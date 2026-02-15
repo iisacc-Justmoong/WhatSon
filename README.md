@@ -74,3 +74,45 @@ Use this only for diagnosis. Modern iOS simulator runtimes are arm64-only, so `x
 cmake --build build --target run_WhatSon
 ./build/src/daemon/whats_on_daemon --healthcheck
 ```
+
+## Unified Build And Launch Automation
+
+`scripts/build_all.py` is a single entrypoint that runs the currently validated workflow:
+
+- Build and launch on the current development machine.
+- Build, install, and launch on an Android emulator.
+- Generate an iOS Xcode project artifact.
+- Export an Android Studio project artifact.
+
+Default run (parallel):
+
+```bash
+python3 scripts/build_all.py
+```
+
+Task selection:
+
+```bash
+python3 scripts/build_all.py --tasks host,android,ios
+python3 scripts/build_all.py --tasks host --no-host-run
+python3 scripts/build_all.py --tasks ios --sequential
+```
+
+Behavior by OS:
+
+- macOS: runs host + Android + iOS flows.
+- Linux/Windows: iOS task is skipped automatically; host and Android flows still run.
+
+Logs are written to `build/automation-logs/*.log` by default.
+Default artifacts are generated at:
+
+- iOS Xcode project: `build/ios-xcode-artifact/WhatSon.xcodeproj`
+- Android Studio project: `build/android-studio-artifact`
+
+You can override artifact locations:
+
+```bash
+python3 scripts/build_all.py \
+  --ios-project-dir build/ios-xcode-artifact \
+  --android-studio-dir build/android-studio-artifact
+```

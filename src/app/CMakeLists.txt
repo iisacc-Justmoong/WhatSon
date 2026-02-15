@@ -15,14 +15,14 @@ qt_add_executable(WhatSon
         note/WhatSonNoteAttachManagerCreator.hpp
 )
 
-if (mobile/Android)
+if (../../platform/Android)
     set_property(TARGET WhatSon PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-            "mobile/Android")
+            "../../platform/Android")
 endif ()
 
-if (mobile/iOS)
+if (../../platform/Apple/iOS)
     set_target_properties(WhatSon PROPERTIES
-            MACOSX_BUNDLE_INFO_PLIST "mobile/iOS/Info.plist"
+            MACOSX_BUNDLE_INFO_PLIST "../../platform/Apple/iOS/Info.plist"
     )
 endif ()
 
@@ -51,7 +51,7 @@ target_link_libraries(WhatSon
 
 lvrs_configure_qml_app(WhatSon)
 
-if (mobile/iOS)
+if (../../platform/Apple/iOS)
     # Exclude Qt qmltooling static plugins from iOS app linkage.
     # The installed Qt iOS kit may provide qmltooling init objects built for device arch,
     # which breaks simulator linking during bootstrap.
