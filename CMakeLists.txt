@@ -28,50 +28,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-function(whatson_runtime_platform out_var)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Android")
-        set(_whatson_platform "android")
-    elseif (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-        set(_whatson_platform "ios")
-    elseif (APPLE)
-        set(_whatson_platform "macos")
-    elseif (WIN32)
-        set(_whatson_platform "windows")
-    elseif (UNIX)
-        set(_whatson_platform "linux")
-    else ()
-        set(_whatson_platform "unknown")
-    endif ()
-    set(${out_var} "${_whatson_platform}" PARENT_SCOPE)
-endfunction()
-
-function(whatson_resolve_lvrs_prefix out_var)
-    whatson_runtime_platform(_whatson_runtime_platform)
-    set(_whatson_lvrs_prefix "${LVRS_PREFIX}")
-    set(_whatson_home "")
-    if (DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
-        set(_whatson_home "$ENV{HOME}")
-    elseif (DEFINED ENV{USERPROFILE} AND NOT "$ENV{USERPROFILE}" STREQUAL "")
-        set(_whatson_home "$ENV{USERPROFILE}")
-    endif ()
-
-    if (_whatson_lvrs_prefix STREQUAL "")
-        if (NOT _whatson_home STREQUAL "" AND EXISTS "${_whatson_home}/.local/LVRS")
-            set(_whatson_lvrs_prefix "${_whatson_home}/.local/LVRS")
-        endif ()
-    endif ()
-
-    if (NOT _whatson_lvrs_prefix STREQUAL "" AND EXISTS "${_whatson_lvrs_prefix}/platforms/${_whatson_runtime_platform}")
-        set(_whatson_lvrs_prefix "${_whatson_lvrs_prefix}/platforms/${_whatson_runtime_platform}")
-    endif ()
-
-    set(${out_var} "${_whatson_lvrs_prefix}" PARENT_SCOPE)
-endfunction()
-
-# Add local prefixes for dependency discovery
-whatson_resolve_lvrs_prefix(_whatson_lvrs_prefix_resolved)
-if (NOT _whatson_lvrs_prefix_resolved STREQUAL "")
-    set(LVRS_PREFIX "${_whatson_lvrs_prefix_resolved}" CACHE PATH "Path to LVRS prefix" FORCE)
+# Add local prefixes for dependency discovery.
+# LVRS root package now dispatches platform-specific configs internally.
+if (NOT LVRS_PREFIX AND EXISTS "$ENV{HOME}/.local/LVRS")
+    set(LVRS_PREFIX "$ENV{HOME}/.local/LVRS" CACHE PATH "Path to LVRS root prefix")
+endif ()
+if (LVRS_PREFIX)
     list(APPEND CMAKE_PREFIX_PATH "${LVRS_PREFIX}")
 endif ()
 
@@ -101,7 +63,7 @@ set(WHATSON_IOS_INFO_PLIST "${WHATSON_APPLE_DIR}/iOS/Info.plist")
 set(WHATSON_DEFAULT_INFO_PLIST "${WHATSON_APPLE_DIR}/Info.plist")
 set(WHATSON_ENTITLEMENTS "${WHATSON_APPLE_DIR}/WhatSon.entitlements")
 set(WHATSON_APPLE_BUNDLE_ID "com.lvrs.whatson" CACHE STRING "Apple bundle id for WhatSon app")
-set(WHATSON_ANDROID_PACKAGE_ID "com.lvrs.whatson" CACHE STRING "Android package id used by launch targets")
+set(WHATSON_ANDROID_PACKAGE_ID "com.lvrs.whatson" CACHE STRING "Android package id for WhatSon app")
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 qt_standard_project_setup(REQUIRES 6.5)
@@ -112,59 +74,6 @@ message(STATUS "  WHATSON_BUILD_DAEMON: ${WHATSON_BUILD_DAEMON}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")
-whatson_runtime_platform(_whatson_runtime_platform)
-message(STATUS "  WHATSON_RUNTIME_PLATFORM: ${_whatson_runtime_platform}")
-
-function(whatson_configure_app_target target_name)
-    if (EXISTS "${WHATSON_ANDROID_DIR}")
-        set_property(TARGET ${target_name} PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR "${WHATSON_ANDROID_DIR}")
-    endif ()
-
-    if (APPLE OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
-        if (EXISTS "${WHATSON_IOS_INFO_PLIST}")
-            set_target_properties(${target_name} PROPERTIES
-                    MACOSX_BUNDLE_INFO_PLIST "${WHATSON_IOS_INFO_PLIST}"
-            )
-        elseif (EXISTS "${WHATSON_DEFAULT_INFO_PLIST}")
-            set_target_properties(${target_name} PROPERTIES
-                    MACOSX_BUNDLE_INFO_PLIST "${WHATSON_DEFAULT_INFO_PLIST}"
-            )
-        endif ()
-
-        if (EXISTS "${WHATSON_ENTITLEMENTS}")
-            set_target_properties(${target_name} PROPERTIES
-                    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${WHATSON_ENTITLEMENTS}"
-            )
-        endif ()
-    endif ()
-
-    if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-        if (COMMAND qt_import_plugins)
-            qt_import_plugins(${target_name} EXCLUDE_BY_TYPE qmltooling)
-        endif ()
-    endif ()
-endfunction()
-
-function(whatson_ensure_lvrs_plugin_target)
-    if (TARGET LVRSCoreplugin)
-        return()
-    endif ()
-
-    if (TARGET LVRS::LVRSCoreplugin)
-        add_library(LVRSCoreplugin INTERFACE IMPORTED)
-        set_target_properties(LVRSCoreplugin PROPERTIES
-                INTERFACE_LINK_LIBRARIES "LVRS::LVRSCoreplugin"
-        )
-        return()
-    endif ()
-
-    if (TARGET LVRS::LVRS)
-        add_library(LVRSCoreplugin INTERFACE IMPORTED)
-        set_target_properties(LVRSCoreplugin PROPERTIES
-                INTERFACE_LINK_LIBRARIES "LVRS::LVRS"
-        )
-    endif ()
-endfunction()
 
 if (WHATSON_BUILD_APP)
     add_subdirectory(src/app)
@@ -211,36 +120,28 @@ if (TARGET whats_on_daemon)
     )
 endif ()
 
-if (TARGET WhatSon)
-    find_program(WHATSON_XCRUN xcrun)
-    if (WHATSON_XCRUN)
-        add_custom_target(whatson_launch_ios
-                COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target bootstrap_WhatSon_ios
-                COMMAND "${WHATSON_XCRUN}" simctl launch booted "${WHATSON_APPLE_BUNDLE_ID}"
-                DEPENDS WhatSon
-                USES_TERMINAL
-                COMMENT "Launch WhatSon on iOS simulator"
-        )
+if (TARGET launch_WhatSon_ios)
+    add_custom_target(whatson_launch_ios DEPENDS launch_WhatSon_ios)
+endif ()
 
-        add_custom_target(launch_WhatSon_ios
-                DEPENDS whatson_launch_ios
-        )
-    endif ()
+if (TARGET launch_WhatSon_android)
+    add_custom_target(whatson_launch_android DEPENDS launch_WhatSon_android)
+endif ()
 
-    find_program(WHATSON_ADB adb HINTS "$ENV{HOME}/Library/Android/sdk/platform-tools")
-    if (WHATSON_ADB)
-        add_custom_target(whatson_launch_android
-                COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target bootstrap_WhatSon_android
-                COMMAND "${WHATSON_ADB}" shell monkey -p "${WHATSON_ANDROID_PACKAGE_ID}" -c android.intent.category.LAUNCHER 1
-                DEPENDS WhatSon
-                USES_TERMINAL
-                COMMENT "Launch WhatSon on Android device/emulator"
-        )
+if (TARGET launch_WhatSon_wasm)
+    add_custom_target(whatson_launch_wasm DEPENDS launch_WhatSon_wasm)
+endif ()
 
-        add_custom_target(launch_WhatSon_android
-                DEPENDS whatson_launch_android
-        )
-    endif ()
+if (TARGET export_WhatSon_xcodeproj)
+    add_custom_target(whatson_export_xcodeproj DEPENDS export_WhatSon_xcodeproj)
+endif ()
+
+if (TARGET export_WhatSon_android_studio)
+    add_custom_target(whatson_export_android_studio DEPENDS export_WhatSon_android_studio)
+endif ()
+
+if (TARGET export_WhatSon_wasm_site)
+    add_custom_target(whatson_export_wasm_site DEPENDS export_WhatSon_wasm_site)
 endif ()
 
 set(WHATSON_DIST_DIR "${CMAKE_BINARY_DIR}/dist")

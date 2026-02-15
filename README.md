@@ -29,7 +29,7 @@ lvrs_configure_qml_app(WhatSon)
 If LVRS cannot be found, pass the LVRS prefix through `CMAKE_PREFIX_PATH` at configure time.
 
 ```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS/platforms/macos
+cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
 ```
 
 LVRS platform-layout reference:
@@ -37,6 +37,7 @@ LVRS platform-layout reference:
 - macOS: `~/.local/LVRS/platforms/macos`
 - iOS: `~/.local/LVRS/platforms/ios`
 - Android: `~/.local/LVRS/platforms/android`
+- WASM: `~/.local/LVRS/platforms/wasm` (if installed)
 
 ## Build
 
@@ -62,13 +63,26 @@ Mobile launch targets from root:
 ```bash
 cmake --build build --target whatson_launch_ios
 cmake --build build --target whatson_launch_android
+cmake --build build --target whatson_launch_wasm
 ```
 
-Legacy compatibility aliases are preserved:
+Mobile artifact export targets from root:
+
+```bash
+cmake --build build --target whatson_export_xcodeproj
+cmake --build build --target whatson_export_android_studio
+cmake --build build --target whatson_export_wasm_site
+```
+
+LVRS-native aliases are still available:
 
 ```bash
 cmake --build build --target launch_WhatSon_ios
 cmake --build build --target launch_WhatSon_android
+cmake --build build --target launch_WhatSon_wasm
+cmake --build build --target export_WhatSon_xcodeproj
+cmake --build build --target export_WhatSon_android_studio
+cmake --build build --target export_WhatSon_wasm_site
 ```
 
 ## Bootstrap All Platforms
@@ -103,7 +117,7 @@ Use this only for diagnosis. Modern iOS simulator runtimes are arm64-only, so `x
 ## Run
 
 ```bash
-cmake --build build --target run_WhatSon
+cmake --build build --target whatson_run_app
 ./build/src/daemon/whats_on_daemon --healthcheck
 ```
 
