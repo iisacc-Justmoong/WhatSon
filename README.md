@@ -29,14 +29,46 @@ lvrs_configure_qml_app(WhatSon)
 If LVRS cannot be found, pass the LVRS prefix through `CMAKE_PREFIX_PATH` at configure time.
 
 ```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
+cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS/platforms/macos
 ```
+
+LVRS platform-layout reference:
+
+- macOS: `~/.local/LVRS/platforms/macos`
+- iOS: `~/.local/LVRS/platforms/ios`
+- Android: `~/.local/LVRS/platforms/android`
 
 ## Build
 
 ```bash
 cmake -S . -B build
 cmake --build build -j
+```
+
+## Unified Root CMake Targets
+
+Platform build, launch, export, and package targets are centralized in the root `CMakeLists.txt`.
+
+```bash
+cmake --build build --target whatson_build_all
+cmake --build build --target whatson_run_app
+cmake --build build --target whatson_healthcheck_daemon
+cmake --build build --target whatson_export_binaries
+cmake --build build --target whatson_package
+```
+
+Mobile launch targets from root:
+
+```bash
+cmake --build build --target whatson_launch_ios
+cmake --build build --target whatson_launch_android
+```
+
+Legacy compatibility aliases are preserved:
+
+```bash
+cmake --build build --target launch_WhatSon_ios
+cmake --build build --target launch_WhatSon_android
 ```
 
 ## Bootstrap All Platforms

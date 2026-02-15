@@ -49,6 +49,47 @@ def _default_android_sdk(system_name: str, home: Path) -> Path:
     return home / "Android" / "Sdk"
 
 
+def _runtime_platform_name(system_name: str) -> str:
+    if system_name == "Darwin":
+        return "macos"
+    if system_name == "Windows":
+        return "windows"
+    if system_name == "Linux":
+        return "linux"
+    return "unknown"
+
+
+def _lvrs_root_from_prefix(prefix: Path) -> Path:
+    if prefix.name in {"macos", "windows", "linux", "ios", "android"} and prefix.parent.name == "platforms":
+        return prefix.parent.parent
+    return prefix
+
+
+def _default_lvrs_prefix_for_system(system_name: str, home: Path) -> Path:
+    lvrs_root = home / ".local" / "LVRS"
+    runtime = _runtime_platform_name(system_name)
+    platform_prefix = lvrs_root / "platforms" / runtime
+    if platform_prefix.exists():
+        return platform_prefix
+    return lvrs_root
+
+
+def _default_lvrs_ios_prefix(base_prefix: Path) -> Path:
+    lvrs_root = _lvrs_root_from_prefix(base_prefix)
+    platform_prefix = lvrs_root / "platforms" / "ios"
+    if platform_prefix.exists():
+        return platform_prefix
+    return base_prefix
+
+
+def _default_lvrs_android_prefix(base_prefix: Path, home: Path) -> Path:
+    lvrs_root = _lvrs_root_from_prefix(base_prefix)
+    platform_prefix = lvrs_root / "platforms" / "android"
+    if platform_prefix.exists():
+        return platform_prefix
+    return home / ".local" / "LVRS-android"
+
+
 def _android_manifest_candidates(root: Path) -> List[Path]:
     return [
         root / "platform" / "Android" / "AndroidManifest.xml",
@@ -132,6 +173,7 @@ class BuildAll:
         self.qt_android_prefix = _expand(args.qt_android_prefix)
 
         self.lvrs_prefix = _expand(args.lvrs_prefix)
+        self.ios_lvrs_prefix = _expand(args.ios_lvrs_prefix)
         self.android_lvrs_prefix = _expand(args.android_lvrs_prefix)
         self.lvrs_source_dir = _expand(args.lvrs_source_dir)
 
@@ -490,7 +532,7 @@ class BuildAll:
             if not toolchain.exists():
                 raise CommandError(f"Qt iOS toolchain file was not found: {toolchain}")
 
-            prefix_paths = [str(self.qt_ios_prefix), str(self.lvrs_prefix)]
+            prefix_paths = [str(self.qt_ios_prefix), str(self.ios_lvrs_prefix)]
             if self.qt_host_prefix.exists():
                 prefix_paths.append(str(self.qt_host_prefix))
 
@@ -513,7 +555,7 @@ class BuildAll:
                 "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=com.lvrs.whatson",
             ]
 
-            lvrs_dir = self.lvrs_prefix / "lib" / "cmake" / "LVRS"
+            lvrs_dir = self.ios_lvrs_prefix / "lib" / "cmake" / "LVRS"
             if lvrs_dir.exists():
                 ios_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
 
@@ -805,6 +847,11 @@ def parse_args() -> argparse.Namespace:
     qt_host_default = _default_qt_host_prefix(system_name, qt_root)
     qt_android_default = _default_qt_android_prefix(qt_root)
     android_sdk = _expand(os.environ.get("ANDROID_SDK_ROOT", str(_default_android_sdk(system_name, home))))
+    lvrs_host_default = _default_lvrs_prefix_for_system(system_name, home)
+    lvrs_prefix_env = os.environ.get("LVRS_PREFIX")
+    lvrs_base_prefix = _expand(lvrs_prefix_env) if lvrs_prefix_env else lvrs_host_default
+    lvrs_ios_default = _default_lvrs_ios_prefix(lvrs_base_prefix)
+    lvrs_android_default = _default_lvrs_android_prefix(lvrs_base_prefix, home)
 
     parser = argparse.ArgumentParser(
         description=(
@@ -838,11 +885,20 @@ def parse_args() -> argparse.Namespace:
         default=str(_expand(os.environ.get("QT_ANDROID_PREFIX", str(qt_android_default)))),
     )
 
-    parser.add_argument("--lvrs-prefix",
-                        default=str(_expand(os.environ.get("LVRS_PREFIX", str(home / ".local" / "LVRS")))))
+    parser.add_argument(
+        "--lvrs-prefix",
+        default=str(_expand(os.environ.get("LVRS_PREFIX", str(lvrs_host_default)))),
+        help="LVRS prefix for host/runtime build (supports ~/.local/LVRS/platforms/<runtime> layout).",
+    )
+    parser.add_argument(
+        "--ios-lvrs-prefix",
+        default=str(_expand(os.environ.get("LVRS_IOS_PREFIX", str(lvrs_ios_default)))),
+        help="LVRS prefix for iOS configure.",
+    )
     parser.add_argument(
         "--android-lvrs-prefix",
-        default=str(_expand(os.environ.get("LVRS_ANDROID_PREFIX", str(home / ".local" / "LVRS-android")))),
+        default=str(_expand(os.environ.get("LVRS_ANDROID_PREFIX", str(lvrs_android_default)))),
+        help="LVRS prefix for Android configure.",
     )
     parser.add_argument("--lvrs-source-dir",
                         default=str(_expand(os.environ.get("LVRS_SOURCE_DIR", str(home / "Developer" / "LVRS")))))

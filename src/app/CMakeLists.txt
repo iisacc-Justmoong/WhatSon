@@ -15,15 +15,12 @@ qt_add_executable(WhatSon
         note/WhatSonNoteAttachManagerCreator.hpp
 )
 
-if (../../platform/Android)
-    set_property(TARGET WhatSon PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-            "../../platform/Android")
+if (COMMAND whatson_configure_app_target)
+    whatson_configure_app_target(WhatSon)
 endif ()
 
-if (../../platform/Apple/iOS)
-    set_target_properties(WhatSon PROPERTIES
-            MACOSX_BUNDLE_INFO_PLIST "../../platform/Apple/iOS/Info.plist"
-    )
+if (COMMAND whatson_ensure_lvrs_plugin_target)
+    whatson_ensure_lvrs_plugin_target()
 endif ()
 
 qt_add_qml_module(WhatSon
@@ -51,39 +48,13 @@ target_link_libraries(WhatSon
 
 lvrs_configure_qml_app(WhatSon)
 
-if (../../platform/Apple/iOS)
-    # Exclude Qt qmltooling static plugins from iOS app linkage.
-    # The installed Qt iOS kit may provide qmltooling init objects built for device arch,
-    # which breaks simulator linking during bootstrap.
-    if (COMMAND qt_import_plugins)
-        qt_import_plugins(WhatSon EXCLUDE_BY_TYPE qmltooling)
-    endif ()
+if (NOT DEFINED WHATSON_APPLE_BUNDLE_ID)
+    set(WHATSON_APPLE_BUNDLE_ID "com.lvrs.whatson")
 endif ()
 
 set_target_properties(WhatSon PROPERTIES
         MACOSX_BUNDLE ON
         OUTPUT_NAME "WhatSon"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.lvrs.whatson"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "${WHATSON_APPLE_BUNDLE_ID}"
         MACOSX_BUNDLE_BUNDLE_NAME "WhatSon"
 )
-
-# Custom launch targets for mobile platforms
-find_program(WHATSON_XCRUN xcrun)
-if (WHATSON_XCRUN)
-    add_custom_target(launch_WhatSon_ios
-            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target bootstrap_WhatSon_ios
-            COMMAND "${WHATSON_XCRUN}" simctl launch booted com.lvrs.whatson
-            USES_TERMINAL
-            COMMENT "Launching WhatSon on iOS simulator"
-    )
-endif ()
-
-find_program(WHATSON_ADB adb HINTS "$ENV{HOME}/Library/Android/sdk/platform-tools")
-if (WHATSON_ADB)
-    add_custom_target(launch_WhatSon_android
-            COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target bootstrap_WhatSon_android
-            COMMAND "${WHATSON_ADB}" shell monkey -p com.lvrs.whatson -c android.intent.category.LAUNCHER 1
-            USES_TERMINAL
-            COMMENT "Launching WhatSon on Android device/emulator"
-    )
-endif ()
