@@ -1,0 +1,76 @@
+# WhatSon
+
+WhatSon is an LVRS-based Qt Quick application.
+
+## Structure
+
+- `src/app`: LVRS-based UI application
+- `src/daemon`: background daemon skeleton
+
+## LVRS Integration Pattern
+
+The app CMake file follows the minimum recommended LVRS configuration.
+
+```cmake
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2)
+find_package(LVRS CONFIG REQUIRED)
+
+qt_add_executable(WhatSon main.cpp)
+qt_add_qml_module(WhatSon
+    URI WhatSon.App
+    VERSION 1.0
+    RESOURCE_PREFIX "/qt/qml"
+    QML_FILES qml/Main.qml
+)
+
+lvrs_configure_qml_app(WhatSon)
+```
+
+If LVRS cannot be found, pass the LVRS prefix through `CMAKE_PREFIX_PATH` at configure time.
+
+```bash
+cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
+```
+
+## Build
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+```
+
+## Bootstrap All Platforms
+
+The script below applies local environment fixes before LVRS bootstrap.
+
+- Uses `arm64` as the default iOS simulator architecture.
+- Detects Qt iOS mixed-slice kits and reports clear remediation guidance when arm64 simulator linking is broken.
+- Detects Android NDK from `${ANDROID_SDK_ROOT}/ndk/*` and exports Android toolchain env vars.
+- Cleans stale iOS bootstrap output to avoid stale `Debug` bundle install mismatches.
+
+```bash
+./scripts/bootstrap_whatson.sh all
+```
+
+Platform-only runs:
+
+```bash
+./scripts/bootstrap_whatson.sh macos
+./scripts/bootstrap_whatson.sh ios
+./scripts/bootstrap_whatson.sh android
+```
+
+Optional temporary fallback:
+
+```bash
+WHATSON_IOS_ALLOW_X86_FALLBACK=1 ./scripts/bootstrap_whatson.sh ios
+```
+
+Use this only for diagnosis. Modern iOS simulator runtimes are arm64-only, so `x86_64` apps may fail to install.
+
+## Run
+
+```bash
+cmake --build build --target run_WhatSon
+./build/src/daemon/whats_on_daemon --healthcheck
+```
