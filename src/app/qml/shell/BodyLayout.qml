@@ -57,6 +57,7 @@ Item {
             width += root.splitterThickness;
         if (root.rightVisible)
             width += root.splitterThickness;
+
     }
 
     Layout.fillHeight: true
@@ -99,7 +100,7 @@ Item {
                     var movePoint = sidebarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
                     var deltaX = movePoint.x - dragStartGlobalX;
                     var nextSidebarWidth = root.clampSidebarWidth(dragStartSidebarWidth + deltaX);
-                    if (nextSidebarWidth !== root.sidebarWidth)
+                    if (isFinite(nextSidebarWidth) && nextSidebarWidth !== root.sidebarWidth)
                         root.sidebarWidthDragRequested(nextSidebarWidth);
                 }
                 onPressed: function (mouse) {
@@ -143,7 +144,7 @@ Item {
                     var movePoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
                     var deltaX = movePoint.x - dragStartGlobalX;
                     var nextListWidth = root.clampListViewWidth(dragStartListWidth + deltaX);
-                    if (nextListWidth !== root.listViewWidth)
+                    if (isFinite(nextListWidth) && nextListWidth !== root.listViewWidth)
                         root.listViewWidthDragRequested(nextListWidth);
                 }
                 onPressed: function (mouse) {
@@ -197,7 +198,7 @@ Item {
                     var movePoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
                     var deltaX = movePoint.x - dragStartGlobalX;
                     var nextRightWidth = root.clampRightPanelWidth(dragStartRightWidth - deltaX);
-                    if (nextRightWidth !== root.rightPanelWidth)
+                    if (isFinite(nextRightWidth) && nextRightWidth !== root.rightPanelWidth)
                         root.rightPanelWidthDragRequested(nextRightWidth);
                 }
                 onPressed: function (mouse) {

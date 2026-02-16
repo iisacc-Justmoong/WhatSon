@@ -59,7 +59,7 @@ LV.ApplicationWindow {
     visible: true
     width: 1265
     windowColor: "#141414"
-    windowDragHandleEnabled: !mobileSinglePageMode
+    windowDragHandleEnabled: !isMobilePlatform
     windowDragHandleHeight: statusBarHeight + navigationBarHeight
     windowDragHandleTopMargin: 0
 
@@ -91,55 +91,64 @@ LV.ApplicationWindow {
                 panelColor: window.navigationBarColor
                 panelHeight: window.navigationBarHeight
             }
-            LayoutShell.ContentViewLayout {
+            Loader {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                displayColor: window.contentsDisplayColor
-                drawerColor: window.contentsDisplayColor
-                drawerHeight: 0
-                minDisplayHeight: 0
-                minDrawerHeight: 0
-                panelColor: window.contentPanelColor
-                splitterHandleThickness: 0
-                splitterThickness: 0
-                visible: window.mobileSinglePageMode
+                sourceComponent: window.isMobilePlatform ? mobileBodyComponent : desktopBodyComponent
             }
-            LayoutShell.BodyLayout {
-                contentPanelColor: window.contentPanelColor
-                contentsDisplayColor: window.contentsDisplayColor
-                drawerColor: window.drawerColor
-                drawerHeight: window.drawerHeight
-                listViewColor: window.listViewColor
-                listViewWidth: window.listViewWidth
-                minContentWidth: window.minContentWidth
-                minDisplayHeight: window.minDisplayHeight
-                minDrawerHeight: window.minDrawerHeight
-                minListViewWidth: window.minListViewWidth
-                minRightPanelWidth: window.minRightPanelWidth
-                minSidebarWidth: window.minSidebarWidth
-                rightPanelColor: window.rightPanelColor
-                rightPanelWidth: window.rightPanelWidth
-                sidebarColor: window.sidebarColor
-                sidebarWidth: window.sidebarWidth
-                splitterThickness: window.bodySplitterThickness
-                visible: !window.mobileSinglePageMode
+        }
+    }
+    Component {
+        id: mobileBodyComponent
 
-                onDrawerHeightDragRequested: function (value) {
-                    if (value !== window.preferredDrawerHeight)
-                        window.preferredDrawerHeight = value;
-                }
-                onListViewWidthDragRequested: function (value) {
-                    if (value !== window.preferredListViewWidth)
-                        window.preferredListViewWidth = value;
-                }
-                onRightPanelWidthDragRequested: function (value) {
-                    if (value !== window.preferredRightPanelWidth)
-                        window.preferredRightPanelWidth = value;
-                }
-                onSidebarWidthDragRequested: function (value) {
-                    if (value !== window.preferredSidebarWidth)
-                        window.preferredSidebarWidth = value;
-                }
+        LayoutShell.ContentViewLayout {
+            displayColor: window.contentsDisplayColor
+            drawerColor: window.contentsDisplayColor
+            drawerHeight: 0
+            minDisplayHeight: 0
+            minDrawerHeight: 0
+            panelColor: window.contentPanelColor
+            splitterHandleThickness: 0
+            splitterThickness: 0
+        }
+    }
+    Component {
+        id: desktopBodyComponent
+
+        LayoutShell.BodyLayout {
+            contentPanelColor: window.contentPanelColor
+            contentsDisplayColor: window.contentsDisplayColor
+            drawerColor: window.drawerColor
+            drawerHeight: window.drawerHeight
+            listViewColor: window.listViewColor
+            listViewWidth: window.listViewWidth
+            minContentWidth: window.minContentWidth
+            minDisplayHeight: window.minDisplayHeight
+            minDrawerHeight: window.minDrawerHeight
+            minListViewWidth: window.minListViewWidth
+            minRightPanelWidth: window.minRightPanelWidth
+            minSidebarWidth: window.minSidebarWidth
+            rightPanelColor: window.rightPanelColor
+            rightPanelWidth: window.rightPanelWidth
+            sidebarColor: window.sidebarColor
+            sidebarWidth: window.sidebarWidth
+            splitterThickness: window.bodySplitterThickness
+
+            onDrawerHeightDragRequested: function (value) {
+                if (value !== window.preferredDrawerHeight)
+                    window.preferredDrawerHeight = value;
+            }
+            onListViewWidthDragRequested: function (value) {
+                if (value !== window.preferredListViewWidth)
+                    window.preferredListViewWidth = value;
+            }
+            onRightPanelWidthDragRequested: function (value) {
+                if (value !== window.preferredRightPanelWidth)
+                    window.preferredRightPanelWidth = value;
+            }
+            onSidebarWidthDragRequested: function (value) {
+                if (value !== window.preferredSidebarWidth)
+                    window.preferredSidebarWidth = value;
             }
         }
     }

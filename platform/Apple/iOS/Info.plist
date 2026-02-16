@@ -9,28 +9,52 @@
     <string>APPL</string>
 
     <key>CFBundleName</key>
-    <string>$(PRODUCT_NAME)</string>
+    <string>WhatSon</string>
 
     <key>CFBundleDisplayName</key>
     <string>WhatSon</string>
 
     <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <string>com.lvrs.whatson</string>
 
     <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
+    <string>WhatSon</string>
 
     <key>CFBundleVersion</key>
-    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <string>1</string>
 
     <key>CFBundleShortVersionString</key>
-    <string>$(MARKETING_VERSION)</string>
+    <string>1.0.0</string>
 
     <key>CFBundleDevelopmentRegion</key>
-    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <string>en</string>
 
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>
+
+    <key>NSCalendarsUsageDescription</key>
+    <string>WhatSon uses calendar and time information to organize work schedules.</string>
+
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>WhatSon needs full calendar access to create and update schedules.</string>
+
+    <key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+    <string>WhatSon needs write access to add schedule events from notes.</string>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>WhatSon uses microphone access for voice notes and dictation.</string>
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>WhatSon uses photo access to attach images to notes and documents.</string>
+
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>WhatSon saves exported visuals and attachments to your photo library.</string>
+
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>WhatSon uses Bluetooth for nearby accessory and device integration.</string>
+
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>WhatSon uses Bluetooth peripheral communication for connected workflows.</string>
 
     <key>LSRequiresIPhoneOS</key>
     <true/>

@@ -244,6 +244,11 @@ class BuildAll:
             return
         shutil.rmtree(path)
 
+    def _reset_task_log(self, log_path: Path) -> None:
+        if log_path.exists():
+            log_path.unlink()
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
     def _stop_host_app_best_effort(self, *, task: str, log_path: Path, app_bin: Path) -> None:
         if self.system_name == "Windows":
             self._run(
@@ -261,6 +266,34 @@ class BuildAll:
                 check=False,
             )
 
+    def _stop_host_processes_best_effort(self, *, task: str, log_path: Path) -> None:
+        if self.system_name == "Windows":
+            self._run(
+                task=task,
+                cmd=["taskkill", "/IM", "WhatSon.exe", "/F"],
+                log_path=log_path,
+                check=False,
+            )
+            return
+        if shutil.which("pkill"):
+            self._run(task=task, cmd=["pkill", "-x", "WhatSon"], log_path=log_path, check=False)
+            self._run(
+                task=task,
+                cmd=["pkill", "-f", "WhatSon.app/Contents/MacOS/WhatSon"],
+                log_path=log_path,
+                check=False,
+            )
+
+    def _android_package_exists(self, *, adb_path: Path, serial: str, package_name: str) -> bool:
+        package = package_name.strip()
+        if not package:
+            return False
+        probe = self._capture(cmd=[str(adb_path), "-s", serial, "shell", "pm", "list", "packages", package])
+        if probe.returncode != 0:
+            return False
+        token = f"package:{package}"
+        return token in probe.stdout
+
     def _reset_android_package_best_effort(
             self,
             *,
@@ -268,22 +301,102 @@ class BuildAll:
             log_path: Path,
             adb_path: Path,
             package_name: str,
+            serial: Optional[str] = None,
     ) -> None:
         package = package_name.strip()
         if not package:
             return
+        adb_cmd = [str(adb_path)]
+        if serial:
+            adb_cmd.extend(["-s", serial])
         self._log(task, f"Resetting Android package state: {package}")
         self._run(
             task=task,
-            cmd=[str(adb_path), "shell", "am", "force-stop", package],
+            cmd=adb_cmd + ["shell", "am", "force-stop", package],
             log_path=log_path,
             check=False,
         )
         self._run(
             task=task,
-            cmd=[str(adb_path), "uninstall", package],
+            cmd=adb_cmd + ["uninstall", package],
             log_path=log_path,
             check=False,
+        )
+        if serial:
+            self._run(
+                task=task,
+                cmd=adb_cmd + ["shell", "pm", "clear", package],
+                log_path=log_path,
+                check=False,
+            )
+            self._run(
+                task=task,
+                cmd=adb_cmd + ["shell", "cmd", "package", "uninstall", "--user", "0", package],
+                log_path=log_path,
+                check=False,
+            )
+            self._run(
+                task=task,
+                cmd=adb_cmd + ["uninstall", package],
+                log_path=log_path,
+                check=False,
+            )
+            if self._android_package_exists(adb_path=adb_path, serial=serial, package_name=package):
+                self._run(
+                    task=task,
+                    cmd=adb_cmd + ["shell", "pm", "uninstall", "--user", "0", package],
+                    log_path=log_path,
+                    check=False,
+                )
+
+    def _install_android_apk_with_retry(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            adb_path: Path,
+            apk_path: Path,
+            package_name: str,
+            attempts: int = 3,
+    ) -> str:
+        if attempts < 1:
+            attempts = 1
+
+        last_serial: Optional[str] = None
+        for attempt in range(1, attempts + 1):
+            serial = self._ensure_android_device(task=task, log_path=log_path)
+            last_serial = serial
+            adb_cmd = [str(adb_path), "-s", serial]
+            install_cmd = adb_cmd + ["install", "-r", str(apk_path)]
+            return_code = self._run(task=task, cmd=install_cmd, log_path=log_path, check=False)
+            if return_code == 0:
+                return serial
+
+            # Best-effort cleanup for stale package state (e.g. DELETE_FAILED_INTERNAL_ERROR)
+            self._run(
+                task=task,
+                cmd=adb_cmd + ["shell", "am", "force-stop", package_name],
+                log_path=log_path,
+                check=False,
+            )
+            self._run(
+                task=task,
+                cmd=adb_cmd + ["uninstall", package_name],
+                log_path=log_path,
+                check=False,
+            )
+            self._run(
+                task=task,
+                cmd=adb_cmd + ["shell", "cmd", "package", "uninstall", "--user", "0", package_name],
+                log_path=log_path,
+                check=False,
+            )
+            if attempt < attempts:
+                time.sleep(2)
+
+        raise CommandError(
+            f"adb install failed after {attempts} attempts for '{apk_path}'"
+            + (f" (last-serial={last_serial})" if last_serial else "")
         )
 
     def _host_app_binary(self) -> Optional[Path]:
@@ -298,6 +411,18 @@ class BuildAll:
             candidates.append(self.host_build_dir / "src" / "app" / "bin" / "WhatSon")
             candidates.append(self.host_build_dir / "src" / "app" / "WhatSon")
         return _find_existing(candidates)
+
+    def _host_app_bundle(self, app_bin: Path) -> Optional[Path]:
+        if self.system_name != "Darwin":
+            return None
+        current = app_bin
+        for _ in range(4):
+            if current.suffix == ".app" and current.exists():
+                return current
+            if current.parent == current:
+                break
+            current = current.parent
+        return None
 
     def _daemon_binary(self) -> Optional[Path]:
         candidates = [
@@ -413,6 +538,41 @@ class BuildAll:
             return updated
         return env
 
+    def _clean_ios_simulator_app_best_effort(self, *, task: str, log_path: Path, bundle_id: str) -> None:
+        if self.system_name != "Darwin":
+            return
+        xcrun = shutil.which("xcrun")
+        if not xcrun:
+            return
+        devices = self._capture(cmd=[xcrun, "simctl", "list", "devices", "booted", "-j"])
+        if devices.returncode != 0:
+            return
+        try:
+            payload = json.loads(devices.stdout)
+        except Exception:  # noqa: BLE001
+            return
+        for runtime_devices in payload.get("devices", {}).values():
+            if not isinstance(runtime_devices, list):
+                continue
+            for device in runtime_devices:
+                if not isinstance(device, dict):
+                    continue
+                udid = str(device.get("udid", "")).strip()
+                if not udid:
+                    continue
+                self._run(
+                    task=task,
+                    cmd=[xcrun, "simctl", "terminate", udid, bundle_id],
+                    log_path=log_path,
+                    check=False,
+                )
+                self._run(
+                    task=task,
+                    cmd=[xcrun, "simctl", "uninstall", udid, bundle_id],
+                    log_path=log_path,
+                    check=False,
+                )
+
     def _lvrs_platform_prefix(self, platform_name: str) -> Path:
         platform_prefix = self.lvrs_prefix / "platforms" / platform_name
         if platform_prefix.exists():
@@ -498,6 +658,8 @@ class BuildAll:
         task = TASK_HOST
         log_path = self.logs_dir / f"{task}.log"
         try:
+            self._reset_task_log(log_path)
+            self._stop_host_processes_best_effort(task=task, log_path=log_path)
             self._clean_path(task=task, path=self.host_build_dir, log_path=log_path)
             self.host_build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -558,6 +720,16 @@ class BuildAll:
                     )
                 fp.write(f"# pid={process.pid}\n")
 
+            if self.system_name == "Darwin":
+                app_bundle = self._host_app_bundle(app_bin)
+                if app_bundle is not None and shutil.which("open"):
+                    self._run(
+                        task=task,
+                        cmd=["open", "-a", str(app_bundle)],
+                        log_path=log_path,
+                        check=False,
+                    )
+
             return TaskResult(task, "success", f"Host app launched (pid={process.pid}).", log_path)
         except Exception as exc:  # noqa: BLE001
             return TaskResult(task, "failed", str(exc), log_path)
@@ -569,6 +741,12 @@ class BuildAll:
             return TaskResult(task, "skipped", "iOS Xcode project generation is macOS-only.", log_path)
 
         try:
+            self._reset_task_log(log_path)
+            self._clean_ios_simulator_app_best_effort(
+                task=task,
+                log_path=log_path,
+                bundle_id="com.lvrs.whatson",
+            )
             self._clean_path(task=task, path=self.ios_project_dir, log_path=log_path)
             toolchain = self.qt_ios_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
             if not toolchain.exists():
@@ -616,6 +794,7 @@ class BuildAll:
         task = TASK_ANDROID
         log_path = self.logs_dir / f"{task}.log"
         try:
+            self._reset_task_log(log_path)
             adb_path = self._find_adb()
             if adb_path is None:
                 raise CommandError("adb was not found.")
@@ -635,10 +814,16 @@ class BuildAll:
                     log_path=log_path,
                     adb_path=adb_path,
                     package_name=package_name,
+                    serial=serial,
                 )
 
             if self.system_name == "Darwin":
-                result = self._task_android_macos_proven(task=task, log_path=log_path, adb_path=adb_path)
+                result = self._task_android_macos_proven(
+                    task=task,
+                    log_path=log_path,
+                    adb_path=adb_path,
+                    serial=serial,
+                )
                 if result:
                     return TaskResult(task, "success", result, log_path)
             else:
@@ -675,7 +860,14 @@ class BuildAll:
         studio_dir = self._export_android_studio_project(source_dir=gradle_dir, task=task, log_path=log_path)
         return f"launch_WhatSon_android completed. Android Studio project: {studio_dir}"
 
-    def _task_android_macos_proven(self, *, task: str, log_path: Path, adb_path: Path) -> Optional[str]:
+    def _task_android_macos_proven(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            adb_path: Path,
+            serial: str,
+    ) -> Optional[str]:
         if not self.qt_android_prefix.exists():
             raise CommandError(f"Qt Android prefix was not found: {self.qt_android_prefix}")
         if not self.qt_host_prefix.exists():
@@ -770,23 +962,31 @@ class BuildAll:
                 log_path=log_path,
                 adb_path=adb_path,
                 package_name=launch_package,
+                serial=serial,
             )
-
-        self._run(task=task, cmd=[str(adb_path), "install", str(debug_apk)], log_path=log_path)
+        install_serial = self._install_android_apk_with_retry(
+            task=task,
+            log_path=log_path,
+            adb_path=adb_path,
+            apk_path=debug_apk,
+            package_name=launch_package,
+            attempts=3,
+        )
+        adb_target = [str(adb_path), "-s", install_serial]
         self._run(
             task=task,
-            cmd=[str(adb_path), "shell", "am", "force-stop", launch_package],
+            cmd=adb_target + ["shell", "am", "force-stop", launch_package],
             log_path=log_path,
             check=False,
         )
         self._run(
             task=task,
-            cmd=[str(adb_path), "shell", "monkey", "-p", launch_package, "-c", "android.intent.category.LAUNCHER", "1"],
+            cmd=adb_target + ["shell", "monkey", "-p", launch_package, "-c", "android.intent.category.LAUNCHER", "1"],
             log_path=log_path,
         )
         studio_dir = self._export_android_studio_project(source_dir=gradle_dir, task=task, log_path=log_path)
 
-        pid_probe = self._capture(cmd=[str(adb_path), "shell", "pidof", launch_package])
+        pid_probe = self._capture(cmd=adb_target + ["shell", "pidof", launch_package])
         pid_text = pid_probe.stdout.strip() if pid_probe.returncode == 0 else ""
         if pid_text:
             return (
