@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import shlex
 import shutil
 import subprocess
@@ -14,8 +15,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence
-
-import platform
 
 TASK_HOST = "host"
 TASK_ANDROID = "android"
@@ -234,6 +233,59 @@ class BuildAll:
             check=False,
         )
 
+    def _clean_path(self, *, task: str, path: Path, log_path: Path) -> None:
+        if not path.exists() and not path.is_symlink():
+            return
+        self._log(task, f"Cleaning path: {path}")
+        with log_path.open("a", encoding="utf-8") as fp:
+            fp.write(f"# clean path: {path}\n")
+        if path.is_symlink() or path.is_file():
+            path.unlink(missing_ok=True)
+            return
+        shutil.rmtree(path)
+
+    def _stop_host_app_best_effort(self, *, task: str, log_path: Path, app_bin: Path) -> None:
+        if self.system_name == "Windows":
+            self._run(
+                task=task,
+                cmd=["taskkill", "/IM", "WhatSon.exe", "/F"],
+                log_path=log_path,
+                check=False,
+            )
+            return
+        if shutil.which("pkill"):
+            self._run(
+                task=task,
+                cmd=["pkill", "-f", str(app_bin)],
+                log_path=log_path,
+                check=False,
+            )
+
+    def _reset_android_package_best_effort(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            adb_path: Path,
+            package_name: str,
+    ) -> None:
+        package = package_name.strip()
+        if not package:
+            return
+        self._log(task, f"Resetting Android package state: {package}")
+        self._run(
+            task=task,
+            cmd=[str(adb_path), "shell", "am", "force-stop", package],
+            log_path=log_path,
+            check=False,
+        )
+        self._run(
+            task=task,
+            cmd=[str(adb_path), "uninstall", package],
+            log_path=log_path,
+            check=False,
+        )
+
     def _host_app_binary(self) -> Optional[Path]:
         candidates: List[Path] = []
         if self.system_name == "Darwin":
@@ -446,6 +498,7 @@ class BuildAll:
         task = TASK_HOST
         log_path = self.logs_dir / f"{task}.log"
         try:
+            self._clean_path(task=task, path=self.host_build_dir, log_path=log_path)
             self.host_build_dir.mkdir(parents=True, exist_ok=True)
 
             cmake_cmd = ["cmake", "-S", str(self.root), "-B", str(self.host_build_dir)]
@@ -480,6 +533,7 @@ class BuildAll:
             if app_bin is None:
                 return TaskResult(task, "failed", "Build succeeded but host app binary was not found.", log_path)
 
+            self._stop_host_app_best_effort(task=task, log_path=log_path, app_bin=app_bin)
             self._log(task, f"Launching host app: {app_bin}")
             with log_path.open("a", encoding="utf-8") as fp:
                 fp.write(f"$ launch {app_bin}\n")
@@ -515,6 +569,7 @@ class BuildAll:
             return TaskResult(task, "skipped", "iOS Xcode project generation is macOS-only.", log_path)
 
         try:
+            self._clean_path(task=task, path=self.ios_project_dir, log_path=log_path)
             toolchain = self.qt_ios_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
             if not toolchain.exists():
                 raise CommandError(f"Qt iOS toolchain file was not found: {toolchain}")
@@ -567,6 +622,20 @@ class BuildAll:
 
             serial = self._ensure_android_device(task=task, log_path=log_path)
             _ = serial
+
+            self._clean_path(task=task, path=self.android_build_dir, log_path=log_path)
+            self._clean_path(task=task, path=self.android_studio_dir, log_path=log_path)
+            cleanup_packages = {
+                self.android_package,
+                "org.qtproject.example.WhatSon",  # Legacy Qt default package from older runs.
+            }
+            for package_name in sorted(cleanup_packages):
+                self._reset_android_package_best_effort(
+                    task=task,
+                    log_path=log_path,
+                    adb_path=adb_path,
+                    package_name=package_name,
+                )
 
             if self.system_name == "Darwin":
                 result = self._task_android_macos_proven(task=task, log_path=log_path, adb_path=adb_path)
@@ -695,7 +764,21 @@ class BuildAll:
             if discovered_runtime_package:
                 launch_package = discovered_runtime_package
 
-        self._run(task=task, cmd=[str(adb_path), "install", "-r", str(debug_apk)], log_path=log_path)
+        if launch_package != self.android_package:
+            self._reset_android_package_best_effort(
+                task=task,
+                log_path=log_path,
+                adb_path=adb_path,
+                package_name=launch_package,
+            )
+
+        self._run(task=task, cmd=[str(adb_path), "install", str(debug_apk)], log_path=log_path)
+        self._run(
+            task=task,
+            cmd=[str(adb_path), "shell", "am", "force-stop", launch_package],
+            log_path=log_path,
+            check=False,
+        )
         self._run(
             task=task,
             cmd=[str(adb_path), "shell", "monkey", "-p", launch_package, "-c", "android.intent.category.LAUNCHER", "1"],

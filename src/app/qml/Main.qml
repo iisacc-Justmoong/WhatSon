@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "components/layoutshell" as LayoutShell
+import "shell" as LayoutShell
 
 LV.ApplicationWindow {
     id: window
@@ -31,7 +31,6 @@ LV.ApplicationWindow {
     readonly property int statusBarHeight: 24
 
     autoAttachRuntimeEvents: false
-    flags: Qt.Window | Qt.FramelessWindowHint
     height: 748
     minimumHeight: 420
     minimumWidth: 640

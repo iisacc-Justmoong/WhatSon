@@ -183,13 +183,23 @@ include(GNUInstallDirs)
 if (TARGET WhatSon)
     install(TARGETS WhatSon
             BUNDLE DESTINATION .
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endif ()
 if (TARGET whats_on_daemon)
-    install(TARGETS whats_on_daemon
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
+    if (APPLE)
+        install(TARGETS whats_on_daemon
+                BUNDLE DESTINATION .
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    else ()
+        install(TARGETS whats_on_daemon
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    endif ()
 endif ()
 
 set(CPACK_PACKAGE_NAME "WhatSon")

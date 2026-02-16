@@ -63,10 +63,10 @@ qt_add_qml_module(WhatSon
         RESOURCE_PREFIX "/qt/qml"
         QML_FILES
         qml/Main.qml
-        qml/components/layoutshell/StatusBarLayout.qml
-        qml/components/layoutshell/NavigationBarLayout.qml
-        qml/components/layoutshell/ContentViewLayout.qml
-        qml/components/layoutshell/BodyLayout.qml
+        qml/shell/StatusBarLayout.qml
+        qml/shell/NavigationBarLayout.qml
+        qml/shell/ContentViewLayout.qml
+        qml/shell/BodyLayout.qml
         qml/components/NavigationRail.qml
         qml/components/MetricCard.qml
         qml/components/InfoListCard.qml

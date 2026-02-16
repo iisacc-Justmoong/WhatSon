@@ -162,3 +162,30 @@ python3 scripts/build_all.py \
   --ios-project-dir build/ios-xcode-artifact \
   --android-studio-dir build/android-studio-artifact
 ```
+
+## Runtime Smoke Matrix
+
+`scripts/runtime_smoke_matrix.py` provides an execution-focused verification layer on top of `build_all.py`.
+It is intended to prove that the same UI codebase is built and launched across platforms with clean state.
+
+What it does:
+
+- Runs `build_all.py` sequentially with clean build directories.
+- Verifies shell-layout QML cache files exist in host and Android build outputs.
+- Runs host runtime smoke (launch + short liveness window).
+- Verifies Android runtime state (`com.lvrs.whatson` resumed) and captures screenshot artifact.
+- Runs iOS simulator smoke when possible (build/install/launch/screenshot).
+- Auto-skips iOS runtime smoke for known Qt kit slice mismatch unless strict mode is enabled.
+
+Examples:
+
+```bash
+python3 scripts/runtime_smoke_matrix.py
+python3 scripts/runtime_smoke_matrix.py --tasks host,android --skip-ios-smoke
+python3 scripts/runtime_smoke_matrix.py --tasks ios --strict-ios-smoke
+```
+
+Outputs:
+
+- Logs: `build/runtime-matrix-logs/*.log`
+- Artifacts: `build/runtime-matrix-artifacts/`
