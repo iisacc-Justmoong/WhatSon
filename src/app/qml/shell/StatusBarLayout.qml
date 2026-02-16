@@ -5,8 +5,9 @@ Rectangle {
     id: root
 
     property color panelColor: "#2a3038"
+    property int panelHeight: 36
 
     Layout.fillWidth: true
-    Layout.preferredHeight: 24
+    Layout.preferredHeight: root.panelHeight
     color: root.panelColor
 }
