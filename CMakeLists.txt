@@ -64,6 +64,15 @@ set(WHATSON_DEFAULT_INFO_PLIST "${WHATSON_APPLE_DIR}/Info.plist")
 set(WHATSON_ENTITLEMENTS "${WHATSON_APPLE_DIR}/WhatSon.entitlements")
 set(WHATSON_APPLE_BUNDLE_ID "com.lvrs.whatson" CACHE STRING "Apple bundle id for WhatSon app")
 set(WHATSON_ANDROID_PACKAGE_ID "com.lvrs.whatson" CACHE STRING "Android package id for WhatSon app")
+set(WHATSON_IOS_XCODEPROJ_DIR "${CMAKE_BINARY_DIR}/ios-xcode-artifact" CACHE PATH
+        "Output directory for generated iOS Xcode project.")
+
+set(_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT OFF)
+if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT ON)
+endif ()
+set(WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD "${_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT}" CACHE BOOL
+        "Generate iOS Xcode project during host build on Apple hosts.")
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 qt_standard_project_setup(REQUIRES 6.5)
@@ -93,6 +102,88 @@ endif ()
 
 if (WHATSON_BUILD_TARGETS)
     add_custom_target(whatson_build_all DEPENDS ${WHATSON_BUILD_TARGETS})
+endif ()
+
+if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET WhatSon)
+    set(_whatson_qt_ios_prefix "")
+    if (DEFINED WHATSON_QT_IOS_PREFIX AND NOT WHATSON_QT_IOS_PREFIX STREQUAL "")
+        set(_whatson_qt_ios_prefix "${WHATSON_QT_IOS_PREFIX}")
+    elseif (DEFINED ENV{QT_IOS_PREFIX} AND NOT "$ENV{QT_IOS_PREFIX}" STREQUAL "")
+        set(_whatson_qt_ios_prefix "$ENV{QT_IOS_PREFIX}")
+    elseif (QT_ROOT_PATH AND EXISTS "${QT_ROOT_PATH}")
+        get_filename_component(_whatson_qt_root_parent "${QT_ROOT_PATH}" DIRECTORY)
+        if (EXISTS "${_whatson_qt_root_parent}/ios")
+            set(_whatson_qt_ios_prefix "${_whatson_qt_root_parent}/ios")
+        endif ()
+        unset(_whatson_qt_root_parent)
+    endif ()
+    if (NOT _whatson_qt_ios_prefix STREQUAL "")
+        set(WHATSON_QT_IOS_PREFIX "${_whatson_qt_ios_prefix}" CACHE PATH
+                "Qt iOS prefix used for iOS Xcode project generation.")
+    endif ()
+
+    set(_whatson_lvrs_ios_prefix "")
+    if (DEFINED WHATSON_LVRS_IOS_PREFIX AND NOT WHATSON_LVRS_IOS_PREFIX STREQUAL "")
+        set(_whatson_lvrs_ios_prefix "${WHATSON_LVRS_IOS_PREFIX}")
+    elseif (LVRS_PREFIX AND EXISTS "${LVRS_PREFIX}/platforms/ios")
+        set(_whatson_lvrs_ios_prefix "${LVRS_PREFIX}/platforms/ios")
+    elseif (DEFINED ENV{LVRS_IOS_PREFIX} AND NOT "$ENV{LVRS_IOS_PREFIX}" STREQUAL "")
+        set(_whatson_lvrs_ios_prefix "$ENV{LVRS_IOS_PREFIX}")
+    endif ()
+    if (NOT _whatson_lvrs_ios_prefix STREQUAL "")
+        set(WHATSON_LVRS_IOS_PREFIX "${_whatson_lvrs_ios_prefix}" CACHE PATH
+                "LVRS iOS prefix used for iOS Xcode project generation.")
+    endif ()
+
+    if (NOT DEFINED WHATSON_QT_IOS_PREFIX OR WHATSON_QT_IOS_PREFIX STREQUAL "")
+        message(WARNING "WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD is ON but WHATSON_QT_IOS_PREFIX could not be resolved.")
+    else ()
+        set(_whatson_ios_toolchain "${WHATSON_QT_IOS_PREFIX}/lib/cmake/Qt6/qt.toolchain.cmake")
+        if (NOT EXISTS "${_whatson_ios_toolchain}")
+            message(WARNING "Qt iOS toolchain file was not found: ${_whatson_ios_toolchain}")
+        else ()
+            set(_whatson_ios_configure_cmd
+                    "${CMAKE_COMMAND}"
+                    -G Xcode
+                    -S "${CMAKE_SOURCE_DIR}"
+                    -B "${WHATSON_IOS_XCODEPROJ_DIR}"
+                    -DCMAKE_SYSTEM_NAME=iOS
+                    "-DCMAKE_TOOLCHAIN_FILE=${_whatson_ios_toolchain}"
+                    -DCMAKE_BUILD_TYPE=Release
+                    -DCMAKE_OSX_SYSROOT=iphonesimulator
+                    "-DCMAKE_OSX_ARCHITECTURES=${WHATSON_IOS_SIMULATOR_ARCH}"
+                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+                    -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+                    "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=${WHATSON_APPLE_BUNDLE_ID}"
+                    "-DWHATSON_PLATFORM_DIR=${WHATSON_PLATFORM_DIR}"
+                    "-DWHATSON_APPLE_DIR=${WHATSON_APPLE_DIR}"
+                    "-DWHATSON_IOS_INFO_PLIST=${WHATSON_IOS_INFO_PLIST}"
+                    "-DWHATSON_DEFAULT_INFO_PLIST=${WHATSON_DEFAULT_INFO_PLIST}"
+                    "-DWHATSON_ENTITLEMENTS=${WHATSON_ENTITLEMENTS}"
+                    "-DWHATSON_APPLE_BUNDLE_ID=${WHATSON_APPLE_BUNDLE_ID}"
+                    "-DWHATSON_ANDROID_PACKAGE_ID=${WHATSON_ANDROID_PACKAGE_ID}"
+            )
+
+            if (DEFINED WHATSON_LVRS_IOS_PREFIX AND EXISTS "${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")
+                list(APPEND _whatson_ios_configure_cmd
+                        "-DLVRS_DIR=${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")
+            endif ()
+
+            add_custom_target(whatson_generate_ios_xcodeproj
+                    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${WHATSON_IOS_XCODEPROJ_DIR}"
+                    COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_IOS_XCODEPROJ_DIR}"
+                    COMMAND ${_whatson_ios_configure_cmd}
+                    BYPRODUCTS "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj"
+                    USES_TERMINAL
+                    COMMENT "Generate iOS Xcode project from platform/Apple metadata"
+            )
+
+            add_dependencies(WhatSon whatson_generate_ios_xcodeproj)
+            if (TARGET whatson_build_all)
+                add_dependencies(whatson_build_all whatson_generate_ios_xcodeproj)
+            endif ()
+        endif ()
+    endif ()
 endif ()
 
 if (TARGET WhatSon)
@@ -132,7 +223,9 @@ if (TARGET launch_WhatSon_wasm)
     add_custom_target(whatson_launch_wasm DEPENDS launch_WhatSon_wasm)
 endif ()
 
-if (TARGET export_WhatSon_xcodeproj)
+if (TARGET whatson_generate_ios_xcodeproj)
+    add_custom_target(whatson_export_xcodeproj DEPENDS whatson_generate_ios_xcodeproj)
+elseif (TARGET export_WhatSon_xcodeproj)
     add_custom_target(whatson_export_xcodeproj DEPENDS export_WhatSon_xcodeproj)
 endif ()
 

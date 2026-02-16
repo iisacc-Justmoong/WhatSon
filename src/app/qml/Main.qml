@@ -59,7 +59,7 @@ LV.ApplicationWindow {
     visible: true
     width: 1265
     windowColor: "#141414"
-    windowDragHandleEnabled: true
+    windowDragHandleEnabled: !mobileSinglePageMode
     windowDragHandleHeight: statusBarHeight + navigationBarHeight
     windowDragHandleTopMargin: 0
 
@@ -91,6 +91,19 @@ LV.ApplicationWindow {
                 panelColor: window.navigationBarColor
                 panelHeight: window.navigationBarHeight
             }
+            LayoutShell.ContentViewLayout {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                displayColor: window.contentsDisplayColor
+                drawerColor: window.contentsDisplayColor
+                drawerHeight: 0
+                minDisplayHeight: 0
+                minDrawerHeight: 0
+                panelColor: window.contentPanelColor
+                splitterHandleThickness: 0
+                splitterThickness: 0
+                visible: window.mobileSinglePageMode
+            }
             LayoutShell.BodyLayout {
                 contentPanelColor: window.contentPanelColor
                 contentsDisplayColor: window.contentsDisplayColor
@@ -109,6 +122,7 @@ LV.ApplicationWindow {
                 sidebarColor: window.sidebarColor
                 sidebarWidth: window.sidebarWidth
                 splitterThickness: window.bodySplitterThickness
+                visible: !window.mobileSinglePageMode
 
                 onDrawerHeightDragRequested: function (value) {
                     if (value !== window.preferredDrawerHeight)
