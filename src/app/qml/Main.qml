@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Window
 import LVRS 1.0 as LV
-import "view/top" as TopPanelView
 import "view/panels" as BodyPanelView
 
 LV.ApplicationWindow {
@@ -17,6 +17,7 @@ LV.ApplicationWindow {
     readonly property color canvasColor: "#1b1b1c"
     readonly property color contentPanelColor: "#39445b"
     readonly property color contentsDisplayColor: "#495473"
+    readonly property int desktopMinimumBodyWidth: minSidebarWidth + minListViewWidth + minContentWidth + minRightPanelWidth + bodySplitterThickness * 3
     readonly property color drawerColor: "#665d47"
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property bool hideListView: false
@@ -70,7 +71,11 @@ LV.ApplicationWindow {
     windowDragHandleHeight: statusBarHeight + navigationBarHeight
     windowDragHandleTopMargin: 0
 
-    Component.onCompleted: clampPreferredSizes()
+    Component.onCompleted: {
+        clampPreferredSizes();
+        if (onboardingVisible)
+            onboardingSubWindow.show();
+    }
     onBodyHeightChanged: clampPreferredSizes()
 
     Item {
@@ -85,11 +90,11 @@ LV.ApplicationWindow {
             anchors.fill: parent
             spacing: 0
 
-            TopPanelView.StatusBarLayout {
+            BodyPanelView.StatusBarLayout {
                 panelColor: window.statusBarColor
                 panelHeight: window.statusBarHeight
             }
-            TopPanelView.NavigationBarLayout {
+            BodyPanelView.NavigationBarLayout {
                 panelColor: window.navigationBarColor
                 panelHeight: window.navigationBarHeight
             }
@@ -152,6 +157,42 @@ LV.ApplicationWindow {
             onSidebarWidthDragRequested: function (value) {
                 if (value !== window.preferredSidebarWidth)
                     window.preferredSidebarWidth = value;
+            }
+        }
+    }
+    Window {
+        id: onboardingSubWindow
+
+        color: window.windowColor
+        flags: Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
+        height: 420
+        minimumHeight: 360
+        minimumWidth: 520
+        modality: Qt.ApplicationModal
+        title: "WhatSon Onboarding"
+        transientParent: window
+        visible: false
+        width: 560
+        x: window.x + Math.round((window.width - width) / 2)
+        y: window.y + Math.round((window.height - height) / 2)
+
+        onVisibleChanged: {
+            if (visible) {
+                x = window.x + Math.round((window.width - width) / 2);
+                y = window.y + Math.round((window.height - height) / 2);
+            }
+        }
+
+        Onboarding {
+            anchors.fill: parent
+
+            onCreateFileRequested: {
+                window.onboardingVisible = false;
+                onboardingSubWindow.close();
+            }
+            onSelectFileRequested: {
+                window.onboardingVisible = false;
+                onboardingSubWindow.close();
             }
         }
     }

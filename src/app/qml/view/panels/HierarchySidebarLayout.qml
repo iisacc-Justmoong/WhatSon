@@ -16,7 +16,7 @@ Item {
     readonly property int searchHeight: LV.Theme.gap18
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property int toolbarCount: toolbarIconNames.length
-    readonly property var toolbarIconNames: sidebarHierarchyStore.toolbarIconNames
+    readonly property var toolbarIconNames: (typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore && sidebarHierarchyStore.toolbarIconNames) ? sidebarHierarchyStore.toolbarIconNames : []
     readonly property var toolbarItems: {
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i)
