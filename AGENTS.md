@@ -85,16 +85,22 @@ An exception is allowed only when all conditions are satisfied.
 ## Current UI Layout
 
 - Root shell: `src/app/qml/Main.qml` (`LV.ApplicationWindow`)
+- View directory (merged from legacy `shell` and `pages`):
+    - `src/app/qml/view/top/StatusBarLayout.qml`
+    - `src/app/qml/view/top/NavigationBarLayout.qml`
+    - `src/app/qml/view/body/BodyLayout.qml`
+    - `src/app/qml/view/body/HierarchySidebarLayout.qml`
+    - `src/app/qml/view/body/ContentViewLayout.qml`
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`
     - `src/app/qml/components/InfoListCard.qml`
     - `src/app/qml/components/InsightPanel.qml`
 - Domain pages:
-    - `src/app/qml/pages/CreativeHubPage.qml`
-    - `src/app/qml/pages/BrandHubPage.qml`
-    - `src/app/qml/pages/KnowledgeHubPage.qml`
-    - `src/app/qml/pages/EditorStudioPage.qml`
+    - `src/app/qml/view/content/CreativeHubPage.qml`
+    - `src/app/qml/view/content/BrandHubPage.qml`
+    - `src/app/qml/view/content/KnowledgeHubPage.qml`
+    - `src/app/qml/view/content/EditorStudioPage.qml`
 
 ## Start Checklist
 

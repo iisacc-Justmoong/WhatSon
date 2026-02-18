@@ -1,8 +1,11 @@
+#include "sidebar/SidebarHierarchyStore.hpp"
+
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QGuiApplication>
 #include <QPermission>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QTimer>
 #include <QUrl>
 #include <QVector>
@@ -81,6 +84,8 @@ int main(int argc, char* argv[])
     QCoreApplication::setOrganizationDomain(QStringLiteral("whatson.local"));
 
     QQmlApplicationEngine engine;
+    SidebarHierarchyStore sidebarHierarchyStore;
+    engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyStore"), &sidebarHierarchyStore);
 
     QObject::connect(
         &engine,

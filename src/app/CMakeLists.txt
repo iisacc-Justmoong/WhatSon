@@ -4,6 +4,12 @@ qt_policy(SET QTP0004 NEW)
 
 qt_add_executable(WhatSon
         main.cpp
+        sidebar/HierarchySectionModel.cpp
+        sidebar/HierarchySectionModel.hpp
+        sidebar/HierarchyItemListModel.cpp
+        sidebar/HierarchyItemListModel.hpp
+        sidebar/SidebarHierarchyStore.cpp
+        sidebar/SidebarHierarchyStore.hpp
         hub/WhatSonHubCreator.cpp
         hub/WhatSonHubCreator.hpp
         hub/WhatSonWorkspaceHubCreator.cpp
@@ -76,19 +82,19 @@ qt_add_qml_module(WhatSon
         RESOURCE_PREFIX "/qt/qml"
         QML_FILES
         qml/Main.qml
-        qml/shell/StatusBarLayout.qml
-        qml/shell/NavigationBarLayout.qml
-        qml/shell/ContentViewLayout.qml
-        qml/shell/BodyLayout.qml
-        qml/shell/HierarchySidebarLayout.qml
+        qml/view/top/StatusBarLayout.qml
+        qml/view/top/NavigationBarLayout.qml
+        qml/view/body/ContentViewLayout.qml
+        qml/view/body/BodyLayout.qml
+        qml/view/body/HierarchySidebarLayout.qml
         qml/components/NavigationRail.qml
         qml/components/MetricCard.qml
         qml/components/InfoListCard.qml
         qml/components/InsightPanel.qml
-        qml/pages/CreativeHubPage.qml
-        qml/pages/BrandHubPage.qml
-        qml/pages/KnowledgeHubPage.qml
-        qml/pages/EditorStudioPage.qml
+        qml/view/content/CreativeHubPage.qml
+        qml/view/content/BrandHubPage.qml
+        qml/view/content/KnowledgeHubPage.qml
+        qml/view/content/EditorStudioPage.qml
         qml/theme/DesignTokens.qml
 )
 

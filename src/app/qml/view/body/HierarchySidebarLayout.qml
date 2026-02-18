@@ -5,63 +5,11 @@ import LVRS 1.0 as LV
 Item {
     id: root
 
-    property int activeToolbarIndex: 0
+    readonly property int activeToolbarIndex: sidebarHierarchyStore.activeIndex
     readonly property int availableContentWidth: Math.max(0, width - horizontalInset * 2)
     readonly property int contentWidth: Math.max(minContentWidth, Math.min(maxContentWidth, availableContentWidth))
     readonly property int footerHeight: 24
     readonly property int footerWidth: 84
-    readonly property var hierarchyItems: [
-        {
-            "indentLevel": 0,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 1,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 2,
-            "accent": true,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 1,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 1,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 1,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 0,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 0,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 0,
-            "accent": false,
-            "label": "Label"
-        },
-        {
-            "indentLevel": 0,
-            "accent": false,
-            "label": "Label"
-        }
-    ]
     readonly property int horizontalInset: LV.Theme.gap8
     readonly property int maxContentWidth: 200
     readonly property int minContentWidth: 136
@@ -71,7 +19,7 @@ Item {
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property int toolbarCount: toolbarIconNames.length
     readonly property real toolbarGap: toolbarCount > 1 ? Math.max(0, (contentWidth - toolbarButtonSize * toolbarCount) / (toolbarCount - 1)) : 0
-    readonly property var toolbarIconNames: ["libraryFolder", "projectStructure", "bookmarksList", "currentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
+    readonly property var toolbarIconNames: sidebarHierarchyStore.toolbarIconNames
     readonly property int verticalInset: LV.Theme.gap2
 
     clip: true
@@ -117,7 +65,7 @@ Item {
                         textColor: index === root.activeToolbarIndex ? LV.Theme.accentBlue : LV.Theme.accentGrayLight
                         tone: LV.AbstractButton.Borderless
 
-                        onClicked: root.activeToolbarIndex = index
+                        onClicked: sidebarHierarchyStore.activeIndex = index
                     }
                 }
             }
@@ -179,29 +127,27 @@ Item {
                     width: hierarchyViewport.width
 
                     Repeater {
-                        model: root.hierarchyItems
+                        model: sidebarHierarchyStore.itemModel
 
                         delegate: LV.HierarchyItem {
-                            required property var modelData
-
                             baseLeftPadding: LV.Theme.gap8
                             chevronColor: LV.Theme.darkGrey10
                             chevronSize: LV.Theme.iconSm
-                            expanded: false
-                            iconPlaceholderColor: modelData.accent ? LV.Theme.accentYellow : LV.Theme.accentGrayLight
+                            expanded: model.expanded
+                            iconPlaceholderColor: model.accent ? LV.Theme.accentYellow : LV.Theme.accentGrayLight
                             iconSize: LV.Theme.iconSm
-                            indentLevel: modelData.indentLevel
+                            indentLevel: model.indentLevel
                             indentStep: 13
                             itemWidth: root.contentWidth
-                            label: modelData.label
+                            label: model.label
                             leadingSpacing: LV.Theme.gap2
                             rowBackgroundColor: "transparent"
                             rowBackgroundColorHover: "transparent"
                             rowBackgroundColorPressed: "transparent"
                             rowHeight: root.rowHeight
                             rowRightPadding: LV.Theme.gap8
-                            showChevron: true
-                            textColorNormal: modelData.accent ? LV.Theme.accentBlue : LV.Theme.bodyColor
+                            showChevron: model.showChevron
+                            textColorNormal: model.accent ? LV.Theme.accentBlue : LV.Theme.bodyColor
                         }
                     }
                 }

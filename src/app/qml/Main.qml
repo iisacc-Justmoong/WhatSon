@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "shell" as LayoutShell
+import "view/top" as TopPanelView
+import "view/body" as BodyPanelView
 
 LV.ApplicationWindow {
     id: window
@@ -83,11 +84,11 @@ LV.ApplicationWindow {
             anchors.fill: parent
             spacing: 0
 
-            LayoutShell.StatusBarLayout {
+            TopPanelView.StatusBarLayout {
                 panelColor: window.statusBarColor
                 panelHeight: window.statusBarHeight
             }
-            LayoutShell.NavigationBarLayout {
+            TopPanelView.NavigationBarLayout {
                 panelColor: window.navigationBarColor
                 panelHeight: window.navigationBarHeight
             }
@@ -101,7 +102,7 @@ LV.ApplicationWindow {
     Component {
         id: mobileBodyComponent
 
-        LayoutShell.ContentViewLayout {
+        BodyPanelView.ContentViewLayout {
             displayColor: window.contentsDisplayColor
             drawerColor: window.contentsDisplayColor
             drawerHeight: 0
@@ -115,7 +116,7 @@ LV.ApplicationWindow {
     Component {
         id: desktopBodyComponent
 
-        LayoutShell.BodyLayout {
+        BodyPanelView.BodyLayout {
             contentPanelColor: window.contentPanelColor
             contentsDisplayColor: window.contentsDisplayColor
             drawerColor: window.drawerColor

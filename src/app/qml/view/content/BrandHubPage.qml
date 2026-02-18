@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
-import "../components"
+import "../../components"
 
 Item {
     id: root
