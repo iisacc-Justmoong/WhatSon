@@ -4,10 +4,15 @@ use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 
 const APP_EXECUTABLES: &[&str] = &[
+    "build/host-auto/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/host-auto/src/app/bin/WhatSon",
+    "build/host-auto/src/app/WhatSon",
     "build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
     "build/src/app/bin/WhatSon",
     "build/src/app/WhatSon",
 ];
+
+const BUILD_DIRS: &[&str] = &["build/host-auto", "build"];
 
 fn main() {
     let Some(root) = discover_root() else {
@@ -81,8 +86,8 @@ fn launch_prebuilt(root: &Path) -> Result<bool, std::io::Error> {
 }
 
 fn run_cmake_target(root: &Path) -> Result<i32, std::io::Error> {
-    let build_dir = root.join("build");
-    if !build_dir.exists() {
+    let build_dir = pick_cmake_build_dir(root);
+    if !build_cache_exists(&build_dir) {
         let configure_status = Command::new("cmake")
             .arg("-S")
             .arg(root)
@@ -102,4 +107,18 @@ fn run_cmake_target(root: &Path) -> Result<i32, std::io::Error> {
         .status()?;
 
     Ok(build_status.code().unwrap_or(1))
+}
+
+fn pick_cmake_build_dir(root: &Path) -> PathBuf {
+    for rel in BUILD_DIRS {
+        let candidate = root.join(rel);
+        if build_cache_exists(&candidate) {
+            return candidate;
+        }
+    }
+    root.join(BUILD_DIRS[0])
+}
+
+fn build_cache_exists(build_dir: &Path) -> bool {
+    build_dir.join("CMakeCache.txt").is_file()
 }

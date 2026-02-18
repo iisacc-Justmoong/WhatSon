@@ -209,32 +209,71 @@ def _resolve_lvrs_android_prefix(home: Path, lvrs_prefix: Path) -> Path:
     return platform_android
 
 
+def _java_major_version(java_home: Path) -> Optional[int]:
+    java_bins = [java_home / "bin" / "java"]
+    if platform.system() == "Windows":
+        java_bins.insert(0, java_home / "bin" / "java.exe")
+
+    java_bin = _first_existing(java_bins)
+    if java_bin is None:
+        return None
+
+    probe = _run_capture([str(java_bin), "-version"])
+    if probe.returncode != 0:
+        return None
+
+    output = f"{probe.stdout}\n{probe.stderr}"
+    match = re.search(r'version "([^"]+)"', output)
+    if not match:
+        return None
+
+    version_text = match.group(1).strip()
+    if not version_text:
+        return None
+
+    if version_text.startswith("1."):
+        major_token = version_text.split(".")[1]
+    else:
+        major_token = version_text.split(".")[0]
+    try:
+        return int(major_token)
+    except ValueError:
+        return None
+
+
 def _resolve_java21_home(system_name: str) -> Optional[Path]:
     env_java = os.environ.get("JAVA21_HOME")
     if env_java:
-        return _expand(env_java)
-    env_java_home = os.environ.get("JAVA_HOME")
-    if env_java_home:
-        return _expand(env_java_home)
-    if system_name != "Darwin":
-        return None
+        candidate = _expand(env_java)
+        if _java_major_version(candidate) == 21:
+            return candidate
 
-    java_home_cmd = Path("/usr/libexec/java_home")
-    if java_home_cmd.exists():
-        probe = _run_capture([str(java_home_cmd), "-v", "21"])
-        if probe.returncode == 0:
-            resolved = probe.stdout.strip()
-            if resolved:
-                resolved_path = Path(resolved)
-                if resolved_path.exists():
-                    return resolved_path
+    if system_name == "Darwin":
+        java_home_cmd = Path("/usr/libexec/java_home")
+        if java_home_cmd.exists():
+            probe = _run_capture([str(java_home_cmd), "-v", "21"])
+            if probe.returncode == 0:
+                resolved = probe.stdout.strip()
+                if resolved:
+                    resolved_path = Path(resolved)
+                    if resolved_path.exists() and _java_major_version(resolved_path) == 21:
+                        return resolved_path
 
     candidates = [
         Path("/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"),
         Path("/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home"),
         Path("/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"),
     ]
-    return _first_existing(candidates)
+    for candidate in candidates:
+        if candidate.exists() and _java_major_version(candidate) == 21:
+            return candidate
+
+    env_java_home = os.environ.get("JAVA_HOME")
+    if env_java_home:
+        candidate = _expand(env_java_home)
+        if _java_major_version(candidate) == 21:
+            return candidate
+    return None
 
 
 def _resolve_android_ndk(android_sdk_root: Path) -> Optional[Path]:

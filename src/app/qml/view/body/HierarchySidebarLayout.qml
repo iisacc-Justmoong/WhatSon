@@ -7,18 +7,15 @@ Item {
 
     readonly property int activeToolbarIndex: sidebarHierarchyStore.activeIndex
     readonly property int availableContentWidth: Math.max(0, width - horizontalInset * 2)
-    readonly property int contentWidth: Math.max(minContentWidth, Math.min(maxContentWidth, availableContentWidth))
+    readonly property int contentWidth: Math.max(minContentWidth, availableContentWidth)
     readonly property int footerHeight: 24
     readonly property int footerWidth: 84
     readonly property int horizontalInset: LV.Theme.gap8
-    readonly property int maxContentWidth: 200
-    readonly property int minContentWidth: 136
     property color panelColor: LV.Theme.panelBackground04
     readonly property int rowHeight: 28
     readonly property int searchHeight: LV.Theme.gap18
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property int toolbarCount: toolbarIconNames.length
-    readonly property real toolbarGap: toolbarCount > 1 ? Math.max(0, (contentWidth - toolbarButtonSize * toolbarCount) / (toolbarCount - 1)) : 0
     readonly property var toolbarIconNames: sidebarHierarchyStore.toolbarIconNames
     readonly property var toolbarItems: {
         var items = [];
@@ -44,23 +41,27 @@ Item {
         anchors.bottom: hierarchyFooter.top
         anchors.left: parent.left
         anchors.leftMargin: root.horizontalInset
+        anchors.right: parent.right
+        anchors.rightMargin: root.horizontalInset
         anchors.top: parent.top
         anchors.topMargin: root.verticalInset
-        width: root.contentWidth
 
         LV.VStack {
             anchors.fill: parent
             spacing: LV.Theme.gap2
 
             LV.HierarchyToolbar {
-                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignLeft
+                Layout.maximumWidth: root.minContentWidth
+                Layout.minimumWidth: root.minContentWidth
                 Layout.preferredHeight: root.toolbarButtonSize
+                Layout.preferredWidth: root.minContentWidth
                 activeButtonId: root.activeToolbarIndex
                 backgroundColor: "transparent"
                 backgroundOpacity: 1.0
                 buttonItems: root.toolbarItems
                 horizontalPadding: 0
-                spacing: root.toolbarGap
+                spacing: root.toolbarSpacing
                 verticalPadding: 0
 
                 onActiveChanged: function (button, buttonId, index) {
@@ -103,7 +104,7 @@ Item {
                             iconSize: LV.Theme.iconSm
                             indentLevel: model.indentLevel
                             indentStep: 13
-                            itemWidth: root.contentWidth
+                            itemWidth: hierarchyViewport.width
                             label: model.label
                             leadingSpacing: LV.Theme.gap2
                             rowBackgroundColor: "transparent"

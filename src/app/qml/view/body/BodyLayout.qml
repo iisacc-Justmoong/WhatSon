@@ -17,13 +17,13 @@ Item {
     property int minDrawerHeight: 120
     property int minListViewWidth: 132
     property int minRightPanelWidth: 132
-    property int minSidebarWidth: 96
+    property int minSidebarWidth: 152
     property color rightPanelColor: "#63556a"
     property int rightPanelWidth: 194
     readonly property bool rightVisible: root.rightPanelWidth > 0
     property color sidebarColor: "#3b4b63"
     property int sidebarWidth: 216
-    property color splitterColor: "transparent"
+    property color splitterColor: "#445066"
     property int splitterHandleThickness: 12
     property int splitterThickness: 0
 
@@ -48,8 +48,8 @@ Item {
     }
     function clampSidebarWidth(value) {
         var occupiedWidth = (root.listVisible ? root.listViewWidth : 0) + (root.rightVisible ? root.rightPanelWidth : 0) + root.totalSplitterWidth();
-        var maxSidebarWidth = Math.max(root.minSidebarWidth, root.width - root.minContentWidth - occupiedWidth);
-        return Math.max(root.minSidebarWidth, Math.min(maxSidebarWidth, value));
+        var maxSidebarWidth = Math.max(root.effectiveMinSidebarWidth, root.width - root.minContentWidth - occupiedWidth);
+        return Math.max(root.effectiveMinSidebarWidth, Math.min(maxSidebarWidth, value));
     }
     function totalSplitterWidth() {
         var width = root.splitterThickness;
@@ -68,7 +68,10 @@ Item {
         spacing: 0
 
         HierarchySidebarLayout {
+            id: hierarchySidebar
+
             Layout.fillHeight: true
+            Layout.minimumWidth: root.effectiveMinSidebarWidth
             Layout.preferredWidth: root.sidebarWidth
         }
         Rectangle {
@@ -110,6 +113,7 @@ Item {
         }
         Rectangle {
             Layout.fillHeight: true
+            Layout.minimumWidth: root.minListViewWidth
             Layout.preferredWidth: root.listViewWidth
             color: root.listViewColor
             visible: root.listVisible
@@ -155,6 +159,7 @@ Item {
         ContentViewLayout {
             Layout.fillHeight: true
             Layout.fillWidth: true
+            Layout.minimumWidth: root.minContentWidth
             displayColor: root.contentsDisplayColor
             drawerColor: root.drawerColor
             drawerHeight: root.drawerHeight
@@ -208,6 +213,7 @@ Item {
         }
         Rectangle {
             Layout.fillHeight: true
+            Layout.minimumWidth: root.minRightPanelWidth
             Layout.preferredWidth: root.rightPanelWidth
             color: root.rightPanelColor
             visible: root.rightVisible

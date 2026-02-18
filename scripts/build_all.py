@@ -219,39 +219,81 @@ def _detect_android_ndk_root(android_sdk_root: Path, system_name: str) -> Option
     return _ndk_from_homebrew_cask(system_name)
 
 
+def _java_major_version(java_home: Path) -> Optional[int]:
+    java_bins = [java_home / "bin" / "java"]
+    if platform.system() == "Windows":
+        java_bins.insert(0, java_home / "bin" / "java.exe")
+
+    java_bin = _find_existing(java_bins)
+    if java_bin is None:
+        return None
+
+    probe = subprocess.run(
+        [str(java_bin), "-version"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        return None
+
+    output = f"{probe.stdout}\n{probe.stderr}"
+    match = re.search(r'version "([^"]+)"', output)
+    if not match:
+        return None
+
+    version_text = match.group(1).strip()
+    if not version_text:
+        return None
+
+    if version_text.startswith("1."):
+        major_token = version_text.split(".")[1]
+    else:
+        major_token = version_text.split(".")[0]
+    try:
+        return int(major_token)
+    except ValueError:
+        return None
+
+
 def _detect_java21_home(system_name: str) -> Optional[Path]:
     explicit = _normalize_env_value(os.environ.get("JAVA21_HOME"))
     if explicit:
-        return _expand(explicit)
+        candidate = _expand(explicit)
+        if _java_major_version(candidate) == 21:
+            return candidate
 
-    java_home = _normalize_env_value(os.environ.get("JAVA_HOME"))
-    if java_home:
-        return _expand(java_home)
-
-    if system_name != "Darwin":
-        return None
-
-    java_home_cmd = Path("/usr/libexec/java_home")
-    if java_home_cmd.exists():
-        probe = subprocess.run(
-            [str(java_home_cmd), "-v", "21"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if probe.returncode == 0:
-            resolved = probe.stdout.strip()
-            if resolved:
-                resolved_path = Path(resolved)
-                if resolved_path.exists():
-                    return resolved_path
+    if system_name == "Darwin":
+        java_home_cmd = Path("/usr/libexec/java_home")
+        if java_home_cmd.exists():
+            probe = subprocess.run(
+                [str(java_home_cmd), "-v", "21"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if probe.returncode == 0:
+                resolved = probe.stdout.strip()
+                if resolved:
+                    resolved_path = Path(resolved)
+                    if resolved_path.exists() and _java_major_version(resolved_path) == 21:
+                        return resolved_path
 
     candidates = [
         Path("/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"),
         Path("/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home"),
         Path("/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"),
     ]
-    return _find_existing(candidates)
+    for candidate in candidates:
+        if candidate.exists() and _java_major_version(candidate) == 21:
+            return candidate
+
+    java_home = _normalize_env_value(os.environ.get("JAVA_HOME"))
+    if java_home:
+        candidate = _expand(java_home)
+        if _java_major_version(candidate) == 21:
+            return candidate
+    return None
 
 
 def _load_dev_env_profile(dev_env_json: Path) -> Dict[str, str]:
@@ -699,6 +741,7 @@ class BuildAll:
         if self.java21_home and self.java21_home.exists():
             updated = dict(env)
             updated["JAVA_HOME"] = str(self.java21_home)
+            updated["JAVA21_HOME"] = str(self.java21_home)
             java_bin = self.java21_home / "bin"
             updated["PATH"] = f"{java_bin}{os.pathsep}{updated.get('PATH', '')}"
             return updated
@@ -796,8 +839,8 @@ class BuildAll:
         if root_android_config.exists():
             return root_android_prefix
 
-        config = _resolve_package_cmake_dir(self.android_lvrs_prefix, "LVRS") / "LVRSConfig.cmake"
-        if config.exists():
+        cached_config = _resolve_package_cmake_dir(self.android_lvrs_prefix, "LVRS") / "LVRSConfig.cmake"
+        if cached_config.exists():
             return self.android_lvrs_prefix
 
         if self.skip_android_lvrs_build:
@@ -858,8 +901,9 @@ class BuildAll:
         self._run(task=task, cmd=["cmake", "--build", str(lvrs_build_dir), "-j"], env=env, log_path=log_path)
         self._run(task=task, cmd=["cmake", "--install", str(lvrs_build_dir)], env=env, log_path=log_path)
 
-        if not config.exists():
-            raise CommandError(f"Android LVRS install failed: {config} was not generated.")
+        installed_config = _resolve_package_cmake_dir(self.android_lvrs_prefix, "LVRS") / "LVRSConfig.cmake"
+        if not installed_config.exists():
+            raise CommandError(f"Android LVRS install failed: {installed_config} was not generated.")
         return self.android_lvrs_prefix
 
     def _ensure_ios_lvrs_prefix(self, *, task: str, log_path: Path) -> Path:
@@ -922,6 +966,7 @@ class BuildAll:
             log_path=log_path,
         )
 
+        ios_config = self._lvrs_cmake_dir(ios_prefix) / "LVRSConfig.cmake"
         if not ios_config.exists():
             raise CommandError(f"iOS LVRS install failed: {ios_config} was not generated.")
         return ios_prefix
