@@ -63,6 +63,19 @@ def _default_lvrs_android_prefix(base_prefix: Path, home: Path) -> Path:
     return home / ".local" / "LVRS-android"
 
 
+def _default_lvrs_source_dir(home: Path, repo_root: Path) -> Path:
+    candidates = [
+        home / "Developer" / "LVRS",
+        repo_root.parent / "LVRS",
+        repo_root.parent.parent / "LVRS",
+        repo_root.parent.parent / "InfraSystem" / "LVRS",
+    ]
+    for candidate in candidates:
+        if candidate.exists() and (candidate / "CMakeLists.txt").exists():
+            return candidate
+    return home / "Developer" / "LVRS"
+
+
 def _android_manifest_candidates(root: Path) -> List[Path]:
     return [
         root / "platform" / "Android" / "AndroidManifest.xml",
@@ -538,6 +551,41 @@ class BuildAll:
             return updated
         return env
 
+    def _ios_simulator_sdk_path(self) -> Optional[Path]:
+        if self.system_name != "Darwin":
+            return None
+        xcrun = shutil.which("xcrun")
+        if not xcrun:
+            return None
+        probe = self._capture(cmd=[xcrun, "--sdk", "iphonesimulator", "--show-sdk-path"])
+        if probe.returncode != 0:
+            return None
+        sdk_path_raw = probe.stdout.strip()
+        if not sdk_path_raw:
+            return None
+        sdk_path = Path(sdk_path_raw)
+        if not sdk_path.exists():
+            return None
+        return sdk_path
+
+    def _ios_backtrace_cmake_args(self) -> List[str]:
+        # Some Qt iOS kits require explicit Backtrace cache hints during
+        # cross-configure, otherwise Qt6Core marks WrapBacktrace unresolved.
+        sdk_path = self._ios_simulator_sdk_path()
+        if sdk_path is None:
+            return []
+
+        args: List[str] = []
+        include_dir = sdk_path / "usr" / "include"
+        libc_tbd = sdk_path / "usr" / "lib" / "libc.tbd"
+
+        if include_dir.exists():
+            args.append(f"-DBacktrace_INCLUDE_DIR={include_dir}")
+        if libc_tbd.exists():
+            args.append(f"-DBacktrace_LIBRARY={libc_tbd}")
+            args.append(f"-DBacktrace_LIBRARIES={libc_tbd}")
+        return args
+
     def _clean_ios_simulator_app_best_effort(self, *, task: str, log_path: Path, bundle_id: str) -> None:
         if self.system_name != "Darwin":
             return
@@ -654,6 +702,70 @@ class BuildAll:
             raise CommandError(f"Android LVRS install failed: {config} was not generated.")
         return self.android_lvrs_prefix
 
+    def _ensure_ios_lvrs_prefix(self, *, task: str, log_path: Path) -> Path:
+        ios_prefix = self.lvrs_prefix / "platforms" / "ios"
+        ios_config = self._lvrs_cmake_dir(ios_prefix) / "LVRSConfig.cmake"
+        if ios_config.exists():
+            return ios_prefix
+
+        if not self.lvrs_source_dir.exists():
+            raise CommandError(
+                f"iOS LVRS prefix is missing and LVRS source dir was not found: {self.lvrs_source_dir}"
+            )
+
+        toolchain = self.qt_ios_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
+        if not toolchain.exists():
+            raise CommandError(f"Qt iOS toolchain file is missing: {toolchain}")
+
+        lvrs_build_dir = self.lvrs_source_dir / "build-ios-install"
+        self._clean_path(task=task, path=lvrs_build_dir, log_path=log_path)
+
+        prefix_paths = [str(self.qt_ios_prefix)]
+        if self.qt_host_prefix.exists():
+            prefix_paths.append(str(self.qt_host_prefix))
+
+        self._log(task, f"Building iOS LVRS package at: {ios_prefix}")
+        self._run(
+            task=task,
+            cmd=[
+                "cmake",
+                "-G",
+                "Xcode",
+                "-S",
+                str(self.lvrs_source_dir),
+                "-B",
+                str(lvrs_build_dir),
+                "-DCMAKE_SYSTEM_NAME=iOS",
+                f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
+                f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_OSX_SYSROOT=iphonesimulator",
+                "-DCMAKE_OSX_ARCHITECTURES=arm64",
+                *self._ios_backtrace_cmake_args(),
+                "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
+                "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO",
+                "-DLVRS_BUILD_EXAMPLES=OFF",
+                "-DLVRS_BUILD_TESTS=OFF",
+                "-DLVRS_BUILD_SHARED_LIBS=OFF",
+                f"-DCMAKE_INSTALL_PREFIX={ios_prefix}",
+            ],
+            log_path=log_path,
+        )
+        self._run(
+            task=task,
+            cmd=["cmake", "--build", str(lvrs_build_dir), "--config", "Release", "-j"],
+            log_path=log_path,
+        )
+        self._run(
+            task=task,
+            cmd=["cmake", "--install", str(lvrs_build_dir), "--config", "Release"],
+            log_path=log_path,
+        )
+
+        if not ios_config.exists():
+            raise CommandError(f"iOS LVRS install failed: {ios_config} was not generated.")
+        return ios_prefix
+
     def task_host(self) -> TaskResult:
         task = TASK_HOST
         log_path = self.logs_dir / f"{task}.log"
@@ -671,6 +783,7 @@ class BuildAll:
                 prefix_paths.append(str(self.lvrs_prefix))
             if prefix_paths:
                 cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}")
+            cmake_cmd.append("-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF")
             lvrs_dir = self.lvrs_prefix / "lib" / "cmake" / "LVRS"
             if lvrs_dir.exists():
                 cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
@@ -752,7 +865,7 @@ class BuildAll:
             if not toolchain.exists():
                 raise CommandError(f"Qt iOS toolchain file was not found: {toolchain}")
 
-            ios_lvrs_prefix = self._lvrs_platform_prefix("ios")
+            ios_lvrs_prefix = self._ensure_ios_lvrs_prefix(task=task, log_path=log_path)
             prefix_paths = [str(self.qt_ios_prefix), str(ios_lvrs_prefix)]
             if self.qt_host_prefix.exists():
                 prefix_paths.append(str(self.qt_host_prefix))
@@ -771,6 +884,7 @@ class BuildAll:
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DCMAKE_OSX_SYSROOT=iphonesimulator",
                 "-DCMAKE_OSX_ARCHITECTURES=arm64",
+                *self._ios_backtrace_cmake_args(),
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO",
                 "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=com.lvrs.whatson",
@@ -1115,6 +1229,7 @@ class BuildAll:
 def parse_args() -> argparse.Namespace:
     home = _expand("~")
     system_name = platform.system()
+    repo_root = Path(__file__).resolve().parents[1]
     qt_root = _expand(os.environ.get("QT_VERSION_ROOT", str(home / "Qt" / "6.8.3")))
     qt_host_default = _default_qt_host_prefix(system_name, qt_root)
     qt_android_default = _default_qt_android_prefix(qt_root)
@@ -1123,6 +1238,8 @@ def parse_args() -> argparse.Namespace:
     lvrs_prefix_env = os.environ.get("LVRS_PREFIX")
     lvrs_base_prefix = _expand(lvrs_prefix_env) if lvrs_prefix_env else lvrs_host_default
     lvrs_android_default = _default_lvrs_android_prefix(lvrs_base_prefix, home)
+    lvrs_source_env = os.environ.get("LVRS_SOURCE_DIR")
+    lvrs_source_default = _expand(lvrs_source_env) if lvrs_source_env else _default_lvrs_source_dir(home, repo_root)
 
     parser = argparse.ArgumentParser(
         description=(
@@ -1130,20 +1247,20 @@ def parse_args() -> argparse.Namespace:
             "and generate iOS Xcode project in one automation entrypoint."
         )
     )
-    parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]), help="Repository root path.")
-    parser.add_argument("--logs-dir", default=str(Path(__file__).resolve().parents[1] / "build" / "automation-logs"))
+    parser.add_argument("--root", default=str(repo_root), help="Repository root path.")
+    parser.add_argument("--logs-dir", default=str(repo_root / "build" / "automation-logs"))
     parser.add_argument("--tasks", default="host,android,ios", help="Comma-separated tasks: host,android,ios")
     parser.add_argument("--sequential", action="store_true", help="Run tasks sequentially instead of parallel.")
     parser.add_argument("--no-host-run", action="store_true", help="Skip launching the host desktop app.")
 
-    parser.add_argument("--host-build-dir", default=str(Path(__file__).resolve().parents[1] / "build" / "host-auto"))
+    parser.add_argument("--host-build-dir", default=str(repo_root / "build" / "host-auto"))
     parser.add_argument("--android-build-dir",
-                        default=str(Path(__file__).resolve().parents[1] / "build" / "android-auto"))
+                        default=str(repo_root / "build" / "android-auto"))
     parser.add_argument("--ios-project-dir",
-                        default=str(Path(__file__).resolve().parents[1] / "build" / "ios-xcode-artifact"))
+                        default=str(repo_root / "build" / "ios-xcode-artifact"))
     parser.add_argument(
         "--android-studio-dir",
-        default=str(Path(__file__).resolve().parents[1] / "build" / "android-studio-artifact"),
+        default=str(repo_root / "build" / "android-studio-artifact"),
         help="Exported Android Studio project path.",
     )
 
@@ -1166,8 +1283,7 @@ def parse_args() -> argparse.Namespace:
         default=str(_expand(os.environ.get("LVRS_ANDROID_PREFIX", str(lvrs_android_default)))),
         help="LVRS prefix for Android configure.",
     )
-    parser.add_argument("--lvrs-source-dir",
-                        default=str(_expand(os.environ.get("LVRS_SOURCE_DIR", str(home / "Developer" / "LVRS")))))
+    parser.add_argument("--lvrs-source-dir", default=str(lvrs_source_default))
     parser.add_argument("--skip-android-lvrs-build", action="store_true")
 
     parser.add_argument("--android-sdk-root", default=str(android_sdk))
