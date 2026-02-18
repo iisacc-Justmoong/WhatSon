@@ -333,8 +333,16 @@ def parse_args() -> argparse.Namespace:
         default=str(root / "build" / "runtime-matrix-artifacts"),
         help="Runtime matrix artifacts directory.",
     )
-    parser.add_argument("--android-package", default="com.lvrs.whatson", help="Expected Android package id.")
-    parser.add_argument("--ios-bundle-id", default="com.lvrs.whatson", help="Expected iOS bundle id.")
+    parser.add_argument(
+        "--android-package",
+        default=os.environ.get("WHATSON_ANDROID_PACKAGE", "com.lvrs.whatson"),
+        help="Expected Android package id.",
+    )
+    parser.add_argument(
+        "--ios-bundle-id",
+        default=os.environ.get("WHATSON_APPLE_BUNDLE_ID", "com.lvrs.whatson"),
+        help="Expected iOS bundle id.",
+    )
     parser.add_argument("--host-smoke-seconds", default=4, type=int, help="Seconds to keep host app running.")
     parser.add_argument("--skip-ios-smoke", action="store_true", help="Skip iOS simulator launch smoke.")
     parser.add_argument(

@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shlex
 import shutil
 import subprocess
@@ -14,12 +15,15 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 TASK_HOST = "host"
 TASK_ANDROID = "android"
 TASK_IOS = "ios"
 ALL_TASKS = (TASK_HOST, TASK_ANDROID, TASK_IOS)
+DEFAULT_ANDROID_PACKAGE_ID = "com.lvrs.whatson"
+DEFAULT_APPLE_BUNDLE_ID = "com.lvrs.whatson"
+LEGACY_ANDROID_PACKAGE_ID = "org.qtproject.example.WhatSon"
 
 
 @dataclass
@@ -50,7 +54,11 @@ def _default_android_sdk(system_name: str, home: Path) -> Path:
 
 def _default_lvrs_prefix_for_system(system_name: str, home: Path) -> Path:
     _ = system_name
-    return home / ".local" / "LVRS"
+    candidates = [
+        home / ".local" / "LVRS",
+        Path("/local/LVRS"),
+    ]
+    return _find_existing(candidates) or candidates[0]
 
 
 def _default_lvrs_android_prefix(base_prefix: Path, home: Path) -> Path:
@@ -69,6 +77,7 @@ def _default_lvrs_source_dir(home: Path, repo_root: Path) -> Path:
         repo_root.parent / "LVRS",
         repo_root.parent.parent / "LVRS",
         repo_root.parent.parent / "InfraSystem" / "LVRS",
+        Path("/local/LVRS"),
     ]
     for candidate in candidates:
         if candidate.exists() and (candidate / "CMakeLists.txt").exists():
@@ -137,6 +146,135 @@ def _latest_dir(parent: Path) -> Optional[Path]:
     return sorted(dirs)[-1]
 
 
+def _latest_version_dir(parent: Path, pattern: str = r"^\d+(\.\d+)*$") -> Optional[Path]:
+    if not parent.is_dir():
+        return None
+
+    regex = re.compile(pattern)
+    candidates = [item for item in parent.iterdir() if item.is_dir() and regex.match(item.name)]
+    if not candidates:
+        return None
+
+    def _key(path: Path) -> Tuple[int, ...]:
+        return tuple(int(part) for part in re.findall(r"\d+", path.name))
+
+    return sorted(candidates, key=_key)[-1]
+
+
+def _default_qt_version_root(home: Path) -> Path:
+    qt_home = home / "Qt"
+    return _latest_version_dir(qt_home) or qt_home
+
+
+def _normalize_env_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped if stripped else None
+
+
+def _pick_setting(name: str, profile: Dict[str, str], fallback: Optional[str] = None) -> Optional[str]:
+    env_value = _normalize_env_value(os.environ.get(name))
+    if env_value is not None:
+        return env_value
+    profile_value = _normalize_env_value(profile.get(name))
+    if profile_value is not None:
+        return profile_value
+    return fallback
+
+
+def _ndk_from_homebrew_cask(system_name: str) -> Optional[Path]:
+    if system_name != "Darwin":
+        return None
+    cask_root = Path("/opt/homebrew/Caskroom/android-ndk")
+    if not cask_root.is_dir():
+        return None
+
+    versions = sorted([item for item in cask_root.iterdir() if item.is_dir()], key=lambda item: item.name)
+    for version_dir in reversed(versions):
+        direct_candidate = version_dir / "Contents" / "NDK"
+        if direct_candidate.exists():
+            return direct_candidate
+
+        app_candidates = sorted(version_dir.glob("*.app/Contents/NDK"))
+        if app_candidates:
+            return app_candidates[-1]
+
+        for fallback in ["ndk", "NDK"]:
+            fallback_candidate = version_dir / fallback
+            if fallback_candidate.exists():
+                return fallback_candidate
+    return None
+
+
+def _detect_android_ndk_root(android_sdk_root: Path, system_name: str) -> Optional[Path]:
+    explicit = _normalize_env_value(os.environ.get("ANDROID_NDK_ROOT"))
+    if explicit:
+        return _expand(explicit)
+
+    sdk_ndk = _latest_dir(android_sdk_root / "ndk")
+    if sdk_ndk:
+        return sdk_ndk
+
+    return _ndk_from_homebrew_cask(system_name)
+
+
+def _detect_java21_home(system_name: str) -> Optional[Path]:
+    explicit = _normalize_env_value(os.environ.get("JAVA21_HOME"))
+    if explicit:
+        return _expand(explicit)
+
+    java_home = _normalize_env_value(os.environ.get("JAVA_HOME"))
+    if java_home:
+        return _expand(java_home)
+
+    if system_name != "Darwin":
+        return None
+
+    java_home_cmd = Path("/usr/libexec/java_home")
+    if java_home_cmd.exists():
+        probe = subprocess.run(
+            [str(java_home_cmd), "-v", "21"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if probe.returncode == 0:
+            resolved = probe.stdout.strip()
+            if resolved:
+                resolved_path = Path(resolved)
+                if resolved_path.exists():
+                    return resolved_path
+
+    candidates = [
+        Path("/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"),
+        Path("/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home"),
+        Path("/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"),
+    ]
+    return _find_existing(candidates)
+
+
+def _load_dev_env_profile(dev_env_json: Path) -> Dict[str, str]:
+    if not dev_env_json.exists():
+        return {}
+    try:
+        payload = json.loads(dev_env_json.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    env_map = payload.get("environment")
+    if not isinstance(env_map, dict):
+        return {}
+
+    normalized: Dict[str, str] = {}
+    for key, value in env_map.items():
+        if not isinstance(key, str):
+            continue
+        if value is None:
+            continue
+        normalized[key] = str(value)
+    return normalized
+
+
 def _find_existing(paths: Iterable[Path]) -> Optional[Path]:
     for path in paths:
         if path.exists():
@@ -170,17 +308,15 @@ class BuildAll:
         self.android_sdk_root = _expand(args.android_sdk_root)
         self.android_ndk_root = _expand(args.android_ndk_root) if args.android_ndk_root else None
         if self.android_ndk_root is None:
-            detected = _latest_dir(self.android_sdk_root / "ndk")
-            if detected:
-                self.android_ndk_root = detected
-        if self.android_ndk_root is None and self.system_name == "Darwin":
-            fallback_ndk = Path("/opt/homebrew/share/android-ndk")
-            if fallback_ndk.exists():
-                self.android_ndk_root = fallback_ndk
+            self.android_ndk_root = _detect_android_ndk_root(
+                android_sdk_root=self.android_sdk_root,
+                system_name=self.system_name,
+            )
 
         self.android_package_explicit = bool(args.android_package)
         discovered_android_package = _read_android_package_from_manifest(self.root)
-        self.android_package = args.android_package or discovered_android_package or "org.qtproject.example.WhatSon"
+        self.android_package = args.android_package or discovered_android_package or DEFAULT_ANDROID_PACKAGE_ID
+        self.ios_bundle_id = args.ios_bundle_id
         self.android_avd = args.android_avd
         self.skip_android_lvrs_build = args.skip_android_lvrs_build
         self.no_host_run = args.no_host_run
@@ -856,7 +992,7 @@ class BuildAll:
             self._clean_ios_simulator_app_best_effort(
                 task=task,
                 log_path=log_path,
-                bundle_id="com.lvrs.whatson",
+                bundle_id=self.ios_bundle_id,
             )
             self._clean_path(task=task, path=self.ios_project_dir, log_path=log_path)
             toolchain = self.qt_ios_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
@@ -885,7 +1021,7 @@ class BuildAll:
                 *self._ios_backtrace_cmake_args(),
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO",
-                "-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER=com.lvrs.whatson",
+                f"-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER={self.ios_bundle_id}",
             ]
 
             lvrs_dir = self._lvrs_cmake_dir(ios_lvrs_prefix)
@@ -918,7 +1054,7 @@ class BuildAll:
             self._clean_path(task=task, path=self.android_studio_dir, log_path=log_path)
             cleanup_packages = {
                 self.android_package,
-                "org.qtproject.example.WhatSon",  # Legacy Qt default package from older runs.
+                LEGACY_ANDROID_PACKAGE_ID,  # Legacy Qt default package from older runs.
             }
             for package_name in sorted(cleanup_packages):
                 self._reset_android_package_best_effort(
@@ -1228,18 +1364,34 @@ def parse_args() -> argparse.Namespace:
     home = _expand("~")
     system_name = platform.system()
     repo_root = Path(__file__).resolve().parents[1]
-    qt_root = _expand(os.environ.get("QT_VERSION_ROOT", str(home / "Qt" / "6.8.3")))
+
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    pre_parser.add_argument(
+        "--dev-env-json",
+        default=os.environ.get("WHATSON_DEV_ENV_JSON", str(repo_root / "build" / "dev-env" / "dev_env.json")),
+        help="Path to dev_env.py output JSON profile.",
+    )
+    pre_args, _ = pre_parser.parse_known_args()
+    dev_env_profile = _load_dev_env_profile(_expand(pre_args.dev_env_json))
+
+    qt_root = _expand(_pick_setting("QT_VERSION_ROOT", dev_env_profile, str(_default_qt_version_root(home))))
     qt_host_default = _default_qt_host_prefix(system_name, qt_root)
     qt_android_default = _default_qt_android_prefix(qt_root)
-    android_sdk = _expand(os.environ.get("ANDROID_SDK_ROOT", str(_default_android_sdk(system_name, home))))
-    lvrs_host_default = _default_lvrs_prefix_for_system(system_name, home)
-    lvrs_prefix_env = os.environ.get("LVRS_PREFIX")
-    lvrs_base_prefix = _expand(lvrs_prefix_env) if lvrs_prefix_env else lvrs_host_default
+    android_sdk = _expand(
+        _pick_setting("ANDROID_SDK_ROOT", dev_env_profile, str(_default_android_sdk(system_name, home))))
+    lvrs_host_default = _expand(
+        _pick_setting("LVRS_PREFIX", dev_env_profile, str(_default_lvrs_prefix_for_system(system_name, home)))
+    )
+    lvrs_base_prefix = lvrs_host_default
     lvrs_android_default = _default_lvrs_android_prefix(lvrs_base_prefix, home)
-    lvrs_source_env = os.environ.get("LVRS_SOURCE_DIR")
-    lvrs_source_default = _expand(lvrs_source_env) if lvrs_source_env else _default_lvrs_source_dir(home, repo_root)
+    lvrs_source_default = _expand(
+        _pick_setting("LVRS_SOURCE_DIR", dev_env_profile, str(_default_lvrs_source_dir(home, repo_root)))
+    )
+    java21_detected = _detect_java21_home(system_name)
+    java21_default = str(java21_detected) if java21_detected else None
 
     parser = argparse.ArgumentParser(
+        parents=[pre_parser],
         description=(
             "Build and run WhatSon on the current host, launch on Android emulator, "
             "and generate iOS Xcode project in one automation entrypoint."
@@ -1264,40 +1416,45 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--qt-version-root", default=str(qt_root))
     parser.add_argument("--qt-host-prefix",
-                        default=str(_expand(os.environ.get("QT_HOST_PREFIX", str(qt_host_default)))))
-    parser.add_argument("--qt-ios-prefix", default=str(_expand(os.environ.get("QT_IOS_PREFIX", str(qt_root / "ios")))))
+                        default=str(_expand(_pick_setting("QT_HOST_PREFIX", dev_env_profile, str(qt_host_default)))))
+    parser.add_argument(
+        "--qt-ios-prefix",
+        default=str(_expand(_pick_setting("QT_IOS_PREFIX", dev_env_profile, str(qt_root / "ios")))),
+    )
     parser.add_argument(
         "--qt-android-prefix",
-        default=str(_expand(os.environ.get("QT_ANDROID_PREFIX", str(qt_android_default)))),
+        default=str(_expand(_pick_setting("QT_ANDROID_PREFIX", dev_env_profile, str(qt_android_default)))),
     )
 
     parser.add_argument(
         "--lvrs-prefix",
-        default=str(_expand(os.environ.get("LVRS_PREFIX", str(lvrs_host_default)))),
+        default=str(_expand(_pick_setting("LVRS_PREFIX", dev_env_profile, str(lvrs_host_default)))),
         help="LVRS root prefix (platform-specific package is auto-dispatched by LVRS).",
     )
     parser.add_argument(
         "--android-lvrs-prefix",
-        default=str(_expand(os.environ.get("LVRS_ANDROID_PREFIX", str(lvrs_android_default)))),
+        default=str(_expand(_pick_setting("LVRS_ANDROID_PREFIX", dev_env_profile, str(lvrs_android_default)))),
         help="LVRS prefix for Android configure.",
     )
     parser.add_argument("--lvrs-source-dir", default=str(lvrs_source_default))
     parser.add_argument("--skip-android-lvrs-build", action="store_true")
 
     parser.add_argument("--android-sdk-root", default=str(android_sdk))
-    parser.add_argument("--android-ndk-root", default=os.environ.get("ANDROID_NDK_ROOT"))
-    parser.add_argument("--android-avd", default=os.environ.get("ANDROID_AVD"))
+    parser.add_argument("--android-ndk-root", default=_pick_setting("ANDROID_NDK_ROOT", dev_env_profile))
+    parser.add_argument("--android-avd", default=_pick_setting("ANDROID_AVD", dev_env_profile))
     parser.add_argument(
         "--android-package",
-        default=os.environ.get("WHATSON_ANDROID_PACKAGE"),
+        default=_pick_setting("WHATSON_ANDROID_PACKAGE", dev_env_profile),
         help="Android application id/package. Auto-detected from platform AndroidManifest when omitted.",
     )
     parser.add_argument(
+        "--ios-bundle-id",
+        default=_pick_setting("WHATSON_APPLE_BUNDLE_ID", dev_env_profile, DEFAULT_APPLE_BUNDLE_ID),
+        help="iOS bundle identifier used for simulator clean and Xcode project generation.",
+    )
+    parser.add_argument(
         "--java21-home",
-        default=os.environ.get(
-            "JAVA21_HOME",
-            "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" if system_name == "Darwin" else None,
-        ),
+        default=_pick_setting("JAVA21_HOME", dev_env_profile, java21_default),
     )
 
     return parser.parse_args()

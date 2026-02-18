@@ -77,7 +77,7 @@ Thumbs.db
 *.pro.user*
 *.qbs.user*
 CMakeLists.txt.user*
-lib/
+blueprint/
 
 # xemacs temporary files
 *.flc

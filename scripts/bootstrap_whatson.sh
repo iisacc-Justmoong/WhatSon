@@ -6,10 +6,7 @@ BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build}"
 APP_TARGET="${APP_TARGET:-WhatSon}"
 PLATFORM="${1:-all}"
 
-QT_VERSION_ROOT="${QT_VERSION_ROOT:-${HOME}/Qt/6.8.3}"
-QT_MACOS_PREFIX="${QT_MACOS_PREFIX:-${QT_VERSION_ROOT}/macos}"
-QT_IOS_PREFIX="${QT_IOS_PREFIX:-${QT_VERSION_ROOT}/ios}"
-QT_ANDROID_PREFIX="${QT_ANDROID_PREFIX:-${QT_VERSION_ROOT}/android_arm64_v8a}"
+QT_VERSION_ROOT="${QT_VERSION_ROOT:-}"
 LVRS_PREFIX="${LVRS_PREFIX:-${HOME}/.local/LVRS}"
 
 ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-${HOME}/Library/Android/sdk}"
@@ -23,6 +20,31 @@ log() {
 die_usage() {
     printf 'Usage: %s [all|macos|ios|android]\n' "$(basename "$0")" >&2
     exit 2
+}
+
+detect_qt_version_root() {
+    local qt_home
+    local candidate
+    qt_home="${HOME}/Qt"
+
+    if [[ -d "${qt_home}" ]]; then
+        candidate="$(
+            find "${qt_home}" -mindepth 1 -maxdepth 1 -type d \
+                | awk -F/ '{print $NF}' \
+                | grep -E '^[0-9]+(\.[0-9]+)*$' \
+                | awk -F. '{ printf "%04d%04d%04d%04d %s\n", $1, $2, $3, $4, $0 }' \
+                | sort \
+                | tail -n 1 \
+                | awk '{print $2}' \
+                || true
+        )"
+        if [[ -n "${candidate}" ]]; then
+            printf '%s' "${qt_home}/${candidate}"
+            return 0
+        fi
+    fi
+
+    printf '%s' "${qt_home}"
 }
 
 detect_ios_simulator_arch() {
@@ -69,6 +91,13 @@ detect_android_ndk() {
 
     printf ''
 }
+
+if [[ -z "${QT_VERSION_ROOT}" ]]; then
+    QT_VERSION_ROOT="$(detect_qt_version_root)"
+fi
+QT_MACOS_PREFIX="${QT_MACOS_PREFIX:-${QT_VERSION_ROOT}/macos}"
+QT_IOS_PREFIX="${QT_IOS_PREFIX:-${QT_VERSION_ROOT}/ios}"
+QT_ANDROID_PREFIX="${QT_ANDROID_PREFIX:-${QT_VERSION_ROOT}/android_arm64_v8a}"
 
 configure_root() {
     log "Configuring build dir: ${BUILD_DIR}"
