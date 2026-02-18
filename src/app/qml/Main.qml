@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
 import "view/top" as TopPanelView
-import "view/body" as BodyPanelView
+import "view/panels" as BodyPanelView
 
 LV.ApplicationWindow {
     id: window
