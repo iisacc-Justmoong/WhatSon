@@ -55,6 +55,7 @@ endif ()
 
 option(WHATSON_BUILD_APP "Build the Qt Quick desktop app" ON)
 option(WHATSON_BUILD_DAEMON "Build the background daemon" ON)
+option(WHATSON_BUILD_CLI "Build the Rust CLI launcher" ON)
 
 set(WHATSON_PLATFORM_DIR "${CMAKE_SOURCE_DIR}/platform")
 set(WHATSON_APPLE_DIR "${WHATSON_PLATFORM_DIR}/Apple")
@@ -80,6 +81,7 @@ qt_standard_project_setup(REQUIRES 6.5)
 message(STATUS "WhatSon configuration")
 message(STATUS "  WHATSON_BUILD_APP: ${WHATSON_BUILD_APP}")
 message(STATUS "  WHATSON_BUILD_DAEMON: ${WHATSON_BUILD_DAEMON}")
+message(STATUS "  WHATSON_BUILD_CLI: ${WHATSON_BUILD_CLI}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")
@@ -92,12 +94,19 @@ if (WHATSON_BUILD_DAEMON)
     add_subdirectory(src/daemon)
 endif ()
 
+if (WHATSON_BUILD_CLI)
+    add_subdirectory(src/cli)
+endif ()
+
 set(WHATSON_BUILD_TARGETS)
 if (TARGET WhatSon)
     list(APPEND WHATSON_BUILD_TARGETS WhatSon)
 endif ()
 if (TARGET whats_on_daemon)
     list(APPEND WHATSON_BUILD_TARGETS whats_on_daemon)
+endif ()
+if (TARGET whatson_cli)
+    list(APPEND WHATSON_BUILD_TARGETS whatson_cli)
 endif ()
 
 if (WHATSON_BUILD_TARGETS)
@@ -195,6 +204,15 @@ if (TARGET WhatSon)
     )
 endif ()
 
+if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
+    add_custom_target(whatson_run_cli
+            COMMAND "${WHATSON_CLI_BINARY_PATH}"
+            DEPENDS whatson_cli
+            USES_TERMINAL
+            COMMENT "Run Rust CLI launcher (whatson)"
+    )
+endif ()
+
 if (TARGET whats_on_daemon)
     add_custom_target(whatson_run_daemon
             COMMAND "$<TARGET_FILE:whats_on_daemon>"
@@ -269,6 +287,14 @@ if (WHATSON_BUILD_TARGETS)
         )
     endif ()
 
+    if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
+        add_custom_command(TARGET whatson_export_binaries POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy
+                "${WHATSON_CLI_BINARY_PATH}"
+                "${WHATSON_DIST_DIR}/whatson${CMAKE_EXECUTABLE_SUFFIX}"
+        )
+    endif ()
+
     add_dependencies(whatson_export_binaries whatson_build_all)
 endif ()
 
@@ -293,6 +319,10 @@ if (TARGET whats_on_daemon)
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         )
     endif ()
+endif ()
+
+if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
+    install(PROGRAMS "${WHATSON_CLI_BINARY_PATH}" DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
 set(CPACK_PACKAGE_NAME "WhatSon")

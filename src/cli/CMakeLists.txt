@@ -1,0 +1,37 @@
+find_program(CARGO_EXECUTABLE NAMES cargo)
+if (NOT CARGO_EXECUTABLE)
+    message(FATAL_ERROR "WHATSON_BUILD_CLI is ON but cargo was not found in PATH.")
+endif ()
+
+set(WHATSON_CLI_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml")
+set(WHATSON_CLI_TARGET_DIR "${CMAKE_BINARY_DIR}/cargo")
+set(WHATSON_CLI_BINARY_PATH "${WHATSON_CLI_TARGET_DIR}/release/whatson")
+if (WIN32)
+    set(WHATSON_CLI_BINARY_PATH "${WHATSON_CLI_TARGET_DIR}/release/whatson.exe")
+endif ()
+
+file(GLOB_RECURSE WHATSON_CLI_SOURCE_FILES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.rs")
+
+set(WHATSON_CLI_INPUTS
+        "${WHATSON_CLI_MANIFEST}"
+        ${WHATSON_CLI_SOURCE_FILES}
+)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.lock")
+    list(APPEND WHATSON_CLI_INPUTS "${CMAKE_CURRENT_SOURCE_DIR}/Cargo.lock")
+endif ()
+
+add_custom_command(
+        OUTPUT "${WHATSON_CLI_BINARY_PATH}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_CLI_TARGET_DIR}"
+        COMMAND "${CMAKE_COMMAND}" -E env
+        "CARGO_TARGET_DIR=${WHATSON_CLI_TARGET_DIR}"
+        "${CARGO_EXECUTABLE}" build --manifest-path "${WHATSON_CLI_MANIFEST}" --release
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        DEPENDS ${WHATSON_CLI_INPUTS}
+        COMMENT "Build Rust CLI target: whatson"
+        VERBATIM
+)
+
+add_custom_target(whatson_cli DEPENDS "${WHATSON_CLI_BINARY_PATH}")
+set(WHATSON_CLI_BINARY_PATH "${WHATSON_CLI_BINARY_PATH}" PARENT_SCOPE)

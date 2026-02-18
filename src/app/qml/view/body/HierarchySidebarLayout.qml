@@ -20,6 +20,16 @@ Item {
     readonly property int toolbarCount: toolbarIconNames.length
     readonly property real toolbarGap: toolbarCount > 1 ? Math.max(0, (contentWidth - toolbarButtonSize * toolbarCount) / (toolbarCount - 1)) : 0
     readonly property var toolbarIconNames: sidebarHierarchyStore.toolbarIconNames
+    readonly property var toolbarItems: {
+        var items = [];
+        for (var i = 0; i < toolbarIconNames.length; ++i)
+            items.push({
+                "id": i,
+                "iconName": toolbarIconNames[i],
+                "selected": i === root.activeToolbarIndex
+            });
+        return items;
+    }
     readonly property int verticalInset: LV.Theme.gap2
 
     clip: true
@@ -42,71 +52,26 @@ Item {
             anchors.fill: parent
             spacing: LV.Theme.gap2
 
-            LV.HStack {
+            LV.HierarchyToolbar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: root.toolbarButtonSize
-                alignmentName: "top"
+                activeButtonId: root.activeToolbarIndex
+                backgroundColor: "transparent"
+                backgroundOpacity: 1.0
+                buttonItems: root.toolbarItems
+                horizontalPadding: 0
                 spacing: root.toolbarGap
+                verticalPadding: 0
 
-                Repeater {
-                    model: root.toolbarCount
-
-                    delegate: LV.IconButton {
-                        required property int index
-
-                        Layout.preferredHeight: root.toolbarButtonSize
-                        Layout.preferredWidth: root.toolbarButtonSize
-                        backgroundColor: index === root.activeToolbarIndex ? LV.Theme.panelBackground12 : "transparent"
-                        backgroundColorDisabled: "transparent"
-                        backgroundColorHover: index === root.activeToolbarIndex ? LV.Theme.panelBackground12 : LV.Theme.surfaceAlt
-                        backgroundColorPressed: index === root.activeToolbarIndex ? LV.Theme.panelBackground12 : LV.Theme.surfaceAlt
-                        iconName: root.toolbarIconNames[index]
-                        iconSize: LV.Theme.iconSm
-                        textColor: index === root.activeToolbarIndex ? LV.Theme.accentBlue : LV.Theme.accentGrayLight
-                        tone: LV.AbstractButton.Borderless
-
-                        onClicked: sidebarHierarchyStore.activeIndex = index
-                    }
+                onActiveChanged: function (button, buttonId, index) {
+                    if (index >= 0 && sidebarHierarchyStore.activeIndex !== index)
+                        sidebarHierarchyStore.activeIndex = index;
                 }
             }
-            Rectangle {
+            LV.InputField {
                 Layout.fillWidth: true
                 Layout.preferredHeight: root.searchHeight
-                color: LV.Theme.panelBackground10
-                radius: LV.Theme.radiusControl
-
-                LV.HStack {
-                    alignmentName: "center"
-                    anchors.bottomMargin: LV.Theme.gap3
-                    anchors.fill: parent
-                    anchors.leftMargin: LV.Theme.gap7
-                    anchors.rightMargin: LV.Theme.gap7
-                    anchors.topMargin: LV.Theme.gap3
-                    spacing: 0
-
-                    LV.Label {
-                        Layout.fillWidth: true
-                        color: LV.Theme.titleHeaderColor
-                        elide: Text.ElideRight
-                        font.family: "Pretendard"
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
-                        lineHeight: 12
-                        lineHeightMode: Text.FixedHeight
-                        style: body
-                        text: "Placeholder"
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    Image {
-                        Layout.preferredHeight: 12
-                        Layout.preferredWidth: 12
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                        LV.Theme.iconPath("search")
-                        sourceSize.height: 12
-                        sourceSize.width: 12
-                    }
-                }
+                mode: searchMode
             }
             Flickable {
                 id: hierarchyViewport
@@ -164,45 +129,36 @@ Item {
         height: root.footerHeight
         width: Math.min(root.footerWidth, root.contentWidth)
 
-        LV.HStack {
-            anchors.bottomMargin: LV.Theme.gap2
+        LV.ListFooter {
             anchors.fill: parent
-            anchors.leftMargin: LV.Theme.gap2
-            anchors.rightMargin: LV.Theme.gap2
-            anchors.topMargin: LV.Theme.gap2
+            button1: ({
+                    "type": "icon",
+                    "iconName": "addFile",
+                    "tone": LV.AbstractButton.Borderless,
+                    "backgroundColor": "transparent",
+                    "backgroundColorHover": LV.Theme.surfaceAlt,
+                    "backgroundColorPressed": LV.Theme.surfaceAlt
+                })
+            button2: ({
+                    "type": "icon",
+                    "iconName": "delete",
+                    "tone": LV.AbstractButton.Borderless,
+                    "backgroundColor": "transparent",
+                    "backgroundColorHover": LV.Theme.surfaceAlt,
+                    "backgroundColorPressed": LV.Theme.surfaceAlt
+                })
+            button3: ({
+                    "type": "menu",
+                    "iconName": "settings",
+                    "tone": LV.AbstractButton.Default,
+                    "backgroundColor": LV.Theme.panelBackground12,
+                    "backgroundColorHover": LV.Theme.panelBackground12,
+                    "backgroundColorPressed": LV.Theme.panelBackground12,
+                    "cornerRadius": LV.Theme.radiusSm
+                })
+            horizontalPadding: LV.Theme.gap2
             spacing: 0
-
-            LV.IconButton {
-                Layout.preferredHeight: 20
-                Layout.preferredWidth: 20
-                backgroundColor: "transparent"
-                backgroundColorHover: LV.Theme.surfaceAlt
-                backgroundColorPressed: LV.Theme.surfaceAlt
-                iconName: "addFile"
-                iconSize: LV.Theme.iconSm
-                tone: LV.AbstractButton.Borderless
-            }
-            LV.IconButton {
-                Layout.preferredHeight: 20
-                Layout.preferredWidth: 20
-                backgroundColor: "transparent"
-                backgroundColorHover: LV.Theme.surfaceAlt
-                backgroundColorPressed: LV.Theme.surfaceAlt
-                iconName: "delete"
-                iconSize: LV.Theme.iconSm
-                tone: LV.AbstractButton.Borderless
-            }
-            LV.IconMenuButton {
-                Layout.preferredHeight: 20
-                Layout.preferredWidth: 40
-                backgroundColor: LV.Theme.panelBackground12
-                backgroundColorHover: LV.Theme.panelBackground12
-                backgroundColorPressed: LV.Theme.panelBackground12
-                cornerRadius: LV.Theme.radiusSm
-                iconName: "settings"
-                iconSize: LV.Theme.iconSm
-                tone: LV.AbstractButton.Default
-            }
+            verticalPadding: LV.Theme.gap2
         }
     }
 }

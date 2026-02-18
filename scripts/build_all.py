@@ -789,11 +789,9 @@ class BuildAll:
                 cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
 
             self._run(task=task, cmd=cmake_cmd, log_path=log_path)
-            self._run(task=task, cmd=["cmake", "--build", str(self.host_build_dir), "--target", "WhatSon", "-j"],
-                      log_path=log_path)
             self._run(
                 task=task,
-                cmd=["cmake", "--build", str(self.host_build_dir), "--target", "whats_on_daemon", "-j"],
+                cmd=["cmake", "--build", str(self.host_build_dir), "--target", "whatson_build_all", "-j"],
                 log_path=log_path,
             )
 
