@@ -80,6 +80,7 @@ qt_add_qml_module(WhatSon
         qml/shell/NavigationBarLayout.qml
         qml/shell/ContentViewLayout.qml
         qml/shell/BodyLayout.qml
+        qml/shell/HierarchySidebarLayout.qml
         qml/components/NavigationRail.qml
         qml/components/MetricCard.qml
         qml/components/InfoListCard.qml

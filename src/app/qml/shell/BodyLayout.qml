@@ -68,10 +68,9 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        Rectangle {
+        HierarchySidebarLayout {
             Layout.fillHeight: true
             Layout.preferredWidth: root.sidebarWidth
-            color: root.sidebarColor
         }
         Rectangle {
             id: sidebarSplitter
