@@ -171,7 +171,7 @@ def _resolve_lvrs_prefix(home: Path, repo_root: Path) -> Path:
 
 
 def _resolve_lvrs_dir(lvrs_prefix: Path, system_name: str) -> Path:
-    root_dispatch = lvrs_prefix / "lib" / "cmake" / "LVRS"
+    root_dispatch = lvrs_prefix / "blueprint" / "cmake" / "LVRS"
     if root_dispatch.exists():
         return root_dispatch
 
@@ -180,9 +180,17 @@ def _resolve_lvrs_dir(lvrs_prefix: Path, system_name: str) -> Path:
         "Linux": "linux",
         "Windows": "windows",
     }.get(system_name, "macos")
-    platform_dir = lvrs_prefix / "platforms" / platform_key / "lib" / "cmake" / "LVRS"
+    platform_dir = lvrs_prefix / "platforms" / platform_key / "blueprint" / "cmake" / "LVRS"
     if platform_dir.exists():
         return platform_dir
+
+    root_fallback = lvrs_prefix / "lib" / "cmake" / "LVRS"
+    if root_fallback.exists():
+        return root_fallback
+
+    platform_fallback = lvrs_prefix / "platforms" / platform_key / "lib" / "cmake" / "LVRS"
+    if platform_fallback.exists():
+        return platform_fallback
 
     return root_dispatch
 
@@ -257,7 +265,7 @@ def _resolve_android_ndk(android_sdk_root: Path) -> Optional[Path]:
 
 
 def _cmake_version_ok() -> Tuple[bool, str]:
-    cmake_bin = shutil.which("../cmake")
+    cmake_bin = shutil.which("cmake")
     if not cmake_bin:
         return False, "cmake was not found in PATH."
 
@@ -400,7 +408,7 @@ def _write_brief(path: Path, env_sh_path: Path, build_all_wrapper_path: Path, ma
 
 
 def parse_args() -> argparse.Namespace:
-    repo_root = Path(__file__).resolve().parent
+    repo_root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(
         description="Normalize WhatSon local development environment for this machine."
     )

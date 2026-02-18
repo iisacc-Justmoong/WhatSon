@@ -275,6 +275,22 @@ def _load_dev_env_profile(dev_env_json: Path) -> Dict[str, str]:
     return normalized
 
 
+def _resolve_qt_toolchain_file(prefix: Path) -> Path:
+    candidates = [
+        prefix / "blueprint" / "cmake" / "Qt6" / "qt.toolchain.cmake",
+        prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake",
+    ]
+    return _find_existing(candidates) or candidates[0]
+
+
+def _resolve_package_cmake_dir(prefix: Path, package_name: str) -> Path:
+    candidates = [
+        prefix / "blueprint" / "cmake" / package_name,
+        prefix / "lib" / "cmake" / package_name,
+    ]
+    return _find_existing(candidates) or candidates[0]
+
+
 def _find_existing(paths: Iterable[Path]) -> Optional[Path]:
     for path in paths:
         if path.exists():
@@ -297,6 +313,7 @@ class BuildAll:
         self.qt_android_prefix = _expand(args.qt_android_prefix)
 
         self.lvrs_prefix = _expand(args.lvrs_prefix)
+        self.lvrs_dir = _expand(args.lvrs_dir) if args.lvrs_dir else None
         self.android_lvrs_prefix = _expand(args.android_lvrs_prefix)
         self.lvrs_source_dir = _expand(args.lvrs_source_dir)
 
@@ -757,6 +774,13 @@ class BuildAll:
                     check=False,
                 )
 
+    def _host_platform_name(self) -> str:
+        if self.system_name == "Darwin":
+            return "macos"
+        if self.system_name == "Windows":
+            return "windows"
+        return "linux"
+
     def _lvrs_platform_prefix(self, platform_name: str) -> Path:
         platform_prefix = self.lvrs_prefix / "platforms" / platform_name
         if platform_prefix.exists():
@@ -764,7 +788,7 @@ class BuildAll:
         return self.lvrs_prefix
 
     def _lvrs_cmake_dir(self, prefix: Path) -> Path:
-        return prefix / "lib" / "cmake" / "LVRS"
+        return _resolve_package_cmake_dir(prefix, "LVRS")
 
     def _ensure_android_lvrs_prefix(self, *, task: str, log_path: Path) -> Path:
         root_android_prefix = self._lvrs_platform_prefix("android")
@@ -772,7 +796,7 @@ class BuildAll:
         if root_android_config.exists():
             return root_android_prefix
 
-        config = self.android_lvrs_prefix / "lib" / "cmake" / "LVRS" / "LVRSConfig.cmake"
+        config = _resolve_package_cmake_dir(self.android_lvrs_prefix, "LVRS") / "LVRSConfig.cmake"
         if config.exists():
             return self.android_lvrs_prefix
 
@@ -789,7 +813,7 @@ class BuildAll:
         if self.android_ndk_root is None or not self.android_ndk_root.exists():
             raise CommandError("Android NDK was not found. Install NDK and set ANDROID_NDK_ROOT.")
 
-        toolchain = self.qt_android_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
+        toolchain = _resolve_qt_toolchain_file(self.qt_android_prefix)
         if not toolchain.exists():
             raise CommandError(f"Qt Android toolchain file is missing: {toolchain}")
 
@@ -849,7 +873,7 @@ class BuildAll:
                 f"iOS LVRS prefix is missing and LVRS source dir was not found: {self.lvrs_source_dir}"
             )
 
-        toolchain = self.qt_ios_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
+        toolchain = _resolve_qt_toolchain_file(self.qt_ios_prefix)
         if not toolchain.exists():
             raise CommandError(f"Qt iOS toolchain file is missing: {toolchain}")
 
@@ -920,7 +944,9 @@ class BuildAll:
             if prefix_paths:
                 cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}")
             cmake_cmd.append("-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF")
-            lvrs_dir = self.lvrs_prefix / "lib" / "cmake" / "LVRS"
+            lvrs_dir = self.lvrs_dir or self._lvrs_cmake_dir(
+                self._lvrs_platform_prefix(self._host_platform_name())
+            )
             if lvrs_dir.exists():
                 cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
 
@@ -995,7 +1021,7 @@ class BuildAll:
                 bundle_id=self.ios_bundle_id,
             )
             self._clean_path(task=task, path=self.ios_project_dir, log_path=log_path)
-            toolchain = self.qt_ios_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
+            toolchain = _resolve_qt_toolchain_file(self.qt_ios_prefix)
             if not toolchain.exists():
                 raise CommandError(f"Qt iOS toolchain file was not found: {toolchain}")
 
@@ -1094,7 +1120,9 @@ class BuildAll:
             prefix_paths.append(str(self.lvrs_prefix))
         if prefix_paths:
             cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}")
-        lvrs_dir = self.lvrs_prefix / "lib" / "cmake" / "LVRS"
+        lvrs_dir = self.lvrs_dir or self._lvrs_cmake_dir(
+            self._lvrs_platform_prefix(self._host_platform_name())
+        )
         if lvrs_dir.exists():
             cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
 
@@ -1126,7 +1154,7 @@ class BuildAll:
             raise CommandError("Android NDK root was not found.")
 
         android_lvrs = self._ensure_android_lvrs_prefix(task=task, log_path=log_path)
-        toolchain = self.qt_android_prefix / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
+        toolchain = _resolve_qt_toolchain_file(self.qt_android_prefix)
         if not toolchain.exists():
             raise CommandError(f"Qt Android toolchain file was not found: {toolchain}")
 
@@ -1430,6 +1458,11 @@ def parse_args() -> argparse.Namespace:
         "--lvrs-prefix",
         default=str(_expand(_pick_setting("LVRS_PREFIX", dev_env_profile, str(lvrs_host_default)))),
         help="LVRS root prefix (platform-specific package is auto-dispatched by LVRS).",
+    )
+    parser.add_argument(
+        "--lvrs-dir",
+        default=_pick_setting("LVRS_DIR", dev_env_profile),
+        help="Path to LVRS CMake package directory (blueprint/cmake/LVRS or lib/cmake/LVRS).",
     )
     parser.add_argument(
         "--android-lvrs-prefix",
