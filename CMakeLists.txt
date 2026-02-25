@@ -56,6 +56,8 @@ endif ()
 option(WHATSON_BUILD_APP "Build the Qt Quick desktop app" ON)
 option(WHATSON_BUILD_DAEMON "Build the background daemon" ON)
 option(WHATSON_BUILD_CLI "Build the Rust CLI launcher" ON)
+option(WHATSON_ENABLE_TESTING "Enable automated tests for TDD workflow" ON)
+option(WHATSON_RUN_TESTS_ON_BUILD "Run automated tests on every build" ON)
 
 set(WHATSON_PLATFORM_DIR "${CMAKE_SOURCE_DIR}/platform")
 set(WHATSON_APPLE_DIR "${WHATSON_PLATFORM_DIR}/Apple")
@@ -77,11 +79,16 @@ set(WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD "${_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAU
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 qt_standard_project_setup(REQUIRES 6.5)
+if (WHATSON_ENABLE_TESTING)
+    include(CTest)
+endif ()
 
 message(STATUS "WhatSon configuration")
 message(STATUS "  WHATSON_BUILD_APP: ${WHATSON_BUILD_APP}")
 message(STATUS "  WHATSON_BUILD_DAEMON: ${WHATSON_BUILD_DAEMON}")
 message(STATUS "  WHATSON_BUILD_CLI: ${WHATSON_BUILD_CLI}")
+message(STATUS "  BUILD_TESTING: ${BUILD_TESTING}")
+message(STATUS "  WHATSON_RUN_TESTS_ON_BUILD: ${WHATSON_RUN_TESTS_ON_BUILD}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")
@@ -98,6 +105,14 @@ if (WHATSON_BUILD_CLI)
     add_subdirectory(src/cli)
 endif ()
 
+if (BUILD_TESTING)
+    if (CMAKE_CROSSCOMPILING)
+        message(STATUS "  Tests are disabled while cross-compiling.")
+    else ()
+        add_subdirectory(tests)
+    endif ()
+endif ()
+
 set(WHATSON_BUILD_TARGETS)
 if (TARGET WhatSon)
     list(APPEND WHATSON_BUILD_TARGETS WhatSon)
@@ -108,9 +123,35 @@ endif ()
 if (TARGET whatson_cli)
     list(APPEND WHATSON_BUILD_TARGETS whatson_cli)
 endif ()
+if (TARGET whatson_tests)
+    list(APPEND WHATSON_BUILD_TARGETS whatson_tests)
+endif ()
 
 if (WHATSON_BUILD_TARGETS)
     add_custom_target(whatson_build_all DEPENDS ${WHATSON_BUILD_TARGETS})
+endif ()
+
+if (TARGET whatson_tests)
+    set(_whatson_ctest_command
+            "${CMAKE_CTEST_COMMAND}"
+            "--output-on-failure"
+            "--test-dir"
+            "${CMAKE_BINARY_DIR}"
+    )
+    if (CMAKE_CONFIGURATION_TYPES)
+        list(APPEND _whatson_ctest_command "-C" "$<CONFIG>")
+    endif ()
+
+    add_custom_target(whatson_test
+            COMMAND ${_whatson_ctest_command}
+            DEPENDS whatson_tests
+            USES_TERMINAL
+            COMMENT "Run WhatSon automated tests"
+    )
+
+    if (WHATSON_RUN_TESTS_ON_BUILD)
+        add_custom_target(whatson_test_on_build ALL DEPENDS whatson_test)
+    endif ()
 endif ()
 
 if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND TARGET WhatSon)
