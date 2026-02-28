@@ -39,8 +39,8 @@ LV.ApplicationWindow {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : 152;
         return Math.max(152, toolbarWidth + hierarchyHorizontalInset * 2);
     }
-    readonly property color navigationBarColor: "#303743"
-    readonly property int navigationBarHeight: 36
+    readonly property color navigationBarColor: LV.Theme.panelBackground06
+    readonly property int navigationBarHeight: 24
     property bool onboardingVisible: false
     property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
