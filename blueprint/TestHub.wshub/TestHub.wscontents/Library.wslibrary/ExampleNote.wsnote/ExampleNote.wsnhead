@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE WHATSONNOTE>
+<contents id=${id}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="wsn-type" content="wsnhead" />
+    <title>Placeholder</title>
+  </head>
+  <body>
+  </body>
+</contents>

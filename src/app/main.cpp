@@ -1,9 +1,13 @@
 #include "hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "hub/WhatSonHubRuntimeStore.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
 
 #include <QByteArray>
 #include <QCoreApplication>
+#include <QDebug>
+#include <QDir>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QPermission>
@@ -41,6 +45,41 @@ namespace
         }
 
         qputenv(variableName, path + ":" + currentValue);
+    }
+
+    QString resolveBlueprintHubPath()
+    {
+        const QStringList basePaths = {
+            QDir::currentPath(),
+            QCoreApplication::applicationDirPath()
+        };
+
+        for (const QString& basePath : basePaths)
+        {
+            QDir probe(basePath);
+            for (int depth = 0; depth < 8; ++depth)
+            {
+                const QDir blueprintDir(probe.filePath(QStringLiteral("blueprint")));
+                if (blueprintDir.exists())
+                {
+                    const QFileInfoList hubCandidates = blueprintDir.entryInfoList(
+                        QStringList{QStringLiteral("*.wshub")},
+                        QDir::Dirs | QDir::NoDotAndDotDot,
+                        QDir::Name);
+                    if (!hubCandidates.isEmpty())
+                    {
+                        return QDir::cleanPath(hubCandidates.first().absoluteFilePath());
+                    }
+                }
+
+                if (!probe.cdUp())
+                {
+                    break;
+                }
+            }
+        }
+
+        return QString();
     }
 
     using PermissionCompletion = std::function<void(bool granted)>;
@@ -261,6 +300,21 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
     SidebarHierarchyStore sidebarHierarchyStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
+    WhatSonHubRuntimeStore hubRuntimeStore;
+    const QString blueprintHubPath = resolveBlueprintHubPath();
+    if (!blueprintHubPath.isEmpty())
+    {
+        QString hubLoadError;
+        if (!hubRuntimeStore.loadFromWshub(blueprintHubPath, &hubLoadError))
+        {
+            qWarning().noquote()
+                << QStringLiteral("Failed to load blueprint .wshub into runtime hub store: %1").arg(hubLoadError);
+        }
+    }
+    else
+    {
+        qWarning().noquote() << QStringLiteral("No .wshub package was found under blueprint directory.");
+    }
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyStore"), &sidebarHierarchyStore);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
 

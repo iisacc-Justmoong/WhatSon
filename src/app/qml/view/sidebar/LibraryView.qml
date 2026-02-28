@@ -213,6 +213,8 @@ Item {
                             required property int indentLevel
                             required property int index
                             required property string label
+                            readonly property int renameLeftInset: LV.Theme.gap8 + indentLevel * 13 + LV.Theme.iconSm + LV.Theme.gap2
+                            readonly property int renameRightInset: showChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8
                             required property bool showChevron
 
                             height: libraryView.rowHeight
@@ -246,57 +248,62 @@ Item {
                                     libraryView.beginRename(index, label);
                                 }
                             }
-                            Loader {
-                                active: index === libraryView.editingIndex
+                            Item {
+                                id: renameOverlay
+
                                 anchors.fill: parent
-                                sourceComponent: renameInputComponent
-                            }
-                            Component {
-                                id: renameInputComponent
+                                visible: index === libraryView.editingIndex
+                                z: 2
 
-                                Item {
-                                    Rectangle {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: LV.Theme.panelBackground10
-                                        height: 20
-                                        radius: 4
-                                        width: Math.max(24, parent.width - x - ((showChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8)))
-                                        x: LV.Theme.gap8 + indentLevel * 13 + LV.Theme.iconSm + LV.Theme.gap2
-                                    }
-                                    TextInput {
-                                        id: renameTextInput
-
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        clip: true
-                                        color: LV.Theme.titleHeaderColor
-                                        font.pixelSize: LV.Theme.textBody
-                                        font.weight: LV.Theme.textBodyWeight
-                                        height: 20
-                                        renderType: Text.NativeRendering
-                                        selectByMouse: true
-                                        selectionColor: LV.Theme.accentBlue
-                                        text: libraryView.editingText
-                                        verticalAlignment: TextInput.AlignVCenter
-                                        width: Math.max(20, parent.width - x - ((showChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8)))
-                                        x: LV.Theme.gap8 + indentLevel * 13 + LV.Theme.iconSm + LV.Theme.gap2 + LV.Theme.gap3
-
-                                        Component.onCompleted: {
+                                onVisibleChanged: {
+                                    if (visible)
+                                        Qt.callLater(function () {
                                             renameTextInput.forceActiveFocus();
                                             renameTextInput.selectAll();
-                                        }
-                                        Keys.onEscapePressed: function (event) {
-                                            libraryView.cancelRename();
-                                            event.accepted = true;
-                                        }
-                                        onAccepted: libraryView.commitRename()
-                                        onActiveFocusChanged: {
-                                            if (!activeFocus && index === libraryView.editingIndex)
-                                                libraryView.commitRename();
-                                        }
-                                        onTextChanged: {
-                                            if (index === libraryView.editingIndex && libraryView.editingText !== text)
-                                                libraryView.editingText = text;
-                                        }
+                                        });
+                                }
+
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: renameLeftInset
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: renameRightInset
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: LV.Theme.panelBackground10
+                                    height: 20
+                                    radius: 4
+                                }
+                                TextInput {
+                                    id: renameTextInput
+
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: renameLeftInset + LV.Theme.gap3
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: renameRightInset + LV.Theme.gap3
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    clip: true
+                                    color: LV.Theme.titleHeaderColor
+                                    font.pixelSize: LV.Theme.textBody
+                                    font.weight: LV.Theme.textBodyWeight
+                                    height: 20
+                                    renderType: Text.NativeRendering
+                                    selectByMouse: true
+                                    selectionColor: LV.Theme.accentBlue
+                                    text: libraryView.editingText
+                                    verticalAlignment: TextInput.AlignVCenter
+
+                                    Keys.onEscapePressed: function (event) {
+                                        libraryView.cancelRename();
+                                        event.accepted = true;
+                                    }
+                                    onAccepted: libraryView.commitRename()
+                                    onActiveFocusChanged: {
+                                        if (!activeFocus && index === libraryView.editingIndex)
+                                            libraryView.commitRename();
+                                    }
+                                    onTextChanged: {
+                                        if (index === libraryView.editingIndex && libraryView.editingText !== text)
+                                            libraryView.editingText = text;
                                     }
                                 }
                             }

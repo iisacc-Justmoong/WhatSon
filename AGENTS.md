@@ -15,6 +15,11 @@ every turn.
 - Root build definition: `CMakeLists.txt`
 - Primary QML root: `src/app/qml/Main.qml`
 - Library hierarchy backend: `src/app/file/hierarchy/library`
+- Hub placement store: `src/app/file/hub/WhatSonHubPlacementStore.*`
+- Tags depth provider: `src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
+- Hub runtime store: `src/app/file/hub/WhatSonHubRuntimeStore.*`
+- Tags runtime state store: `src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
+- Runtime bootstrap: app startup loads the first `blueprint/*.wshub` package into `WhatSonHubRuntimeStore`.
 
 ## Codex Init (`/init`) Procedure
 

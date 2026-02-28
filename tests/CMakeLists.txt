@@ -20,6 +20,96 @@ target_link_libraries(whatson_hub_creator_tests
 add_test(NAME whatson_hub_creator_tests COMMAND whatson_hub_creator_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_creator_tests)
 
+add_executable(whatson_hub_placement_store_tests
+        app/test_whatson_hub_placement_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacement.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacementStore.cpp
+)
+set_target_properties(whatson_hub_placement_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_placement_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub
+)
+target_link_libraries(whatson_hub_placement_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_placement_store_tests COMMAND whatson_hub_placement_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_placement_store_tests)
+
+add_executable(whatson_hub_tags_state_store_tests
+        app/test_whatson_hub_tags_state_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsPathResolver.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsFileReader.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp
+)
+set_target_properties(whatson_hub_tags_state_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_tags_state_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
+)
+target_link_libraries(whatson_hub_tags_state_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_tags_state_store_tests COMMAND whatson_hub_tags_state_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_state_store_tests)
+
+add_executable(whatson_hub_runtime_store_tests
+        app/test_whatson_hub_runtime_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacement.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacementStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubRuntimeStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsPathResolver.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsFileReader.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp
+)
+set_target_properties(whatson_hub_runtime_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_runtime_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
+)
+target_link_libraries(whatson_hub_runtime_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_runtime_store_tests COMMAND whatson_hub_runtime_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_runtime_store_tests)
+
+add_executable(whatson_hub_tags_depth_provider_tests
+        app/test_whatson_hub_tags_depth_provider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonHubTagsPathResolver.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsFileReader.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp
+)
+set_target_properties(whatson_hub_tags_depth_provider_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_tags_depth_provider_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
+)
+target_link_libraries(whatson_hub_tags_depth_provider_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_tags_depth_provider_tests COMMAND whatson_hub_tags_depth_provider_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
+
 add_executable(whatson_sidebar_store_tests
         app/test_sidebar_hierarchy_store.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyItemListModel.cpp
@@ -58,6 +148,18 @@ target_link_libraries(whatson_library_hierarchy_tests
 )
 add_test(NAME whatson_library_hierarchy_tests COMMAND whatson_library_hierarchy_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
+
+add_executable(whatson_qml_binding_guard_tests
+        app/test_qml_binding_syntax_guard.cpp
+)
+set_target_properties(whatson_qml_binding_guard_tests PROPERTIES AUTOMOC ON)
+target_link_libraries(whatson_qml_binding_guard_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_qml_binding_guard_tests COMMAND whatson_qml_binding_guard_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_qml_binding_guard_tests)
 
 if (WHATSON_TEST_TARGETS)
     add_custom_target(whatson_tests DEPENDS ${WHATSON_TEST_TARGETS})

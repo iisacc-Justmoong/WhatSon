@@ -1,1 +1,96 @@
-<DOCTYPE-XML>
+{
+  "version": 1,
+  "schema": "whatson.tags.tree",
+  "tags": [
+    {
+      "id": "business",
+      "label": "Business",
+      "children": [
+        {
+          "id": "business/brand",
+          "label": "Brand",
+          "children": [
+            {
+              "id": "business/brand/identity",
+              "label": "Identity",
+              "children": [
+                {
+                  "id": "business/brand/identity/logo",
+                  "label": "Logo"
+                },
+                {
+                  "id": "business/brand/identity/color-palette",
+                  "label": "Color Palette"
+                }
+              ]
+            },
+            {
+              "id": "business/brand/campaign",
+              "label": "Campaign"
+            }
+          ]
+        },
+        {
+          "id": "business/sales",
+          "label": "Sales",
+          "children": [
+            {
+              "id": "business/sales/lead",
+              "label": "Lead"
+            },
+            {
+              "id": "business/sales/deal",
+              "label": "Deal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "product",
+      "label": "Product",
+      "children": [
+        {
+          "id": "product/ux",
+          "label": "UX"
+        },
+        {
+          "id": "product/bug",
+          "label": "Bug"
+        },
+        {
+          "id": "product/release",
+          "label": "Release",
+          "children": [
+            {
+              "id": "product/release/v1-0",
+              "label": "v1.0"
+            },
+            {
+              "id": "product/release/v1-1",
+              "label": "v1.1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "knowledge",
+      "label": "Knowledge",
+      "children": [
+        {
+          "id": "knowledge/research",
+          "label": "Research"
+        },
+        {
+          "id": "knowledge/reference",
+          "label": "Reference"
+        },
+        {
+          "id": "knowledge/glossary",
+          "label": "Glossary"
+        }
+      ]
+    }
+  ]
+}
