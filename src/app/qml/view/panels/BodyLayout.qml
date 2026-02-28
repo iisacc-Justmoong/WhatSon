@@ -23,6 +23,7 @@ Item {
     readonly property bool rightVisible: root.rightPanelWidth > 0
     property color sidebarColor: "#3b4b63"
     property int sidebarWidth: 216
+    readonly property int effectiveMinSidebarWidth: (typeof root.minSidebarWidth === "number" && isFinite(root.minSidebarWidth)) ? Math.max(0, root.minSidebarWidth) : 152
     property color splitterColor: "#445066"
     property int splitterHandleThickness: 12
     property int splitterThickness: 0
@@ -57,6 +58,7 @@ Item {
             width += root.splitterThickness;
         if (root.rightVisible)
             width += root.splitterThickness;
+        return width;
     }
 
     Layout.fillHeight: true

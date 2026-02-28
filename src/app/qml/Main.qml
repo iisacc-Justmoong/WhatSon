@@ -10,7 +10,7 @@ LV.ApplicationWindow {
     readonly property int baseDrawerHeight: 255
     readonly property int baseListViewWidth: 198
     readonly property int baseRightPanelWidth: 194
-    readonly property int baseSidebarWidth: 216
+    readonly property int baseSidebarWidth: minSidebarWidth
     readonly property int bodyHeight: Math.max(0, height - statusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: "#445066"
     readonly property int bodySplitterThickness: 1
@@ -35,14 +35,17 @@ LV.ApplicationWindow {
     readonly property int minDrawerHeight: 120
     readonly property int minListViewWidth: 132
     readonly property int minRightPanelWidth: 132
-    readonly property int minSidebarWidth: Math.max(152, hierarchyToolbarWidth + hierarchyHorizontalInset * 2)
+    readonly property int minSidebarWidth: {
+        var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : 152;
+        return Math.max(152, toolbarWidth + hierarchyHorizontalInset * 2);
+    }
     readonly property color navigationBarColor: "#303743"
     readonly property int navigationBarHeight: 36
     property bool onboardingVisible: false
     property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
-    property int preferredSidebarWidth: baseSidebarWidth
+    property int preferredSidebarWidth: minSidebarWidth
     readonly property color rightPanelColor: "#63556a"
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
     readonly property color sidebarColor: "#3b4b63"
@@ -69,8 +72,8 @@ LV.ApplicationWindow {
     width: 1265
     windowColor: "#141414"
     windowDragHandleEnabled: !isMobilePlatform
-    windowDragHandleHeight: statusBarHeight + navigationBarHeight
-    windowDragHandleTopMargin: 0
+    windowDragHandleHeight: navigationBarHeight
+    windowDragHandleTopMargin: statusBarHeight
 
     Component.onCompleted: {
         clampPreferredSizes();
@@ -94,6 +97,10 @@ LV.ApplicationWindow {
             BodyPanelView.StatusBarLayout {
                 panelColor: window.statusBarColor
                 panelHeight: window.statusBarHeight
+
+                onWindowMoveRequested: {
+                    window.requestWindowMove();
+                }
             }
             BodyPanelView.NavigationBarLayout {
                 panelColor: window.navigationBarColor

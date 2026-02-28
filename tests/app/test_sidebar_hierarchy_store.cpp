@@ -72,10 +72,10 @@ void SidebarHierarchyStoreTest::metadata_matchesSectionModels()
     QCOMPARE(store.sectionNames(), expectedSections);
 
     const QStringList expectedIcons = {
-        QStringLiteral("nodes  libraryFolder"),
-        QStringLiteral("generalprojectStructure"),
-        QStringLiteral("bookmarks  bookmarksList"),
-        QStringLiteral("vcs  currentBranch"),
+        QStringLiteral("libraryFolder"),
+        QStringLiteral("projectStructure"),
+        QStringLiteral("bookmarksList"),
+        QStringLiteral("currentBranch"),
         QStringLiteral("imageToImage"),
         QStringLiteral("chartBar"),
         QStringLiteral("dataView"),

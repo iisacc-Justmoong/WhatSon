@@ -5,25 +5,41 @@ import LVRS 1.0 as LV
 Item {
     id: root
 
+    readonly property var hierarchyStore: (typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore) ? sidebarHierarchyStore : null
     readonly property int activeToolbarIndex: root.hierarchyStore ? root.hierarchyStore.activeIndex : -1
     readonly property int availableContentWidth: Math.max(0, width - horizontalInset * 2)
     readonly property int contentWidth: Math.max(minContentWidth, availableContentWidth)
     readonly property int footerHeight: 24
     readonly property int footerWidth: 84
     readonly property int horizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
-    readonly property int minContentWidth: 152
     property color panelColor: LV.Theme.panelBackground04
     readonly property int rowHeight: 28
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     readonly property int toolbarButtonSize: (typeof LV.Theme.gap20 === "number" && isFinite(LV.Theme.gap20)) ? LV.Theme.gap20 : 20
     readonly property int toolbarCount: toolbarIconNames.length
     readonly property var toolbarIconNames: root.hierarchyStore ? root.hierarchyStore.toolbarIconNames : []
+    readonly property int toolbarSpacing: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
+    readonly property int toolbarMinWidth: toolbarCount > 0 ? toolbarCount * toolbarButtonSize + (toolbarCount - 1) * toolbarSpacing : toolbarButtonSize
+    readonly property int minContentWidth: Math.max(152, toolbarMinWidth)
+    readonly property string iconSetBasePath: "qrc:/qt/qml/LVRS/resources/iconset/"
+    function resolveToolbarIconSource(iconName) {
+        if (iconName === "libraryFolder")
+            return root.iconSetBasePath + "nodes  libraryFolder.svg";
+        if (iconName === "projectStructure")
+            return root.iconSetBasePath + "generalprojectStructure.svg";
+        if (iconName === "bookmarksList")
+            return root.iconSetBasePath + "bookmarks  bookmarksList.svg";
+        if (iconName === "currentBranch")
+            return root.iconSetBasePath + "vcs  currentBranch.svg";
+        return root.iconSetBasePath + iconName + ".svg";
+    }
     readonly property var toolbarItems: {
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i)
             items.push({
                 "id": i,
                 "iconName": toolbarIconNames[i],
+                "iconSource": root.resolveToolbarIconSource(toolbarIconNames[i]),
                 "selected": i === root.activeToolbarIndex
             });
         return items;
@@ -31,6 +47,7 @@ Item {
     readonly property int verticalInset: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
 
     clip: true
+
 
     Rectangle {
         anchors.fill: parent
