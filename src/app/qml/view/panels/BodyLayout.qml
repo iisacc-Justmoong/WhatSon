@@ -3,15 +3,17 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Item {
-    id: root
+    id: hStack
 
+    property color compactCanvasColor: LV.Theme.panelBackground01
+    property bool compactMode: false
     property color contentPanelColor: "#39445b"
     property color contentsDisplayColor: "#495473"
     property color drawerColor: "#665d47"
     property int drawerHeight: 255
     property color listViewColor: "#3a5c57"
     property int listViewWidth: 198
-    readonly property bool listVisible: root.listViewWidth > 0
+    readonly property bool listVisible: hStack.listViewWidth > 0
     property int minContentWidth: 320
     property int minDisplayHeight: 160
     property int minDrawerHeight: 120
@@ -20,10 +22,9 @@ Item {
     property int minSidebarWidth: 152
     property color rightPanelColor: "#63556a"
     property int rightPanelWidth: 194
-    readonly property bool rightVisible: root.rightPanelWidth > 0
+    readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: "#3b4b63"
     property int sidebarWidth: 216
-    readonly property int effectiveMinSidebarWidth: (typeof root.minSidebarWidth === "number" && isFinite(root.minSidebarWidth)) ? Math.max(0, root.minSidebarWidth) : 152
     property color splitterColor: "#445066"
     property int splitterHandleThickness: 12
     property int splitterThickness: 0
@@ -34,191 +35,211 @@ Item {
     signal sidebarWidthDragRequested(int value)
 
     function clampListViewWidth(value) {
-        if (!root.listVisible)
+        if (!hStack.listVisible)
             return 0;
-        var occupiedWidth = root.sidebarWidth + (root.rightVisible ? root.rightPanelWidth : 0) + root.totalSplitterWidth();
-        var maxListWidth = Math.max(root.minListViewWidth, root.width - root.minContentWidth - occupiedWidth);
-        return Math.max(root.minListViewWidth, Math.min(maxListWidth, value));
+        var occupiedWidth = hStack.sidebarWidth + (hStack.rightVisible ? hStack.rightPanelWidth : 0) + hStack.totalSplitterWidth();
+        var maxListWidth = Math.max(hStack.minListViewWidth, hStack.width - hStack.minContentWidth - occupiedWidth);
+        return Math.max(hStack.minListViewWidth, Math.min(maxListWidth, value));
     }
     function clampRightPanelWidth(value) {
-        if (!root.rightVisible)
+        if (!hStack.rightVisible)
             return 0;
-        var occupiedWidth = root.sidebarWidth + (root.listVisible ? root.listViewWidth : 0) + root.totalSplitterWidth();
-        var maxRightWidth = Math.max(root.minRightPanelWidth, root.width - root.minContentWidth - occupiedWidth);
-        return Math.max(root.minRightPanelWidth, Math.min(maxRightWidth, value));
+        var occupiedWidth = hStack.sidebarWidth + (hStack.listVisible ? hStack.listViewWidth : 0) + hStack.totalSplitterWidth();
+        var maxRightWidth = Math.max(hStack.minRightPanelWidth, hStack.width - hStack.minContentWidth - occupiedWidth);
+        return Math.max(hStack.minRightPanelWidth, Math.min(maxRightWidth, value));
     }
     function clampSidebarWidth(value) {
-        var occupiedWidth = (root.listVisible ? root.listViewWidth : 0) + (root.rightVisible ? root.rightPanelWidth : 0) + root.totalSplitterWidth();
-        var maxSidebarWidth = Math.max(root.effectiveMinSidebarWidth, root.width - root.minContentWidth - occupiedWidth);
-        return Math.max(root.effectiveMinSidebarWidth, Math.min(maxSidebarWidth, value));
+        var occupiedWidth = (hStack.listVisible ? hStack.listViewWidth : 0) + (hStack.rightVisible ? hStack.rightPanelWidth : 0) + hStack.totalSplitterWidth();
+        var maxSidebarWidth = Math.max(hStack.effectiveMinSidebarWidth, hStack.width - hStack.minContentWidth - occupiedWidth);
+        return Math.max(hStack.effectiveMinSidebarWidth, Math.min(maxSidebarWidth, value));
     }
     function totalSplitterWidth() {
-        var width = root.splitterThickness;
-        if (root.listVisible)
-            width += root.splitterThickness;
-        if (root.rightVisible)
-            width += root.splitterThickness;
-        return width;
+        var width = hStack.splitterThickness;
+        if (hStack.listVisible)
+            width += hStack.splitterThickness;
+        if (hStack.rightVisible)
+            width += hStack.splitterThickness;
+
     }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
     clip: true
 
-    LV.HStack {
+    Item {
         anchors.fill: parent
-        spacing: 0
+        visible: !hStack.compactMode
 
-        HierarchySidebarLayout {
-            id: hierarchySidebar
+        LV.HStack {
+            anchors.fill: parent
+            spacing: 0
 
-            Layout.fillHeight: true
-            Layout.minimumWidth: root.effectiveMinSidebarWidth
-            Layout.preferredWidth: root.sidebarWidth
-        }
-        Rectangle {
-            id: sidebarSplitter
+            HierarchySidebarLayout {
+                id: sideBar
 
-            Layout.fillHeight: true
-            Layout.preferredWidth: root.splitterThickness
-            color: root.splitterColor
+                Layout.fillHeight: true
+                Layout.minimumWidth: hStack.effectiveMinSidebarWidth
+                Layout.preferredWidth: hStack.sidebarWidth
+            }
+            Rectangle {
+                id: sideBarSplitter
 
-            MouseArea {
-                id: sidebarSplitterMouse
+                Layout.fillHeight: true
+                Layout.preferredWidth: hStack.splitterThickness
+                color: hStack.splitterColor
 
-                property real dragStartGlobalX: 0
-                property int dragStartSidebarWidth: root.sidebarWidth
+                MouseArea {
+                    id: sideBarSplitterMouse
 
-                acceptedButtons: Qt.LeftButton
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                cursorShape: Qt.SizeHorCursor
-                preventStealing: true
-                width: root.splitterHandleThickness
+                    property real dragStartGlobalX: 0
+                    property int dragStartSidebarWidth: hStack.sidebarWidth
 
-                onPositionChanged: function (mouse) {
-                    if (!(pressedButtons & Qt.LeftButton))
-                        return;
-                    var movePoint = sidebarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    var deltaX = movePoint.x - dragStartGlobalX;
-                    var nextSidebarWidth = root.clampSidebarWidth(dragStartSidebarWidth + deltaX);
-                    if (isFinite(nextSidebarWidth) && nextSidebarWidth !== root.sidebarWidth)
-                        root.sidebarWidthDragRequested(nextSidebarWidth);
-                }
-                onPressed: function (mouse) {
-                    var pressPoint = sidebarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    dragStartGlobalX = pressPoint.x;
-                    dragStartSidebarWidth = root.sidebarWidth;
+                    acceptedButtons: Qt.LeftButton
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    cursorShape: Qt.SizeHorCursor
+                    preventStealing: true
+                    width: hStack.splitterHandleThickness
+
+                    onPositionChanged: function (mouse) {
+                        if (!(pressedButtons & Qt.LeftButton))
+                            return;
+                        var movePoint = sideBarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                        var deltaX = movePoint.x - dragStartGlobalX;
+                        var nextSidebarWidth = hStack.clampSidebarWidth(dragStartSidebarWidth + deltaX);
+                        if (isFinite(nextSidebarWidth) && nextSidebarWidth !== hStack.sidebarWidth)
+                            hStack.sidebarWidthDragRequested(nextSidebarWidth);
+                    }
+                    onPressed: function (mouse) {
+                        var pressPoint = sideBarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                        dragStartGlobalX = pressPoint.x;
+                        dragStartSidebarWidth = hStack.sidebarWidth;
+                    }
                 }
             }
-        }
-        Rectangle {
-            Layout.fillHeight: true
-            Layout.minimumWidth: root.minListViewWidth
-            Layout.preferredWidth: root.listViewWidth
-            color: root.listViewColor
-            visible: root.listVisible
-        }
-        Rectangle {
-            id: listSplitter
+            Rectangle {
+                id: listBar
 
-            Layout.fillHeight: true
-            Layout.preferredWidth: root.splitterThickness
-            color: root.splitterColor
-            visible: root.listVisible
+                Layout.fillHeight: true
+                Layout.minimumWidth: hStack.minListViewWidth
+                Layout.preferredWidth: hStack.listViewWidth
+                color: hStack.listViewColor
+                visible: hStack.listVisible
+            }
+            Rectangle {
+                id: listSplitter
 
-            MouseArea {
-                id: listSplitterMouse
+                Layout.fillHeight: true
+                Layout.preferredWidth: hStack.splitterThickness
+                color: hStack.splitterColor
+                visible: hStack.listVisible
 
-                property real dragStartGlobalX: 0
-                property int dragStartListWidth: root.listViewWidth
+                MouseArea {
+                    id: listSplitterMouse
 
-                acceptedButtons: Qt.LeftButton
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                cursorShape: Qt.SizeHorCursor
-                preventStealing: true
-                width: root.splitterHandleThickness
+                    property real dragStartGlobalX: 0
+                    property int dragStartListWidth: hStack.listViewWidth
 
-                onPositionChanged: function (mouse) {
-                    if (!(pressedButtons & Qt.LeftButton))
-                        return;
-                    var movePoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    var deltaX = movePoint.x - dragStartGlobalX;
-                    var nextListWidth = root.clampListViewWidth(dragStartListWidth + deltaX);
-                    if (isFinite(nextListWidth) && nextListWidth !== root.listViewWidth)
-                        root.listViewWidthDragRequested(nextListWidth);
-                }
-                onPressed: function (mouse) {
-                    var pressPoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    dragStartGlobalX = pressPoint.x;
-                    dragStartListWidth = root.listViewWidth;
+                    acceptedButtons: Qt.LeftButton
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    cursorShape: Qt.SizeHorCursor
+                    preventStealing: true
+                    width: hStack.splitterHandleThickness
+
+                    onPositionChanged: function (mouse) {
+                        if (!(pressedButtons & Qt.LeftButton))
+                            return;
+                        var movePoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                        var deltaX = movePoint.x - dragStartGlobalX;
+                        var nextListWidth = hStack.clampListViewWidth(dragStartListWidth + deltaX);
+                        if (isFinite(nextListWidth) && nextListWidth !== hStack.listViewWidth)
+                            hStack.listViewWidthDragRequested(nextListWidth);
+                    }
+                    onPressed: function (mouse) {
+                        var pressPoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                        dragStartGlobalX = pressPoint.x;
+                        dragStartListWidth = hStack.listViewWidth;
+                    }
                 }
             }
-        }
-        ContentViewLayout {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            Layout.minimumWidth: root.minContentWidth
-            displayColor: root.contentsDisplayColor
-            drawerColor: root.drawerColor
-            drawerHeight: root.drawerHeight
-            minDisplayHeight: root.minDisplayHeight
-            minDrawerHeight: root.minDrawerHeight
-            panelColor: root.contentPanelColor
-            splitterColor: root.splitterColor
-            splitterThickness: root.splitterThickness
+            ContentViewLayout {
+                id: contentsView
 
-            onDrawerHeightDragRequested: function (value) {
-                root.drawerHeightDragRequested(value);
-            }
-        }
-        Rectangle {
-            id: rightSplitter
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.minimumWidth: hStack.minContentWidth
+                displayColor: hStack.contentsDisplayColor
+                drawerColor: hStack.drawerColor
+                drawerHeight: hStack.drawerHeight
+                minDisplayHeight: hStack.minDisplayHeight
+                minDrawerHeight: hStack.minDrawerHeight
+                panelColor: hStack.contentPanelColor
+                splitterColor: hStack.splitterColor
+                splitterThickness: hStack.splitterThickness
 
-            Layout.fillHeight: true
-            Layout.preferredWidth: root.splitterThickness
-            color: root.splitterColor
-            visible: root.rightVisible
-
-            MouseArea {
-                id: rightSplitterMouse
-
-                property real dragStartGlobalX: 0
-                property int dragStartRightWidth: root.rightPanelWidth
-
-                acceptedButtons: Qt.LeftButton
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                cursorShape: Qt.SizeHorCursor
-                preventStealing: true
-                width: root.splitterHandleThickness
-
-                onPositionChanged: function (mouse) {
-                    if (!(pressedButtons & Qt.LeftButton))
-                        return;
-                    var movePoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    var deltaX = movePoint.x - dragStartGlobalX;
-                    var nextRightWidth = root.clampRightPanelWidth(dragStartRightWidth - deltaX);
-                    if (isFinite(nextRightWidth) && nextRightWidth !== root.rightPanelWidth)
-                        root.rightPanelWidthDragRequested(nextRightWidth);
-                }
-                onPressed: function (mouse) {
-                    var pressPoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    dragStartGlobalX = pressPoint.x;
-                    dragStartRightWidth = root.rightPanelWidth;
+                onDrawerHeightDragRequested: function (value) {
+                    hStack.drawerHeightDragRequested(value);
                 }
             }
+            Rectangle {
+                id: rightSplitter
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: hStack.splitterThickness
+                color: hStack.splitterColor
+                visible: hStack.rightVisible
+
+                MouseArea {
+                    id: rightSplitterMouse
+
+                    property real dragStartGlobalX: 0
+                    property int dragStartRightWidth: hStack.rightPanelWidth
+
+                    acceptedButtons: Qt.LeftButton
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    cursorShape: Qt.SizeHorCursor
+                    preventStealing: true
+                    width: hStack.splitterHandleThickness
+
+                    onPositionChanged: function (mouse) {
+                        if (!(pressedButtons & Qt.LeftButton))
+                            return;
+                        var movePoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                        var deltaX = movePoint.x - dragStartGlobalX;
+                        var nextRightWidth = hStack.clampRightPanelWidth(dragStartRightWidth - deltaX);
+                        if (isFinite(nextRightWidth) && nextRightWidth !== hStack.rightPanelWidth)
+                            hStack.rightPanelWidthDragRequested(nextRightWidth);
+                    }
+                    onPressed: function (mouse) {
+                        var pressPoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                        dragStartGlobalX = pressPoint.x;
+                        dragStartRightWidth = hStack.rightPanelWidth;
+                    }
+                }
+            }
+            Rectangle {
+                id: rightPanel
+
+                Layout.fillHeight: true
+                Layout.minimumWidth: hStack.minRightPanelWidth
+                Layout.preferredWidth: hStack.rightPanelWidth
+                color: hStack.rightPanelColor
+                visible: hStack.rightVisible
+            }
         }
+    }
+    Item {
+        anchors.fill: parent
+        visible: hStack.compactMode
+
         Rectangle {
-            Layout.fillHeight: true
-            Layout.minimumWidth: root.minRightPanelWidth
-            Layout.preferredWidth: root.rightPanelWidth
-            color: root.rightPanelColor
-            visible: root.rightVisible
+            anchors.fill: parent
+            color: hStack.compactCanvasColor
         }
     }
 }

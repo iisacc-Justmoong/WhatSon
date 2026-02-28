@@ -2,11 +2,13 @@ import QtQuick
 import LVRS 1.0 as LV
 
 LV.HStack {
-    id: root
+    id: appControlBar
 
     spacing: 2
 
     LV.IconButton {
+        id: pinWindowButton
+
         height: 20
         iconName: "pin"
         iconSize: 16
@@ -14,6 +16,8 @@ LV.HStack {
         width: 20
     }
     LV.IconButton {
+        id: alertsButton
+
         height: 20
         iconName: "toolwindownotifications"
         iconSize: 16
@@ -21,6 +25,8 @@ LV.HStack {
         width: 20
     }
     LV.IconButton {
+        id: timerButton
+
         height: 20
         iconName: "startTimer"
         iconSize: 16

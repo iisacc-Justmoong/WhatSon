@@ -65,7 +65,7 @@ set(WHATSON_ANDROID_DIR "${WHATSON_PLATFORM_DIR}/Android")
 set(WHATSON_IOS_INFO_PLIST "${WHATSON_APPLE_DIR}/iOS/Info.plist")
 set(WHATSON_DEFAULT_INFO_PLIST "${WHATSON_APPLE_DIR}/Info.plist")
 set(WHATSON_ENTITLEMENTS "${WHATSON_APPLE_DIR}/WhatSon.entitlements")
-set(WHATSON_APPLE_BUNDLE_ID "com.lvrs.whatson" CACHE STRING "Apple bundle id for WhatSon app")
+set(WHATSON_APPLE_BUNDLE_ID "com.iisacc.app.whatson" CACHE STRING "Apple bundle id for WhatSon app")
 set(WHATSON_ANDROID_PACKAGE_ID "com.lvrs.whatson" CACHE STRING "Android package id for WhatSon app")
 set(WHATSON_IOS_XCODEPROJ_DIR "${CMAKE_BINARY_DIR}/ios-xcode-artifact" CACHE PATH
         "Output directory for generated iOS Xcode project.")
@@ -117,8 +117,8 @@ set(WHATSON_BUILD_TARGETS)
 if (TARGET WhatSon)
     list(APPEND WHATSON_BUILD_TARGETS WhatSon)
 endif ()
-if (TARGET whats_on_daemon)
-    list(APPEND WHATSON_BUILD_TARGETS whats_on_daemon)
+if (TARGET WhatSon_daemon)
+    list(APPEND WHATSON_BUILD_TARGETS WhatSon_daemon)
 endif ()
 if (TARGET whatson_cli)
     list(APPEND WHATSON_BUILD_TARGETS whatson_cli)
@@ -254,17 +254,17 @@ if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_B
     )
 endif ()
 
-if (TARGET whats_on_daemon)
+if (TARGET WhatSon_daemon)
     add_custom_target(whatson_run_daemon
-            COMMAND "$<TARGET_FILE:whats_on_daemon>"
-            DEPENDS whats_on_daemon
+            COMMAND "$<TARGET_FILE:WhatSon_daemon>"
+            DEPENDS WhatSon_daemon
             USES_TERMINAL
             COMMENT "Run WhatSon daemon on current host"
     )
 
     add_custom_target(whatson_healthcheck_daemon
-            COMMAND "$<TARGET_FILE:whats_on_daemon>" --healthcheck
-            DEPENDS whats_on_daemon
+            COMMAND "$<TARGET_FILE:WhatSon_daemon>" --healthcheck
+            DEPENDS WhatSon_daemon
             USES_TERMINAL
             COMMENT "Run daemon healthcheck"
     )
@@ -320,11 +320,11 @@ if (WHATSON_BUILD_TARGETS)
         endif ()
     endif ()
 
-    if (TARGET whats_on_daemon)
+    if (TARGET WhatSon_daemon)
         add_custom_command(TARGET whatson_export_binaries POST_BUILD
                 COMMAND "${CMAKE_COMMAND}" -E copy
-                "$<TARGET_FILE:whats_on_daemon>"
-                "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:whats_on_daemon>"
+                "$<TARGET_FILE:WhatSon_daemon>"
+                "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:WhatSon_daemon>"
         )
     endif ()
 
@@ -347,15 +347,15 @@ if (TARGET WhatSon)
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endif ()
-if (TARGET whats_on_daemon)
+if (TARGET WhatSon_daemon)
     if (APPLE)
-        install(TARGETS whats_on_daemon
+        install(TARGETS WhatSon_daemon
                 BUNDLE DESTINATION .
                 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         )
     else ()
-        install(TARGETS whats_on_daemon
+        install(TARGETS WhatSon_daemon
                 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         )

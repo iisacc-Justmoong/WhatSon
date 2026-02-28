@@ -5,24 +5,26 @@ import argparse
 import json
 import os
 import platform
+import plistlib
 import re
 import shlex
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+
 import sys
 import time
-import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 TASK_HOST = "host"
 TASK_ANDROID = "android"
 TASK_IOS = "ios"
 ALL_TASKS = (TASK_HOST, TASK_ANDROID, TASK_IOS)
 DEFAULT_ANDROID_PACKAGE_ID = "com.lvrs.whatson"
-DEFAULT_APPLE_BUNDLE_ID = "com.lvrs.whatson"
+DEFAULT_APPLE_BUNDLE_ID = "com.iisacc.app.whatson"
 LEGACY_ANDROID_PACKAGE_ID = "org.qtproject.example.WhatSon"
 
 
@@ -35,6 +37,10 @@ class TaskResult:
 
 
 class CommandError(RuntimeError):
+    pass
+
+
+class MissingPhysicalDeviceError(CommandError):
     pass
 
 
@@ -376,7 +382,11 @@ class BuildAll:
         discovered_android_package = _read_android_package_from_manifest(self.root)
         self.android_package = args.android_package or discovered_android_package or DEFAULT_ANDROID_PACKAGE_ID
         self.ios_bundle_id = args.ios_bundle_id
+        self.ios_device = args.ios_device
+        self.ios_development_team = args.ios_development_team
+        self.ios_code_sign_identity = args.ios_code_sign_identity
         self.android_avd = args.android_avd
+        self.android_allow_emulator = args.android_allow_emulator
         self.skip_android_lvrs_build = args.skip_android_lvrs_build
         self.no_host_run = args.no_host_run
         self.sequential = args.sequential
@@ -440,6 +450,31 @@ class BuildAll:
             text=True,
             check=False,
         )
+
+    def _capture_with_log(
+            self,
+            *,
+            cmd: Sequence[str],
+            log_path: Path,
+            cwd: Optional[Path] = None,
+            env: Optional[Dict[str, str]] = None,
+    ) -> subprocess.CompletedProcess[str]:
+        process = self._capture(cmd=cmd, cwd=cwd, env=env)
+        cwd_path = cwd or self.root
+
+        with log_path.open("a", encoding="utf-8") as fp:
+            fp.write(f"$ {self._quote_cmd(cmd)}\n")
+            fp.write(f"# cwd: {cwd_path}\n")
+            if process.stdout:
+                fp.write(process.stdout)
+                if not process.stdout.endswith("\n"):
+                    fp.write("\n")
+            if process.stderr:
+                fp.write(process.stderr)
+                if not process.stderr.endswith("\n"):
+                    fp.write("\n")
+            fp.write(f"[exit] {process.returncode}\n\n")
+        return process
 
     def _clean_path(self, *, task: str, path: Path, log_path: Path) -> None:
         if not path.exists() and not path.is_symlink():
@@ -632,10 +667,30 @@ class BuildAll:
             current = current.parent
         return None
 
+    def _read_bundle_id_from_app_bundle(self, app_bundle: Path) -> Optional[str]:
+        info_plist = app_bundle / "Info.plist"
+        if not info_plist.exists():
+            return None
+        try:
+            with info_plist.open("rb") as fp:
+                payload = plistlib.load(fp)
+        except Exception:  # noqa: BLE001
+            return None
+        if not isinstance(payload, dict):
+            return None
+        bundle_id = payload.get("CFBundleIdentifier")
+        if isinstance(bundle_id, str):
+            cleaned = bundle_id.strip()
+            if cleaned:
+                return cleaned
+        return None
+
     def _daemon_binary(self) -> Optional[Path]:
         candidates = [
-            self.host_build_dir / "src" / "daemon" / "whats_on_daemon",
-            self.host_build_dir / "src" / "daemon" / "whats_on_daemon.exe",
+            self.host_build_dir / "src" / "daemon" / "WhatSon_daemon",
+            self.host_build_dir / "src" / "daemon" / "WhatSon_daemon.exe",
+            self.host_build_dir / "src" / "daemon" / "whatson_daemon",
+            self.host_build_dir / "src" / "daemon" / "whatson_daemon.exe",
         ]
         return _find_existing(candidates)
 
@@ -661,15 +716,46 @@ class BuildAll:
         candidates.append(self.android_sdk_root / "emulator" / "emulator")
         return _find_existing(candidates)
 
-    def _connected_android_serial(self, adb_path: Path) -> Optional[str]:
+    def _connected_android_devices(self, adb_path: Path) -> List[Tuple[str, bool]]:
         result = self._capture(cmd=[str(adb_path), "devices", "-l"])
         if result.returncode != 0:
-            return None
+            return []
+        devices: List[Tuple[str, bool]] = []
         for line in result.stdout.splitlines():
             parts = line.strip().split()
-            if len(parts) >= 2 and parts[1] == "device":
-                return parts[0]
-        return None
+            if len(parts) < 2 or parts[1] != "device":
+                continue
+            serial = parts[0]
+            lowered = line.lower()
+            is_emulator = (
+                    serial.startswith("emulator-")
+                    or "model:sdk_" in lowered
+                    or "product:sdk_" in lowered
+                    or " emulator" in lowered
+            )
+            devices.append((serial, is_emulator))
+        return devices
+
+    def _adb_devices_snapshot(self, adb_path: Path) -> str:
+        probe = self._capture(cmd=[str(adb_path), "devices", "-l"])
+        if probe.returncode != 0:
+            return f"[adb devices failed: exit={probe.returncode}]"
+
+        lines = [line.rstrip() for line in probe.stdout.splitlines()]
+        if not lines:
+            return "[adb devices output is empty]"
+        return "\n".join(lines)
+
+    def _connected_android_serial(self, adb_path: Path, *, physical_only: bool = True) -> Optional[str]:
+        devices = self._connected_android_devices(adb_path)
+        if physical_only:
+            for serial, is_emulator in devices:
+                if not is_emulator:
+                    return serial
+            return None
+        if not devices:
+            return None
+        return devices[0][0]
 
     def _pick_avd(self, emulator_path: Path) -> Optional[str]:
         if self.android_avd:
@@ -687,10 +773,71 @@ class BuildAll:
         if adb_path is None:
             raise CommandError("adb was not found. Install Android platform-tools or set ANDROID_SDK_ROOT.")
 
-        serial = self._connected_android_serial(adb_path)
+        # Refresh adb state before device inspection.
+        self._run(task=task, cmd=[str(adb_path), "start-server"], log_path=log_path, check=False)
+
+        serial = self._connected_android_serial(adb_path, physical_only=True)
         if serial:
-            self._log(task, f"Using connected Android device: {serial}")
+            self._log(task, f"Using connected Android physical device: {serial}")
             return serial
+
+        snapshot = self._adb_devices_snapshot(adb_path)
+        with log_path.open("a", encoding="utf-8") as fp:
+            fp.write("# adb-devices-snapshot\n")
+            fp.write(snapshot)
+            if not snapshot.endswith("\n"):
+                fp.write("\n")
+            fp.write("\n")
+
+        unauthorized_or_offline: List[str] = []
+        for line in snapshot.splitlines():
+            trimmed = line.strip()
+            if not trimmed or trimmed.lower().startswith("list of devices attached"):
+                continue
+            tokens = trimmed.split()
+            if len(tokens) < 2:
+                continue
+            serial_token = tokens[0]
+            state = tokens[1].lower()
+            lowered = trimmed.lower()
+            is_emulator = (
+                    serial_token.startswith("emulator-")
+                    or "model:sdk_" in lowered
+                    or "product:sdk_" in lowered
+                    or " emulator" in lowered
+            )
+            if is_emulator:
+                continue
+            if state in {"unauthorized", "offline"}:
+                unauthorized_or_offline.append(f"{serial_token}({state})")
+
+        if unauthorized_or_offline:
+            joined = ", ".join(unauthorized_or_offline)
+            raise MissingPhysicalDeviceError(
+                "Android physical device is connected but not ready: "
+                f"{joined}. Unlock device and accept USB debugging authorization, then run build_all again."
+            )
+
+        connected_devices = self._connected_android_devices(adb_path)
+        if self.android_allow_emulator:
+            for emulator_serial, is_emulator in connected_devices:
+                if is_emulator:
+                    self._log(task, f"Using running Android emulator: {emulator_serial}")
+                    return emulator_serial
+
+        if connected_devices and not self.android_allow_emulator:
+            emulator_serials = [serial for serial, is_emulator in connected_devices if is_emulator]
+            if emulator_serials:
+                raise MissingPhysicalDeviceError(
+                    "Only Android emulator was detected. "
+                    "Connect a physical Android device (USB/Wi-Fi) and run build_all again."
+                )
+
+        if not self.android_allow_emulator:
+            raise MissingPhysicalDeviceError(
+                "No connected Android physical device was detected. "
+                "Connect a physical Android device (USB/Wi-Fi) and run build_all again."
+            )
 
         emulator_path = self._find_emulator_binary()
         if emulator_path is None:
@@ -729,7 +876,7 @@ class BuildAll:
         for _ in range(180):
             probe = self._capture(cmd=[str(adb_path), "shell", "getprop", "sys.boot_completed"])
             if probe.returncode == 0 and probe.stdout.strip() == "1":
-                serial = self._connected_android_serial(adb_path)
+                serial = self._connected_android_serial(adb_path, physical_only=False)
                 if serial:
                     self._log(task, f"Android emulator is ready: {serial}")
                     return serial
@@ -747,13 +894,13 @@ class BuildAll:
             return updated
         return env
 
-    def _ios_simulator_sdk_path(self) -> Optional[Path]:
+    def _ios_sdk_path(self, sdk_name: str) -> Optional[Path]:
         if self.system_name != "Darwin":
             return None
         xcrun = shutil.which("xcrun")
         if not xcrun:
             return None
-        probe = self._capture(cmd=[xcrun, "--sdk", "iphonesimulator", "--show-sdk-path"])
+        probe = self._capture(cmd=[xcrun, "--sdk", sdk_name, "--show-sdk-path"])
         if probe.returncode != 0:
             return None
         sdk_path_raw = probe.stdout.strip()
@@ -764,10 +911,10 @@ class BuildAll:
             return None
         return sdk_path
 
-    def _ios_backtrace_cmake_args(self) -> List[str]:
+    def _ios_backtrace_cmake_args(self, sdk_name: str) -> List[str]:
         # Some Qt iOS kits require explicit Backtrace cache hints during
         # cross-configure, otherwise Qt6Core marks WrapBacktrace unresolved.
-        sdk_path = self._ios_simulator_sdk_path()
+        sdk_path = self._ios_sdk_path(sdk_name)
         if sdk_path is None:
             return []
 
@@ -781,6 +928,107 @@ class BuildAll:
             args.append(f"-DBacktrace_LIBRARY={libc_tbd}")
             args.append(f"-DBacktrace_LIBRARIES={libc_tbd}")
         return args
+
+    def _connected_ios_devices(self) -> List[Dict[str, str]]:
+        if self.system_name != "Darwin":
+            return []
+        xcrun = shutil.which("xcrun")
+        if not xcrun:
+            return []
+
+        probe = self._capture(cmd=[xcrun, "xcdevice", "list"])
+        if probe.returncode != 0:
+            return []
+
+        try:
+            payload = json.loads(probe.stdout)
+        except Exception:  # noqa: BLE001
+            return []
+        if not isinstance(payload, list):
+            return []
+
+        devices: List[Dict[str, str]] = []
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            if bool(entry.get("simulator", False)):
+                continue
+            if not bool(entry.get("available", False)):
+                continue
+            platform_name = str(entry.get("platform", "")).strip().lower()
+            if "iphoneos" not in platform_name and "ipados" not in platform_name:
+                continue
+            identifier = str(entry.get("identifier", "")).strip()
+            if not identifier:
+                continue
+            name = str(entry.get("name", "")).strip() or identifier
+            architecture = str(entry.get("architecture", "")).strip().lower() or "arm64"
+            if "arm64" in architecture:
+                architecture = "arm64"
+            devices.append(
+                {
+                    "identifier": identifier,
+                    "name": name,
+                    "platform": platform_name,
+                    "architecture": architecture,
+                }
+            )
+        return devices
+
+    def _ensure_ios_device(self, *, task: str, log_path: Path) -> Dict[str, str]:
+        devices = self._connected_ios_devices()
+        if not devices:
+            raise CommandError(
+                "No connected iOS physical device was detected. "
+                "Connect an iPhone/iPad and trust this Mac, then run build_all again."
+            )
+
+        requested = (self.ios_device or "").strip()
+        if requested:
+            for device in devices:
+                if requested in {device["identifier"], device["name"]}:
+                    self._log(task, f"Using requested iOS device: {device['name']} ({device['identifier']})")
+                    return device
+            available = ", ".join(f"{item['name']}({item['identifier']})" for item in devices)
+            raise CommandError(
+                f"Requested iOS device '{requested}' was not found among connected devices: {available}"
+            )
+
+        selected = devices[0]
+        self._log(task, f"Using connected iOS device: {selected['name']} ({selected['identifier']})")
+        with log_path.open("a", encoding="utf-8") as fp:
+            fp.write(f"# ios-device: {selected['name']} ({selected['identifier']})\n")
+        return selected
+
+    def _uninstall_ios_app_best_effort(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            device_identifier: str,
+            bundle_id: str,
+    ) -> None:
+        if self.system_name != "Darwin":
+            return
+        xcrun = shutil.which("xcrun")
+        if not xcrun:
+            return
+
+        self._run(
+            task=task,
+            cmd=[
+                xcrun,
+                "devicectl",
+                "device",
+                "uninstall",
+                "app",
+                "--device",
+                device_identifier,
+                bundle_id,
+            ],
+            log_path=log_path,
+            check=False,
+        )
 
     def _clean_ios_simulator_app_best_effort(self, *, task: str, log_path: Path, bundle_id: str) -> None:
         if self.system_name != "Darwin":
@@ -816,6 +1064,68 @@ class BuildAll:
                     log_path=log_path,
                     check=False,
                 )
+
+    def _launch_ios_app_with_retry(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            xcrun: str,
+            ios_device_id: str,
+            bundle_id: str,
+            max_attempts: int = 24,
+            interval_seconds: int = 5,
+    ) -> None:
+        launch_cmd = [
+            xcrun,
+            "devicectl",
+            "device",
+            "process",
+            "launch",
+            "--device",
+            ios_device_id,
+            "--terminate-existing",
+            bundle_id,
+        ]
+
+        locked_markers = (
+            "could not be unlocked",
+            "device was not, or could not be, unlocked",
+            "unable to launch",
+            "locked",
+            "requestdenied",
+        )
+
+        for attempt in range(1, max_attempts + 1):
+            result = self._capture_with_log(cmd=launch_cmd, log_path=log_path)
+            if result.returncode == 0:
+                if attempt > 1:
+                    self._log(task, f"iOS launch succeeded after retry (attempt={attempt}).")
+                return
+
+            output = f"{result.stdout}\n{result.stderr}".lower()
+            if any(marker in output for marker in locked_markers):
+                if attempt == 1:
+                    self._log(
+                        task,
+                        "iOS device appears locked. Waiting for unlock and retrying app launch automatically.",
+                    )
+                if attempt < max_attempts:
+                    time.sleep(interval_seconds)
+                    continue
+                raise CommandError(
+                    "iOS app launch failed because the device stayed locked. "
+                    "Unlock the device screen and run build_all again."
+                )
+
+            raise CommandError(
+                f"iOS app launch failed (exit={result.returncode}) for bundle '{bundle_id}'. "
+                f"See log: {log_path}"
+            )
+
+        raise CommandError(
+            "iOS app launch retry limit was exceeded."
+        )
 
     def _host_platform_name(self) -> str:
         if self.system_name == "Darwin":
@@ -909,8 +1219,11 @@ class BuildAll:
     def _ensure_ios_lvrs_prefix(self, *, task: str, log_path: Path) -> Path:
         ios_prefix = self.lvrs_prefix / "platforms" / "ios"
         ios_config = self._lvrs_cmake_dir(ios_prefix) / "LVRSConfig.cmake"
-        if ios_config.exists():
-            return ios_prefix
+        ios_sdk_marker = ios_prefix / ".whatson_ios_sdk"
+        if ios_config.exists() and ios_sdk_marker.exists():
+            marker_value = ios_sdk_marker.read_text(encoding="utf-8").strip().lower()
+            if marker_value == "iphoneos":
+                return ios_prefix
 
         if not self.lvrs_source_dir.exists():
             raise CommandError(
@@ -921,7 +1234,7 @@ class BuildAll:
         if not toolchain.exists():
             raise CommandError(f"Qt iOS toolchain file is missing: {toolchain}")
 
-        lvrs_build_dir = self.lvrs_source_dir / "build-ios-install"
+        lvrs_build_dir = self.lvrs_source_dir / "build-ios-install-device"
         self._clean_path(task=task, path=lvrs_build_dir, log_path=log_path)
 
         prefix_paths = [str(self.qt_ios_prefix)]
@@ -943,9 +1256,9 @@ class BuildAll:
                 f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
                 f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}",
                 "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_OSX_SYSROOT=iphonesimulator",
+                "-DCMAKE_OSX_SYSROOT=iphoneos",
                 "-DCMAKE_OSX_ARCHITECTURES=arm64",
-                *self._ios_backtrace_cmake_args(),
+                *self._ios_backtrace_cmake_args("iphoneos"),
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO",
                 "-DLVRS_BUILD_EXAMPLES=OFF",
@@ -969,6 +1282,8 @@ class BuildAll:
         ios_config = self._lvrs_cmake_dir(ios_prefix) / "LVRSConfig.cmake"
         if not ios_config.exists():
             raise CommandError(f"iOS LVRS install failed: {ios_config} was not generated.")
+        ios_sdk_marker.parent.mkdir(parents=True, exist_ok=True)
+        ios_sdk_marker.write_text("iphoneos\n", encoding="utf-8")
         return ios_prefix
 
     def task_host(self) -> TaskResult:
@@ -1060,9 +1375,13 @@ class BuildAll:
 
         try:
             self._reset_task_log(log_path)
-            self._clean_ios_simulator_app_best_effort(
+            ios_device = self._ensure_ios_device(task=task, log_path=log_path)
+            ios_device_id = ios_device["identifier"]
+            ios_arch = ios_device.get("architecture", "arm64") or "arm64"
+            self._uninstall_ios_app_best_effort(
                 task=task,
                 log_path=log_path,
+                device_identifier=ios_device_id,
                 bundle_id=self.ios_bundle_id,
             )
             self._clean_path(task=task, path=self.ios_project_dir, log_path=log_path)
@@ -1087,13 +1406,16 @@ class BuildAll:
                 f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
                 f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}",
                 "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_OSX_SYSROOT=iphonesimulator",
-                "-DCMAKE_OSX_ARCHITECTURES=arm64",
-                *self._ios_backtrace_cmake_args(),
-                "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO",
-                "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO",
+                "-DCMAKE_OSX_SYSROOT=iphoneos",
+                f"-DCMAKE_OSX_ARCHITECTURES={ios_arch}",
+                *self._ios_backtrace_cmake_args("iphoneos"),
+                "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE=Automatic",
                 f"-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER={self.ios_bundle_id}",
             ]
+            if self.ios_development_team:
+                ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={self.ios_development_team}")
+            if self.ios_code_sign_identity:
+                ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={self.ios_code_sign_identity}")
 
             lvrs_dir = self._lvrs_cmake_dir(ios_lvrs_prefix)
             if lvrs_dir.exists():
@@ -1105,7 +1427,92 @@ class BuildAll:
             if not xcode_project.exists():
                 raise CommandError(f"Xcode project was not generated: {xcode_project}")
 
-            return TaskResult(task, "success", f"Generated: {xcode_project}", log_path)
+            derived_data_dir = self.ios_project_dir / "derived-data"
+            self._clean_path(task=task, path=derived_data_dir, log_path=log_path)
+
+            xcodebuild_cmd = [
+                "xcodebuild",
+                "-project",
+                str(xcode_project),
+                "-scheme",
+                "WhatSon",
+                "-configuration",
+                "Release",
+                "-destination",
+                f"id={ios_device_id}",
+                "-derivedDataPath",
+                str(derived_data_dir),
+                "build",
+            ]
+            self._run(task=task, cmd=xcodebuild_cmd, log_path=log_path)
+
+            app_bundle_candidates = [
+                derived_data_dir / "Build" / "Products" / "Release-iphoneos" / "WhatSon.app",
+                self.ios_project_dir / "src" / "app" / "bin" / "Release" / "WhatSon.app",
+                self.ios_project_dir / "src" / "app" / "bin" / "Debug" / "WhatSon.app",
+            ]
+            app_bundle: Path = app_bundle_candidates[0]
+            for candidate in app_bundle_candidates:
+                if candidate.exists():
+                    app_bundle = candidate
+                    break
+            if not app_bundle.exists():
+                candidates = sorted(derived_data_dir.glob("Build/Products/*-iphoneos/WhatSon.app"))
+                if candidates:
+                    app_bundle = candidates[-1]
+            if not app_bundle.exists():
+                candidates = sorted((self.ios_project_dir / "src" / "app" / "bin").glob("**/WhatSon.app"))
+                if candidates:
+                    app_bundle = candidates[-1]
+            if not app_bundle.exists():
+                raise CommandError("iOS .app bundle was not generated for iphoneos.")
+
+            detected_bundle_id = self._read_bundle_id_from_app_bundle(app_bundle)
+            launch_bundle_id = detected_bundle_id or self.ios_bundle_id
+            if detected_bundle_id and detected_bundle_id != self.ios_bundle_id:
+                self._log(
+                    task,
+                    "Configured iOS bundle id differs from built app bundle id. "
+                    f"Using built bundle id for launch: {detected_bundle_id}",
+                )
+                with log_path.open("a", encoding="utf-8") as fp:
+                    fp.write(
+                        "# bundle-id-mismatch: "
+                        f"configured={self.ios_bundle_id}, built={detected_bundle_id}\n"
+                    )
+
+            xcrun = shutil.which("xcrun")
+            if not xcrun:
+                raise CommandError("xcrun was not found, cannot install .app on iOS device.")
+
+            self._run(
+                task=task,
+                cmd=[
+                    xcrun,
+                    "devicectl",
+                    "device",
+                    "install",
+                    "app",
+                    "--device",
+                    ios_device_id,
+                    str(app_bundle),
+                ],
+                log_path=log_path,
+            )
+            self._launch_ios_app_with_retry(
+                task=task,
+                log_path=log_path,
+                xcrun=xcrun,
+                ios_device_id=ios_device_id,
+                bundle_id=launch_bundle_id,
+            )
+
+            return TaskResult(
+                task,
+                "success",
+                f"Installed .app on iOS device {ios_device['name']} ({ios_device_id}): {app_bundle}",
+                log_path,
+            )
         except Exception as exc:  # noqa: BLE001
             return TaskResult(task, "failed", str(exc), log_path)
 
@@ -1151,6 +1558,8 @@ class BuildAll:
                     return TaskResult(task, "success", result, log_path)
 
             return TaskResult(task, "failed", "Android launch did not complete.", log_path)
+        except MissingPhysicalDeviceError as exc:
+            return TaskResult(task, "skipped", str(exc), log_path)
         except Exception as exc:  # noqa: BLE001
             return TaskResult(task, "failed", str(exc), log_path)
 
@@ -1311,10 +1720,10 @@ class BuildAll:
         pid_text = pid_probe.stdout.strip() if pid_probe.returncode == 0 else ""
         if pid_text:
             return (
-                f"Installed and launched on Android emulator ({launch_package}, pid={pid_text}). "
+                f"Installed and launched on Android device ({launch_package}, pid={pid_text}). "
                 f"Android Studio project: {studio_dir}"
             )
-        return f"Installed and launched on Android emulator ({launch_package}). Android Studio project: {studio_dir}"
+        return f"Installed and launched on Android device ({launch_package}). Android Studio project: {studio_dir}"
 
     def _find_android_gradle_dir(self) -> Optional[Path]:
         candidate_dirs = [
@@ -1466,8 +1875,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         parents=[pre_parser],
         description=(
-            "Build and run WhatSon on the current host, launch on Android emulator, "
-            "and generate iOS Xcode project in one automation entrypoint."
+            "Build and run WhatSon on the current host, launch on Android (emulator fallback enabled), "
+            "build/install .app on a connected iOS physical device, and export project artifacts."
         )
     )
     parser.add_argument("--root", default=str(repo_root), help="Repository root path.")
@@ -1521,6 +1930,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--android-ndk-root", default=_pick_setting("ANDROID_NDK_ROOT", dev_env_profile))
     parser.add_argument("--android-avd", default=_pick_setting("ANDROID_AVD", dev_env_profile))
     parser.add_argument(
+        "--android-allow-emulator",
+        dest="android_allow_emulator",
+        action="store_true",
+        default=True,
+        help="Allow Android emulator fallback when no physical device is connected (default: enabled).",
+    )
+    parser.add_argument(
+        "--android-physical-only",
+        dest="android_allow_emulator",
+        action="store_false",
+        help="Disable emulator fallback and require a connected Android physical device.",
+    )
+    parser.add_argument(
         "--android-package",
         default=_pick_setting("WHATSON_ANDROID_PACKAGE", dev_env_profile),
         help="Android application id/package. Auto-detected from platform AndroidManifest when omitted.",
@@ -1528,7 +1950,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ios-bundle-id",
         default=_pick_setting("WHATSON_APPLE_BUNDLE_ID", dev_env_profile, DEFAULT_APPLE_BUNDLE_ID),
-        help="iOS bundle identifier used for simulator clean and Xcode project generation.",
+        help="iOS bundle identifier used for .app install/launch on connected physical device.",
+    )
+    parser.add_argument(
+        "--ios-device",
+        default=_pick_setting("WHATSON_IOS_DEVICE", dev_env_profile),
+        help="Target iOS physical device identifier or device name. Auto-selects first connected device when omitted.",
+    )
+    parser.add_argument(
+        "--ios-development-team",
+        default=_pick_setting("WHATSON_IOS_DEVELOPMENT_TEAM", dev_env_profile),
+        help="Optional Apple Development Team ID for iOS code signing.",
+    )
+    parser.add_argument(
+        "--ios-code-sign-identity",
+        default=_pick_setting("WHATSON_IOS_CODE_SIGN_IDENTITY", dev_env_profile),
+        help="Optional iOS code signing identity (for example: Apple Development).",
     )
     parser.add_argument(
         "--java21-home",

@@ -30,8 +30,8 @@ Recommended commands:
 ```bash
 cmake -S . -B build
 cmake --build build --target WhatSon -j
-cmake --build build --target whats_on_daemon -j
-./build/src/daemon/whats_on_daemon --healthcheck
+cmake --build build --target WhatSon_daemon -j
+./build/src/daemon/WhatSon_daemon --healthcheck
 ./build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon
 ```
 
@@ -112,8 +112,8 @@ An exception is allowed only when all conditions are satisfied.
 
 1. `cmake -S . -B build` passes.
 2. `cmake --build build --target WhatSon -j` passes.
-3. `cmake --build build --target whats_on_daemon -j` passes.
-4. `build/src/daemon/whats_on_daemon --healthcheck` returns `status=ok`.
+3. `cmake --build build --target WhatSon_daemon -j` passes.
+4. `build/src/daemon/WhatSon_daemon --healthcheck` returns `status=ok`.
 5. Updated QML keeps consistent LVRS imports and component usage.
 
 ## Maintenance Rules

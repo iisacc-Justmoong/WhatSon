@@ -33,6 +33,12 @@ file(GLOB_RECURSE WHATSON_APP_SOURCE_FILES
 )
 list(SORT WHATSON_APP_SOURCE_FILES)
 
+if (APPLE)
+    list(FILTER WHATSON_APP_SOURCE_FILES EXCLUDE REGEX "ApplePermissionBridge_stub\\.cpp$")
+else ()
+    list(FILTER WHATSON_APP_SOURCE_FILES EXCLUDE REGEX "\\.(m|mm)$")
+endif ()
+
 if (NOT WHATSON_APP_SOURCE_FILES)
     message(FATAL_ERROR "No source files were discovered under src/app.")
 endif ()
@@ -89,7 +95,7 @@ if (NOT DEFINED WHATSON_ENTITLEMENTS)
     set(WHATSON_ENTITLEMENTS "${WHATSON_APPLE_DIR}/WhatSon.entitlements")
 endif ()
 if (NOT DEFINED WHATSON_APPLE_BUNDLE_ID)
-    set(WHATSON_APPLE_BUNDLE_ID "com.lvrs.whatson")
+    set(WHATSON_APPLE_BUNDLE_ID "com.iisacc.app.whatson")
 endif ()
 if (NOT DEFINED WHATSON_ANDROID_PACKAGE_ID)
     set(WHATSON_ANDROID_PACKAGE_ID "com.lvrs.whatson")
@@ -149,6 +155,105 @@ target_link_libraries(WhatSon
         Qt6::Quick
         Qt6::QuickControls2
 )
+
+if (APPLE)
+    find_library(WHATSON_EVENTKIT_FRAMEWORK EventKit)
+    if (WHATSON_EVENTKIT_FRAMEWORK)
+        target_link_libraries(WhatSon PRIVATE "${WHATSON_EVENTKIT_FRAMEWORK}")
+    endif ()
+
+    find_library(WHATSON_PHOTOS_FRAMEWORK Photos)
+    if (WHATSON_PHOTOS_FRAMEWORK)
+        target_link_libraries(WhatSon PRIVATE "${WHATSON_PHOTOS_FRAMEWORK}")
+    endif ()
+
+    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        find_library(WHATSON_APPLICATION_SERVICES_FRAMEWORK ApplicationServices)
+        if (WHATSON_APPLICATION_SERVICES_FRAMEWORK)
+            target_link_libraries(WhatSon PRIVATE "${WHATSON_APPLICATION_SERVICES_FRAMEWORK}")
+        endif ()
+    endif ()
+endif ()
+
+if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(_whatson_lvrs_qml_root "")
+    if (DEFINED LVRS_QML_MODULE_PATH AND EXISTS "${LVRS_QML_MODULE_PATH}/qmldir")
+        set(_whatson_lvrs_qml_root "${LVRS_QML_MODULE_PATH}")
+    elseif (DEFINED LVRS_ACTIVE_PREFIX AND EXISTS "${LVRS_ACTIVE_PREFIX}/lib/qt6/qml/LVRS/qmldir")
+        set(_whatson_lvrs_qml_root "${LVRS_ACTIVE_PREFIX}/lib/qt6/qml/LVRS")
+    endif ()
+
+    if (NOT _whatson_lvrs_qml_root STREQUAL "")
+        file(GLOB _whatson_lvrs_plugin_candidates
+                "${_whatson_lvrs_qml_root}/LVRSCoreplugin${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/${CMAKE_STATIC_LIBRARY_PREFIX}LVRSCoreplugin${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/Release/LVRSCoreplugin${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/Release/${CMAKE_STATIC_LIBRARY_PREFIX}LVRSCoreplugin${CMAKE_STATIC_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/LVRSCoreplugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/${CMAKE_SHARED_LIBRARY_PREFIX}LVRSCoreplugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/Release/LVRSCoreplugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+                "${_whatson_lvrs_qml_root}/Release/${CMAKE_SHARED_LIBRARY_PREFIX}LVRSCoreplugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        )
+
+        if (NOT _whatson_lvrs_plugin_candidates)
+            set(_whatson_lvrs_qmldir_override "")
+            if (EXISTS "${_whatson_lvrs_qml_root}/qmldir")
+                file(STRINGS "${_whatson_lvrs_qml_root}/qmldir" _whatson_lvrs_qmldir_lines)
+                set(_whatson_lvrs_qmldir_sanitized "")
+                foreach (_whatson_lvrs_qmldir_line IN LISTS _whatson_lvrs_qmldir_lines)
+                    if (_whatson_lvrs_qmldir_line MATCHES "^(linktarget|classname|plugin|optional plugin)[ ]")
+                        continue()
+                    endif ()
+                    string(APPEND _whatson_lvrs_qmldir_sanitized "${_whatson_lvrs_qmldir_line}\n")
+                endforeach ()
+                set(_whatson_lvrs_qmldir_override "${CMAKE_CURRENT_BINARY_DIR}/WhatSon_lvrs_fallback_qmldir")
+                file(WRITE "${_whatson_lvrs_qmldir_override}" "${_whatson_lvrs_qmldir_sanitized}")
+                set_source_files_properties("${_whatson_lvrs_qmldir_override}" PROPERTIES QT_RESOURCE_ALIAS "qmldir")
+            endif ()
+
+            file(GLOB_RECURSE _whatson_lvrs_qml_entries
+                    CONFIGURE_DEPENDS
+                    RELATIVE "${_whatson_lvrs_qml_root}"
+                    "${_whatson_lvrs_qml_root}/*"
+            )
+
+            set(_whatson_lvrs_qml_files)
+            foreach (_whatson_lvrs_entry IN LISTS _whatson_lvrs_qml_entries)
+                if (IS_DIRECTORY "${_whatson_lvrs_qml_root}/${_whatson_lvrs_entry}")
+                    continue()
+                endif ()
+                if (_whatson_lvrs_entry MATCHES "(^|/)\\.DS_Store$")
+                    continue()
+                endif ()
+                if (_whatson_lvrs_entry MATCHES "LVRSCore_qml_module_dir_map\\.qrc$")
+                    continue()
+                endif ()
+                if (_whatson_lvrs_entry STREQUAL "qmldir")
+                    if (NOT _whatson_lvrs_qmldir_override STREQUAL "")
+                        list(APPEND _whatson_lvrs_qml_files "${_whatson_lvrs_qmldir_override}")
+                    else ()
+                        list(APPEND _whatson_lvrs_qml_files "${_whatson_lvrs_qml_root}/${_whatson_lvrs_entry}")
+                    endif ()
+                    continue()
+                endif ()
+                list(APPEND _whatson_lvrs_qml_files "${_whatson_lvrs_qml_root}/${_whatson_lvrs_entry}")
+            endforeach ()
+
+            if (_whatson_lvrs_qml_files)
+                list(SORT _whatson_lvrs_qml_files)
+                message(STATUS "WhatSon iOS fallback: embedding LVRS QML module resources from ${_whatson_lvrs_qml_root}")
+                qt_add_resources(WhatSon "WhatSonLvrsIosFallbackModule"
+                        PREFIX
+                        "/qt/qml/LVRS"
+                        BASE
+                        "${_whatson_lvrs_qml_root}"
+                        FILES
+                        ${_whatson_lvrs_qml_files}
+                )
+            endif ()
+        endif ()
+    endif ()
+endif ()
 
 lvrs_configure_qml_app(WhatSon)
 

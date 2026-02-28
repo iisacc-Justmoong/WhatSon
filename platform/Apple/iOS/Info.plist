@@ -15,7 +15,7 @@
     <string>WhatSon</string>
 
     <key>CFBundleIdentifier</key>
-    <string>com.lvrs.whatson</string>
+    <string>com.iisacc.app.whatson</string>
 
     <key>CFBundleExecutable</key>
     <string>WhatSon</string>
@@ -49,6 +49,26 @@
 
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>WhatSon saves exported visuals and attachments to your photo library.</string>
+
+    <key>NSRemindersUsageDescription</key>
+    <string>WhatSon uses reminders to capture tasks and deadlines from your workspace.</string>
+
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>WhatSon needs full reminder access to create and update reminder items.</string>
+
+    <key>NSRemindersWriteOnlyUsageDescription</key>
+    <string>WhatSon needs write access to add reminders from created content.</string>
+
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>WhatSon uses local network discovery to connect nearby services.</string>
+
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_whatson._tcp.</string>
+    </array>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>WhatSon uses location while the app is active to personalize workspace context.</string>
 
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>WhatSon uses Bluetooth for nearby accessory and device integration.</string>

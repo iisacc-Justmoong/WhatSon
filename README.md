@@ -118,7 +118,7 @@ Use this only for diagnosis. Modern iOS simulator runtimes are arm64-only, so `x
 
 ```bash
 cmake --build build --target whatson_run_app
-./build/src/daemon/whats_on_daemon --healthcheck
+./build/src/daemon/WhatSon_daemon --healthcheck
 ```
 
 ## Unified Build And Launch Automation
@@ -126,8 +126,8 @@ cmake --build build --target whatson_run_app
 `scripts/build_all.py` is a single entrypoint that runs the currently validated workflow:
 
 - Build and launch on the current development machine.
-- Build, install, and launch on an Android emulator.
-- Generate an iOS Xcode project artifact.
+- Build, install, and launch on a connected Android physical device.
+- Build `.app`, install, and launch on a connected iOS physical device.
 - Export an Android Studio project artifact.
 
 Default run (parallel):
@@ -142,6 +142,7 @@ Task selection:
 python3 scripts/build_all.py --tasks host,android,ios
 python3 scripts/build_all.py --tasks host --no-host-run
 python3 scripts/build_all.py --tasks ios --sequential
+python3 scripts/build_all.py --tasks ios --ios-device "<UDID-or-Device-Name>"
 ```
 
 Behavior by OS:

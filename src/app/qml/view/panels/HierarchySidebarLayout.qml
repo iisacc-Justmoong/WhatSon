@@ -3,9 +3,9 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Item {
-    id: root
+    id: hierarchyView
 
-    readonly property int activeToolbarIndex: root.hierarchyStore ? root.hierarchyStore.activeIndex : -1
+    readonly property int activeToolbarIndex: hierarchyView.hierarchyStore ? hierarchyView.hierarchyStore.activeIndex : -1
     readonly property int availableContentWidth: Math.max(0, width - horizontalInset * 2)
     readonly property int contentWidth: Math.max(minContentWidth, availableContentWidth)
     readonly property int footerHeight: 24
@@ -18,14 +18,14 @@ Item {
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     readonly property int toolbarButtonSize: (typeof LV.Theme.gap20 === "number" && isFinite(LV.Theme.gap20)) ? LV.Theme.gap20 : 20
     readonly property int toolbarCount: toolbarIconNames.length
-    readonly property var toolbarIconNames: root.hierarchyStore ? root.hierarchyStore.toolbarIconNames : []
+    readonly property var toolbarIconNames: hierarchyView.hierarchyStore ? hierarchyView.hierarchyStore.toolbarIconNames : []
     readonly property var toolbarItems: {
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i)
             items.push({
                 "id": i,
                 "iconName": toolbarIconNames[i],
-                "selected": i === root.activeToolbarIndex
+                "selected": i === hierarchyView.activeToolbarIndex
             });
         return items;
     }
@@ -37,45 +37,49 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: root.panelColor
+        color: hierarchyView.panelColor
     }
     Item {
         id: hierarchyContents
 
         anchors.bottom: hierarchyFooter.top
         anchors.left: parent.left
-        anchors.leftMargin: root.horizontalInset
+        anchors.leftMargin: hierarchyView.horizontalInset
         anchors.right: parent.right
-        anchors.rightMargin: root.horizontalInset
+        anchors.rightMargin: hierarchyView.horizontalInset
         anchors.top: parent.top
-        anchors.topMargin: root.verticalInset
+        anchors.topMargin: hierarchyView.verticalInset
 
         LV.VStack {
             anchors.fill: parent
             spacing: LV.Theme.gap2
 
             LV.HierarchyToolbar {
+                id: hierarchyHeaderToolbar
+
                 Layout.alignment: Qt.AlignLeft
-                Layout.maximumWidth: root.minContentWidth
-                Layout.minimumWidth: root.minContentWidth
-                Layout.preferredHeight: root.toolbarButtonSize
-                Layout.preferredWidth: root.minContentWidth
-                activeButtonId: root.activeToolbarIndex
+                Layout.maximumWidth: hierarchyView.minContentWidth
+                Layout.minimumWidth: hierarchyView.minContentWidth
+                Layout.preferredHeight: hierarchyView.toolbarButtonSize
+                Layout.preferredWidth: hierarchyView.minContentWidth
+                activeButtonId: hierarchyView.activeToolbarIndex
                 backgroundColor: "transparent"
                 backgroundOpacity: 1.0
-                buttonItems: root.toolbarItems
+                buttonItems: hierarchyView.toolbarItems
                 horizontalPadding: 0
-                spacing: root.toolbarSpacing
+                spacing: hierarchyView.toolbarSpacing
                 verticalPadding: 0
 
                 onActiveChanged: function (button, buttonId, index) {
-                    if (index >= 0 && root.hierarchyStore && root.hierarchyStore.activeIndex !== index)
-                        root.hierarchyStore.activeIndex = index;
+                    if (index >= 0 && hierarchyView.hierarchyStore && hierarchyView.hierarchyStore.activeIndex !== index)
+                        hierarchyView.hierarchyStore.activeIndex = index;
                 }
             }
             LV.InputField {
+                id: searchBar
+
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.searchHeight
+                Layout.preferredHeight: hierarchyView.searchHeight
                 mode: searchMode
             }
             Flickable {
@@ -97,7 +101,7 @@ Item {
                     width: hierarchyViewport.width
 
                     Repeater {
-                        model: root.hierarchyStore ? root.hierarchyStore.itemModel : null
+                        model: hierarchyView.hierarchyStore ? hierarchyView.hierarchyStore.itemModel : null
 
                         delegate: LV.HierarchyItem {
                             baseLeftPadding: LV.Theme.gap8
@@ -114,7 +118,7 @@ Item {
                             rowBackgroundColor: "transparent"
                             rowBackgroundColorHover: "transparent"
                             rowBackgroundColorPressed: "transparent"
-                            rowHeight: root.rowHeight
+                            rowHeight: hierarchyView.rowHeight
                             rowRightPadding: LV.Theme.gap8
                             showChevron: model.showChevron
                             textColorNormal: model.accent ? LV.Theme.accentBlue : LV.Theme.bodyColor
@@ -124,40 +128,33 @@ Item {
             }
         }
     }
-    Item {
+    LV.ListFooter {
         id: hierarchyFooter
 
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.verticalInset
+        anchors.bottomMargin: hierarchyView.verticalInset
         anchors.left: parent.left
-        anchors.leftMargin: root.horizontalInset
-        height: root.footerHeight
-        width: Math.min(root.footerWidth, root.contentWidth)
-
-        LV.HStack {
-            anchors.bottomMargin: LV.Theme.gap2
-            anchors.fill: parent
-            anchors.leftMargin: LV.Theme.gap2
-            anchors.rightMargin: LV.Theme.gap2
-            anchors.topMargin: LV.Theme.gap2
-            spacing: 0
-
-            LV.IconButton {
-                backgroundColor: "transparent"
-                iconName: "addFile"
-                tone: LV.AbstractButton.Borderless
-            }
-            LV.IconButton {
-                backgroundColor: "transparent"
-                iconName: "generaldelete"
-                tone: LV.AbstractButton.Borderless
-            }
-            LV.IconMenuButton {
-                backgroundColor: LV.Theme.panelBackground12
-                cornerRadius: LV.Theme.radiusSm
-                iconName: "settings"
-                tone: LV.AbstractButton.Default
-            }
-        }
+        anchors.leftMargin: hierarchyView.horizontalInset
+        button1: ({
+                "type": "icon",
+                "iconName": "addFile",
+                "tone": LV.AbstractButton.Borderless
+            })
+        button2: ({
+                "type": "icon",
+                "iconName": "generaldelete",
+                "tone": LV.AbstractButton.Borderless
+            })
+        button3: ({
+                "type": "menu",
+                "iconName": "settings",
+                "tone": LV.AbstractButton.Default,
+                "backgroundColor": LV.Theme.panelBackground12,
+                "cornerRadius": LV.Theme.radiusSm
+            })
+        height: hierarchyView.footerHeight
+        horizontalPadding: LV.Theme.gap2
+        verticalPadding: LV.Theme.gap2
+        width: Math.min(hierarchyView.footerWidth, hierarchyView.contentWidth)
     }
 }

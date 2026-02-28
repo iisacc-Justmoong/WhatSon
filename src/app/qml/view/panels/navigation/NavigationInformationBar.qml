@@ -2,18 +2,25 @@ import QtQuick
 import LVRS 1.0 as LV
 
 LV.HStack {
-    id: root
+    id: informationBar
+
+    property bool compactMode: false
 
     spacing: 4
 
     LV.IconButton {
+        id: sidebarControlButton
+
         height: 20
         iconName: "columnIndex"
         iconSize: 16
         tone: LV.AbstractButton.Borderless
+        visible: !informationBar.compactMode
         width: 20
     }
     LV.IconButton {
+        id: profileButton
+
         height: 20
         iconName: "loggedInUser"
         iconSize: 16
@@ -21,10 +28,13 @@ LV.HStack {
         width: 20
     }
     LV.IconButton {
+        id: syncButton
+
         height: 20
         iconName: "syncFiles"
         iconSize: 16
         tone: LV.AbstractButton.Borderless
+        visible: !informationBar.compactMode
         width: 20
     }
 }

@@ -3,10 +3,17 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Rectangle {
-    id: root
+    id: statusBar
 
-    signal windowMoveRequested()
-
+    property int compactBottomInset: compactHorizontalInset
+    property color compactFieldColor: LV.Theme.panelBackground10
+    property int compactFieldHeight: 18
+    property int compactHorizontalInset: Math.max(12, Math.min(24, Math.round(width * 0.04)))
+    property bool compactMode: false
+    property int compactNewFileSlotWidth: 36
+    property int compactToolbarHeight: 20
+    property string compactToolbarText: "Placeholder"
+    readonly property int effectivePanelHeight: compactMode ? (compactBottomInset + compactToolbarHeight) : panelHeight
     property color panelColor: "#262728"
     property int panelHeight: 36
     readonly property color searchFieldColor: "#343536"
@@ -24,58 +31,130 @@ Rectangle {
     readonly property color searchInputColor: Qt.rgba(1, 1, 1, 0.9)
     property string searchPlaceholder: "Search"
 
+    signal windowMoveRequested
+
     Layout.fillWidth: true
-    Layout.preferredHeight: root.panelHeight
+    Layout.preferredHeight: statusBar.effectivePanelHeight
     clip: true
-    color: root.panelColor
+    color: statusBar.compactMode ? "transparent" : statusBar.panelColor
+
+    Component.onCompleted: {
+        if (!statusBar.compactMode)
+            return;
+        compactSearchTextField.cursorPosition = compactSearchTextField.text.length;
+    }
 
     LV.InputField {
-        id: searchField
+        id: searchBarTextField
 
         anchors.centerIn: parent
-        height: root.searchFieldHeight
-        width: root.searchFieldWidth
-        backgroundColor: root.searchFieldColor
-        backgroundColorDisabled: root.searchFieldColor
-        backgroundColorFocused: root.searchFieldColor
+        backgroundColor: statusBar.searchFieldColor
+        backgroundColorDisabled: statusBar.searchFieldColor
+        backgroundColorFocused: statusBar.searchFieldColor
         clearButtonVisible: true
         cornerRadius: 5
-        fieldMinHeight: root.searchFieldHeight
+        fieldMinHeight: statusBar.searchFieldHeight
+        height: statusBar.searchFieldHeight
         insetHorizontal: 7
         insetVertical: 3
         mode: searchMode
-        placeholder: root.searchPlaceholder
-        placeholderColor: root.searchHintColor
+        placeholder: statusBar.searchPlaceholder
+        placeholderColor: statusBar.searchHintColor
         sideSpacing: 6
-        textColor: root.searchInputColor
+        textColor: statusBar.searchInputColor
+        visible: !statusBar.compactMode
+        width: statusBar.searchFieldWidth
     }
     Item {
+        id: windowControlsHitArea
+
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.right: searchField.left
+        anchors.right: searchBarTextField.left
         anchors.top: parent.top
+        visible: !statusBar.compactMode
 
         MouseArea {
-            anchors.fill: parent
             acceptedButtons: Qt.LeftButton
+            anchors.fill: parent
+
             onPressed: function (mouse) {
                 if (mouse.button === Qt.LeftButton)
-                    root.windowMoveRequested();
+                    statusBar.windowMoveRequested();
             }
         }
     }
     Item {
+        id: windowControlIconsHitArea
+
         anchors.bottom: parent.bottom
-        anchors.left: searchField.right
+        anchors.left: searchBarTextField.right
         anchors.right: parent.right
         anchors.top: parent.top
+        visible: !statusBar.compactMode
 
         MouseArea {
-            anchors.fill: parent
             acceptedButtons: Qt.LeftButton
+            anchors.fill: parent
+
             onPressed: function (mouse) {
                 if (mouse.button === Qt.LeftButton)
-                    root.windowMoveRequested();
+                    statusBar.windowMoveRequested();
+            }
+        }
+    }
+    Item {
+        id: compactStatusBar
+
+        anchors.fill: parent
+        visible: statusBar.compactMode
+
+        LV.HStack {
+            id: compactSearchBar
+
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: statusBar.compactBottomInset
+            anchors.left: parent.left
+            anchors.leftMargin: statusBar.compactHorizontalInset
+            anchors.right: parent.right
+            anchors.rightMargin: statusBar.compactHorizontalInset
+            anchors.top: parent.top
+            spacing: 0
+
+            LV.InputField {
+                id: compactSearchTextField
+
+                Layout.alignment: Qt.AlignVCenter
+                Layout.fillWidth: true
+                backgroundColor: statusBar.compactFieldColor
+                backgroundColorDisabled: statusBar.compactFieldColor
+                backgroundColorFocused: statusBar.compactFieldColor
+                clearButtonVisible: true
+                cornerRadius: 5
+                fieldMinHeight: statusBar.compactFieldHeight
+                height: statusBar.compactFieldHeight
+                insetHorizontal: 7
+                insetVertical: 3
+                placeholder: "Placeholder"
+                sideSpacing: 6
+                text: statusBar.compactToolbarText
+            }
+            Item {
+                id: newFileButtonSlot
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: statusBar.compactNewFileSlotWidth
+
+                LV.IconButton {
+                    id: newFileButton
+
+                    anchors.centerIn: parent
+                    height: 20
+                    iconName: "addFile"
+                    iconSize: 16
+                    tone: LV.AbstractButton.Borderless
+                    width: 20
+                }
             }
         }
     }

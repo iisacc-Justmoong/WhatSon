@@ -5,13 +5,15 @@ import LVRS 1.0 as LV
 import "view/panels" as BodyPanelView
 
 LV.ApplicationWindow {
-    id: window
+    id: applicationWindow
 
+    readonly property bool adaptiveCompactMode: matchesMedia("mobile") || matchesMedia("compact")
+    readonly property int adaptiveStatusBarHeight: adaptiveCompactMode ? 0 : statusBarHeight
     readonly property int baseDrawerHeight: 255
     readonly property int baseListViewWidth: 198
     readonly property int baseRightPanelWidth: 194
     readonly property int baseSidebarWidth: minSidebarWidth
-    readonly property int bodyHeight: Math.max(0, height - statusBarHeight - navigationBarHeight)
+    readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: "#445066"
     readonly property int bodySplitterThickness: 1
     readonly property color canvasColor: "#1b1b1c"
@@ -39,7 +41,7 @@ LV.ApplicationWindow {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : 152;
         return Math.max(152, toolbarWidth + hierarchyHorizontalInset * 2);
     }
-    readonly property color navigationBarColor: LV.Theme.panelBackground06
+    readonly property color navigationBarColor: LV.Theme.panelBackground05
     readonly property int navigationBarHeight: 24
     property bool onboardingVisible: false
     property int preferredDrawerHeight: baseDrawerHeight
@@ -65,19 +67,19 @@ LV.ApplicationWindow {
     autoAttachRuntimeEvents: false
     height: 748
     minimumHeight: 420
-    minimumWidth: isMobilePlatform ? 360 : desktopMinimumBodyWidth
+    minimumWidth: adaptiveCompactMode ? 360 : desktopMinimumBodyWidth
     navItems: []
     navigationEnabled: false
     visible: true
     width: 1265
     windowColor: "#141414"
-    windowDragHandleEnabled: !isMobilePlatform
+    windowDragHandleEnabled: false
     windowDragHandleHeight: navigationBarHeight
     windowDragHandleTopMargin: statusBarHeight
 
     Component.onCompleted: {
         clampPreferredSizes();
-        if (window.onboardingVisible)
+        if (applicationWindow.onboardingVisible)
             onboardingSubWindow.show();
     }
     onBodyHeightChanged: clampPreferredSizes()
@@ -88,106 +90,108 @@ LV.ApplicationWindow {
 
         Rectangle {
             anchors.fill: parent
-            color: window.canvasColor
+            color: applicationWindow.canvasColor
         }
         LV.VStack {
+            id: vStack
+
             anchors.fill: parent
             spacing: 0
 
             BodyPanelView.StatusBarLayout {
-                panelColor: window.statusBarColor
-                panelHeight: window.statusBarHeight
+                id: statusBar
+
+                Layout.preferredHeight: visible ? panelHeight : 0
+                compactMode: false
+                panelColor: applicationWindow.statusBarColor
+                panelHeight: applicationWindow.statusBarHeight
+                visible: !applicationWindow.adaptiveCompactMode
 
                 onWindowMoveRequested: {
-                    window.requestWindowMove();
+                    applicationWindow.requestWindowMove();
                 }
             }
             BodyPanelView.NavigationBarLayout {
-                panelColor: window.navigationBarColor
-                panelHeight: window.navigationBarHeight
+                id: navigationBar
+
+                compactMode: applicationWindow.adaptiveCompactMode
+                panelColor: applicationWindow.navigationBarColor
+                panelHeight: applicationWindow.navigationBarHeight
             }
-            Loader {
+            BodyPanelView.BodyLayout {
+                id: hStack
+
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                sourceComponent: window.isMobilePlatform ? mobileBodyComponent : desktopBodyComponent
-            }
-        }
-    }
-    Component {
-        id: mobileBodyComponent
+                compactCanvasColor: applicationWindow.canvasColor
+                compactMode: applicationWindow.adaptiveCompactMode
+                contentPanelColor: applicationWindow.contentPanelColor
+                contentsDisplayColor: applicationWindow.contentsDisplayColor
+                drawerColor: applicationWindow.drawerColor
+                drawerHeight: applicationWindow.drawerHeight
+                listViewColor: applicationWindow.listViewColor
+                listViewWidth: applicationWindow.listViewWidth
+                minContentWidth: applicationWindow.minContentWidth
+                minDisplayHeight: applicationWindow.minDisplayHeight
+                minDrawerHeight: applicationWindow.minDrawerHeight
+                minListViewWidth: applicationWindow.minListViewWidth
+                minRightPanelWidth: applicationWindow.minRightPanelWidth
+                minSidebarWidth: applicationWindow.minSidebarWidth
+                rightPanelColor: applicationWindow.rightPanelColor
+                rightPanelWidth: applicationWindow.rightPanelWidth
+                sidebarColor: applicationWindow.sidebarColor
+                sidebarWidth: applicationWindow.sidebarWidth
+                splitterColor: applicationWindow.bodySplitterColor
+                splitterThickness: applicationWindow.bodySplitterThickness
 
-        BodyPanelView.ContentViewLayout {
-            displayColor: window.contentsDisplayColor
-            drawerColor: window.contentsDisplayColor
-            drawerHeight: 0
-            minDisplayHeight: 0
-            minDrawerHeight: 0
-            panelColor: window.contentPanelColor
-            splitterHandleThickness: 0
-            splitterThickness: 0
-        }
-    }
-    Component {
-        id: desktopBodyComponent
+                onDrawerHeightDragRequested: function (value) {
+                    if (value !== applicationWindow.preferredDrawerHeight)
+                        applicationWindow.preferredDrawerHeight = value;
+                }
+                onListViewWidthDragRequested: function (value) {
+                    if (value !== applicationWindow.preferredListViewWidth)
+                        applicationWindow.preferredListViewWidth = value;
+                }
+                onRightPanelWidthDragRequested: function (value) {
+                    if (value !== applicationWindow.preferredRightPanelWidth)
+                        applicationWindow.preferredRightPanelWidth = value;
+                }
+                onSidebarWidthDragRequested: function (value) {
+                    if (value !== applicationWindow.preferredSidebarWidth)
+                        applicationWindow.preferredSidebarWidth = value;
+                }
+            }
+            BodyPanelView.StatusBarLayout {
+                id: mobileStatusBar
 
-        BodyPanelView.BodyLayout {
-            contentPanelColor: window.contentPanelColor
-            contentsDisplayColor: window.contentsDisplayColor
-            drawerColor: window.drawerColor
-            drawerHeight: window.drawerHeight
-            listViewColor: window.listViewColor
-            listViewWidth: window.listViewWidth
-            minContentWidth: window.minContentWidth
-            minDisplayHeight: window.minDisplayHeight
-            minDrawerHeight: window.minDrawerHeight
-            minListViewWidth: window.minListViewWidth
-            minRightPanelWidth: window.minRightPanelWidth
-            minSidebarWidth: window.minSidebarWidth
-            rightPanelColor: window.rightPanelColor
-            rightPanelWidth: window.rightPanelWidth
-            sidebarColor: window.sidebarColor
-            sidebarWidth: window.sidebarWidth
-            splitterColor: window.bodySplitterColor
-            splitterThickness: window.bodySplitterThickness
-
-            onDrawerHeightDragRequested: function (value) {
-                if (value !== window.preferredDrawerHeight)
-                    window.preferredDrawerHeight = value;
-            }
-            onListViewWidthDragRequested: function (value) {
-                if (value !== window.preferredListViewWidth)
-                    window.preferredListViewWidth = value;
-            }
-            onRightPanelWidthDragRequested: function (value) {
-                if (value !== window.preferredRightPanelWidth)
-                    window.preferredRightPanelWidth = value;
-            }
-            onSidebarWidthDragRequested: function (value) {
-                if (value !== window.preferredSidebarWidth)
-                    window.preferredSidebarWidth = value;
+                Layout.preferredHeight: visible ? effectivePanelHeight : 0
+                compactMode: true
+                panelColor: applicationWindow.statusBarColor
+                panelHeight: applicationWindow.statusBarHeight
+                visible: applicationWindow.adaptiveCompactMode
             }
         }
     }
     Window {
         id: onboardingSubWindow
 
-        color: window.windowColor
+        color: applicationWindow.windowColor
         flags: Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
         height: 420
         minimumHeight: 360
         minimumWidth: 520
         modality: Qt.ApplicationModal
         title: "WhatSon Onboarding"
-        transientParent: window
+        transientParent: applicationWindow
         visible: false
         width: 560
-        x: window.x + Math.round((window.width - width) / 2)
-        y: window.y + Math.round((window.height - height) / 2)
+        x: applicationWindow.x + Math.round((applicationWindow.width - width) / 2)
+        y: applicationWindow.y + Math.round((applicationWindow.height - height) / 2)
 
         onVisibleChanged: {
             if (visible) {
-                x = window.x + Math.round((window.width - width) / 2);
-                y = window.y + Math.round((window.height - height) / 2);
+                x = applicationWindow.x + Math.round((applicationWindow.width - width) / 2);
+                y = applicationWindow.y + Math.round((applicationWindow.height - height) / 2);
             }
         }
 
@@ -195,11 +199,11 @@ LV.ApplicationWindow {
             anchors.fill: parent
 
             onCreateFileRequested: {
-                window.onboardingVisible = false;
+                applicationWindow.onboardingVisible = false;
                 onboardingSubWindow.close();
             }
             onSelectFileRequested: {
-                window.onboardingVisible = false;
+                applicationWindow.onboardingVisible = false;
                 onboardingSubWindow.close();
             }
         }

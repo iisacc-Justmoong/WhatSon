@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Item {
-    id: root
+    id: contentsView
 
     property color displayColor: "#495473"
     property color drawerColor: "#665d47"
@@ -18,8 +18,8 @@ Item {
     signal drawerHeightDragRequested(int value)
 
     function clampDrawerHeight(value) {
-        var maxDrawer = Math.max(root.minDrawerHeight, root.height - root.minDisplayHeight - root.splitterThickness);
-        return Math.max(root.minDrawerHeight, Math.min(maxDrawer, value));
+        var maxDrawer = Math.max(contentsView.minDrawerHeight, contentsView.height - contentsView.minDisplayHeight - contentsView.splitterThickness);
+        return Math.max(contentsView.minDrawerHeight, Math.min(maxDrawer, value));
     }
 
     Layout.fillHeight: true
@@ -28,28 +28,32 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: root.panelColor
+        color: contentsView.panelColor
     }
     LV.VStack {
+        id: drawerView
+
         anchors.fill: parent
         spacing: 0
 
         Rectangle {
+            id: contentsDisplayView
+
             Layout.fillHeight: true
             Layout.fillWidth: true
-            color: root.displayColor
+            color: contentsView.displayColor
         }
         Rectangle {
-            id: horizontalSplitter
+            id: drawerSplitter
 
             Layout.fillWidth: true
-            Layout.preferredHeight: root.splitterThickness
-            color: root.splitterColor
+            Layout.preferredHeight: contentsView.splitterThickness
+            color: contentsView.splitterColor
 
             MouseArea {
-                id: splitterMouse
+                id: drawerSplitterMouse
 
-                property int dragStartDrawerHeight: root.drawerHeight
+                property int dragStartDrawerHeight: contentsView.drawerHeight
                 property real dragStartGlobalY: 0
 
                 acceptedButtons: Qt.LeftButton
@@ -57,29 +61,31 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 cursorShape: Qt.SizeVerCursor
-                height: root.splitterHandleThickness
+                height: contentsView.splitterHandleThickness
                 preventStealing: true
 
                 onPositionChanged: function (mouse) {
                     if (!(pressedButtons & Qt.LeftButton))
                         return;
-                    var movePoint = splitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                    var movePoint = drawerSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
                     var deltaY = movePoint.y - dragStartGlobalY;
-                    var nextDrawerHeight = root.clampDrawerHeight(dragStartDrawerHeight - deltaY);
-                    if (nextDrawerHeight !== root.drawerHeight)
-                        root.drawerHeightDragRequested(nextDrawerHeight);
+                    var nextDrawerHeight = contentsView.clampDrawerHeight(dragStartDrawerHeight - deltaY);
+                    if (nextDrawerHeight !== contentsView.drawerHeight)
+                        contentsView.drawerHeightDragRequested(nextDrawerHeight);
                 }
                 onPressed: function (mouse) {
-                    var pressPoint = splitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
+                    var pressPoint = drawerSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
                     dragStartGlobalY = pressPoint.y;
-                    dragStartDrawerHeight = root.drawerHeight;
+                    dragStartDrawerHeight = contentsView.drawerHeight;
                 }
             }
         }
         Rectangle {
+            id: drawer
+
             Layout.fillWidth: true
-            Layout.preferredHeight: root.clampDrawerHeight(root.drawerHeight)
-            color: root.drawerColor
+            Layout.preferredHeight: contentsView.clampDrawerHeight(contentsView.drawerHeight)
+            color: contentsView.drawerColor
         }
     }
 }

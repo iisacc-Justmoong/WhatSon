@@ -7,8 +7,8 @@ This file records the standard Codex initialization (`/init`) procedure for this
 ```bash
 cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
 cmake --build build --target WhatSon -j
-cmake --build build --target whats_on_daemon -j
-./build/src/daemon/whats_on_daemon --healthcheck
+cmake --build build --target WhatSon_daemon -j
+./build/src/daemon/WhatSon_daemon --healthcheck
 cmake --build build --target run_WhatSon
 ```
 
@@ -16,7 +16,7 @@ cmake --build build --target run_WhatSon
 
 - Configure succeeds
 - `WhatSon` build succeeds
-- `whats_on_daemon` build succeeds
+- `WhatSon_daemon` build succeeds
 - Healthcheck output: `status=ok`
 
 ## Notes
