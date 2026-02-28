@@ -100,7 +100,16 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/body/BodyLayout.qml`
     - `src/app/qml/view/body/HierarchySidebarLayout.qml`
     - `src/app/qml/view/body/ContentViewLayout.qml`
-    - `src/app/qml/view/panels/sidebar/LibraryView.qml`
+    - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
+    - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
+    - `src/app/qml/view/panels/sidebar/LibraryView.qml` (compatibility wrapper)
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`
