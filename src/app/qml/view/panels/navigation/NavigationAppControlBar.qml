@@ -6,13 +6,25 @@ LV.HStack {
 
     spacing: 2
 
-    NavigationIconButton {
-        iconToken: "pin"
+    LV.IconButton {
+        height: 20
+        iconName: "pin"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "toolwindownotifications"
+    LV.IconButton {
+        height: 20
+        iconName: "toolwindownotifications"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "startTimer"
+    LV.IconButton {
+        height: 20
+        iconName: "startTimer"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
 }

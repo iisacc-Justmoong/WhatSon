@@ -6,13 +6,25 @@ LV.HStack {
 
     spacing: 2
 
-    NavigationIconButton {
-        iconToken: "generalexport"
+    LV.IconButton {
+        height: 20
+        iconName: "generalupload"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "generalprint"
+    LV.IconButton {
+        height: 20
+        iconName: "generalprint"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "mailer"
+    LV.IconButton {
+        height: 20
+        iconName: "mailer"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
 }

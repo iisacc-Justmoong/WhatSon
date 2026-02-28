@@ -74,7 +74,7 @@ void SidebarHierarchyStoreTest::metadata_matchesSectionModels()
 
     const QStringList expectedIcons = {
         QStringLiteral("nodeslibraryFolder"),
-        QStringLiteral("generalprojectStructure"),
+        QStringLiteral("table"),
         QStringLiteral("bookmarksbookmarksList"),
         QStringLiteral("vcscurrentBranch"),
         QStringLiteral("imageToImage"),

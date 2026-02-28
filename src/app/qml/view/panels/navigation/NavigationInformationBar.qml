@@ -6,13 +6,25 @@ LV.HStack {
 
     spacing: 4
 
-    NavigationIconButton {
-        iconToken: "generalprojectStructure"
+    LV.IconButton {
+        height: 20
+        iconName: "columnIndex"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "loggedInUser"
+    LV.IconButton {
+        height: 20
+        iconName: "loggedInUser"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "syncFiles"
+    LV.IconButton {
+        height: 20
+        iconName: "syncFiles"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
 }

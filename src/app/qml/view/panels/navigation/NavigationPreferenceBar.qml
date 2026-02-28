@@ -6,10 +6,18 @@ LV.HStack {
 
     spacing: 2
 
-    NavigationIconButton {
-        iconToken: "audioToAudio"
+    LV.IconButton {
+        height: 20
+        iconName: "audioToAudio"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "swapPanels"
+    LV.IconButton {
+        height: 20
+        iconName: "columnIndex"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
 }

@@ -6,7 +6,11 @@ LV.HStack {
 
     spacing: 0
 
-    NavigationIconButton {
-        iconToken: "addFile"
+    LV.IconButton {
+        height: 20
+        iconName: "addFile"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
 }

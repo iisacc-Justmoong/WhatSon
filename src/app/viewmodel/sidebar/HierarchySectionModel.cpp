@@ -45,7 +45,7 @@ QString ProjectsModel::sectionName() const
 
 QString ProjectsModel::toolbarIconName() const
 {
-    return QStringLiteral("generalprojectStructure");
+    return QStringLiteral("table");
 }
 
 QVector<SidebarHierarchyItem> ProjectsModel::items() const

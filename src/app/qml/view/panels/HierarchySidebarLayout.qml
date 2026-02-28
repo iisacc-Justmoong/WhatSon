@@ -134,36 +134,30 @@ Item {
         height: root.footerHeight
         width: Math.min(root.footerWidth, root.contentWidth)
 
-        LV.ListFooter {
+        LV.HStack {
+            anchors.bottomMargin: LV.Theme.gap2
             anchors.fill: parent
-            button1: ({
-                    "type": "icon",
-                    "iconName": "addFile",
-                    "tone": LV.AbstractButton.Borderless,
-                    "backgroundColor": "transparent",
-                    "backgroundColorHover": LV.Theme.surfaceAlt,
-                    "backgroundColorPressed": LV.Theme.surfaceAlt
-                })
-            button2: ({
-                    "type": "icon",
-                    "iconName": "generaldelete",
-                    "tone": LV.AbstractButton.Borderless,
-                    "backgroundColor": "transparent",
-                    "backgroundColorHover": LV.Theme.surfaceAlt,
-                    "backgroundColorPressed": LV.Theme.surfaceAlt
-                })
-            button3: ({
-                    "type": "menu",
-                    "iconName": "settings",
-                    "tone": LV.AbstractButton.Default,
-                    "backgroundColor": LV.Theme.panelBackground12,
-                    "backgroundColorHover": LV.Theme.panelBackground12,
-                    "backgroundColorPressed": LV.Theme.panelBackground12,
-                    "cornerRadius": LV.Theme.radiusSm
-                })
-            horizontalPadding: LV.Theme.gap2
+            anchors.leftMargin: LV.Theme.gap2
+            anchors.rightMargin: LV.Theme.gap2
+            anchors.topMargin: LV.Theme.gap2
             spacing: 0
-            verticalPadding: LV.Theme.gap2
+
+            LV.IconButton {
+                backgroundColor: "transparent"
+                iconName: "addFile"
+                tone: LV.AbstractButton.Borderless
+            }
+            LV.IconButton {
+                backgroundColor: "transparent"
+                iconName: "generaldelete"
+                tone: LV.AbstractButton.Borderless
+            }
+            LV.IconMenuButton {
+                backgroundColor: LV.Theme.panelBackground12
+                cornerRadius: LV.Theme.radiusSm
+                iconName: "settings"
+                tone: LV.AbstractButton.Default
+            }
         }
     }
 }

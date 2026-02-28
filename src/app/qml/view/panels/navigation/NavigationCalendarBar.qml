@@ -6,19 +6,39 @@ LV.HStack {
 
     spacing: 2
 
-    NavigationIconButton {
-        iconToken: "toolwindowtodo"
+    LV.IconButton {
+        height: 20
+        iconName: "toolWindowCheckDetails"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "toolWindowClock"
+    LV.IconButton {
+        height: 20
+        iconName: "newUIlightThemeSelected"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "structureListView"
+    LV.IconButton {
+        height: 20
+        iconName: "table"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "bookmarksbookmarksList"
+    LV.IconButton {
+        height: 20
+        iconName: "pnpm"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
-    NavigationIconButton {
-        iconToken: "generalprojectStructure"
+    LV.IconButton {
+        height: 20
+        iconName: "runshowCurrentFrame"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
     }
 }
