@@ -1,3 +1,4 @@
+#include "hierarchy/library/LibraryHierarchyViewModel.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
 
@@ -259,7 +260,9 @@ int main(int argc, char* argv[])
 
     QQmlApplicationEngine engine;
     SidebarHierarchyStore sidebarHierarchyStore;
+    LibraryHierarchyViewModel libraryHierarchyViewModel;
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyStore"), &sidebarHierarchyStore);
+    engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
 
     QObject::connect(
         &engine,

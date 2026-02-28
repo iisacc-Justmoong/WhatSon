@@ -14,6 +14,7 @@ every turn.
 - Daemon entry: `src/daemon/main.cpp`
 - Root build definition: `CMakeLists.txt`
 - Primary QML root: `src/app/qml/Main.qml`
+- Library hierarchy backend: `src/app/file/hierarchy/library`
 
 ## Codex Init (`/init`) Procedure
 
@@ -47,10 +48,10 @@ find_package(LVRS CONFIG REQUIRED)
 
 qt_add_executable(WhatSon main.cpp)
 qt_add_qml_module(WhatSon
-    URI WhatSon.App
-    VERSION 1.0
-    RESOURCE_PREFIX "/qt/qml"
-    QML_FILES
+        URI WhatSon.App
+        VERSION 1.0
+        RESOURCE_PREFIX "/qt/qml"
+        QML_FILES
         qml/Main.qml
 )
 
@@ -91,6 +92,7 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/body/BodyLayout.qml`
     - `src/app/qml/view/body/HierarchySidebarLayout.qml`
     - `src/app/qml/view/body/ContentViewLayout.qml`
+    - `src/app/qml/view/sidebar/LibraryView.qml`
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`

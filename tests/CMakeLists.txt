@@ -40,6 +40,25 @@ target_link_libraries(whatson_sidebar_store_tests
 add_test(NAME whatson_sidebar_store_tests COMMAND whatson_sidebar_store_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_store_tests)
 
+add_executable(whatson_library_hierarchy_tests
+        app/test_library_hierarchy_view_model.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyViewModel.cpp
+)
+set_target_properties(whatson_library_hierarchy_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_library_hierarchy_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
+)
+target_link_libraries(whatson_library_hierarchy_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_library_hierarchy_tests COMMAND whatson_library_hierarchy_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
+
 if (WHATSON_TEST_TARGETS)
     add_custom_target(whatson_tests DEPENDS ${WHATSON_TEST_TARGETS})
 endif ()
