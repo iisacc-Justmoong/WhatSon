@@ -57,7 +57,6 @@
 *.*#
 core
 !core/
-tags
 .DS_Store
 .directory
 *.debug

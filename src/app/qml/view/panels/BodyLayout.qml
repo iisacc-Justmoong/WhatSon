@@ -221,13 +221,13 @@ Item {
                     }
                 }
             }
-            Rectangle {
+            DetailPanelLayout {
                 id: rightPanel
 
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.minRightPanelWidth
                 Layout.preferredWidth: hStack.rightPanelWidth
-                color: hStack.rightPanelColor
+                panelColor: hStack.rightPanelColor
                 visible: hStack.rightVisible
             }
         }
