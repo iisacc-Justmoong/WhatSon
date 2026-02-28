@@ -27,7 +27,7 @@ LV.ApplicationWindow {
     readonly property int hierarchyHorizontalInset: LV.Theme.gap8
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
-    readonly property var hierarchyToolbarIconNames: (typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore && sidebarHierarchyStore.toolbarIconNames) ? sidebarHierarchyStore.toolbarIconNames : []
+    readonly property var hierarchyToolbarIconNames: (typeof sidebarSelectionStore !== "undefined" && sidebarSelectionStore && sidebarSelectionStore.toolbarIconNames) ? sidebarSelectionStore.toolbarIconNames : ((typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore && sidebarHierarchyStore.toolbarIconNames) ? sidebarHierarchyStore.toolbarIconNames : [])
     readonly property int hierarchyToolbarSpacing: LV.Theme.gap2
     readonly property int hierarchyToolbarWidth: hierarchyToolbarCount > 0 ? hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing : hierarchyToolbarButtonSize
     readonly property color listViewColor: LV.Theme.panelBackground08

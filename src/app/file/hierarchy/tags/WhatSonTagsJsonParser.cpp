@@ -4,6 +4,22 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 
+namespace
+{
+    bool looksLikeTagNode(const QJsonObject& object)
+    {
+        return object.contains(QStringLiteral("id"))
+            || object.contains(QStringLiteral("key"))
+            || object.contains(QStringLiteral("label"))
+            || object.contains(QStringLiteral("name"))
+            || object.contains(QStringLiteral("title"))
+            || object.contains(QStringLiteral("text"))
+            || object.contains(QStringLiteral("children"))
+            || object.contains(QStringLiteral("items"))
+            || object.contains(QStringLiteral("tags"));
+    }
+} // namespace
+
 WhatSonTagsJsonParser::WhatSonTagsJsonParser() = default;
 
 WhatSonTagsJsonParser::~WhatSonTagsJsonParser() = default;
@@ -25,7 +41,7 @@ bool WhatSonTagsJsonParser::parseRootTags(
     QJsonParseError parseError;
     const QJsonDocument document =
         QJsonDocument::fromJson(rawJson.toUtf8(), &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject())
+    if (parseError.error != QJsonParseError::NoError || document.isNull())
     {
         if (errorMessage != nullptr)
         {
@@ -34,16 +50,53 @@ bool WhatSonTagsJsonParser::parseRootTags(
         return false;
     }
 
-    const QJsonObject rootObject = document.object();
-    if (!rootObject.contains(QStringLiteral("tags")) || !rootObject.value(QStringLiteral("tags")).isArray())
+    if (document.isArray())
+    {
+        *outTags = document.array();
+        return true;
+    }
+
+    if (!document.isObject())
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = QStringLiteral("Root JSON must contain an array field named 'tags'.");
+            *errorMessage = QStringLiteral("Root JSON must be an object or array.");
         }
         return false;
     }
 
-    *outTags = rootObject.value(QStringLiteral("tags")).toArray();
-    return true;
+    const QJsonObject rootObject = document.object();
+    const QJsonValue tagsValue = rootObject.value(QStringLiteral("tags"));
+    if (tagsValue.isArray())
+    {
+        *outTags = tagsValue.toArray();
+        return true;
+    }
+
+    const QJsonValue childrenValue = rootObject.value(QStringLiteral("children"));
+    if (childrenValue.isArray())
+    {
+        *outTags = childrenValue.toArray();
+        return true;
+    }
+
+    const QJsonValue itemsValue = rootObject.value(QStringLiteral("items"));
+    if (itemsValue.isArray())
+    {
+        *outTags = itemsValue.toArray();
+        return true;
+    }
+
+    if (looksLikeTagNode(rootObject))
+    {
+        *outTags = QJsonArray{QJsonValue(rootObject)};
+        return true;
+    }
+
+    if (errorMessage != nullptr)
+    {
+        *errorMessage = QStringLiteral(
+            "Root JSON must contain tags/children/items array or be a tag node.");
+    }
+    return false;
 }

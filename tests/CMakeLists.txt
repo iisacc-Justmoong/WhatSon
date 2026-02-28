@@ -130,6 +130,34 @@ target_link_libraries(whatson_sidebar_store_tests
 add_test(NAME whatson_sidebar_store_tests COMMAND whatson_sidebar_store_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_store_tests)
 
+add_executable(whatson_sidebar_selection_store_tests
+        app/test_sidebar_selection_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyItemListModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchySectionModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyViewModel.cpp
+)
+set_target_properties(whatson_sidebar_selection_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_sidebar_selection_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar
+)
+target_link_libraries(whatson_sidebar_selection_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_sidebar_selection_store_tests COMMAND whatson_sidebar_selection_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_selection_store_tests)
+
 add_executable(whatson_library_hierarchy_tests
         app/test_library_hierarchy_view_model.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyModel.cpp
@@ -148,6 +176,25 @@ target_link_libraries(whatson_library_hierarchy_tests
 )
 add_test(NAME whatson_library_hierarchy_tests COMMAND whatson_library_hierarchy_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
+
+add_executable(whatson_tags_hierarchy_tests
+        app/test_tags_hierarchy_view_model.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyViewModel.cpp
+)
+set_target_properties(whatson_tags_hierarchy_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_tags_hierarchy_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
+)
+target_link_libraries(whatson_tags_hierarchy_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_tags_hierarchy_tests COMMAND whatson_tags_hierarchy_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_tags_hierarchy_tests)
 
 add_executable(whatson_qml_binding_guard_tests
         app/test_qml_binding_syntax_guard.cpp

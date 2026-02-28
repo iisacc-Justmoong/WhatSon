@@ -1,7 +1,9 @@
 #include "hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
+#include "sidebar/SidebarSelectionStore.hpp"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -300,6 +302,11 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
     SidebarHierarchyStore sidebarHierarchyStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
+    TagsHierarchyViewModel tagsHierarchyViewModel;
+    SidebarSelectionStore sidebarSelectionStore(
+        &sidebarHierarchyStore,
+        &libraryHierarchyViewModel,
+        &tagsHierarchyViewModel);
     WhatSonHubRuntimeStore hubRuntimeStore;
     const QString blueprintHubPath = resolveBlueprintHubPath();
     if (!blueprintHubPath.isEmpty())
@@ -310,13 +317,16 @@ int main(int argc, char* argv[])
             qWarning().noquote()
                 << QStringLiteral("Failed to load blueprint .wshub into runtime hub store: %1").arg(hubLoadError);
         }
+        tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
     }
     else
     {
         qWarning().noquote() << QStringLiteral("No .wshub package was found under blueprint directory.");
     }
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyStore"), &sidebarHierarchyStore);
+    engine.rootContext()->setContextProperty(QStringLiteral("sidebarSelectionStore"), &sidebarSelectionStore);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("tagsHierarchyViewModel"), &tagsHierarchyViewModel);
 
     QObject::connect(
         &engine,

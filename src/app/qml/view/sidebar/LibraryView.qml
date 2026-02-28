@@ -19,9 +19,11 @@ Item {
     readonly property int rowHeight: 28
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     readonly property int searchRadius: 5
-    readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.selectedIndex : -1
+    readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
     property var toolbarIconNames: ["nodeslibraryFolder", "table", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property var toolbarItems: {
+        if (libraryView.hierarchyViewModel && libraryView.hierarchyViewModel.toolbarItems !== undefined)
+            return libraryView.hierarchyViewModel.toolbarItems;
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i) {
             items.push({
@@ -70,7 +72,7 @@ Item {
             viewOptionsContextMenu.close();
             return;
         }
-        viewOptionsContextMenu.openFor(viewOptionsButton, 0, viewOptionsButton.height + verticalInset);
+        viewOptionsContextMenu.openFor(libraryFooter, 0, libraryFooter.height + verticalInset);
     }
 
     clip: true
@@ -84,6 +86,7 @@ Item {
             libraryView.hierarchyViewModel.setDepthItems(libraryView.depthItems);
         libraryView.cancelRename();
     }
+    onHierarchyViewModelChanged: libraryView.cancelRename()
 
     Rectangle {
         anchors.fill: parent
@@ -245,7 +248,12 @@ Item {
                                 anchors.fill: parent
 
                                 onClicked: {
-                                    libraryView.beginRename(index, label);
+                                    if (libraryView.renameEnabled) {
+                                        libraryView.beginRename(index, label);
+                                        return;
+                                    }
+                                    if (libraryView.hierarchyViewModel)
+                                        libraryView.hierarchyViewModel.setSelectedIndex(index);
                                 }
                             }
                             Item {
@@ -313,70 +321,62 @@ Item {
             }
         }
     }
-    Item {
+    LV.ListFooter {
         id: libraryFooter
 
         anchors.bottom: parent.bottom
         anchors.bottomMargin: libraryView.verticalInset
         anchors.left: parent.left
         anchors.leftMargin: libraryView.horizontalInset
-        height: libraryView.footerHeight
-        width: Math.max(0, libraryView.contentWidth)
-
-        LV.HStack {
-            anchors.bottomMargin: LV.Theme.gap2
-            anchors.fill: parent
-            anchors.leftMargin: LV.Theme.gap2
-            anchors.rightMargin: LV.Theme.gap2
-            anchors.topMargin: LV.Theme.gap2
-            spacing: LV.Theme.gapNone
-
-            LV.IconButton {
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: LV.Theme.gap20
-                Layout.preferredWidth: LV.Theme.gap20
-                iconName: "addFile"
-                iconSize: LV.Theme.iconSm
-                tone: LV.AbstractButton.Borderless
-
-                onClicked: {
+        button1: ({
+                type: "icon",
+                enabled: libraryView.createFolderEnabled,
+                iconName: "addFile",
+                iconSize: LV.Theme.iconSm,
+                tone: LV.AbstractButton.Borderless,
+                onClicked: function () {
+                    if (!libraryView.createFolderEnabled)
+                        return;
                     libraryView.commitRename();
                     if (libraryView.hierarchyViewModel)
                         libraryView.hierarchyViewModel.createFolder();
-                    if (libraryView.hierarchyViewModel && libraryView.hierarchyViewModel.selectedIndex >= 0) {
+                    if (libraryView.renameEnabled && libraryView.hierarchyViewModel && libraryView.hierarchyViewModel.selectedIndex >= 0) {
                         var createdIndex = libraryView.hierarchyViewModel.selectedIndex;
                         libraryView.beginRename(createdIndex, libraryView.hierarchyViewModel.itemLabel(createdIndex));
                     }
                 }
-            }
-            LV.IconButton {
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: LV.Theme.gap20
-                Layout.preferredWidth: LV.Theme.gap20
-                enabled: libraryView.selectedFolderIndex >= 0
-                iconName: "generaldelete"
-                iconSize: LV.Theme.iconSm
-                tone: LV.AbstractButton.Borderless
-
-                onClicked: {
+            })
+        button2: ({
+                type: "icon",
+                enabled: libraryView.deleteFolderEnabled,
+                iconName: "generaldelete",
+                iconSize: LV.Theme.iconSm,
+                tone: LV.AbstractButton.Borderless,
+                onClicked: function () {
+                    if (!libraryView.deleteFolderEnabled)
+                        return;
                     libraryView.cancelRename();
                     if (libraryView.hierarchyViewModel)
                         libraryView.hierarchyViewModel.deleteSelectedFolder();
                 }
-            }
-            LV.IconMenuButton {
-                id: viewOptionsButton
-
-                checkable: false
-                height: LV.Theme.gap20
-                iconName: "settings"
-                iconSize: LV.Theme.iconSm
-                tone: LV.AbstractButton.Default
-                width: LV.Theme.gap20 + LV.Theme.gap7
-
-                onClicked: libraryView.toggleViewOptionsMenu()
-            }
-        }
+            })
+        button3: ({
+                type: "menu",
+                iconName: "settings",
+                iconSize: LV.Theme.iconSm,
+                tone: LV.AbstractButton.Default,
+                onClicked: function () {
+                    libraryView.toggleViewOptionsMenu();
+                }
+            })
+        horizontalPadding: LV.Theme.gap2
+        horizontalPadding: LV.Theme.gap2
+        interactive: true
+        interactive: true
+        spacing: LV.Theme.gapNone
+        spacing: LV.Theme.gapNone
+        verticalPadding: LV.Theme.gap2
+        verticalPadding: LV.Theme.gap2
     }
     LV.ContextMenu {
         id: viewOptionsContextMenu
