@@ -25,9 +25,9 @@
     <application
             android:name="org.qtproject.qt.android.bindings.QtApplication"
             android:hardwareAccelerated="true"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/app_icon"
             android:label="-- %%INSERT_APP_NAME%% --"
-            android:roundIcon="@mipmap/ic_launcher_round"
+            android:roundIcon="@drawable/app_icon"
             android:requestLegacyExternalStorage="true"
             android:allowBackup="true"
             android:fullBackupOnly="false">

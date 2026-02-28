@@ -75,12 +75,40 @@ Item {
                         hierarchyView.hierarchyStore.activeIndex = index;
                 }
             }
-            LV.InputField {
+            Rectangle {
                 id: searchBar
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: hierarchyView.searchHeight
-                mode: searchMode
+                color: LV.Theme.panelBackground10
+                radius: LV.Theme.radiusControl
+
+                TextInput {
+                    id: searchBarTextInput
+
+                    anchors.bottomMargin: LV.Theme.gap3
+                    anchors.fill: parent
+                    anchors.leftMargin: LV.Theme.gap7
+                    anchors.rightMargin: LV.Theme.gap7
+                    anchors.topMargin: LV.Theme.gap3
+                    clip: true
+                    color: LV.Theme.titleHeaderColor
+                    font.pixelSize: LV.Theme.textBody
+                    font.weight: LV.Theme.textBodyWeight
+                    renderType: Text.NativeRendering
+                    selectByMouse: true
+                    selectionColor: LV.Theme.accentBlue
+                    verticalAlignment: TextInput.AlignVCenter
+                }
+                Text {
+                    anchors.left: searchBarTextInput.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: LV.Theme.descriptionColor
+                    font.pixelSize: LV.Theme.textBody
+                    font.weight: LV.Theme.textBodyWeight
+                    text: "Search"
+                    visible: searchBarTextInput.text.length === 0 && !searchBarTextInput.activeFocus
+                }
             }
             Flickable {
                 id: hierarchyViewport
@@ -128,33 +156,50 @@ Item {
             }
         }
     }
-    LV.ListFooter {
+    Item {
         id: hierarchyFooter
 
         anchors.bottom: parent.bottom
         anchors.bottomMargin: hierarchyView.verticalInset
         anchors.left: parent.left
         anchors.leftMargin: hierarchyView.horizontalInset
-        button1: ({
-                "type": "icon",
-                "iconName": "addFile",
-                "tone": LV.AbstractButton.Borderless
-            })
-        button2: ({
-                "type": "icon",
-                "iconName": "generaldelete",
-                "tone": LV.AbstractButton.Borderless
-            })
-        button3: ({
-                "type": "menu",
-                "iconName": "settings",
-                "tone": LV.AbstractButton.Default,
-                "backgroundColor": LV.Theme.panelBackground12,
-                "cornerRadius": LV.Theme.radiusSm
-            })
         height: hierarchyView.footerHeight
-        horizontalPadding: LV.Theme.gap2
-        verticalPadding: LV.Theme.gap2
         width: Math.min(hierarchyView.footerWidth, hierarchyView.contentWidth)
+
+        LV.HStack {
+            anchors.bottomMargin: LV.Theme.gap2
+            anchors.fill: parent
+            anchors.leftMargin: LV.Theme.gap2
+            anchors.rightMargin: LV.Theme.gap2
+            anchors.topMargin: LV.Theme.gap2
+            spacing: LV.Theme.gapNone
+
+            LV.IconButton {
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredHeight: LV.Theme.gap20
+                Layout.preferredWidth: LV.Theme.gap20
+                iconName: "addFile"
+                iconSize: LV.Theme.iconSm
+                tone: LV.AbstractButton.Borderless
+            }
+            LV.IconButton {
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredHeight: LV.Theme.gap20
+                Layout.preferredWidth: LV.Theme.gap20
+                iconName: "generaldelete"
+                iconSize: LV.Theme.iconSm
+                tone: LV.AbstractButton.Borderless
+            }
+            LV.IconButton {
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredHeight: LV.Theme.gap20
+                Layout.preferredWidth: LV.Theme.gap20
+                backgroundColor: LV.Theme.panelBackground12
+                cornerRadius: LV.Theme.radiusSm
+                iconName: "settings"
+                iconSize: LV.Theme.iconSm
+                tone: LV.AbstractButton.Default
+            }
+        }
     }
 }

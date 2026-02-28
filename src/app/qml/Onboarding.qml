@@ -10,7 +10,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: "#1f242d"
+        color: LV.Theme.panelBackground03
     }
     Item {
         anchors.centerIn: parent

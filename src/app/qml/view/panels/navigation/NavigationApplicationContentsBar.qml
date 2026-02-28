@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
 
-LV.HStack {
+Item {
     id: applicationContentsBar
 
     property var applicationContentsMenuItems: [
@@ -90,13 +91,21 @@ LV.HStack {
     property int menuItemWidth: 176
     property int menuYOffset: 2
 
-    spacing: 12
+    implicitHeight: applicationContentsRow.implicitHeight
+    implicitWidth: applicationContentsRow.implicitWidth
 
-    Loader {
-        id: applicationContentsLoader
+    LV.HStack {
+        id: applicationContentsRow
 
-        Layout.alignment: Qt.AlignVCenter
-        sourceComponent: applicationContentsBar.compactMode ? compactApplicationContentsComponent : fullApplicationContentsComponent
+        anchors.fill: parent
+        spacing: LV.Theme.gap12
+
+        Loader {
+            id: applicationContentsLoader
+
+            Layout.alignment: Qt.AlignVCenter
+            sourceComponent: applicationContentsBar.compactMode ? compactApplicationContentsComponent : fullApplicationContentsComponent
+        }
     }
     Component {
         id: fullApplicationContentsComponent
@@ -141,6 +150,15 @@ LV.HStack {
 
             spacing: 12
 
+            LV.IconButton {
+                id: compactPreferenceButton
+
+                height: 20
+                iconName: "audioToAudio"
+                iconSize: 16
+                tone: LV.AbstractButton.Borderless
+                width: 20
+            }
             LV.IconMenuButton {
                 id: applicationContentsMenuButton
 
@@ -158,42 +176,18 @@ LV.HStack {
                     applicationContentsContextMenu.openFor(applicationContentsMenuButton, 0, height + applicationContentsBar.menuYOffset);
                 }
             }
-            LV.IconButton {
-                id: compactPreferenceButton
-
-                height: 20
-                iconName: "audioToAudio"
-                iconSize: 16
-                tone: LV.AbstractButton.Borderless
-                width: 20
-            }
         }
     }
     LV.ContextMenu {
         id: applicationContentsContextMenu
 
         autoCloseOnTrigger: true
+        closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
         dismissOnGlobalContextRequest: true
         dismissOnGlobalPress: true
         itemWidth: applicationContentsBar.menuItemWidth
         items: applicationContentsBar.applicationContentsMenuItems
-    }
-    Item {
-        id: applicationContentsDismissLayer
-
-        anchors.fill: parent
-        parent: applicationContentsContextMenu.parent
-        visible: applicationContentsContextMenu.opened && !!parent
-        z: applicationContentsContextMenu.z - 1
-
-        MouseArea {
-            acceptedButtons: Qt.AllButtons
-            anchors.fill: parent
-            preventStealing: true
-
-            onPressed: function () {
-                applicationContentsContextMenu.close();
-            }
-        }
+        modal: false
+        parent: Controls.Overlay.overlay
     }
 }

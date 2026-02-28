@@ -5,15 +5,15 @@ import LVRS 1.0 as LV
 Item {
     id: contentsView
 
-    property color displayColor: "#495473"
-    property color drawerColor: "#665d47"
-    property int drawerHeight: 255
-    property int minDisplayHeight: 160
-    property int minDrawerHeight: 120
-    property color panelColor: "#39445b"
+    property color displayColor: LV.Theme.panelBackground09
+    property color drawerColor: LV.Theme.panelBackground11
+    property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
+    property int minDisplayHeight: LV.Theme.gap20 * 8
+    property int minDrawerHeight: LV.Theme.gap20 * 6
+    property color panelColor: LV.Theme.panelBackground07
     property color splitterColor: "transparent"
-    property int splitterHandleThickness: 12
-    property int splitterThickness: 0
+    property int splitterHandleThickness: LV.Theme.gap12
+    property int splitterThickness: LV.Theme.gapNone
 
     signal drawerHeightDragRequested(int value)
 
@@ -34,7 +34,7 @@ Item {
         id: drawerView
 
         anchors.fill: parent
-        spacing: 0
+        spacing: LV.Theme.gapNone
 
         Rectangle {
             id: contentsDisplayView

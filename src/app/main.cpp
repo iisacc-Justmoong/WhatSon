@@ -1,6 +1,7 @@
 #include "permissions/ApplePermissionBridge.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
 
+#include <QByteArray>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QIcon>
@@ -10,6 +11,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QVector>
+#include <QtCore/qglobal.h>
 #include <QtCore/qpermissions.h>
 
 #include <cstdlib>
@@ -22,6 +24,23 @@ namespace
 {
     constexpr auto kPermissionsGrantedSettingsKey = "permissions/granted";
     constexpr auto kPermissionsScopeKey = "permissions";
+
+    void prependEnvPath(const char* variableName, const QByteArray& path)
+    {
+        if (path.isEmpty())
+        {
+            return;
+        }
+
+        const QByteArray currentValue = qgetenv(variableName);
+        if (currentValue.isEmpty())
+        {
+            qputenv(variableName, path);
+            return;
+        }
+
+        qputenv(variableName, path + ":" + currentValue);
+    }
 
     using PermissionCompletion = std::function<void(bool granted)>;
     using PermissionRequester = std::function<void(const PermissionCompletion& completion)>;
@@ -219,8 +238,20 @@ namespace
 int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
+#if defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT) && defined(WHATSON_LVRS_RUNTIME_IMPORT_ROOT)
+    Q_CLEANUP_RESOURCE(qmake_LVRS);
+
+    const QByteArray lvrsImportRoot = QByteArrayLiteral(WHATSON_LVRS_RUNTIME_IMPORT_ROOT);
+    prependEnvPath("QML_IMPORT_PATH", lvrsImportRoot);
+    prependEnvPath("QML2_IMPORT_PATH", lvrsImportRoot);
+#endif
+
+#if !defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT)
     qml_register_types_LVRS();
+#endif
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
+#endif
 
     QCoreApplication::setApplicationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationName(QStringLiteral("WhatSon"));

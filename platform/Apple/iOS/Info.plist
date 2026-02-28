@@ -14,31 +14,8 @@
     <key>CFBundleDisplayName</key>
     <string>WhatSon</string>
 
-    <key>CFBundleIcons</key>
-    <dict>
-        <key>CFBundlePrimaryIcon</key>
-        <dict>
-            <key>CFBundleIconFiles</key>
-            <array>
-                <string>AppIcon</string>
-            </array>
-            <key>UIPrerenderedIcon</key>
-            <false/>
-        </dict>
-    </dict>
-
-    <key>CFBundleIcons~ipad</key>
-    <dict>
-        <key>CFBundlePrimaryIcon</key>
-        <dict>
-            <key>CFBundleIconFiles</key>
-            <array>
-                <string>AppIcon</string>
-            </array>
-            <key>UIPrerenderedIcon</key>
-            <false/>
-        </dict>
-    </dict>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.png</string>
 
     <key>CFBundleIdentifier</key>
     <string>com.iisacc.app.whatson</string>

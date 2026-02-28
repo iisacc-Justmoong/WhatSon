@@ -20,7 +20,7 @@ Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: navigationBar.effectivePanelHeight
     clip: true
-    color: navigationBar.compactMode ? "transparent" : navigationBar.panelColor
+    color: navigationBar.compactMode ? LV.Theme.accentTransparent : navigationBar.panelColor
 
     Rectangle {
         id: navigationBarSurface
