@@ -15,6 +15,7 @@ Item {
     readonly property int minContentWidth: Math.max(152, toolbarMinWidth)
     property color panelColor: LV.Theme.panelBackground04
     readonly property int rowHeight: 28
+    readonly property int searchFieldRadius: 5
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     readonly property int toolbarButtonSize: (typeof LV.Theme.gap20 === "number" && isFinite(LV.Theme.gap20)) ? LV.Theme.gap20 : 20
     readonly property int toolbarCount: toolbarIconNames.length
@@ -81,7 +82,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: hierarchyView.searchHeight
                 color: LV.Theme.panelBackground10
-                radius: LV.Theme.radiusControl
+                radius: hierarchyView.searchFieldRadius
 
                 TextInput {
                     id: searchBarTextInput

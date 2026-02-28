@@ -11,6 +11,7 @@ LV.HStack {
     LV.IconButton {
         id: sidebarControlButton
 
+        checkable: false
         height: 20
         iconName: "columnIndex"
         iconSize: 16
@@ -21,6 +22,7 @@ LV.HStack {
     LV.IconButton {
         id: profileButton
 
+        checkable: false
         height: 20
         iconName: "loggedInUser"
         iconSize: 16
@@ -30,6 +32,7 @@ LV.HStack {
     LV.IconButton {
         id: syncButton
 
+        checkable: false
         height: 20
         iconName: "syncFiles"
         iconSize: 16

@@ -6,6 +6,7 @@ LV.IconButton {
 
     property string iconToken: ""
 
+    checkable: false
     height: 20
     iconName: navigationIconButton.iconToken
     iconSize: 16

@@ -9,7 +9,7 @@ Rectangle {
     property int compactContainerRadius: LV.Theme.radiusXl * 2
     property color compactFieldColor: LV.Theme.panelBackground10
     property int compactFieldHeight: LV.Theme.gap18
-    property int compactFieldRadius: searchFieldRadiusOverride
+    property int compactFieldRadius: Math.round(compactFieldHeight / 2)
     property int compactHorizontalInset: Math.max(LV.Theme.gap12, Math.min(LV.Theme.gap24, Math.round(width * 0.04)))
     property bool compactMode: false
     property int compactNewFileSlotWidth: LV.Theme.controlHeightMd
@@ -23,8 +23,7 @@ Rectangle {
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
     readonly property int searchFieldMaxWidth: 541
     readonly property int searchFieldMinWidth: 220
-    property int searchFieldRadius: searchFieldRadiusOverride
-    property int searchFieldRadiusOverride: 5
+    property int searchFieldRadius: 5
     readonly property int searchFieldWidth: {
         var availableWidth = Math.max(0, width - searchFieldHorizontalInset * 2);
         if (availableWidth < searchFieldMinWidth)
@@ -192,6 +191,7 @@ Rectangle {
                     id: newFileButton
 
                     anchors.centerIn: parent
+                    checkable: false
                     height: LV.Theme.gap20
                     iconName: "addFile"
                     iconSize: LV.Theme.iconSm

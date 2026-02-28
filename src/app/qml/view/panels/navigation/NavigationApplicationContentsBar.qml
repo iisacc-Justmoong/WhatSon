@@ -150,22 +150,14 @@ Item {
 
             spacing: 12
 
-            LV.IconButton {
-                id: compactPreferenceButton
-
-                height: 20
-                iconName: "audioToAudio"
-                iconSize: 16
-                tone: LV.AbstractButton.Borderless
-                width: 20
-            }
             LV.IconMenuButton {
                 id: applicationContentsMenuButton
 
+                checkable: false
                 height: 20
                 iconName: "generalprojectStructure"
                 iconSize: 16
-                tone: LV.AbstractButton.Default
+                tone: LV.AbstractButton.Borderless
                 width: 40
 
                 onClicked: {
@@ -175,6 +167,16 @@ Item {
                     }
                     applicationContentsContextMenu.openFor(applicationContentsMenuButton, 0, height + applicationContentsBar.menuYOffset);
                 }
+            }
+            LV.IconButton {
+                id: compactPreferenceButton
+
+                checkable: false
+                height: 20
+                iconName: "audioToAudio"
+                iconSize: 16
+                tone: LV.AbstractButton.Borderless
+                width: 20
             }
         }
     }

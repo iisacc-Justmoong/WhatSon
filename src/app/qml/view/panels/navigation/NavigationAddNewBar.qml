@@ -9,6 +9,7 @@ LV.HStack {
     LV.IconButton {
         id: newFileButton
 
+        checkable: false
         height: 20
         iconName: "addFile"
         iconSize: 16

@@ -9,6 +9,7 @@ LV.HStack {
     LV.IconButton {
         id: preferenceButton
 
+        checkable: false
         height: 20
         iconName: "audioToAudio"
         iconSize: 16
@@ -18,6 +19,7 @@ LV.HStack {
     LV.IconButton {
         id: detailPanelControlButton
 
+        checkable: false
         height: 20
         iconName: "columnIndex"
         iconSize: 16

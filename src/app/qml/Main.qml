@@ -93,6 +93,55 @@ LV.ApplicationWindow {
     }
     onBodyHeightChanged: clampPreferredSizes()
 
+    // Mobile must draw edge-to-edge; disable safe-area padding from the root window.
+    Binding {
+        "topPadding"
+        target: applicationWindow
+        value: 0
+        when: applicationWindow.matchesMedia("mobile")
+    }
+    Binding {
+        "rightPadding"
+        target: applicationWindow
+        value: 0
+        when: applicationWindow.matchesMedia("mobile")
+    }
+    Binding {
+        "bottomPadding"
+        target: applicationWindow
+        value: 0
+        when: applicationWindow.matchesMedia("mobile")
+    }
+    Binding {
+        "leftPadding"
+        target: applicationWindow
+        value: 0
+        when: applicationWindow.matchesMedia("mobile")
+    }
+    Binding {
+        "x"
+        target: applicationWindow.contentItem
+        value: 0
+        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
+    }
+    Binding {
+        "y"
+        target: applicationWindow.contentItem
+        value: 0
+        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
+    }
+    Binding {
+        "width"
+        target: applicationWindow.contentItem
+        value: applicationWindow.width
+        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
+    }
+    Binding {
+        "height"
+        target: applicationWindow.contentItem
+        value: applicationWindow.height
+        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
+    }
     Item {
         anchors.fill: parent
         clip: true

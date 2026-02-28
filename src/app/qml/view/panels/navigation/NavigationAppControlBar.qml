@@ -9,6 +9,7 @@ LV.HStack {
     LV.IconButton {
         id: pinWindowButton
 
+        checkable: false
         height: 20
         iconName: "pin"
         iconSize: 16
@@ -18,6 +19,7 @@ LV.HStack {
     LV.IconButton {
         id: alertsButton
 
+        checkable: false
         height: 20
         iconName: "toolwindownotifications"
         iconSize: 16
@@ -27,6 +29,7 @@ LV.HStack {
     LV.IconButton {
         id: timerButton
 
+        checkable: false
         height: 20
         iconName: "startTimer"
         iconSize: 16
