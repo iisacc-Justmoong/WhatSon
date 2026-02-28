@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QGuiApplication>
+#include <QIcon>
 #include <QPermission>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -219,6 +220,7 @@ int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
     qml_register_types_LVRS();
+    app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 
     QCoreApplication::setApplicationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationName(QStringLiteral("WhatSon"));

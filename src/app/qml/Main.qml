@@ -65,6 +65,7 @@ LV.ApplicationWindow {
     }
 
     autoAttachRuntimeEvents: false
+    globalEventListenersEnabled: true
     height: 748
     minimumHeight: 420
     minimumWidth: adaptiveCompactMode ? 360 : desktopMinimumBodyWidth

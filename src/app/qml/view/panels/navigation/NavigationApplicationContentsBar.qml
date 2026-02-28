@@ -178,4 +178,22 @@ LV.HStack {
         itemWidth: applicationContentsBar.menuItemWidth
         items: applicationContentsBar.applicationContentsMenuItems
     }
+    Item {
+        id: applicationContentsDismissLayer
+
+        anchors.fill: parent
+        parent: applicationContentsContextMenu.parent
+        visible: applicationContentsContextMenu.opened && !!parent
+        z: applicationContentsContextMenu.z - 1
+
+        MouseArea {
+            acceptedButtons: Qt.AllButtons
+            anchors.fill: parent
+            preventStealing: true
+
+            onPressed: function () {
+                applicationContentsContextMenu.close();
+            }
+        }
+    }
 }

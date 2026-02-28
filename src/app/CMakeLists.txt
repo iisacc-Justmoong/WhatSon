@@ -76,6 +76,39 @@ list(SORT WHATSON_APP_INCLUDE_DIRS)
 
 target_include_directories(WhatSon PRIVATE ${WHATSON_APP_INCLUDE_DIRS})
 
+set(WHATSON_APP_ICON_PNG "${CMAKE_SOURCE_DIR}/resources/AppIcon.png")
+set(WHATSON_APP_ICON_ICNS "${CMAKE_SOURCE_DIR}/resources/AppIcon.icns")
+
+if (EXISTS "${WHATSON_APP_ICON_PNG}")
+    set_source_files_properties("${WHATSON_APP_ICON_PNG}" PROPERTIES
+            QT_RESOURCE_ALIAS "AppIcon.png")
+    qt_add_resources(WhatSon "WhatSonAppIcon"
+            PREFIX
+            "/whatson"
+            FILES
+            "${WHATSON_APP_ICON_PNG}"
+    )
+endif ()
+
+if (APPLE)
+    set(_whatson_icon_png_location "Resources")
+    if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        set(_whatson_icon_png_location ".")
+    endif ()
+    if (EXISTS "${WHATSON_APP_ICON_PNG}")
+        set_source_files_properties("${WHATSON_APP_ICON_PNG}" PROPERTIES
+                MACOSX_PACKAGE_LOCATION "${_whatson_icon_png_location}")
+        target_sources(WhatSon PRIVATE "${WHATSON_APP_ICON_PNG}")
+    endif ()
+    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND EXISTS "${WHATSON_APP_ICON_ICNS}")
+        set_source_files_properties("${WHATSON_APP_ICON_ICNS}" PROPERTIES
+                MACOSX_PACKAGE_LOCATION "Resources")
+        target_sources(WhatSon PRIVATE "${WHATSON_APP_ICON_ICNS}")
+        set_target_properties(WhatSon PROPERTIES
+                MACOSX_BUNDLE_ICON_FILE "AppIcon.icns")
+    endif ()
+endif ()
+
 if (NOT DEFINED WHATSON_PLATFORM_DIR)
     set(WHATSON_PLATFORM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../platform")
 endif ()

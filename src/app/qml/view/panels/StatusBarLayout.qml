@@ -6,8 +6,10 @@ Rectangle {
     id: statusBar
 
     property int compactBottomInset: compactHorizontalInset
+    property int compactContainerRadius: 32
     property color compactFieldColor: LV.Theme.panelBackground10
     property int compactFieldHeight: 18
+    property int compactFieldRadius: 5
     property int compactHorizontalInset: Math.max(12, Math.min(24, Math.round(width * 0.04)))
     property bool compactMode: false
     property int compactNewFileSlotWidth: 36
@@ -52,7 +54,7 @@ Rectangle {
         backgroundColorDisabled: statusBar.searchFieldColor
         backgroundColorFocused: statusBar.searchFieldColor
         clearButtonVisible: true
-        cornerRadius: 5
+        cornerRadius: statusBar.searchFieldRadius
         fieldMinHeight: statusBar.searchFieldHeight
         height: statusBar.searchFieldHeight
         insetHorizontal: 7
@@ -103,10 +105,13 @@ Rectangle {
             }
         }
     }
-    Item {
+    Rectangle {
         id: compactStatusBar
 
         anchors.fill: parent
+        clip: true
+        color: "transparent"
+        radius: statusBar.compactContainerRadius
         visible: statusBar.compactMode
 
         LV.HStack {
@@ -130,7 +135,7 @@ Rectangle {
                 backgroundColorDisabled: statusBar.compactFieldColor
                 backgroundColorFocused: statusBar.compactFieldColor
                 clearButtonVisible: true
-                cornerRadius: 5
+                cornerRadius: statusBar.compactFieldRadius
                 fieldMinHeight: statusBar.compactFieldHeight
                 height: statusBar.compactFieldHeight
                 insetHorizontal: 7
