@@ -22,11 +22,11 @@ LV.ApplicationWindow {
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
-    readonly property int hierarchyHorizontalInset: LV.Theme.gap8
-    readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
+    readonly property int hierarchyHorizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
+    readonly property int hierarchyToolbarButtonSize: (typeof LV.Theme.gap20 === "number" && isFinite(LV.Theme.gap20)) ? LV.Theme.gap20 : 20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
     readonly property var hierarchyToolbarIconNames: (typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore && sidebarHierarchyStore.toolbarIconNames) ? sidebarHierarchyStore.toolbarIconNames : []
-    readonly property int hierarchyToolbarSpacing: LV.Theme.gap2
+    readonly property int hierarchyToolbarSpacing: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
     readonly property int hierarchyToolbarWidth: hierarchyToolbarCount > 0 ? hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing : hierarchyToolbarButtonSize
     readonly property color listViewColor: "#3a5c57"
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
@@ -38,6 +38,7 @@ LV.ApplicationWindow {
     readonly property int minSidebarWidth: Math.max(152, hierarchyToolbarWidth + hierarchyHorizontalInset * 2)
     readonly property color navigationBarColor: "#303743"
     readonly property int navigationBarHeight: 36
+    property bool onboardingVisible: false
     property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
@@ -46,7 +47,7 @@ LV.ApplicationWindow {
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
     readonly property color sidebarColor: "#3b4b63"
     readonly property int sidebarWidth: Math.max(minSidebarWidth, preferredSidebarWidth)
-    readonly property color statusBarColor: "#2a3038"
+    readonly property color statusBarColor: "#262728"
     readonly property int statusBarHeight: 36
 
     function clampPreferredSizes() {
@@ -73,7 +74,7 @@ LV.ApplicationWindow {
 
     Component.onCompleted: {
         clampPreferredSizes();
-        if (onboardingVisible)
+        if (window.onboardingVisible)
             onboardingSubWindow.show();
     }
     onBodyHeightChanged: clampPreferredSizes()

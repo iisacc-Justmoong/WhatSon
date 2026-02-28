@@ -5,18 +5,19 @@ import LVRS 1.0 as LV
 Item {
     id: root
 
-    readonly property int activeToolbarIndex: sidebarHierarchyStore.activeIndex
+    readonly property int activeToolbarIndex: root.hierarchyStore ? root.hierarchyStore.activeIndex : -1
     readonly property int availableContentWidth: Math.max(0, width - horizontalInset * 2)
     readonly property int contentWidth: Math.max(minContentWidth, availableContentWidth)
     readonly property int footerHeight: 24
     readonly property int footerWidth: 84
-    readonly property int horizontalInset: LV.Theme.gap8
+    readonly property int horizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
+    readonly property int minContentWidth: 152
     property color panelColor: LV.Theme.panelBackground04
     readonly property int rowHeight: 28
-    readonly property int searchHeight: LV.Theme.gap18
-    readonly property int toolbarButtonSize: LV.Theme.gap20
+    readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
+    readonly property int toolbarButtonSize: (typeof LV.Theme.gap20 === "number" && isFinite(LV.Theme.gap20)) ? LV.Theme.gap20 : 20
     readonly property int toolbarCount: toolbarIconNames.length
-    readonly property var toolbarIconNames: (typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore && sidebarHierarchyStore.toolbarIconNames) ? sidebarHierarchyStore.toolbarIconNames : []
+    readonly property var toolbarIconNames: root.hierarchyStore ? root.hierarchyStore.toolbarIconNames : []
     readonly property var toolbarItems: {
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i)
@@ -27,7 +28,7 @@ Item {
             });
         return items;
     }
-    readonly property int verticalInset: LV.Theme.gap2
+    readonly property int verticalInset: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
 
     clip: true
 
@@ -65,8 +66,8 @@ Item {
                 verticalPadding: 0
 
                 onActiveChanged: function (button, buttonId, index) {
-                    if (index >= 0 && sidebarHierarchyStore.activeIndex !== index)
-                        sidebarHierarchyStore.activeIndex = index;
+                    if (index >= 0 && root.hierarchyStore && root.hierarchyStore.activeIndex !== index)
+                        root.hierarchyStore.activeIndex = index;
                 }
             }
             LV.InputField {
@@ -93,7 +94,7 @@ Item {
                     width: hierarchyViewport.width
 
                     Repeater {
-                        model: sidebarHierarchyStore.itemModel
+                        model: root.hierarchyStore ? root.hierarchyStore.itemModel : null
 
                         delegate: LV.HierarchyItem {
                             baseLeftPadding: LV.Theme.gap8

@@ -57,7 +57,6 @@ Item {
             width += root.splitterThickness;
         if (root.rightVisible)
             width += root.splitterThickness;
-        return width;
     }
 
     Layout.fillHeight: true

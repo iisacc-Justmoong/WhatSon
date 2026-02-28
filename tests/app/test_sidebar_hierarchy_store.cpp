@@ -8,7 +8,10 @@ class SidebarHierarchyStoreTest final : public QObject
 {
     Q_OBJECT
 
-private slots:
+private
+    slots  :
+
+
     void defaultState_isLibrarySection();
     void setActiveIndex_clampsRangeAndEmitsSignal();
     void metadata_matchesSectionModels();
@@ -69,10 +72,10 @@ void SidebarHierarchyStoreTest::metadata_matchesSectionModels()
     QCOMPARE(store.sectionNames(), expectedSections);
 
     const QStringList expectedIcons = {
-        QStringLiteral("libraryFolder"),
-        QStringLiteral("projectStructure"),
-        QStringLiteral("bookmarksList"),
-        QStringLiteral("currentBranch"),
+        QStringLiteral("nodes  libraryFolder"),
+        QStringLiteral("generalprojectStructure"),
+        QStringLiteral("bookmarks  bookmarksList"),
+        QStringLiteral("vcs  currentBranch"),
         QStringLiteral("imageToImage"),
         QStringLiteral("chartBar"),
         QStringLiteral("dataView"),

@@ -2,6 +2,21 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2)
 find_package(LVRS CONFIG REQUIRED)
 qt_policy(SET QTP0004 NEW)
 
+if (APPLE AND TARGET WrapOpenGL::WrapOpenGL)
+    get_target_property(_whatson_wrap_opengl_links WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
+    if (_whatson_wrap_opengl_links)
+        set(_whatson_wrap_opengl_links_filtered)
+        foreach (_whatson_wrap_link IN LISTS _whatson_wrap_opengl_links)
+            if (_whatson_wrap_link STREQUAL "-framework AGL" OR _whatson_wrap_link MATCHES "AGL\\.framework")
+                continue()
+            endif ()
+            list(APPEND _whatson_wrap_opengl_links_filtered "${_whatson_wrap_link}")
+        endforeach ()
+        set_property(TARGET WrapOpenGL::WrapOpenGL PROPERTY
+                INTERFACE_LINK_LIBRARIES "${_whatson_wrap_opengl_links_filtered}")
+    endif ()
+endif ()
+
 file(GLOB_RECURSE WHATSON_APP_SOURCE_FILES
         CONFIGURE_DEPENDS
         RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
