@@ -15,6 +15,8 @@
 #include <functional>
 #include <utility>
 
+void qml_register_types_LVRS();
+
 namespace
 {
     constexpr auto kPermissionsGrantedSettingsKey = "permissions/granted";
@@ -216,6 +218,8 @@ namespace
 int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
+    qml_register_types_LVRS();
+
     QCoreApplication::setApplicationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("whatson.local"));

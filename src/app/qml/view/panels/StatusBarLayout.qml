@@ -12,7 +12,7 @@ Rectangle {
     property bool compactMode: false
     property int compactNewFileSlotWidth: 36
     property int compactToolbarHeight: 20
-    property string compactToolbarText: "Placeholder"
+    property string compactToolbarText: ""
     readonly property int effectivePanelHeight: compactMode ? (compactBottomInset + compactToolbarHeight) : panelHeight
     property color panelColor: "#262728"
     property int panelHeight: 36
@@ -135,7 +135,7 @@ Rectangle {
                 height: statusBar.compactFieldHeight
                 insetHorizontal: 7
                 insetVertical: 3
-                placeholder: "Placeholder"
+                placeholder: ""
                 sideSpacing: 6
                 text: statusBar.compactToolbarText
             }

@@ -72,7 +72,7 @@ LV.ApplicationWindow {
     navigationEnabled: false
     visible: true
     width: 1265
-    windowColor: "#141414"
+    windowColor: canvasColor
     windowDragHandleEnabled: false
     windowDragHandleHeight: navigationBarHeight
     windowDragHandleTopMargin: statusBarHeight

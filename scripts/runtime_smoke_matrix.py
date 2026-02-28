@@ -7,10 +7,11 @@ import os
 import shlex
 import shutil
 import subprocess
+from typing import Iterable, List, Optional, Sequence, Tuple
+
 import sys
 import time
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple
 
 
 class SmokeError(RuntimeError):
@@ -335,12 +336,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--android-package",
-        default=os.environ.get("WHATSON_ANDROID_PACKAGE", "com.lvrs.whatson"),
+        default=os.environ.get("WHATSON_ANDROID_PACKAGE", "com.iisacc.app.whatson"),
         help="Expected Android package id.",
     )
     parser.add_argument(
         "--ios-bundle-id",
-        default=os.environ.get("WHATSON_APPLE_BUNDLE_ID", "com.lvrs.whatson"),
+        default=os.environ.get("WHATSON_APPLE_BUNDLE_ID", "com.iisacc.app.whatson"),
         help="Expected iOS bundle id.",
     )
     parser.add_argument("--host-smoke-seconds", default=4, type=int, help="Seconds to keep host app running.")

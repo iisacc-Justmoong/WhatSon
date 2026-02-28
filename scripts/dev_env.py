@@ -9,14 +9,15 @@ import re
 import shlex
 import shutil
 import subprocess
-import sys
 import textwrap
 import xml.etree.ElementTree as ET
-from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
-DEFAULT_ANDROID_PACKAGE_ID = "com.lvrs.whatson"
-DEFAULT_APPLE_BUNDLE_ID = "com.lvrs.whatson"
+import sys
+from pathlib import Path
+
+DEFAULT_ANDROID_PACKAGE_ID = "com.iisacc.app.whatson"
+DEFAULT_APPLE_BUNDLE_ID = "com.iisacc.app.whatson"
 
 
 def _expand(value: str | Path) -> Path:

@@ -59,7 +59,6 @@ Item {
             width += hStack.splitterThickness;
         if (hStack.rightVisible)
             width += hStack.splitterThickness;
-
     }
 
     Layout.fillHeight: true

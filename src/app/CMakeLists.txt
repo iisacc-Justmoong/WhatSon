@@ -98,7 +98,7 @@ if (NOT DEFINED WHATSON_APPLE_BUNDLE_ID)
     set(WHATSON_APPLE_BUNDLE_ID "com.iisacc.app.whatson")
 endif ()
 if (NOT DEFINED WHATSON_ANDROID_PACKAGE_ID)
-    set(WHATSON_ANDROID_PACKAGE_ID "com.lvrs.whatson")
+    set(WHATSON_ANDROID_PACKAGE_ID "com.iisacc.app.whatson")
 endif ()
 
 set(_whatson_lvrs_defaults_args

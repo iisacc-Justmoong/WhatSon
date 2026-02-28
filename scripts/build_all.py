@@ -23,9 +23,8 @@ TASK_HOST = "host"
 TASK_ANDROID = "android"
 TASK_IOS = "ios"
 ALL_TASKS = (TASK_HOST, TASK_ANDROID, TASK_IOS)
-DEFAULT_ANDROID_PACKAGE_ID = "com.lvrs.whatson"
+DEFAULT_ANDROID_PACKAGE_ID = "com.iisacc.app.whatson"
 DEFAULT_APPLE_BUNDLE_ID = "com.iisacc.app.whatson"
-LEGACY_ANDROID_PACKAGE_ID = "org.qtproject.example.WhatSon"
 
 
 @dataclass
@@ -1530,10 +1529,7 @@ class BuildAll:
 
             self._clean_path(task=task, path=self.android_build_dir, log_path=log_path)
             self._clean_path(task=task, path=self.android_studio_dir, log_path=log_path)
-            cleanup_packages = {
-                self.android_package,
-                LEGACY_ANDROID_PACKAGE_ID,  # Legacy Qt default package from older runs.
-            }
+            cleanup_packages = {self.android_package}
             for package_name in sorted(cleanup_packages):
                 self._reset_android_package_best_effort(
                     task=task,

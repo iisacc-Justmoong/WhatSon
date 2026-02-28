@@ -12,6 +12,8 @@ Rectangle {
     property color compactSurfaceColor: LV.Theme.panelBackground10
     readonly property int compactTopInset: compactHorizontalInset
     readonly property int effectivePanelHeight: compactMode ? (compactTopInset + panelHeight) : panelHeight
+    property color panelColor: LV.Theme.panelBackground05
+    property int panelHeight: 24
     readonly property int sideInset: compactMode ? 8 : 4
     readonly property int topInset: 2
 

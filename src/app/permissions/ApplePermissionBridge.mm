@@ -53,6 +53,8 @@
             [self finish:NO];
 
 
+
+
         });
 }
 
@@ -86,6 +88,8 @@ static NSMutableArray<LocalNetworkPermissionRequester*>* pendingLocalNetworkRequ
         &onceToken,
         ^{
             requesters = [[NSMutableArray alloc] init];
+
+
 
 
         });
@@ -186,6 +190,7 @@ namespace WhatSon::Permissions
 {
     void requestPhotoLibraryPermission(const PermissionCallback& completion)
     {
+        const PermissionCallback completionCopy = completion;
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
         if (@ available(macOS 11.0, iOS 14.0, *))
         {
@@ -196,11 +201,11 @@ namespace WhatSon::Permissions
                 [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelReadWrite
                     handler:^(PHAuthorizationStatus newStatus)
                     {
-                    completeOnQtMain(completion, isPhotoGranted(newStatus));
+                    completeOnQtMain(completionCopy, isPhotoGranted(newStatus));
                     }];
                 return;
             }
-            completeOnQtMain(completion, isPhotoGranted(status));
+            completeOnQtMain(completionCopy, isPhotoGranted(status));
             return;
         }
 
@@ -209,23 +214,24 @@ namespace WhatSon::Permissions
         {
             [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus newStatus)
                 {
-                completeOnQtMain(completion, isPhotoGranted(newStatus));
+                completeOnQtMain(completionCopy, isPhotoGranted(newStatus));
                 }];
             return;
         }
-        completeOnQtMain(completion, isPhotoGranted(status));
+        completeOnQtMain(completionCopy, isPhotoGranted(status));
 #else
-        completeOnQtMain(completion, true);
+        completeOnQtMain(completionCopy, true);
 #endif
     }
 
     void requestRemindersPermission(const PermissionCallback& completion)
     {
+        const PermissionCallback completionCopy = completion;
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
         const EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeReminder];
         if (status != EKAuthorizationStatusNotDetermined)
         {
-            completeOnQtMain(completion, isRemindersGranted(status));
+            completeOnQtMain(completionCopy, isRemindersGranted(status));
             return;
         }
 
@@ -235,7 +241,7 @@ namespace WhatSon::Permissions
             [eventStore requestFullAccessToRemindersWithCompletion:^(BOOL granted, NSError* error)
                 {
                 Q_UNUSED(error);
-                completeOnQtMain(completion, granted);
+                completeOnQtMain(completionCopy, granted);
                 }];
             return;
         }
@@ -244,10 +250,10 @@ namespace WhatSon::Permissions
             completion:^(BOOL granted, NSError* error)
             {
             Q_UNUSED(error);
-            completeOnQtMain(completion, granted);
+            completeOnQtMain(completionCopy, granted);
             }];
 #else
-        completeOnQtMain(completion, true);
+        completeOnQtMain(completionCopy, true);
 #endif
     }
 
@@ -276,20 +282,19 @@ namespace WhatSon::Permissions
 
     void requestLocalNetworkPermission(const PermissionCallback& completion)
     {
+        const PermissionCallback completionCopy = completion;
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
         LocalNetworkPermissionRequester* requester =  [[LocalNetworkPermissionRequester alloc] init];
         requester.completion =  ^ (BOOL granted)
         {
-            NSMutableArray<LocalNetworkPermissionRequester*>* requesters = pendingLocalNetworkRequesters();
-            [requesters removeObject:requester];
-            completeOnQtMain(completion, granted);
+            completeOnQtMain(completionCopy, granted);
         };
 
         NSMutableArray<LocalNetworkPermissionRequester*>* requesters = pendingLocalNetworkRequesters();
         [requesters addObject:requester];
         [requester start];
 #else
-        completeOnQtMain(completion, true);
+        completeOnQtMain(completionCopy, true);
 #endif
     }
 
