@@ -21,25 +21,12 @@ Item {
     readonly property int toolbarSpacing: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
     readonly property int toolbarMinWidth: toolbarCount > 0 ? toolbarCount * toolbarButtonSize + (toolbarCount - 1) * toolbarSpacing : toolbarButtonSize
     readonly property int minContentWidth: Math.max(152, toolbarMinWidth)
-    readonly property string iconSetBasePath: "qrc:/qt/qml/LVRS/resources/iconset/"
-    function resolveToolbarIconSource(iconName) {
-        if (iconName === "libraryFolder")
-            return root.iconSetBasePath + "nodes  libraryFolder.svg";
-        if (iconName === "projectStructure")
-            return root.iconSetBasePath + "generalprojectStructure.svg";
-        if (iconName === "bookmarksList")
-            return root.iconSetBasePath + "bookmarks  bookmarksList.svg";
-        if (iconName === "currentBranch")
-            return root.iconSetBasePath + "vcs  currentBranch.svg";
-        return root.iconSetBasePath + iconName + ".svg";
-    }
     readonly property var toolbarItems: {
         var items = [];
         for (var i = 0; i < toolbarIconNames.length; ++i)
             items.push({
                 "id": i,
                 "iconName": toolbarIconNames[i],
-                "iconSource": root.resolveToolbarIconSource(toolbarIconNames[i]),
                 "selected": i === root.activeToolbarIndex
             });
         return items;

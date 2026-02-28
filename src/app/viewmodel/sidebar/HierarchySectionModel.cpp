@@ -19,7 +19,7 @@ QString LibraryModel::sectionName() const
 
 QString LibraryModel::toolbarIconName() const
 {
-    return QStringLiteral("libraryFolder");
+    return QStringLiteral("nodeslibraryFolder");
 }
 
 QVector<SidebarHierarchyItem> LibraryModel::items() const
@@ -45,7 +45,7 @@ QString ProjectsModel::sectionName() const
 
 QString ProjectsModel::toolbarIconName() const
 {
-    return QStringLiteral("projectStructure");
+    return QStringLiteral("generalprojectStructure");
 }
 
 QVector<SidebarHierarchyItem> ProjectsModel::items() const
@@ -71,7 +71,7 @@ QString BookmarksModel::sectionName() const
 
 QString BookmarksModel::toolbarIconName() const
 {
-    return QStringLiteral("bookmarksList");
+    return QStringLiteral("bookmarksbookmarksList");
 }
 
 QVector<SidebarHierarchyItem> BookmarksModel::items() const
@@ -97,7 +97,7 @@ QString TagsModel::sectionName() const
 
 QString TagsModel::toolbarIconName() const
 {
-    return QStringLiteral("currentBranch");
+    return QStringLiteral("vcscurrentBranch");
 }
 
 QVector<SidebarHierarchyItem> TagsModel::items() const

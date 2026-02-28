@@ -12,6 +12,7 @@ private
     slots  :
 
 
+
     void defaultState_isLibrarySection();
     void setActiveIndex_clampsRangeAndEmitsSignal();
     void metadata_matchesSectionModels();
@@ -72,10 +73,10 @@ void SidebarHierarchyStoreTest::metadata_matchesSectionModels()
     QCOMPARE(store.sectionNames(), expectedSections);
 
     const QStringList expectedIcons = {
-        QStringLiteral("libraryFolder"),
-        QStringLiteral("projectStructure"),
-        QStringLiteral("bookmarksList"),
-        QStringLiteral("currentBranch"),
+        QStringLiteral("nodeslibraryFolder"),
+        QStringLiteral("generalprojectStructure"),
+        QStringLiteral("bookmarksbookmarksList"),
+        QStringLiteral("vcscurrentBranch"),
         QStringLiteral("imageToImage"),
         QStringLiteral("chartBar"),
         QStringLiteral("dataView"),
