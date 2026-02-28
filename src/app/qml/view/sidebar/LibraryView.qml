@@ -370,12 +370,8 @@ Item {
                 }
             })
         horizontalPadding: LV.Theme.gap2
-        horizontalPadding: LV.Theme.gap2
-        interactive: true
         interactive: true
         spacing: LV.Theme.gapNone
-        spacing: LV.Theme.gapNone
-        verticalPadding: LV.Theme.gap2
         verticalPadding: LV.Theme.gap2
     }
     LV.ContextMenu {

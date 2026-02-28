@@ -4,10 +4,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="wsn-type" content="wsnhead" />
-    <title>Placeholder</title>
+    <title>Placeholder. This is not requirements so it can be empty.</title>
     <created>YYYY-MM-DD-hh-mm-ss</created>
     <author>${ProfileName}</author>
-    <modified>YYYY-MM-DD-hh-mm-ss</modified>
+    <lastModified>YYYY-MM-DD-hh-mm-ss</lastModified>
     <modifiedBy>${ProfileName}</modifiedBy>
     <folders>
       <folder>folder1</folder>
