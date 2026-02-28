@@ -347,6 +347,19 @@ if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
                     "${_whatson_lvrs_host_abstract_input_bar_patched}")
         endif ()
 
+        file(GLOB_RECURSE _whatson_lvrs_host_qml_patch_files
+                CONFIGURE_DEPENDS
+                "${_whatson_lvrs_host_qml_dst}/*.qml")
+        foreach (_whatson_lvrs_host_qml_patch_file IN LISTS _whatson_lvrs_host_qml_patch_files)
+            file(READ "${_whatson_lvrs_host_qml_patch_file}" _whatson_lvrs_host_qml_patch_source)
+            string(REPLACE
+                    "\"projectStructure\""
+                    "\"generalprojectStructure\""
+                    _whatson_lvrs_host_qml_patch_result
+                    "${_whatson_lvrs_host_qml_patch_source}")
+            file(WRITE "${_whatson_lvrs_host_qml_patch_file}" "${_whatson_lvrs_host_qml_patch_result}")
+        endforeach ()
+
         foreach (_whatson_lvrs_host_entry IN ITEMS "resources" "LVRSCore.qmltypes")
             set(_whatson_lvrs_host_entry_src "${_whatson_lvrs_host_module_root}/${_whatson_lvrs_host_entry}")
             set(_whatson_lvrs_host_entry_dst "${_whatson_lvrs_host_runtime_module_dir}/${_whatson_lvrs_host_entry}")

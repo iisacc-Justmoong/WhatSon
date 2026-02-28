@@ -7,6 +7,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app`: LVRS-based UI application
 - `src/daemon`: background daemon skeleton
 
+## Search Input Behavior
+
+- Status bar search uses `LV.InputField` in `searchMode` and exposes editable state via QML properties/signals.
+- Sidebar hierarchy search uses `LV.InputField` in `searchMode` and filters visible hierarchy rows in real time.
+
 ## LVRS Integration Pattern
 
 The app CMake file follows the minimum recommended LVRS configuration.

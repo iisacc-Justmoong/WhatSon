@@ -18,9 +18,10 @@ Item {
     property color panelColor: LV.Theme.panelBackground04
     readonly property int rowHeight: 28
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
+    property string searchQuery: ""
     readonly property int searchRadius: 5
     readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
-    property var toolbarIconNames: ["nodeslibraryFolder", "table", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
+    property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property var toolbarItems: {
         if (libraryView.hierarchyViewModel && libraryView.hierarchyViewModel.toolbarItems !== undefined)
             return libraryView.hierarchyViewModel.toolbarItems;
@@ -66,6 +67,13 @@ Item {
             libraryView.hierarchyViewModel.renameItem(libraryView.editingIndex, libraryView.editingText);
         libraryView.editingIndex = -1;
         libraryView.editingText = "";
+    }
+    function matchesSearchText(label) {
+        var query = libraryView.searchQuery.trim().toLowerCase();
+        if (query.length === 0)
+            return true;
+        var target = (label === undefined || label === null) ? "" : String(label).toLowerCase();
+        return target.indexOf(query) >= 0;
     }
     function toggleViewOptionsMenu() {
         if (viewOptionsContextMenu.opened) {
@@ -130,63 +138,32 @@ Item {
                     libraryView.toolbarIndexChangeRequested(index);
                 }
             }
-            Rectangle {
-                id: searchBar
+            LV.InputField {
+                id: searchInput
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: libraryView.searchHeight
-                color: LV.Theme.panelBackground10
-                radius: libraryView.searchRadius
+                backgroundColor: LV.Theme.panelBackground10
+                backgroundColorDisabled: LV.Theme.panelBackground10
+                backgroundColorFocused: LV.Theme.panelBackground10
+                backgroundColorHover: LV.Theme.panelBackground10
+                backgroundColorPressed: LV.Theme.panelBackground10
+                clearButtonVisible: true
+                cornerRadius: libraryView.searchRadius
+                fieldMinHeight: libraryView.searchHeight
+                insetHorizontal: LV.Theme.gap7
+                insetVertical: LV.Theme.gap3
+                mode: searchMode
+                placeholderText: "Search"
+                selectByMouse: true
+                sideSpacing: LV.Theme.gap5
+                text: libraryView.searchQuery
 
-                TextInput {
-                    id: searchBarTextInput
-
-                    anchors.bottomMargin: LV.Theme.gap3
-                    anchors.fill: parent
-                    anchors.leftMargin: LV.Theme.gap7
-                    anchors.rightMargin: clearSearchButton.width + LV.Theme.gap7 + LV.Theme.gap2
-                    anchors.topMargin: LV.Theme.gap3
-                    clip: true
-                    color: LV.Theme.titleHeaderColor
-                    font.pixelSize: LV.Theme.textBody
-                    font.weight: LV.Theme.textBodyWeight
-                    renderType: Text.NativeRendering
-                    selectByMouse: true
-                    selectionColor: LV.Theme.accentBlue
-                    verticalAlignment: TextInput.AlignVCenter
+                onAccepted: function (text) {
+                    libraryView.searchQuery = text;
                 }
-                Text {
-                    anchors.left: searchBarTextInput.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: LV.Theme.descriptionColor
-                    font.pixelSize: LV.Theme.textBody
-                    font.weight: LV.Theme.textBodyWeight
-                    text: "Placeholder"
-                    visible: searchBarTextInput.text.length === 0 && !searchBarTextInput.activeFocus
-                }
-                Rectangle {
-                    id: clearSearchButton
-
-                    anchors.right: parent.right
-                    anchors.rightMargin: LV.Theme.gap5
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: LV.Theme.panelBackground12
-                    height: 12
-                    radius: 6
-                    width: 12
-
-                    Text {
-                        anchors.centerIn: parent
-                        color: LV.Theme.descriptionColor
-                        font.pixelSize: 9
-                        text: "x"
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: searchBarTextInput.text = ""
-                    }
+                onTextEdited: function (text) {
+                    libraryView.searchQuery = text;
                 }
             }
             Flickable {
@@ -216,11 +193,13 @@ Item {
                             required property int indentLevel
                             required property int index
                             required property string label
+                            readonly property bool matchesSearch: libraryView.matchesSearchText(label)
                             readonly property int renameLeftInset: LV.Theme.gap8 + indentLevel * 13 + LV.Theme.iconSm + LV.Theme.gap2
                             readonly property int renameRightInset: showChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8
                             required property bool showChevron
 
-                            height: libraryView.rowHeight
+                            height: matchesSearch ? libraryView.rowHeight : 0
+                            visible: matchesSearch
                             width: hierarchyViewport.width
 
                             LV.HierarchyItem {

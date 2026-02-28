@@ -34,6 +34,8 @@ Rectangle {
     readonly property color searchInputColor: LV.Theme.titleHeaderColor
     property string searchPlaceholder: "Search"
 
+    signal searchSubmitted(string text)
+    signal searchTextEdited(string text)
     signal windowMoveRequested
 
     Layout.fillWidth: true
@@ -44,9 +46,8 @@ Rectangle {
     Component.onCompleted: {
         if (!statusBar.compactMode)
             return;
-        if (compactSearchTextInput.text.length === 0 && statusBar.compactToolbarText.length > 0)
-            compactSearchTextInput.text = statusBar.compactToolbarText;
-        compactSearchTextInput.cursorPosition = compactSearchTextInput.text.length;
+        if (statusBar.searchText.length === 0 && statusBar.compactToolbarText.length > 0)
+            statusBar.searchText = statusBar.compactToolbarText;
     }
 
     Rectangle {
@@ -59,31 +60,35 @@ Rectangle {
         visible: !statusBar.compactMode
         width: statusBar.searchFieldWidth
 
-        TextInput {
-            id: searchBarTextInput
+        LV.InputField {
+            id: searchBarInput
 
-            anchors.bottomMargin: LV.Theme.gap3
             anchors.fill: parent
-            anchors.leftMargin: LV.Theme.gap7
-            anchors.rightMargin: LV.Theme.gap7
-            anchors.topMargin: LV.Theme.gap3
-            clip: true
-            color: statusBar.searchInputColor
-            font.pixelSize: LV.Theme.textBody
-            font.weight: LV.Theme.textBodyWeight
-            renderType: Text.NativeRendering
+            backgroundColor: statusBar.searchFieldColor
+            backgroundColorDisabled: statusBar.searchFieldColor
+            backgroundColorFocused: statusBar.searchFieldColor
+            backgroundColorHover: statusBar.searchFieldColor
+            backgroundColorPressed: statusBar.searchFieldColor
+            clearButtonVisible: true
+            cornerRadius: statusBar.searchFieldRadius
+            fieldMinHeight: statusBar.searchFieldHeight
+            insetHorizontal: LV.Theme.gap7
+            insetVertical: LV.Theme.gap3
+            mode: searchMode
+            placeholderText: statusBar.searchPlaceholder
             selectByMouse: true
-            selectionColor: LV.Theme.accentBlue
-            verticalAlignment: TextInput.AlignVCenter
-        }
-        Text {
-            anchors.left: searchBarTextInput.left
-            anchors.verticalCenter: parent.verticalCenter
-            color: statusBar.searchHintColor
-            font.pixelSize: LV.Theme.textBody
-            font.weight: LV.Theme.textBodyWeight
-            text: statusBar.searchPlaceholder
-            visible: searchBarTextInput.text.length === 0 && !searchBarTextInput.activeFocus
+            sideSpacing: LV.Theme.gap5
+            text: statusBar.searchText
+            textColor: statusBar.searchInputColor
+
+            onAccepted: function (text) {
+                statusBar.searchText = text;
+                statusBar.searchSubmitted(text);
+            }
+            onTextEdited: function (text) {
+                statusBar.searchText = text;
+                statusBar.searchTextEdited(text);
+            }
         }
     }
     Item {
@@ -154,31 +159,35 @@ Rectangle {
                 height: statusBar.compactFieldHeight
                 radius: statusBar.compactFieldRadius
 
-                TextInput {
-                    id: compactSearchTextInput
+                LV.InputField {
+                    id: compactSearchInput
 
-                    anchors.bottomMargin: LV.Theme.gap3
                     anchors.fill: parent
-                    anchors.leftMargin: LV.Theme.gap7
-                    anchors.rightMargin: LV.Theme.gap7
-                    anchors.topMargin: LV.Theme.gap3
-                    clip: true
-                    color: statusBar.searchInputColor
-                    font.pixelSize: LV.Theme.textBody
-                    font.weight: LV.Theme.textBodyWeight
-                    renderType: Text.NativeRendering
+                    backgroundColor: statusBar.compactFieldColor
+                    backgroundColorDisabled: statusBar.compactFieldColor
+                    backgroundColorFocused: statusBar.compactFieldColor
+                    backgroundColorHover: statusBar.compactFieldColor
+                    backgroundColorPressed: statusBar.compactFieldColor
+                    clearButtonVisible: true
+                    cornerRadius: statusBar.compactFieldRadius
+                    fieldMinHeight: statusBar.compactFieldHeight
+                    insetHorizontal: LV.Theme.gap7
+                    insetVertical: LV.Theme.gap3
+                    mode: searchMode
+                    placeholderText: statusBar.compactToolbarText.length > 0 ? statusBar.compactToolbarText : statusBar.searchPlaceholder
                     selectByMouse: true
-                    selectionColor: LV.Theme.accentBlue
-                    verticalAlignment: TextInput.AlignVCenter
-                }
-                Text {
-                    anchors.left: compactSearchTextInput.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: statusBar.searchHintColor
-                    font.pixelSize: LV.Theme.textBody
-                    font.weight: LV.Theme.textBodyWeight
-                    text: statusBar.compactToolbarText
-                    visible: compactSearchTextInput.text.length === 0 && !compactSearchTextInput.activeFocus
+                    sideSpacing: LV.Theme.gap5
+                    text: statusBar.searchText
+                    textColor: statusBar.searchInputColor
+
+                    onAccepted: function (text) {
+                        statusBar.searchText = text;
+                        statusBar.searchSubmitted(text);
+                    }
+                    onTextEdited: function (text) {
+                        statusBar.searchText = text;
+                        statusBar.searchTextEdited(text);
+                    }
                 }
             }
             Item {

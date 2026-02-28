@@ -10,14 +10,22 @@
     <lastModified>YYYY-MM-DD-hh-mm-ss</lastModified>
     <modifiedBy>${ProfileName}</modifiedBy>
     <folders>
-      <folder>folder1</folder>
-      <folder>folder2</folder>
-      <folder>folder3</folder>
+      <folder>%{folder1}</folder>
+      <folder>%{folder2}</folder>
+      <folder>%{folder3}</folder>
     </folders>
+    <project>
+        included project name
+    </project>
+    <bookmarks state=${bool} />
     <tags>
-      <tag>tag1</tag>
-      <tag>tag2</tag>
-      <tag>tag3</tag>
+      <tag>${tag1}</tag>
+      <tag>${tag2}</tag>
+      <tag>${tag3}</tag>
     </tags>
+    <progress enums={"Ready", Pending, InProgress, Done"}>
+        ${float: float}
+    </progress>
+    </ isPreset >
   </head>
 </contents>

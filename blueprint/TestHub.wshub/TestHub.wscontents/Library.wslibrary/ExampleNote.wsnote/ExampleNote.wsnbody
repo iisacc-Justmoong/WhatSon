@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?> // This is a example note.
 <!DOCTYPE WHATSONNOTE>
 <contents id=${id}>
   <body>
@@ -41,3 +41,12 @@
 //  subTitle
 //  </subTitle>
 //  </resource format=".xxx" resourcePath="TestHub.wshub/TestHub.wsresources/WhatImage.png">
+//  <event created="2016-01-01 00:00:00", startTime="2016-01-01 00:00:00", endTime="2016-01-01 00:00:00" isDone=${boolean}, doneTime="2016-01-01 00:00:00">
+//      <eventTitle>
+//      event title
+//      </eventTitle>
+//      <eventDescription>
+//      event description is looks like paragraph.
+//      </eventDescription>
+//  </event>
+//

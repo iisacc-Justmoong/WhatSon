@@ -1,6 +1,6 @@
 import QtQuick
 import LVRS 1.0 as LV
-import "../sidebar" as SidebarView
+import "sidebar" as SidebarView
 
 Item {
     id: hierarchyView

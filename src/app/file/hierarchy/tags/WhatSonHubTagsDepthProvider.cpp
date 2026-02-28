@@ -1,6 +1,332 @@
 #include "WhatSonHubTagsDepthProvider.hpp"
 
+#include <QDir>
+#include <QDirIterator>
+#include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QRegularExpression>
+#include <QSet>
+#include <utility>
+
+namespace
+{
+    QString normalizeHubPath(const QString& input)
+    {
+        const QString trimmed = input.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return {};
+        }
+        return QDir::cleanPath(trimmed);
+    }
+
+    bool resolveContentsDirectories(
+        const QString& wshubPath,
+        QStringList* outContentsDirectories,
+        QString* errorMessage)
+    {
+        if (outContentsDirectories == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("outContentsDirectories must not be null.");
+            }
+            return false;
+        }
+
+        const QString hubRootPath = normalizeHubPath(wshubPath);
+        if (hubRootPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("wshubPath must not be empty.");
+            }
+            return false;
+        }
+
+        const QFileInfo hubInfo(hubRootPath);
+        if (!hubInfo.exists())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("wshubPath does not exist: %1").arg(hubRootPath);
+            }
+            return false;
+        }
+        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub")))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Path is not a .wshub package: %1").arg(hubRootPath);
+            }
+            return false;
+        }
+        if (!hubInfo.isDir())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage =
+                    QStringLiteral("Only unpacked .wshub directories are supported: %1").arg(hubRootPath);
+            }
+            return false;
+        }
+
+        const QDir hubDir(hubRootPath);
+        QStringList contentsDirectories;
+
+        const QString fixedInternalPath = hubDir.filePath(QStringLiteral(".wscontents"));
+        if (QFileInfo(fixedInternalPath).isDir())
+        {
+            contentsDirectories.push_back(QDir::cleanPath(fixedInternalPath));
+        }
+
+        const QStringList dynamicContentsDirectories = hubDir.entryList(
+            QStringList{QStringLiteral("*.wscontents")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        for (const QString& directoryName : dynamicContentsDirectories)
+        {
+            contentsDirectories.push_back(QDir::cleanPath(hubDir.filePath(directoryName)));
+        }
+
+        if (contentsDirectories.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("No *.wscontents directory was found inside .wshub: %1").arg(
+                    hubRootPath);
+            }
+            return false;
+        }
+
+        contentsDirectories.removeDuplicates();
+        *outContentsDirectories = contentsDirectories;
+        return true;
+    }
+
+    bool parseTagsWstags(
+        const QStringList& contentsDirectories,
+        const WhatSonTagsFileReader& fileReader,
+        const WhatSonTagsJsonParser& jsonParser,
+        const WhatSonTagsDepthFlattener& depthFlattener,
+        QVector<WhatSonTagDepthEntry>* outEntries,
+        QString* errorMessage)
+    {
+        if (outEntries == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("outEntries must not be null.");
+            }
+            return false;
+        }
+
+        for (const QString& contentsDirectory : contentsDirectories)
+        {
+            const QString tagsPath = QDir(contentsDirectory).filePath(QStringLiteral("Tags.wstags"));
+            if (!QFileInfo(tagsPath).isFile())
+            {
+                continue;
+            }
+
+            QString rawJson;
+            if (!fileReader.readTextFile(tagsPath, &rawJson, errorMessage))
+            {
+                return false;
+            }
+
+            QJsonArray rootTags;
+            if (!jsonParser.parseRootTags(rawJson, &rootTags, errorMessage))
+            {
+                return false;
+            }
+
+            QVector<WhatSonTagDepthEntry> flattenedEntries = depthFlattener.flatten(rootTags);
+            for (WhatSonTagDepthEntry& entry : flattenedEntries)
+            {
+                entry.id = entry.id.trimmed();
+                entry.label = entry.label.trimmed();
+                if (entry.id.isEmpty())
+                {
+                    entry.id = entry.label;
+                }
+                if (entry.label.isEmpty())
+                {
+                    entry.label = entry.id;
+                }
+                entry.depth = 0;
+            }
+
+            *outEntries = std::move(flattenedEntries);
+            return true;
+        }
+
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Tags.wstags was not found inside .wshub contents directories.");
+        }
+        return false;
+    }
+
+    bool isTemplateToken(const QString& token)
+    {
+        const QString trimmed = token.trimmed();
+        return (trimmed.startsWith(QStringLiteral("${")) && trimmed.endsWith(QLatin1Char('}')))
+            || (trimmed.startsWith(QStringLiteral("%{")) && trimmed.endsWith(QLatin1Char('}')));
+    }
+
+    QVector<WhatSonTagDepthEntry> parseNoteTagEntries(const QString& wsnHeadText)
+    {
+        static const QRegularExpression kTagRegex(
+            QStringLiteral(R"(<\s*tag\b[^>]*>\s*([^<]*)\s*<\s*/\s*tag\s*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QVector<WhatSonTagDepthEntry> entries;
+        QRegularExpressionMatchIterator it = kTagRegex.globalMatch(wsnHeadText);
+        while (it.hasNext())
+        {
+            const QRegularExpressionMatch match = it.next();
+            const QString rawTagValue = match.captured(1).trimmed();
+            if (rawTagValue.isEmpty() || isTemplateToken(rawTagValue))
+            {
+                continue;
+            }
+
+            WhatSonTagDepthEntry entry;
+            entry.id = rawTagValue;
+            entry.label = rawTagValue;
+            entry.depth = 0;
+            entries.push_back(std::move(entry));
+        }
+
+        return entries;
+    }
+
+    QVector<WhatSonTagDepthEntry> parseTagEntriesFromNoteHeaders(
+        const QStringList& contentsDirectories,
+        QString* errorMessage)
+    {
+        QVector<WhatSonTagDepthEntry> entries;
+        QSet<QString> dedupKeys;
+
+        bool wsnHeadFound = false;
+        for (const QString& contentsDirectory : contentsDirectories)
+        {
+            QDirIterator iterator(
+                contentsDirectory,
+                QStringList{QStringLiteral("*.wsnhead")},
+                QDir::Files,
+                QDirIterator::Subdirectories);
+
+            while (iterator.hasNext())
+            {
+                const QString wsnHeadPath = iterator.next();
+                wsnHeadFound = true;
+
+                QFile file(wsnHeadPath);
+                if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
+                    continue;
+                }
+                const QString fileContents = QString::fromUtf8(file.readAll());
+
+                const QVector<WhatSonTagDepthEntry> parsedEntries = parseNoteTagEntries(fileContents);
+                for (const WhatSonTagDepthEntry& parsedEntry : parsedEntries)
+                {
+                    const QString dedupKey = parsedEntry.id.trimmed().toCaseFolded();
+                    if (dedupKey.isEmpty() || dedupKeys.contains(dedupKey))
+                    {
+                        continue;
+                    }
+                    dedupKeys.insert(dedupKey);
+                    entries.push_back(parsedEntry);
+                }
+            }
+        }
+
+        if (!wsnHeadFound && errorMessage != nullptr)
+        {
+            *errorMessage =
+                QStringLiteral("No .wsnhead files were found under .wshub contents directories.");
+        }
+
+        return entries;
+    }
+
+    QString resolveTagsWstagsPath(const QStringList& contentsDirectories)
+    {
+        for (const QString& contentsDirectory : contentsDirectories)
+        {
+            const QString candidatePath = QDir(contentsDirectory).filePath(QStringLiteral("Tags.wstags"));
+            if (QFileInfo(candidatePath).isFile())
+            {
+                return candidatePath;
+            }
+        }
+
+        if (!contentsDirectories.isEmpty())
+        {
+            return QDir(contentsDirectories.first()).filePath(QStringLiteral("Tags.wstags"));
+        }
+
+        return {};
+    }
+
+    bool writeTagsWstags(
+        const QStringList& contentsDirectories,
+        const QVector<WhatSonTagDepthEntry>& entries,
+        QString* errorMessage)
+    {
+        const QString tagsPath = resolveTagsWstagsPath(contentsDirectories);
+        if (tagsPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Unable to resolve Tags.wstags path.");
+            }
+            return false;
+        }
+
+        QJsonArray tagsArray;
+        for (const WhatSonTagDepthEntry& entry : entries)
+        {
+            const QString id = entry.id.trimmed();
+            const QString label = entry.label.trimmed().isEmpty() ? id : entry.label.trimmed();
+            if (id.isEmpty())
+            {
+                continue;
+            }
+
+            QJsonObject tagObject;
+            tagObject.insert(QStringLiteral("id"), id);
+            tagObject.insert(QStringLiteral("label"), label);
+            tagsArray.append(tagObject);
+        }
+
+        QJsonObject rootObject;
+        rootObject.insert(QStringLiteral("version"), 1);
+        rootObject.insert(QStringLiteral("schema"), QStringLiteral("whatson.tags.tree"));
+        rootObject.insert(QStringLiteral("tags"), tagsArray);
+
+        QFile file(tagsPath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write Tags.wstags: %1").arg(tagsPath);
+            }
+            return false;
+        }
+
+        const QJsonDocument document(rootObject);
+        file.write(document.toJson(QJsonDocument::Indented));
+        file.close();
+        return true;
+    }
+} // namespace
 
 WhatSonHubTagsDepthProvider::WhatSonHubTagsDepthProvider() = default;
 
@@ -10,25 +336,82 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
     const QString& wshubPath,
     QString* errorMessage)
 {
-    QString tagsPath;
-    if (!m_pathResolver.resolveTagsFilePath(wshubPath, &tagsPath, errorMessage))
+    QStringList contentsDirectories;
+    QString contentsError;
+    if (!resolveContentsDirectories(wshubPath, &contentsDirectories, &contentsError))
     {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = contentsError;
+        }
         return false;
     }
 
-    QString rawJson;
-    if (!m_fileReader.readTextFile(tagsPath, &rawJson, errorMessage))
+    QString noteHeadersError;
+    const QVector<WhatSonTagDepthEntry> noteHeaderEntries =
+        parseTagEntriesFromNoteHeaders(contentsDirectories, &noteHeadersError);
+    if (!noteHeaderEntries.isEmpty())
     {
+        QString writeError;
+        if (!writeTagsWstags(contentsDirectories, noteHeaderEntries, &writeError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+
+        QVector<WhatSonTagDepthEntry> tagsFileEntries;
+        QString tagsFileError;
+        if (!parseTagsWstags(
+            contentsDirectories,
+            m_fileReader,
+            m_jsonParser,
+            m_depthFlattener,
+            &tagsFileEntries,
+            &tagsFileError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral(
+                        "Failed to parse Tags.wstags after note-header sync: %1")
+                    .arg(tagsFileError);
+            }
+            return false;
+        }
+
+        m_entries = std::move(tagsFileEntries);
+        return true;
+    }
+
+    QVector<WhatSonTagDepthEntry> tagsFileEntries;
+    QString tagsFileError;
+    if (!parseTagsWstags(
+        contentsDirectories,
+        m_fileReader,
+        m_jsonParser,
+        m_depthFlattener,
+        &tagsFileEntries,
+        &tagsFileError))
+    {
+        if (errorMessage != nullptr)
+        {
+            if (!noteHeadersError.isEmpty())
+            {
+                *errorMessage = QStringLiteral(
+                        "Failed to load tags from note headers (%1) and Tags.wstags (%2).")
+                    .arg(noteHeadersError, tagsFileError);
+            }
+            else
+            {
+                *errorMessage = tagsFileError;
+            }
+        }
         return false;
     }
 
-    QJsonArray rootTags;
-    if (!m_jsonParser.parseRootTags(rawJson, &rootTags, errorMessage))
-    {
-        return false;
-    }
-
-    m_entries = m_depthFlattener.flatten(rootTags);
+    m_entries = std::move(tagsFileEntries);
     return true;
 }
 

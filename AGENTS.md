@@ -100,7 +100,7 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/body/BodyLayout.qml`
     - `src/app/qml/view/body/HierarchySidebarLayout.qml`
     - `src/app/qml/view/body/ContentViewLayout.qml`
-    - `src/app/qml/view/sidebar/LibraryView.qml`
+    - `src/app/qml/view/panels/sidebar/LibraryView.qml`
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`
