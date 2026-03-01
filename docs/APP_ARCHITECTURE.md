@@ -135,6 +135,8 @@ Examples:
 - `WhatSonHubParser` + `WhatSonHubStore` + `WhatSonHubStat` (hub root topology + `.wsstat` metadata)
 - `WhatSonHubPlacementStore` (hub coordinate state from `.whatson/hub.json`)
 - `WhatSonHubTagsStateStore` (flattened tag depth state per hub)
+- Runtime load policy: `loadFromWshub()` is all-or-nothing; any parse/placement/tags failure leaves previously committed
+  runtime state unchanged.
 
 Hub parser behavior:
 

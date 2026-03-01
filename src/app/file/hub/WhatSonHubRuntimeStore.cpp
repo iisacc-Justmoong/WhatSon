@@ -43,9 +43,15 @@ bool WhatSonHubRuntimeStore::loadFromWshub(
             errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
-    m_hubStore.insert(hubStore.hubPath(), hubStore);
 
-    if (!m_placementStore.loadFromWshub(wshubPath, errorMessage))
+    // All-or-nothing policy: stage updates in local copies and commit only on full success.
+    QHash<QString, WhatSonHubStore> stagedHubStore = m_hubStore;
+    WhatSonHubPlacementStore stagedPlacementStore = m_placementStore;
+    WhatSonHubTagsStateStore stagedTagsStateStore = m_tagsStateStore;
+
+    stagedHubStore.insert(hubStore.hubPath(), hubStore);
+
+    if (!stagedPlacementStore.loadFromWshub(wshubPath, errorMessage))
     {
         WhatSon::Debug::trace(
             QStringLiteral("hub.runtime"),
@@ -53,7 +59,7 @@ bool WhatSonHubRuntimeStore::loadFromWshub(
             errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
-    if (!m_tagsStateStore.loadFromWshub(wshubPath, errorMessage))
+    if (!stagedTagsStateStore.loadFromWshub(wshubPath, errorMessage))
     {
         WhatSon::Debug::trace(
             QStringLiteral("hub.runtime"),
@@ -62,8 +68,13 @@ bool WhatSonHubRuntimeStore::loadFromWshub(
         return false;
     }
 
-    const int tagCount = m_tagsStateStore.entries(wshubPath).size();
-    const WhatSonHubStore loadedHub = m_hubStore.value(normalizePath(wshubPath));
+    m_hubStore = std::move(stagedHubStore);
+    m_placementStore = std::move(stagedPlacementStore);
+    m_tagsStateStore = std::move(stagedTagsStateStore);
+
+    const QString normalizedPath = normalizePath(wshubPath);
+    const int tagCount = m_tagsStateStore.entries(normalizedPath).size();
+    const WhatSonHubStore loadedHub = m_hubStore.value(normalizedPath);
     WhatSon::Debug::trace(
         QStringLiteral("hub.runtime"),
         QStringLiteral("load.success"),
@@ -84,9 +95,13 @@ bool WhatSonHubRuntimeStore::contains(const QString& wshubPath) const
 
 QStringList WhatSonHubRuntimeStore::hubPaths() const
 {
-    QSet<QString> merged = QSet<QString>(m_hubStore.keys().begin(), m_hubStore.keys().end());
-    merged.unite(QSet<QString>(m_placementStore.hubPaths().begin(), m_placementStore.hubPaths().end()));
-    merged.unite(QSet<QString>(m_tagsStateStore.hubPaths().begin(), m_tagsStateStore.hubPaths().end()));
+    const QStringList hubStorePaths = m_hubStore.keys();
+    const QStringList placementPaths = m_placementStore.hubPaths();
+    const QStringList tagStatePaths = m_tagsStateStore.hubPaths();
+
+    QSet<QString> merged(hubStorePaths.begin(), hubStorePaths.end());
+    merged.unite(QSet<QString>(placementPaths.begin(), placementPaths.end()));
+    merged.unite(QSet<QString>(tagStatePaths.begin(), tagStatePaths.end()));
 
     QStringList paths = merged.values();
     paths.sort();

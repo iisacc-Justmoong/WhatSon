@@ -19,7 +19,8 @@ namespace
 
     bool buildRequiredRuntimeHub(
         const QString& hubPath,
-        bool includeTagsFile)
+        bool includeTagsFile,
+        QByteArray manifestText = QByteArray())
     {
         const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("RuntimeHub.wscontents"));
         const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
@@ -35,14 +36,20 @@ namespace
             return false;
         }
 
+        if (manifestText.isEmpty())
+        {
+            manifestText =
+                "{\n"
+                "  \"coordinate\": {\n"
+                "    \"x\": 24.0,\n"
+                "    \"y\": 88.0\n"
+                "  }\n"
+                "}\n";
+        }
+
         if (!writeUtf8File(
             QDir(manifestDirPath).filePath(QStringLiteral("hub.json")),
-            "{\n"
-            "  \"coordinate\": {\n"
-            "    \"x\": 24.0,\n"
-            "    \"y\": 88.0\n"
-            "  }\n"
-            "}\n"))
+            manifestText))
         {
             return false;
         }
@@ -124,6 +131,7 @@ private
 
     void loadFromWshub_storesHubAndContentsState();
     void loadFromWshub_missingRequiredEntry_fails();
+    void loadFromWshub_allOrNothing_keepsPreviousStateOnLateFailure();
     void setPlacement_setTagDepthEntries_overrideRuntimeState();
 };
 
@@ -161,6 +169,44 @@ void WhatSonHubRuntimeStoreTest::loadFromWshub_missingRequiredEntry_fails()
     QString errorMessage;
     QVERIFY(!store.loadFromWshub(hubPath, &errorMessage));
     QVERIFY(errorMessage.contains(QStringLiteral("Tags.wstags")));
+}
+
+void WhatSonHubRuntimeStoreTest::loadFromWshub_allOrNothing_keepsPreviousStateOnLateFailure()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString validHubPath = QDir(tempDir.path()).filePath(QStringLiteral("RuntimeHub.wshub"));
+    QVERIFY(buildRequiredRuntimeHub(validHubPath, true));
+
+    WhatSonHubRuntimeStore store;
+    QString errorMessage;
+    QVERIFY2(store.loadFromWshub(validHubPath, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(store.contains(validHubPath));
+
+    const QString brokenHubPath = QDir(tempDir.path()).filePath(QStringLiteral("BrokenHub.wshub"));
+    QVERIFY(buildRequiredRuntimeHub(
+        brokenHubPath,
+        true,
+        "{\n"
+        "  \"coordinate\": { \"x\": 10.0, \"y\": 10.0,\n"
+        "}\n"));
+
+    errorMessage.clear();
+    QVERIFY(!store.loadFromWshub(brokenHubPath, &errorMessage));
+    QVERIFY(errorMessage.contains(QStringLiteral("Invalid hub manifest JSON")));
+
+    QVERIFY(!store.contains(brokenHubPath));
+    QVERIFY(store.contains(validHubPath));
+
+    const QStringList paths = store.hubPaths();
+    QCOMPARE(paths.size(), 1);
+    QVERIFY(paths.contains(QDir::cleanPath(validHubPath)));
+
+    QCOMPARE(store.placement(validHubPath).x(), 24.0);
+    QCOMPARE(store.placement(validHubPath).y(), 88.0);
+    QCOMPARE(store.tagDepthEntries(validHubPath).size(), 2);
+    QCOMPARE(store.hubStat(validHubPath).noteCount(), 9);
 }
 
 void WhatSonHubRuntimeStoreTest::setPlacement_setTagDepthEntries_overrideRuntimeState()
