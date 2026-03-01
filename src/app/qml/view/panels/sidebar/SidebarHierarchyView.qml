@@ -237,9 +237,13 @@ Item {
                             required property bool expanded
                             required property int indentLevel
                             required property int index
+                            readonly property bool itemAccent: accent
+                            readonly property bool itemExpanded: expanded
+                            readonly property int itemIndentLevel: indentLevel
+                            readonly property string itemLabel: label
                             required property string label
-                            readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(label)
-                            readonly property int renameLeftInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding + indentLevel * sidebarHierarchyView.hierarchyIndentStep + sidebarHierarchyView.hierarchyChevronSlotWidth
+                            readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(itemLabel)
+                            readonly property int renameLeftInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding + itemIndentLevel * sidebarHierarchyView.hierarchyIndentStep + sidebarHierarchyView.hierarchyChevronSlotWidth
                             readonly property int renameRightInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding
                             required property bool showChevron
 
@@ -254,18 +258,18 @@ Item {
                                 anchors.fill: parent
                                 baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
                                 chevronColor: LV.Theme.darkGrey10
-                                expanded: expanded
+                                expanded: hierarchyDelegate.itemExpanded
                                 iconPlaceholderColor: LV.Theme.accentGrayLight
-                                indentLevel: indentLevel
+                                indentLevel: hierarchyDelegate.itemIndentLevel
                                 indentStep: sidebarHierarchyView.hierarchyIndentStep
-                                label: index === sidebarHierarchyView.editingIndex ? "" : label
+                                label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
                                 leadingSpacing: LV.Theme.gap2
                                 rowBackgroundColor: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowBackgroundColorHover: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowBackgroundColorPressed: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowRightPadding: LV.Theme.gap8
                                 showChevron: hierarchyDelegate.showChevron
-                                textColorNormal: accent ? LV.Theme.accentBlue : LV.Theme.bodyColor
+                                textColorNormal: hierarchyDelegate.itemAccent ? LV.Theme.accentBlue : LV.Theme.bodyColor
                             }
                             MouseArea {
                                 anchors.fill: parent

@@ -281,21 +281,14 @@ namespace WhatSon::Hierarchy::PresetSupport
         const QStringList sanitized = sanitizeStringList(values);
 
         QVector<PresetHierarchyItem> items;
-        items.reserve(sanitized.size() + 1);
+        items.reserve(sanitized.size());
 
-        PresetHierarchyItem bucket;
-        bucket.depth = 0;
-        bucket.accent = true;
-        bucket.expanded = true;
-        bucket.label = QStringLiteral("%1 (%2)").arg(bucketName).arg(sanitized.size());
-        bucket.showChevron = !sanitized.isEmpty();
-        items.push_back(std::move(bucket));
-
+        Q_UNUSED(bucketName);
         Q_UNUSED(fallbackPrefix);
         for (const QString& value : sanitized)
         {
             PresetHierarchyItem child;
-            child.depth = 1;
+            child.depth = 0;
             child.accent = false;
             child.expanded = false;
             child.label = value;

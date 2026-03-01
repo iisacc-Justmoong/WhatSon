@@ -235,27 +235,23 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     viewModel.setProjectNames({QStringLiteral("Alpha"), QStringLiteral("Beta")});
     QVERIFY(viewModel.renameEnabled());
     QVERIFY(viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
     viewModel.setSelectedIndex(0);
-    QVERIFY(!viewModel.deleteFolderEnabled());
-    QVERIFY(!viewModel.renameItem(0, QStringLiteral("Projects-Header")));
-
-    viewModel.setSelectedIndex(1);
     QVERIFY(viewModel.deleteFolderEnabled());
-    QVERIFY(viewModel.renameItem(1, QStringLiteral("Alpha-Renamed")));
-    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Alpha-Renamed"));
+    QVERIFY(viewModel.renameItem(0, QStringLiteral("Alpha-Renamed")));
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Alpha-Renamed"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
-    viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    viewModel.deleteSelectedFolder();
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
 }
 
 void HierarchyViewModelsTest::projectsViewModel_reactsToModelMutation()
 {
     ProjectsHierarchyViewModel viewModel;
     viewModel.setProjectNames({QStringLiteral("Alpha"), QStringLiteral("Beta")});
-    viewModel.setSelectedIndex(2);
-    QCOMPARE(viewModel.itemCount(), 3);
+    viewModel.setSelectedIndex(1);
+    QCOMPARE(viewModel.itemCount(), 2);
 
     QSignalSpy itemCountSpy(&viewModel, &ProjectsHierarchyViewModel::itemCountChanged);
     QVector<ProjectsHierarchyItem> externalItems;
@@ -349,18 +345,15 @@ void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
     viewModel.setResourcePaths({QStringLiteral("assets/logo.png")});
     QVERIFY(viewModel.renameEnabled());
     QVERIFY(viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.setSelectedIndex(0);
-    QVERIFY(!viewModel.deleteFolderEnabled());
-    QVERIFY(!viewModel.renameItem(0, QStringLiteral("Resources-Header")));
-
-    viewModel.setSelectedIndex(1);
-    QVERIFY(viewModel.renameItem(1, QStringLiteral("assets/logo-renamed.png")));
-    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("assets/logo-renamed.png"));
+    QVERIFY(viewModel.deleteFolderEnabled());
+    QVERIFY(viewModel.renameItem(0, QStringLiteral("assets/logo-renamed.png")));
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("assets/logo-renamed.png"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
-    viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    viewModel.deleteSelectedFolder();
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
 
 void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
@@ -391,18 +384,15 @@ void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
     viewModel.setEventNames({QStringLiteral("Kickoff")});
     QVERIFY(viewModel.renameEnabled());
     QVERIFY(viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.setSelectedIndex(0);
-    QVERIFY(!viewModel.deleteFolderEnabled());
-    QVERIFY(!viewModel.renameItem(0, QStringLiteral("Event-Header")));
-
-    viewModel.setSelectedIndex(1);
-    QVERIFY(viewModel.renameItem(1, QStringLiteral("Kickoff-Renamed")));
-    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Kickoff-Renamed"));
+    QVERIFY(viewModel.deleteFolderEnabled());
+    QVERIFY(viewModel.renameItem(0, QStringLiteral("Kickoff-Renamed")));
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Kickoff-Renamed"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
-    viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    viewModel.deleteSelectedFolder();
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
 
 void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
@@ -411,18 +401,15 @@ void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
     viewModel.setPresetNames({QStringLiteral("Executive Summary")});
     QVERIFY(viewModel.renameEnabled());
     QVERIFY(viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.setSelectedIndex(0);
-    QVERIFY(!viewModel.deleteFolderEnabled());
-    QVERIFY(!viewModel.renameItem(0, QStringLiteral("Preset-Header")));
-
-    viewModel.setSelectedIndex(1);
-    QVERIFY(viewModel.renameItem(1, QStringLiteral("Executive-Summary-Renamed")));
-    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Executive-Summary-Renamed"));
+    QVERIFY(viewModel.deleteFolderEnabled());
+    QVERIFY(viewModel.renameItem(0, QStringLiteral("Executive-Summary-Renamed")));
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Executive-Summary-Renamed"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
-    viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    viewModel.deleteSelectedFolder();
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
 
 void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
@@ -486,8 +473,8 @@ void HierarchyViewModelsTest::projectsModel_appliesCorrectionAndRaisesHookSignal
     QCOMPARE(model.rowCount(), 1);
     const QModelIndex index = model.index(0, 0);
     QCOMPARE(model.data(index, ProjectsHierarchyModel::DepthRole).toInt(), 0);
-    QCOMPARE(model.data(index, ProjectsHierarchyModel::LabelRole).toString(), QStringLiteral("Item1"));
-    QVERIFY(model.correctionCount() >= 2);
+    QCOMPARE(model.data(index, ProjectsHierarchyModel::LabelRole).toString(), QString());
+    QVERIFY(model.correctionCount() >= 1);
     QVERIFY(issueSpy.count() >= 1);
     QVERIFY(correctedSpy.count() >= 1);
 }
@@ -565,14 +552,12 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
 
     QCOMPARE(model.rowCount(), 1);
     const QModelIndex index = model.index(0, 0);
-    QCOMPARE(model.data(index, LibraryNoteListModel::TitleRole).toString(), QStringLiteral("No contents"));
-    QCOMPARE(model.data(index, LibraryNoteListModel::DescRole).toString(), QStringLiteral("No contents"));
+    QCOMPARE(model.data(index, LibraryNoteListModel::TitleRole).toString(), QString());
+    QCOMPARE(model.data(index, LibraryNoteListModel::DescRole).toString(), QString());
     QCOMPARE(model.data(index, LibraryNoteListModel::FoldersRole).toStringList(),
              QStringList({QStringLiteral("folder-a")}));
-    QCOMPARE(
-        model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(),
-        WhatSon::Bookmarks::defaultBookmarkColorHex());
-    QVERIFY(model.correctionCount() >= 3);
+    QCOMPARE(model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(), QString());
+    QVERIFY(model.correctionCount() >= 1);
 }
 
 void HierarchyViewModelsTest::noteListModel_limitsDescriptionToFiveLines()

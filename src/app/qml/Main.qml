@@ -9,8 +9,7 @@ LV.ApplicationWindow {
     id: applicationWindow
 
     readonly property string activeMainLayout: useMobileMainLayout ? "mobile" : "desktop"
-    readonly property bool adaptiveCompactMode: runtimeMobilePlatform || mediaCompactMode || mobileLayoutByMediaFallback
-    readonly property int adaptiveStatusBarHeight: adaptiveCompactMode ? 0 : statusBarHeight
+    readonly property int adaptiveStatusBarHeight: useMobileMainLayout ? 0 : statusBarHeight
     readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: LV.Theme.inputWidthMd - LV.Theme.gap12
@@ -77,14 +76,14 @@ LV.ApplicationWindow {
         preferredDrawerHeight = Math.max(minDrawerHeight, Math.min(maxDrawerHeight, preferredDrawerHeight));
     }
     function reportLayoutBranch(source) {
-        console.log("[whatson:debug][main.layout][" + source + "] os=" + runtimePlatformOs + " runtimeDesktop=" + runtimeDesktopPlatform + " runtimeMobile=" + runtimeMobilePlatform + " mediaMobile=" + mediaMobileMode + " mediaCompact=" + mediaCompactMode + " mobileByPlatform=" + mobileLayoutByPlatform + " mobileByMediaFallback=" + mobileLayoutByMediaFallback + " useMobileMainLayout=" + useMobileMainLayout + " adaptiveCompactMode=" + adaptiveCompactMode + " selectedLayout=" + activeMainLayout);
+        console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " isDesktopPlatform=" + isDesktopPlatform + " isMobilePlatform=" + isMobilePlatform + " useMobileMainLayout=" + useMobileMainLayout + " selectedLayout=" + activeMainLayout);
     }
 
     autoAttachRuntimeEvents: true
     globalEventListenersEnabled: true
     height: windowDefaultHeight
     minimumHeight: windowMinHeight
-    minimumWidth: adaptiveCompactMode ? windowMobileMinWidth : desktopMinimumBodyWidth
+    minimumWidth: useMobileMainLayout ? windowMobileMinWidth : desktopMinimumBodyWidth
     navItems: []
     navigationEnabled: false
     visible: true
@@ -134,7 +133,7 @@ LV.ApplicationWindow {
                     compactMode: false
                     panelColor: applicationWindow.statusBarColor
                     panelHeight: applicationWindow.statusBarHeight
-                    visible: !applicationWindow.adaptiveCompactMode
+                    visible: !applicationWindow.useMobileMainLayout
 
                     onWindowMoveRequested: {
                         applicationWindow.requestWindowMove();
@@ -143,7 +142,7 @@ LV.ApplicationWindow {
                 BodyPanelView.NavigationBarLayout {
                     id: navigationBar
 
-                    compactMode: applicationWindow.adaptiveCompactMode
+                    compactMode: applicationWindow.useMobileMainLayout
                     panelColor: applicationWindow.navigationBarColor
                     panelHeight: applicationWindow.navigationBarHeight
                 }
@@ -155,7 +154,7 @@ LV.ApplicationWindow {
                     activeToolbarIndex: applicationWindow.hierarchyActiveToolbarIndex
                     bookmarksViewModel: (typeof bookmarksHierarchyViewModel !== "undefined") ? bookmarksHierarchyViewModel : null
                     compactCanvasColor: applicationWindow.canvasColor
-                    compactMode: applicationWindow.adaptiveCompactMode
+                    compactMode: applicationWindow.useMobileMainLayout
                     contentPanelColor: applicationWindow.contentPanelColor
                     contentsDisplayColor: applicationWindow.contentsDisplayColor
                     drawerColor: applicationWindow.drawerColor
@@ -210,7 +209,7 @@ LV.ApplicationWindow {
                     compactMode: true
                     panelColor: applicationWindow.statusBarColor
                     panelHeight: applicationWindow.statusBarHeight
-                    visible: applicationWindow.adaptiveCompactMode
+                    visible: applicationWindow.useMobileMainLayout
                 }
             }
         }
