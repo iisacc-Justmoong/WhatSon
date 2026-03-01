@@ -36,6 +36,7 @@ public:
     Q_INVOKABLE void setDepthItems(const QVariantList& depthItems);
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const;
+    Q_INVOKABLE bool canRenameItem(int index) const;
     Q_INVOKABLE bool renameItem(int index, const QString& displayName);
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
@@ -59,6 +60,7 @@ public
     }
 
     signals  :
+
 
 
     void selectedIndexChanged();
@@ -85,4 +87,5 @@ private:
     int m_itemCount = 0;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
+    QString m_tagsFilePath;
 };

@@ -92,27 +92,50 @@ QString ResourcesHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
-bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayName)
+bool ResourcesHierarchyViewModel::canRenameItem(int index) const
 {
-    if (!renameEnabled())
-    {
-        return false;
-    }
     if (index < 0 || index >= m_items.size())
     {
         return false;
     }
-    if (WhatSon::Hierarchy::ResourcesSupport::isBucketHeaderItem(m_items.at(index)))
+
+    return !WhatSon::Hierarchy::ResourcesSupport::isBucketHeaderItem(m_items.at(index));
+}
+
+bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!canRenameItem(index))
     {
         return false;
     }
 
-    if (!WhatSon::Hierarchy::ResourcesSupport::renameHierarchyItem(&m_items, index, displayName))
+    QVector<ResourcesHierarchyItem> stagedItems = m_items;
+    if (!WhatSon::Hierarchy::ResourcesSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
         return false;
     }
 
-    syncDomainStoreFromItems();
+    const QStringList stagedResourcePaths =
+        WhatSon::Hierarchy::ResourcesSupport::extractDomainLabelsFromItems(stagedItems);
+    WhatSonResourcesHierarchyStore stagedStore = m_store;
+    stagedStore.setResourcePaths(stagedResourcePaths);
+
+    if (!m_resourcesFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_resourcesFilePath, &writeError))
+        {
+            WhatSon::Debug::trace(
+                QString::fromLatin1(kScope),
+                QStringLiteral("renameItem.writeFailed"),
+                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_resourcesFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_store = std::move(stagedStore);
+    m_resourcePaths = m_store.resourcePaths();
     syncModel();
     return true;
 }
@@ -190,6 +213,8 @@ bool ResourcesHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_resourcesFilePath.clear();
+
     QStringList contentsDirectories;
     QString resolveError;
     if (!WhatSon::Hierarchy::ResourcesSupport::resolveContentsDirectories(
@@ -212,6 +237,11 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         if (!QFileInfo(filePath).isFile())
         {
             continue;
+        }
+
+        if (m_resourcesFilePath.isEmpty())
+        {
+            m_resourcesFilePath = filePath;
         }
 
         QString rawText;
@@ -241,6 +271,11 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         {
             aggregated.push_back(value);
         }
+    }
+
+    if (m_resourcesFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_resourcesFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Resources.wsresources"));
     }
 
     setResourcePaths(aggregated);

@@ -264,6 +264,12 @@ QString BookmarksHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
+bool BookmarksHierarchyViewModel::canRenameItem(int index) const
+{
+    Q_UNUSED(index);
+    return false;
+}
+
 bool BookmarksHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
     Q_UNUSED(index);

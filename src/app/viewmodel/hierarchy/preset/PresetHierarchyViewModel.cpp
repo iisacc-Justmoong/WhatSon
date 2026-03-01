@@ -1,11 +1,17 @@
 #include "PresetHierarchyViewModel.hpp"
 
+#include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
 #include "viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
+
+namespace
+{
+    constexpr auto kScope = "preset.viewmodel";
+}
 
 PresetHierarchyViewModel::PresetHierarchyViewModel(QObject* parent)
     : QObject(parent)
@@ -85,27 +91,49 @@ QString PresetHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
-bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
+bool PresetHierarchyViewModel::canRenameItem(int index) const
 {
-    if (!renameEnabled())
-    {
-        return false;
-    }
     if (index < 0 || index >= m_items.size())
     {
         return false;
     }
-    if (WhatSon::Hierarchy::PresetSupport::isBucketHeaderItem(m_items.at(index)))
+
+    return !WhatSon::Hierarchy::PresetSupport::isBucketHeaderItem(m_items.at(index));
+}
+
+bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!canRenameItem(index))
     {
         return false;
     }
 
-    if (!WhatSon::Hierarchy::PresetSupport::renameHierarchyItem(&m_items, index, displayName))
+    QVector<PresetHierarchyItem> stagedItems = m_items;
+    if (!WhatSon::Hierarchy::PresetSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
         return false;
     }
 
-    syncDomainStoreFromItems();
+    const QStringList stagedPresetNames = WhatSon::Hierarchy::PresetSupport::extractDomainLabelsFromItems(stagedItems);
+    WhatSonPresetHierarchyStore stagedStore = m_store;
+    stagedStore.setPresetNames(stagedPresetNames);
+
+    if (!m_presetFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_presetFilePath, &writeError))
+        {
+            WhatSon::Debug::trace(
+                QString::fromLatin1(kScope),
+                QStringLiteral("renameItem.writeFailed"),
+                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_presetFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_store = std::move(stagedStore);
+    m_presetNames = m_store.presetNames();
     syncModel();
     return true;
 }
@@ -182,6 +210,8 @@ bool PresetHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_presetFilePath.clear();
+
     QStringList contentsDirectories;
     QString resolveError;
     if (!WhatSon::Hierarchy::PresetSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
@@ -203,6 +233,11 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
         if (!QFileInfo(filePath).isFile())
         {
             continue;
+        }
+
+        if (m_presetFilePath.isEmpty())
+        {
+            m_presetFilePath = filePath;
         }
 
         QString rawText;
@@ -232,6 +267,11 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
         {
             aggregated.push_back(value);
         }
+    }
+
+    if (m_presetFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_presetFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Preset.wspreset"));
     }
 
     setPresetNames(aggregated);

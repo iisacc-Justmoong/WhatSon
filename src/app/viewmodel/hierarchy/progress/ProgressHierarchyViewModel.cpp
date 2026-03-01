@@ -87,12 +87,7 @@ void ProgressHierarchyViewModel::setSelectedIndex(int index)
 
 void ProgressHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    m_items = WhatSon::Hierarchy::ProgressSupport::parseDepthItems(depthItems, QStringLiteral("Progress"));
-    syncProgressStatesFromItems();
-    syncProgressStore();
-    m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
-    syncModel();
-    setSelectedIndex(-1);
+    Q_UNUSED(depthItems);
 }
 
 QVariantList ProgressHierarchyViewModel::depthItems() const
@@ -110,69 +105,27 @@ QString ProgressHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
+bool ProgressHierarchyViewModel::canRenameItem(int index) const
+{
+    Q_UNUSED(index);
+    return false;
+}
+
 bool ProgressHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
-    if (!renameEnabled() || index <= 0 || index >= m_items.size())
-    {
-        return false;
-    }
-
-    const QString trimmed = displayName.trimmed();
-    if (trimmed.isEmpty())
-    {
-        return false;
-    }
-
-    const int stateIndex = index - 1;
-    if (stateIndex < 0 || stateIndex >= m_progressStates.size())
-    {
-        return false;
-    }
-
-    m_progressStates[stateIndex] = trimmed;
-    rebuildItems();
-    syncProgressStore();
-    syncModel();
-    setSelectedIndex(index);
-    return true;
+    Q_UNUSED(index);
+    Q_UNUSED(displayName);
+    return false;
 }
 
 void ProgressHierarchyViewModel::createFolder()
 {
-    if (!createFolderEnabled())
-    {
-        return;
-    }
-
-    m_progressStates.push_back(QStringLiteral("Folder%1").arg(m_createdFolderSequence++));
-    rebuildItems();
-    syncProgressStore();
-    syncModel();
-    setSelectedIndex(m_items.size() - 1);
+    return;
 }
 
 void ProgressHierarchyViewModel::deleteSelectedFolder()
 {
-    if (!deleteFolderEnabled())
-    {
-        return;
-    }
-
-    const int stateIndex = m_selectedIndex - 1;
-    if (stateIndex < 0 || stateIndex >= m_progressStates.size())
-    {
-        return;
-    }
-
-    m_progressStates.removeAt(stateIndex);
-    if (m_progressValue >= m_progressStates.size())
-    {
-        m_progressValue = std::max(0, static_cast<int>(m_progressStates.size()) - 1);
-    }
-    rebuildItems();
-    syncProgressStore();
-    syncModel();
-    setSelectedIndex(std::min(m_selectedIndex, static_cast<int>(m_items.size()) - 1));
+    return;
 }
 
 void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList progressStates)
@@ -198,21 +151,23 @@ QStringList ProgressHierarchyViewModel::progressStates() const
 
 bool ProgressHierarchyViewModel::renameEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool ProgressHierarchyViewModel::createFolderEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool ProgressHierarchyViewModel::deleteFolderEnabled() const noexcept
 {
-    return m_selectedIndex > 0;
+    return false;
 }
 
 bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_progressFilePath.clear();
+
     QStringList contentsDirectories;
     QString resolveError;
     if (!WhatSon::Hierarchy::ProgressSupport::resolveContentsDirectories(
@@ -238,6 +193,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         }
 
         fileFound = true;
+        m_progressFilePath = filePath;
 
         QString rawText;
         QString readError;
@@ -262,6 +218,11 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             return false;
         }
         break;
+    }
+
+    if (m_progressFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_progressFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Progress.wsprogress"));
     }
 
     if (!fileFound)

@@ -16,6 +16,7 @@ public:
 
     QStringList eventNames() const;
     void setEventNames(QStringList values);
+    bool writeToFile(const QString& filePath, QString* errorMessage = nullptr) const;
 
 private:
     QString m_hubPath;

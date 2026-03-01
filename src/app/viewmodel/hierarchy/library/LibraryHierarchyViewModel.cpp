@@ -193,6 +193,35 @@ namespace
         applyChevronByDepth(&items);
         return items;
     }
+
+    QVector<WhatSonFolderDepthEntry> folderEntriesFromItems(const QVector<LibraryHierarchyItem>& items)
+    {
+        QVector<WhatSonFolderDepthEntry> entries;
+        entries.reserve(items.size());
+        const int depthOffset =
+            (!items.isEmpty() && items.first().accent && items.first().depth == 0) ? 1 : 0;
+
+        for (const LibraryHierarchyItem& item : items)
+        {
+            const QString label = item.label.trimmed();
+            if (label.isEmpty())
+            {
+                continue;
+            }
+            if (item.accent && item.depth == 0)
+            {
+                continue;
+            }
+
+            WhatSonFolderDepthEntry entry;
+            entry.id = label;
+            entry.label = label;
+            entry.depth = std::max(0, item.depth - depthOffset);
+            entries.push_back(std::move(entry));
+        }
+
+        return entries;
+    }
 } // namespace
 
 LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
@@ -344,6 +373,8 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_foldersFilePath.clear();
+
     QString indexError;
     if (!m_libraryAll.indexFromWshub(wshubPath, &indexError))
     {
@@ -394,6 +425,10 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         }
 
         foldersFileFound = true;
+        if (m_foldersFilePath.isEmpty())
+        {
+            m_foldersFilePath = filePath;
+        }
 
         QString rawText;
         QString readError;
@@ -424,6 +459,11 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         {
             folderEntries.push_back(entry);
         }
+    }
+
+    if (m_foldersFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_foldersFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Folders.wsfolders"));
     }
 
     if (!folderEntries.isEmpty())
@@ -491,13 +531,24 @@ QString LibraryHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
-bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName)
+bool LibraryHierarchyViewModel::canRenameItem(int index) const
 {
     if (index < 0 || index >= m_items.size())
     {
         return false;
     }
-    if (m_items.at(index).accent && m_items.at(index).depth == 0)
+    if (m_runtimeIndexLoaded && !m_foldersHierarchyLoaded)
+    {
+        return false;
+    }
+
+    const LibraryHierarchyItem& item = m_items.at(index);
+    return !(item.accent && item.depth == 0);
+}
+
+bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!canRenameItem(index))
     {
         return false;
     }
@@ -508,13 +559,31 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
         return false;
     }
 
-    LibraryHierarchyItem& target = m_items[index];
-    if (target.label == trimmedName)
+    if (m_items.at(index).label == trimmedName)
     {
         return true;
     }
 
-    target.label = trimmedName;
+    QVector<LibraryHierarchyItem> stagedItems = m_items;
+    stagedItems[index].label = trimmedName;
+
+    WhatSonProjectsHierarchyStore stagedStore;
+    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+
+    if (!m_foldersFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("library.viewmodel"),
+                QStringLiteral("renameItem.writeFailed"),
+                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_foldersFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_items = std::move(stagedItems);
     syncModel();
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),

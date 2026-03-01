@@ -389,6 +389,14 @@ int main(int argc, char* argv[])
                 QStringLiteral("loadFromWshub.success"),
                 QStringLiteral("tagEntryCount=%1").arg(tags.size()));
         }
+        QString tagsLoadError;
+        if (!tagsHierarchyViewModel.loadFromWshub(blueprintHubPath, &tagsLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadTags.failed"),
+                tagsLoadError);
+        }
         tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
         WhatSon::Debug::trace(
             QStringLiteral("main.runtime"),

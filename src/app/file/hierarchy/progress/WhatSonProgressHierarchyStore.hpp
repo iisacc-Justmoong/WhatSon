@@ -19,6 +19,7 @@ public:
 
     QStringList progressStates() const;
     void setProgressStates(QStringList progressStates);
+    bool writeToFile(const QString& filePath, QString* errorMessage = nullptr) const;
 
 private:
     QString m_hubPath;

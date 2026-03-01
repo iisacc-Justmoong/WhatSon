@@ -16,6 +16,7 @@ public:
 
     QStringList resourcePaths() const;
     void setResourcePaths(QStringList values);
+    bool writeToFile(const QString& filePath, QString* errorMessage = nullptr) const;
 
 private:
     QString m_hubPath;

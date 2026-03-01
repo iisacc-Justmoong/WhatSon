@@ -26,6 +26,7 @@ public:
     void setProjectNames(QStringList values);
     QVector<WhatSonFolderDepthEntry> folderEntries() const;
     void setFolderEntries(QVector<WhatSonFolderDepthEntry> entries);
+    bool writeToFile(const QString& filePath, QString* errorMessage = nullptr) const;
 
 private:
     QString m_hubPath;

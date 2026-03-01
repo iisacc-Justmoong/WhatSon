@@ -367,18 +367,20 @@ void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
 {
     ProgressHierarchyViewModel viewModel;
     viewModel.setProgressState(0, {QStringLiteral("Ready"), QStringLiteral("Done")});
-    QVERIFY(viewModel.renameEnabled());
-    QVERIFY(viewModel.createFolderEnabled());
+    QVERIFY(!viewModel.renameEnabled());
+    QVERIFY(!viewModel.createFolderEnabled());
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
+    QVERIFY(!viewModel.canRenameItem(0));
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("Progress-Header")));
 
     viewModel.setSelectedIndex(1);
-    QVERIFY(viewModel.renameItem(1, QStringLiteral("Ready-Renamed")));
-    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Ready-Renamed"));
+    QVERIFY(!viewModel.canRenameItem(1));
+    QVERIFY(!viewModel.renameItem(1, QStringLiteral("Ready-Renamed")));
+    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Ready"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
 }

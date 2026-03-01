@@ -12,6 +12,35 @@
 namespace
 {
     constexpr auto kScope = "projects.viewmodel";
+
+    QVector<WhatSonFolderDepthEntry> folderEntriesFromItems(const QVector<ProjectsHierarchyItem>& items)
+    {
+        QVector<WhatSonFolderDepthEntry> entries;
+        entries.reserve(items.size());
+        const int depthOffset =
+            (!items.isEmpty() && items.first().accent && items.first().depth == 0) ? 1 : 0;
+
+        for (const ProjectsHierarchyItem& item : items)
+        {
+            const QString label = item.label.trimmed();
+            if (label.isEmpty())
+            {
+                continue;
+            }
+            if (item.accent && item.depth == 0)
+            {
+                continue;
+            }
+
+            WhatSonFolderDepthEntry entry;
+            entry.id = label;
+            entry.label = label;
+            entry.depth = std::max(0, item.depth - depthOffset);
+            entries.push_back(std::move(entry));
+        }
+
+        return entries;
+    }
 }
 
 ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
@@ -101,27 +130,49 @@ QString ProjectsHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
-bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayName)
+bool ProjectsHierarchyViewModel::canRenameItem(int index) const
 {
-    if (!renameEnabled())
-    {
-        return false;
-    }
     if (index < 0 || index >= m_items.size())
     {
         return false;
     }
-    if (m_items.at(index).accent && m_items.at(index).depth == 0)
+
+    const ProjectsHierarchyItem& item = m_items.at(index);
+    return !(item.accent && item.depth == 0);
+}
+
+bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!canRenameItem(index))
     {
         return false;
     }
 
-    if (!WhatSon::Hierarchy::ProjectsSupport::renameHierarchyItem(&m_items, index, displayName))
+    QVector<ProjectsHierarchyItem> stagedItems = m_items;
+    if (!WhatSon::Hierarchy::ProjectsSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
         return false;
     }
 
-    syncDomainStoreFromItems();
+    WhatSonProjectsHierarchyStore stagedStore = m_store;
+    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+
+    if (!m_foldersFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        {
+            WhatSon::Debug::trace(
+                QString::fromLatin1(kScope),
+                QStringLiteral("renameItem.writeFailed"),
+                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_foldersFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_store = std::move(stagedStore);
+    m_projectNames = m_store.projectNames();
     syncModel();
     return true;
 }
@@ -200,6 +251,8 @@ bool ProjectsHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_foldersFilePath.clear();
+
     QStringList contentsDirectories;
     QString resolveError;
     if (!WhatSon::Hierarchy::ProjectsSupport::resolveContentsDirectories(
@@ -226,6 +279,10 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         }
 
         fileFound = true;
+        if (m_foldersFilePath.isEmpty())
+        {
+            m_foldersFilePath = filePath;
+        }
 
         QString rawText;
         QString readError;
@@ -254,6 +311,11 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         {
             aggregated.push_back(value);
         }
+    }
+
+    if (m_foldersFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_foldersFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Folders.wsfolders"));
     }
 
     setProjectNames(aggregated);
@@ -311,6 +373,6 @@ void ProjectsHierarchyViewModel::syncModel()
 
 void ProjectsHierarchyViewModel::syncDomainStoreFromItems()
 {
-    m_projectNames = WhatSon::Hierarchy::ProjectsSupport::extractDomainLabelsFromItems(m_items);
-    m_store.setProjectNames(m_projectNames);
+    m_store.setFolderEntries(folderEntriesFromItems(m_items));
+    m_projectNames = m_store.projectNames();
 }

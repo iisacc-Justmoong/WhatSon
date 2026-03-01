@@ -147,9 +147,14 @@ QString TagsHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
+bool TagsHierarchyViewModel::canRenameItem(int index) const
+{
+    return index >= 0 && index < m_entries.size();
+}
+
 bool TagsHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
-    if (!renameEnabled() || index < 0 || index >= m_entries.size())
+    if (!canRenameItem(index))
     {
         return false;
     }
@@ -160,14 +165,32 @@ bool TagsHierarchyViewModel::renameItem(int index, const QString& displayName)
         return false;
     }
 
-    m_entries[index].label = trimmed;
-    if (m_entries[index].id.trimmed().isEmpty())
+    QVector<WhatSonTagDepthEntry> stagedEntries = m_entries;
+    stagedEntries[index].label = trimmed;
+    if (stagedEntries[index].id.trimmed().isEmpty())
     {
-        m_entries[index].id = trimmed;
+        stagedEntries[index].id = trimmed;
     }
 
+    WhatSonTagsHierarchyStore stagedStore = m_store;
+    stagedStore.setTagEntries(stagedEntries);
+
+    if (!m_tagsFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_tagsFilePath, &writeError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("tags.viewmodel"),
+                QStringLiteral("renameItem.writeFailed"),
+                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_tagsFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_entries = std::move(stagedEntries);
+    m_store = std::move(stagedStore);
     m_items = buildItems(m_entries);
-    syncStore();
     syncModel();
     return true;
 }
@@ -279,6 +302,8 @@ QVector<WhatSonTagDepthEntry> TagsHierarchyViewModel::tagDepthEntries() const
 
 bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_tagsFilePath.clear();
+
     QStringList contentsDirectories;
     QString resolveError;
     if (!WhatSon::Hierarchy::TagsSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
@@ -300,6 +325,11 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
         if (!QFileInfo(filePath).isFile())
         {
             continue;
+        }
+
+        if (m_tagsFilePath.isEmpty())
+        {
+            m_tagsFilePath = filePath;
         }
 
         QString rawText;
@@ -330,6 +360,11 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
         {
             aggregated.push_back(entry);
         }
+    }
+
+    if (m_tagsFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_tagsFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Tags.wstags"));
     }
 
     setTagDepthEntries(std::move(aggregated));

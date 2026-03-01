@@ -216,10 +216,18 @@ Hierarchy rendering pipeline:
 - `SidebarHierarchyView` handles search, selection, inline rename, create/delete folder, and toolbar event propagation
     - Rename trigger policy: open text input overlay from selected item with `Enter/Return` key (double-click rename
       disabled)
+    - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
+      opening the overlay. Global `renameEnabled` is treated as a fallback only.
+    - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to domain
+      store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+      `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
     - Selecting a bookmark color folder filters right-panel note cards by that bookmark color.
+- Progress domain behavior is fixed-state driven:
+    - Progress hierarchy labels are immutable constants at runtime.
+    - Rename/create/delete actions are disabled in the progress hierarchy.
 
 ---
 

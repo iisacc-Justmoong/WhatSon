@@ -82,7 +82,6 @@ Item {
             return false;
         if (sidebarHierarchyView.hierarchyViewModel.canRenameItem !== undefined)
             return sidebarHierarchyView.hierarchyViewModel.canRenameItem(index);
-
     }
     function cancelRename() {
         sidebarHierarchyView.editingIndex = -1;

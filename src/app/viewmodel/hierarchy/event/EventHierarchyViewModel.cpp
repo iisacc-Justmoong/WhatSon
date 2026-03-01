@@ -1,11 +1,17 @@
 #include "EventHierarchyViewModel.hpp"
 
+#include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
+
+namespace
+{
+    constexpr auto kScope = "event.viewmodel";
+}
 
 EventHierarchyViewModel::EventHierarchyViewModel(QObject* parent)
     : QObject(parent)
@@ -85,27 +91,49 @@ QString EventHierarchyViewModel::itemLabel(int index) const
     return m_items.at(index).label;
 }
 
-bool EventHierarchyViewModel::renameItem(int index, const QString& displayName)
+bool EventHierarchyViewModel::canRenameItem(int index) const
 {
-    if (!renameEnabled())
-    {
-        return false;
-    }
     if (index < 0 || index >= m_items.size())
     {
         return false;
     }
-    if (WhatSon::Hierarchy::EventSupport::isBucketHeaderItem(m_items.at(index)))
+
+    return !WhatSon::Hierarchy::EventSupport::isBucketHeaderItem(m_items.at(index));
+}
+
+bool EventHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!canRenameItem(index))
     {
         return false;
     }
 
-    if (!WhatSon::Hierarchy::EventSupport::renameHierarchyItem(&m_items, index, displayName))
+    QVector<EventHierarchyItem> stagedItems = m_items;
+    if (!WhatSon::Hierarchy::EventSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
         return false;
     }
 
-    syncDomainStoreFromItems();
+    const QStringList stagedEventNames = WhatSon::Hierarchy::EventSupport::extractDomainLabelsFromItems(stagedItems);
+    WhatSonEventHierarchyStore stagedStore = m_store;
+    stagedStore.setEventNames(stagedEventNames);
+
+    if (!m_eventFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_eventFilePath, &writeError))
+        {
+            WhatSon::Debug::trace(
+                QString::fromLatin1(kScope),
+                QStringLiteral("renameItem.writeFailed"),
+                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_eventFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_store = std::move(stagedStore);
+    m_eventNames = m_store.eventNames();
     syncModel();
     return true;
 }
@@ -182,6 +210,8 @@ bool EventHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_eventFilePath.clear();
+
     QStringList contentsDirectories;
     QString resolveError;
     if (!WhatSon::Hierarchy::EventSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
@@ -203,6 +233,11 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
         if (!QFileInfo(filePath).isFile())
         {
             continue;
+        }
+
+        if (m_eventFilePath.isEmpty())
+        {
+            m_eventFilePath = filePath;
         }
 
         QString rawText;
@@ -232,6 +267,11 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
         {
             aggregated.push_back(value);
         }
+    }
+
+    if (m_eventFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    {
+        m_eventFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Event.wsevent"));
     }
 
     setEventNames(aggregated);

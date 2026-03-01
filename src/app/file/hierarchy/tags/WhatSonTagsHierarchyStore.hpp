@@ -18,6 +18,7 @@ public:
 
     QVector<WhatSonTagDepthEntry> tagEntries() const;
     void setTagEntries(QVector<WhatSonTagDepthEntry> tagEntries);
+    bool writeToFile(const QString& filePath, QString* errorMessage = nullptr) const;
 
 private:
     QString m_hubPath;
