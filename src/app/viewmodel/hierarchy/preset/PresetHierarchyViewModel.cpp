@@ -2,7 +2,7 @@
 
 #include "file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/preset/PresetHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -13,7 +13,7 @@ PresetHierarchyViewModel::PresetHierarchyViewModel(QObject* parent)
 {
     QObject::connect(
         &m_itemModel,
-        &FlatHierarchyModel::itemCountChanged,
+        &PresetHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -25,7 +25,7 @@ PresetHierarchyViewModel::PresetHierarchyViewModel(QObject* parent)
 
 PresetHierarchyViewModel::~PresetHierarchyViewModel() = default;
 
-FlatHierarchyModel* PresetHierarchyViewModel::itemModel() noexcept
+PresetHierarchyModel* PresetHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -52,7 +52,7 @@ QString PresetHierarchyViewModel::lastLoadError() const
 
 void PresetHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::PresetSupport::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -64,7 +64,7 @@ void PresetHierarchyViewModel::setSelectedIndex(int index)
 
 void PresetHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Preset"));
+    m_items = WhatSon::Hierarchy::PresetSupport::parseDepthItems(depthItems, QStringLiteral("Preset"));
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
@@ -72,7 +72,7 @@ void PresetHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList PresetHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
+    return WhatSon::Hierarchy::PresetSupport::serializeDepthItems(m_items);
 }
 
 QString PresetHierarchyViewModel::itemLabel(int index) const
@@ -95,12 +95,12 @@ bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
     {
         return false;
     }
-    if (WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(index)))
+    if (WhatSon::Hierarchy::PresetSupport::isBucketHeaderItem(m_items.at(index)))
     {
         return false;
     }
 
-    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
+    if (!WhatSon::Hierarchy::PresetSupport::renameHierarchyItem(&m_items, index, displayName))
     {
         return false;
     }
@@ -117,7 +117,7 @@ void PresetHierarchyViewModel::createFolder()
         return;
     }
 
-    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
+    const int insertIndex = WhatSon::Hierarchy::PresetSupport::createHierarchyFolder(
         &m_items, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
@@ -136,7 +136,7 @@ void PresetHierarchyViewModel::deleteSelectedFolder()
         return;
     }
 
-    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
+    const int nextSelectedIndex = WhatSon::Hierarchy::PresetSupport::deleteHierarchySubtree(&m_items, m_selectedIndex);
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(nextSelectedIndex);
@@ -144,13 +144,13 @@ void PresetHierarchyViewModel::deleteSelectedFolder()
 
 void PresetHierarchyViewModel::setPresetNames(QStringList presetNames)
 {
-    m_presetNames = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(presetNames));
+    m_presetNames = WhatSon::Hierarchy::PresetSupport::sanitizeStringList(std::move(presetNames));
     m_store.setPresetNames(m_presetNames);
-    m_items = WhatSon::Hierarchy::Support::buildBucketItems(
+    m_items = WhatSon::Hierarchy::PresetSupport::buildBucketItems(
         QStringLiteral("Preset"),
         m_presetNames,
         QStringLiteral("Preset"));
-    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
+    m_createdFolderSequence = WhatSon::Hierarchy::PresetSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -177,14 +177,14 @@ bool PresetHierarchyViewModel::deleteFolderEnabled() const noexcept
         return false;
     }
 
-    return !WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(m_selectedIndex));
+    return !WhatSon::Hierarchy::PresetSupport::isBucketHeaderItem(m_items.at(m_selectedIndex));
 }
 
 bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
     QStringList contentsDirectories;
     QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    if (!WhatSon::Hierarchy::PresetSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
     {
         if (errorMessage != nullptr)
         {
@@ -207,7 +207,7 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
 
         QString rawText;
         QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        if (!WhatSon::Hierarchy::PresetSupport::readUtf8File(filePath, &rawText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -271,6 +271,6 @@ void PresetHierarchyViewModel::syncModel()
 
 void PresetHierarchyViewModel::syncDomainStoreFromItems()
 {
-    m_presetNames = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
+    m_presetNames = WhatSon::Hierarchy::PresetSupport::extractDomainLabelsFromItems(m_items);
     m_store.setPresetNames(m_presetNames);
 }

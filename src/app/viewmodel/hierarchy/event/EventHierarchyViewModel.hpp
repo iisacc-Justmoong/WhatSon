@@ -1,7 +1,7 @@
 #pragma once
 
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/FlatHierarchyModel.hpp"
+#include "viewmodel/hierarchy/event/EventHierarchyModel.hpp"
 
 #include <QObject>
 #include <QStringList>
@@ -12,7 +12,7 @@ class EventHierarchyViewModel final : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(FlatHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(EventHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
     Q_PROPERTY(bool loadSucceeded READ loadSucceeded NOTIFY loadStateChanged)
@@ -25,7 +25,7 @@ public:
     explicit EventHierarchyViewModel(QObject* parent = nullptr);
     ~EventHierarchyViewModel() override;
 
-    FlatHierarchyModel* itemModel() noexcept;
+    EventHierarchyModel* itemModel() noexcept;
 
     int selectedIndex() const noexcept;
     Q_INVOKABLE void setSelectedIndex(int index);
@@ -62,6 +62,7 @@ public
     signals  :
 
 
+
     void selectedIndexChanged();
     void itemCountChanged();
     void loadStateChanged();
@@ -74,9 +75,9 @@ private:
     void syncDomainStoreFromItems();
 
     QStringList m_eventNames;
-    QVector<FlatHierarchyItem> m_items;
+    QVector<EventHierarchyItem> m_items;
     WhatSonEventHierarchyStore m_store;
-    FlatHierarchyModel m_itemModel;
+    EventHierarchyModel m_itemModel;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;

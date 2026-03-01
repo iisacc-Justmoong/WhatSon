@@ -21,6 +21,12 @@
 
 namespace
 {
+    struct BodyContentExtract final
+    {
+        QString plainText;
+        QString firstLine;
+    };
+
     QString normalizePath(const QString& input)
     {
         const QString trimmed = input.trimmed();
@@ -285,31 +291,74 @@ namespace
         return text;
     }
 
-    QString extractBodySummaryFromWsnbody(const QString& wsnbodyText)
+    QString normalizeBodyLine(QString text)
     {
+        text.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
+        return text.trimmed();
+    }
+
+    BodyContentExtract extractBodyContentFromWsnbody(const QString& wsnbodyText)
+    {
+        BodyContentExtract content;
         static const QRegularExpression bodyPattern(
             QStringLiteral(R"(<body\b[^>]*>([\s\S]*?)</body>)"),
             QRegularExpression::CaseInsensitiveOption);
         const QRegularExpressionMatch bodyMatch = bodyPattern.match(wsnbodyText);
         if (!bodyMatch.hasMatch())
         {
-            return {};
+            return content;
         }
 
         QString innerText = bodyMatch.captured(1);
         innerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
-        innerText.replace(QRegularExpression(QStringLiteral(R"(<[^>]+>)")), QStringLiteral(" "));
+        innerText.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        innerText.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        innerText.replace(
+            QRegularExpression(QStringLiteral(R"(<br\s*/?>)"), QRegularExpression::CaseInsensitiveOption),
+            QStringLiteral("\n"));
+        innerText.replace(
+            QRegularExpression(
+                QStringLiteral(R"(</(?:p|paragraph|div|li|h[1-6]|section|article|blockquote|ul|ol|tr|table|pre)>)"),
+                QRegularExpression::CaseInsensitiveOption),
+            QStringLiteral("\n"));
+        innerText.replace(
+            QRegularExpression(
+                QStringLiteral(
+                    R"(<(?:p|paragraph|div|li|h[1-6]|section|article|blockquote|ul|ol|tr|table|pre|hr)\b[^>]*>)"),
+                QRegularExpression::CaseInsensitiveOption),
+            QStringLiteral("\n"));
+        innerText.replace(QRegularExpression(QStringLiteral(R"(<[^>]+>)")), QString());
         innerText = decodeXmlEntities(std::move(innerText));
-        innerText.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
-        return innerText.trimmed();
+
+        const QStringList rawLines = innerText.split(QLatin1Char('\n'));
+        QStringList lines;
+        lines.reserve(rawLines.size());
+        for (QString line : rawLines)
+        {
+            line = normalizeBodyLine(std::move(line));
+            if (!line.isEmpty())
+            {
+                lines.push_back(std::move(line));
+            }
+        }
+
+        if (lines.isEmpty())
+        {
+            return content;
+        }
+
+        content.firstLine = lines.constFirst();
+        content.plainText = lines.join(QLatin1Char('\n'));
+        return content;
     }
 
-    QString readBodySummary(const LibraryNoteRecord& record)
+    BodyContentExtract readBodyContent(const LibraryNoteRecord& record)
     {
+        BodyContentExtract content;
         const QString bodyPath = resolveWsnbodyPath(record.noteDirectoryPath);
         if (bodyPath.isEmpty())
         {
-            return {};
+            return content;
         }
 
         QString readError;
@@ -323,10 +372,10 @@ namespace
                     QStringLiteral("scan.wsnbody.readFailed"),
                     QStringLiteral("file=%1 reason=%2").arg(bodyPath, readError));
             }
-            return {};
+            return content;
         }
 
-        return extractBodySummaryFromWsnbody(bodyText);
+        return extractBodyContentFromWsnbody(bodyText);
     }
 
     LibraryNoteRecord parseIndexRecord(const QJsonObject& object)
@@ -584,7 +633,8 @@ namespace
         overwriteIfNonEmpty(&base->author, overlay.author);
         overwriteIfNonEmpty(&base->modifiedBy, overlay.modifiedBy);
         overwriteIfNonEmpty(&base->project, overlay.project);
-        overwriteIfNonEmpty(&base->bodySummary, overlay.bodySummary);
+        overwriteIfNonEmpty(&base->bodyPlainText, overlay.bodyPlainText);
+        overwriteIfNonEmpty(&base->bodyFirstLine, overlay.bodyFirstLine);
         overwriteListIfNonEmpty(&base->folders, overlay.folders);
         overwriteListIfNonEmpty(&base->bookmarkColors, overlay.bookmarkColors);
         overwriteListIfNonEmpty(&base->tags, overlay.tags);
@@ -593,6 +643,16 @@ namespace
         base->preset = overlay.preset;
         overwriteIfNonEmpty(&base->noteDirectoryPath, overlay.noteDirectoryPath);
         overwriteIfNonEmpty(&base->noteHeaderPath, overlay.noteHeaderPath);
+    }
+
+    bool isPlaceholderTitle(const QString& value)
+    {
+        const QString normalized = value.trimmed().toCaseFolded();
+        return normalized.isEmpty()
+            || normalized == QStringLiteral("untitled")
+            || normalized == QStringLiteral("untitled note")
+            || normalized == QStringLiteral("no title")
+            || normalized == QStringLiteral("제목 없음");
     }
 
     void normalizeRecordFallbacks(LibraryNoteRecord* record)
@@ -614,18 +674,50 @@ namespace
         {
             record->noteId = QFileInfo(record->noteDirectoryPath).completeBaseName().trimmed();
         }
+    }
 
-        if (record->title.trimmed().isEmpty())
+    void finalizeRecordDisplayFields(LibraryNoteRecord* record)
+    {
+        if (record == nullptr)
         {
-            record->title = record->noteId.trimmed();
-            if (record->title.isEmpty() && !record->noteDirectoryPath.isEmpty())
-            {
-                record->title = QFileInfo(record->noteDirectoryPath).completeBaseName();
-            }
-            if (record->title.isEmpty())
-            {
-                record->title = QStringLiteral("Untitled Note");
-            }
+            return;
+        }
+
+        record->noteId = record->noteId.trimmed();
+        record->title = record->title.trimmed();
+        record->bodyPlainText = record->bodyPlainText.trimmed();
+        record->bodyFirstLine = record->bodyFirstLine.trimmed();
+
+        if (record->bodyFirstLine.isEmpty() && !record->bodyPlainText.isEmpty())
+        {
+            record->bodyFirstLine = record->bodyPlainText.section(QLatin1Char('\n'), 0, 0).trimmed();
+        }
+
+        if (isPlaceholderTitle(record->title))
+        {
+            record->title.clear();
+        }
+
+        if (!record->title.isEmpty())
+        {
+            return;
+        }
+
+        if (!record->bodyFirstLine.isEmpty())
+        {
+            record->title = record->bodyFirstLine;
+            return;
+        }
+
+        if (!record->noteId.isEmpty())
+        {
+            record->title = record->noteId;
+            return;
+        }
+
+        if (!record->noteDirectoryPath.isEmpty())
+        {
+            record->title = QFileInfo(record->noteDirectoryPath).completeBaseName().trimmed();
         }
     }
 
@@ -885,7 +977,10 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
     for (LibraryNoteRecord& record : mergedRecords)
     {
         normalizeRecordFallbacks(&record);
-        record.bodySummary = readBodySummary(record);
+        const BodyContentExtract bodyContent = readBodyContent(record);
+        record.bodyPlainText = bodyContent.plainText;
+        record.bodyFirstLine = bodyContent.firstLine;
+        finalizeRecordDisplayFields(&record);
     }
 
     m_sourceWshubPath = normalizedHubPath;

@@ -4,7 +4,7 @@
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -27,15 +27,19 @@ namespace
         QString primary = note.title.trimmed();
         if (primary.isEmpty())
         {
+            primary = note.bodyFirstLine.trimmed();
+        }
+        if (primary.isEmpty())
+        {
             primary = note.noteId.trimmed();
         }
         if (primary.isEmpty() && !note.noteDirectoryPath.isEmpty())
         {
-            primary = QFileInfo(note.noteDirectoryPath).completeBaseName();
+            primary = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
         }
         if (primary.isEmpty())
         {
-            primary = QStringLiteral("Untitled Note");
+            primary = QStringLiteral("Note");
         }
 
         QStringList attributes;
@@ -63,6 +67,12 @@ namespace
             return title;
         }
 
+        title = note.bodyFirstLine.trimmed();
+        if (!title.isEmpty())
+        {
+            return title;
+        }
+
         title = note.noteId.trimmed();
         if (!title.isEmpty())
         {
@@ -78,20 +88,20 @@ namespace
             }
         }
 
-        return QStringLiteral("Untitled Note");
+        return {};
     }
 
     QString noteListSummary(const LibraryNoteRecord& note)
     {
-        const QString bodySummary = note.bodySummary.trimmed();
-        if (!bodySummary.isEmpty())
+        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        if (!bodyPlainText.isEmpty())
         {
-            return bodySummary;
+            return bodyPlainText;
         }
         return QStringLiteral("No contents");
     }
 
-    QString noteListFolders(const LibraryNoteRecord& note)
+    QStringList noteListFolders(const LibraryNoteRecord& note)
     {
         QStringList folders;
         folders.reserve(note.folders.size());
@@ -103,12 +113,8 @@ namespace
                 folders.push_back(trimmed);
             }
         }
-
-        if (folders.isEmpty())
-        {
-            return QStringLiteral("No Folder");
-        }
-        return folders.join(QStringLiteral(", "));
+        folders.removeDuplicates();
+        return folders;
     }
 
     QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
@@ -301,8 +307,6 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     applyChevronByDepth(&m_items);
     m_foldersHierarchyLoaded = false;
     m_bucketRanges.clear();
-    m_rowNoteIds.clear();
-    m_rowNoteIds.resize(m_items.size());
     m_createdFolderSequence = nextFolderSequence(m_items);
     syncModel();
     m_noteListModel.setItems({});
@@ -343,7 +347,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
 
     QStringList contentsDirectories;
     QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    if (!WhatSon::Hierarchy::LibrarySupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
     {
         if (errorMessage != nullptr)
         {
@@ -369,7 +373,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
 
         QString rawText;
         QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(filePath, &rawText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -403,8 +407,6 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         m_items = buildFolderItems(folderEntries);
         m_foldersHierarchyLoaded = true;
         m_bucketRanges.clear();
-        m_rowNoteIds.clear();
-        m_rowNoteIds.resize(m_items.size());
         m_createdFolderSequence = nextFolderSequence(m_items);
         syncModel();
         setSelectedIndex(-1);
@@ -544,8 +546,6 @@ void LibraryHierarchyViewModel::createFolder()
     m_items.insert(insertIndex, std::move(newItem));
     applyChevronByDepth(&m_items);
     m_bucketRanges.clear();
-    m_rowNoteIds.clear();
-    m_rowNoteIds.resize(m_items.size());
     syncModel();
     setSelectedIndex(insertIndex);
     WhatSon::Debug::trace(
@@ -577,8 +577,6 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     m_items.remove(startIndex, removeCount);
     applyChevronByDepth(&m_items);
     m_bucketRanges.clear();
-    m_rowNoteIds.clear();
-    m_rowNoteIds.resize(m_items.size());
     syncModel();
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),
@@ -680,24 +678,20 @@ int LibraryHierarchyViewModel::nextFolderSequence(const QVector<LibraryHierarchy
 }
 
 QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
-    const QVector<LibraryNoteRecord>& notes,
-    const QString& highlightedNoteId)
+    const QVector<LibraryNoteRecord>& notes)
 {
     QVector<LibraryNoteListItem> items;
     items.reserve(notes.size());
 
-    const QString highlightedKey = highlightedNoteId.trimmed().toCaseFolded();
-
     for (const LibraryNoteRecord& note : notes)
     {
         LibraryNoteListItem item;
-        item.noteId = note.noteId.trimmed();
-        item.titleText = noteListTitle(note);
-        item.summaryText = noteListSummary(note);
-        item.foldersText = noteListFolders(note);
+        item.id = note.noteId.trimmed();
+        item.title = noteListTitle(note);
+        item.desc = noteListSummary(note);
+        item.folders = noteListFolders(note);
         item.bookmarked = note.bookmarked;
-        item.bookmarkColorHex = bookmarkColorHexFromNote(note);
-        item.highlighted = !highlightedKey.isEmpty() && item.noteId.toCaseFolded() == highlightedKey;
+        item.bookmarkColor = bookmarkColorHexFromNote(note);
         items.push_back(std::move(item));
     }
 
@@ -736,21 +730,9 @@ LibraryHierarchyViewModel::IndexedBucket LibraryHierarchyViewModel::selectedBuck
     return IndexedBucket::All;
 }
 
-QString LibraryHierarchyViewModel::selectedNoteId() const
-{
-    if (m_selectedIndex < 0 || m_selectedIndex >= m_rowNoteIds.size())
-    {
-        return {};
-    }
-
-    return m_rowNoteIds.at(m_selectedIndex).trimmed();
-}
-
 void LibraryHierarchyViewModel::rebuildBucketRanges()
 {
     m_bucketRanges.clear();
-    m_rowNoteIds.clear();
-    m_rowNoteIds.resize(m_items.size());
 
     int cursor = 0;
     auto appendRange = [&](IndexedBucket bucket, const QVector<LibraryNoteRecord>& notes)
@@ -761,14 +743,9 @@ void LibraryHierarchyViewModel::rebuildBucketRanges()
         range.endRow = cursor;
 
         ++cursor;
-        int row = range.startRow + 1;
         for (const LibraryNoteRecord& note : notes)
         {
-            if (row >= 0 && row < m_rowNoteIds.size())
-            {
-                m_rowNoteIds[row] = note.noteId.trimmed();
-            }
-            ++row;
+            Q_UNUSED(note);
             ++cursor;
         }
 
@@ -791,8 +768,7 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     }
 
     const IndexedBucket bucket = selectedBucket();
-    const QString highlighted = selectedNoteId();
-    const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(bucket), highlighted);
+    const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(bucket));
     m_noteListModel.setItems(listItems);
     updateNoteItemCount();
 }

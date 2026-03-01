@@ -50,6 +50,7 @@ Item {
         return count * 20 + (count - 1) * ((typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2);
     }
     readonly property int verticalInset: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
+    readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? hierarchyViewModel.viewOptionsEnabled : true
     property var viewOptionsMenuItems: []
 
     signal toolbarIndexChangeRequested(int index)
@@ -108,8 +109,28 @@ Item {
     }
 
     clip: true
+    focus: true
 
     Component.onCompleted: sidebarHierarchyView.applyExternalDepthItems()
+    Keys.onPressed: function (event) {
+        if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)
+            return;
+
+        if (sidebarHierarchyView.editingIndex >= 0) {
+            sidebarHierarchyView.commitRename();
+            event.accepted = true;
+            return;
+        }
+
+        if (!sidebarHierarchyView.renameEnabled || sidebarHierarchyView.selectedFolderIndex < 0)
+            return;
+
+        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.itemLabel === undefined)
+            return;
+
+        sidebarHierarchyView.beginRename(sidebarHierarchyView.selectedFolderIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(sidebarHierarchyView.selectedFolderIndex));
+        event.accepted = true;
+    }
     onDepthItemsChanged: {
         sidebarHierarchyView.applyExternalDepthItems();
         sidebarHierarchyView.cancelRename();
@@ -117,6 +138,10 @@ Item {
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelRename();
         sidebarHierarchyView.applyExternalDepthItems();
+    }
+    onSelectedFolderIndexChanged: {
+        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== sidebarHierarchyView.selectedFolderIndex)
+            sidebarHierarchyView.commitRename();
     }
 
     Rectangle {
@@ -157,6 +182,7 @@ Item {
                 onActiveChanged: function (button, buttonId, index) {
                     if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
                         return;
+                    sidebarHierarchyView.commitRename();
                     sidebarHierarchyView.toolbarIndexChangeRequested(index);
                 }
             }
@@ -181,9 +207,12 @@ Item {
                 text: sidebarHierarchyView.searchQuery
 
                 onAccepted: function (text) {
+                    sidebarHierarchyView.commitRename();
                     sidebarHierarchyView.searchQuery = text;
                 }
                 onTextEdited: function (text) {
+                    if (sidebarHierarchyView.editingIndex >= 0)
+                        sidebarHierarchyView.commitRename();
                     sidebarHierarchyView.searchQuery = text;
                 }
             }
@@ -249,15 +278,11 @@ Item {
                                 anchors.fill: parent
 
                                 onClicked: {
+                                    if (sidebarHierarchyView.editingIndex >= 0)
+                                        sidebarHierarchyView.commitRename();
+                                    sidebarHierarchyView.forceActiveFocus();
                                     if (sidebarHierarchyView.hierarchyViewModel)
                                         sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
-                                }
-                                onDoubleClicked: {
-                                    if (!sidebarHierarchyView.renameEnabled)
-                                        return;
-                                    if (accent && indentLevel === 0)
-                                        return;
-                                    sidebarHierarchyView.beginRename(index, label);
                                 }
                             }
                             Item {
@@ -306,6 +331,10 @@ Item {
 
                                     Keys.onEscapePressed: function (event) {
                                         sidebarHierarchyView.cancelRename();
+                                        event.accepted = true;
+                                    }
+                                    Keys.onReturnPressed: function (event) {
+                                        sidebarHierarchyView.commitRename();
                                         event.accepted = true;
                                     }
                                     onAccepted: sidebarHierarchyView.commitRename()
@@ -366,10 +395,13 @@ Item {
             })
         button3: ({
                 type: "menu",
+                enabled: sidebarHierarchyView.viewOptionsEnabled,
                 iconName: "settings",
                 iconSize: LV.Theme.iconSm,
                 tone: LV.AbstractButton.Default,
                 onClicked: function () {
+                    if (!sidebarHierarchyView.viewOptionsEnabled)
+                        return;
                     sidebarHierarchyView.toggleViewOptionsMenu();
                 }
             })

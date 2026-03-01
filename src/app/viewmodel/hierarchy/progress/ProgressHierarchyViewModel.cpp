@@ -3,7 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -31,7 +31,7 @@ ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
 {
     QObject::connect(
         &m_itemModel,
-        &FlatHierarchyModel::itemCountChanged,
+        &ProgressHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -48,7 +48,7 @@ ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
 
 ProgressHierarchyViewModel::~ProgressHierarchyViewModel() = default;
 
-FlatHierarchyModel* ProgressHierarchyViewModel::itemModel() noexcept
+ProgressHierarchyModel* ProgressHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -75,7 +75,7 @@ QString ProgressHierarchyViewModel::lastLoadError() const
 
 void ProgressHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::ProgressSupport::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -87,17 +87,17 @@ void ProgressHierarchyViewModel::setSelectedIndex(int index)
 
 void ProgressHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Progress"));
+    m_items = WhatSon::Hierarchy::ProgressSupport::parseDepthItems(depthItems, QStringLiteral("Progress"));
     syncProgressStatesFromItems();
     syncProgressStore();
-    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
+    m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
 
 QVariantList ProgressHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
+    return WhatSon::Hierarchy::ProgressSupport::serializeDepthItems(m_items);
 }
 
 QString ProgressHierarchyViewModel::itemLabel(int index) const
@@ -178,10 +178,10 @@ void ProgressHierarchyViewModel::deleteSelectedFolder()
 void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList progressStates)
 {
     m_progressValue = progressValue;
-    m_progressStates = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(progressStates));
+    m_progressStates = WhatSon::Hierarchy::ProgressSupport::sanitizeStringList(std::move(progressStates));
     rebuildItems();
     syncProgressStore();
-    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
+    m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -215,7 +215,8 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 {
     QStringList contentsDirectories;
     QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    if (!WhatSon::Hierarchy::ProgressSupport::resolveContentsDirectories(
+        wshubPath, &contentsDirectories, &resolveError))
     {
         if (errorMessage != nullptr)
         {
@@ -240,7 +241,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
         QString rawText;
         QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        if (!WhatSon::Hierarchy::ProgressSupport::readUtf8File(filePath, &rawText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -318,10 +319,10 @@ void ProgressHierarchyViewModel::updateLoadState(bool succeeded, QString errorMe
 
 void ProgressHierarchyViewModel::rebuildItems()
 {
-    QVector<FlatHierarchyItem> rebuilt;
+    QVector<ProgressHierarchyItem> rebuilt;
     rebuilt.reserve(m_progressStates.size() + 1);
 
-    FlatHierarchyItem bucket;
+    ProgressHierarchyItem bucket;
     bucket.depth = 0;
     bucket.accent = true;
     bucket.expanded = true;
@@ -331,7 +332,7 @@ void ProgressHierarchyViewModel::rebuildItems()
 
     for (int index = 0; index < m_progressStates.size(); ++index)
     {
-        FlatHierarchyItem state;
+        ProgressHierarchyItem state;
         state.depth = 1;
         state.accent = index == m_progressValue;
         state.expanded = false;

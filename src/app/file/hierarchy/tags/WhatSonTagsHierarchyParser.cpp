@@ -12,7 +12,7 @@
 
 namespace
 {
-    QVector<WhatSonTagDepthEntry> parseFlatEntries(const QJsonArray& array)
+    QVector<WhatSonTagDepthEntry> parseTagEntries(const QJsonArray& array)
     {
         QVector<WhatSonTagDepthEntry> entries;
         entries.reserve(array.size());
@@ -91,7 +91,7 @@ bool WhatSonTagsHierarchyParser::parse(
     {
         if (document.isArray())
         {
-            outStore->setTagEntries(parseFlatEntries(document.array()));
+            outStore->setTagEntries(parseTagEntries(document.array()));
             return true;
         }
 
@@ -101,7 +101,7 @@ bool WhatSonTagsHierarchyParser::parse(
             const QJsonValue entriesValue = object.value(QStringLiteral("entries"));
             if (entriesValue.isArray())
             {
-                outStore->setTagEntries(parseFlatEntries(entriesValue.toArray()));
+                outStore->setTagEntries(parseTagEntries(entriesValue.toArray()));
                 return true;
             }
         }

@@ -5,7 +5,7 @@
 #include <QVariantMap>
 #include <QVector>
 
-struct FlatHierarchyItem
+struct EventHierarchyItem
 {
     int depth = 0;
     bool accent = false;
@@ -14,7 +14,7 @@ struct FlatHierarchyItem
     bool showChevron = true;
 };
 
-class FlatHierarchyModel final : public QAbstractListModel
+class EventHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -36,7 +36,7 @@ public:
 
     Q_ENUM(Role)
 
-    explicit FlatHierarchyModel(QObject* parent = nullptr);
+    explicit EventHierarchyModel(QObject* parent = nullptr);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -48,8 +48,8 @@ public:
     QString lastValidationCode() const;
     QString lastValidationMessage() const;
 
-    void setItems(QVector<FlatHierarchyItem> items);
-    const QVector<FlatHierarchyItem>& items() const noexcept;
+    void setItems(QVector<EventHierarchyItem> items);
+    const QVector<EventHierarchyItem>& items() const noexcept;
 
 public
     slots  :
@@ -65,6 +65,7 @@ public
     signals  :
 
 
+
     void itemCountChanged(int itemCount);
     void itemsChanged();
     void strictValidationChanged();
@@ -77,7 +78,7 @@ public
 private:
     void setValidationState(QString code, QString message);
 
-    QVector<FlatHierarchyItem> m_items;
+    QVector<EventHierarchyItem> m_items;
     bool m_strictValidation = false;
     int m_correctionCount = 0;
     QString m_lastValidationCode;

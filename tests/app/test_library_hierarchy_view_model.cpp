@@ -26,6 +26,7 @@ private
     void deleteSelectedFolder_removesDescendantSubtree();
     void loadFromWshub_buildsAllDraftTodayBuckets();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
+    void loadFromWshub_fallsBackTitleFromBodyFirstLineWhenHeadTitleEmpty();
     void loadFromWshub_usesFoldersFileForSidebarItems();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
@@ -99,7 +100,8 @@ namespace
 
     bool prepareIndexedLibraryHub(
         QString* outHubPath,
-        const QString& libraryDirectoryName = QStringLiteral("Library.wslibrary"))
+        const QString& libraryDirectoryName = QStringLiteral("Library.wslibrary"),
+        bool emptyHeadTitleForGamma = false)
     {
         if (outHubPath == nullptr)
         {
@@ -144,7 +146,7 @@ namespace
         });
         notesArray.append(QJsonObject{
             {QStringLiteral("id"), QStringLiteral("note-c")},
-            {QStringLiteral("title"), QStringLiteral("Gamma Note")},
+            {QStringLiteral("title"), emptyHeadTitleForGamma ? QString() : QStringLiteral("Gamma Note")},
             {QStringLiteral("lastModified"), oldText}
         });
 
@@ -202,7 +204,7 @@ namespace
             QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-c"),
-                QStringLiteral("Gamma Note"),
+                emptyHeadTitleForGamma ? QString() : QStringLiteral("Gamma Note"),
                 oldText,
                 oldText,
                 {})))
@@ -211,7 +213,11 @@ namespace
         }
         if (!writeUtf8File(
             QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnbody")),
-            makeWsnBodyText(QStringLiteral("    <paragraph>Gamma body summary.</paragraph>\n"))))
+            emptyHeadTitleForGamma
+                ? makeWsnBodyText(
+                    QStringLiteral(
+                        "    <Bold>Body Fallback Title</Bold>\n    <paragraph>Gamma body summary.</paragraph>\n"))
+                : makeWsnBodyText(QStringLiteral("    <paragraph>Gamma body summary.</paragraph>\n"))))
         {
             return false;
         }
@@ -452,17 +458,17 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleTextRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole)
                  .toString(),
         QStringLiteral("Alpha Note"));
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::SummaryTextRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::DescRole)
                  .toString(),
         QStringLiteral("Alpha body summary."));
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::SummaryTextRole)
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::DescRole)
                  .toString(),
         QStringLiteral("Beta body summary."));
     QCOMPARE(
@@ -472,7 +478,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
         true);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkColorHexRole)
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkColorRole)
                  .toString(),
         QStringLiteral("#3B82F6"));
 
@@ -484,30 +490,33 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
 
     viewModel.setSelectedIndex(2);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::TitleRole)
+                 .toString(),
+        QStringLiteral("Beta Note"));
+}
 
-    int highlightedCount = 0;
-    QString highlightedTitle;
-    for (int index = 0; index < viewModel.noteListModel()->rowCount(); ++index)
-    {
-        const bool highlighted = viewModel.noteListModel()
-                                          ->data(
-                                              viewModel.noteListModel()->index(index, 0),
-                                              LibraryNoteListModel::HighlightedRole)
-                                          .toBool();
-        if (!highlighted)
-        {
-            continue;
-        }
-        ++highlightedCount;
-        highlightedTitle = viewModel.noteListModel()
-                                    ->data(
-                                        viewModel.noteListModel()->index(index, 0),
-                                        LibraryNoteListModel::TitleTextRole)
-                                    .toString();
-    }
+void LibraryHierarchyViewModelTest::loadFromWshub_fallsBackTitleFromBodyFirstLineWhenHeadTitleEmpty()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath, QStringLiteral("Library.wslibrary"), true));
 
-    QCOMPARE(highlightedCount, 1);
-    QCOMPARE(highlightedTitle, QStringLiteral("Beta Note"));
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(2, 0), LibraryNoteListModel::TitleRole)
+                 .toString(),
+        QStringLiteral("Body Fallback Title"));
+    QVERIFY(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(2, 0), LibraryNoteListModel::DescRole)
+                 .toString()
+                 .contains(QStringLiteral("Gamma body summary.")));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems()

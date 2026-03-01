@@ -21,6 +21,31 @@ namespace
         static const QRegularExpression kHexColorPattern(QStringLiteral("^#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$"));
         return kHexColorPattern.match(value).hasMatch();
     }
+
+    QString normalizeDesc(QString value)
+    {
+        value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return value.trimmed();
+    }
+
+    QString firstMeaningfulLine(const QString& value)
+    {
+        static const QRegularExpression kSpacePattern(QStringLiteral(R"(\s+)"));
+
+        const QStringList lines = value.split(QLatin1Char('\n'));
+        for (QString line : lines)
+        {
+            line.replace(kSpacePattern, QStringLiteral(" "));
+            line = line.trimmed();
+            if (!line.isEmpty())
+            {
+                return line;
+            }
+        }
+
+        return {};
+    }
 }
 
 LibraryNoteListModel::LibraryNoteListModel(QObject* parent)
@@ -49,20 +74,18 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
     const LibraryNoteListItem& item = m_items.at(index.row());
     switch (role)
     {
-    case NoteIdRole:
-        return item.noteId;
-    case TitleTextRole:
-        return item.titleText;
-    case SummaryTextRole:
-        return item.summaryText;
-    case FoldersTextRole:
-        return item.foldersText;
+    case IdRole:
+        return item.id;
+    case TitleRole:
+        return item.title;
+    case DescRole:
+        return item.desc;
+    case FoldersRole:
+        return item.folders;
     case BookmarkedRole:
         return item.bookmarked;
-    case BookmarkColorHexRole:
-        return item.bookmarkColorHex;
-    case HighlightedRole:
-        return item.highlighted;
+    case BookmarkColorRole:
+        return item.bookmarkColor;
     default:
         return {};
     }
@@ -71,13 +94,12 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
 QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
 {
     return {
-        {NoteIdRole, "noteId"},
-        {TitleTextRole, "titleText"},
-        {SummaryTextRole, "summaryText"},
-        {FoldersTextRole, "foldersText"},
+        {IdRole, "id"},
+        {TitleRole, "title"},
+        {DescRole, "desc"},
+        {FoldersRole, "folders"},
         {BookmarkedRole, "bookmarked"},
-        {BookmarkColorHexRole, "bookmarkColorHex"},
-        {HighlightedRole, "highlighted"}
+        {BookmarkColorRole, "bookmarkColor"}
     };
 }
 
@@ -128,61 +150,82 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     for (int index = 0; index < items.size(); ++index)
     {
         LibraryNoteListItem item = std::move(items[index]);
-        const QString originalTitle = item.titleText;
-        const QString originalSummary = item.summaryText;
-        const QString originalFolders = item.foldersText;
-        const QString originalColor = item.bookmarkColorHex;
+        const QString originalTitle = item.title;
+        const QString originalDesc = item.desc;
+        const QStringList originalFolders = item.folders;
+        const QString originalColor = item.bookmarkColor;
 
-        item.noteId = item.noteId.trimmed();
-        item.titleText = item.titleText.trimmed();
-        item.summaryText = item.summaryText.trimmed();
-        item.foldersText = item.foldersText.trimmed();
-        item.bookmarkColorHex = item.bookmarkColorHex.trimmed();
+        item.id = item.id.trimmed();
+        item.title = item.title.trimmed();
+        item.desc = normalizeDesc(std::move(item.desc));
+        item.bookmarkColor = item.bookmarkColor.trimmed();
 
-        if (item.titleText.isEmpty())
+        QStringList folders;
+        folders.reserve(item.folders.size());
+        for (QString folder : item.folders)
+        {
+            folder = folder.trimmed();
+            if (folder.isEmpty() || folders.contains(folder))
+            {
+                continue;
+            }
+            folders.push_back(std::move(folder));
+        }
+        item.folders = std::move(folders);
+
+        if (item.desc.isEmpty())
+        {
+            ValidationIssue issue;
+            issue.code = QStringLiteral("notelist.desc.empty");
+            issue.message = QStringLiteral("Description was empty. Replaced with default message.");
+            issue.context = QVariantMap{
+                {QStringLiteral("index"), index},
+                {QStringLiteral("originalDesc"), originalDesc},
+                {QStringLiteral("correctedDesc"), QStringLiteral("No contents")}
+            };
+            item.desc = QStringLiteral("No contents");
+            issues.push_back(std::move(issue));
+        }
+
+        if (item.title.isEmpty())
         {
             ValidationIssue issue;
             issue.code = QStringLiteral("notelist.title.empty");
             issue.message = QStringLiteral("Title was empty. Generated fallback title.");
-            const QString fallbackTitle = !item.noteId.isEmpty()
-                                              ? item.noteId
-                                              : QStringLiteral("Untitled Note");
+
+            QString fallbackTitle = firstMeaningfulLine(item.desc);
+            if (fallbackTitle.isEmpty())
+            {
+                fallbackTitle = item.id;
+            }
+            if (fallbackTitle.isEmpty())
+            {
+                fallbackTitle = QStringLiteral("No title");
+            }
+
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
                 {QStringLiteral("originalTitle"), originalTitle},
                 {QStringLiteral("correctedTitle"), fallbackTitle}
             };
-            item.titleText = fallbackTitle;
-            issues.push_back(std::move(issue));
-        }
-        if (item.summaryText.isEmpty())
-        {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("notelist.summary.empty");
-            issue.message = QStringLiteral("Summary was empty. Replaced with default message.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalSummary"), originalSummary},
-                {QStringLiteral("correctedSummary"), QStringLiteral("No contents")}
-            };
-            item.summaryText = QStringLiteral("No contents");
-            issues.push_back(std::move(issue));
-        }
-        if (item.foldersText.isEmpty())
-        {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("notelist.folders.empty");
-            issue.message = QStringLiteral("Folders text was empty. Replaced with default message.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalFolders"), originalFolders},
-                {QStringLiteral("correctedFolders"), QStringLiteral("No Folder")}
-            };
-            item.foldersText = QStringLiteral("No Folder");
+            item.title = fallbackTitle;
             issues.push_back(std::move(issue));
         }
 
-        const bool colorValid = isValidHexColor(item.bookmarkColorHex);
+        if (item.folders != originalFolders)
+        {
+            ValidationIssue issue;
+            issue.code = QStringLiteral("notelist.folders.sanitized");
+            issue.message = QStringLiteral("Folders list was sanitized.");
+            issue.context = QVariantMap{
+                {QStringLiteral("index"), index},
+                {QStringLiteral("originalCount"), originalFolders.size()},
+                {QStringLiteral("sanitizedCount"), item.folders.size()}
+            };
+            issues.push_back(std::move(issue));
+        }
+
+        const bool colorValid = isValidHexColor(item.bookmarkColor);
         if (item.bookmarked && !colorValid)
         {
             ValidationIssue issue;
@@ -193,20 +236,20 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
                 {QStringLiteral("originalColor"), originalColor},
                 {QStringLiteral("correctedColor"), WhatSon::Bookmarks::defaultBookmarkColorHex()}
             };
-            item.bookmarkColorHex = WhatSon::Bookmarks::defaultBookmarkColorHex();
+            item.bookmarkColor = WhatSon::Bookmarks::defaultBookmarkColorHex();
             issues.push_back(std::move(issue));
         }
-        else if (!item.bookmarked && !item.bookmarkColorHex.isEmpty() && !colorValid)
+        else if (!item.bookmarked && !item.bookmarkColor.isEmpty())
         {
             ValidationIssue issue;
-            issue.code = QStringLiteral("notelist.color.invalid");
-            issue.message = QStringLiteral("Non-bookmark color was invalid. Cleared color.");
+            issue.code = QStringLiteral("notelist.bookmarkColor.cleared");
+            issue.message = QStringLiteral("Bookmark color was cleared because bookmarked=false.");
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
                 {QStringLiteral("originalColor"), originalColor},
                 {QStringLiteral("correctedColor"), QString()}
             };
-            item.bookmarkColorHex.clear();
+            item.bookmarkColor.clear();
             issues.push_back(std::move(issue));
         }
 

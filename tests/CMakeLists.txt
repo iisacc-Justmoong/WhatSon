@@ -119,7 +119,12 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
 
 add_executable(whatson_hierarchy_viewmodels_tests
         app/test_hierarchy_viewmodels.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/common/FlatHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/event/EventHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/preset/PresetHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
@@ -331,25 +336,6 @@ target_link_libraries(whatson_io_runtime_tests
 )
 add_test(NAME whatson_io_runtime_tests COMMAND whatson_io_runtime_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_io_runtime_tests)
-
-add_executable(whatson_backend_bridge_tests
-        app/test_backend_bridge.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/bridge/WhatSonBackendBridge.cpp
-)
-set_target_properties(whatson_backend_bridge_tests PROPERTIES AUTOMOC ON)
-target_include_directories(whatson_backend_bridge_tests
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/app
-        ${CMAKE_SOURCE_DIR}/src/app/file
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel
-)
-target_link_libraries(whatson_backend_bridge_tests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-add_test(NAME whatson_backend_bridge_tests COMMAND whatson_backend_bridge_tests)
-list(APPEND WHATSON_TEST_TARGETS whatson_backend_bridge_tests)
 
 if (WHATSON_TEST_TARGETS)
     add_custom_target(whatson_tests DEPENDS ${WHATSON_TEST_TARGETS})

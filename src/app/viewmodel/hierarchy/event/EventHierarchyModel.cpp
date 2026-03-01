@@ -1,4 +1,4 @@
-#include "LibraryHierarchyModel.hpp"
+#include "EventHierarchyModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
 
@@ -15,13 +15,13 @@ namespace
     };
 }
 
-LibraryHierarchyModel::LibraryHierarchyModel(QObject* parent)
+EventHierarchyModel::EventHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::trace(QStringLiteral("library.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::trace(QStringLiteral("hierarchy.event.model"), QStringLiteral("ctor"));
 }
 
-int LibraryHierarchyModel::rowCount(const QModelIndex& parent) const
+int EventHierarchyModel::rowCount(const QModelIndex& parent) const
 {
     if (parent.isValid())
     {
@@ -31,14 +31,14 @@ int LibraryHierarchyModel::rowCount(const QModelIndex& parent) const
     return m_items.size();
 }
 
-QVariant LibraryHierarchyModel::data(const QModelIndex& index, int role) const
+QVariant EventHierarchyModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
     {
         return {};
     }
 
-    const LibraryHierarchyItem& item = m_items.at(index.row());
+    const EventHierarchyItem& item = m_items.at(index.row());
     switch (role)
     {
     case LabelRole:
@@ -62,7 +62,7 @@ QVariant LibraryHierarchyModel::data(const QModelIndex& index, int role) const
     }
 }
 
-QHash<int, QByteArray> LibraryHierarchyModel::roleNames() const
+QHash<int, QByteArray> EventHierarchyModel::roleNames() const
 {
     return {
         {LabelRole, "label"},
@@ -74,17 +74,17 @@ QHash<int, QByteArray> LibraryHierarchyModel::roleNames() const
     };
 }
 
-int LibraryHierarchyModel::itemCount() const noexcept
+int EventHierarchyModel::itemCount() const noexcept
 {
     return m_items.size();
 }
 
-bool LibraryHierarchyModel::strictValidation() const noexcept
+bool EventHierarchyModel::strictValidation() const noexcept
 {
     return m_strictValidation;
 }
 
-void LibraryHierarchyModel::setStrictValidation(bool enabled)
+void EventHierarchyModel::setStrictValidation(bool enabled)
 {
     if (m_strictValidation == enabled)
     {
@@ -94,37 +94,37 @@ void LibraryHierarchyModel::setStrictValidation(bool enabled)
     emit strictValidationChanged();
 }
 
-int LibraryHierarchyModel::correctionCount() const noexcept
+int EventHierarchyModel::correctionCount() const noexcept
 {
     return m_correctionCount;
 }
 
-QString LibraryHierarchyModel::lastValidationCode() const
+QString EventHierarchyModel::lastValidationCode() const
 {
     return m_lastValidationCode;
 }
 
-QString LibraryHierarchyModel::lastValidationMessage() const
+QString EventHierarchyModel::lastValidationMessage() const
 {
     return m_lastValidationMessage;
 }
 
-void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
+void EventHierarchyModel::setItems(QVector<EventHierarchyItem> items)
 {
     const int previousCount = m_items.size();
-    QVector<LibraryHierarchyItem> sanitized;
+    QVector<EventHierarchyItem> sanitized;
     sanitized.reserve(items.size());
 
     QVector<ValidationIssue> issues;
-    issues.reserve(items.size() * 3);
+    issues.reserve(items.size() * 2);
 
     for (int index = 0; index < items.size(); ++index)
     {
-        LibraryHierarchyItem item = std::move(items[index]);
+        EventHierarchyItem item = std::move(items[index]);
         if (item.depth < 0)
         {
             ValidationIssue issue;
-            issue.code = QStringLiteral("library.depth.negative");
+            issue.code = QStringLiteral("hierarchy.depth.negative");
             issue.message = QStringLiteral("Depth must be >= 0. Corrected to 0.");
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
@@ -140,31 +140,16 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
         if (item.label.isEmpty())
         {
             ValidationIssue issue;
-            issue.code = QStringLiteral("library.label.empty");
+            issue.code = QStringLiteral("hierarchy.label.empty");
             issue.message = QStringLiteral("Label must not be empty. Generated fallback label.");
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
                 {QStringLiteral("originalLabel"), originalLabel},
-                {QStringLiteral("correctedLabel"), QStringLiteral("Folder%1").arg(index + 1)}
+                {QStringLiteral("correctedLabel"), QStringLiteral("Item%1").arg(index + 1)}
             };
-            item.label = QStringLiteral("Folder%1").arg(index + 1);
+            item.label = QStringLiteral("Item%1").arg(index + 1);
             issues.push_back(std::move(issue));
         }
-
-        if (item.accent && item.depth > 0)
-        {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("library.accent.invalidDepth");
-            issue.message = QStringLiteral("Accent flag is only valid on depth 0. Corrected to false.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("depth"), item.depth},
-                {QStringLiteral("correctedAccent"), false}
-            };
-            item.accent = false;
-            issues.push_back(std::move(issue));
-        }
-
         sanitized.push_back(std::move(item));
     }
     if (m_strictValidation && !issues.isEmpty())
@@ -176,7 +161,7 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
     }
 
     WhatSon::Debug::trace(
-        QStringLiteral("library.model"),
+        QStringLiteral("hierarchy.event.model"),
         QStringLiteral("setItems"),
         QStringLiteral("count=%1").arg(sanitized.size()));
     beginResetModel();
@@ -202,12 +187,12 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
     emit itemsChanged();
 }
 
-const QVector<LibraryHierarchyItem>& LibraryHierarchyModel::items() const noexcept
+const QVector<EventHierarchyItem>& EventHierarchyModel::items() const noexcept
 {
     return m_items;
 }
 
-void LibraryHierarchyModel::setValidationState(QString code, QString message)
+void EventHierarchyModel::setValidationState(QString code, QString message)
 {
     code = code.trimmed();
     message = message.trimmed();

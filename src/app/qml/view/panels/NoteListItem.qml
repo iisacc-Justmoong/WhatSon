@@ -5,9 +5,9 @@ import LVRS 1.0 as LV
 Item {
     id: noteListItem
 
-    readonly property bool activeState: hovered
+    readonly property bool activeState: hovered || pressed
     property color bookmarkColor: "#F2C55C"
-    property bool bookmarked: true
+    property bool bookmarked: false
     readonly property color captionColor: Qt.rgba(1, 1, 1, 0.5)
     readonly property color cardColor: LV.Theme.panelBackground08
     property string desc: "Note Contents Thumbnail... is can has 2 lines..."
@@ -24,6 +24,8 @@ Item {
         return "";
     }
     readonly property bool hovered: noteHoverHandler.hovered
+    property string noteId: ""
+    property bool pressed: false
     property string title: "NoteTitle"
     readonly property color titleColor: LV.Theme.bodyColor
 
@@ -52,18 +54,23 @@ Item {
             spacing: 8
 
             RowLayout {
+                clip: true
                 width: parent.width
 
                 Text {
                     Layout.fillWidth: true
+                    clip: true
                     color: noteListItem.titleColor
+                    elide: Text.ElideRight
                     font.family: "Pretendard"
                     font.pixelSize: 12
                     font.weight: 500
                     lineHeight: 12
                     lineHeightMode: Text.FixedHeight
+                    maximumLineCount: 1
                     text: noteListItem.title
                     verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.NoWrap
                 }
                 Item {
                     Layout.preferredHeight: 16
@@ -91,7 +98,9 @@ Item {
                 }
             }
             Text {
+                clip: true
                 color: noteListItem.captionColor
+                elide: Text.ElideRight
                 font.family: "Pretendard"
                 font.pixelSize: 11
                 font.weight: 400

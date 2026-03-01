@@ -80,9 +80,12 @@ Item {
         }
     }
     function normalizeHierarchyIndex(index) {
-        if (index < hierarchyEnum.library || index > hierarchyEnum.preset)
+        var numericIndex = Number(index);
+        if (!isFinite(numericIndex))
             return hierarchyEnum.library;
-
+        var normalizedIndex = Math.floor(numericIndex);
+        if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
+            return hierarchyEnum.library;
     }
 
     QtObject {

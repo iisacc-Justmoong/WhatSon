@@ -53,7 +53,12 @@ QVariant TagsHierarchyModel::data(const QModelIndex& index, int role) const
     case ExpandedRole:
         return item.expanded;
     case ShowChevronRole:
-        return item.showChevron;
+        {
+            const int nextIndex = index.row() + 1;
+            const bool hasChild = nextIndex < m_items.size()
+                && m_items.at(nextIndex).depth > item.depth;
+            return hasChild;
+        }
     default:
         return {};
     }
@@ -181,7 +186,6 @@ void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
 
         sanitized.push_back(std::move(item));
     }
-
     if (m_strictValidation && !issues.isEmpty())
     {
         const ValidationIssue& first = issues.constFirst();

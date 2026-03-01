@@ -2,7 +2,7 @@
 
 #include "file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -13,7 +13,7 @@ EventHierarchyViewModel::EventHierarchyViewModel(QObject* parent)
 {
     QObject::connect(
         &m_itemModel,
-        &FlatHierarchyModel::itemCountChanged,
+        &EventHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -25,7 +25,7 @@ EventHierarchyViewModel::EventHierarchyViewModel(QObject* parent)
 
 EventHierarchyViewModel::~EventHierarchyViewModel() = default;
 
-FlatHierarchyModel* EventHierarchyViewModel::itemModel() noexcept
+EventHierarchyModel* EventHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -52,7 +52,7 @@ QString EventHierarchyViewModel::lastLoadError() const
 
 void EventHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::EventSupport::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -64,7 +64,7 @@ void EventHierarchyViewModel::setSelectedIndex(int index)
 
 void EventHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Event"));
+    m_items = WhatSon::Hierarchy::EventSupport::parseDepthItems(depthItems, QStringLiteral("Event"));
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
@@ -72,7 +72,7 @@ void EventHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList EventHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
+    return WhatSon::Hierarchy::EventSupport::serializeDepthItems(m_items);
 }
 
 QString EventHierarchyViewModel::itemLabel(int index) const
@@ -95,12 +95,12 @@ bool EventHierarchyViewModel::renameItem(int index, const QString& displayName)
     {
         return false;
     }
-    if (WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(index)))
+    if (WhatSon::Hierarchy::EventSupport::isBucketHeaderItem(m_items.at(index)))
     {
         return false;
     }
 
-    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
+    if (!WhatSon::Hierarchy::EventSupport::renameHierarchyItem(&m_items, index, displayName))
     {
         return false;
     }
@@ -117,7 +117,7 @@ void EventHierarchyViewModel::createFolder()
         return;
     }
 
-    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
+    const int insertIndex = WhatSon::Hierarchy::EventSupport::createHierarchyFolder(
         &m_items, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
@@ -136,7 +136,7 @@ void EventHierarchyViewModel::deleteSelectedFolder()
         return;
     }
 
-    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
+    const int nextSelectedIndex = WhatSon::Hierarchy::EventSupport::deleteHierarchySubtree(&m_items, m_selectedIndex);
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(nextSelectedIndex);
@@ -144,13 +144,13 @@ void EventHierarchyViewModel::deleteSelectedFolder()
 
 void EventHierarchyViewModel::setEventNames(QStringList eventNames)
 {
-    m_eventNames = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(eventNames));
+    m_eventNames = WhatSon::Hierarchy::EventSupport::sanitizeStringList(std::move(eventNames));
     m_store.setEventNames(m_eventNames);
-    m_items = WhatSon::Hierarchy::Support::buildBucketItems(
+    m_items = WhatSon::Hierarchy::EventSupport::buildBucketItems(
         QStringLiteral("Event"),
         m_eventNames,
         QStringLiteral("Event"));
-    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
+    m_createdFolderSequence = WhatSon::Hierarchy::EventSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -177,14 +177,14 @@ bool EventHierarchyViewModel::deleteFolderEnabled() const noexcept
         return false;
     }
 
-    return !WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(m_selectedIndex));
+    return !WhatSon::Hierarchy::EventSupport::isBucketHeaderItem(m_items.at(m_selectedIndex));
 }
 
 bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
     QStringList contentsDirectories;
     QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    if (!WhatSon::Hierarchy::EventSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
     {
         if (errorMessage != nullptr)
         {
@@ -207,7 +207,7 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
 
         QString rawText;
         QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        if (!WhatSon::Hierarchy::EventSupport::readUtf8File(filePath, &rawText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -271,6 +271,6 @@ void EventHierarchyViewModel::syncModel()
 
 void EventHierarchyViewModel::syncDomainStoreFromItems()
 {
-    m_eventNames = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
+    m_eventNames = WhatSon::Hierarchy::EventSupport::extractDomainLabelsFromItems(m_items);
     m_store.setEventNames(m_eventNames);
 }

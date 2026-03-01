@@ -3,7 +3,11 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+
+#include <QFileInfo>
+#include <QVariantMap>
+
+#include <algorithm>
 
 namespace
 {
@@ -11,32 +15,47 @@ namespace
 
     QString bookmarkListTitle(const LibraryNoteRecord& note)
     {
-        const QString title = note.title.trimmed();
+        QString title = note.title.trimmed();
         if (!title.isEmpty())
         {
             return title;
         }
 
-        const QString noteId = note.noteId.trimmed();
-        if (!noteId.isEmpty())
+        title = note.bodyFirstLine.trimmed();
+        if (!title.isEmpty())
         {
-            return noteId;
+            return title;
         }
 
-        return QStringLiteral("Untitled Note");
+        title = note.noteId.trimmed();
+        if (!title.isEmpty())
+        {
+            return title;
+        }
+
+        if (!note.noteDirectoryPath.isEmpty())
+        {
+            title = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
+            if (!title.isEmpty())
+            {
+                return title;
+            }
+        }
+
+        return QStringLiteral("Note");
     }
 
     QString bookmarkListSummary(const LibraryNoteRecord& note)
     {
-        const QString bodySummary = note.bodySummary.trimmed();
-        if (!bodySummary.isEmpty())
+        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        if (!bodyPlainText.isEmpty())
         {
-            return bodySummary;
+            return bodyPlainText;
         }
         return QStringLiteral("No contents");
     }
 
-    QString bookmarkListFolders(const LibraryNoteRecord& note)
+    QStringList bookmarkListFolders(const LibraryNoteRecord& note)
     {
         QStringList folders;
         folders.reserve(note.folders.size());
@@ -48,12 +67,8 @@ namespace
                 folders.push_back(trimmed);
             }
         }
-
-        if (folders.isEmpty())
-        {
-            return QStringLiteral("No Folder");
-        }
-        return folders.join(QStringLiteral(", "));
+        folders.removeDuplicates();
+        return folders;
     }
 
     QString bookmarkColorHexForNote(const LibraryNoteRecord& note)
@@ -64,7 +79,39 @@ namespace
         }
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
-}
+
+    QString colorHexForLabel(const QString& label)
+    {
+        const QString normalized = label.trimmed().toCaseFolded();
+        for (const auto& colorDef : WhatSon::Bookmarks::kBookmarkColorDefinitions)
+        {
+            if (normalized == QString::fromLatin1(colorDef.name))
+            {
+                return QString::fromLatin1(colorDef.hex);
+            }
+        }
+        return {};
+    }
+
+    QVector<BookmarksHierarchyItem> buildColorFolderItems()
+    {
+        QVector<BookmarksHierarchyItem> items;
+        items.reserve(static_cast<int>(WhatSon::Bookmarks::kBookmarkColorDefinitions.size()));
+
+        for (const auto& colorDef : WhatSon::Bookmarks::kBookmarkColorDefinitions)
+        {
+            BookmarksHierarchyItem item;
+            item.depth = 0;
+            item.accent = false;
+            item.expanded = false;
+            item.label = QString::fromLatin1(colorDef.name);
+            item.showChevron = false;
+            items.push_back(std::move(item));
+        }
+
+        return items;
+    }
+} // namespace
 
 BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
     : QObject(parent)
@@ -73,7 +120,7 @@ BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
     WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
-        &FlatHierarchyModel::itemCountChanged,
+        &BookmarksHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -88,12 +135,14 @@ BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
         {
             updateNoteItemCount();
         });
-    setBookmarkIds({});
+
+    rebuildColorFolders();
+    refreshNoteListForSelection();
 }
 
 BookmarksHierarchyViewModel::~BookmarksHierarchyViewModel() = default;
 
-FlatHierarchyModel* BookmarksHierarchyViewModel::itemModel() noexcept
+BookmarksHierarchyModel* BookmarksHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -130,7 +179,17 @@ QString BookmarksHierarchyViewModel::lastLoadError() const
 
 void BookmarksHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int maxIndex = m_itemModel.rowCount() - 1;
+    int clamped = index;
+    if (maxIndex < 0)
+    {
+        clamped = -1;
+    }
+    else
+    {
+        clamped = std::clamp(index, -1, maxIndex);
+    }
+
     if (m_selectedIndex == clamped)
     {
         return;
@@ -141,20 +200,35 @@ void BookmarksHierarchyViewModel::setSelectedIndex(int index)
         QString::fromLatin1(kScope),
         QStringLiteral("setSelectedIndex"),
         QStringLiteral("value=%1").arg(m_selectedIndex));
+    refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
 void BookmarksHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Bookmark"));
-    syncDomainStoreFromItems();
-    syncModel();
+    Q_UNUSED(depthItems);
+    rebuildColorFolders();
     setSelectedIndex(-1);
+    refreshNoteListForSelection();
 }
 
 QVariantList BookmarksHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
+    QVariantList serialized;
+    serialized.reserve(m_items.size());
+
+    for (const BookmarksHierarchyItem& item : m_items)
+    {
+        serialized.push_back(QVariantMap{
+            {QStringLiteral("label"), item.label},
+            {QStringLiteral("depth"), item.depth},
+            {QStringLiteral("accent"), item.accent},
+            {QStringLiteral("expanded"), item.expanded},
+            {QStringLiteral("showChevron"), item.showChevron}
+        });
+    }
+
+    return serialized;
 }
 
 QString BookmarksHierarchyViewModel::itemLabel(int index) const
@@ -169,97 +243,37 @@ QString BookmarksHierarchyViewModel::itemLabel(int index) const
 
 bool BookmarksHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
-    if (!renameEnabled())
-    {
-        return false;
-    }
-    if (index < 0 || index >= m_items.size())
-    {
-        return false;
-    }
-    if (WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(index)))
-    {
-        return false;
-    }
-
-    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
-    {
-        return false;
-    }
-
-    syncDomainStoreFromItems();
-    syncModel();
-    return true;
+    Q_UNUSED(index);
+    Q_UNUSED(displayName);
+    return false;
 }
 
 void BookmarksHierarchyViewModel::createFolder()
 {
-    if (!createFolderEnabled())
-    {
-        return;
-    }
-
-    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
-        &m_items, m_selectedIndex, &m_createdFolderSequence);
-    if (insertIndex < 0)
-    {
-        return;
-    }
-
-    syncDomainStoreFromItems();
-    syncModel();
-    setSelectedIndex(insertIndex);
 }
 
 void BookmarksHierarchyViewModel::deleteSelectedFolder()
 {
-    if (!deleteFolderEnabled())
-    {
-        return;
-    }
-
-    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
-    syncDomainStoreFromItems();
-    syncModel();
-    setSelectedIndex(nextSelectedIndex);
-}
-
-void BookmarksHierarchyViewModel::setBookmarkIds(QStringList bookmarkIds)
-{
-    m_bookmarkIds = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(bookmarkIds));
-    m_store.setBookmarkIds(m_bookmarkIds);
-    m_items = WhatSon::Hierarchy::Support::buildBucketItems(
-        QStringLiteral("Bookmarks"),
-        m_bookmarkIds,
-        QStringLiteral("Bookmark"));
-    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
-    syncModel();
-    setSelectedIndex(-1);
-}
-
-QStringList BookmarksHierarchyViewModel::bookmarkIds() const
-{
-    return m_bookmarkIds;
 }
 
 bool BookmarksHierarchyViewModel::renameEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool BookmarksHierarchyViewModel::createFolderEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool BookmarksHierarchyViewModel::deleteFolderEnabled() const noexcept
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
-    {
-        return false;
-    }
+    return false;
+}
 
-    return !WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(m_selectedIndex));
+bool BookmarksHierarchyViewModel::viewOptionsEnabled() const noexcept
+{
+    return false;
 }
 
 bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -277,8 +291,6 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
     }
 
     const QVector<LibraryNoteRecord>& notes = libraryAll.notes();
-    QStringList bookmarkLabels;
-    bookmarkLabels.reserve(notes.size());
 
     QVector<LibraryNoteListItem> bookmarkListItems;
     bookmarkListItems.reserve(notes.size());
@@ -290,33 +302,27 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             continue;
         }
 
-        const QString title = bookmarkListTitle(note);
-        if (!title.isEmpty())
-        {
-            bookmarkLabels.push_back(title);
-        }
-
         LibraryNoteListItem item;
-        item.noteId = note.noteId.trimmed();
-        item.titleText = title;
-        item.summaryText = bookmarkListSummary(note);
-        item.foldersText = bookmarkListFolders(note);
+        item.id = note.noteId.trimmed();
+        item.title = bookmarkListTitle(note);
+        item.desc = bookmarkListSummary(note);
+        item.folders = bookmarkListFolders(note);
         item.bookmarked = true;
-        item.bookmarkColorHex = bookmarkColorHexForNote(note);
-        item.highlighted = false;
+        item.bookmarkColor = bookmarkColorHexForNote(note);
         bookmarkListItems.push_back(std::move(item));
     }
 
-    setBookmarkIds(bookmarkLabels);
-    m_noteListModel.setItems(std::move(bookmarkListItems));
-    updateNoteItemCount();
+    m_allBookmarkedNotes = std::move(bookmarkListItems);
+    rebuildColorFolders();
+    setSelectedIndex(-1);
+    refreshNoteListForSelection();
 
     WhatSon::Debug::trace(
         QString::fromLatin1(kScope),
         QStringLiteral("loadFromWshub"),
         QStringLiteral("path=%1 source=wsnhead count=%2")
         .arg(wshubPath)
-        .arg(m_bookmarkIds.size()));
+        .arg(m_allBookmarkedNotes.size()));
     updateLoadState(true);
     return true;
 }
@@ -356,14 +362,49 @@ void BookmarksHierarchyViewModel::updateLoadState(bool succeeded, QString errorM
     }
 }
 
+void BookmarksHierarchyViewModel::rebuildColorFolders()
+{
+    m_items = buildColorFolderItems();
+    syncModel();
+}
+
+void BookmarksHierarchyViewModel::refreshNoteListForSelection()
+{
+    const QString selectedColorHex = colorHexForLabel(selectedColorLabel());
+    if (selectedColorHex.isEmpty())
+    {
+        m_noteListModel.setItems(m_allBookmarkedNotes);
+        updateNoteItemCount();
+        return;
+    }
+
+    QVector<LibraryNoteListItem> filtered;
+    filtered.reserve(m_allBookmarkedNotes.size());
+    for (const LibraryNoteListItem& item : m_allBookmarkedNotes)
+    {
+        if (item.bookmarkColor.compare(selectedColorHex, Qt::CaseInsensitive) != 0)
+        {
+            continue;
+        }
+        filtered.push_back(item);
+    }
+
+    m_noteListModel.setItems(filtered);
+    updateNoteItemCount();
+}
+
+QString BookmarksHierarchyViewModel::selectedColorLabel() const
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+    {
+        return {};
+    }
+
+    return m_items.at(m_selectedIndex).label.trimmed();
+}
+
 void BookmarksHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
-}
-
-void BookmarksHierarchyViewModel::syncDomainStoreFromItems()
-{
-    m_bookmarkIds = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
-    m_store.setBookmarkIds(m_bookmarkIds);
 }

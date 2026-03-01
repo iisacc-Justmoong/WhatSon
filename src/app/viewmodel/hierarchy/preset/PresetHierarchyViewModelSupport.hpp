@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FlatHierarchyModel.hpp"
+#include "PresetHierarchyModel.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -11,7 +11,7 @@
 
 #include <algorithm>
 
-namespace WhatSon::Hierarchy::Support
+namespace WhatSon::Hierarchy::PresetSupport
 {
     inline QString normalizePath(const QString& input)
     {
@@ -156,9 +156,9 @@ namespace WhatSon::Hierarchy::Support
         return std::clamp(requested, -1, itemCount - 1);
     }
 
-    inline FlatHierarchyItem parseFlatItem(const QVariant& entry, int fallbackOrdinal, const QString& fallbackPrefix)
+    inline PresetHierarchyItem parseItemEntry(const QVariant& entry, int fallbackOrdinal, const QString& fallbackPrefix)
     {
-        FlatHierarchyItem item;
+        PresetHierarchyItem item;
 
         if (entry.metaType().id() == QMetaType::QVariantMap)
         {
@@ -205,17 +205,17 @@ namespace WhatSon::Hierarchy::Support
         return item;
     }
 
-    inline QVector<FlatHierarchyItem> parseDepthItems(
+    inline QVector<PresetHierarchyItem> parseDepthItems(
         const QVariantList& depthItems,
         const QString& fallbackPrefix)
     {
-        QVector<FlatHierarchyItem> items;
+        QVector<PresetHierarchyItem> items;
         items.reserve(depthItems.size());
 
         int ordinal = 1;
         for (const QVariant& entry : depthItems)
         {
-            items.push_back(parseFlatItem(entry, ordinal, fallbackPrefix));
+            items.push_back(parseItemEntry(entry, ordinal, fallbackPrefix));
             ++ordinal;
         }
 
@@ -229,12 +229,12 @@ namespace WhatSon::Hierarchy::Support
         return items;
     }
 
-    inline QVariantList serializeDepthItems(const QVector<FlatHierarchyItem>& items)
+    inline QVariantList serializeDepthItems(const QVector<PresetHierarchyItem>& items)
     {
         QVariantList serialized;
         serialized.reserve(items.size());
 
-        for (const FlatHierarchyItem& item : items)
+        for (const PresetHierarchyItem& item : items)
         {
             serialized.push_back(QVariantMap{
                 {QStringLiteral("label"), item.label},
@@ -248,17 +248,17 @@ namespace WhatSon::Hierarchy::Support
         return serialized;
     }
 
-    inline QVector<FlatHierarchyItem> buildBucketItems(
+    inline QVector<PresetHierarchyItem> buildBucketItems(
         const QString& bucketName,
         const QStringList& values,
         const QString& fallbackPrefix)
     {
         const QStringList sanitized = sanitizeStringList(values);
 
-        QVector<FlatHierarchyItem> items;
+        QVector<PresetHierarchyItem> items;
         items.reserve(sanitized.size() + 1);
 
-        FlatHierarchyItem bucket;
+        PresetHierarchyItem bucket;
         bucket.depth = 0;
         bucket.accent = true;
         bucket.expanded = true;
@@ -269,7 +269,7 @@ namespace WhatSon::Hierarchy::Support
         int ordinal = 1;
         for (const QString& value : sanitized)
         {
-            FlatHierarchyItem child;
+            PresetHierarchyItem child;
             child.depth = 1;
             child.accent = false;
             child.expanded = false;
@@ -289,7 +289,7 @@ namespace WhatSon::Hierarchy::Support
         return items;
     }
 
-    inline void applyChevronByDepth(QVector<FlatHierarchyItem>* items)
+    inline void applyChevronByDepth(QVector<PresetHierarchyItem>* items)
     {
         if (items == nullptr)
         {
@@ -304,12 +304,12 @@ namespace WhatSon::Hierarchy::Support
         }
     }
 
-    inline int nextGeneratedFolderSequence(const QVector<FlatHierarchyItem>& items)
+    inline int nextGeneratedFolderSequence(const QVector<PresetHierarchyItem>& items)
     {
         static const QRegularExpression folderPattern(QStringLiteral("^Folder(\\d+)$"));
 
         int maxSequence = 0;
-        for (const FlatHierarchyItem& item : items)
+        for (const PresetHierarchyItem& item : items)
         {
             const QRegularExpressionMatch match = folderPattern.match(item.label);
             if (!match.hasMatch())
@@ -328,7 +328,7 @@ namespace WhatSon::Hierarchy::Support
         return maxSequence + 1;
     }
 
-    inline bool renameFlatItem(QVector<FlatHierarchyItem>* items, int index, const QString& displayName)
+    inline bool renameHierarchyItem(QVector<PresetHierarchyItem>* items, int index, const QString& displayName)
     {
         if (items == nullptr || index < 0 || index >= items->size())
         {
@@ -350,12 +350,12 @@ namespace WhatSon::Hierarchy::Support
         return true;
     }
 
-    inline bool isBucketHeaderItem(const FlatHierarchyItem& item)
+    inline bool isBucketHeaderItem(const PresetHierarchyItem& item)
     {
         return item.depth == 0 && item.accent;
     }
 
-    inline int createFlatFolder(QVector<FlatHierarchyItem>* items, int selectedIndex, int* ioFolderSequence)
+    inline int createHierarchyFolder(QVector<PresetHierarchyItem>* items, int selectedIndex, int* ioFolderSequence)
     {
         if (items == nullptr || ioFolderSequence == nullptr)
         {
@@ -377,7 +377,7 @@ namespace WhatSon::Hierarchy::Support
             }
         }
 
-        FlatHierarchyItem newItem;
+        PresetHierarchyItem newItem;
         newItem.depth = folderDepth;
         newItem.label = QStringLiteral("Folder%1").arg((*ioFolderSequence)++);
         newItem.accent = false;
@@ -389,7 +389,7 @@ namespace WhatSon::Hierarchy::Support
         return insertIndex;
     }
 
-    inline int deleteFlatSubtree(QVector<FlatHierarchyItem>* items, int selectedIndex)
+    inline int deleteHierarchySubtree(QVector<PresetHierarchyItem>* items, int selectedIndex)
     {
         if (items == nullptr || selectedIndex < 0 || selectedIndex >= items->size())
         {
@@ -415,14 +415,14 @@ namespace WhatSon::Hierarchy::Support
         return std::min(startIndex, static_cast<int>(items->size() - 1));
     }
 
-    inline QStringList extractDomainLabelsFromItems(const QVector<FlatHierarchyItem>& items)
+    inline QStringList extractDomainLabelsFromItems(const QVector<PresetHierarchyItem>& items)
     {
         QStringList labels;
         labels.reserve(items.size());
 
         for (int index = 0; index < items.size(); ++index)
         {
-            const FlatHierarchyItem& item = items.at(index);
+            const PresetHierarchyItem& item = items.at(index);
             if (index == 0 && item.depth == 0 && item.accent)
             {
                 continue;
@@ -438,4 +438,4 @@ namespace WhatSon::Hierarchy::Support
 
         return labels;
     }
-} // namespace WhatSon::Hierarchy::Support
+} // namespace WhatSon::Hierarchy::PresetSupport

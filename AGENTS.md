@@ -27,6 +27,23 @@ every turn.
 - Sidebar selection store: `src/app/viewmodel/sidebar/SidebarSelectionStore.*`
 - Runtime bootstrap: app startup loads the first `blueprint/*.wshub` package into `WhatSonHubRuntimeStore`.
 
+### Hierarchy ViewModel Ownership (Critical)
+
+- Each hierarchy type must use its own dedicated ViewModel under `src/app/viewmodel/hierarchy/*`.
+- Do not bind all hierarchy categories to a single shared ViewModel instance.
+- Canonical mapping:
+    - Library -> `LibraryHierarchyViewModel`
+    - Projects -> `ProjectsHierarchyViewModel`
+    - Bookmarks -> `BookmarksHierarchyViewModel`
+    - Tags -> `TagsHierarchyViewModel`
+    - Resources -> `ResourcesHierarchyViewModel`
+    - Progress -> `ProgressHierarchyViewModel`
+    - Event -> `EventHierarchyViewModel`
+    - Preset -> `PresetHierarchyViewModel`
+- Any hierarchy wiring change must preserve this one-type/one-ViewModel contract.
+- Flat/shared hierarchy model abstraction is prohibited for runtime hierarchy ViewModel wiring.
+- Keep model/support code isolated per domain directory in `src/app/viewmodel/hierarchy/<domain>/`.
+
 ## Codex Init (`/init`) Procedure
 
 Initialization is considered complete when the following sequence succeeds.
@@ -152,6 +169,8 @@ An exception is allowed only when all conditions are satisfied.
 - Keep command examples and real output paths synchronized in docs.
 - Keep model/viewmodel/view interfaces event-driven: every model, viewmodel, and view must expose at least one signal
   and one slot/hook entrypoint.
+- Keep hierarchy wiring type-safe: each hierarchy category must remain bound to its dedicated ViewModel in
+  `src/app/viewmodel/hierarchy`.
 
 ## Troubleshooting Baseline
 

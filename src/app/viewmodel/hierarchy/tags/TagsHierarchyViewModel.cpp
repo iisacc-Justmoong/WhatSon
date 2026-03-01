@@ -2,7 +2,7 @@
 
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -281,7 +281,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
 {
     QStringList contentsDirectories;
     QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    if (!WhatSon::Hierarchy::TagsSupport::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
     {
         if (errorMessage != nullptr)
         {
@@ -304,7 +304,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
 
         QString rawText;
         QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        if (!WhatSon::Hierarchy::TagsSupport::readUtf8File(filePath, &rawText, &readError))
         {
             if (errorMessage != nullptr)
             {

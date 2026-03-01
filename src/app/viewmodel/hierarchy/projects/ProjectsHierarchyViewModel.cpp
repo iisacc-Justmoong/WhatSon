@@ -3,7 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
+#include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 
 #include <QDebug>
 #include <QDir>
@@ -21,7 +21,7 @@ ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
     WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
-        &FlatHierarchyModel::itemCountChanged,
+        &ProjectsHierarchyModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -33,7 +33,7 @@ ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
 
 ProjectsHierarchyViewModel::~ProjectsHierarchyViewModel() = default;
 
-FlatHierarchyModel* ProjectsHierarchyViewModel::itemModel() noexcept
+ProjectsHierarchyModel* ProjectsHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
 }
@@ -60,7 +60,7 @@ QString ProjectsHierarchyViewModel::lastLoadError() const
 
 void ProjectsHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
+    const int clamped = WhatSon::Hierarchy::ProjectsSupport::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -80,7 +80,7 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
         QString::fromLatin1(kScope),
         QStringLiteral("setDepthItems.begin"),
         QStringLiteral("count=%1").arg(depthItems.size()));
-    m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Project"));
+    m_items = WhatSon::Hierarchy::ProjectsSupport::parseDepthItems(depthItems, QStringLiteral("Project"));
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
@@ -88,7 +88,7 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList ProjectsHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
+    return WhatSon::Hierarchy::ProjectsSupport::serializeDepthItems(m_items);
 }
 
 QString ProjectsHierarchyViewModel::itemLabel(int index) const
@@ -116,7 +116,7 @@ bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayNam
         return false;
     }
 
-    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
+    if (!WhatSon::Hierarchy::ProjectsSupport::renameHierarchyItem(&m_items, index, displayName))
     {
         return false;
     }
@@ -133,7 +133,7 @@ void ProjectsHierarchyViewModel::createFolder()
         return;
     }
 
-    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
+    const int insertIndex = WhatSon::Hierarchy::ProjectsSupport::createHierarchyFolder(
         &m_items, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
@@ -152,7 +152,8 @@ void ProjectsHierarchyViewModel::deleteSelectedFolder()
         return;
     }
 
-    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
+    const int nextSelectedIndex =
+        WhatSon::Hierarchy::ProjectsSupport::deleteHierarchySubtree(&m_items, m_selectedIndex);
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(nextSelectedIndex);
@@ -160,13 +161,13 @@ void ProjectsHierarchyViewModel::deleteSelectedFolder()
 
 void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)
 {
-    m_projectNames = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(projectNames));
+    m_projectNames = WhatSon::Hierarchy::ProjectsSupport::sanitizeStringList(std::move(projectNames));
     m_store.setProjectNames(m_projectNames);
-    m_items = WhatSon::Hierarchy::Support::buildBucketItems(
+    m_items = WhatSon::Hierarchy::ProjectsSupport::buildBucketItems(
         QStringLiteral("Projects"),
         m_projectNames,
         QStringLiteral("Project"));
-    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
+    m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -193,7 +194,7 @@ bool ProjectsHierarchyViewModel::deleteFolderEnabled() const noexcept
         return false;
     }
 
-    const FlatHierarchyItem& selectedItem = m_items.at(m_selectedIndex);
+    const ProjectsHierarchyItem& selectedItem = m_items.at(m_selectedIndex);
     return !(selectedItem.accent && selectedItem.depth == 0);
 }
 
@@ -201,7 +202,8 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 {
     QStringList contentsDirectories;
     QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    if (!WhatSon::Hierarchy::ProjectsSupport::resolveContentsDirectories(
+        wshubPath, &contentsDirectories, &resolveError))
     {
         if (errorMessage != nullptr)
         {
@@ -227,7 +229,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
         QString rawText;
         QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        if (!WhatSon::Hierarchy::ProjectsSupport::readUtf8File(filePath, &rawText, &readError))
         {
             if (errorMessage != nullptr)
             {
@@ -309,6 +311,6 @@ void ProjectsHierarchyViewModel::syncModel()
 
 void ProjectsHierarchyViewModel::syncDomainStoreFromItems()
 {
-    m_projectNames = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
+    m_projectNames = WhatSon::Hierarchy::ProjectsSupport::extractDomainLabelsFromItems(m_items);
     m_store.setProjectNames(m_projectNames);
 }

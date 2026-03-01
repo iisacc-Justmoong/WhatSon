@@ -1,11 +1,9 @@
 #pragma once
 
-#include "file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
 #include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
-#include "viewmodel/hierarchy/common/FlatHierarchyModel.hpp"
+#include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
 
 #include <QObject>
-#include <QStringList>
 #include <QVariantList>
 #include <QVector>
 
@@ -13,7 +11,7 @@ class BookmarksHierarchyViewModel final : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(FlatHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(BookmarksHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -23,12 +21,13 @@ class BookmarksHierarchyViewModel final : public QObject
     Q_PROPERTY(bool renameEnabled READ renameEnabled CONSTANT)
     Q_PROPERTY(bool createFolderEnabled READ createFolderEnabled CONSTANT)
     Q_PROPERTY(bool deleteFolderEnabled READ deleteFolderEnabled NOTIFY selectedIndexChanged)
+    Q_PROPERTY(bool viewOptionsEnabled READ viewOptionsEnabled CONSTANT)
 
 public:
     explicit BookmarksHierarchyViewModel(QObject* parent = nullptr);
     ~BookmarksHierarchyViewModel() override;
 
-    FlatHierarchyModel* itemModel() noexcept;
+    BookmarksHierarchyModel* itemModel() noexcept;
     LibraryNoteListModel* noteListModel() noexcept;
 
     int selectedIndex() const noexcept;
@@ -45,11 +44,10 @@ public:
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
 
-    void setBookmarkIds(QStringList bookmarkIds);
-    QStringList bookmarkIds() const;
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;
+    bool viewOptionsEnabled() const noexcept;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
 
@@ -67,6 +65,7 @@ public
     signals  :
 
 
+
     void selectedIndexChanged();
     void itemCountChanged();
     void noteItemCountChanged();
@@ -77,16 +76,16 @@ private:
     void updateItemCount();
     void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
+    void rebuildColorFolders();
+    void refreshNoteListForSelection();
+    QString selectedColorLabel() const;
     void syncModel();
-    void syncDomainStoreFromItems();
 
-    QStringList m_bookmarkIds;
-    QVector<FlatHierarchyItem> m_items;
-    WhatSonBookmarksHierarchyStore m_store;
-    FlatHierarchyModel m_itemModel;
+    QVector<BookmarksHierarchyItem> m_items;
+    QVector<LibraryNoteListItem> m_allBookmarkedNotes;
+    BookmarksHierarchyModel m_itemModel;
     LibraryNoteListModel m_noteListModel;
     int m_selectedIndex = -1;
-    int m_createdFolderSequence = 1;
     int m_itemCount = 0;
     int m_noteItemCount = 0;
     bool m_loadSucceeded = false;

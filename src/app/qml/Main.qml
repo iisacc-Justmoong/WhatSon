@@ -101,15 +101,7 @@ LV.ApplicationWindow {
             onboardingSubWindow.show();
     }
     onBodyHeightChanged: clampPreferredSizes()
-    onUseMobileMainLayoutChanged: reportLayoutBranch("useMobileMainLayoutChanged")
 
-    Connections {
-        function onBackendEvent(domain, eventName, payload) {
-            console.log("[whatson:debug][main.backendBridge] domain=" + domain + " event=" + eventName + " count=" + applicationWindow.backendEventCount);
-        }
-
-        target: (typeof backendBridge !== "undefined" && backendBridge !== null) ? backendBridge : null
-    }
     Loader {
         id: mainLayoutLoader
 

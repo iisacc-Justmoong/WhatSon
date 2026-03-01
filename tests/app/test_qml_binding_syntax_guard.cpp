@@ -111,6 +111,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             QStringLiteral("readonly property int currentHierarchy: normalizeHierarchyIndex(activeToolbarIndex)")),
         "HierarchySidebarLayout.qml must normalize active toolbar index into currentHierarchy.");
     QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral("return normalizedIndex;")),
+        "HierarchySidebarLayout.qml normalizeHierarchyIndex must explicitly return normalized valid index.");
+    QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("activeToolbarIndex: hierarchyView.currentHierarchy")),
         "HierarchySidebarLayout.qml must bind sidebar activeToolbarIndex from currentHierarchy.");
     QVERIFY2(
@@ -145,6 +148,28 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.activeToolbarIndex = index;")),
         "SidebarHierarchyView.qml must not overwrite activeToolbarIndex locally.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("Keys.onPressed: function (event)")),
+        "SidebarHierarchyView.qml must handle Enter/Return rename trigger from keyboard.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter")),
+        "SidebarHierarchyView.qml keyboard rename handler must gate Return/Enter keys.");
+    QVERIFY2(
+        !sidebarViewText.contains(QStringLiteral("onDoubleClicked")),
+        "SidebarHierarchyView.qml must not use double-click rename trigger.");
+
+    const QString bodyLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/BodyLayout.qml"));
+    QFile bodyLayoutFile(bodyLayoutPath);
+    QVERIFY2(bodyLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(bodyLayoutPath));
+    const QString bodyLayoutText = QString::fromUtf8(bodyLayoutFile.readAll());
+
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("function totalSplitterWidth()")),
+        "BodyLayout.qml must keep totalSplitterWidth helper.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("return width;")),
+        "BodyLayout.qml totalSplitterWidth must return width to keep splitter drag clamps finite.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)

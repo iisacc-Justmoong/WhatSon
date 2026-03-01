@@ -2,21 +2,19 @@
 
 #include <QAbstractListModel>
 #include <QString>
-#include <QStringList>
 #include <QVariantMap>
 #include <QVector>
 
-struct LibraryNoteListItem
+struct ProgressHierarchyItem
 {
-    QString id;
-    QString title;
-    QString desc;
-    QStringList folders;
-    bool bookmarked = false;
-    QString bookmarkColor;
+    int depth = 0;
+    bool accent = false;
+    bool expanded = false;
+    QString label;
+    bool showChevron = true;
 };
 
-class LibraryNoteListModel final : public QAbstractListModel
+class ProgressHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -28,17 +26,17 @@ class LibraryNoteListModel final : public QAbstractListModel
 public:
     enum Role
     {
-        IdRole = Qt::UserRole + 1,
-        TitleRole,
-        DescRole,
-        FoldersRole,
-        BookmarkedRole,
-        BookmarkColorRole
+        LabelRole = Qt::UserRole + 1,
+        DepthRole,
+        IndentLevelRole,
+        AccentRole,
+        ExpandedRole,
+        ShowChevronRole
     };
 
     Q_ENUM(Role)
 
-    explicit LibraryNoteListModel(QObject* parent = nullptr);
+    explicit ProgressHierarchyModel(QObject* parent = nullptr);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -50,8 +48,8 @@ public:
     QString lastValidationCode() const;
     QString lastValidationMessage() const;
 
-    void setItems(QVector<LibraryNoteListItem> items);
-    const QVector<LibraryNoteListItem>& items() const noexcept;
+    void setItems(QVector<ProgressHierarchyItem> items);
+    const QVector<ProgressHierarchyItem>& items() const noexcept;
 
 public
     slots  :
@@ -80,7 +78,7 @@ public
 private:
     void setValidationState(QString code, QString message);
 
-    QVector<LibraryNoteListItem> m_items;
+    QVector<ProgressHierarchyItem> m_items;
     bool m_strictValidation = false;
     int m_correctionCount = 0;
     QString m_lastValidationCode;

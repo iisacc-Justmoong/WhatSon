@@ -65,6 +65,7 @@ public
     signals  :
 
 
+
     void selectedIndexChanged();
     void itemCountChanged();
     void noteItemCountChanged();
@@ -89,12 +90,9 @@ private:
     static int extractDepth(const QVariantMap& entryMap);
     static LibraryHierarchyItem parseItem(const QVariant& entry, int fallbackOrdinal);
     static int nextFolderSequence(const QVector<LibraryHierarchyItem>& items);
-    static QVector<LibraryNoteListItem> buildNoteListItems(
-        const QVector<LibraryNoteRecord>& notes,
-        const QString& highlightedNoteId);
+    static QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes);
     const QVector<LibraryNoteRecord>& notesForBucket(IndexedBucket bucket) const;
     IndexedBucket selectedBucket() const;
-    QString selectedNoteId() const;
     void rebuildBucketRanges();
     void refreshNoteListForSelection();
     void applyIndexedBuckets();
@@ -110,7 +108,6 @@ private:
     LibraryDraft m_libraryDraft;
     LibraryToday m_libraryToday;
     QVector<IndexedBucketRange> m_bucketRanges;
-    QVector<QString> m_rowNoteIds;
     bool m_runtimeIndexLoaded = false;
     bool m_foldersHierarchyLoaded = false;
     int m_selectedIndex = -1;

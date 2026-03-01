@@ -47,6 +47,8 @@ Item {
     signal sidebarWidthDragRequested(int value)
 
     function clampListViewWidth(value) {
+        // CRITICAL: Drag-resize clamps must always use finite occupied width.
+        // If occupied width becomes undefined/NaN, splitter dragging appears "blocked".
         if (!hStack.listVisible)
             return 0;
         var occupiedWidth = hStack.sidebarWidth + (hStack.rightVisible ? hStack.rightPanelWidth : 0) + hStack.totalSplitterWidth();
@@ -66,11 +68,14 @@ Item {
         return Math.max(hStack.effectiveMinSidebarWidth, Math.min(maxSidebarWidth, value));
     }
     function totalSplitterWidth() {
+        // DO NOT REMOVE THIS RETURN.
+        // Returning undefined here breaks all width clamp math and disables edge drag resizing.
         var width = hStack.splitterThickness;
         if (hStack.listVisible)
             width += hStack.splitterThickness;
         if (hStack.rightVisible)
             width += hStack.splitterThickness;
+
     }
 
     Layout.fillHeight: true

@@ -1,4 +1,4 @@
-#include "FlatHierarchyModel.hpp"
+#include "BookmarksHierarchyModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
 
@@ -15,13 +15,13 @@ namespace
     };
 }
 
-FlatHierarchyModel::FlatHierarchyModel(QObject* parent)
+BookmarksHierarchyModel::BookmarksHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::trace(QStringLiteral("hierarchy.flat.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::trace(QStringLiteral("hierarchy.bookmarks.model"), QStringLiteral("ctor"));
 }
 
-int FlatHierarchyModel::rowCount(const QModelIndex& parent) const
+int BookmarksHierarchyModel::rowCount(const QModelIndex& parent) const
 {
     if (parent.isValid())
     {
@@ -31,14 +31,14 @@ int FlatHierarchyModel::rowCount(const QModelIndex& parent) const
     return m_items.size();
 }
 
-QVariant FlatHierarchyModel::data(const QModelIndex& index, int role) const
+QVariant BookmarksHierarchyModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
     {
         return {};
     }
 
-    const FlatHierarchyItem& item = m_items.at(index.row());
+    const BookmarksHierarchyItem& item = m_items.at(index.row());
     switch (role)
     {
     case LabelRole:
@@ -51,13 +51,18 @@ QVariant FlatHierarchyModel::data(const QModelIndex& index, int role) const
     case ExpandedRole:
         return item.expanded;
     case ShowChevronRole:
-        return item.showChevron;
+        {
+            const int nextIndex = index.row() + 1;
+            const bool hasChild = nextIndex < m_items.size()
+                && m_items.at(nextIndex).depth > item.depth;
+            return hasChild;
+        }
     default:
         return {};
     }
 }
 
-QHash<int, QByteArray> FlatHierarchyModel::roleNames() const
+QHash<int, QByteArray> BookmarksHierarchyModel::roleNames() const
 {
     return {
         {LabelRole, "label"},
@@ -69,17 +74,17 @@ QHash<int, QByteArray> FlatHierarchyModel::roleNames() const
     };
 }
 
-int FlatHierarchyModel::itemCount() const noexcept
+int BookmarksHierarchyModel::itemCount() const noexcept
 {
     return m_items.size();
 }
 
-bool FlatHierarchyModel::strictValidation() const noexcept
+bool BookmarksHierarchyModel::strictValidation() const noexcept
 {
     return m_strictValidation;
 }
 
-void FlatHierarchyModel::setStrictValidation(bool enabled)
+void BookmarksHierarchyModel::setStrictValidation(bool enabled)
 {
     if (m_strictValidation == enabled)
     {
@@ -89,25 +94,25 @@ void FlatHierarchyModel::setStrictValidation(bool enabled)
     emit strictValidationChanged();
 }
 
-int FlatHierarchyModel::correctionCount() const noexcept
+int BookmarksHierarchyModel::correctionCount() const noexcept
 {
     return m_correctionCount;
 }
 
-QString FlatHierarchyModel::lastValidationCode() const
+QString BookmarksHierarchyModel::lastValidationCode() const
 {
     return m_lastValidationCode;
 }
 
-QString FlatHierarchyModel::lastValidationMessage() const
+QString BookmarksHierarchyModel::lastValidationMessage() const
 {
     return m_lastValidationMessage;
 }
 
-void FlatHierarchyModel::setItems(QVector<FlatHierarchyItem> items)
+void BookmarksHierarchyModel::setItems(QVector<BookmarksHierarchyItem> items)
 {
     const int previousCount = m_items.size();
-    QVector<FlatHierarchyItem> sanitized;
+    QVector<BookmarksHierarchyItem> sanitized;
     sanitized.reserve(items.size());
 
     QVector<ValidationIssue> issues;
@@ -115,11 +120,11 @@ void FlatHierarchyModel::setItems(QVector<FlatHierarchyItem> items)
 
     for (int index = 0; index < items.size(); ++index)
     {
-        FlatHierarchyItem item = std::move(items[index]);
+        BookmarksHierarchyItem item = std::move(items[index]);
         if (item.depth < 0)
         {
             ValidationIssue issue;
-            issue.code = QStringLiteral("flat.depth.negative");
+            issue.code = QStringLiteral("hierarchy.depth.negative");
             issue.message = QStringLiteral("Depth must be >= 0. Corrected to 0.");
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
@@ -135,7 +140,7 @@ void FlatHierarchyModel::setItems(QVector<FlatHierarchyItem> items)
         if (item.label.isEmpty())
         {
             ValidationIssue issue;
-            issue.code = QStringLiteral("flat.label.empty");
+            issue.code = QStringLiteral("hierarchy.label.empty");
             issue.message = QStringLiteral("Label must not be empty. Generated fallback label.");
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
@@ -147,7 +152,6 @@ void FlatHierarchyModel::setItems(QVector<FlatHierarchyItem> items)
         }
         sanitized.push_back(std::move(item));
     }
-
     if (m_strictValidation && !issues.isEmpty())
     {
         const ValidationIssue& first = issues.constFirst();
@@ -157,7 +161,7 @@ void FlatHierarchyModel::setItems(QVector<FlatHierarchyItem> items)
     }
 
     WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.flat.model"),
+        QStringLiteral("hierarchy.bookmarks.model"),
         QStringLiteral("setItems"),
         QStringLiteral("count=%1").arg(sanitized.size()));
     beginResetModel();
@@ -183,12 +187,12 @@ void FlatHierarchyModel::setItems(QVector<FlatHierarchyItem> items)
     emit itemsChanged();
 }
 
-const QVector<FlatHierarchyItem>& FlatHierarchyModel::items() const noexcept
+const QVector<BookmarksHierarchyItem>& BookmarksHierarchyModel::items() const noexcept
 {
     return m_items;
 }
 
-void FlatHierarchyModel::setValidationState(QString code, QString message)
+void BookmarksHierarchyModel::setValidationState(QString code, QString message)
 {
     code = code.trimmed();
     message = message.trimmed();

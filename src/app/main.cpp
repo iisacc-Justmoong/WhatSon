@@ -1,5 +1,4 @@
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
-#include "viewmodel/bridge/WhatSonBackendBridge.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
@@ -12,7 +11,6 @@
 #include "permissions/ApplePermissionBridge.hpp"
 
 #include <QByteArray>
-#include <QAbstractItemModel>
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
@@ -25,7 +23,6 @@
 #include <QSettings>
 #include <QTimer>
 #include <QVector>
-#include <QVariantMap>
 #include <QtCore/qglobal.h>
 #include <QtCore/qpermissions.h>
 
@@ -348,25 +345,8 @@ int main(int argc, char* argv[])
     ProgressHierarchyViewModel progressHierarchyViewModel;
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
-    WhatSonBackendBridge backendBridge;
     WhatSonHubRuntimeStore hubRuntimeStore;
     const QString blueprintHubPath = resolveBlueprintHubPath();
-    auto publishLoadEvent = [&backendBridge, &blueprintHubPath](
-        const QString& domain,
-        bool ok,
-        const QString& errorMessage,
-        int itemCount)
-    {
-        backendBridge.publish(
-            domain,
-            ok ? QStringLiteral("load.success") : QStringLiteral("load.failed"),
-            QVariantMap{
-                {QStringLiteral("ok"), ok},
-                {QStringLiteral("path"), blueprintHubPath},
-                {QStringLiteral("error"), errorMessage},
-                {QStringLiteral("itemCount"), itemCount}
-            });
-    };
     if (!blueprintHubPath.isEmpty())
     {
         WhatSon::Debug::trace(
@@ -383,7 +363,6 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadLibraryIndex.failed"),
                 libraryIndexError);
-            publishLoadEvent(QStringLiteral("library"), false, libraryIndexError, 0);
         }
         else
         {
@@ -391,11 +370,6 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadLibraryIndex.success"),
                 QStringLiteral("path=%1").arg(blueprintHubPath));
-            publishLoadEvent(
-                QStringLiteral("library"),
-                true,
-                QString(),
-                libraryHierarchyViewModel.itemModel()->rowCount());
         }
         QString hubLoadError;
         if (!hubRuntimeStore.loadFromWshub(blueprintHubPath, &hubLoadError))
@@ -406,7 +380,6 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadFromWshub.failed"),
                 hubLoadError);
-            publishLoadEvent(QStringLiteral("runtime"), false, hubLoadError, 0);
         }
         else
         {
@@ -415,15 +388,12 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadFromWshub.success"),
                 QStringLiteral("tagEntryCount=%1").arg(tags.size()));
-            publishLoadEvent(QStringLiteral("runtime"), true, QString(), tags.size());
         }
         tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
-        backendBridge.publish(
-            QStringLiteral("tags"),
-            QStringLiteral("runtime.applyDepthEntries"),
-            QVariantMap{
-                {QStringLiteral("itemCount"), tagsHierarchyViewModel.itemModel()->rowCount()}
-            });
+        WhatSon::Debug::trace(
+            QStringLiteral("main.runtime"),
+            QStringLiteral("applyTagsDepthEntries.success"),
+            QStringLiteral("itemCount=%1").arg(tagsHierarchyViewModel.itemModel()->rowCount()));
 
         QString hierarchyLoadError;
         if (!projectsHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
@@ -432,15 +402,13 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadProjects.failed"),
                 hierarchyLoadError);
-            publishLoadEvent(QStringLiteral("projects"), false, hierarchyLoadError, 0);
         }
         else
         {
-            publishLoadEvent(
+            WhatSon::Debug::trace(
                 QStringLiteral("projects"),
-                true,
-                QString(),
-                projectsHierarchyViewModel.itemModel()->rowCount());
+                QStringLiteral("load.success"),
+                QStringLiteral("itemCount=%1").arg(projectsHierarchyViewModel.itemModel()->rowCount()));
         }
         if (!bookmarksHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
         {
@@ -448,15 +416,13 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadBookmarks.failed"),
                 hierarchyLoadError);
-            publishLoadEvent(QStringLiteral("bookmarks"), false, hierarchyLoadError, 0);
         }
         else
         {
-            publishLoadEvent(
+            WhatSon::Debug::trace(
                 QStringLiteral("bookmarks"),
-                true,
-                QString(),
-                bookmarksHierarchyViewModel.itemModel()->rowCount());
+                QStringLiteral("load.success"),
+                QStringLiteral("itemCount=%1").arg(bookmarksHierarchyViewModel.itemModel()->rowCount()));
         }
         if (!resourcesHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
         {
@@ -464,15 +430,13 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadResources.failed"),
                 hierarchyLoadError);
-            publishLoadEvent(QStringLiteral("resources"), false, hierarchyLoadError, 0);
         }
         else
         {
-            publishLoadEvent(
+            WhatSon::Debug::trace(
                 QStringLiteral("resources"),
-                true,
-                QString(),
-                resourcesHierarchyViewModel.itemModel()->rowCount());
+                QStringLiteral("load.success"),
+                QStringLiteral("itemCount=%1").arg(resourcesHierarchyViewModel.itemModel()->rowCount()));
         }
         if (!progressHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
         {
@@ -480,15 +444,13 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadProgress.failed"),
                 hierarchyLoadError);
-            publishLoadEvent(QStringLiteral("progress"), false, hierarchyLoadError, 0);
         }
         else
         {
-            publishLoadEvent(
+            WhatSon::Debug::trace(
                 QStringLiteral("progress"),
-                true,
-                QString(),
-                progressHierarchyViewModel.itemModel()->rowCount());
+                QStringLiteral("load.success"),
+                QStringLiteral("itemCount=%1").arg(progressHierarchyViewModel.itemModel()->rowCount()));
         }
         if (!eventHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
         {
@@ -496,15 +458,13 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadEvent.failed"),
                 hierarchyLoadError);
-            publishLoadEvent(QStringLiteral("event"), false, hierarchyLoadError, 0);
         }
         else
         {
-            publishLoadEvent(
+            WhatSon::Debug::trace(
                 QStringLiteral("event"),
-                true,
-                QString(),
-                eventHierarchyViewModel.itemModel()->rowCount());
+                QStringLiteral("load.success"),
+                QStringLiteral("itemCount=%1").arg(eventHierarchyViewModel.itemModel()->rowCount()));
         }
         if (!presetHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
         {
@@ -512,15 +472,13 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("loadPreset.failed"),
                 hierarchyLoadError);
-            publishLoadEvent(QStringLiteral("preset"), false, hierarchyLoadError, 0);
         }
         else
         {
-            publishLoadEvent(
+            WhatSon::Debug::trace(
                 QStringLiteral("preset"),
-                true,
-                QString(),
-                presetHierarchyViewModel.itemModel()->rowCount());
+                QStringLiteral("load.success"),
+                QStringLiteral("itemCount=%1").arg(presetHierarchyViewModel.itemModel()->rowCount()));
         }
     }
     else
@@ -530,232 +488,8 @@ int main(int argc, char* argv[])
             QStringLiteral("main.runtime"),
             QStringLiteral("loadFromWshub.skipped"),
             QStringLiteral("no blueprint .wshub detected"));
-        backendBridge.publish(
-            QStringLiteral("runtime"),
-            QStringLiteral("load.skipped"),
-            QVariantMap{
-                {QStringLiteral("reason"), QStringLiteral("no blueprint .wshub detected")}
-            });
     }
 
-    QObject::connect(
-        &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("library"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), libraryHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), libraryHierarchyViewModel.itemModel()->rowCount()},
-                    {QStringLiteral("noteCount"), libraryHierarchyViewModel.noteListModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &projectsHierarchyViewModel,
-        &ProjectsHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("projects"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), projectsHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), projectsHierarchyViewModel.itemModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &bookmarksHierarchyViewModel,
-        &BookmarksHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("bookmarks"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), bookmarksHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), bookmarksHierarchyViewModel.itemModel()->rowCount()},
-                    {QStringLiteral("noteCount"), bookmarksHierarchyViewModel.noteListModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &tagsHierarchyViewModel,
-        &TagsHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("tags"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), tagsHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), tagsHierarchyViewModel.itemModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &resourcesHierarchyViewModel,
-        &ResourcesHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("resources"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), resourcesHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), resourcesHierarchyViewModel.itemModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &progressHierarchyViewModel,
-        &ProgressHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("progress"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), progressHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), progressHierarchyViewModel.itemModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &eventHierarchyViewModel,
-        &EventHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("event"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), eventHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), eventHierarchyViewModel.itemModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        &presetHierarchyViewModel,
-        &PresetHierarchyViewModel::selectedIndexChanged,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("preset"),
-                QStringLiteral("selection.changed"),
-                QVariantMap{
-                    {QStringLiteral("selectedIndex"), presetHierarchyViewModel.selectedIndex()},
-                    {QStringLiteral("itemCount"), presetHierarchyViewModel.itemModel()->rowCount()}
-                });
-        });
-
-    QObject::connect(
-        libraryHierarchyViewModel.noteListModel(),
-        &QAbstractItemModel::modelReset,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("library"),
-                QStringLiteral("notelist.modelReset"),
-                QVariantMap{
-                    {QStringLiteral("rowCount"), libraryHierarchyViewModel.noteListModel()->rowCount()}
-                });
-        });
-    QObject::connect(
-        bookmarksHierarchyViewModel.noteListModel(),
-        &QAbstractItemModel::modelReset,
-        &backendBridge,
-        [&]()
-        {
-            backendBridge.publish(
-                QStringLiteral("bookmarks"),
-                QStringLiteral("notelist.modelReset"),
-                QVariantMap{
-                    {QStringLiteral("rowCount"), bookmarksHierarchyViewModel.noteListModel()->rowCount()}
-                });
-        });
-
-    QObject::connect(
-        &backendBridge,
-        &WhatSonBackendBridge::commandRequested,
-        &backendBridge,
-        [&](const QString& command, const QVariantMap& payload)
-        {
-            if (command.compare(QStringLiteral("bridge.ping"), Qt::CaseInsensitive) == 0)
-            {
-                backendBridge.publish(QStringLiteral("bridge"), QStringLiteral("pong"), payload);
-                return;
-            }
-
-            if (command.compare(QStringLiteral("hierarchy.select"), Qt::CaseInsensitive) == 0)
-            {
-                const QString domain = payload.value(QStringLiteral("domain")).toString().trimmed().toCaseFolded();
-                const int index = payload.value(QStringLiteral("index")).toInt();
-                bool handled = true;
-
-                if (domain == QStringLiteral("library"))
-                {
-                    libraryHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("projects"))
-                {
-                    projectsHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("bookmarks"))
-                {
-                    bookmarksHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("tags"))
-                {
-                    tagsHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("resources"))
-                {
-                    resourcesHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("progress"))
-                {
-                    progressHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("event"))
-                {
-                    eventHierarchyViewModel.setSelectedIndex(index);
-                }
-                else if (domain == QStringLiteral("preset"))
-                {
-                    presetHierarchyViewModel.setSelectedIndex(index);
-                }
-                else
-                {
-                    handled = false;
-                }
-
-                backendBridge.publish(
-                    QStringLiteral("bridge"),
-                    handled ? QStringLiteral("command.applied") : QStringLiteral("command.rejected"),
-                    QVariantMap{
-                        {QStringLiteral("command"), command},
-                        {QStringLiteral("domain"), domain},
-                        {QStringLiteral("index"), index},
-                        {QStringLiteral("handled"), handled}
-                    });
-                return;
-            }
-
-            backendBridge.publish(
-                QStringLiteral("bridge"),
-                QStringLiteral("command.unsupported"),
-                QVariantMap{
-                    {QStringLiteral("command"), command}
-                });
-        });
-
-    engine.rootContext()->setContextProperty(QStringLiteral("backendBridge"), &backendBridge);
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("projectsHierarchyViewModel"), &projectsHierarchyViewModel);
     engine.rootContext()->setContextProperty(

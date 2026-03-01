@@ -1,7 +1,7 @@
 #pragma once
 
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
-#include "viewmodel/hierarchy/common/FlatHierarchyModel.hpp"
+#include "viewmodel/hierarchy/progress/ProgressHierarchyModel.hpp"
 
 #include <QObject>
 #include <QStringList>
@@ -12,7 +12,7 @@ class ProgressHierarchyViewModel final : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(FlatHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(ProgressHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
     Q_PROPERTY(bool loadSucceeded READ loadSucceeded NOTIFY loadStateChanged)
@@ -25,7 +25,7 @@ public:
     explicit ProgressHierarchyViewModel(QObject* parent = nullptr);
     ~ProgressHierarchyViewModel() override;
 
-    FlatHierarchyModel* itemModel() noexcept;
+    ProgressHierarchyModel* itemModel() noexcept;
 
     int selectedIndex() const noexcept;
     Q_INVOKABLE void setSelectedIndex(int index);
@@ -63,6 +63,7 @@ public
     signals  :
 
 
+
     void selectedIndexChanged();
     void itemCountChanged();
     void loadStateChanged();
@@ -78,9 +79,9 @@ private:
 
     int m_progressValue = 0;
     QStringList m_progressStates;
-    QVector<FlatHierarchyItem> m_items;
+    QVector<ProgressHierarchyItem> m_items;
     WhatSonProgressHierarchyStore m_store;
-    FlatHierarchyModel m_itemModel;
+    ProgressHierarchyModel m_itemModel;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;
