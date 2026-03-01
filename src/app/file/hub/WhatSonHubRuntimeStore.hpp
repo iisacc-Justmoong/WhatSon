@@ -1,8 +1,10 @@
 #pragma once
 
+#include "WhatSonHubStore.hpp"
 #include "WhatSonHubPlacementStore.hpp"
 #include "hierarchy/tags/WhatSonHubTagsStateStore.hpp"
 
+#include <QHash>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -20,14 +22,19 @@ public:
 
     WhatSonHubPlacement placement(const QString& wshubPath) const;
     QVector<WhatSonTagDepthEntry> tagDepthEntries(const QString& wshubPath) const;
+    WhatSonHubStore hub(const QString& wshubPath) const;
+    WhatSonHubStat hubStat(const QString& wshubPath) const;
 
     void setPlacement(WhatSonHubPlacement placement);
     void setTagDepthEntries(const QString& wshubPath, QVector<WhatSonTagDepthEntry> entries);
+    void setHub(WhatSonHubStore store);
+    void setHubStat(const QString& wshubPath, WhatSonHubStat stat);
 
     void remove(const QString& wshubPath);
     void clear();
 
 private:
+    QHash<QString, WhatSonHubStore> m_hubStore;
     WhatSonHubPlacementStore m_placementStore;
     WhatSonHubTagsStateStore m_tagsStateStore;
 };

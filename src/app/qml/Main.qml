@@ -225,40 +225,23 @@ LV.ApplicationWindow {
             statusPlaceholderText: "Placeholder"
         }
     }
-    Window {
+    Onboarding {
         id: onboardingSubWindow
 
-        color: applicationWindow.windowColor
-        flags: Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
-        height: applicationWindow.onboardingDefaultHeight
-        minimumHeight: applicationWindow.onboardingMinHeight
-        minimumWidth: applicationWindow.onboardingMinWidth
-        modality: Qt.ApplicationModal
-        title: "WhatSon Onboarding"
-        transientParent: applicationWindow
-        visible: false
-        width: applicationWindow.onboardingDefaultWidth
-        x: applicationWindow.x + Math.round((applicationWindow.width - width) / 2)
-        y: applicationWindow.y + Math.round((applicationWindow.height - height) / 2)
+        defaultHeight: applicationWindow.onboardingDefaultHeight
+        defaultWidth: applicationWindow.onboardingDefaultWidth
+        hostWindow: applicationWindow
+        minHeight: applicationWindow.onboardingMinHeight
+        minWidth: applicationWindow.onboardingMinWidth
+        panelColor: applicationWindow.windowColor
 
-        onVisibleChanged: {
-            if (visible) {
-                x = applicationWindow.x + Math.round((applicationWindow.width - width) / 2);
-                y = applicationWindow.y + Math.round((applicationWindow.height - height) / 2);
-            }
+        onCreateFileRequested: {
+            applicationWindow.onboardingVisible = false;
+            onboardingSubWindow.close();
         }
-
-        Onboarding {
-            anchors.fill: parent
-
-            onCreateFileRequested: {
-                applicationWindow.onboardingVisible = false;
-                onboardingSubWindow.close();
-            }
-            onSelectFileRequested: {
-                applicationWindow.onboardingVisible = false;
-                onboardingSubWindow.close();
-            }
+        onSelectFileRequested: {
+            applicationWindow.onboardingVisible = false;
+            onboardingSubWindow.close();
         }
     }
 }

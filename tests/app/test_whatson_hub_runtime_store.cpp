@@ -5,6 +5,114 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
+namespace
+{
+    bool writeUtf8File(const QString& filePath, const QByteArray& text)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            return false;
+        }
+        return file.write(text) == text.size();
+    }
+
+    bool buildRequiredRuntimeHub(
+        const QString& hubPath,
+        bool includeTagsFile)
+    {
+        const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("RuntimeHub.wscontents"));
+        const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+        const QString resourcesPath = QDir(hubPath).filePath(QStringLiteral("RuntimeHub.wsresources"));
+        const QString presetPath = QDir(contentsPath).filePath(QStringLiteral("Preset.wspreset"));
+        const QString manifestDirPath = QDir(hubPath).filePath(QStringLiteral(".whatson"));
+
+        if (!QDir().mkpath(libraryPath)
+            || !QDir().mkpath(resourcesPath)
+            || !QDir().mkpath(presetPath)
+            || !QDir().mkpath(manifestDirPath))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+            QDir(manifestDirPath).filePath(QStringLiteral("hub.json")),
+            "{\n"
+            "  \"coordinate\": {\n"
+            "    \"x\": 24.0,\n"
+            "    \"y\": 88.0\n"
+            "  }\n"
+            "}\n"))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders")),
+            "{\n  \"folders\": [{\"id\": \"Brand\", \"label\": \"Brand\", \"depth\": 0}]\n}\n"))
+        {
+            return false;
+        }
+        if (!writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj")),
+            "{\n  \"projects\": [\"Campaign\"]\n}\n"))
+        {
+            return false;
+        }
+        if (!writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("Bookmarks.wsbookmarks")),
+            "{\n  \"bookmarks\": [\"note-1\"]\n}\n"))
+        {
+            return false;
+        }
+        if (includeTagsFile)
+        {
+            if (!writeUtf8File(
+                QDir(contentsPath).filePath(QStringLiteral("Tags.wstags")),
+                "{\n"
+                "  \"tags\": [\n"
+                "    {\"id\": \"root\", \"label\": \"Root\"},\n"
+                "    {\"id\": \"next\", \"label\": \"Next\"}\n"
+                "  ]\n"
+                "}\n"))
+            {
+                return false;
+            }
+        }
+        if (!writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("Progress.wsprogress")),
+            "{\n  \"value\": 1,\n  \"states\": [\"Ready\", \"Done\"]\n}\n"))
+        {
+            return false;
+        }
+        if (!writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            "{\n  \"notes\": [\"note-1\"]\n}\n"))
+        {
+            return false;
+        }
+        if (!writeUtf8File(
+            QDir(resourcesPath).filePath(QStringLiteral("image.png")),
+            "png"))
+        {
+            return false;
+        }
+        if (!writeUtf8File(
+            QDir(hubPath).filePath(QStringLiteral("RuntimeHubStat.wsstat")),
+            "{\n"
+            "  \"noteCount\": 9,\n"
+            "  \"resourceCount\": 4,\n"
+            "  \"characterCount\": 200,\n"
+            "  \"participants\": [\"ProfileA\", \"ProfileB\"]\n"
+            "}\n"))
+        {
+            return false;
+        }
+
+        return true;
+    }
+} // namespace
+
 class WhatSonHubRuntimeStoreTest final : public QObject
 {
     Q_OBJECT
@@ -15,7 +123,7 @@ private
 
 
     void loadFromWshub_storesHubAndContentsState();
-    void loadFromWshub_readsNoteHeaderTagsWhenTagsFileIsMissing();
+    void loadFromWshub_missingRequiredEntry_fails();
     void setPlacement_setTagDepthEntries_overrideRuntimeState();
 };
 
@@ -25,32 +133,7 @@ void WhatSonHubRuntimeStoreTest::loadFromWshub_storesHubAndContentsState()
     QVERIFY(tempDir.isValid());
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("RuntimeHub.wshub"));
-    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("RuntimeHub.wscontents"));
-    const QString manifestDirPath = QDir(hubPath).filePath(QStringLiteral(".whatson"));
-    QVERIFY(QDir().mkpath(contentsPath));
-    QVERIFY(QDir().mkpath(manifestDirPath));
-
-    QFile manifestFile(QDir(manifestDirPath).filePath(QStringLiteral("hub.json")));
-    QVERIFY(manifestFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    manifestFile.write(
-        "{\n"
-        "  \"coordinate\": {\n"
-        "    \"x\": 24.0,\n"
-        "    \"y\": 88.0\n"
-        "  }\n"
-        "}\n");
-    manifestFile.close();
-
-    QFile tagsFile(QDir(contentsPath).filePath(QStringLiteral("Tags.wstags")));
-    QVERIFY(tagsFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    tagsFile.write(
-        "{\n"
-        "  \"tags\": [\n"
-        "    {\"id\": \"root\", \"label\": \"Root\"},\n"
-        "    {\"id\": \"next\", \"label\": \"Next\"}\n"
-        "  ]\n"
-        "}\n");
-    tagsFile.close();
+    QVERIFY(buildRequiredRuntimeHub(hubPath, true));
 
     WhatSonHubRuntimeStore store;
     QString errorMessage;
@@ -61,6 +144,23 @@ void WhatSonHubRuntimeStoreTest::loadFromWshub_storesHubAndContentsState()
     QCOMPARE(placement.x(), 24.0);
     QCOMPARE(placement.y(), 88.0);
     QCOMPARE(store.tagDepthEntries(hubPath).size(), 2);
+    QCOMPARE(store.hubStat(hubPath).noteCount(), 9);
+    QCOMPARE(store.hubStat(hubPath).resourceCount(), 4);
+    QCOMPARE(store.hubStat(hubPath).participants().size(), 2);
+}
+
+void WhatSonHubRuntimeStoreTest::loadFromWshub_missingRequiredEntry_fails()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("RuntimeHub.wshub"));
+    QVERIFY(buildRequiredRuntimeHub(hubPath, false));
+
+    WhatSonHubRuntimeStore store;
+    QString errorMessage;
+    QVERIFY(!store.loadFromWshub(hubPath, &errorMessage));
+    QVERIFY(errorMessage.contains(QStringLiteral("Tags.wstags")));
 }
 
 void WhatSonHubRuntimeStoreTest::setPlacement_setTagDepthEntries_overrideRuntimeState()
@@ -81,56 +181,6 @@ void WhatSonHubRuntimeStoreTest::setPlacement_setTagDepthEntries_overrideRuntime
 
     store.remove(hubPath);
     QVERIFY(!store.contains(hubPath));
-}
-
-void WhatSonHubRuntimeStoreTest::loadFromWshub_readsNoteHeaderTagsWhenTagsFileIsMissing()
-{
-    QTemporaryDir tempDir;
-    QVERIFY(tempDir.isValid());
-
-    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("RuntimeHub.wshub"));
-    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("RuntimeHub.wscontents"));
-    const QString manifestDirPath = QDir(hubPath).filePath(QStringLiteral(".whatson"));
-    const QString notePath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/One.wsnote"));
-    QVERIFY(QDir().mkpath(contentsPath));
-    QVERIFY(QDir().mkpath(manifestDirPath));
-    QVERIFY(QDir().mkpath(notePath));
-
-    QFile manifestFile(QDir(manifestDirPath).filePath(QStringLiteral("hub.json")));
-    QVERIFY(manifestFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    manifestFile.write(
-        "{\n"
-        "  \"coordinate\": {\n"
-        "    \"x\": 10.0,\n"
-        "    \"y\": 20.0\n"
-        "  }\n"
-        "}\n");
-    manifestFile.close();
-
-    QFile noteHeadFile(QDir(notePath).filePath(QStringLiteral("One.wsnhead")));
-    QVERIFY(noteHeadFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    noteHeadFile.write(
-        "<contents>\n"
-        "  <head>\n"
-        "    <tags>\n"
-        "      <tag>Alpha</tag>\n"
-        "      <tag>Beta</tag>\n"
-        "      <tag>alpha</tag>\n"
-        "    </tags>\n"
-        "  </head>\n"
-        "</contents>\n");
-    noteHeadFile.close();
-
-    WhatSonHubRuntimeStore store;
-    QString errorMessage;
-    QVERIFY2(store.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
-
-    const QVector<WhatSonTagDepthEntry> entries = store.tagDepthEntries(hubPath);
-    QCOMPARE(entries.size(), 2);
-    QCOMPARE(entries.at(0).id, QStringLiteral("Alpha"));
-    QCOMPARE(entries.at(0).depth, 0);
-    QCOMPARE(entries.at(1).id, QStringLiteral("Beta"));
-    QCOMPARE(entries.at(1).depth, 0);
 }
 
 QTEST_APPLESS_MAIN(WhatSonHubRuntimeStoreTest)

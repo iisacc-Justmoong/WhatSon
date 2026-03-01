@@ -20,6 +20,42 @@ target_link_libraries(whatson_hub_creator_tests
 add_test(NAME whatson_hub_creator_tests COMMAND whatson_hub_creator_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_creator_tests)
 
+add_executable(whatson_hub_parser_tests
+        app/test_whatson_hub_parser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp
+)
+set_target_properties(whatson_hub_parser_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_parser_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub
+)
+target_link_libraries(whatson_hub_parser_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_parser_tests COMMAND whatson_hub_parser_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_parser_tests)
+
 add_executable(whatson_hub_placement_store_tests
         app/test_whatson_hub_placement_store.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacement.cpp
@@ -66,6 +102,23 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_state_store_tests)
 
 add_executable(whatson_hub_runtime_store_tests
         app/test_whatson_hub_runtime_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacement.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubPlacementStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubRuntimeStore.cpp

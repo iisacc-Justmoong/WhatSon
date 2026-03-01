@@ -23,7 +23,7 @@ public:
     const QString& hubsRootPath() const noexcept;
 
     QString creatorName() const;
-    QStringList requiredRelativePaths() const;
+    QStringList requiredRelativePaths(const QString& hubName) const;
     bool createHub(
         const QString& hubName,
         QString* outPackagePath,
@@ -31,6 +31,9 @@ public:
 
     QString packageExtension() const;
     QString manifestFileName() const;
+    QString hubContentsDirectoryName(const QString& hubName) const;
+    QString hubResourcesDirectoryName(const QString& hubName) const;
+    QString hubStatFileName(const QString& hubName) const;
 
 protected:
     QString sanitizeHubName(const QString& hubName) const;
@@ -40,11 +43,7 @@ protected:
 
 private:
     QString hubDirectoryPath(const QString& hubName) const;
-    bool createHubScaffold(const QString& hubRootPath, QString* errorMessage) const;
-    bool packageHubDirectory(
-        const QString& hubRootPath,
-        const QString& packagePath,
-        QString* errorMessage) const;
+    bool createHubScaffold(const QString& hubRootPath, const QString& hubName, QString* errorMessage) const;
 
     QString m_workspaceRootPath;
     QString m_hubsRootPath;

@@ -132,8 +132,20 @@ Examples:
 
 `WhatSonHubRuntimeStore` aggregates:
 
+- `WhatSonHubParser` + `WhatSonHubStore` + `WhatSonHubStat` (hub root topology + `.wsstat` metadata)
 - `WhatSonHubPlacementStore` (hub coordinate state from `.whatson/hub.json`)
 - `WhatSonHubTagsStateStore` (flattened tag depth state per hub)
+
+Hub parser behavior:
+
+- Validate unpacked `.wshub` directory contract
+- Resolve primary contents/resources roots (`.wscontents|*.wscontents`, `.wsresources|*.wsresources`)
+- Require and parse `*.wsstat` as a mandatory hub metadata source
+- Normalize and expose stat getters/setters (`noteCount`, `resourceCount`, `characterCount`, timestamp fields,
+  participant list, profile-scoped last-modified map)
+- Expose Qt signal/slot bridge for downstream model/viewmodel binding:
+    - Slot: `requestParseFromWshub(path)`
+    - Signals: `hubParsed`, `hubStatParsed`, `hubDomainsParsed`, `parseFailed`
 
 Placement extraction behavior:
 
@@ -217,13 +229,49 @@ Detected package conventions:
 - Contents roots:
     - `.wscontents` (fixed internal path)
     - or dynamic `<HubName>.wscontents`
-- Domain files:
-    - `Folders.wsfolders` (tree depth list)
+- Core hub domains:
+    - `Library.wslibrary`
+        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsndiff`, `*.wsnpaint`)
+        - Global note index (`index.wsnindex`)
+    - `<HubName>.wsresources`
+        - Binary/resource storage domain for note attachments (image/video/audio/other payloads)
+    - `<HubName>Stat.wsstat`
+        - Hub-level aggregate statistics and metadata domain (note/resource counts, character totals, created/modified
+          timestamps,
+          participant list, and related summary attributes)
+- Hierarchy/auxiliary files (typically under `*.wscontents`):
+    - `Folders.wsfolders` (folder depth tree)
     - `Tags.wstags` (tag tree or flat list)
-    - `Library.wslibrary/index.wsnindex`
-    - per-note directories `*.wsnote` with `*.wsnhead` and `*.wsnbody`
+    - `Bookmarks.wsbookmarks` (bookmark hierarchy source)
+    - `Progress.wsprogress` (progress state domain)
+    - `ProjectLists.wsproj` (project hierarchy domain)
+    - `Preset.wspreset` (preset hierarchy domain)
 - Placement manifest:
     - `.whatson/hub.json`
+
+### 5.1 Sync Design Intent (Filesystem-First)
+
+Hub synchronization is intentionally network-agnostic:
+
+- The authoritative sync unit is the entire `.wshub` directory.
+- Cross-device sync is delegated to filesystem/cloud providers (for example iCloud Drive, Google Drive, Dropbox), not to
+  an app-managed
+  online API.
+- WhatSon is expected to operate correctly even without direct network connectivity by reading/writing the shared hub
+  filesystem package.
+
+### 5.2 Conflict Minimization and Merge Strategy
+
+Design policy for conflict reduction:
+
+- Domain creator/parser pairs own write/read normalization for each file type.
+- Runtime timer jobs are expected to perform periodic read/write cycles for frequently changing hub files (`.wslibrary`,
+  `.wsresources`, `.wsstat`,
+  and hierarchy sidecar files).
+- Records should include profile-aware last-modified timestamps so conflict merge can be resolved with explicit edit
+  provenance rather than opaque
+  file-level overwrite behavior.
+- Merge UX goal is deterministic and human-readable conflict resolution using timestamp + profile identity context.
 
 Parser resilience is intentionally high. The code accepts schema variants such as:
 

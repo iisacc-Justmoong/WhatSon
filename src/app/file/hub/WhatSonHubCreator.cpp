@@ -4,17 +4,12 @@
 
 #include <QDateTime>
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QSaveFile>
-#include <QtCore/qconfig.h>
-
-#if QT_CONFIG(process)
-#include <QProcess>
-#endif
 
 #include <utility>
 
@@ -61,15 +56,15 @@ QString WhatSonHubCreator::creatorName() const
     return QStringLiteral("WhatSonHubCreator");
 }
 
-QStringList WhatSonHubCreator::requiredRelativePaths() const
+QStringList WhatSonHubCreator::requiredRelativePaths(const QString& hubName) const
 {
+    const QString contentsDirectory = hubContentsDirectoryName(hubName);
     return {
         QStringLiteral(".whatson"),
-        QStringLiteral("notes"),
-        QStringLiteral("notes/drafts"),
-        QStringLiteral("attachments"),
-        QStringLiteral("assets"),
-        QStringLiteral("indexes")
+        contentsDirectory,
+        joinPath(contentsDirectory, QStringLiteral("Library.wslibrary")),
+        joinPath(contentsDirectory, QStringLiteral("Preset.wspreset")),
+        hubResourcesDirectoryName(hubName)
     };
 }
 
@@ -98,6 +93,7 @@ bool WhatSonHubCreator::createHub(
         return false;
     }
 
+    const QString sanitizedHubName = sanitizeHubName(hubName);
     const QString hubRootPath = hubDirectoryPath(hubName);
     QDir hubRootDir(hubRootPath);
     if (hubRootDir.exists())
@@ -114,7 +110,7 @@ bool WhatSonHubCreator::createHub(
         return false;
     }
 
-    if (!createHubScaffold(hubRootPath, errorMessage))
+    if (!createHubScaffold(hubRootPath, sanitizedHubName, errorMessage))
     {
         WhatSon::Debug::trace(
             QStringLiteral("hub.creator"),
@@ -123,24 +119,14 @@ bool WhatSonHubCreator::createHub(
         return false;
     }
 
-    const QString packagePath = hubRootPath + packageExtension();
-    if (!packageHubDirectory(hubRootPath, packagePath, errorMessage))
-    {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createHub.failed.package"),
-            errorMessage != nullptr ? *errorMessage : QString());
-        return false;
-    }
-
     if (outPackagePath != nullptr)
     {
-        *outPackagePath = packagePath;
+        *outPackagePath = hubRootPath;
     }
     WhatSon::Debug::trace(
         QStringLiteral("hub.creator"),
         QStringLiteral("createHub.success"),
-        QStringLiteral("hubRoot=%1 package=%2").arg(hubRootPath, packagePath));
+        QStringLiteral("hubRoot=%1").arg(hubRootPath));
     return true;
 }
 
@@ -152,6 +138,21 @@ QString WhatSonHubCreator::packageExtension() const
 QString WhatSonHubCreator::manifestFileName() const
 {
     return QStringLiteral("hub.json");
+}
+
+QString WhatSonHubCreator::hubContentsDirectoryName(const QString& hubName) const
+{
+    return sanitizeHubName(hubName) + QStringLiteral(".wscontents");
+}
+
+QString WhatSonHubCreator::hubResourcesDirectoryName(const QString& hubName) const
+{
+    return sanitizeHubName(hubName) + QStringLiteral(".wsresources");
+}
+
+QString WhatSonHubCreator::hubStatFileName(const QString& hubName) const
+{
+    return sanitizeHubName(hubName) + QStringLiteral("Stat.wsstat");
 }
 
 QString WhatSonHubCreator::sanitizeHubName(const QString& hubName) const
@@ -266,18 +267,26 @@ bool WhatSonHubCreator::writeTextFile(
 QString WhatSonHubCreator::hubDirectoryPath(const QString& hubName) const
 {
     const QString basePath = joinPath(workspaceRootPath(), m_hubsRootPath);
-    return joinPath(basePath, sanitizeHubName(hubName));
+    return joinPath(basePath, sanitizeHubName(hubName) + packageExtension());
 }
 
 bool WhatSonHubCreator::createHubScaffold(
     const QString& hubRootPath,
+    const QString& hubName,
     QString* errorMessage) const
 {
     WhatSon::Debug::trace(
         QStringLiteral("hub.creator"),
         QStringLiteral("createScaffold.begin"),
         QStringLiteral("hubRoot=%1").arg(hubRootPath));
-    const QStringList paths = requiredRelativePaths();
+
+    const QString sanitizedHubName = sanitizeHubName(hubName);
+    const QString contentsDirectory = hubContentsDirectoryName(sanitizedHubName);
+    const QString resourcesDirectory = hubResourcesDirectoryName(sanitizedHubName);
+    const QString statFileName = hubStatFileName(sanitizedHubName);
+    const QString libraryRoot = joinPath(contentsDirectory, QStringLiteral("Library.wslibrary"));
+
+    const QStringList paths = requiredRelativePaths(sanitizedHubName);
     for (const QString& relativePath : paths)
     {
         const QString absolutePath = joinPath(hubRootPath, relativePath);
@@ -296,102 +305,138 @@ bool WhatSonHubCreator::createHubScaffold(
     manifest.insert(QStringLiteral("version"), 1);
     manifest.insert(QStringLiteral("creator"), creatorName());
     manifest.insert(QStringLiteral("storage"), QStringLiteral("filesystem"));
-    manifest.insert(QStringLiteral("notesRoot"), QStringLiteral("notes"));
-    manifest.insert(QStringLiteral("createdAtUtc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    manifest.insert(QStringLiteral("hubName"), sanitizedHubName);
+    manifest.insert(QStringLiteral("contentsRoot"), contentsDirectory);
+    manifest.insert(QStringLiteral("notesRoot"), libraryRoot);
+    manifest.insert(QStringLiteral("resourcesRoot"), resourcesDirectory);
+    manifest.insert(QStringLiteral("statFile"), statFileName);
+    const QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    manifest.insert(QStringLiteral("createdAtUtc"), now);
+    manifest.insert(QStringLiteral("lastModifiedAtUtc"), now);
     manifest.insert(QStringLiteral("hubDirectory"), QFileInfo(hubRootPath).fileName());
 
     const QString manifestText = QString::fromUtf8(
         QJsonDocument(manifest).toJson(QJsonDocument::Indented));
 
-    const bool ok = writeTextFile(manifestPath, manifestText, errorMessage);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        ok ? QStringLiteral("createScaffold.success") : QStringLiteral("createScaffold.failed"),
-        ok
-            ? QStringLiteral("manifest=%1").arg(manifestPath)
-            : (errorMessage != nullptr ? *errorMessage : QString()));
-    return ok;
-}
-
-bool WhatSonHubCreator::packageHubDirectory(
-    const QString& hubRootPath,
-    const QString& packagePath,
-    QString* errorMessage) const
-{
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("package.begin"),
-        QStringLiteral("hubRoot=%1 package=%2").arg(hubRootPath, packagePath));
-#if !QT_CONFIG(process)
-    Q_UNUSED(hubRootPath);
-    Q_UNUSED(packagePath);
-    if (errorMessage != nullptr)
+    if (!writeTextFile(manifestPath, manifestText, errorMessage))
     {
-        *errorMessage = QStringLiteral(
-            "Packaging is unavailable on this platform because Qt process support is disabled.");
-    }
-    return false;
-#else
-    QFile::remove(packagePath);
-
-    const QFileInfo hubInfo(hubRootPath);
-    const QString parentPath = hubInfo.absolutePath();
-    const QString directoryName = hubInfo.fileName();
-
-    QProcess process;
-#if defined(Q_OS_MACOS)
-    process.setProgram(QStringLiteral("/usr/bin/ditto"));
-    process.setArguments({
-        QStringLiteral("-c"),
-        QStringLiteral("-k"),
-        QStringLiteral("--sequesterRsrc"),
-        QStringLiteral("--keepParent"),
-        directoryName,
-        packagePath
-    });
-#else
-    process.setProgram(QStringLiteral("zip"));
-    process.setArguments({
-        QStringLiteral("-r"),
-        packagePath,
-        directoryName
-    });
-#endif
-    process.setWorkingDirectory(parentPath);
-
-    process.start();
-    if (!process.waitForFinished(-1))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Packaging process timed out for: %1").arg(hubRootPath);
-        }
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.manifest"),
+            errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
-    if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+    const QString statPath = joinPath(hubRootPath, statFileName);
+
+    QJsonObject statRoot;
+    statRoot.insert(QStringLiteral("version"), 1);
+    statRoot.insert(QStringLiteral("schema"), QStringLiteral("whatson.hub.stat"));
+    statRoot.insert(QStringLiteral("hub"), sanitizedHubName);
+    statRoot.insert(QStringLiteral("noteCount"), 0);
+    statRoot.insert(QStringLiteral("resourceCount"), 0);
+    statRoot.insert(QStringLiteral("characterCount"), 0);
+    statRoot.insert(QStringLiteral("createdAtUtc"), now);
+    statRoot.insert(QStringLiteral("lastModifiedAtUtc"), now);
+    statRoot.insert(QStringLiteral("participants"), QJsonArray{});
+    statRoot.insert(QStringLiteral("profileLastModifiedAtUtc"), QJsonObject{});
+
+    const QString statText = QString::fromUtf8(
+        QJsonDocument(statRoot).toJson(QJsonDocument::Indented));
+    if (!writeTextFile(statPath, statText, errorMessage))
     {
-        if (errorMessage != nullptr)
-        {
-            const QString stderrText = QString::fromLocal8Bit(process.readAllStandardError());
-            *errorMessage = QStringLiteral("Packaging failed: %1").arg(stderrText.trimmed());
-        }
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.stat"),
+            errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
-    if (!QFileInfo::exists(packagePath))
+    const QString indexPath = joinPath(hubRootPath, joinPath(libraryRoot, QStringLiteral("index.wsnindex")));
+    const QString indexText = QStringLiteral(
+        "{\n  \"version\": 1,\n  \"schema\": \"whatson.library.index\",\n  \"notes\": []\n}\n");
+    if (!writeTextFile(indexPath, indexText, errorMessage))
     {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Package file was not created: %1").arg(packagePath);
-        }
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.index"),
+            errorMessage != nullptr ? *errorMessage : QString());
+        return false;
+    }
+
+    const QString tagsPath = joinPath(hubRootPath, joinPath(contentsDirectory, QStringLiteral("Tags.wstags")));
+    const QString tagsText = QStringLiteral(
+        "{\n  \"version\": 1,\n  \"schema\": \"whatson.tags.depth\",\n  \"tags\": []\n}\n");
+    if (!writeTextFile(tagsPath, tagsText, errorMessage))
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.tags"),
+            errorMessage != nullptr ? *errorMessage : QString());
+        return false;
+    }
+
+    const QString foldersPath = joinPath(
+        hubRootPath,
+        joinPath(contentsDirectory, QStringLiteral("Folders.wsfolders")));
+    const QString foldersText =
+        QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.projects.depth\",\n  \"folders\": []\n}\n");
+    if (!writeTextFile(foldersPath, foldersText, errorMessage))
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.folders"),
+            errorMessage != nullptr ? *errorMessage : QString());
+        return false;
+    }
+
+    const QString bookmarksPath = joinPath(
+        hubRootPath,
+        joinPath(contentsDirectory, QStringLiteral("Bookmarks.wsbookmarks")));
+    const QString bookmarksText =
+        QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.bookmarks.list\",\n  \"bookmarks\": []\n}\n");
+    if (!writeTextFile(bookmarksPath, bookmarksText, errorMessage))
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.bookmarks"),
+            errorMessage != nullptr ? *errorMessage : QString());
+        return false;
+    }
+
+    const QString progressPath = joinPath(
+        hubRootPath,
+        joinPath(contentsDirectory, QStringLiteral("Progress.wsprogress")));
+    const QString progressText =
+        QStringLiteral(
+            "{\n  \"version\": 1,\n  \"schema\": \"whatson.progress.state\",\n  \"value\": 0,\n  \"states\": [\"Ready\", \"Pending\", \"InProgress\", \"Done\"]\n}\n");
+    if (!writeTextFile(progressPath, progressText, errorMessage))
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.progress"),
+            errorMessage != nullptr ? *errorMessage : QString());
+        return false;
+    }
+
+    const QString projectListsPath = joinPath(
+        hubRootPath,
+        joinPath(contentsDirectory, QStringLiteral("ProjectLists.wsproj")));
+    if (!writeTextFile(
+        projectListsPath,
+        QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.projects.list\",\n  \"projects\": []\n}\n"),
+        errorMessage))
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator"),
+            QStringLiteral("createScaffold.failed.projectLists"),
+            errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
     WhatSon::Debug::trace(
         QStringLiteral("hub.creator"),
-        QStringLiteral("package.success"),
-        QStringLiteral("package=%1").arg(packagePath));
+        QStringLiteral("createScaffold.success"),
+        QStringLiteral("manifest=%1 stat=%2").arg(manifestPath, statPath));
     return true;
-#endif
 }

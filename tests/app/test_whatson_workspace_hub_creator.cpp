@@ -35,6 +35,7 @@ private
     slots  :
 
 
+
     void sanitizeHubName_normalizesInput();
     void baseFileHelpers_createDirectoryAndFile();
     void createHub_createsWorkspacePackageAndManifest();
@@ -88,10 +89,10 @@ void WhatSonWorkspaceHubCreatorTest::createHub_createsWorkspacePackageAndManifes
 
     QFileInfo packageInfo(packagePath);
     QVERIFY(packageInfo.exists());
-    QVERIFY(packageInfo.isFile());
-    QCOMPARE(packageInfo.suffix(), QStringLiteral("wshub"));
+    QVERIFY(packageInfo.isDir());
+    QVERIFY(packageInfo.fileName().endsWith(QStringLiteral(".wshub")));
 
-    const QString hubRootPath = QDir(tempDir.path()).filePath(QStringLiteral("hubs/brand-hub-2026"));
+    const QString hubRootPath = QDir(tempDir.path()).filePath(QStringLiteral("hubs/brand-hub-2026.wshub"));
     const QString manifestPath = QDir(hubRootPath).filePath(QStringLiteral(".whatson/hub.json"));
     QFile manifestFile(manifestPath);
     QVERIFY(manifestFile.open(QIODevice::ReadOnly | QIODevice::Text));
@@ -100,7 +101,22 @@ void WhatSonWorkspaceHubCreatorTest::createHub_createsWorkspacePackageAndManifes
     QVERIFY(manifestDocument.isObject());
     const QJsonObject manifestObject = manifestDocument.object();
     QCOMPARE(manifestObject.value(QStringLiteral("format")).toString(), QStringLiteral("wshub"));
-    QCOMPARE(manifestObject.value(QStringLiteral("hubDirectory")).toString(), QStringLiteral("brand-hub-2026"));
+    QCOMPARE(manifestObject.value(QStringLiteral("hubDirectory")).toString(), QStringLiteral("brand-hub-2026.wshub"));
+    QCOMPARE(manifestObject.value(QStringLiteral("contentsRoot")).toString(),
+             QStringLiteral("brand-hub-2026.wscontents"));
+    QCOMPARE(manifestObject.value(QStringLiteral("resourcesRoot")).toString(),
+             QStringLiteral("brand-hub-2026.wsresources"));
+    QCOMPARE(manifestObject.value(QStringLiteral("statFile")).toString(), QStringLiteral("brand-hub-2026Stat.wsstat"));
+
+    QVERIFY(QFileInfo(QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026.wscontents"))).isDir());
+    QVERIFY(
+        QFileInfo(QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026.wscontents/Library.wslibrary"))).isDir());
+    QVERIFY(QFileInfo(QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026.wscontents/Preset.wspreset"))).isDir());
+    QVERIFY(QFileInfo(QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026.wsresources"))).isDir());
+    QVERIFY(QFileInfo(QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026Stat.wsstat"))).isFile());
+    QVERIFY(QFileInfo(
+            QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026.wscontents/Library.wslibrary/index.wsnindex"))).
+        isFile());
 }
 
 void WhatSonWorkspaceHubCreatorTest::createHub_failsWhenHubAlreadyExists()
