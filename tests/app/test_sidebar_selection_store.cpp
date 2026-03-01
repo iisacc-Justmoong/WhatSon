@@ -1,9 +1,12 @@
-#include "sidebar/SidebarHierarchyStore.hpp"
 #include "sidebar/SidebarSelectionStore.hpp"
 
-#include "viewmodel/hierarchy/library/LibraryHierarchyModel.hpp"
+#include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
+#include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
 #include <QtTest>
@@ -19,15 +22,28 @@ private
 
     void defaultState_usesLibraryModelAndToolbarSelection();
     void activeIndex_tags_switchesModelAndDisablesFolderActions();
-    void activeIndex_projects_usesStaticSectionModel();
+    void activeIndex_projects_usesProjectsViewModel();
 };
 
 void SidebarSelectionStoreTest::defaultState_usesLibraryModelAndToolbarSelection()
 {
-    SidebarHierarchyStore hierarchyStore;
     LibraryHierarchyViewModel libraryViewModel;
+    ProjectsHierarchyViewModel projectsViewModel;
+    BookmarksHierarchyViewModel bookmarksViewModel;
     TagsHierarchyViewModel tagsViewModel;
-    SidebarSelectionStore selectionStore(&hierarchyStore, &libraryViewModel, &tagsViewModel);
+    ResourcesHierarchyViewModel resourcesViewModel;
+    ProgressHierarchyViewModel progressViewModel;
+    EventHierarchyViewModel eventViewModel;
+    PresetHierarchyViewModel presetViewModel;
+    SidebarSelectionStore selectionStore(
+        &libraryViewModel,
+        &projectsViewModel,
+        &bookmarksViewModel,
+        &tagsViewModel,
+        &resourcesViewModel,
+        &progressViewModel,
+        &eventViewModel,
+        &presetViewModel);
 
     QCOMPARE(selectionStore.activeIndex(), 0);
     QVERIFY(selectionStore.itemModel() == libraryViewModel.itemModel());
@@ -36,16 +52,30 @@ void SidebarSelectionStoreTest::defaultState_usesLibraryModelAndToolbarSelection
     QVERIFY(!selectionStore.deleteFolderEnabled());
 
     const QVariantList toolbarItems = selectionStore.toolbarItems();
-    QCOMPARE(toolbarItems.size(), hierarchyStore.toolbarIconNames().size());
+    QCOMPARE(toolbarItems.size(), selectionStore.toolbarIconNames().size());
+    QCOMPARE(toolbarItems.size(), 8);
     QCOMPARE(toolbarItems.at(0).toMap().value(QStringLiteral("selected")).toBool(), true);
 }
 
 void SidebarSelectionStoreTest::activeIndex_tags_switchesModelAndDisablesFolderActions()
 {
-    SidebarHierarchyStore hierarchyStore;
     LibraryHierarchyViewModel libraryViewModel;
+    ProjectsHierarchyViewModel projectsViewModel;
+    BookmarksHierarchyViewModel bookmarksViewModel;
     TagsHierarchyViewModel tagsViewModel;
-    SidebarSelectionStore selectionStore(&hierarchyStore, &libraryViewModel, &tagsViewModel);
+    ResourcesHierarchyViewModel resourcesViewModel;
+    ProgressHierarchyViewModel progressViewModel;
+    EventHierarchyViewModel eventViewModel;
+    PresetHierarchyViewModel presetViewModel;
+    SidebarSelectionStore selectionStore(
+        &libraryViewModel,
+        &projectsViewModel,
+        &bookmarksViewModel,
+        &tagsViewModel,
+        &resourcesViewModel,
+        &progressViewModel,
+        &eventViewModel,
+        &presetViewModel);
 
     tagsViewModel.setTagDepthEntries({
         {QStringLiteral("tag-root"), QStringLiteral("TagRoot"), 0}
@@ -66,29 +96,42 @@ void SidebarSelectionStoreTest::activeIndex_tags_switchesModelAndDisablesFolderA
     QCOMPARE(toolbarItems.at(3).toMap().value(QStringLiteral("selected")).toBool(), true);
 }
 
-void SidebarSelectionStoreTest::activeIndex_projects_usesStaticSectionModel()
+void SidebarSelectionStoreTest::activeIndex_projects_usesProjectsViewModel()
 {
-    SidebarHierarchyStore hierarchyStore;
     LibraryHierarchyViewModel libraryViewModel;
+    ProjectsHierarchyViewModel projectsViewModel;
+    BookmarksHierarchyViewModel bookmarksViewModel;
     TagsHierarchyViewModel tagsViewModel;
-    SidebarSelectionStore selectionStore(&hierarchyStore, &libraryViewModel, &tagsViewModel);
+    ResourcesHierarchyViewModel resourcesViewModel;
+    ProgressHierarchyViewModel progressViewModel;
+    EventHierarchyViewModel eventViewModel;
+    PresetHierarchyViewModel presetViewModel;
+    SidebarSelectionStore selectionStore(
+        &libraryViewModel,
+        &projectsViewModel,
+        &bookmarksViewModel,
+        &tagsViewModel,
+        &resourcesViewModel,
+        &progressViewModel,
+        &eventViewModel,
+        &presetViewModel);
+
+    projectsViewModel.setProjectNames({QStringLiteral("Alpha"), QStringLiteral("Beta")});
 
     selectionStore.setActiveIndex(1);
     QCOMPARE(selectionStore.activeIndex(), 1);
-    QVERIFY(selectionStore.itemModel() == hierarchyStore.itemModel());
-    QVERIFY(selectionStore.itemModel() == hierarchyStore.itemModelForSection(1));
-    QVERIFY(selectionStore.itemModel() != hierarchyStore.itemModelForSection(2));
+    QVERIFY(selectionStore.itemModel() == projectsViewModel.itemModel());
     QVERIFY(selectionStore.itemModel() != libraryViewModel.itemModel());
     QVERIFY(selectionStore.itemModel() != tagsViewModel.itemModel());
 
-    selectionStore.setSelectedIndex(2);
-    QCOMPARE(selectionStore.selectedIndex(), 2);
-    QCOMPARE(selectionStore.itemLabel(0), QStringLiteral("Projects"));
+    selectionStore.setSelectedIndex(1);
+    QCOMPARE(selectionStore.selectedIndex(), 1);
+    QCOMPARE(selectionStore.itemLabel(0), QStringLiteral("Projects (2)"));
 
     selectionStore.createFolder();
     selectionStore.deleteSelectedFolder();
 
-    QCOMPARE(selectionStore.itemModel()->rowCount(), 10);
+    QCOMPARE(selectionStore.itemModel()->rowCount(), 3);
 }
 
 QTEST_APPLESS_MAIN(SidebarSelectionStoreTest)

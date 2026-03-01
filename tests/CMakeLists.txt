@@ -118,32 +118,10 @@ target_link_libraries(whatson_hub_tags_depth_provider_tests
 add_test(NAME whatson_hub_tags_depth_provider_tests COMMAND whatson_hub_tags_depth_provider_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
 
-add_executable(whatson_sidebar_store_tests
-        app/test_sidebar_hierarchy_store.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyItemListModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchySectionModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyStore.cpp
-)
-set_target_properties(whatson_sidebar_store_tests PROPERTIES AUTOMOC ON)
-target_include_directories(whatson_sidebar_store_tests
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar
-)
-target_link_libraries(whatson_sidebar_store_tests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-add_test(NAME whatson_sidebar_store_tests COMMAND whatson_sidebar_store_tests)
-list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_store_tests)
-
 add_executable(whatson_sidebar_selection_store_tests
         app/test_sidebar_selection_store.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyItemListModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchySectionModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/common/FlatHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
@@ -151,8 +129,26 @@ add_executable(whatson_sidebar_selection_store_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/bookmarks/WhatSonBookmarksHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/event/EventHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.cpp
 )
 set_target_properties(whatson_sidebar_selection_store_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_sidebar_selection_store_tests

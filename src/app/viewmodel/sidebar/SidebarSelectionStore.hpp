@@ -1,13 +1,17 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <QHash>
 #include <QObject>
 #include <QStringList>
 #include <QVariantList>
 
+class BookmarksHierarchyViewModel;
+class EventHierarchyViewModel;
 class LibraryHierarchyViewModel;
-class SidebarHierarchyStore;
+class PresetHierarchyViewModel;
+class ProgressHierarchyViewModel;
+class ProjectsHierarchyViewModel;
+class ResourcesHierarchyViewModel;
 class TagsHierarchyViewModel;
 
 class SidebarSelectionStore final : public QObject
@@ -25,9 +29,14 @@ class SidebarSelectionStore final : public QObject
 
 public:
     explicit SidebarSelectionStore(
-        SidebarHierarchyStore* sidebarStore,
         LibraryHierarchyViewModel* libraryViewModel,
+        ProjectsHierarchyViewModel* projectsViewModel,
+        BookmarksHierarchyViewModel* bookmarksViewModel,
         TagsHierarchyViewModel* tagsViewModel,
+        ResourcesHierarchyViewModel* resourcesViewModel,
+        ProgressHierarchyViewModel* progressViewModel,
+        EventHierarchyViewModel* eventViewModel,
+        PresetHierarchyViewModel* presetViewModel,
         QObject* parent = nullptr);
     ~SidebarSelectionStore() override;
 
@@ -55,6 +64,7 @@ public:
     signals  :
 
 
+
     void activeIndexChanged();
     void itemModelChanged();
     void selectedIndexChanged();
@@ -63,12 +73,24 @@ public:
 
 private:
     static constexpr int kLibrarySectionIndex = 0;
+    static constexpr int kProjectsSectionIndex = 1;
+    static constexpr int kBookmarksSectionIndex = 2;
     static constexpr int kTagsSectionIndex = 3;
+    static constexpr int kResourcesSectionIndex = 4;
+    static constexpr int kProgressSectionIndex = 5;
+    static constexpr int kEventSectionIndex = 6;
+    static constexpr int kPresetSectionIndex = 7;
+    static constexpr int kSectionCount = 8;
 
     void emitSelectionAndCapabilityUpdates();
 
-    SidebarHierarchyStore* m_sidebarStore = nullptr;
     LibraryHierarchyViewModel* m_libraryViewModel = nullptr;
+    ProjectsHierarchyViewModel* m_projectsViewModel = nullptr;
+    BookmarksHierarchyViewModel* m_bookmarksViewModel = nullptr;
     TagsHierarchyViewModel* m_tagsViewModel = nullptr;
-    QHash<int, int> m_genericSelectedIndexBySection;
+    ResourcesHierarchyViewModel* m_resourcesViewModel = nullptr;
+    ProgressHierarchyViewModel* m_progressViewModel = nullptr;
+    EventHierarchyViewModel* m_eventViewModel = nullptr;
+    PresetHierarchyViewModel* m_presetViewModel = nullptr;
+    int m_activeIndex = kLibrarySectionIndex;
 };

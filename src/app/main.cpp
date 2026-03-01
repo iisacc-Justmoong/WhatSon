@@ -1,9 +1,14 @@
+#include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
-#include "sidebar/SidebarHierarchyStore.hpp"
 #include "sidebar/SidebarSelectionStore.hpp"
 
 #include <QByteArray>
@@ -333,13 +338,23 @@ int main(int argc, char* argv[])
         .arg(QDir::currentPath(), QCoreApplication::applicationDirPath()));
 
     QQmlApplicationEngine engine;
-    SidebarHierarchyStore sidebarHierarchyStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
+    ProjectsHierarchyViewModel projectsHierarchyViewModel;
+    BookmarksHierarchyViewModel bookmarksHierarchyViewModel;
     TagsHierarchyViewModel tagsHierarchyViewModel;
+    ResourcesHierarchyViewModel resourcesHierarchyViewModel;
+    ProgressHierarchyViewModel progressHierarchyViewModel;
+    EventHierarchyViewModel eventHierarchyViewModel;
+    PresetHierarchyViewModel presetHierarchyViewModel;
     SidebarSelectionStore sidebarSelectionStore(
-        &sidebarHierarchyStore,
         &libraryHierarchyViewModel,
-        &tagsHierarchyViewModel);
+        &projectsHierarchyViewModel,
+        &bookmarksHierarchyViewModel,
+        &tagsHierarchyViewModel,
+        &resourcesHierarchyViewModel,
+        &progressHierarchyViewModel,
+        &eventHierarchyViewModel,
+        &presetHierarchyViewModel);
     WhatSonHubRuntimeStore hubRuntimeStore;
     const QString blueprintHubPath = resolveBlueprintHubPath();
     if (!blueprintHubPath.isEmpty())
@@ -385,6 +400,50 @@ int main(int argc, char* argv[])
                 QStringLiteral("tagEntryCount=%1").arg(tags.size()));
         }
         tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
+
+        QString hierarchyLoadError;
+        if (!projectsHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadProjects.failed"),
+                hierarchyLoadError);
+        }
+        if (!bookmarksHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadBookmarks.failed"),
+                hierarchyLoadError);
+        }
+        if (!resourcesHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadResources.failed"),
+                hierarchyLoadError);
+        }
+        if (!progressHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadProgress.failed"),
+                hierarchyLoadError);
+        }
+        if (!eventHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadEvent.failed"),
+                hierarchyLoadError);
+        }
+        if (!presetHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadPreset.failed"),
+                hierarchyLoadError);
+        }
     }
     else
     {
@@ -394,10 +453,7 @@ int main(int argc, char* argv[])
             QStringLiteral("loadFromWshub.skipped"),
             QStringLiteral("no blueprint .wshub detected"));
     }
-    engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyStore"), &sidebarHierarchyStore);
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarSelectionStore"), &sidebarSelectionStore);
-    engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("tagsHierarchyViewModel"), &tagsHierarchyViewModel);
 
     QObject::connect(
         &engine,

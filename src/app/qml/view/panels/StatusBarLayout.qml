@@ -83,12 +83,14 @@ Rectangle {
             textColor: statusBar.searchInputColor
 
             onAccepted: function (text) {
-                statusBar.searchText = text;
-                statusBar.searchSubmitted(text);
+                var nextText = typeof text === "string" ? text : searchBarInput.text;
+                statusBar.searchText = nextText;
+                statusBar.searchSubmitted(nextText);
             }
             onTextEdited: function (text) {
-                statusBar.searchText = text;
-                statusBar.searchTextEdited(text);
+                var nextText = typeof text === "string" ? text : searchBarInput.text;
+                statusBar.searchText = nextText;
+                statusBar.searchTextEdited(nextText);
             }
         }
     }
@@ -182,12 +184,14 @@ Rectangle {
                     textColor: statusBar.searchInputColor
 
                     onAccepted: function (text) {
-                        statusBar.searchText = text;
-                        statusBar.searchSubmitted(text);
+                        var nextText = typeof text === "string" ? text : compactSearchInput.text;
+                        statusBar.searchText = nextText;
+                        statusBar.searchSubmitted(nextText);
                     }
                     onTextEdited: function (text) {
-                        statusBar.searchText = text;
-                        statusBar.searchTextEdited(text);
+                        var nextText = typeof text === "string" ? text : compactSearchInput.text;
+                        statusBar.searchText = nextText;
+                        statusBar.searchTextEdited(nextText);
                     }
                 }
             }

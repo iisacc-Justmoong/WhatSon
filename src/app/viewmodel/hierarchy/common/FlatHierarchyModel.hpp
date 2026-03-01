@@ -1,11 +1,19 @@
 #pragma once
 
-#include "HierarchySectionModel.hpp"
-
 #include <QAbstractListModel>
+#include <QString>
 #include <QVector>
 
-class HierarchyItemListModel final : public QAbstractListModel
+struct FlatHierarchyItem
+{
+    int depth = 0;
+    bool accent = false;
+    bool expanded = false;
+    QString label;
+    bool showChevron = true;
+};
+
+class FlatHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
 
@@ -13,6 +21,7 @@ public:
     enum Role
     {
         LabelRole = Qt::UserRole + 1,
+        DepthRole,
         IndentLevelRole,
         AccentRole,
         ExpandedRole,
@@ -21,14 +30,15 @@ public:
 
     Q_ENUM(Role)
 
-    explicit HierarchyItemListModel(QObject* parent = nullptr);
+    explicit FlatHierarchyModel(QObject* parent = nullptr);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void setItems(QVector<SidebarHierarchyItem> items);
+    void setItems(QVector<FlatHierarchyItem> items);
+    const QVector<FlatHierarchyItem>& items() const noexcept;
 
 private:
-    QVector<SidebarHierarchyItem> m_items;
+    QVector<FlatHierarchyItem> m_items;
 };

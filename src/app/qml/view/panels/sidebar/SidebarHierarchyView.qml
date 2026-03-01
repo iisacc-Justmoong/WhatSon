@@ -18,7 +18,7 @@ Item {
     readonly property int footerHeight: 24
     property string frameName: ""
     property string frameNodeId: ""
-    property var hierarchyViewModel: (typeof libraryHierarchyViewModel !== "undefined" && libraryHierarchyViewModel) ? libraryHierarchyViewModel : null
+    property var hierarchyViewModel: null
     readonly property int horizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property color panelColor: LV.Theme.panelBackground04
     readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false

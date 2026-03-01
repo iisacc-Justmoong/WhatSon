@@ -5,7 +5,6 @@ Item {
     id: hierarchyView
 
     readonly property int activeToolbarIndex: hierarchyView.selectionStore ? hierarchyView.selectionStore.activeIndex : 0
-    readonly property var hierarchyStore: (typeof sidebarHierarchyStore !== "undefined" && sidebarHierarchyStore) ? sidebarHierarchyStore : null
     property color panelColor: LV.Theme.panelBackground04
     readonly property var selectionStore: (typeof sidebarSelectionStore !== "undefined" && sidebarSelectionStore) ? sidebarSelectionStore : null
     readonly property string sidebarSource: {
