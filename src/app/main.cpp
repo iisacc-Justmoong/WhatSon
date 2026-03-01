@@ -369,8 +369,14 @@ int main(int argc, char* argv[])
         QVector<WhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;
         parallelLoader.loadFromWshub(blueprintHubPath, targets, &loadResults);
 
+        bool hubRuntimeLoadSucceeded = false;
         for (const WhatSonRuntimeParallelLoader::DomainLoadResult& result : loadResults)
         {
+            if (result.domain == QStringLiteral("hub.runtime"))
+            {
+                hubRuntimeLoadSucceeded = result.succeeded;
+            }
+
             if (result.succeeded)
             {
                 WhatSon::Debug::trace(
@@ -392,11 +398,21 @@ int main(int argc, char* argv[])
                 QStringLiteral("domain=%1 reason=%2").arg(result.domain, errorMessage));
         }
 
-        tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
-        WhatSon::Debug::trace(
-            QStringLiteral("main.runtime"),
-            QStringLiteral("applyTagsDepthEntries.success"),
-            QStringLiteral("itemCount=%1").arg(tagsHierarchyViewModel.itemModel()->rowCount()));
+        if (hubRuntimeLoadSucceeded)
+        {
+            tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("applyTagsDepthEntries.success"),
+                QStringLiteral("itemCount=%1").arg(tagsHierarchyViewModel.itemModel()->rowCount()));
+        }
+        else
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("applyTagsDepthEntries.skipped"),
+                QStringLiteral("reason=hub.runtime load failed"));
+        }
     }
     else
     {

@@ -60,10 +60,10 @@ bool WhatSonResourcesHierarchyParser::parse(
     WhatSonResourcesHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.resources.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.resources.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -79,9 +79,9 @@ bool WhatSonResourcesHierarchyParser::parse(
     if (rawText.trimmed().isEmpty())
     {
         outStore->setResourcePaths({});
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.resources.parser"),
-            QStringLiteral("parse.empty"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hierarchy.resources.parser"),
+                                  QStringLiteral("parse.empty"));
         return true;
     }
 
@@ -114,9 +114,9 @@ bool WhatSonResourcesHierarchyParser::parse(
     }
 
     outStore->setResourcePaths(sanitizeLines(rawText));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.resources.parser"),
-        QStringLiteral("parse.fallbackLines"),
-        QStringLiteral("count=%1").arg(outStore->resourcePaths().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.resources.parser"),
+                              QStringLiteral("parse.fallbackLines"),
+                              QStringLiteral("count=%1").arg(outStore->resourcePaths().size()));
     return true;
 }

@@ -21,6 +21,8 @@ Item {
 
     function frameNameForHierarchy(index) {
         switch (index) {
+        case hierarchyEnum.library:
+            return "HierarchyView-Library";
         case hierarchyEnum.projects:
             return "HierarchyView-Projects";
         case hierarchyEnum.bookmarks:
@@ -36,11 +38,13 @@ Item {
         case hierarchyEnum.preset:
             return "HierarchyView-Preset";
         default:
-            return "HierarchyView-Library";
+            return "HierarchyView-Unknown";
         }
     }
     function frameNodeIdForHierarchy(index) {
         switch (index) {
+        case hierarchyEnum.library:
+            return "sidebar.hierarchy.library";
         case hierarchyEnum.projects:
             return "sidebar.hierarchy.projects";
         case hierarchyEnum.bookmarks:
@@ -56,11 +60,13 @@ Item {
         case hierarchyEnum.preset:
             return "sidebar.hierarchy.preset";
         default:
-            return "sidebar.hierarchy.library";
+            return "sidebar.hierarchy.unknown";
         }
     }
     function modelForHierarchy(index) {
         switch (index) {
+        case hierarchyEnum.library:
+            return hierarchyView.libraryViewModel;
         case hierarchyEnum.projects:
             return hierarchyView.projectsViewModel;
         case hierarchyEnum.bookmarks:
@@ -76,16 +82,17 @@ Item {
         case hierarchyEnum.preset:
             return hierarchyView.presetViewModel;
         default:
-            return hierarchyView.libraryViewModel;
+            return null;
         }
     }
     function normalizeHierarchyIndex(index) {
         var numericIndex = Number(index);
         if (!isFinite(numericIndex))
-            return hierarchyEnum.library;
+            return -1;
         var normalizedIndex = Math.floor(numericIndex);
         if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
-            return hierarchyEnum.library;
+            return -1;
+
     }
 
     QtObject {
@@ -103,7 +110,7 @@ Item {
     SidebarHierarchyView {
         id: sidebarView
 
-        activeToolbarIndex: hierarchyView.currentHierarchy
+        activeToolbarIndex: hierarchyView.currentHierarchy >= 0 ? hierarchyView.currentHierarchy : hierarchyEnum.library
         anchors.fill: parent
         defaultToolbarIndex: hierarchyEnum.library
         frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
@@ -114,6 +121,8 @@ Item {
 
         onToolbarIndexChangeRequested: function (index) {
             const nextIndex = hierarchyView.normalizeHierarchyIndex(index);
+            if (nextIndex < 0)
+                return;
             if (nextIndex === hierarchyView.currentHierarchy)
                 return;
             hierarchyView.activeToolbarIndexChangeRequested(nextIndex);

@@ -55,12 +55,12 @@ namespace
 
 LibraryToday::LibraryToday()
 {
-    WhatSon::Debug::trace(QStringLiteral("library.today"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.today"), QStringLiteral("ctor"));
 }
 
 LibraryToday::~LibraryToday()
 {
-    WhatSon::Debug::trace(QStringLiteral("library.today"), QStringLiteral("dtor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.today"), QStringLiteral("dtor"));
 }
 
 bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDate& today)
@@ -79,13 +79,13 @@ bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDa
         }
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.today"),
-        QStringLiteral("rebuild"),
-        QStringLiteral("sourceCount=%1 todayCount=%2 date=%3")
-        .arg(allNotes.size())
-        .arg(m_notes.size())
-        .arg(today.toString(QStringLiteral("yyyy-MM-dd"))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.today"),
+                              QStringLiteral("rebuild"),
+                              QStringLiteral("sourceCount=%1 todayCount=%2 date=%3")
+                              .arg(allNotes.size())
+                              .arg(m_notes.size())
+                              .arg(today.toString(QStringLiteral("yyyy-MM-dd"))));
 
     if (WhatSon::Debug::isEnabled())
     {
@@ -103,10 +103,10 @@ bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDa
 
 void LibraryToday::clear()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("library.today"),
-        QStringLiteral("clear"),
-        QStringLiteral("previousCount=%1").arg(m_notes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.today"),
+                              QStringLiteral("clear"),
+                              QStringLiteral("previousCount=%1").arg(m_notes.size()));
     m_notes.clear();
 }
 

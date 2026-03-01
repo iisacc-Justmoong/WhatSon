@@ -60,10 +60,10 @@ bool WhatSonBookmarksHierarchyParser::parse(
     WhatSonBookmarksHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.bookmarks.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.bookmarks.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -79,9 +79,9 @@ bool WhatSonBookmarksHierarchyParser::parse(
     if (rawText.trimmed().isEmpty())
     {
         outStore->setBookmarkIds({});
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.bookmarks.parser"),
-            QStringLiteral("parse.empty"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hierarchy.bookmarks.parser"),
+                                  QStringLiteral("parse.empty"));
         return true;
     }
 
@@ -114,9 +114,9 @@ bool WhatSonBookmarksHierarchyParser::parse(
     }
 
     outStore->setBookmarkIds(sanitizeLines(rawText));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.bookmarks.parser"),
-        QStringLiteral("parse.fallbackLines"),
-        QStringLiteral("count=%1").arg(outStore->bookmarkIds().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.bookmarks.parser"),
+                              QStringLiteral("parse.fallbackLines"),
+                              QStringLiteral("count=%1").arg(outStore->bookmarkIds().size()));
     return true;
 }

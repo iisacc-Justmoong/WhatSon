@@ -17,6 +17,7 @@ PresetHierarchyViewModel::PresetHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &PresetHierarchyModel::itemCountChanged,
@@ -65,15 +66,27 @@ void PresetHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void PresetHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.begin"),
+                              QStringLiteral("count=%1").arg(depthItems.size()));
     m_items = WhatSon::Hierarchy::PresetSupport::parseDepthItems(depthItems, QStringLiteral("Preset"));
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.success"),
+                              QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
 QVariantList PresetHierarchyViewModel::depthItems() const
@@ -103,14 +116,27 @@ bool PresetHierarchyViewModel::canRenameItem(int index) const
 
 bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.begin"),
+                              QStringLiteral("index=%1 label=%2").arg(index).arg(displayName));
     if (!canRenameItem(index))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=canRenameItem false index=%1").arg(index));
         return false;
     }
 
     QVector<PresetHierarchyItem> stagedItems = m_items;
     if (!WhatSon::Hierarchy::PresetSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=support rejected index=%1 label=%2").arg(index).arg(
+                                      displayName));
         return false;
     }
 
@@ -123,10 +149,11 @@ bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
         QString writeError;
         if (!stagedStore.writeToFile(m_presetFilePath, &writeError))
         {
-            WhatSon::Debug::trace(
-                QString::fromLatin1(kScope),
-                QStringLiteral("renameItem.writeFailed"),
-                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_presetFilePath, writeError));
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("renameItem.writeFailed"),
+                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
+                                          m_presetFilePath, writeError));
             return false;
         }
     }
@@ -135,13 +162,26 @@ bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
     m_store = std::move(stagedStore);
     m_presetNames = m_store.presetNames();
     syncModel();
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.success"),
+                              QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(displayName).arg(
+                                  m_items.size()));
     return true;
 }
 
 void PresetHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
     if (!createFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=createFolderEnabled false"));
         return;
     }
 
@@ -149,18 +189,35 @@ void PresetHierarchyViewModel::createFolder()
         &m_items, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=insertIndex invalid"));
         return;
     }
 
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(insertIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.success"),
+                              QStringLiteral("insertIndex=%1 itemCount=%2").arg(insertIndex).arg(m_items.size()));
 }
 
 void PresetHierarchyViewModel::deleteSelectedFolder()
 {
+    const int startIndex = m_selectedIndex;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(startIndex).arg(m_items.size()));
     if (!deleteFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("deleteSelectedFolder.rejected"),
+                                  QStringLiteral("reason=deleteFolderEnabled false selectedIndex=%1").arg(startIndex));
         return;
     }
 
@@ -168,10 +225,19 @@ void PresetHierarchyViewModel::deleteSelectedFolder()
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(nextSelectedIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.success"),
+                              QStringLiteral("startIndex=%1 nextIndex=%2 itemCount=%3").arg(startIndex).arg(
+                                  nextSelectedIndex).arg(m_items.size()));
 }
 
 void PresetHierarchyViewModel::setPresetNames(QStringList presetNames)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setPresetNames.begin"),
+                              QStringLiteral("rawCount=%1").arg(presetNames.size()));
     m_presetNames = WhatSon::Hierarchy::PresetSupport::sanitizeStringList(std::move(presetNames));
     m_store.setPresetNames(m_presetNames);
     m_items = WhatSon::Hierarchy::PresetSupport::buildBucketItems(
@@ -181,6 +247,11 @@ void PresetHierarchyViewModel::setPresetNames(QStringList presetNames)
     m_createdFolderSequence = WhatSon::Hierarchy::PresetSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setPresetNames.success"),
+                              QStringLiteral("sanitizedCount=%1 itemCount=%2").arg(m_presetNames.size()).arg(
+                                  m_items.size()));
 }
 
 QStringList PresetHierarchyViewModel::presetNames() const
@@ -210,6 +281,10 @@ bool PresetHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_presetFilePath.clear();
 
     QStringList contentsDirectories;
@@ -220,11 +295,16 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
         {
             *errorMessage = resolveError;
         }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.resolve"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, resolveError));
         updateLoadState(false, resolveError);
         return false;
     }
 
     QStringList aggregated;
+    bool fileFound = false;
 
     WhatSonPresetHierarchyParser parser;
     for (const QString& contentsDirectory : contentsDirectories)
@@ -234,6 +314,7 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
         {
             continue;
         }
+        fileFound = true;
 
         if (m_presetFilePath.isEmpty())
         {
@@ -248,6 +329,10 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
             {
                 *errorMessage = readError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.read"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, readError));
             updateLoadState(false, readError);
             return false;
         }
@@ -259,6 +344,10 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
             {
                 *errorMessage = parseError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.parse"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, parseError));
             updateLoadState(false, parseError);
             return false;
         }
@@ -275,6 +364,11 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
     }
 
     setPresetNames(aggregated);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.success"),
+                              QStringLiteral("path=%1 fileFound=%2 count=%3").arg(wshubPath).arg(
+                                  fileFound ? QStringLiteral("1") : QStringLiteral("0")).arg(m_presetNames.size()));
     updateLoadState(true);
     return true;
 }

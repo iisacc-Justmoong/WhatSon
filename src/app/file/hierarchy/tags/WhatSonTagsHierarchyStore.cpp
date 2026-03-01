@@ -16,9 +16,9 @@ void WhatSonTagsHierarchyStore::clear()
 {
     m_hubPath.clear();
     m_tagEntries.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.tags.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.tags.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonTagsHierarchyStore::hubPath() const
@@ -29,10 +29,10 @@ QString WhatSonTagsHierarchyStore::hubPath() const
 void WhatSonTagsHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.tags.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.tags.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QVector<WhatSonTagDepthEntry> WhatSonTagsHierarchyStore::tagEntries() const
@@ -43,10 +43,10 @@ QVector<WhatSonTagDepthEntry> WhatSonTagsHierarchyStore::tagEntries() const
 void WhatSonTagsHierarchyStore::setTagEntries(QVector<WhatSonTagDepthEntry> tagEntries)
 {
     m_tagEntries = std::move(tagEntries);
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.tags.store"),
-        QStringLiteral("setTagEntries"),
-        QStringLiteral("count=%1").arg(m_tagEntries.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.tags.store"),
+                              QStringLiteral("setTagEntries"),
+                              QStringLiteral("count=%1").arg(m_tagEntries.size()));
 }
 
 bool WhatSonTagsHierarchyStore::writeToFile(const QString& filePath, QString* errorMessage) const
@@ -86,9 +86,9 @@ bool WhatSonTagsHierarchyStore::writeToFile(const QString& filePath, QString* er
 
     file.write(text.toUtf8());
     file.close();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.tags.store"),
-        QStringLiteral("writeToFile"),
-        QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.tags.store"),
+                              QStringLiteral("writeToFile"),
+                              QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
     return true;
 }

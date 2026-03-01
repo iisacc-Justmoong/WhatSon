@@ -104,10 +104,10 @@ WhatSonTagsDepthFlattener::~WhatSonTagsDepthFlattener() = default;
 
 QVector<WhatSonTagDepthEntry> WhatSonTagsDepthFlattener::flatten(const QJsonArray& rootTags) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.tags.flattener"),
-        QStringLiteral("flatten.begin"),
-        QStringLiteral("rootCount=%1").arg(rootTags.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.tags.flattener"),
+                              QStringLiteral("flatten.begin"),
+                              QStringLiteral("rootCount=%1").arg(rootTags.size()));
     QVector<WhatSonTagDepthEntry> entries;
     entries.reserve(rootTags.size());
 
@@ -115,10 +115,10 @@ QVector<WhatSonTagDepthEntry> WhatSonTagsDepthFlattener::flatten(const QJsonArra
     {
         appendNodeDepth(nodeValue, 0, &entries);
     }
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.tags.flattener"),
-        QStringLiteral("flatten.success"),
-        QStringLiteral("entryCount=%1").arg(entries.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.tags.flattener"),
+                              QStringLiteral("flatten.success"),
+                              QStringLiteral("entryCount=%1").arg(entries.size()));
     return entries;
 }
 
@@ -129,12 +129,12 @@ void WhatSonTagsDepthFlattener::appendNodeDepth(
 {
     if (outEntries == nullptr || !nodeValue.isObject())
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.flattener"),
-            QStringLiteral("append.skip"),
-            QStringLiteral("reason=%1").arg(outEntries == nullptr
-                                                ? QStringLiteral("outEntries-null")
-                                                : QStringLiteral("node-not-object")));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.flattener"),
+                                  QStringLiteral("append.skip"),
+                                  QStringLiteral("reason=%1").arg(outEntries == nullptr
+                                                                      ? QStringLiteral("outEntries-null")
+                                                                      : QStringLiteral("node-not-object")));
         return;
     }
 
@@ -151,10 +151,11 @@ void WhatSonTagsDepthFlattener::appendNodeDepth(
     }
     if (!entry.id.isEmpty() || !entry.label.isEmpty())
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.flattener"),
-            QStringLiteral("append.entry"),
-            QStringLiteral("id=%1 label=%2 depth=%3").arg(entry.id, entry.label).arg(entry.depth));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.flattener"),
+                                  QStringLiteral("append.entry"),
+                                  QStringLiteral("id=%1 label=%2 depth=%3").arg(
+                                      entry.id, entry.label).arg(entry.depth));
         outEntries->push_back(std::move(entry));
     }
 

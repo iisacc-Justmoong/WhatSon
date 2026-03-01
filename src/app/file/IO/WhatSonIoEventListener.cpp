@@ -34,10 +34,10 @@ namespace
 WhatSonIoEventListener::WhatSonIoEventListener()
 {
     setAcceptedEventPrefixes({QStringLiteral("io."), QStringLiteral("lvrs.io.")});
-    WhatSon::Debug::trace(
-        QStringLiteral("io.event.listener"),
-        QStringLiteral("ctor"),
-        QStringLiteral("prefixCount=%1").arg(m_acceptedEventPrefixes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.event.listener"),
+                              QStringLiteral("ctor"),
+                              QStringLiteral("prefixCount=%1").arg(m_acceptedEventPrefixes.size()));
 }
 
 WhatSonIoEventListener::~WhatSonIoEventListener() = default;
@@ -45,9 +45,9 @@ WhatSonIoEventListener::~WhatSonIoEventListener() = default;
 void WhatSonIoEventListener::clear()
 {
     m_pendingEvents.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("io.event.listener"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.event.listener"),
+                              QStringLiteral("clear"));
 }
 
 bool WhatSonIoEventListener::enabled() const noexcept
@@ -58,10 +58,11 @@ bool WhatSonIoEventListener::enabled() const noexcept
 void WhatSonIoEventListener::setEnabled(bool enabled) noexcept
 {
     m_enabled = enabled;
-    WhatSon::Debug::trace(
-        QStringLiteral("io.event.listener"),
-        QStringLiteral("setEnabled"),
-        QStringLiteral("value=%1").arg(m_enabled ? QStringLiteral("true") : QStringLiteral("false")));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.event.listener"),
+                              QStringLiteral("setEnabled"),
+                              QStringLiteral("value=%1").arg(
+                                  m_enabled ? QStringLiteral("true") : QStringLiteral("false")));
 }
 
 QStringList WhatSonIoEventListener::acceptedEventPrefixes() const
@@ -72,12 +73,12 @@ QStringList WhatSonIoEventListener::acceptedEventPrefixes() const
 void WhatSonIoEventListener::setAcceptedEventPrefixes(QStringList prefixes)
 {
     m_acceptedEventPrefixes = sanitizePrefixes(std::move(prefixes));
-    WhatSon::Debug::trace(
-        QStringLiteral("io.event.listener"),
-        QStringLiteral("setAcceptedEventPrefixes"),
-        QStringLiteral("count=%1 values=[%2]")
-        .arg(m_acceptedEventPrefixes.size())
-        .arg(m_acceptedEventPrefixes.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.event.listener"),
+                              QStringLiteral("setAcceptedEventPrefixes"),
+                              QStringLiteral("count=%1 values=[%2]")
+                              .arg(m_acceptedEventPrefixes.size())
+                              .arg(m_acceptedEventPrefixes.join(QStringLiteral(", "))));
 }
 
 void WhatSonIoEventListener::pushLvrsEvent(QString eventName, QVariantMap payload)
@@ -90,19 +91,19 @@ void WhatSonIoEventListener::pushLvrsEvent(QString eventName, QVariantMap payloa
 
     if (!m_enabled)
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("io.event.listener"),
-            QStringLiteral("pushLvrsEvent.ignored"),
-            QStringLiteral("reason=listenerDisabled name=%1").arg(eventName));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.event.listener"),
+                                  QStringLiteral("pushLvrsEvent.ignored"),
+                                  QStringLiteral("reason=listenerDisabled name=%1").arg(eventName));
         return;
     }
 
     if (!acceptsEventName(eventName))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("io.event.listener"),
-            QStringLiteral("pushLvrsEvent.rejected"),
-            QStringLiteral("name=%1").arg(eventName));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.event.listener"),
+                                  QStringLiteral("pushLvrsEvent.rejected"),
+                                  QStringLiteral("name=%1").arg(eventName));
         return;
     }
 
@@ -112,10 +113,10 @@ void WhatSonIoEventListener::pushLvrsEvent(QString eventName, QVariantMap payloa
     event.createdAtUtc = QDateTime::currentDateTimeUtc();
 
     m_pendingEvents.push_back(std::move(event));
-    WhatSon::Debug::trace(
-        QStringLiteral("io.event.listener"),
-        QStringLiteral("pushLvrsEvent.accepted"),
-        QStringLiteral("pendingCount=%1").arg(m_pendingEvents.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.event.listener"),
+                              QStringLiteral("pushLvrsEvent.accepted"),
+                              QStringLiteral("pendingCount=%1").arg(m_pendingEvents.size()));
 }
 
 bool WhatSonIoEventListener::hasPendingEvents() const noexcept

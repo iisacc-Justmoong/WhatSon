@@ -18,7 +18,7 @@ namespace
 TagsHierarchyModel::TagsHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::trace(QStringLiteral("tags.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("tags.model"), QStringLiteral("ctor"));
 }
 
 int TagsHierarchyModel::rowCount(const QModelIndex& parent) const
@@ -145,43 +145,26 @@ void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
 
         if (item.label.isEmpty() && !item.id.isEmpty())
         {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("tags.label.empty");
-            issue.message = QStringLiteral("Label was empty. Synchronized from id.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalLabel"), originalLabel},
-                {QStringLiteral("correctedLabel"), item.id}
-            };
-            item.label = item.id;
-            issues.push_back(std::move(issue));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.model"),
+                                      QStringLiteral("setItems.emptyLabelKept"),
+                                      QStringLiteral("index=%1 id=%2 originalLabel=%3").arg(index).arg(
+                                          item.id, originalLabel));
         }
         if (item.id.isEmpty() && !item.label.isEmpty())
         {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("tags.id.empty");
-            issue.message = QStringLiteral("Id was empty. Synchronized from label.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalId"), originalId},
-                {QStringLiteral("correctedId"), item.label}
-            };
-            item.id = item.label;
-            issues.push_back(std::move(issue));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.model"),
+                                      QStringLiteral("setItems.emptyIdKept"),
+                                      QStringLiteral("index=%1 label=%2 originalId=%3").arg(index).arg(
+                                          item.label, originalId));
         }
         if (item.id.isEmpty() && item.label.isEmpty())
         {
-            const QString fallback = QStringLiteral("Tag%1").arg(index + 1);
-            ValidationIssue issue;
-            issue.code = QStringLiteral("tags.id_label.empty");
-            issue.message = QStringLiteral("Tag id and label were empty. Generated fallback id/label.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("correctedValue"), fallback}
-            };
-            item.id = fallback;
-            item.label = fallback;
-            issues.push_back(std::move(issue));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.model"),
+                                      QStringLiteral("setItems.emptyIdLabelKept"),
+                                      QStringLiteral("index=%1").arg(index));
         }
 
         sanitized.push_back(std::move(item));
@@ -194,10 +177,10 @@ void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
         throw std::runtime_error(first.message.toStdString());
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("tags.model"),
-        QStringLiteral("setItems"),
-        QStringLiteral("count=%1").arg(sanitized.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.model"),
+                              QStringLiteral("setItems"),
+                              QStringLiteral("count=%1").arg(sanitized.size()));
     beginResetModel();
     m_items = std::move(sanitized);
     endResetModel();

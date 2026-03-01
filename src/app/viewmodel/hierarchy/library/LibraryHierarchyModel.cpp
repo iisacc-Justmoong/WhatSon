@@ -18,7 +18,7 @@ namespace
 LibraryHierarchyModel::LibraryHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::trace(QStringLiteral("library.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.model"), QStringLiteral("ctor"));
 }
 
 int LibraryHierarchyModel::rowCount(const QModelIndex& parent) const
@@ -139,16 +139,10 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
         item.label = item.label.trimmed();
         if (item.label.isEmpty())
         {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("library.label.empty");
-            issue.message = QStringLiteral("Label must not be empty. Generated fallback label.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalLabel"), originalLabel},
-                {QStringLiteral("correctedLabel"), QStringLiteral("Folder%1").arg(index + 1)}
-            };
-            item.label = QStringLiteral("Folder%1").arg(index + 1);
-            issues.push_back(std::move(issue));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("hierarchy.model"),
+                                      QStringLiteral("setItems.emptyLabelKept"),
+                                      QStringLiteral("index=%1 originalLabel=%2").arg(index).arg(originalLabel));
         }
 
         if (item.accent && item.depth > 0)
@@ -175,10 +169,10 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
         throw std::runtime_error(first.message.toStdString());
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.model"),
-        QStringLiteral("setItems"),
-        QStringLiteral("count=%1").arg(sanitized.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.model"),
+                              QStringLiteral("setItems"),
+                              QStringLiteral("count=%1").arg(sanitized.size()));
     beginResetModel();
     m_items = std::move(sanitized);
     endResetModel();

@@ -34,11 +34,11 @@ QString WhatSonTagsHierarchyCreator::createText(const WhatSonTagsHierarchyStore&
     root.insert(QStringLiteral("entries"), entries);
 
     const QString text = QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.tags.creator"),
-        QStringLiteral("createText"),
-        QStringLiteral("count=%1 bytes=%2")
-        .arg(store.tagEntries().size())
-        .arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.tags.creator"),
+                              QStringLiteral("createText"),
+                              QStringLiteral("count=%1 bytes=%2")
+                              .arg(store.tagEntries().size())
+                              .arg(text.toUtf8().size()));
     return text;
 }

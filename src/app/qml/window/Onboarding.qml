@@ -5,6 +5,13 @@ import LVRS 1.0 as LV
 Window {
     id: root
 
+    property int defaultHeight: 480
+    property int defaultWidth: 720
+    property Window hostWindow: null
+    property int minHeight: 360
+    property int minWidth: 520
+    property color panelColor: LV.Theme.panelBackground10
+
     signal createFileRequested
     signal selectFileRequested
     signal viewHookRequested
@@ -51,11 +58,11 @@ Window {
 
         LV.Label {
             style: title
-            text: "Onboarding placeholder"
+            text: "Onboarding"
         }
         LV.Label {
             style: description
-            text: "Temporary window to avoid startup/runtime errors."
+            text: "Create or select a hub."
         }
         LV.HStack {
             spacing: LV.Theme.gap8

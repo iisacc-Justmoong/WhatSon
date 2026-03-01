@@ -37,9 +37,9 @@ void WhatSonResourcesHierarchyStore::clear()
 {
     m_hubPath.clear();
     m_resourcePaths.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.resources.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.resources.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonResourcesHierarchyStore::hubPath() const
@@ -50,10 +50,10 @@ QString WhatSonResourcesHierarchyStore::hubPath() const
 void WhatSonResourcesHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.resources.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.resources.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QStringList WhatSonResourcesHierarchyStore::resourcePaths() const
@@ -65,13 +65,13 @@ void WhatSonResourcesHierarchyStore::setResourcePaths(QStringList values)
 {
     const int rawCount = values.size();
     m_resourcePaths = sanitizeValues(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.resources.store"),
-        QStringLiteral("setResourcePaths"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_resourcePaths.size())
-        .arg(m_resourcePaths.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.resources.store"),
+                              QStringLiteral("setResourcePaths"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_resourcePaths.size())
+                              .arg(m_resourcePaths.join(QStringLiteral(", "))));
 }
 
 bool WhatSonResourcesHierarchyStore::writeToFile(const QString& filePath, QString* errorMessage) const
@@ -111,9 +111,9 @@ bool WhatSonResourcesHierarchyStore::writeToFile(const QString& filePath, QStrin
 
     file.write(text.toUtf8());
     file.close();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.resources.store"),
-        QStringLiteral("writeToFile"),
-        QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.resources.store"),
+                              QStringLiteral("writeToFile"),
+                              QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
     return true;
 }

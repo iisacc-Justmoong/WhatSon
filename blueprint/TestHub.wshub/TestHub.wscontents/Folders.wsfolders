@@ -1,36 +1,36 @@
 {
-    "version": 1,
-    "schema": "whatson.folders.tree",
     "folders": [
         {
+            "depth": 0,
             "id": "Research",
-            "label": "Research",
-            "depth": 0
+            "label": "Research"
         },
         {
-            "id": "Research/Competitor",
-            "label": "Competitor",
-            "depth": 1
+            "depth": 1,
+            "id": "Competitor",
+            "label": "Competitor"
         },
         {
-            "id": "Research/Competitor/Pricing",
-            "label": "Pricing",
-            "depth": 2
+            "depth": 2,
+            "id": "Pricing",
+            "label": "Pricing"
         },
         {
+            "depth": 0,
             "id": "Brand",
-            "label": "Brand",
-            "depth": 0
+            "label": "Brand"
         },
         {
-            "id": "Brand/Campaign",
-            "label": "Campaign",
-            "depth": 1
+            "depth": 1,
+            "id": "yugtftftyy",
+            "label": "yugtftftyy"
         },
         {
+            "depth": 0,
             "id": "Product",
-            "label": "Product",
-            "depth": 0
+            "label": "Product"
         }
-    ]
+    ],
+    "schema": "whatson.folders.tree",
+    "version": 1
 }

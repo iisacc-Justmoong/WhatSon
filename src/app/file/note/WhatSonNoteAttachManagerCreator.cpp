@@ -22,10 +22,10 @@ QString WhatSonNoteAttachManagerCreator::targetPathForNote(const QString& noteId
 {
     const QString noteDirPath = noteDirectoryPath(noteId);
     const QString targetPath = joinPath(noteDirPath, attachmentManifestFileName());
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.attach"),
-        QStringLiteral("targetPathForNote"),
-        QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.attach"),
+                              QStringLiteral("targetPathForNote"),
+                              QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
     return targetPath;
 }
 

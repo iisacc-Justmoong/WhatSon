@@ -411,10 +411,10 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
     const QString& wshubPath,
     QString* errorMessage)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.tags.depth"),
-        QStringLiteral("load.begin"),
-        QStringLiteral("path=%1").arg(wshubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.tags.depth"),
+                              QStringLiteral("load.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     QStringList contentsDirectories;
     QString contentsError;
     if (!resolveContentsDirectories(wshubPath, &contentsDirectories, &contentsError))
@@ -437,10 +437,10 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
         &tagsFileError))
     {
         m_entries = std::move(tagsFileEntries);
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.depth"),
-            QStringLiteral("load.success.fromTags"),
-            QStringLiteral("entryCount=%1").arg(m_entries.size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.depth"),
+                                  QStringLiteral("load.success.fromTags"),
+                                  QStringLiteral("entryCount=%1").arg(m_entries.size()));
         return true;
     }
 
@@ -479,10 +479,10 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
         }
 
         m_entries = std::move(syncedTagsFileEntries);
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.depth"),
-            QStringLiteral("load.success.fromWsnhead"),
-            QStringLiteral("entryCount=%1").arg(m_entries.size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.depth"),
+                                  QStringLiteral("load.success.fromWsnhead"),
+                                  QStringLiteral("entryCount=%1").arg(m_entries.size()));
         return true;
     }
 

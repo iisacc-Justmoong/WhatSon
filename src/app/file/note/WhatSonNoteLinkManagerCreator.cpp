@@ -22,10 +22,10 @@ QString WhatSonNoteLinkManagerCreator::targetPathForNote(const QString& noteId) 
 {
     const QString noteDirPath = noteDirectoryPath(noteId);
     const QString targetPath = joinPath(noteDirPath, linksFileName());
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.link"),
-        QStringLiteral("targetPathForNote"),
-        QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.link"),
+                              QStringLiteral("targetPathForNote"),
+                              QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
     return targetPath;
 }
 

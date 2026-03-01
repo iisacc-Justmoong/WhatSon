@@ -222,7 +222,7 @@ LV.ApplicationWindow {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: LV.Theme.panelBackground10
-            statusPlaceholderText: "Placeholder"
+            statusPlaceholderText: ""
         }
     }
     Onboarding {

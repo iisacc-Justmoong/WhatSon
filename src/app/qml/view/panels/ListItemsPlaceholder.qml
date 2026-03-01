@@ -6,7 +6,6 @@ Item {
     id: listItemsPlaceholder
 
     property var noteModel: null
-    property int sampleCount: 8
 
     function normalizeFolders(value) {
         if (value === undefined || value === null)
@@ -42,20 +41,20 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         interactive: contentHeight > height
-        model: listItemsPlaceholder.noteModel ? listItemsPlaceholder.noteModel : listItemsPlaceholder.sampleCount
+        model: listItemsPlaceholder.noteModel ? listItemsPlaceholder.noteModel : null
         spacing: 2
 
         delegate: NoteListItem {
             readonly property var roleModel: typeof model === "object" ? model : null
             readonly property bool useRuntimeModel: listItemsPlaceholder.noteModel !== null
 
-            bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : "#F2C55C"
-            bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : true
-            desc: useRuntimeModel && roleModel && roleModel.desc !== undefined ? String(roleModel.desc) : "Note Contents Thumbnail... is can has 2 lines..."
-            folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listItemsPlaceholder.normalizeFolders(roleModel.folders) : ["FolderName1", "FolderName2"]
+            bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : ""
+            bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : false
+            desc: useRuntimeModel && roleModel && roleModel.desc !== undefined ? String(roleModel.desc) : ""
+            folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listItemsPlaceholder.normalizeFolders(roleModel.folders) : []
             noteId: useRuntimeModel && roleModel && roleModel.id !== undefined ? String(roleModel.id) : ""
             pressed: ListView.isCurrentItem
-            title: useRuntimeModel && roleModel && roleModel.title !== undefined ? String(roleModel.title) : "NoteTitle"
+            title: useRuntimeModel && roleModel && roleModel.title !== undefined ? String(roleModel.title) : ""
             width: ListView.view ? ListView.view.width : listItemsPlaceholder.width
 
             TapHandler {

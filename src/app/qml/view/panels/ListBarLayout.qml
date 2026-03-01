@@ -101,7 +101,7 @@ Rectangle {
                         color: listBarLayout.hintColor
                         font.family: "Pretendard"
                         font.pixelSize: 11
-                        text: "List content placeholder"
+                        text: "No list data"
                     }
                 }
             }

@@ -31,12 +31,12 @@ QString WhatSonProgressHierarchyCreator::createText(const WhatSonProgressHierarc
     root.insert(QStringLiteral("states"), states);
 
     const QString text = QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.creator"),
-        QStringLiteral("createText"),
-        QStringLiteral("value=%1 states=%2 bytes=%3")
-        .arg(store.progressValue())
-        .arg(store.progressStates().size())
-        .arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.creator"),
+                              QStringLiteral("createText"),
+                              QStringLiteral("value=%1 states=%2 bytes=%3")
+                              .arg(store.progressValue())
+                              .arg(store.progressStates().size())
+                              .arg(text.toUtf8().size()));
     return text;
 }

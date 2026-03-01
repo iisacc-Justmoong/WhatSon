@@ -40,20 +40,20 @@ WhatSonNoteCreator::WhatSonNoteCreator(QString workspaceRootPath, QString notesR
     : m_workspaceRootPath(std::move(workspaceRootPath)),
       m_notesRootPath(std::move(notesRootPath))
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.base"),
-        QStringLiteral("ctor"),
-        QStringLiteral("workspace=%1 notesRoot=%2").arg(m_workspaceRootPath, m_notesRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.base"),
+                              QStringLiteral("ctor"),
+                              QStringLiteral("workspace=%1 notesRoot=%2").arg(m_workspaceRootPath, m_notesRootPath));
 }
 
 WhatSonNoteCreator::~WhatSonNoteCreator() = default;
 
 void WhatSonNoteCreator::setWorkspaceRootPath(QString workspaceRootPath)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.base"),
-        QStringLiteral("setWorkspaceRootPath"),
-        QStringLiteral("value=%1").arg(workspaceRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.base"),
+                              QStringLiteral("setWorkspaceRootPath"),
+                              QStringLiteral("value=%1").arg(workspaceRootPath));
     m_workspaceRootPath = std::move(workspaceRootPath);
 }
 
@@ -64,10 +64,10 @@ const QString& WhatSonNoteCreator::workspaceRootPath() const noexcept
 
 void WhatSonNoteCreator::setNotesRootPath(QString notesRootPath)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.base"),
-        QStringLiteral("setNotesRootPath"),
-        QStringLiteral("value=%1").arg(notesRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.base"),
+                              QStringLiteral("setNotesRootPath"),
+                              QStringLiteral("value=%1").arg(notesRootPath));
     m_notesRootPath = std::move(notesRootPath);
 }
 
@@ -80,10 +80,10 @@ QString WhatSonNoteCreator::noteDirectoryPath(const QString& noteId) const
 {
     const QString notesRootAbsolutePath = joinPath(workspaceRootPath(), notesRootPath());
     const QString result = joinPath(notesRootAbsolutePath, normalizeNoteDirectoryName(noteId));
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.base"),
-        QStringLiteral("noteDirectoryPath"),
-        QStringLiteral("noteId=%1 result=%2").arg(noteId, result));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.base"),
+                              QStringLiteral("noteDirectoryPath"),
+                              QStringLiteral("noteId=%1 result=%2").arg(noteId, result));
     return result;
 }
 

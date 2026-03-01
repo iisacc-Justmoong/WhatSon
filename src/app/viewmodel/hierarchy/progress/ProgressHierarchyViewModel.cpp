@@ -29,6 +29,7 @@ ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &ProgressHierarchyModel::itemCountChanged,
@@ -82,11 +83,19 @@ void ProgressHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void ProgressHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.rejected"),
+                              QStringLiteral("reason=progress hierarchy is constant count=%1").arg(depthItems.size()));
     Q_UNUSED(depthItems);
 }
 
@@ -113,6 +122,11 @@ bool ProgressHierarchyViewModel::canRenameItem(int index) const
 
 bool ProgressHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.rejected"),
+                              QStringLiteral("reason=progress hierarchy is constant index=%1 label=%2").arg(index).arg(
+                                  displayName));
     Q_UNUSED(index);
     Q_UNUSED(displayName);
     return false;
@@ -120,16 +134,28 @@ bool ProgressHierarchyViewModel::renameItem(int index, const QString& displayNam
 
 void ProgressHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.rejected"),
+                              QStringLiteral("reason=progress hierarchy is constant"));
     return;
 }
 
 void ProgressHierarchyViewModel::deleteSelectedFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.rejected"),
+                              QStringLiteral("reason=progress hierarchy is constant"));
     return;
 }
 
 void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList progressStates)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setProgressState.begin"),
+                              QStringLiteral("value=%1 rawCount=%2").arg(progressValue).arg(progressStates.size()));
     m_progressValue = progressValue;
     m_progressStates = WhatSon::Hierarchy::ProgressSupport::sanitizeStringList(std::move(progressStates));
     rebuildItems();
@@ -137,6 +163,11 @@ void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList
     m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setProgressState.success"),
+                              QStringLiteral("value=%1 states=%2 itemCount=%3").arg(m_progressValue).arg(
+                                  m_progressStates.size()).arg(m_items.size()));
 }
 
 int ProgressHierarchyViewModel::progressValue() const noexcept
@@ -166,6 +197,10 @@ bool ProgressHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_progressFilePath.clear();
 
     QStringList contentsDirectories;
@@ -177,6 +212,10 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         {
             *errorMessage = resolveError;
         }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.resolve"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, resolveError));
         updateLoadState(false, resolveError);
         return false;
     }
@@ -203,6 +242,10 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = readError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.read"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, readError));
             updateLoadState(false, readError);
             return false;
         }
@@ -214,6 +257,10 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = parseError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.parse"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, parseError));
             updateLoadState(false, parseError);
             return false;
         }
@@ -234,6 +281,10 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = parseError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.defaultParse"),
+                                      QStringLiteral("path=%1 reason=%2").arg(wshubPath, parseError));
             updateLoadState(false, parseError);
             return false;
         }
@@ -241,14 +292,14 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
     setProgressState(m_store.progressValue(), m_store.progressStates());
 
-    WhatSon::Debug::trace(
-        QString::fromLatin1(kScope),
-        QStringLiteral("loadFromWshub"),
-        QStringLiteral("path=%1 fileFound=%2 value=%3 states=%4")
-        .arg(wshubPath)
-        .arg(fileFound ? QStringLiteral("1") : QStringLiteral("0"))
-        .arg(m_progressValue)
-        .arg(m_progressStates.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub"),
+                              QStringLiteral("path=%1 fileFound=%2 value=%3 states=%4")
+                              .arg(wshubPath)
+                              .arg(fileFound ? QStringLiteral("1") : QStringLiteral("0"))
+                              .arg(m_progressValue)
+                              .arg(m_progressStates.size()));
 
     updateLoadState(true);
     return true;

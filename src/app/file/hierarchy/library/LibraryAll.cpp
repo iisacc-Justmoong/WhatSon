@@ -777,12 +777,12 @@ namespace
 
 LibraryAll::LibraryAll()
 {
-    WhatSon::Debug::trace(QStringLiteral("library.all"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.all"), QStringLiteral("ctor"));
 }
 
 LibraryAll::~LibraryAll()
 {
-    WhatSon::Debug::trace(QStringLiteral("library.all"), QStringLiteral("dtor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.all"), QStringLiteral("dtor"));
 }
 
 bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -826,10 +826,10 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
         return false;
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.all"),
-        QStringLiteral("index.begin"),
-        QStringLiteral("path=%1").arg(normalizedHubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.all"),
+                              QStringLiteral("index.begin"),
+                              QStringLiteral("path=%1").arg(normalizedHubPath));
 
     const QStringList contentsDirectories = resolveContentsDirectories(normalizedHubPath);
     const QStringList libraryRoots = resolveLibraryRoots(contentsDirectories);
@@ -841,10 +841,10 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
             *errorMessage = QStringLiteral("No Library.wslibrary directory found inside: %1").arg(
                 normalizedHubPath);
         }
-        WhatSon::Debug::trace(
-            QStringLiteral("library.all"),
-            QStringLiteral("index.noLibraryRoot"),
-            QStringLiteral("path=%1").arg(normalizedHubPath));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.all"),
+                                  QStringLiteral("index.noLibraryRoot"),
+                                  QStringLiteral("path=%1").arg(normalizedHubPath));
         return false;
     }
 
@@ -940,26 +940,26 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
                 }
                 else
                 {
-                    WhatSon::Debug::trace(
-                        QStringLiteral("library.all"),
-                        QStringLiteral("index.parseFailed"),
-                        QStringLiteral("path=%1 reason=%2").arg(indexPath, parseError));
+                    WhatSon::Debug::traceSelf(this,
+                                              QStringLiteral("library.all"),
+                                              QStringLiteral("index.parseFailed"),
+                                              QStringLiteral("path=%1 reason=%2").arg(indexPath, parseError));
                 }
             }
             else
             {
-                WhatSon::Debug::trace(
-                    QStringLiteral("library.all"),
-                    QStringLiteral("index.readFailed"),
-                    QStringLiteral("path=%1 reason=%2").arg(indexPath, readError));
+                WhatSon::Debug::traceSelf(this,
+                                          QStringLiteral("library.all"),
+                                          QStringLiteral("index.readFailed"),
+                                          QStringLiteral("path=%1 reason=%2").arg(indexPath, readError));
             }
         }
         else
         {
-            WhatSon::Debug::trace(
-                QStringLiteral("library.all"),
-                QStringLiteral("index.fileMissing"),
-                QStringLiteral("path=%1").arg(indexPath));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.all"),
+                                      QStringLiteral("index.fileMissing"),
+                                      QStringLiteral("path=%1").arg(indexPath));
         }
 
         QDirIterator iterator(
@@ -986,10 +986,10 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
     m_sourceWshubPath = normalizedHubPath;
     m_notes = std::move(mergedRecords);
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.all"),
-        QStringLiteral("index.success"),
-        QStringLiteral("path=%1 noteCount=%2").arg(m_sourceWshubPath).arg(m_notes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.all"),
+                              QStringLiteral("index.success"),
+                              QStringLiteral("path=%1 noteCount=%2").arg(m_sourceWshubPath).arg(m_notes.size()));
 
     if (WhatSon::Debug::isEnabled())
     {
@@ -1015,10 +1015,10 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
 
 void LibraryAll::clear()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("library.all"),
-        QStringLiteral("clear"),
-        QStringLiteral("previousCount=%1").arg(m_notes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.all"),
+                              QStringLiteral("clear"),
+                              QStringLiteral("previousCount=%1").arg(m_notes.size()));
     m_sourceWshubPath.clear();
     m_notes.clear();
 }

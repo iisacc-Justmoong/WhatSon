@@ -43,10 +43,10 @@ QString WhatSonNoteHeaderCreator::targetPathForNote(const QString& noteId) const
     const QString noteStem = QFileInfo(noteDirPath).completeBaseName();
     const QString fileName = noteStem + QStringLiteral(".wsnhead");
     const QString targetPath = joinPath(noteDirPath, fileName);
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.header"),
-        QStringLiteral("targetPathForNote"),
-        QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.header"),
+                              QStringLiteral("targetPathForNote"),
+                              QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
     return targetPath;
 }
 
@@ -117,15 +117,15 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     text += QStringLiteral("  </head>\n");
     text += QStringLiteral("</contents>\n");
 
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.header"),
-        QStringLiteral("createHeaderText"),
-        QStringLiteral("id=%1 title=%2 folderCount=%3 tagCount=%4 progress=%5 bytes=%6")
-        .arg(store.noteId())
-        .arg(store.title())
-        .arg(store.folders().size())
-        .arg(store.tags().size())
-        .arg(store.progress())
-        .arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.header"),
+                              QStringLiteral("createHeaderText"),
+                              QStringLiteral("id=%1 title=%2 folderCount=%3 tagCount=%4 progress=%5 bytes=%6")
+                              .arg(store.noteId())
+                              .arg(store.title())
+                              .arg(store.folders().size())
+                              .arg(store.tags().size())
+                              .arg(store.progress())
+                              .arg(text.toUtf8().size()));
     return text;
 }

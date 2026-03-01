@@ -73,10 +73,10 @@ bool WhatSonHubParser::parseFromWshub(
     WhatSonHubStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("path=%1").arg(wshubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
 
     if (outStore == nullptr)
     {
@@ -226,12 +226,12 @@ bool WhatSonHubParser::parseFromWshub(
     outStore->setStat(std::move(stat));
     outStore->setDomainValues(domainPayload);
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.parser"),
-        QStringLiteral("parse.success"),
-        QStringLiteral("hub=%1 domains=%2")
-        .arg(outStore->hubPath())
-        .arg(outStore->domainValues().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.parser"),
+                              QStringLiteral("parse.success"),
+                              QStringLiteral("hub=%1 domains=%2")
+                              .arg(outStore->hubPath())
+                              .arg(outStore->domainValues().size()));
     return true;
 }
 
@@ -838,11 +838,11 @@ bool WhatSonHubParser::parseStatText(
 
     if (rawText.trimmed().isEmpty())
     {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral(".wsstat file is empty.");
-        }
-        return false;
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.parser"),
+                                  QStringLiteral("parseStatText.emptyAccepted"),
+                                  QStringLiteral("hub=%1").arg(hubName));
+        return true;
     }
 
     QJsonParseError parseError;
@@ -927,13 +927,13 @@ bool WhatSonHubParser::parseStatText(
                                                             QStringLiteral("participantLastModifiedAtUtc")
                                                         }));
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.parser"),
-        QStringLiteral("parseStatText.success"),
-        QStringLiteral("hub=%1 noteCount=%2 resourceCount=%3 characterCount=%4")
-        .arg(hubName)
-        .arg(outStat->noteCount())
-        .arg(outStat->resourceCount())
-        .arg(outStat->characterCount()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.parser"),
+                              QStringLiteral("parseStatText.success"),
+                              QStringLiteral("hub=%1 noteCount=%2 resourceCount=%3 characterCount=%4")
+                              .arg(hubName)
+                              .arg(outStat->noteCount())
+                              .arg(outStat->resourceCount())
+                              .arg(outStat->characterCount()));
     return true;
 }

@@ -70,7 +70,6 @@ public
 
 private:
     static int extractDepth(const QVariantMap& entryMap);
-    static QString fallbackLabel(int ordinal);
     static QVector<TagsHierarchyItem> buildItems(const QVector<WhatSonTagDepthEntry>& entries);
     static int nextFolderSequence(const QVector<WhatSonTagDepthEntry>& entries);
     void updateItemCount();

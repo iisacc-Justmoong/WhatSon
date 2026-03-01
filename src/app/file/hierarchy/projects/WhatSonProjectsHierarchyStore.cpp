@@ -113,9 +113,9 @@ void WhatSonProjectsHierarchyStore::clear()
     m_hubPath.clear();
     m_projectNames.clear();
     m_folderEntries.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonProjectsHierarchyStore::hubPath() const
@@ -126,10 +126,10 @@ QString WhatSonProjectsHierarchyStore::hubPath() const
 void WhatSonProjectsHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QStringList WhatSonProjectsHierarchyStore::projectNames() const
@@ -142,13 +142,13 @@ void WhatSonProjectsHierarchyStore::setProjectNames(QStringList values)
     const int rawCount = values.size();
     m_projectNames = sanitizeValues(std::move(values));
     m_folderEntries = buildFlatEntries(m_projectNames);
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.store"),
-        QStringLiteral("setProjectNames"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_projectNames.size())
-        .arg(m_projectNames.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.store"),
+                              QStringLiteral("setProjectNames"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_projectNames.size())
+                              .arg(m_projectNames.join(QStringLiteral(", "))));
 }
 
 QVector<WhatSonFolderDepthEntry> WhatSonProjectsHierarchyStore::folderEntries() const
@@ -162,13 +162,13 @@ void WhatSonProjectsHierarchyStore::setFolderEntries(QVector<WhatSonFolderDepthE
     m_folderEntries = sanitizeFolderEntries(std::move(entries));
     m_projectNames = extractProjectNames(m_folderEntries);
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.store"),
-        QStringLiteral("setFolderEntries"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 projectNames=%3")
-        .arg(rawCount)
-        .arg(m_folderEntries.size())
-        .arg(m_projectNames.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.store"),
+                              QStringLiteral("setFolderEntries"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 projectNames=%3")
+                              .arg(rawCount)
+                              .arg(m_folderEntries.size())
+                              .arg(m_projectNames.size()));
 }
 
 bool WhatSonProjectsHierarchyStore::writeToFile(const QString& filePath, QString* errorMessage) const
@@ -208,9 +208,9 @@ bool WhatSonProjectsHierarchyStore::writeToFile(const QString& filePath, QString
 
     file.write(text.toUtf8());
     file.close();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.store"),
-        QStringLiteral("writeToFile"),
-        QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.store"),
+                              QStringLiteral("writeToFile"),
+                              QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
     return true;
 }

@@ -316,10 +316,10 @@ bool WhatSonProjectsHierarchyParser::parse(
     WhatSonProjectsHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -335,9 +335,9 @@ bool WhatSonProjectsHierarchyParser::parse(
     if (rawText.trimmed().isEmpty())
     {
         outStore->setFolderEntries({});
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.projects.parser"),
-            QStringLiteral("parse.empty"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hierarchy.projects.parser"),
+                                  QStringLiteral("parse.empty"));
         return true;
     }
 
@@ -370,9 +370,9 @@ bool WhatSonProjectsHierarchyParser::parse(
     }
 
     outStore->setProjectNames(sanitizeLines(rawText));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.parser"),
-        QStringLiteral("parse.fallbackLines"),
-        QStringLiteral("count=%1").arg(outStore->projectNames().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.parser"),
+                              QStringLiteral("parse.fallbackLines"),
+                              QStringLiteral("count=%1").arg(outStore->projectNames().size()));
     return true;
 }

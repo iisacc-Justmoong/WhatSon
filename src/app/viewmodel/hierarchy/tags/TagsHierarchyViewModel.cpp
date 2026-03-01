@@ -16,7 +16,7 @@ TagsHierarchyViewModel::TagsHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
-    WhatSon::Debug::trace(QStringLiteral("tags.viewmodel"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("tags.viewmodel"), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &TagsHierarchyModel::itemCountChanged,
@@ -75,19 +75,22 @@ void TagsHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
-    WhatSon::Debug::trace(
-        QStringLiteral("tags.viewmodel"),
-        QStringLiteral("setSelectedIndex"),
-        QStringLiteral("value=%1").arg(m_selectedIndex));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void TagsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("setDepthItems.begin"),
+                              QStringLiteral("count=%1").arg(depthItems.size()));
     QVector<WhatSonTagDepthEntry> parsedEntries;
     parsedEntries.reserve(depthItems.size());
 
-    int ordinal = 1;
     for (const QVariant& entry : depthItems)
     {
         WhatSonTagDepthEntry parsedEntry;
@@ -105,17 +108,21 @@ void TagsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
             parsedEntry.label = entry.toString().trimmed();
         }
 
-        if (parsedEntry.label.isEmpty())
-        {
-            parsedEntry.label = fallbackLabel(ordinal);
-        }
         if (parsedEntry.id.isEmpty())
         {
-            parsedEntry.id = parsedEntry.label;
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("setDepthItems.emptyIdKept"),
+                                      QStringLiteral("label=%1").arg(parsedEntry.label));
+        }
+        if (parsedEntry.label.isEmpty())
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("setDepthItems.emptyLabelKept"));
         }
 
         parsedEntries.push_back(std::move(parsedEntry));
-        ++ordinal;
     }
 
     setTagDepthEntries(std::move(parsedEntries));
@@ -154,14 +161,26 @@ bool TagsHierarchyViewModel::canRenameItem(int index) const
 
 bool TagsHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("renameItem.begin"),
+                              QStringLiteral("index=%1 label=%2").arg(index).arg(displayName));
     if (!canRenameItem(index))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("tags.viewmodel"),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=canRenameItem false index=%1").arg(index));
         return false;
     }
 
     const QString trimmed = displayName.trimmed();
     if (trimmed.isEmpty())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("tags.viewmodel"),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=empty label index=%1").arg(index));
         return false;
     }
 
@@ -180,10 +199,11 @@ bool TagsHierarchyViewModel::renameItem(int index, const QString& displayName)
         QString writeError;
         if (!stagedStore.writeToFile(m_tagsFilePath, &writeError))
         {
-            WhatSon::Debug::trace(
-                QStringLiteral("tags.viewmodel"),
-                QStringLiteral("renameItem.writeFailed"),
-                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_tagsFilePath, writeError));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("renameItem.writeFailed"),
+                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
+                                          m_tagsFilePath, writeError));
             return false;
         }
     }
@@ -192,13 +212,27 @@ bool TagsHierarchyViewModel::renameItem(int index, const QString& displayName)
     m_store = std::move(stagedStore);
     m_items = buildItems(m_entries);
     syncModel();
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("renameItem.success"),
+                              QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(trimmed).arg(
+                                  m_items.size()));
     return true;
 }
 
 void TagsHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("createFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).
+                                                                              arg(m_entries.size()));
     if (!createFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("tags.viewmodel"),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=createFolderEnabled false"));
         return;
     }
 
@@ -217,10 +251,10 @@ void TagsHierarchyViewModel::createFolder()
         }
     }
 
-    const QString folderLabel = QStringLiteral("Folder%1").arg(m_createdFolderSequence++);
     WhatSonTagDepthEntry entry;
-    entry.id = folderLabel;
-    entry.label = folderLabel;
+    ++m_createdFolderSequence;
+    entry.id.clear();
+    entry.label.clear();
     entry.depth = depth;
     m_entries.insert(insertIndex, std::move(entry));
 
@@ -228,16 +262,29 @@ void TagsHierarchyViewModel::createFolder()
     syncStore();
     syncModel();
     setSelectedIndex(insertIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("createFolder.success"),
+                              QStringLiteral("insertIndex=%1 label=<empty> depth=%2 itemCount=%3").arg(insertIndex).
+                              arg(depth).arg(m_entries.size()));
 }
 
 void TagsHierarchyViewModel::deleteSelectedFolder()
 {
+    const int startIndex = m_selectedIndex;
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("deleteSelectedFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(startIndex).arg(m_entries.size()));
     if (!deleteFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("tags.viewmodel"),
+                                  QStringLiteral("deleteSelectedFolder.rejected"),
+                                  QStringLiteral("reason=deleteFolderEnabled false selectedIndex=%1").arg(startIndex));
         return;
     }
 
-    const int startIndex = m_selectedIndex;
     const int baseDepth = m_entries.at(startIndex).depth;
 
     int removeCount = 1;
@@ -251,19 +298,23 @@ void TagsHierarchyViewModel::deleteSelectedFolder()
     syncStore();
     syncModel();
     setSelectedIndex(std::min(startIndex, static_cast<int>(m_entries.size() - 1)));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("deleteSelectedFolder.success"),
+                              QStringLiteral("startIndex=%1 removeCount=%2 itemCount=%3").arg(startIndex).
+                              arg(removeCount).arg(m_entries.size()));
 }
 
 void TagsHierarchyViewModel::setTagDepthEntries(QVector<WhatSonTagDepthEntry> entries)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("tags.viewmodel"),
-        QStringLiteral("setTagDepthEntries.begin"),
-        QStringLiteral("count=%1").arg(entries.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("setTagDepthEntries.begin"),
+                              QStringLiteral("count=%1").arg(entries.size()));
 
     QVector<WhatSonTagDepthEntry> sanitized;
     sanitized.reserve(entries.size());
 
-    int ordinal = 1;
     for (WhatSonTagDepthEntry& entry : entries)
     {
         entry.id = entry.id.trimmed();
@@ -272,15 +323,19 @@ void TagsHierarchyViewModel::setTagDepthEntries(QVector<WhatSonTagDepthEntry> en
 
         if (entry.label.isEmpty())
         {
-            entry.label = entry.id.isEmpty() ? fallbackLabel(ordinal) : entry.id;
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("setTagDepthEntries.emptyLabelKept"));
         }
         if (entry.id.isEmpty())
         {
-            entry.id = entry.label;
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("setTagDepthEntries.emptyIdKept"),
+                                      QStringLiteral("label=%1").arg(entry.label));
         }
 
         sanitized.push_back(std::move(entry));
-        ++ordinal;
     }
 
     m_entries = std::move(sanitized);
@@ -289,10 +344,10 @@ void TagsHierarchyViewModel::setTagDepthEntries(QVector<WhatSonTagDepthEntry> en
     m_createdFolderSequence = nextFolderSequence(m_entries);
     syncModel();
     setSelectedIndex(-1);
-    WhatSon::Debug::trace(
-        QStringLiteral("tags.viewmodel"),
-        QStringLiteral("setTagDepthEntries.success"),
-        QStringLiteral("itemCount=%1").arg(m_items.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("setTagDepthEntries.success"),
+                              QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
 QVector<WhatSonTagDepthEntry> TagsHierarchyViewModel::tagDepthEntries() const
@@ -302,6 +357,10 @@ QVector<WhatSonTagDepthEntry> TagsHierarchyViewModel::tagDepthEntries() const
 
 bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_tagsFilePath.clear();
 
     QStringList contentsDirectories;
@@ -312,11 +371,16 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
         {
             *errorMessage = resolveError;
         }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("tags.viewmodel"),
+                                  QStringLiteral("loadFromWshub.failed.resolve"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, resolveError));
         updateLoadState(false, resolveError);
         return false;
     }
 
     QVector<WhatSonTagDepthEntry> aggregated;
+    bool fileFound = false;
     WhatSonTagsHierarchyParser parser;
 
     for (const QString& contentsDirectory : contentsDirectories)
@@ -326,6 +390,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
         {
             continue;
         }
+        fileFound = true;
 
         if (m_tagsFilePath.isEmpty())
         {
@@ -340,6 +405,10 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
             {
                 *errorMessage = readError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("loadFromWshub.failed.read"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, readError));
             updateLoadState(false, readError);
             return false;
         }
@@ -351,6 +420,10 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
             {
                 *errorMessage = parseError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("tags.viewmodel"),
+                                      QStringLiteral("loadFromWshub.failed.parse"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, parseError));
             updateLoadState(false, parseError);
             return false;
         }
@@ -368,6 +441,11 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
     }
 
     setTagDepthEntries(std::move(aggregated));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("loadFromWshub.success"),
+                              QStringLiteral("path=%1 fileFound=%2 count=%3").arg(wshubPath).arg(
+                                  fileFound ? QStringLiteral("1") : QStringLiteral("0")).arg(m_entries.size()));
     updateLoadState(true);
     return true;
 }
@@ -408,17 +486,11 @@ int TagsHierarchyViewModel::extractDepth(const QVariantMap& entryMap)
     return converted ? std::max(0, depth) : 0;
 }
 
-QString TagsHierarchyViewModel::fallbackLabel(int ordinal)
-{
-    return QStringLiteral("Tag%1").arg(ordinal);
-}
-
 QVector<TagsHierarchyItem> TagsHierarchyViewModel::buildItems(const QVector<WhatSonTagDepthEntry>& entries)
 {
     QVector<TagsHierarchyItem> items;
     items.reserve(entries.size());
 
-    int ordinal = 1;
     for (const WhatSonTagDepthEntry& entry : entries)
     {
         TagsHierarchyItem item;
@@ -428,11 +500,13 @@ QVector<TagsHierarchyItem> TagsHierarchyViewModel::buildItems(const QVector<What
 
         if (item.label.isEmpty())
         {
-            item.label = item.id.isEmpty() ? fallbackLabel(ordinal) : item.id;
+            WhatSon::Debug::trace(
+                QStringLiteral("tags.viewmodel"),
+                QStringLiteral("buildItems.emptyLabelKept"),
+                QStringLiteral("id=%1").arg(item.id));
         }
 
         items.push_back(std::move(item));
-        ++ordinal;
     }
 
     for (int index = 0; index < items.size(); ++index)
@@ -500,10 +574,10 @@ void TagsHierarchyViewModel::syncStore()
 
 void TagsHierarchyViewModel::syncModel()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("tags.viewmodel"),
-        QStringLiteral("syncModel"),
-        QStringLiteral("itemCount=%1").arg(m_items.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("tags.viewmodel"),
+                              QStringLiteral("syncModel"),
+                              QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
     updateItemCount();
 }

@@ -67,10 +67,10 @@ bool WhatSonProgressHierarchyParser::parse(
     WhatSonProgressHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -131,9 +131,9 @@ bool WhatSonProgressHierarchyParser::parse(
     outStore->setProgressStates(defaultStates());
     outStore->setProgressValue(parseFirstInteger(trimmedText));
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.parser"),
-        QStringLiteral("parse.fallback"),
-        QStringLiteral("value=%1").arg(outStore->progressValue()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.parser"),
+                              QStringLiteral("parse.fallback"),
+                              QStringLiteral("value=%1").arg(outStore->progressValue()));
     return true;
 }

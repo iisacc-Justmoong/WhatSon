@@ -21,12 +21,12 @@ namespace
 
 LibraryDraft::LibraryDraft()
 {
-    WhatSon::Debug::trace(QStringLiteral("library.draft"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.draft"), QStringLiteral("ctor"));
 }
 
 LibraryDraft::~LibraryDraft()
 {
-    WhatSon::Debug::trace(QStringLiteral("library.draft"), QStringLiteral("dtor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.draft"), QStringLiteral("dtor"));
 }
 
 bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
@@ -42,10 +42,10 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
         }
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.draft"),
-        QStringLiteral("rebuild"),
-        QStringLiteral("sourceCount=%1 draftCount=%2").arg(allNotes.size()).arg(m_notes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.draft"),
+                              QStringLiteral("rebuild"),
+                              QStringLiteral("sourceCount=%1 draftCount=%2").arg(allNotes.size()).arg(m_notes.size()));
 
     if (WhatSon::Debug::isEnabled())
     {
@@ -63,10 +63,10 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
 
 void LibraryDraft::clear()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("library.draft"),
-        QStringLiteral("clear"),
-        QStringLiteral("previousCount=%1").arg(m_notes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.draft"),
+                              QStringLiteral("clear"),
+                              QStringLiteral("previousCount=%1").arg(m_notes.size()));
     m_notes.clear();
 }
 

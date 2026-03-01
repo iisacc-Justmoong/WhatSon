@@ -28,19 +28,19 @@ bool WhatSonHubRuntimeStore::loadFromWshub(
     const QString& wshubPath,
     QString* errorMessage)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("load.begin"),
-        QStringLiteral("path=%1").arg(wshubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("load.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
 
     WhatSonHubParser parser;
     WhatSonHubStore hubStore;
     if (!parser.parseFromWshub(wshubPath, &hubStore, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.runtime"),
-            QStringLiteral("load.failed.parser"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.runtime"),
+                                  QStringLiteral("load.failed.parser"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -53,18 +53,18 @@ bool WhatSonHubRuntimeStore::loadFromWshub(
 
     if (!stagedPlacementStore.loadFromWshub(wshubPath, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.runtime"),
-            QStringLiteral("load.failed.placement"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.runtime"),
+                                  QStringLiteral("load.failed.placement"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
     if (!stagedTagsStateStore.loadFromWshub(wshubPath, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.runtime"),
-            QStringLiteral("load.failed.tags"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.runtime"),
+                                  QStringLiteral("load.failed.tags"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -75,13 +75,13 @@ bool WhatSonHubRuntimeStore::loadFromWshub(
     const QString normalizedPath = normalizePath(wshubPath);
     const int tagCount = m_tagsStateStore.entries(normalizedPath).size();
     const WhatSonHubStore loadedHub = m_hubStore.value(normalizedPath);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("load.success"),
-        QStringLiteral("tagCount=%1 noteCount=%2 resourceCount=%3")
-        .arg(tagCount)
-        .arg(loadedHub.stat().noteCount())
-        .arg(loadedHub.stat().resourceCount()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("load.success"),
+                              QStringLiteral("tagCount=%1 noteCount=%2 resourceCount=%3")
+                              .arg(tagCount)
+                              .arg(loadedHub.stat().noteCount())
+                              .arg(loadedHub.stat().resourceCount()));
     return true;
 }
 
@@ -130,10 +130,10 @@ WhatSonHubStat WhatSonHubRuntimeStore::hubStat(const QString& wshubPath) const
 
 void WhatSonHubRuntimeStore::setPlacement(WhatSonHubPlacement placement)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("setPlacement"),
-        QStringLiteral("path=%1").arg(placement.hubPath()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("setPlacement"),
+                              QStringLiteral("path=%1").arg(placement.hubPath()));
     m_placementStore.setPlacement(std::move(placement));
 }
 
@@ -141,10 +141,10 @@ void WhatSonHubRuntimeStore::setTagDepthEntries(
     const QString& wshubPath,
     QVector<WhatSonTagDepthEntry> entries)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("setTagDepthEntries"),
-        QStringLiteral("path=%1 count=%2").arg(wshubPath).arg(entries.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("setTagDepthEntries"),
+                              QStringLiteral("path=%1 count=%2").arg(wshubPath).arg(entries.size()));
     m_tagsStateStore.setEntries(wshubPath, std::move(entries));
 }
 
@@ -157,10 +157,10 @@ void WhatSonHubRuntimeStore::setHub(WhatSonHubStore store)
     }
 
     store.setHubPath(normalized);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("setHub"),
-        QStringLiteral("path=%1").arg(normalized));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("setHub"),
+                              QStringLiteral("path=%1").arg(normalized));
     m_hubStore.insert(normalized, std::move(store));
 }
 
@@ -176,18 +176,18 @@ void WhatSonHubRuntimeStore::setHubStat(const QString& wshubPath, WhatSonHubStat
     store.setHubPath(normalized);
     store.setStat(std::move(stat));
     m_hubStore.insert(normalized, std::move(store));
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("setHubStat"),
-        QStringLiteral("path=%1").arg(normalized));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("setHubStat"),
+                              QStringLiteral("path=%1").arg(normalized));
 }
 
 void WhatSonHubRuntimeStore::remove(const QString& wshubPath)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("remove"),
-        QStringLiteral("path=%1").arg(wshubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("remove"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_hubStore.remove(normalizePath(wshubPath));
     m_placementStore.remove(wshubPath);
     m_tagsStateStore.remove(wshubPath);
@@ -195,9 +195,9 @@ void WhatSonHubRuntimeStore::remove(const QString& wshubPath)
 
 void WhatSonHubRuntimeStore::clear()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.runtime"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.runtime"),
+                              QStringLiteral("clear"));
     m_hubStore.clear();
     m_placementStore.clear();
     m_tagsStateStore.clear();

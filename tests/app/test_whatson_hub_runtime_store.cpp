@@ -130,6 +130,7 @@ private
 
 
     void loadFromWshub_storesHubAndContentsState();
+    void loadFromWshub_emptyStat_succeeds();
     void loadFromWshub_missingRequiredEntry_fails();
     void loadFromWshub_allOrNothing_keepsPreviousStateOnLateFailure();
     void setPlacement_setTagDepthEntries_overrideRuntimeState();
@@ -155,6 +156,26 @@ void WhatSonHubRuntimeStoreTest::loadFromWshub_storesHubAndContentsState()
     QCOMPARE(store.hubStat(hubPath).noteCount(), 9);
     QCOMPARE(store.hubStat(hubPath).resourceCount(), 4);
     QCOMPARE(store.hubStat(hubPath).participants().size(), 2);
+}
+
+void WhatSonHubRuntimeStoreTest::loadFromWshub_emptyStat_succeeds()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("RuntimeHub.wshub"));
+    QVERIFY(buildRequiredRuntimeHub(hubPath, true));
+    QVERIFY(writeUtf8File(
+        QDir(hubPath).filePath(QStringLiteral("RuntimeHubStat.wsstat")),
+        QByteArray{}));
+
+    WhatSonHubRuntimeStore store;
+    QString errorMessage;
+    QVERIFY2(store.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(store.contains(hubPath));
+    QCOMPARE(store.hubStat(hubPath).noteCount(), 0);
+    QCOMPARE(store.hubStat(hubPath).resourceCount(), 0);
+    QCOMPARE(store.hubStat(hubPath).characterCount(), 0);
 }
 
 void WhatSonHubRuntimeStoreTest::loadFromWshub_missingRequiredEntry_fails()

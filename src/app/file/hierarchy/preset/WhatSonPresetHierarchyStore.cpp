@@ -37,9 +37,9 @@ void WhatSonPresetHierarchyStore::clear()
 {
     m_hubPath.clear();
     m_presetNames.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonPresetHierarchyStore::hubPath() const
@@ -50,10 +50,10 @@ QString WhatSonPresetHierarchyStore::hubPath() const
 void WhatSonPresetHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QStringList WhatSonPresetHierarchyStore::presetNames() const
@@ -65,13 +65,13 @@ void WhatSonPresetHierarchyStore::setPresetNames(QStringList values)
 {
     const int rawCount = values.size();
     m_presetNames = sanitizeValues(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.store"),
-        QStringLiteral("setPresetNames"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_presetNames.size())
-        .arg(m_presetNames.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.store"),
+                              QStringLiteral("setPresetNames"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_presetNames.size())
+                              .arg(m_presetNames.join(QStringLiteral(", "))));
 }
 
 bool WhatSonPresetHierarchyStore::writeToFile(const QString& filePath, QString* errorMessage) const
@@ -111,9 +111,9 @@ bool WhatSonPresetHierarchyStore::writeToFile(const QString& filePath, QString* 
 
     file.write(text.toUtf8());
     file.close();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.store"),
-        QStringLiteral("writeToFile"),
-        QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.store"),
+                              QStringLiteral("writeToFile"),
+                              QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
     return true;
 }

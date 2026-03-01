@@ -25,10 +25,10 @@ WhatSonHubCreator::~WhatSonHubCreator() = default;
 
 void WhatSonHubCreator::setWorkspaceRootPath(QString workspaceRootPath)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("setWorkspaceRootPath"),
-        QStringLiteral("path=%1").arg(workspaceRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("setWorkspaceRootPath"),
+                              QStringLiteral("path=%1").arg(workspaceRootPath));
     m_workspaceRootPath = std::move(workspaceRootPath);
 }
 
@@ -39,10 +39,10 @@ const QString& WhatSonHubCreator::workspaceRootPath() const noexcept
 
 void WhatSonHubCreator::setHubsRootPath(QString hubsRootPath)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("setHubsRootPath"),
-        QStringLiteral("path=%1").arg(hubsRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("setHubsRootPath"),
+                              QStringLiteral("path=%1").arg(hubsRootPath));
     m_hubsRootPath = std::move(hubsRootPath);
 }
 
@@ -73,11 +73,11 @@ bool WhatSonHubCreator::createHub(
     QString* outPackagePath,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("createHub.begin"),
-        QStringLiteral("hubName=%1 workspace=%2 hubsRoot=%3")
-        .arg(hubName, workspaceRootPath(), m_hubsRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("createHub.begin"),
+                              QStringLiteral("hubName=%1 workspace=%2 hubsRoot=%3")
+                              .arg(hubName, workspaceRootPath(), m_hubsRootPath));
     if (workspaceRootPath().trimmed().isEmpty())
     {
         if (errorMessage != nullptr)
@@ -112,10 +112,10 @@ bool WhatSonHubCreator::createHub(
 
     if (!createHubScaffold(hubRootPath, sanitizedHubName, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createHub.failed.scaffold"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createHub.failed.scaffold"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -123,10 +123,10 @@ bool WhatSonHubCreator::createHub(
     {
         *outPackagePath = hubRootPath;
     }
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("createHub.success"),
-        QStringLiteral("hubRoot=%1").arg(hubRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("createHub.success"),
+                              QStringLiteral("hubRoot=%1").arg(hubRootPath));
     return true;
 }
 
@@ -163,17 +163,17 @@ QString WhatSonHubCreator::sanitizeHubName(const QString& hubName) const
 
     if (normalized.isEmpty())
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("sanitizeHubName.fallback"),
-            QStringLiteral("input=%1").arg(hubName));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("sanitizeHubName.fallback"),
+                                  QStringLiteral("input=%1").arg(hubName));
         return QStringLiteral("untitled-hub");
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("sanitizeHubName.success"),
-        QStringLiteral("input=%1 output=%2").arg(hubName, normalized));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("sanitizeHubName.success"),
+                              QStringLiteral("input=%1 output=%2").arg(hubName, normalized));
     return normalized;
 }
 
@@ -193,10 +193,10 @@ QString WhatSonHubCreator::joinPath(const QString& left, const QString& right) c
 
 bool WhatSonHubCreator::ensureDirectory(const QString& absolutePath, QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("ensureDirectory.begin"),
-        QStringLiteral("path=%1").arg(absolutePath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("ensureDirectory.begin"),
+                              QStringLiteral("path=%1").arg(absolutePath));
     QDir dir;
     if (dir.exists(absolutePath))
     {
@@ -205,10 +205,10 @@ bool WhatSonHubCreator::ensureDirectory(const QString& absolutePath, QString* er
 
     if (dir.mkpath(absolutePath))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("ensureDirectory.created"),
-            QStringLiteral("path=%1").arg(absolutePath));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("ensureDirectory.created"),
+                                  QStringLiteral("path=%1").arg(absolutePath));
         return true;
     }
 
@@ -224,10 +224,10 @@ bool WhatSonHubCreator::writeTextFile(
     const QString& content,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("writeTextFile.begin"),
-        QStringLiteral("path=%1 bytes=%2").arg(absolutePath).arg(content.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("writeTextFile.begin"),
+                              QStringLiteral("path=%1 bytes=%2").arg(absolutePath).arg(content.toUtf8().size()));
     QSaveFile file(absolutePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
     {
@@ -257,10 +257,10 @@ bool WhatSonHubCreator::writeTextFile(
         return false;
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("writeTextFile.success"),
-        QStringLiteral("path=%1").arg(absolutePath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("writeTextFile.success"),
+                              QStringLiteral("path=%1").arg(absolutePath));
     return true;
 }
 
@@ -275,10 +275,10 @@ bool WhatSonHubCreator::createHubScaffold(
     const QString& hubName,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("createScaffold.begin"),
-        QStringLiteral("hubRoot=%1").arg(hubRootPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("createScaffold.begin"),
+                              QStringLiteral("hubRoot=%1").arg(hubRootPath));
 
     const QString sanitizedHubName = sanitizeHubName(hubName);
     const QString contentsDirectory = hubContentsDirectoryName(sanitizedHubName);
@@ -320,10 +320,10 @@ bool WhatSonHubCreator::createHubScaffold(
 
     if (!writeTextFile(manifestPath, manifestText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.manifest"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.manifest"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -345,10 +345,10 @@ bool WhatSonHubCreator::createHubScaffold(
         QJsonDocument(statRoot).toJson(QJsonDocument::Indented));
     if (!writeTextFile(statPath, statText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.stat"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.stat"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -357,10 +357,10 @@ bool WhatSonHubCreator::createHubScaffold(
         "{\n  \"version\": 1,\n  \"schema\": \"whatson.library.index\",\n  \"notes\": []\n}\n");
     if (!writeTextFile(indexPath, indexText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.index"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.index"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -369,10 +369,10 @@ bool WhatSonHubCreator::createHubScaffold(
         "{\n  \"version\": 1,\n  \"schema\": \"whatson.tags.depth\",\n  \"tags\": []\n}\n");
     if (!writeTextFile(tagsPath, tagsText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.tags"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.tags"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -383,10 +383,10 @@ bool WhatSonHubCreator::createHubScaffold(
         QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.projects.depth\",\n  \"folders\": []\n}\n");
     if (!writeTextFile(foldersPath, foldersText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.folders"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.folders"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -397,10 +397,10 @@ bool WhatSonHubCreator::createHubScaffold(
         QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.bookmarks.list\",\n  \"bookmarks\": []\n}\n");
     if (!writeTextFile(bookmarksPath, bookmarksText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.bookmarks"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.bookmarks"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -412,10 +412,10 @@ bool WhatSonHubCreator::createHubScaffold(
             "{\n  \"version\": 1,\n  \"schema\": \"whatson.progress.state\",\n  \"value\": 0,\n  \"states\": [\"Ready\", \"Pending\", \"InProgress\", \"Done\"]\n}\n");
     if (!writeTextFile(progressPath, progressText, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.progress"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.progress"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -427,16 +427,16 @@ bool WhatSonHubCreator::createHubScaffold(
         QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.projects.list\",\n  \"projects\": []\n}\n"),
         errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.creator"),
-            QStringLiteral("createScaffold.failed.projectLists"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.creator"),
+                                  QStringLiteral("createScaffold.failed.projectLists"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.creator"),
-        QStringLiteral("createScaffold.success"),
-        QStringLiteral("manifest=%1 stat=%2").arg(manifestPath, statPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("createScaffold.success"),
+                              QStringLiteral("manifest=%1 stat=%2").arg(manifestPath, statPath));
     return true;
 }

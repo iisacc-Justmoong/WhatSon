@@ -21,9 +21,9 @@ namespace
 
 WhatSonIoRuntimeController::WhatSonIoRuntimeController()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("io.runtime.controller"),
-        QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.runtime.controller"),
+                              QStringLiteral("ctor"));
 }
 
 WhatSonIoRuntimeController::~WhatSonIoRuntimeController() = default;
@@ -286,9 +286,10 @@ QVariantMap WhatSonIoRuntimeController::buildResult(
         result.insert(it.key(), it.value());
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("io.runtime.controller"),
-        QStringLiteral("buildResult"),
-        QStringLiteral("ok=%1 action=%2").arg(ok ? QStringLiteral("true") : QStringLiteral("false"), action));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("io.runtime.controller"),
+                              QStringLiteral("buildResult"),
+                              QStringLiteral("ok=%1 action=%2").arg(
+                                  ok ? QStringLiteral("true") : QStringLiteral("false"), action));
     return result;
 }

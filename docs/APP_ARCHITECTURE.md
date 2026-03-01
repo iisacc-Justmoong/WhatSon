@@ -146,7 +146,8 @@ Hub parser behavior:
 
 - Validate unpacked `.wshub` directory contract
 - Resolve primary contents/resources roots (`.wscontents|*.wscontents`, `.wsresources|*.wsresources`)
-- Require and parse `*.wsstat` as a mandatory hub metadata source
+- Require `*.wsstat` as a mandatory hub metadata source; accept empty file as valid and keep default in-memory stat
+  values
 - Normalize and expose stat getters/setters (`noteCount`, `resourceCount`, `characterCount`, timestamp fields,
   participant list, profile-scoped last-modified map)
 - Expose Qt signal/slot bridge for downstream model/viewmodel binding:
@@ -172,6 +173,33 @@ Responsibilities:
 - Expose QObject/QAbstractListModel interfaces for QML
 - Manage selection state, item CRUD, load status, and derived lists
 - Normalize malformed input in non-strict mode
+- Emit structured CRUD debug traces per domain view-model, including:
+    - `*.begin` for operation entry (`setDepthItems`, `loadFromWshub`, `renameItem`, `createFolder`,
+      `deleteSelectedFolder`)
+    - `*.success` for committed model/store updates
+    - `*.rejected` for policy-driven no-op paths (immutable/read-only hierarchies, invalid selection/state)
+    - `*.failed.*` for read/parse/write failures with path and reason fields
+- Global trace envelope is emitted by `file/WhatSonDebugTrace.hpp` and now includes:
+    - monotonically increasing `seq`
+    - process uptime `ms`
+    - `pid` and `tid`
+    - normalized source location (`src=<file>:<line>`)
+    - owner class/function split (`owner=<class|global>`, `method=<name>`)
+    - normalized function name (`fn=<signature>`)
+    - one-line detail payload sanitization (`\n`, `\r` escaped, overlong payload truncated with original length)
+- Instance-aware tracing is available via `traceSelf(this, ...)`:
+    - `selfPtr` (instance pointer)
+    - `selfClass` (derived from function signature owner)
+    - for QObject-based instances: `selfQObjectClass`, `selfObjectName`
+- Coverage policy:
+    - default all instance member methods log with `traceSelf(this, ...)`
+    - use plain `trace(...)` only in free/static contexts where `this` does not exist (parser-local helpers,
+      lambdas without object capture, global bootstrap functions)
+- System I/O trace points (`WhatSonSystemIoGateway`) emit begin/success/fail/skip with:
+    - normalized absolute path
+    - byte counts for read/write/append
+    - host error strings (`QFile::errorString`) on open/write/remove failures
+    - file/directory listing previews (`values=[a, b, ...]`) with total count
 
 Domain-isolated support:
 
@@ -218,6 +246,8 @@ Hierarchy rendering pipeline:
 
 - `HierarchySidebarLayout` maps toolbar index to domain view-model
 - `SidebarHierarchyView` handles search, selection, inline rename, create/delete folder, and toolbar event propagation
+    - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
+      UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
     - Rename trigger policy: open text input overlay from selected item with `Enter/Return` key (double-click rename
       disabled)
     - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before

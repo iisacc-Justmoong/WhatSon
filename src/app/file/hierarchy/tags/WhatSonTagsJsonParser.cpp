@@ -31,10 +31,10 @@ bool WhatSonTagsJsonParser::parseRootTags(
     QJsonArray* outTags,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.tags.jsonParser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawJson.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.tags.jsonParser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawJson.toUtf8().size()));
     if (outTags == nullptr)
     {
         if (errorMessage != nullptr)
@@ -59,10 +59,10 @@ bool WhatSonTagsJsonParser::parseRootTags(
     if (document.isArray())
     {
         *outTags = document.array();
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.jsonParser"),
-            QStringLiteral("parse.success.rootArray"),
-            QStringLiteral("count=%1").arg(outTags->size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.jsonParser"),
+                                  QStringLiteral("parse.success.rootArray"),
+                                  QStringLiteral("count=%1").arg(outTags->size()));
         return true;
     }
 
@@ -80,10 +80,10 @@ bool WhatSonTagsJsonParser::parseRootTags(
     if (tagsValue.isArray())
     {
         *outTags = tagsValue.toArray();
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.jsonParser"),
-            QStringLiteral("parse.success.tags"),
-            QStringLiteral("count=%1").arg(outTags->size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.jsonParser"),
+                                  QStringLiteral("parse.success.tags"),
+                                  QStringLiteral("count=%1").arg(outTags->size()));
         return true;
     }
 
@@ -91,10 +91,10 @@ bool WhatSonTagsJsonParser::parseRootTags(
     if (childrenValue.isArray())
     {
         *outTags = childrenValue.toArray();
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.jsonParser"),
-            QStringLiteral("parse.success.children"),
-            QStringLiteral("count=%1").arg(outTags->size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.jsonParser"),
+                                  QStringLiteral("parse.success.children"),
+                                  QStringLiteral("count=%1").arg(outTags->size()));
         return true;
     }
 
@@ -102,19 +102,19 @@ bool WhatSonTagsJsonParser::parseRootTags(
     if (itemsValue.isArray())
     {
         *outTags = itemsValue.toArray();
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.jsonParser"),
-            QStringLiteral("parse.success.items"),
-            QStringLiteral("count=%1").arg(outTags->size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.jsonParser"),
+                                  QStringLiteral("parse.success.items"),
+                                  QStringLiteral("count=%1").arg(outTags->size()));
         return true;
     }
 
     if (looksLikeTagNode(rootObject))
     {
         *outTags = QJsonArray{QJsonValue(rootObject)};
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.tags.jsonParser"),
-            QStringLiteral("parse.success.singleNode"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.tags.jsonParser"),
+                                  QStringLiteral("parse.success.singleNode"));
         return true;
     }
 
@@ -123,9 +123,9 @@ bool WhatSonTagsJsonParser::parseRootTags(
         *errorMessage = QStringLiteral(
             "Root JSON must contain tags/children/items array or be a tag node.");
     }
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.tags.jsonParser"),
-        QStringLiteral("parse.failed"),
-        errorMessage != nullptr ? *errorMessage : QString());
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.tags.jsonParser"),
+                              QStringLiteral("parse.failed"),
+                              errorMessage != nullptr ? *errorMessage : QString());
     return false;
 }

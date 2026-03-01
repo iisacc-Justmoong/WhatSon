@@ -53,30 +53,12 @@ namespace
         value = truncateToMaxLines(value, kMaxNoteListDescLines);
         return value.trimmed();
     }
-
-    QString firstMeaningfulLine(const QString& value)
-    {
-        static const QRegularExpression kSpacePattern(QStringLiteral(R"(\s+)"));
-
-        const QStringList lines = value.split(QLatin1Char('\n'));
-        for (QString line : lines)
-        {
-            line.replace(kSpacePattern, QStringLiteral(" "));
-            line = line.trimmed();
-            if (!line.isEmpty())
-            {
-                return line;
-            }
-        }
-
-        return {};
-    }
 }
 
 LibraryNoteListModel::LibraryNoteListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::trace(QStringLiteral("library.notelist.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.notelist.model"), QStringLiteral("ctor"));
 }
 
 int LibraryNoteListModel::rowCount(const QModelIndex& parent) const
@@ -200,41 +182,18 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
 
         if (item.desc.isEmpty())
         {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("notelist.desc.empty");
-            issue.message = QStringLiteral("Description was empty. Replaced with default message.");
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalDesc"), originalDesc},
-                {QStringLiteral("correctedDesc"), QStringLiteral("No contents")}
-            };
-            item.desc = QStringLiteral("No contents");
-            issues.push_back(std::move(issue));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.notelist.model"),
+                                      QStringLiteral("setItems.emptyDescKept"),
+                                      QStringLiteral("index=%1 originalDesc=%2").arg(index).arg(originalDesc));
         }
 
         if (item.title.isEmpty())
         {
-            ValidationIssue issue;
-            issue.code = QStringLiteral("notelist.title.empty");
-            issue.message = QStringLiteral("Title was empty. Generated fallback title.");
-
-            QString fallbackTitle = firstMeaningfulLine(item.desc);
-            if (fallbackTitle.isEmpty())
-            {
-                fallbackTitle = item.id;
-            }
-            if (fallbackTitle.isEmpty())
-            {
-                fallbackTitle = QStringLiteral("No title");
-            }
-
-            issue.context = QVariantMap{
-                {QStringLiteral("index"), index},
-                {QStringLiteral("originalTitle"), originalTitle},
-                {QStringLiteral("correctedTitle"), fallbackTitle}
-            };
-            item.title = fallbackTitle;
-            issues.push_back(std::move(issue));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.notelist.model"),
+                                      QStringLiteral("setItems.emptyTitleKept"),
+                                      QStringLiteral("index=%1 originalTitle=%2").arg(index).arg(originalTitle));
         }
 
         if (item.folders != originalFolders)
@@ -255,13 +214,13 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         {
             ValidationIssue issue;
             issue.code = QStringLiteral("notelist.bookmarkColor.invalid");
-            issue.message = QStringLiteral("Bookmark color was invalid. Replaced with default palette color.");
+            issue.message = QStringLiteral("Bookmark color was invalid. Cleared.");
             issue.context = QVariantMap{
                 {QStringLiteral("index"), index},
                 {QStringLiteral("originalColor"), originalColor},
-                {QStringLiteral("correctedColor"), WhatSon::Bookmarks::defaultBookmarkColorHex()}
+                {QStringLiteral("correctedColor"), QString()}
             };
-            item.bookmarkColor = WhatSon::Bookmarks::defaultBookmarkColorHex();
+            item.bookmarkColor.clear();
             issues.push_back(std::move(issue));
         }
         else if (!item.bookmarked && !item.bookmarkColor.isEmpty())
@@ -289,10 +248,10 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         throw std::runtime_error(first.message.toStdString());
     }
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.notelist.model"),
-        QStringLiteral("setItems"),
-        QStringLiteral("count=%1").arg(sanitized.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.notelist.model"),
+                              QStringLiteral("setItems"),
+                              QStringLiteral("count=%1").arg(sanitized.size()));
     beginResetModel();
     m_items = std::move(sanitized);
     endResetModel();

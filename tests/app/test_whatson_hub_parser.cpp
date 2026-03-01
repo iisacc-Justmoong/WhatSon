@@ -102,7 +102,7 @@ private
 
     void parseFromWshub_readsHubStructureAndDomainValues();
     void parseFromWshub_missingStat_fails();
-    void parseFromWshub_emptyStat_fails();
+    void parseFromWshub_emptyStat_succeedsWithDefaultStat();
     void requestParseFromWshub_emitsSignals();
 };
 
@@ -161,7 +161,7 @@ void WhatSonHubParserTest::parseFromWshub_missingStat_fails()
     QVERIFY(errorMessage.contains(QStringLiteral(".wsstat")));
 }
 
-void WhatSonHubParserTest::parseFromWshub_emptyStat_fails()
+void WhatSonHubParserTest::parseFromWshub_emptyStat_succeedsWithDefaultStat()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -172,8 +172,12 @@ void WhatSonHubParserTest::parseFromWshub_emptyStat_fails()
     WhatSonHubParser parser;
     WhatSonHubStore store;
     QString errorMessage;
-    QVERIFY(!parser.parseFromWshub(hubPath, &store, &errorMessage));
-    QVERIFY(errorMessage.contains(QStringLiteral("empty"), Qt::CaseInsensitive));
+    QVERIFY2(parser.parseFromWshub(hubPath, &store, &errorMessage), qPrintable(errorMessage));
+    QCOMPARE(store.stat().noteCount(), 0);
+    QCOMPARE(store.stat().resourceCount(), 0);
+    QCOMPARE(store.stat().characterCount(), 0);
+    QVERIFY(store.stat().createdAtUtc().isEmpty());
+    QVERIFY(store.stat().lastModifiedAtUtc().isEmpty());
 }
 
 void WhatSonHubParserTest::requestParseFromWshub_emitsSignals()

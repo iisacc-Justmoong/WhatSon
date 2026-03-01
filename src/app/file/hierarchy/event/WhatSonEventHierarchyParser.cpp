@@ -60,10 +60,10 @@ bool WhatSonEventHierarchyParser::parse(
     WhatSonEventHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.event.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.event.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -79,9 +79,9 @@ bool WhatSonEventHierarchyParser::parse(
     if (rawText.trimmed().isEmpty())
     {
         outStore->setEventNames({});
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.event.parser"),
-            QStringLiteral("parse.empty"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hierarchy.event.parser"),
+                                  QStringLiteral("parse.empty"));
         return true;
     }
 
@@ -114,9 +114,9 @@ bool WhatSonEventHierarchyParser::parse(
     }
 
     outStore->setEventNames(sanitizeLines(rawText));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.event.parser"),
-        QStringLiteral("parse.fallbackLines"),
-        QStringLiteral("count=%1").arg(outStore->eventNames().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.event.parser"),
+                              QStringLiteral("parse.fallbackLines"),
+                              QStringLiteral("count=%1").arg(outStore->eventNames().size()));
     return true;
 }

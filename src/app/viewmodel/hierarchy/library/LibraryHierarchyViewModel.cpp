@@ -41,11 +41,6 @@ namespace
         return truncated.join(QLatin1Char('\n'));
     }
 
-    QString nextFolderName(int sequence)
-    {
-        return QStringLiteral("Folder%1").arg(sequence);
-    }
-
     QString noteDisplayLabel(const LibraryNoteRecord& note)
     {
         QString primary = note.title.trimmed();
@@ -60,10 +55,6 @@ namespace
         if (primary.isEmpty() && !note.noteDirectoryPath.isEmpty())
         {
             primary = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
-        }
-        if (primary.isEmpty())
-        {
-            primary = QStringLiteral("Note");
         }
 
         QStringList attributes;
@@ -122,7 +113,7 @@ namespace
         {
             return bodyPlainText;
         }
-        return QStringLiteral("No contents");
+        return {};
     }
 
     QStringList noteListFolders(const LibraryNoteRecord& note)
@@ -171,7 +162,6 @@ namespace
         QVector<LibraryHierarchyItem> items;
         items.reserve(entries.size());
 
-        int fallbackOrdinal = 1;
         for (const WhatSonFolderDepthEntry& entry : entries)
         {
             LibraryHierarchyItem item;
@@ -183,11 +173,12 @@ namespace
 
             if (item.label.isEmpty())
             {
-                item.label = nextFolderName(fallbackOrdinal);
+                WhatSon::Debug::trace(
+                    QStringLiteral("library.viewmodel"),
+                    QStringLiteral("buildFolderItems.emptyLabelKept"));
             }
 
             items.push_back(std::move(item));
-            ++fallbackOrdinal;
         }
 
         applyChevronByDepth(&items);
@@ -229,7 +220,7 @@ LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
       , m_itemModel(this)
       , m_noteListModel(this)
 {
-    WhatSon::Debug::trace(QStringLiteral("library.viewmodel"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("library.viewmodel"), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &LibraryHierarchyModel::itemCountChanged,
@@ -307,40 +298,40 @@ void LibraryHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("setSelectedIndex"),
-        QStringLiteral("value=%1").arg(m_selectedIndex));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
 void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("setDepthItems.begin"),
-        QStringLiteral("count=%1").arg(depthItems.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("setDepthItems.begin"),
+                              QStringLiteral("count=%1").arg(depthItems.size()));
 
     if (depthItems.isEmpty() && m_runtimeIndexLoaded)
     {
         if (m_foldersHierarchyLoaded)
         {
-            WhatSon::Debug::trace(
-                QStringLiteral("library.viewmodel"),
-                QStringLiteral("setDepthItems.keepFoldersHierarchy"),
-                QStringLiteral("folderCount=%1").arg(m_items.size()));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("setDepthItems.keepFoldersHierarchy"),
+                                      QStringLiteral("folderCount=%1").arg(m_items.size()));
             refreshNoteListForSelection();
             return;
         }
 
-        WhatSon::Debug::trace(
-            QStringLiteral("library.viewmodel"),
-            QStringLiteral("setDepthItems.useIndexedBuckets"),
-            QStringLiteral("all=%1 draft=%2 today=%3")
-            .arg(m_libraryAll.notes().size())
-            .arg(m_libraryDraft.notes().size())
-            .arg(m_libraryToday.notes().size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("setDepthItems.useIndexedBuckets"),
+                                  QStringLiteral("all=%1 draft=%2 today=%3")
+                                  .arg(m_libraryAll.notes().size())
+                                  .arg(m_libraryDraft.notes().size())
+                                  .arg(m_libraryToday.notes().size()));
         applyIndexedBuckets();
         setSelectedIndex(-1);
         return;
@@ -365,10 +356,11 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     m_noteListModel.setItems({});
     updateNoteItemCount();
     setSelectedIndex(-1);
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("setDepthItems.success"),
-        QStringLiteral("itemCount=%1 nextFolderSeq=%2").arg(m_items.size()).arg(m_createdFolderSequence));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("setDepthItems.success"),
+                              QStringLiteral("itemCount=%1 nextFolderSeq=%2").arg(m_items.size()).arg(
+                                  m_createdFolderSequence));
 }
 
 bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -389,10 +381,10 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         m_noteListModel.setItems({});
         updateNoteItemCount();
         updateLoadState(false, indexError);
-        WhatSon::Debug::trace(
-            QStringLiteral("library.viewmodel"),
-            QStringLiteral("loadFromWshub.failed"),
-            QStringLiteral("path=%1 reason=%2").arg(wshubPath, indexError));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("loadFromWshub.failed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, indexError));
         return false;
     }
 
@@ -476,15 +468,15 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         setSelectedIndex(-1);
         refreshNoteListForSelection();
 
-        WhatSon::Debug::trace(
-            QStringLiteral("library.viewmodel"),
-            QStringLiteral("loadFromWshub.folderHierarchy"),
-            QStringLiteral("path=%1 folderCount=%2 all=%3 draft=%4 today=%5")
-            .arg(wshubPath)
-            .arg(m_items.size())
-            .arg(m_libraryAll.notes().size())
-            .arg(m_libraryDraft.notes().size())
-            .arg(m_libraryToday.notes().size()));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("loadFromWshub.folderHierarchy"),
+                                  QStringLiteral("path=%1 folderCount=%2 all=%3 draft=%4 today=%5")
+                                  .arg(wshubPath)
+                                  .arg(m_items.size())
+                                  .arg(m_libraryAll.notes().size())
+                                  .arg(m_libraryDraft.notes().size())
+                                  .arg(m_libraryToday.notes().size()));
         updateLoadState(true);
         return true;
     }
@@ -492,14 +484,14 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
     applyIndexedBuckets();
     setSelectedIndex(-1);
 
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("loadFromWshub.success"),
-        QStringLiteral("foldersFileFound=%1 all=%2 draft=%3 today=%4")
-        .arg(foldersFileFound ? QStringLiteral("1") : QStringLiteral("0"))
-        .arg(m_libraryAll.notes().size())
-        .arg(m_libraryDraft.notes().size())
-        .arg(m_libraryToday.notes().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("loadFromWshub.success"),
+                              QStringLiteral("foldersFileFound=%1 all=%2 draft=%3 today=%4")
+                              .arg(foldersFileFound ? QStringLiteral("1") : QStringLiteral("0"))
+                              .arg(m_libraryAll.notes().size())
+                              .arg(m_libraryDraft.notes().size())
+                              .arg(m_libraryToday.notes().size()));
     updateLoadState(true);
     return true;
 }
@@ -548,19 +540,35 @@ bool LibraryHierarchyViewModel::canRenameItem(int index) const
 
 bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("renameItem.begin"),
+                              QStringLiteral("index=%1 label=%2").arg(index).arg(displayName));
     if (!canRenameItem(index))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=canRenameItem false index=%1").arg(index));
         return false;
     }
 
     const QString trimmedName = displayName.trimmed();
     if (trimmedName.isEmpty())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=empty label index=%1").arg(index));
         return false;
     }
 
     if (m_items.at(index).label == trimmedName)
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("renameItem.skipped"),
+                                  QStringLiteral("reason=same label index=%1").arg(index));
         return true;
     }
 
@@ -575,20 +583,21 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
         QString writeError;
         if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
         {
-            WhatSon::Debug::trace(
-                QStringLiteral("library.viewmodel"),
-                QStringLiteral("renameItem.writeFailed"),
-                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_foldersFilePath, writeError));
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("renameItem.writeFailed"),
+                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
+                                          m_foldersFilePath, writeError));
             return false;
         }
     }
 
     m_items = std::move(stagedItems);
     syncModel();
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("renameItem"),
-        QStringLiteral("index=%1 label=%2").arg(index).arg(trimmedName));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("renameItem"),
+                              QStringLiteral("index=%1 label=%2").arg(index).arg(trimmedName));
     return true;
 }
 
@@ -614,6 +623,10 @@ bool LibraryHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 void LibraryHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("createFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
     int insertIndex = m_items.size();
     int folderDepth = 0;
 
@@ -631,7 +644,8 @@ void LibraryHierarchyViewModel::createFolder()
 
     LibraryHierarchyItem newItem;
     newItem.depth = folderDepth;
-    newItem.label = nextFolderName(m_createdFolderSequence++);
+    ++m_createdFolderSequence;
+    newItem.label.clear();
     newItem.accent = false;
     newItem.expanded = false;
     newItem.showChevron = true;
@@ -641,23 +655,31 @@ void LibraryHierarchyViewModel::createFolder()
     m_bucketRanges.clear();
     syncModel();
     setSelectedIndex(insertIndex);
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("createFolder"),
-        QStringLiteral("insertIndex=%1 depth=%2 itemCount=%3")
-        .arg(insertIndex)
-        .arg(folderDepth)
-        .arg(m_items.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("createFolder"),
+                              QStringLiteral("insertIndex=%1 depth=%2 itemCount=%3")
+                              .arg(insertIndex)
+                              .arg(folderDepth)
+                              .arg(m_items.size()));
 }
 
 void LibraryHierarchyViewModel::deleteSelectedFolder()
 {
+    const int startIndex = m_selectedIndex;
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("deleteSelectedFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(startIndex).arg(m_items.size()));
     if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("deleteSelectedFolder.rejected"),
+                                  QStringLiteral("reason=selection out of range selectedIndex=%1").arg(startIndex));
         return;
     }
 
-    const int startIndex = m_selectedIndex;
     const int baseDepth = m_items.at(startIndex).depth;
 
     int removeCount = 1;
@@ -671,13 +693,13 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     applyChevronByDepth(&m_items);
     m_bucketRanges.clear();
     syncModel();
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("deleteSelectedFolder"),
-        QStringLiteral("startIndex=%1 removeCount=%2 remaining=%3")
-        .arg(startIndex)
-        .arg(removeCount)
-        .arg(m_items.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("deleteSelectedFolder"),
+                              QStringLiteral("startIndex=%1 removeCount=%2 remaining=%3")
+                              .arg(startIndex)
+                              .arg(removeCount)
+                              .arg(m_items.size()));
 
     if (m_items.isEmpty())
     {
@@ -717,6 +739,7 @@ int LibraryHierarchyViewModel::extractDepth(const QVariantMap& entryMap)
 LibraryHierarchyItem LibraryHierarchyViewModel::parseItem(const QVariant& entry, int fallbackOrdinal)
 {
     LibraryHierarchyItem parsed;
+    Q_UNUSED(fallbackOrdinal);
 
     if (entry.metaType().id() == QMetaType::QVariantMap)
     {
@@ -740,7 +763,9 @@ LibraryHierarchyItem LibraryHierarchyViewModel::parseItem(const QVariant& entry,
 
     if (parsed.label.isEmpty())
     {
-        parsed.label = nextFolderName(fallbackOrdinal);
+        WhatSon::Debug::trace(
+            QStringLiteral("library.viewmodel"),
+            QStringLiteral("parseItem.emptyLabelKept"));
     }
 
     return parsed;
@@ -907,10 +932,10 @@ void LibraryHierarchyViewModel::applyIndexedBuckets()
 void LibraryHierarchyViewModel::syncModel()
 {
     applyChevronByDepth(&m_items);
-    WhatSon::Debug::trace(
-        QStringLiteral("library.viewmodel"),
-        QStringLiteral("syncModel"),
-        QStringLiteral("itemCount=%1").arg(m_items.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("syncModel"),
+                              QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
     updateItemCount();
 }

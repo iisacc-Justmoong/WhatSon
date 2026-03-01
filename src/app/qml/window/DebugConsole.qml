@@ -9,7 +9,7 @@ Window {
     height: LV.Theme.gap20 * 14
     minimumHeight: LV.Theme.gap20 * 8
     minimumWidth: LV.Theme.gap20 * 12
-    title: "WhatSon DebugConsole Placeholder"
+    title: "WhatSon DebugConsole"
     visible: false
     width: LV.Theme.gap20 * 24
 
@@ -19,6 +19,6 @@ Window {
     }
     LV.Label {
         anchors.centerIn: parent
-        text: "DebugConsole placeholder window."
+        text: "DebugConsole"
     }
 }

@@ -60,10 +60,10 @@ bool WhatSonPresetHierarchyParser::parse(
     WhatSonPresetHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -79,9 +79,9 @@ bool WhatSonPresetHierarchyParser::parse(
     if (rawText.trimmed().isEmpty())
     {
         outStore->setPresetNames({});
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.preset.parser"),
-            QStringLiteral("parse.empty"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hierarchy.preset.parser"),
+                                  QStringLiteral("parse.empty"));
         return true;
     }
 
@@ -114,9 +114,9 @@ bool WhatSonPresetHierarchyParser::parse(
     }
 
     outStore->setPresetNames(sanitizeLines(rawText));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.parser"),
-        QStringLiteral("parse.fallbackLines"),
-        QStringLiteral("count=%1").arg(outStore->presetNames().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.parser"),
+                              QStringLiteral("parse.fallbackLines"),
+                              QStringLiteral("count=%1").arg(outStore->presetNames().size()));
     return true;
 }

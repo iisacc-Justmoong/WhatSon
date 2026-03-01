@@ -11,9 +11,11 @@ Item {
     readonly property bool createFolderEnabled: hierarchyViewModel && hierarchyViewModel.createFolderEnabled !== undefined ? hierarchyViewModel.createFolderEnabled : false
     property int defaultToolbarIndex: 0
     readonly property bool deleteFolderEnabled: hierarchyViewModel && hierarchyViewModel.deleteFolderEnabled !== undefined ? hierarchyViewModel.deleteFolderEnabled : false
-    property var depthItems: []
     property int editingIndex: -1
     property string editingText: ""
+    // SOURCE-OF-TRUTH GUARD:
+    // Hierarchy list must always come from per-domain ViewModel.itemModel (store-backed path).
+    // Do not add any UI-side sample/fallback/depth injection model here.
     readonly property var folderModel: hierarchyViewModel ? hierarchyViewModel.itemModel : null
     readonly property int footerHeight: 24
     property string frameName: ""
@@ -56,15 +58,6 @@ Item {
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
 
-    function applyExternalDepthItems() {
-        if (!sidebarHierarchyView.hierarchyViewModel)
-            return;
-        if (!sidebarHierarchyView.hasExternalDepthItems())
-            return;
-        if (sidebarHierarchyView.hierarchyViewModel.setDepthItems === undefined)
-            return;
-        sidebarHierarchyView.hierarchyViewModel.setDepthItems(sidebarHierarchyView.depthItems);
-    }
     function beginRename(index, currentLabel) {
         if (index < 0)
             return;
@@ -82,6 +75,7 @@ Item {
             return false;
         if (sidebarHierarchyView.hierarchyViewModel.canRenameItem !== undefined)
             return sidebarHierarchyView.hierarchyViewModel.canRenameItem(index);
+        return false;
     }
     function cancelRename() {
         sidebarHierarchyView.editingIndex = -1;
@@ -94,9 +88,6 @@ Item {
             sidebarHierarchyView.hierarchyViewModel.renameItem(sidebarHierarchyView.editingIndex, sidebarHierarchyView.editingText);
         sidebarHierarchyView.editingIndex = -1;
         sidebarHierarchyView.editingText = "";
-    }
-    function hasExternalDepthItems() {
-        return sidebarHierarchyView.depthItems !== undefined && sidebarHierarchyView.depthItems !== null && sidebarHierarchyView.depthItems.length !== undefined && sidebarHierarchyView.depthItems.length > 0;
     }
     function matchesSearchText(label) {
         var query = sidebarHierarchyView.searchQuery.trim().toLowerCase();
@@ -119,7 +110,6 @@ Item {
     clip: true
     focus: true
 
-    Component.onCompleted: sidebarHierarchyView.applyExternalDepthItems()
     Keys.onPressed: function (event) {
         if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)
             return;
@@ -139,13 +129,8 @@ Item {
         sidebarHierarchyView.beginRename(sidebarHierarchyView.selectedFolderIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(sidebarHierarchyView.selectedFolderIndex));
         event.accepted = true;
     }
-    onDepthItemsChanged: {
-        sidebarHierarchyView.applyExternalDepthItems();
-        sidebarHierarchyView.cancelRename();
-    }
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelRename();
-        sidebarHierarchyView.applyExternalDepthItems();
     }
     onSelectedFolderIndexChanged: {
         if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== sidebarHierarchyView.selectedFolderIndex)

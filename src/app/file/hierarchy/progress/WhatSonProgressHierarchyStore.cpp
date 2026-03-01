@@ -56,9 +56,9 @@ void WhatSonProgressHierarchyStore::clear()
     m_hubPath.clear();
     m_progressValue = 0;
     m_progressStates = defaultStates();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonProgressHierarchyStore::hubPath() const
@@ -69,10 +69,10 @@ QString WhatSonProgressHierarchyStore::hubPath() const
 void WhatSonProgressHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 int WhatSonProgressHierarchyStore::progressValue() const noexcept
@@ -83,10 +83,10 @@ int WhatSonProgressHierarchyStore::progressValue() const noexcept
 void WhatSonProgressHierarchyStore::setProgressValue(int progressValue) noexcept
 {
     m_progressValue = std::max(progressValue, 0);
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.store"),
-        QStringLiteral("setProgressValue"),
-        QStringLiteral("value=%1").arg(m_progressValue));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.store"),
+                              QStringLiteral("setProgressValue"),
+                              QStringLiteral("value=%1").arg(m_progressValue));
 }
 
 QStringList WhatSonProgressHierarchyStore::progressStates() const
@@ -98,13 +98,13 @@ void WhatSonProgressHierarchyStore::setProgressStates(QStringList progressStates
 {
     const int rawCount = progressStates.size();
     m_progressStates = sanitizeStates(std::move(progressStates));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.store"),
-        QStringLiteral("setProgressStates"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_progressStates.size())
-        .arg(m_progressStates.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.store"),
+                              QStringLiteral("setProgressStates"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_progressStates.size())
+                              .arg(m_progressStates.join(QStringLiteral(", "))));
 }
 
 bool WhatSonProgressHierarchyStore::writeToFile(const QString& filePath, QString* errorMessage) const
@@ -144,9 +144,9 @@ bool WhatSonProgressHierarchyStore::writeToFile(const QString& filePath, QString
 
     file.write(text.toUtf8());
     file.close();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.progress.store"),
-        QStringLiteral("writeToFile"),
-        QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.progress.store"),
+                              QStringLiteral("writeToFile"),
+                              QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
     return true;
 }

@@ -35,11 +35,11 @@ QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarc
     root.insert(QStringLiteral("folders"), values);
 
     const QString text = QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.projects.creator"),
-        QStringLiteral("createText"),
-        QStringLiteral("count=%1 bytes=%2")
-        .arg(entries.size())
-        .arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.projects.creator"),
+                              QStringLiteral("createText"),
+                              QStringLiteral("count=%1 bytes=%2")
+                              .arg(entries.size())
+                              .arg(text.toUtf8().size()));
     return text;
 }

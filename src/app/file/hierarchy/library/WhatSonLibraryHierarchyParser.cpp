@@ -78,10 +78,10 @@ bool WhatSonLibraryHierarchyParser::parse(
     WhatSonLibraryHierarchyStore* outStore,
     QString* errorMessage) const
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.library.parser"),
-        QStringLiteral("parse.begin"),
-        QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.library.parser"),
+                              QStringLiteral("parse.begin"),
+                              QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
     if (outStore == nullptr)
     {
@@ -97,9 +97,9 @@ bool WhatSonLibraryHierarchyParser::parse(
     if (rawText.trimmed().isEmpty())
     {
         outStore->setNoteIds({});
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.library.parser"),
-            QStringLiteral("parse.empty"));
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hierarchy.library.parser"),
+                                  QStringLiteral("parse.empty"));
         return true;
     }
 
@@ -165,9 +165,9 @@ bool WhatSonLibraryHierarchyParser::parse(
     }
 
     outStore->setNoteIds(sanitizeLines(rawText));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.library.parser"),
-        QStringLiteral("parse.fallbackLines"),
-        QStringLiteral("count=%1").arg(outStore->noteIds().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.library.parser"),
+                              QStringLiteral("parse.fallbackLines"),
+                              QStringLiteral("count=%1").arg(outStore->noteIds().size()));
     return true;
 }

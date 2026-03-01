@@ -33,9 +33,9 @@ void WhatSonLibraryHierarchyStore::clear()
 {
     m_hubPath.clear();
     m_noteIds.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.library.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.library.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonLibraryHierarchyStore::hubPath() const
@@ -46,10 +46,10 @@ QString WhatSonLibraryHierarchyStore::hubPath() const
 void WhatSonLibraryHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.library.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.library.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QStringList WhatSonLibraryHierarchyStore::noteIds() const
@@ -61,11 +61,11 @@ void WhatSonLibraryHierarchyStore::setNoteIds(QStringList values)
 {
     const int rawCount = values.size();
     m_noteIds = sanitizeValues(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.library.store"),
-        QStringLiteral("setNoteIds"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_noteIds.size())
-        .arg(m_noteIds.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.library.store"),
+                              QStringLiteral("setNoteIds"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_noteIds.size())
+                              .arg(m_noteIds.join(QStringLiteral(", "))));
 }

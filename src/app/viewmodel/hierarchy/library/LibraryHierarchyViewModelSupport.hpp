@@ -1,5 +1,7 @@
 #pragma once
 
+#include "file/WhatSonDebugTrace.hpp"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -95,12 +97,21 @@ namespace WhatSon::Hierarchy::LibrarySupport
 
     inline bool readUtf8File(const QString& filePath, QString* outText, QString* errorMessage = nullptr)
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hierarchy.io.support"),
+            QStringLiteral("readUtf8File.begin"),
+            QStringLiteral("path=%1").arg(filePath));
+
         if (outText == nullptr)
         {
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral("outText must not be null.");
             }
+            WhatSon::Debug::trace(
+                QStringLiteral("hierarchy.io.support"),
+                QStringLiteral("readUtf8File.failed"),
+                QStringLiteral("path=%1 reason=outText is null").arg(filePath));
             return false;
         }
 
@@ -111,10 +122,19 @@ namespace WhatSon::Hierarchy::LibrarySupport
             {
                 *errorMessage = QStringLiteral("Failed to open file: %1").arg(filePath);
             }
+            WhatSon::Debug::trace(
+                QStringLiteral("hierarchy.io.support"),
+                QStringLiteral("readUtf8File.failed"),
+                QStringLiteral("path=%1 reason=open failed").arg(filePath));
             return false;
         }
 
-        *outText = QString::fromUtf8(file.readAll());
+        const QByteArray bytes = file.readAll();
+        *outText = QString::fromUtf8(bytes);
+        WhatSon::Debug::trace(
+            QStringLiteral("hierarchy.io.support"),
+            QStringLiteral("readUtf8File.success"),
+            QStringLiteral("path=%1 bytes=%2").arg(filePath).arg(bytes.size()));
         return true;
     }
 } // namespace WhatSon::Hierarchy::LibrarySupport

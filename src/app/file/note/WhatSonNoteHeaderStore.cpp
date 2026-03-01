@@ -3,7 +3,6 @@
 #include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 
-#include <QDateTime>
 #include <QRegularExpression>
 #include <QUuid>
 
@@ -17,11 +16,6 @@ namespace
         const QString trimmed = token.trimmed();
         return (trimmed.startsWith(QStringLiteral("${")) && trimmed.endsWith(QLatin1Char('}')))
             || (trimmed.startsWith(QStringLiteral("%{")) && trimmed.endsWith(QLatin1Char('}')));
-    }
-
-    QString currentTimestampText()
-    {
-        return QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyy-MM-dd-hh-mm-ss"));
     }
 
     QString generatedNoteId()
@@ -79,7 +73,7 @@ namespace
     {
         QStringList sanitized;
         sanitized.reserve(values.size());
-        int generatedIndex = 1;
+        Q_UNUSED(fallbackPrefix);
 
         for (QString& value : values)
         {
@@ -94,9 +88,11 @@ namespace
                 QString resolved = templatePayload(value);
                 if (resolved.isEmpty())
                 {
-                    resolved = QStringLiteral("%1-%2").arg(fallbackPrefix).arg(generatedIndex);
+                    WhatSon::Debug::trace(
+                        QStringLiteral("note.header.store"),
+                        QStringLiteral("sanitizeStringList.dropEmptyTemplateToken"));
+                    continue;
                 }
-                ++generatedIndex;
                 sanitized.push_back(resolved);
                 continue;
             }
@@ -113,7 +109,7 @@ WhatSonNoteHeaderStore::~WhatSonNoteHeaderStore() = default;
 
 void WhatSonNoteHeaderStore::clear()
 {
-    WhatSon::Debug::trace(QStringLiteral("note.header.store"), QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("note.header.store"), QStringLiteral("clear"));
     m_noteId.clear();
     m_title.clear();
     m_createdAt.clear();
@@ -148,10 +144,10 @@ void WhatSonNoteHeaderStore::setNoteId(QString noteId)
     }
 
     m_noteId = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setNoteId"),
-        QStringLiteral("value=%1").arg(m_noteId));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setNoteId"),
+                              QStringLiteral("value=%1").arg(m_noteId));
 }
 
 QString WhatSonNoteHeaderStore::title() const
@@ -166,14 +162,14 @@ void WhatSonNoteHeaderStore::setTitle(QString title)
         || isTemplateToken(value)
         || value.startsWith(QStringLiteral("Placeholder"), Qt::CaseInsensitive))
     {
-        value = QStringLiteral("Untitled Note");
+        value.clear();
     }
 
     m_title = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setTitle"),
-        QStringLiteral("value=%1").arg(m_title));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setTitle"),
+                              QStringLiteral("value=%1").arg(m_title));
 }
 
 QString WhatSonNoteHeaderStore::createdAt() const
@@ -186,14 +182,14 @@ void WhatSonNoteHeaderStore::setCreatedAt(QString createdAt)
     QString value = sanitizeText(std::move(createdAt));
     if (value.isEmpty() || isTemplateToken(value) || isDatePlaceholderToken(value))
     {
-        value = currentTimestampText();
+        value.clear();
     }
 
     m_createdAt = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setCreatedAt"),
-        QStringLiteral("value=%1").arg(m_createdAt));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setCreatedAt"),
+                              QStringLiteral("value=%1").arg(m_createdAt));
 }
 
 QString WhatSonNoteHeaderStore::author() const
@@ -206,19 +202,19 @@ void WhatSonNoteHeaderStore::setAuthor(QString author)
     QString value = sanitizeText(std::move(author));
     if (value.isEmpty())
     {
-        value = QStringLiteral("ProfileName");
+        value.clear();
     }
     else if (isTemplateToken(value))
     {
         const QString resolved = templatePayload(value);
-        value = resolved.isEmpty() ? QStringLiteral("ProfileName") : resolved;
+        value = resolved;
     }
 
     m_author = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setAuthor"),
-        QStringLiteral("value=%1").arg(m_author));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setAuthor"),
+                              QStringLiteral("value=%1").arg(m_author));
 }
 
 QString WhatSonNoteHeaderStore::lastModifiedAt() const
@@ -231,14 +227,14 @@ void WhatSonNoteHeaderStore::setLastModifiedAt(QString lastModifiedAt)
     QString value = sanitizeText(std::move(lastModifiedAt));
     if (value.isEmpty() || isTemplateToken(value) || isDatePlaceholderToken(value))
     {
-        value = currentTimestampText();
+        value.clear();
     }
 
     m_lastModifiedAt = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setLastModifiedAt"),
-        QStringLiteral("value=%1").arg(m_lastModifiedAt));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setLastModifiedAt"),
+                              QStringLiteral("value=%1").arg(m_lastModifiedAt));
 }
 
 QString WhatSonNoteHeaderStore::modifiedBy() const
@@ -251,19 +247,19 @@ void WhatSonNoteHeaderStore::setModifiedBy(QString modifiedBy)
     QString value = sanitizeText(std::move(modifiedBy));
     if (value.isEmpty())
     {
-        value = QStringLiteral("ProfileName");
+        value.clear();
     }
     else if (isTemplateToken(value))
     {
         const QString resolved = templatePayload(value);
-        value = resolved.isEmpty() ? QStringLiteral("ProfileName") : resolved;
+        value = resolved;
     }
 
     m_modifiedBy = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setModifiedBy"),
-        QStringLiteral("value=%1").arg(m_modifiedBy));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setModifiedBy"),
+                              QStringLiteral("value=%1").arg(m_modifiedBy));
 }
 
 QStringList WhatSonNoteHeaderStore::folders() const
@@ -275,13 +271,13 @@ void WhatSonNoteHeaderStore::setFolders(QStringList folders)
 {
     const int rawCount = folders.size();
     m_folders = sanitizeStringList(std::move(folders), QStringLiteral("folder"));
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setFolders"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_folders.size())
-        .arg(m_folders.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setFolders"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_folders.size())
+                              .arg(m_folders.join(QStringLiteral(", "))));
 }
 
 QString WhatSonNoteHeaderStore::project() const
@@ -294,19 +290,19 @@ void WhatSonNoteHeaderStore::setProject(QString project)
     QString value = sanitizeText(std::move(project));
     if (value.isEmpty())
     {
-        value = QStringLiteral("General");
+        value.clear();
     }
     else if (isTemplateToken(value))
     {
         const QString resolved = templatePayload(value);
-        value = resolved.isEmpty() ? QStringLiteral("General") : resolved;
+        value = resolved;
     }
 
     m_project = value;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setProject"),
-        QStringLiteral("value=%1").arg(m_project));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setProject"),
+                              QStringLiteral("value=%1").arg(m_project));
 }
 
 bool WhatSonNoteHeaderStore::isBookmarked() const noexcept
@@ -317,10 +313,11 @@ bool WhatSonNoteHeaderStore::isBookmarked() const noexcept
 void WhatSonNoteHeaderStore::setBookmarked(bool bookmarked) noexcept
 {
     m_bookmarked = bookmarked;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setBookmarked"),
-        QStringLiteral("value=%1").arg(m_bookmarked ? QStringLiteral("true") : QStringLiteral("false")));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setBookmarked"),
+                              QStringLiteral("value=%1").arg(
+                                  m_bookmarked ? QStringLiteral("true") : QStringLiteral("false")));
 }
 
 QStringList WhatSonNoteHeaderStore::bookmarkColors() const
@@ -345,13 +342,13 @@ void WhatSonNoteHeaderStore::setBookmarkColors(QStringList colors)
     }
 
     m_bookmarkColors = std::move(sanitized);
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setBookmarkColors"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_bookmarkColors.size())
-        .arg(m_bookmarkColors.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setBookmarkColors"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_bookmarkColors.size())
+                              .arg(m_bookmarkColors.join(QStringLiteral(", "))));
 }
 
 QStringList WhatSonNoteHeaderStore::tags() const
@@ -363,13 +360,13 @@ void WhatSonNoteHeaderStore::setTags(QStringList tags)
 {
     const int rawCount = tags.size();
     m_tags = sanitizeStringList(std::move(tags), QStringLiteral("tag"));
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setTags"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_tags.size())
-        .arg(m_tags.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setTags"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_tags.size())
+                              .arg(m_tags.join(QStringLiteral(", "))));
 }
 
 int WhatSonNoteHeaderStore::progress() const noexcept
@@ -380,10 +377,10 @@ int WhatSonNoteHeaderStore::progress() const noexcept
 void WhatSonNoteHeaderStore::setProgress(int progress) noexcept
 {
     m_progress = std::max(progress, 0);
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setProgress"),
-        QStringLiteral("value=%1").arg(m_progress));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setProgress"),
+                              QStringLiteral("value=%1").arg(m_progress));
 }
 
 bool WhatSonNoteHeaderStore::isPreset() const noexcept
@@ -394,8 +391,9 @@ bool WhatSonNoteHeaderStore::isPreset() const noexcept
 void WhatSonNoteHeaderStore::setPreset(bool preset) noexcept
 {
     m_preset = preset;
-    WhatSon::Debug::trace(
-        QStringLiteral("note.header.store"),
-        QStringLiteral("setPreset"),
-        QStringLiteral("value=%1").arg(m_preset ? QStringLiteral("true") : QStringLiteral("false")));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setPreset"),
+                              QStringLiteral("value=%1").arg(
+                                  m_preset ? QStringLiteral("true") : QStringLiteral("false")));
 }

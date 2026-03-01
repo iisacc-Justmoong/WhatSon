@@ -37,9 +37,9 @@ void WhatSonEventHierarchyStore::clear()
 {
     m_hubPath.clear();
     m_eventNames.clear();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.event.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.event.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonEventHierarchyStore::hubPath() const
@@ -50,10 +50,10 @@ QString WhatSonEventHierarchyStore::hubPath() const
 void WhatSonEventHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.event.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.event.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QStringList WhatSonEventHierarchyStore::eventNames() const
@@ -65,13 +65,13 @@ void WhatSonEventHierarchyStore::setEventNames(QStringList values)
 {
     const int rawCount = values.size();
     m_eventNames = sanitizeValues(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.event.store"),
-        QStringLiteral("setEventNames"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_eventNames.size())
-        .arg(m_eventNames.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.event.store"),
+                              QStringLiteral("setEventNames"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_eventNames.size())
+                              .arg(m_eventNames.join(QStringLiteral(", "))));
 }
 
 bool WhatSonEventHierarchyStore::writeToFile(const QString& filePath, QString* errorMessage) const
@@ -111,9 +111,9 @@ bool WhatSonEventHierarchyStore::writeToFile(const QString& filePath, QString* e
 
     file.write(text.toUtf8());
     file.close();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.event.store"),
-        QStringLiteral("writeToFile"),
-        QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.event.store"),
+                              QStringLiteral("writeToFile"),
+                              QStringLiteral("path=%1 bytes=%2").arg(normalizedPath).arg(text.toUtf8().size()));
     return true;
 }

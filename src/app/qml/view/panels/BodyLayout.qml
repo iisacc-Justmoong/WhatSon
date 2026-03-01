@@ -68,13 +68,15 @@ Item {
         return Math.max(hStack.effectiveMinSidebarWidth, Math.min(maxSidebarWidth, value));
     }
     function totalSplitterWidth() {
-        // DO NOT REMOVE THIS RETURN.
-        // Returning undefined here breaks all width clamp math and disables edge drag resizing.
+        // CRITICAL REGRESSION GUARD:
+        // This function MUST return a finite number. If return is removed or undefined/NaN leaks,
+        // clamp math fails and panel edge drag-resizing becomes blocked (historically repeated issue).
         var width = hStack.splitterThickness;
         if (hStack.listVisible)
             width += hStack.splitterThickness;
         if (hStack.rightVisible)
             width += hStack.splitterThickness;
+        return isFinite(width) ? width : 0;
     }
 
     Layout.fillHeight: true

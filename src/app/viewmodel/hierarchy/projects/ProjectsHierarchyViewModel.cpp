@@ -47,7 +47,7 @@ ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
-    WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &ProjectsHierarchyModel::itemCountChanged,
@@ -96,23 +96,27 @@ void ProjectsHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
-    WhatSon::Debug::trace(
-        QString::fromLatin1(kScope),
-        QStringLiteral("setSelectedIndex"),
-        QStringLiteral("value=%1").arg(m_selectedIndex));
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
-    WhatSon::Debug::trace(
-        QString::fromLatin1(kScope),
-        QStringLiteral("setDepthItems.begin"),
-        QStringLiteral("count=%1").arg(depthItems.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.begin"),
+                              QStringLiteral("count=%1").arg(depthItems.size()));
     m_items = WhatSon::Hierarchy::ProjectsSupport::parseDepthItems(depthItems, QStringLiteral("Project"));
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.success"),
+                              QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
 QVariantList ProjectsHierarchyViewModel::depthItems() const
@@ -143,14 +147,27 @@ bool ProjectsHierarchyViewModel::canRenameItem(int index) const
 
 bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.begin"),
+                              QStringLiteral("index=%1 label=%2").arg(index).arg(displayName));
     if (!canRenameItem(index))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=canRenameItem false index=%1").arg(index));
         return false;
     }
 
     QVector<ProjectsHierarchyItem> stagedItems = m_items;
     if (!WhatSon::Hierarchy::ProjectsSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=support rejected index=%1 label=%2").arg(index).arg(
+                                      displayName));
         return false;
     }
 
@@ -162,10 +179,11 @@ bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayNam
         QString writeError;
         if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
         {
-            WhatSon::Debug::trace(
-                QString::fromLatin1(kScope),
-                QStringLiteral("renameItem.writeFailed"),
-                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_foldersFilePath, writeError));
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("renameItem.writeFailed"),
+                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
+                                          m_foldersFilePath, writeError));
             return false;
         }
     }
@@ -174,13 +192,26 @@ bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayNam
     m_store = std::move(stagedStore);
     m_projectNames = m_store.projectNames();
     syncModel();
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.success"),
+                              QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(displayName).arg(
+                                  m_items.size()));
     return true;
 }
 
 void ProjectsHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
     if (!createFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=createFolderEnabled false"));
         return;
     }
 
@@ -188,18 +219,35 @@ void ProjectsHierarchyViewModel::createFolder()
         &m_items, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=insertIndex invalid"));
         return;
     }
 
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(insertIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.success"),
+                              QStringLiteral("insertIndex=%1 itemCount=%2").arg(insertIndex).arg(m_items.size()));
 }
 
 void ProjectsHierarchyViewModel::deleteSelectedFolder()
 {
+    const int startIndex = m_selectedIndex;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(startIndex).arg(m_items.size()));
     if (!deleteFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("deleteSelectedFolder.rejected"),
+                                  QStringLiteral("reason=deleteFolderEnabled false selectedIndex=%1").arg(startIndex));
         return;
     }
 
@@ -208,10 +256,19 @@ void ProjectsHierarchyViewModel::deleteSelectedFolder()
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(nextSelectedIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.success"),
+                              QStringLiteral("startIndex=%1 nextIndex=%2 itemCount=%3").arg(startIndex).arg(
+                                  nextSelectedIndex).arg(m_items.size()));
 }
 
 void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setProjectNames.begin"),
+                              QStringLiteral("rawCount=%1").arg(projectNames.size()));
     m_projectNames = WhatSon::Hierarchy::ProjectsSupport::sanitizeStringList(std::move(projectNames));
     m_store.setProjectNames(m_projectNames);
     m_items = WhatSon::Hierarchy::ProjectsSupport::buildBucketItems(
@@ -221,6 +278,11 @@ void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)
     m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setProjectNames.success"),
+                              QStringLiteral("sanitizedCount=%1 itemCount=%2").arg(m_projectNames.size()).arg(
+                                  m_items.size()));
 }
 
 QStringList ProjectsHierarchyViewModel::projectNames() const
@@ -251,6 +313,10 @@ bool ProjectsHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_foldersFilePath.clear();
 
     QStringList contentsDirectories;
@@ -262,6 +328,10 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         {
             *errorMessage = resolveError;
         }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.resolve"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, resolveError));
         updateLoadState(false, resolveError);
         return false;
     }
@@ -292,6 +362,10 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = readError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.read"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, readError));
             updateLoadState(false, readError);
             return false;
         }
@@ -303,6 +377,10 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = parseError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.parse"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, parseError));
             updateLoadState(false, parseError);
             return false;
         }
@@ -320,13 +398,13 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
     setProjectNames(aggregated);
 
-    WhatSon::Debug::trace(
-        QString::fromLatin1(kScope),
-        QStringLiteral("loadFromWshub"),
-        QStringLiteral("path=%1 fileFound=%2 count=%3")
-        .arg(wshubPath)
-        .arg(fileFound ? QStringLiteral("1") : QStringLiteral("0"))
-        .arg(m_projectNames.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub"),
+                              QStringLiteral("path=%1 fileFound=%2 count=%3")
+                              .arg(wshubPath)
+                              .arg(fileFound ? QStringLiteral("1") : QStringLiteral("0"))
+                              .arg(m_projectNames.size()));
 
     if (WhatSon::Debug::isEnabled())
     {

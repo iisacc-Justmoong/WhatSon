@@ -30,11 +30,11 @@ QString WhatSonPresetHierarchyCreator::createText(const WhatSonPresetHierarchySt
     root.insert(QStringLiteral("presets"), values);
 
     const QString text = QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.preset.creator"),
-        QStringLiteral("createText"),
-        QStringLiteral("count=%1 bytes=%2")
-        .arg(store.presetNames().size())
-        .arg(text.toUtf8().size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.preset.creator"),
+                              QStringLiteral("createText"),
+                              QStringLiteral("count=%1 bytes=%2")
+                              .arg(store.presetNames().size())
+                              .arg(text.toUtf8().size()));
     return text;
 }

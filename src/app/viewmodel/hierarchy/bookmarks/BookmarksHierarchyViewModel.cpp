@@ -65,7 +65,7 @@ namespace
             }
         }
 
-        return QStringLiteral("Note");
+        return {};
     }
 
     QString bookmarkListSummary(const LibraryNoteRecord& note)
@@ -75,7 +75,7 @@ namespace
         {
             return bodyPlainText;
         }
-        return QStringLiteral("No contents");
+        return {};
     }
 
     QStringList bookmarkListFolders(const LibraryNoteRecord& note)
@@ -140,7 +140,7 @@ BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
-    WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &BookmarksHierarchyModel::itemCountChanged,
@@ -219,20 +219,29 @@ void BookmarksHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
-    WhatSon::Debug::trace(
-        QString::fromLatin1(kScope),
-        QStringLiteral("setSelectedIndex"),
-        QStringLiteral("value=%1").arg(m_selectedIndex));
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
 void BookmarksHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.begin"),
+                              QStringLiteral("count=%1").arg(depthItems.size()));
     Q_UNUSED(depthItems);
     rebuildColorFolders();
     setSelectedIndex(-1);
     refreshNoteListForSelection();
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.success"),
+                              QStringLiteral("itemCount=%1 noteCount=%2").arg(m_items.size()).arg(
+                                  m_noteListModel.rowCount()));
 }
 
 QVariantList BookmarksHierarchyViewModel::depthItems() const
@@ -274,15 +283,27 @@ bool BookmarksHierarchyViewModel::renameItem(int index, const QString& displayNa
 {
     Q_UNUSED(index);
     Q_UNUSED(displayName);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.rejected"),
+                              QStringLiteral("reason=bookmarks hierarchy is read-only"));
     return false;
 }
 
 void BookmarksHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.rejected"),
+                              QStringLiteral("reason=bookmarks hierarchy is read-only"));
 }
 
 void BookmarksHierarchyViewModel::deleteSelectedFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.rejected"),
+                              QStringLiteral("reason=bookmarks hierarchy is read-only"));
 }
 
 bool BookmarksHierarchyViewModel::renameEnabled() const noexcept
@@ -307,6 +328,10 @@ bool BookmarksHierarchyViewModel::viewOptionsEnabled() const noexcept
 
 bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     LibraryAll libraryAll;
     QString indexError;
     if (!libraryAll.indexFromWshub(wshubPath, &indexError))
@@ -315,6 +340,10 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         {
             *errorMessage = indexError;
         }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.index"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, indexError));
         updateLoadState(false, indexError);
         return false;
     }
@@ -346,12 +375,12 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
     setSelectedIndex(-1);
     refreshNoteListForSelection();
 
-    WhatSon::Debug::trace(
-        QString::fromLatin1(kScope),
-        QStringLiteral("loadFromWshub"),
-        QStringLiteral("path=%1 source=wsnhead count=%2")
-        .arg(wshubPath)
-        .arg(m_allBookmarkedNotes.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub"),
+                              QStringLiteral("path=%1 source=wsnhead count=%2")
+                              .arg(wshubPath)
+                              .arg(m_allBookmarkedNotes.size()));
     updateLoadState(true);
     return true;
 }

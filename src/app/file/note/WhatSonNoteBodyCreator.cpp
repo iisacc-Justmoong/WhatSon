@@ -24,10 +24,10 @@ QString WhatSonNoteBodyCreator::targetPathForNote(const QString& noteId) const
     const QString noteStem = QFileInfo(noteDirPath).completeBaseName();
     const QString fileName = noteStem + QStringLiteral(".wsnbody");
     const QString targetPath = joinPath(noteDirPath, fileName);
-    WhatSon::Debug::trace(
-        QStringLiteral("note.creator.body"),
-        QStringLiteral("targetPathForNote"),
-        QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.creator.body"),
+                              QStringLiteral("targetPathForNote"),
+                              QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
     return targetPath;
 }
 

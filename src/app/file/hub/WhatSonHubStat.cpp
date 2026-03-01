@@ -58,9 +58,9 @@ void WhatSonHubStat::clear()
     m_participants.clear();
     m_profileLastModifiedAtUtc.clear();
 
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("clear"));
 }
 
 int WhatSonHubStat::noteCount() const noexcept
@@ -71,10 +71,10 @@ int WhatSonHubStat::noteCount() const noexcept
 void WhatSonHubStat::setNoteCount(int value)
 {
     m_noteCount = std::max(0, value);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setNoteCount"),
-        QStringLiteral("value=%1").arg(m_noteCount));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setNoteCount"),
+                              QStringLiteral("value=%1").arg(m_noteCount));
 }
 
 int WhatSonHubStat::resourceCount() const noexcept
@@ -85,10 +85,10 @@ int WhatSonHubStat::resourceCount() const noexcept
 void WhatSonHubStat::setResourceCount(int value)
 {
     m_resourceCount = std::max(0, value);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setResourceCount"),
-        QStringLiteral("value=%1").arg(m_resourceCount));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setResourceCount"),
+                              QStringLiteral("value=%1").arg(m_resourceCount));
 }
 
 int WhatSonHubStat::characterCount() const noexcept
@@ -99,10 +99,10 @@ int WhatSonHubStat::characterCount() const noexcept
 void WhatSonHubStat::setCharacterCount(int value)
 {
     m_characterCount = std::max(0, value);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setCharacterCount"),
-        QStringLiteral("value=%1").arg(m_characterCount));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setCharacterCount"),
+                              QStringLiteral("value=%1").arg(m_characterCount));
 }
 
 QString WhatSonHubStat::createdAtUtc() const
@@ -113,10 +113,10 @@ QString WhatSonHubStat::createdAtUtc() const
 void WhatSonHubStat::setCreatedAtUtc(QString value)
 {
     m_createdAtUtc = value.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setCreatedAtUtc"),
-        QStringLiteral("value=%1").arg(m_createdAtUtc));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setCreatedAtUtc"),
+                              QStringLiteral("value=%1").arg(m_createdAtUtc));
 }
 
 QString WhatSonHubStat::lastModifiedAtUtc() const
@@ -127,10 +127,10 @@ QString WhatSonHubStat::lastModifiedAtUtc() const
 void WhatSonHubStat::setLastModifiedAtUtc(QString value)
 {
     m_lastModifiedAtUtc = value.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setLastModifiedAtUtc"),
-        QStringLiteral("value=%1").arg(m_lastModifiedAtUtc));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setLastModifiedAtUtc"),
+                              QStringLiteral("value=%1").arg(m_lastModifiedAtUtc));
 }
 
 QStringList WhatSonHubStat::participants() const
@@ -141,12 +141,12 @@ QStringList WhatSonHubStat::participants() const
 void WhatSonHubStat::setParticipants(QStringList values)
 {
     m_participants = sanitizeParticipants(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setParticipants"),
-        QStringLiteral("count=%1 values=[%2]")
-        .arg(m_participants.size())
-        .arg(m_participants.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setParticipants"),
+                              QStringLiteral("count=%1 values=[%2]")
+                              .arg(m_participants.size())
+                              .arg(m_participants.join(QStringLiteral(", "))));
 }
 
 QVariantMap WhatSonHubStat::profileLastModifiedAtUtc() const
@@ -157,8 +157,8 @@ QVariantMap WhatSonHubStat::profileLastModifiedAtUtc() const
 void WhatSonHubStat::setProfileLastModifiedAtUtc(QVariantMap values)
 {
     m_profileLastModifiedAtUtc = sanitizeProfileMap(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.stat"),
-        QStringLiteral("setProfileLastModifiedAtUtc"),
-        QStringLiteral("count=%1").arg(m_profileLastModifiedAtUtc.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.stat"),
+                              QStringLiteral("setProfileLastModifiedAtUtc"),
+                              QStringLiteral("count=%1").arg(m_profileLastModifiedAtUtc.size()));
 }

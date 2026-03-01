@@ -19,10 +19,10 @@ bool WhatSonHubPlacementStore::loadFromWshub(
     QString* errorMessage)
 {
     const QString normalized = normalizeHubPath(wshubPath);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.placement"),
-        QStringLiteral("load.begin"),
-        QStringLiteral("path=%1 normalized=%2").arg(wshubPath, normalized));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.placement"),
+                              QStringLiteral("load.begin"),
+                              QStringLiteral("path=%1 normalized=%2").arg(wshubPath, normalized));
     if (normalized.isEmpty())
     {
         if (errorMessage != nullptr)
@@ -55,18 +55,18 @@ bool WhatSonHubPlacementStore::loadFromWshub(
     double y = 0.0;
     if (!extractCoordinates(normalized, &x, &y, errorMessage))
     {
-        WhatSon::Debug::trace(
-            QStringLiteral("hub.placement"),
-            QStringLiteral("load.failed.extractCoordinates"),
-            errorMessage != nullptr ? *errorMessage : QString());
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("hub.placement"),
+                                  QStringLiteral("load.failed.extractCoordinates"),
+                                  errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
     m_store.insert(normalized, WhatSonHubPlacement(normalized, x, y));
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.placement"),
-        QStringLiteral("load.success"),
-        QStringLiteral("path=%1 x=%2 y=%3").arg(normalized).arg(x).arg(y));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.placement"),
+                              QStringLiteral("load.success"),
+                              QStringLiteral("path=%1 x=%2 y=%3").arg(normalized).arg(x).arg(y));
     return true;
 }
 
@@ -93,29 +93,30 @@ QStringList WhatSonHubPlacementStore::hubPaths() const
 void WhatSonHubPlacementStore::setPlacement(WhatSonHubPlacement placement)
 {
     const QString normalized = normalizeHubPath(placement.hubPath());
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.placement"),
-        QStringLiteral("setPlacement"),
-        QStringLiteral("path=%1 x=%2 y=%3").arg(normalized).arg(placement.x()).arg(placement.y()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.placement"),
+                              QStringLiteral("setPlacement"),
+                              QStringLiteral("path=%1 x=%2 y=%3").arg(normalized).arg(placement.x()).arg(
+                                  placement.y()));
     placement.setHubPath(normalized);
     m_store.insert(normalized, std::move(placement));
 }
 
 void WhatSonHubPlacementStore::remove(const QString& wshubPath)
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.placement"),
-        QStringLiteral("remove"),
-        QStringLiteral("path=%1").arg(wshubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.placement"),
+                              QStringLiteral("remove"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_store.remove(normalizeHubPath(wshubPath));
 }
 
 void WhatSonHubPlacementStore::clear()
 {
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.placement"),
-        QStringLiteral("clear"),
-        QStringLiteral("previousCount=%1").arg(m_store.size()));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.placement"),
+                              QStringLiteral("clear"),
+                              QStringLiteral("previousCount=%1").arg(m_store.size()));
     m_store.clear();
 }
 

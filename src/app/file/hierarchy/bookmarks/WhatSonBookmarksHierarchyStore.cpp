@@ -42,9 +42,9 @@ void WhatSonBookmarksHierarchyStore::clear()
     {
         m_bookmarkColorCriteriaHex.push_back(QString::fromLatin1(definition.hex));
     }
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.bookmarks.store"),
-        QStringLiteral("clear"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.bookmarks.store"),
+                              QStringLiteral("clear"));
 }
 
 QString WhatSonBookmarksHierarchyStore::hubPath() const
@@ -55,10 +55,10 @@ QString WhatSonBookmarksHierarchyStore::hubPath() const
 void WhatSonBookmarksHierarchyStore::setHubPath(QString hubPath)
 {
     m_hubPath = hubPath.trimmed();
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.bookmarks.store"),
-        QStringLiteral("setHubPath"),
-        QStringLiteral("value=%1").arg(m_hubPath));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.bookmarks.store"),
+                              QStringLiteral("setHubPath"),
+                              QStringLiteral("value=%1").arg(m_hubPath));
 }
 
 QStringList WhatSonBookmarksHierarchyStore::bookmarkIds() const
@@ -70,13 +70,13 @@ void WhatSonBookmarksHierarchyStore::setBookmarkIds(QStringList values)
 {
     const int rawCount = values.size();
     m_bookmarkIds = sanitizeValues(std::move(values));
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.bookmarks.store"),
-        QStringLiteral("setBookmarkIds"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_bookmarkIds.size())
-        .arg(m_bookmarkIds.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.bookmarks.store"),
+                              QStringLiteral("setBookmarkIds"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_bookmarkIds.size())
+                              .arg(m_bookmarkIds.join(QStringLiteral(", "))));
 }
 
 QStringList WhatSonBookmarksHierarchyStore::bookmarkColorCriteriaHex() const
@@ -115,11 +115,11 @@ void WhatSonBookmarksHierarchyStore::setBookmarkColorCriteriaHex(QStringList val
     }
 
     m_bookmarkColorCriteriaHex = std::move(sanitized);
-    WhatSon::Debug::trace(
-        QStringLiteral("hierarchy.bookmarks.store"),
-        QStringLiteral("setBookmarkColorCriteriaHex"),
-        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
-        .arg(rawCount)
-        .arg(m_bookmarkColorCriteriaHex.size())
-        .arg(m_bookmarkColorCriteriaHex.join(QStringLiteral(", "))));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hierarchy.bookmarks.store"),
+                              QStringLiteral("setBookmarkColorCriteriaHex"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_bookmarkColorCriteriaHex.size())
+                              .arg(m_bookmarkColorCriteriaHex.join(QStringLiteral(", "))));
 }

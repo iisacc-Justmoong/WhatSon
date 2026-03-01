@@ -12,6 +12,7 @@
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QEventLoop>
 #include <QThread>
 
@@ -31,8 +32,19 @@ namespace
         {
             result->succeeded = false;
             result->error = QStringLiteral("Target object is null.");
+            WhatSon::Debug::trace(
+                QStringLiteral("runtime.parallel"),
+                QStringLiteral("task.invalid"),
+                QStringLiteral("domain=%1 reason=target object is null").arg(domain));
             return nullptr;
         }
+
+        WhatSon::Debug::trace(
+            QStringLiteral("runtime.parallel"),
+            QStringLiteral("task.queued"),
+            QStringLiteral("domain=%1 path=%2 targetPtr=%3")
+            .arg(domain, wshubPath)
+            .arg(reinterpret_cast<quintptr>(object), 0, 16));
 
         QThread* thread = new QThread();
         object->moveToThread(thread);
@@ -43,6 +55,15 @@ namespace
             thread,
             [object, wshubPath, mainThread, result, thread, domain, loader]()
             {
+                WhatSon::Debug::trace(
+                    QStringLiteral("runtime.parallel"),
+                    QStringLiteral("task.begin"),
+                    QStringLiteral("domain=%1 path=%2 threadPtr=%3")
+                    .arg(domain, wshubPath)
+                    .arg(reinterpret_cast<quintptr>(QThread::currentThread()), 0, 16));
+
+                QElapsedTimer elapsedTimer;
+                elapsedTimer.start();
                 QString error;
                 const bool succeeded = loader(object, wshubPath, &error);
                 result->succeeded = succeeded;
@@ -51,9 +72,10 @@ namespace
                 WhatSon::Debug::trace(
                     QStringLiteral("runtime.parallel"),
                     QStringLiteral("load.completed"),
-                    QStringLiteral("domain=%1 succeeded=%2 error=%3")
+                    QStringLiteral("domain=%1 succeeded=%2 elapsedMs=%3 error=%4")
                     .arg(domain)
                     .arg(succeeded ? QStringLiteral("1") : QStringLiteral("0"))
+                    .arg(elapsedTimer.elapsed())
                     .arg(result->error));
 
                 object->moveToThread(mainThread);
@@ -72,6 +94,10 @@ namespace
         Loader loader)
     {
         result->domain = domain;
+        WhatSon::Debug::trace(
+            QStringLiteral("runtime.parallel"),
+            QStringLiteral("task.queued"),
+            QStringLiteral("domain=%1 path=%2").arg(domain, wshubPath));
         QThread* thread = new QThread();
         QObject::connect(
             thread,
@@ -79,6 +105,15 @@ namespace
             thread,
             [wshubPath, result, thread, domain, loader]()
             {
+                WhatSon::Debug::trace(
+                    QStringLiteral("runtime.parallel"),
+                    QStringLiteral("task.begin"),
+                    QStringLiteral("domain=%1 path=%2 threadPtr=%3")
+                    .arg(domain, wshubPath)
+                    .arg(reinterpret_cast<quintptr>(QThread::currentThread()), 0, 16));
+
+                QElapsedTimer elapsedTimer;
+                elapsedTimer.start();
                 QString error;
                 const bool succeeded = loader(wshubPath, &error);
                 result->succeeded = succeeded;
@@ -87,9 +122,10 @@ namespace
                 WhatSon::Debug::trace(
                     QStringLiteral("runtime.parallel"),
                     QStringLiteral("load.completed"),
-                    QStringLiteral("domain=%1 succeeded=%2 error=%3")
+                    QStringLiteral("domain=%1 succeeded=%2 elapsedMs=%3 error=%4")
                     .arg(domain)
                     .arg(succeeded ? QStringLiteral("1") : QStringLiteral("0"))
+                    .arg(elapsedTimer.elapsed())
                     .arg(result->error));
                 thread->quit();
             },
@@ -103,9 +139,17 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     const Targets& targets,
     QVector<DomainLoadResult>* outResults) const
 {
+    QElapsedTimer totalElapsedTimer;
+    totalElapsedTimer.start();
+
     const QString normalizedPath = wshubPath.trimmed();
     QVector<DomainLoadResult> results;
     results.reserve(9);
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("runtime.parallel"),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(normalizedPath));
 
     if (normalizedPath.isEmpty())
     {
@@ -114,6 +158,10 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
         result.succeeded = false;
         result.error = QStringLiteral("wshubPath is empty.");
         results.push_back(result);
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("runtime.parallel"),
+                                  QStringLiteral("loadFromWshub.failed"),
+                                  QStringLiteral("reason=empty wshubPath"));
         if (outResults != nullptr)
         {
             *outResults = results;
@@ -251,7 +299,15 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     if (pendingCount > 0)
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("runtime.parallel"),
+                                  QStringLiteral("wait.begin"),
+                                  QStringLiteral("pending=%1").arg(pendingCount));
         waitLoop.exec();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("runtime.parallel"),
+                                  QStringLiteral("wait.end"),
+                                  QStringLiteral("pending=%1").arg(pendingCount));
     }
 
     for (QThread* thread : threads)
@@ -270,13 +326,25 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     }
 
     bool allSucceeded = true;
+    int failedCount = 0;
     for (const DomainLoadResult& result : results)
     {
         if (!result.succeeded)
         {
             allSucceeded = false;
-            break;
+            ++failedCount;
         }
     }
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("runtime.parallel"),
+                              allSucceeded
+                                  ? QStringLiteral("loadFromWshub.success")
+                                  : QStringLiteral("loadFromWshub.failed"),
+                              QStringLiteral("path=%1 totalDomains=%2 failedDomains=%3 elapsedMs=%4")
+                              .arg(normalizedPath)
+                              .arg(results.size())
+                              .arg(failedCount)
+                              .arg(totalElapsedTimer.elapsed()));
     return allSucceeded;
 }

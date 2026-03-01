@@ -17,7 +17,7 @@ ResourcesHierarchyViewModel::ResourcesHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
-    WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
     QObject::connect(
         &m_itemModel,
         &ResourcesHierarchyModel::itemCountChanged,
@@ -66,15 +66,27 @@ void ResourcesHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setSelectedIndex"),
+                              QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void ResourcesHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.begin"),
+                              QStringLiteral("count=%1").arg(depthItems.size()));
     m_items = WhatSon::Hierarchy::ResourcesSupport::parseDepthItems(depthItems, QStringLiteral("Resource"));
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setDepthItems.success"),
+                              QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
 QVariantList ResourcesHierarchyViewModel::depthItems() const
@@ -104,14 +116,27 @@ bool ResourcesHierarchyViewModel::canRenameItem(int index) const
 
 bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayName)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.begin"),
+                              QStringLiteral("index=%1 label=%2").arg(index).arg(displayName));
     if (!canRenameItem(index))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=canRenameItem false index=%1").arg(index));
         return false;
     }
 
     QVector<ResourcesHierarchyItem> stagedItems = m_items;
     if (!WhatSon::Hierarchy::ResourcesSupport::renameHierarchyItem(&stagedItems, index, displayName))
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=support rejected index=%1 label=%2").arg(index).arg(
+                                      displayName));
         return false;
     }
 
@@ -125,10 +150,11 @@ bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayNa
         QString writeError;
         if (!stagedStore.writeToFile(m_resourcesFilePath, &writeError))
         {
-            WhatSon::Debug::trace(
-                QString::fromLatin1(kScope),
-                QStringLiteral("renameItem.writeFailed"),
-                QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(m_resourcesFilePath, writeError));
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("renameItem.writeFailed"),
+                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
+                                          m_resourcesFilePath, writeError));
             return false;
         }
     }
@@ -137,13 +163,26 @@ bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayNa
     m_store = std::move(stagedStore);
     m_resourcePaths = m_store.resourcePaths();
     syncModel();
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("renameItem.success"),
+                              QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(displayName).arg(
+                                  m_items.size()));
     return true;
 }
 
 void ResourcesHierarchyViewModel::createFolder()
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
     if (!createFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=createFolderEnabled false"));
         return;
     }
 
@@ -151,18 +190,35 @@ void ResourcesHierarchyViewModel::createFolder()
         &m_items, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("createFolder.rejected"),
+                                  QStringLiteral("reason=insertIndex invalid"));
         return;
     }
 
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(insertIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("createFolder.success"),
+                              QStringLiteral("insertIndex=%1 itemCount=%2").arg(insertIndex).arg(m_items.size()));
 }
 
 void ResourcesHierarchyViewModel::deleteSelectedFolder()
 {
+    const int startIndex = m_selectedIndex;
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.begin"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(startIndex).arg(m_items.size()));
     if (!deleteFolderEnabled())
     {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("deleteSelectedFolder.rejected"),
+                                  QStringLiteral("reason=deleteFolderEnabled false selectedIndex=%1").arg(startIndex));
         return;
     }
 
@@ -171,10 +227,19 @@ void ResourcesHierarchyViewModel::deleteSelectedFolder()
     syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(nextSelectedIndex);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("deleteSelectedFolder.success"),
+                              QStringLiteral("startIndex=%1 nextIndex=%2 itemCount=%3").arg(startIndex).arg(
+                                  nextSelectedIndex).arg(m_items.size()));
 }
 
 void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setResourcePaths.begin"),
+                              QStringLiteral("rawCount=%1").arg(resourcePaths.size()));
     m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(resourcePaths));
     m_store.setResourcePaths(m_resourcePaths);
     m_items = WhatSon::Hierarchy::ResourcesSupport::buildBucketItems(
@@ -184,6 +249,11 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
     m_createdFolderSequence = WhatSon::Hierarchy::ResourcesSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("setResourcePaths.success"),
+                              QStringLiteral("sanitizedCount=%1 itemCount=%2").arg(m_resourcePaths.size()).arg(
+                                  m_items.size()));
 }
 
 QStringList ResourcesHierarchyViewModel::resourcePaths() const
@@ -213,6 +283,10 @@ bool ResourcesHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.begin"),
+                              QStringLiteral("path=%1").arg(wshubPath));
     m_resourcesFilePath.clear();
 
     QStringList contentsDirectories;
@@ -224,11 +298,16 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         {
             *errorMessage = resolveError;
         }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.resolve"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, resolveError));
         updateLoadState(false, resolveError);
         return false;
     }
 
     QStringList aggregated;
+    bool fileFound = false;
 
     WhatSonResourcesHierarchyParser parser;
     for (const QString& contentsDirectory : contentsDirectories)
@@ -238,6 +317,7 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         {
             continue;
         }
+        fileFound = true;
 
         if (m_resourcesFilePath.isEmpty())
         {
@@ -252,6 +332,10 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             {
                 *errorMessage = readError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.read"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, readError));
             updateLoadState(false, readError);
             return false;
         }
@@ -263,6 +347,10 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             {
                 *errorMessage = parseError;
             }
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("loadFromWshub.failed.parse"),
+                                      QStringLiteral("path=%1 reason=%2").arg(filePath, parseError));
             updateLoadState(false, parseError);
             return false;
         }
@@ -279,6 +367,11 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
     }
 
     setResourcePaths(aggregated);
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("loadFromWshub.success"),
+                              QStringLiteral("path=%1 fileFound=%2 count=%3").arg(wshubPath).arg(
+                                  fileFound ? QStringLiteral("1") : QStringLiteral("0")).arg(m_resourcePaths.size()));
     updateLoadState(true);
     return true;
 }

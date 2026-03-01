@@ -2,6 +2,8 @@
 
 #include "BookmarksHierarchyModel.hpp"
 
+#include "file/WhatSonDebugTrace.hpp"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -102,12 +104,21 @@ namespace WhatSon::Hierarchy::BookmarksSupport
 
     inline bool readUtf8File(const QString& filePath, QString* outText, QString* errorMessage = nullptr)
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hierarchy.io.support"),
+            QStringLiteral("readUtf8File.begin"),
+            QStringLiteral("path=%1").arg(filePath));
+
         if (outText == nullptr)
         {
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral("outText must not be null.");
             }
+            WhatSon::Debug::trace(
+                QStringLiteral("hierarchy.io.support"),
+                QStringLiteral("readUtf8File.failed"),
+                QStringLiteral("path=%1 reason=outText is null").arg(filePath));
             return false;
         }
 
@@ -118,10 +129,19 @@ namespace WhatSon::Hierarchy::BookmarksSupport
             {
                 *errorMessage = QStringLiteral("Failed to open file: %1").arg(filePath);
             }
+            WhatSon::Debug::trace(
+                QStringLiteral("hierarchy.io.support"),
+                QStringLiteral("readUtf8File.failed"),
+                QStringLiteral("path=%1 reason=open failed").arg(filePath));
             return false;
         }
 
-        *outText = QString::fromUtf8(file.readAll());
+        const QByteArray bytes = file.readAll();
+        *outText = QString::fromUtf8(bytes);
+        WhatSon::Debug::trace(
+            QStringLiteral("hierarchy.io.support"),
+            QStringLiteral("readUtf8File.success"),
+            QStringLiteral("path=%1 bytes=%2").arg(filePath).arg(bytes.size()));
         return true;
     }
 
@@ -200,7 +220,12 @@ namespace WhatSon::Hierarchy::BookmarksSupport
 
         if (item.label.isEmpty())
         {
-            item.label = QStringLiteral("%1%2").arg(fallbackPrefix).arg(fallbackOrdinal);
+            Q_UNUSED(fallbackPrefix);
+            Q_UNUSED(fallbackOrdinal);
+            WhatSon::Debug::trace(
+                QStringLiteral("hierarchy.io.support"),
+                QStringLiteral("parseItemEntry.emptyLabel"),
+                QStringLiteral("depth=%1").arg(item.depth));
         }
 
         return item;
@@ -267,17 +292,16 @@ namespace WhatSon::Hierarchy::BookmarksSupport
         bucket.showChevron = !sanitized.isEmpty();
         items.push_back(std::move(bucket));
 
-        int ordinal = 1;
+        Q_UNUSED(fallbackPrefix);
         for (const QString& value : sanitized)
         {
             BookmarksHierarchyItem child;
             child.depth = 1;
             child.accent = false;
             child.expanded = false;
-            child.label = value.trimmed().isEmpty() ? QStringLiteral("%1%2").arg(fallbackPrefix).arg(ordinal) : value;
+            child.label = value;
             child.showChevron = false;
             items.push_back(std::move(child));
-            ++ordinal;
         }
 
         for (int index = 0; index < items.size(); ++index)
@@ -380,7 +404,8 @@ namespace WhatSon::Hierarchy::BookmarksSupport
 
         BookmarksHierarchyItem newItem;
         newItem.depth = folderDepth;
-        newItem.label = QStringLiteral("Folder%1").arg((*ioFolderSequence)++);
+        newItem.label.clear();
+        ++(*ioFolderSequence);
         newItem.accent = false;
         newItem.expanded = false;
         newItem.showChevron = true;
