@@ -208,6 +208,30 @@ target_link_libraries(whatson_qml_binding_guard_tests
 add_test(NAME whatson_qml_binding_guard_tests COMMAND whatson_qml_binding_guard_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_qml_binding_guard_tests)
 
+add_executable(whatson_note_header_tests
+        app/test_whatson_note_header_parser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
+)
+set_target_properties(whatson_note_header_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_note_header_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/note
+)
+target_link_libraries(whatson_note_header_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_note_header_tests COMMAND whatson_note_header_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_note_header_tests)
+
 if (WHATSON_TEST_TARGETS)
     add_custom_target(whatson_tests DEPENDS ${WHATSON_TEST_TARGETS})
 endif ()

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "WhatSonNoteCreator.hpp"
+#include "WhatSonNoteHeaderStore.hpp"
 
 class WhatSonNoteHeaderCreator : public WhatSonNoteCreator
 {
@@ -14,4 +15,5 @@ public:
 
     QString headerFileName() const;
     QString metadataDirectoryName() const;
+    QString createHeaderText(const WhatSonNoteHeaderStore& store) const;
 };

@@ -1,0 +1,264 @@
+#include "WhatSonNoteHeaderParser.hpp"
+
+#include <QRegularExpression>
+
+namespace
+{
+    QString unescapeXmlText(QString value)
+    {
+        value.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+        value.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+        value.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+        value.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+        value.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+        return value;
+    }
+
+    QString normalizeSingleValue(QString value)
+    {
+        return unescapeXmlText(value.trimmed());
+    }
+
+    bool parseBooleanValue(const QString& rawValue, bool fallback)
+    {
+        const QString normalized = rawValue.trimmed().toCaseFolded();
+        if (normalized.isEmpty())
+        {
+            return fallback;
+        }
+
+        if (normalized == QStringLiteral("1")
+            || normalized == QStringLiteral("true")
+            || normalized == QStringLiteral("yes")
+            || normalized == QStringLiteral("on"))
+        {
+            return true;
+        }
+
+        if (normalized == QStringLiteral("0")
+            || normalized == QStringLiteral("false")
+            || normalized == QStringLiteral("no")
+            || normalized == QStringLiteral("off"))
+        {
+            return false;
+        }
+
+        return fallback;
+    }
+
+    QString extractTagText(const QString& source, const QString& tagName)
+    {
+        const QRegularExpression regex(
+            QStringLiteral(R"(<\s*%1\b[^>]*>([\s\S]*?)<\s*/\s*%1\s*>)")
+            .arg(QRegularExpression::escape(tagName)),
+            QRegularExpression::CaseInsensitiveOption);
+
+        const QRegularExpressionMatch match = regex.match(source);
+        if (!match.hasMatch())
+        {
+            return {};
+        }
+
+        return normalizeSingleValue(match.captured(1));
+    }
+
+    QStringList extractTagTexts(const QString& source, const QString& tagName)
+    {
+        const QRegularExpression regex(
+            QStringLiteral(R"(<\s*%1\b[^>]*>([\s\S]*?)<\s*/\s*%1\s*>)")
+            .arg(QRegularExpression::escape(tagName)),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QStringList values;
+        QRegularExpressionMatchIterator it = regex.globalMatch(source);
+        while (it.hasNext())
+        {
+            const QRegularExpressionMatch match = it.next();
+            values.push_back(normalizeSingleValue(match.captured(1)));
+        }
+
+        return values;
+    }
+
+    QString extractStartTagAttributes(const QString& source, const QString& tagName)
+    {
+        const QRegularExpression regex(
+            QStringLiteral(R"(<\s*%1\b([^>]*)>)").arg(QRegularExpression::escape(tagName)),
+            QRegularExpression::CaseInsensitiveOption);
+
+        const QRegularExpressionMatch match = regex.match(source);
+        if (!match.hasMatch())
+        {
+            return {};
+        }
+
+        return match.captured(1);
+    }
+
+    QString extractAttributeValue(
+        const QString& source,
+        const QString& tagName,
+        const QString& attributeName)
+    {
+        const QString attributesText = extractStartTagAttributes(source, tagName);
+        if (attributesText.isEmpty())
+        {
+            return {};
+        }
+
+        const QRegularExpression attrRegex(
+            QStringLiteral("\\b%1\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s/>]+))")
+            .arg(QRegularExpression::escape(attributeName)),
+            QRegularExpression::CaseInsensitiveOption);
+
+        const QRegularExpressionMatch match = attrRegex.match(attributesText);
+        if (!match.hasMatch())
+        {
+            return {};
+        }
+
+        for (int index = 1; index <= 3; ++index)
+        {
+            const QString captured = match.captured(index);
+            if (!captured.isNull())
+            {
+                return normalizeSingleValue(captured);
+            }
+        }
+
+        return {};
+    }
+
+    QStringList parseProgressEnums(const QString& rawEnums)
+    {
+        QString value = rawEnums.trimmed();
+        if (value.startsWith(QLatin1Char('{')) && value.endsWith(QLatin1Char('}')) && value.size() >= 2)
+        {
+            value = value.mid(1, value.size() - 2);
+        }
+
+        QStringList labels;
+        const QStringList tokens = value.split(QLatin1Char(','), Qt::SkipEmptyParts);
+        labels.reserve(tokens.size());
+
+        for (QString token : tokens)
+        {
+            token = token.trimmed();
+            if (token.startsWith(QLatin1Char('"')) && token.endsWith(QLatin1Char('"')) && token.size() >= 2)
+            {
+                token = token.mid(1, token.size() - 2).trimmed();
+            }
+            if (token.startsWith(QLatin1Char('\'')) && token.endsWith(QLatin1Char('\'')) && token.size() >= 2)
+            {
+                token = token.mid(1, token.size() - 2).trimmed();
+            }
+            if (!token.isEmpty())
+            {
+                labels.push_back(unescapeXmlText(token));
+            }
+        }
+
+        return labels;
+    }
+
+    int parseProgressValue(const QString& source)
+    {
+        const QString progressText = extractTagText(source, QStringLiteral("progress"));
+        bool ok = false;
+        const int progressNumeric = progressText.toInt(&ok);
+        if (ok)
+        {
+            return progressNumeric;
+        }
+
+        const QString valueAttr = extractAttributeValue(source, QStringLiteral("progress"), QStringLiteral("value"));
+        if (!valueAttr.isEmpty())
+        {
+            const int valueNumeric = valueAttr.toInt(&ok);
+            if (ok)
+            {
+                return valueNumeric;
+            }
+        }
+
+        const QString enumsAttr = extractAttributeValue(source, QStringLiteral("progress"), QStringLiteral("enums"));
+        const QStringList enumLabels = parseProgressEnums(enumsAttr);
+
+        if (!progressText.isEmpty())
+        {
+            for (int i = 0; i < enumLabels.size(); ++i)
+            {
+                if (QString::compare(progressText, enumLabels.at(i), Qt::CaseInsensitive) == 0)
+                {
+                    return i;
+                }
+            }
+        }
+
+        if (!valueAttr.isEmpty())
+        {
+            for (int i = 0; i < enumLabels.size(); ++i)
+            {
+                if (QString::compare(valueAttr, enumLabels.at(i), Qt::CaseInsensitive) == 0)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return 0;
+    }
+} // namespace
+
+WhatSonNoteHeaderParser::WhatSonNoteHeaderParser() = default;
+
+WhatSonNoteHeaderParser::~WhatSonNoteHeaderParser() = default;
+
+bool WhatSonNoteHeaderParser::parse(
+    const QString& wsnHeadText,
+    WhatSonNoteHeaderStore* outStore,
+    QString* errorMessage) const
+{
+    if (outStore == nullptr)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("outStore must not be null.");
+        }
+        return false;
+    }
+
+    if (wsnHeadText.trimmed().isEmpty())
+    {
+        outStore->clear();
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("wsnHeadText must not be empty.");
+        }
+        return false;
+    }
+
+    outStore->clear();
+    outStore->setNoteId(extractAttributeValue(wsnHeadText, QStringLiteral("contents"), QStringLiteral("id")));
+    outStore->setTitle(extractTagText(wsnHeadText, QStringLiteral("title")));
+    outStore->setCreatedAt(extractTagText(wsnHeadText, QStringLiteral("created")));
+    outStore->setAuthor(extractTagText(wsnHeadText, QStringLiteral("author")));
+    outStore->setLastModifiedAt(extractTagText(wsnHeadText, QStringLiteral("lastModified")));
+    outStore->setModifiedBy(extractTagText(wsnHeadText, QStringLiteral("modifiedBy")));
+    outStore->setFolders(extractTagTexts(wsnHeadText, QStringLiteral("folder")));
+    outStore->setProject(extractTagText(wsnHeadText, QStringLiteral("project")));
+    outStore->setBookmarked(parseBooleanValue(
+        extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("state")),
+        false));
+    outStore->setTags(extractTagTexts(wsnHeadText, QStringLiteral("tag")));
+    outStore->setProgress(parseProgressValue(wsnHeadText));
+
+    QString isPresetValue = extractTagText(wsnHeadText, QStringLiteral("isPreset"));
+    if (isPresetValue.isEmpty())
+    {
+        isPresetValue = extractAttributeValue(wsnHeadText, QStringLiteral("isPreset"), QStringLiteral("value"));
+    }
+    outStore->setPreset(parseBooleanValue(isPresetValue, false));
+
+    return true;
+}
