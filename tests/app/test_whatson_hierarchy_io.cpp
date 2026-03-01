@@ -39,6 +39,7 @@ private
 
     void parse_blueprintFiles();
     void creatorParser_roundTrip();
+    void libraryParser_parsesObjectStyleNotes();
 };
 
 namespace
@@ -231,6 +232,66 @@ void WhatSonHierarchyIoTest::creatorParser_roundTrip()
         QCOMPARE(decoded.tagEntries().at(0).id, QStringLiteral("business"));
         QCOMPARE(decoded.tagEntries().at(1).depth, 1);
     }
+}
+
+void WhatSonHierarchyIoTest::libraryParser_parsesObjectStyleNotes()
+{
+    QString errorMessage;
+
+    WhatSonLibraryHierarchyParser parser;
+    WhatSonLibraryHierarchyStore store;
+
+    const QJsonObject arrayRoot{
+        {
+            QStringLiteral("notes"), QJsonArray{
+                QJsonObject{
+                    {QStringLiteral("id"), QStringLiteral("note-a")},
+                    {QStringLiteral("title"), QStringLiteral("Alpha")}
+                },
+                QJsonObject{
+                    {QStringLiteral("noteId"), QStringLiteral("note-b")},
+                    {QStringLiteral("title"), QStringLiteral("Beta")}
+                }
+            }
+        }
+    };
+
+    QVERIFY2(
+        parser.parse(
+            QString::fromUtf8(QJsonDocument(arrayRoot).toJson(QJsonDocument::Compact)),
+            &store,
+            &errorMessage),
+        qPrintable(errorMessage));
+    const QStringList expectedArrayStyleIds{
+        QStringLiteral("note-a"),
+        QStringLiteral("note-b")
+    };
+    QCOMPARE(store.noteIds(), expectedArrayStyleIds);
+
+    const QJsonObject objectRoot{
+        {
+            QStringLiteral("notes"), QJsonObject{
+                {
+                    QStringLiteral("note-c"), QJsonObject{
+                        {QStringLiteral("title"), QStringLiteral("Gamma")}
+                    }
+                },
+                {QStringLiteral("note-d"), QStringLiteral("Delta")}
+            }
+        }
+    };
+
+    QVERIFY2(
+        parser.parse(
+            QString::fromUtf8(QJsonDocument(objectRoot).toJson(QJsonDocument::Compact)),
+            &store,
+            &errorMessage),
+        qPrintable(errorMessage));
+    const QStringList expectedObjectStyleIds{
+        QStringLiteral("note-c"),
+        QStringLiteral("note-d")
+    };
+    QCOMPARE(store.noteIds(), expectedObjectStyleIds);
 }
 
 QTEST_APPLESS_MAIN(WhatSonHierarchyIoTest)

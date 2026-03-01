@@ -49,14 +49,107 @@ namespace
         }
         return QStringLiteral("%1 (%2)").arg(primary, attributes.join(QStringLiteral(", ")));
     }
+
+    QString noteListTitle(const LibraryNoteRecord& note)
+    {
+        QString title = note.title.trimmed();
+        if (!title.isEmpty())
+        {
+            return title;
+        }
+
+        title = note.noteId.trimmed();
+        if (!title.isEmpty())
+        {
+            return title;
+        }
+
+        if (!note.noteDirectoryPath.isEmpty())
+        {
+            const QString fromPath = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
+            if (!fromPath.isEmpty())
+            {
+                return fromPath;
+            }
+        }
+
+        return QStringLiteral("Untitled Note");
+    }
+
+    QString noteListSummary(const LibraryNoteRecord& note)
+    {
+        QStringList summaryParts;
+        if (!note.lastModifiedAt.trimmed().isEmpty())
+        {
+            summaryParts.push_back(QStringLiteral("Modified %1").arg(note.lastModifiedAt.trimmed()));
+        }
+        else if (!note.createdAt.trimmed().isEmpty())
+        {
+            summaryParts.push_back(QStringLiteral("Created %1").arg(note.createdAt.trimmed()));
+        }
+
+        if (!note.project.trimmed().isEmpty())
+        {
+            summaryParts.push_back(QStringLiteral("Project %1").arg(note.project.trimmed()));
+        }
+
+        if (!note.tags.isEmpty())
+        {
+            summaryParts.push_back(note.tags.join(QStringLiteral(" • ")));
+        }
+
+        if (summaryParts.isEmpty())
+        {
+            return QStringLiteral("No metadata");
+        }
+        return summaryParts.join(QStringLiteral(" | "));
+    }
+
+    QString noteListFolders(const LibraryNoteRecord& note)
+    {
+        QStringList folders;
+        folders.reserve(note.folders.size());
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                folders.push_back(trimmed);
+            }
+        }
+
+        if (folders.isEmpty())
+        {
+            return QStringLiteral("No Folder");
+        }
+        return folders.join(QStringLiteral(", "));
+    }
+
+    void applyChevronByDepth(QVector<LibraryHierarchyItem>* items)
+    {
+        if (items == nullptr)
+        {
+            return;
+        }
+
+        for (int index = 0; index < items->size(); ++index)
+        {
+            const int nextIndex = index + 1;
+            const bool hasChild = nextIndex < items->size()
+                && items->at(nextIndex).depth > items->at(index).depth;
+            (*items)[index].showChevron = items->at(index).showChevron && hasChild;
+        }
+    }
 } // namespace
 
 LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
+      , m_noteListModel(this)
 {
     WhatSon::Debug::trace(QStringLiteral("library.viewmodel"), QStringLiteral("ctor"));
     syncModel();
+    refreshNoteListForSelection();
 }
 
 LibraryHierarchyViewModel::~LibraryHierarchyViewModel() = default;
@@ -64,6 +157,11 @@ LibraryHierarchyViewModel::~LibraryHierarchyViewModel() = default;
 LibraryHierarchyModel* LibraryHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
+}
+
+LibraryNoteListModel* LibraryHierarchyViewModel::noteListModel() noexcept
+{
+    return &m_noteListModel;
 }
 
 int LibraryHierarchyViewModel::selectedIndex() const noexcept
@@ -94,6 +192,7 @@ void LibraryHierarchyViewModel::setSelectedIndex(int index)
         QStringLiteral("library.viewmodel"),
         QStringLiteral("setSelectedIndex"),
         QStringLiteral("value=%1").arg(m_selectedIndex));
+    refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
@@ -129,8 +228,12 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     }
 
     m_items = std::move(parsedItems);
+    m_bucketRanges.clear();
+    m_rowNoteIds.clear();
+    m_rowNoteIds.resize(m_items.size());
     m_createdFolderSequence = nextFolderSequence(m_items);
     syncModel();
+    m_noteListModel.setItems({});
     setSelectedIndex(-1);
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),
@@ -150,6 +253,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         {
             *errorMessage = indexError;
         }
+        m_noteListModel.setItems({});
         WhatSon::Debug::trace(
             QStringLiteral("library.viewmodel"),
             QStringLiteral("loadFromWshub.failed"),
@@ -254,6 +358,9 @@ void LibraryHierarchyViewModel::createFolder()
     newItem.showChevron = true;
 
     m_items.insert(insertIndex, std::move(newItem));
+    m_bucketRanges.clear();
+    m_rowNoteIds.clear();
+    m_rowNoteIds.resize(m_items.size());
     syncModel();
     setSelectedIndex(insertIndex);
     WhatSon::Debug::trace(
@@ -283,6 +390,9 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     }
 
     m_items.remove(startIndex, removeCount);
+    m_bucketRanges.clear();
+    m_rowNoteIds.clear();
+    m_rowNoteIds.resize(m_items.size());
     syncModel();
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),
@@ -383,6 +493,121 @@ int LibraryHierarchyViewModel::nextFolderSequence(const QVector<LibraryHierarchy
     return maxSequence + 1;
 }
 
+QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
+    const QVector<LibraryNoteRecord>& notes,
+    const QString& highlightedNoteId)
+{
+    QVector<LibraryNoteListItem> items;
+    items.reserve(notes.size());
+
+    const QString highlightedKey = highlightedNoteId.trimmed().toCaseFolded();
+
+    for (const LibraryNoteRecord& note : notes)
+    {
+        LibraryNoteListItem item;
+        item.noteId = note.noteId.trimmed();
+        item.titleText = noteListTitle(note);
+        item.summaryText = noteListSummary(note);
+        item.foldersText = noteListFolders(note);
+        item.bookmarked = note.bookmarked;
+        item.highlighted = !highlightedKey.isEmpty() && item.noteId.toCaseFolded() == highlightedKey;
+        items.push_back(std::move(item));
+    }
+
+    return items;
+}
+
+const QVector<LibraryNoteRecord>& LibraryHierarchyViewModel::notesForBucket(IndexedBucket bucket) const
+{
+    switch (bucket)
+    {
+    case IndexedBucket::Draft:
+        return m_libraryDraft.notes();
+    case IndexedBucket::Today:
+        return m_libraryToday.notes();
+    case IndexedBucket::All:
+    default:
+        return m_libraryAll.notes();
+    }
+}
+
+LibraryHierarchyViewModel::IndexedBucket LibraryHierarchyViewModel::selectedBucket() const
+{
+    if (m_selectedIndex < 0)
+    {
+        return IndexedBucket::All;
+    }
+
+    for (const IndexedBucketRange& range : m_bucketRanges)
+    {
+        if (m_selectedIndex >= range.startRow && m_selectedIndex <= range.endRow)
+        {
+            return range.bucket;
+        }
+    }
+
+    return IndexedBucket::All;
+}
+
+QString LibraryHierarchyViewModel::selectedNoteId() const
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_rowNoteIds.size())
+    {
+        return {};
+    }
+
+    return m_rowNoteIds.at(m_selectedIndex).trimmed();
+}
+
+void LibraryHierarchyViewModel::rebuildBucketRanges()
+{
+    m_bucketRanges.clear();
+    m_rowNoteIds.clear();
+    m_rowNoteIds.resize(m_items.size());
+
+    int cursor = 0;
+    auto appendRange = [&](IndexedBucket bucket, const QVector<LibraryNoteRecord>& notes)
+    {
+        IndexedBucketRange range;
+        range.bucket = bucket;
+        range.startRow = cursor;
+        range.endRow = cursor;
+
+        ++cursor;
+        int row = range.startRow + 1;
+        for (const LibraryNoteRecord& note : notes)
+        {
+            if (row >= 0 && row < m_rowNoteIds.size())
+            {
+                m_rowNoteIds[row] = note.noteId.trimmed();
+            }
+            ++row;
+            ++cursor;
+        }
+
+        range.endRow = std::max(range.startRow, cursor - 1);
+        m_bucketRanges.push_back(range);
+    };
+
+    appendRange(IndexedBucket::All, m_libraryAll.notes());
+    appendRange(IndexedBucket::Draft, m_libraryDraft.notes());
+    appendRange(IndexedBucket::Today, m_libraryToday.notes());
+}
+
+void LibraryHierarchyViewModel::refreshNoteListForSelection()
+{
+    if (!m_runtimeIndexLoaded)
+    {
+        m_noteListModel.setItems({});
+        return;
+    }
+
+    const IndexedBucket bucket = selectedBucket();
+    const QString highlighted = selectedNoteId();
+    const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(bucket), highlighted);
+    m_noteListModel.setItems(listItems);
+}
+
 void LibraryHierarchyViewModel::applyIndexedBuckets()
 {
     QVector<LibraryHierarchyItem> indexedItems;
@@ -414,12 +639,15 @@ void LibraryHierarchyViewModel::applyIndexedBuckets()
     appendBucket(QStringLiteral("Today"), m_libraryToday.notes());
 
     m_items = std::move(indexedItems);
+    rebuildBucketRanges();
     m_createdFolderSequence = nextFolderSequence(m_items);
     syncModel();
+    refreshNoteListForSelection();
 }
 
 void LibraryHierarchyViewModel::syncModel()
 {
+    applyChevronByDepth(&m_items);
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),
         QStringLiteral("syncModel"),

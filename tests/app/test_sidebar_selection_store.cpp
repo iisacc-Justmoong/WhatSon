@@ -47,6 +47,7 @@ void SidebarSelectionStoreTest::defaultState_usesLibraryModelAndToolbarSelection
 
     QCOMPARE(selectionStore.activeIndex(), 0);
     QVERIFY(selectionStore.itemModel() == libraryViewModel.itemModel());
+    QVERIFY(selectionStore.listItemModel() == libraryViewModel.noteListModel());
     QVERIFY(selectionStore.renameEnabled());
     QVERIFY(selectionStore.createFolderEnabled());
     QVERIFY(!selectionStore.deleteFolderEnabled());
@@ -85,6 +86,7 @@ void SidebarSelectionStoreTest::activeIndex_tags_switchesModelAndDisablesFolderA
 
     QCOMPARE(selectionStore.activeIndex(), 3);
     QVERIFY(selectionStore.itemModel() == tagsViewModel.itemModel());
+    QVERIFY(selectionStore.listItemModel() == nullptr);
     QVERIFY(!selectionStore.renameEnabled());
     QVERIFY(!selectionStore.createFolderEnabled());
     QVERIFY(!selectionStore.deleteFolderEnabled());

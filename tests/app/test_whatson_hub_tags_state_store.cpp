@@ -52,7 +52,7 @@ void WhatSonHubTagsStateStoreTest::loadFromWshub_storesDepthEntriesPerHub()
     const QVector<WhatSonTagDepthEntry> entries = store.entries(hubPath);
     QCOMPARE(entries.size(), 2);
     QCOMPARE(entries.at(0).depth, 0);
-    QCOMPARE(entries.at(1).depth, 0);
+    QCOMPARE(entries.at(1).depth, 1);
 }
 
 void WhatSonHubTagsStateStoreTest::setEntries_remove_clear_manageRuntimeState()

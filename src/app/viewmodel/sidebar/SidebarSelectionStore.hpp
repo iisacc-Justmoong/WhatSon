@@ -20,6 +20,7 @@ class SidebarSelectionStore final : public QObject
 
     Q_PROPERTY(int activeIndex READ activeIndex WRITE setActiveIndex NOTIFY activeIndexChanged)
     Q_PROPERTY(QAbstractItemModel* itemModel READ itemModel NOTIFY itemModelChanged)
+    Q_PROPERTY(QAbstractItemModel* listItemModel READ listItemModel NOTIFY listItemModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(bool renameEnabled READ renameEnabled NOTIFY capabilitiesChanged)
     Q_PROPERTY(bool createFolderEnabled READ createFolderEnabled NOTIFY capabilitiesChanged)
@@ -44,6 +45,7 @@ public:
     void setActiveIndex(int index);
 
     QAbstractItemModel* itemModel() const noexcept;
+    QAbstractItemModel* listItemModel() const noexcept;
 
     int selectedIndex() const noexcept;
     Q_INVOKABLE void setSelectedIndex(int index);
@@ -67,6 +69,7 @@ public:
 
     void activeIndexChanged();
     void itemModelChanged();
+    void listItemModelChanged();
     void selectedIndexChanged();
     void capabilitiesChanged();
     void toolbarStateChanged();

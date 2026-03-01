@@ -17,6 +17,7 @@ every turn.
 - Library hierarchy backend: `src/app/file/hierarchy/library`
 - Library hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.*`,
   `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.*`
+- Library right-panel list model: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.*`
 - Hub placement store: `src/app/file/hub/WhatSonHubPlacementStore.*`
 - Tags depth provider: `src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
 - Hub runtime store: `src/app/file/hub/WhatSonHubRuntimeStore.*`
@@ -100,18 +101,22 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/top/StatusBarLayout.qml`
     - `src/app/qml/view/top/NavigationBarLayout.qml`
     - `src/app/qml/view/body/BodyLayout.qml`
-    - `src/app/qml/view/body/HierarchySidebarLayout.qml`
-    - `src/app/qml/view/body/ContentViewLayout.qml`
-    - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
-    - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
-    - `src/app/qml/view/panels/sidebar/LibraryView.qml` (compatibility wrapper)
+    - `src/app/qml/view/panels/MobileNormalLayout.qml` (Figma-driven mobile root layout for node `77:3144`)
+    - `src/app/qml/view/panels/ListBarLayout.qml` (Figma-driven list bar panel for node `73:2635`)
+    - `src/app/qml/view/panels/NoteListItem.qml` (Figma-driven note item card for node `119:3028`)
+    - `src/app/qml/view/panels/ListItemsPlaceholder.qml` (placeholder component used by `ListBarLayout`)
+        - `src/app/qml/view/body/HierarchySidebarLayout.qml`
+        - `src/app/qml/view/body/ContentViewLayout.qml`
+        - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
+        - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
+        - `src/app/qml/view/panels/sidebar/LibraryView.qml` (compatibility wrapper)
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`

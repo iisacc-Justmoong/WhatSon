@@ -7,6 +7,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app`: LVRS-based UI application
 - `src/daemon`: background daemon skeleton
 
+## Adaptive Layout
+
+- `src/app/qml/Main.qml` selects `MobileNormalLayout` when runtime OS is iOS/Android, with media-query fallback for
+  mobile breakpoints.
+
 ## Search Input Behavior
 
 - Status bar search uses `LV.InputField` in `searchMode` and exposes editable state via QML properties/signals.
@@ -138,6 +143,7 @@ Current trace coverage includes:
 - tags file reader / JSON parser / depth flattener
 - note header parser / store setters
 - library and tags hierarchy model/viewmodel sync path
+- library right-panel note list model sync path (All/Draft/Today bucket filtering)
 - sidebar hierarchy per-section item model instantiation and activation path
 - sidebar selection store state transition and capabilities updates
 - Apple permission bridge request/callback flow
@@ -170,7 +176,7 @@ for hub/note hierarchy payloads.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
-- `tags`: `WhatSonTagsHierarchy{Store,Parser,Creator}` (`Tags.wstags`, tree/flat JSON)
+- `tags`: `WhatSonTagsHierarchy{Store,Parser,Creator}` (`Tags.wstags`, tree/flat JSON with preserved hierarchy depth)
 - `resources`: `WhatSonResourcesHierarchy{Store,Parser,Creator}` (`Resources.wsresources`)
 - `progress`: `WhatSonProgressHierarchy{Store,Parser,Creator}` (`Progress.wsprogress`)
 - `event`: `WhatSonEventHierarchy{Store,Parser,Creator}` (`Event.wsevent`)
@@ -180,6 +186,7 @@ Library runtime classification behavior:
 
 - `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, `title`, created/modified
   timestamps, and related fields)
+- `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
 - `Draft`: filters notes where `<folders>` resolves to an empty list
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
 

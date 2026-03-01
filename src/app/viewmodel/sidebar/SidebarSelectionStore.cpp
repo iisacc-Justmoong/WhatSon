@@ -174,6 +174,7 @@ void SidebarSelectionStore::setActiveIndex(int index)
     m_activeIndex = clamped;
     emit activeIndexChanged();
     emit itemModelChanged();
+    emit listItemModelChanged();
     emitSelectionAndCapabilityUpdates();
     emit toolbarStateChanged();
 }
@@ -201,6 +202,16 @@ QAbstractItemModel* SidebarSelectionStore::itemModel() const noexcept
     default:
         return nullptr;
     }
+}
+
+QAbstractItemModel* SidebarSelectionStore::listItemModel() const noexcept
+{
+    if (activeIndex() != kLibrarySectionIndex || m_libraryViewModel == nullptr)
+    {
+        return nullptr;
+    }
+
+    return m_libraryViewModel->noteListModel();
 }
 
 int SidebarSelectionStore::selectedIndex() const noexcept

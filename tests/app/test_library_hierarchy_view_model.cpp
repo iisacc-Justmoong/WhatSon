@@ -20,10 +20,13 @@ private
 
     void defaultState_isEmptyAndCreatable();
     void setDepthItems_parsesDepthAndDpethKeys();
+    void setDepthItems_setsChevronOnlyWhenChildExists();
     void renameItem_updatesDisplayName();
     void createFolder_insertsAsChildOfSelectedSubtree();
     void deleteSelectedFolder_removesDescendantSubtree();
     void loadFromWshub_buildsAllDraftTodayBuckets();
+    void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
+    void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
 };
 
@@ -66,7 +69,9 @@ namespace
         return text;
     }
 
-    bool prepareIndexedLibraryHub(QString* outHubPath)
+    bool prepareIndexedLibraryHub(
+        QString* outHubPath,
+        const QString& libraryDirectoryName = QStringLiteral("Library.wslibrary"))
     {
         if (outHubPath == nullptr)
         {
@@ -79,9 +84,13 @@ namespace
             return false;
         }
 
-        const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("LibraryHub.wshub"));
-        const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("LibraryHub.wscontents"));
-        const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+        QString hubStem = libraryDirectoryName;
+        hubStem.replace(QLatin1Char('/'), QLatin1Char('_'));
+        const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("LibraryHub_%1.wshub").arg(hubStem));
+        QDir(hubPath).removeRecursively();
+
+        const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("LibraryHub_%1.wscontents").arg(hubStem));
+        const QString libraryPath = QDir(contentsPath).filePath(libraryDirectoryName);
         const QString noteAPath = QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"));
         const QString noteBPath = QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"));
         const QString noteCPath = QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote"));
@@ -211,6 +220,39 @@ void LibraryHierarchyViewModelTest::setDepthItems_parsesDepthAndDpethKeys()
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::DepthRole).toInt(),
         2);
+}
+
+void LibraryHierarchyViewModelTest::setDepthItems_setsChevronOnlyWhenChildExists()
+{
+    LibraryHierarchyViewModel viewModel;
+    viewModel.setDepthItems(QVariantList{
+        QVariantMap{
+            {"label", QStringLiteral("Root")},
+            {"depth", 0}
+        },
+        QVariantMap{
+            {"label", QStringLiteral("Child")},
+            {"depth", 1}
+        },
+        QVariantMap{
+            {"label", QStringLiteral("Leaf")},
+            {"depth", 0}
+        }
+    });
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ShowChevronRole).
+                  toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::ShowChevronRole).
+                  toBool(),
+        false);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::ShowChevronRole).
+                  toBool(),
+        false);
 }
 
 void LibraryHierarchyViewModelTest::renameItem_updatesDisplayName()
@@ -344,6 +386,69 @@ void LibraryHierarchyViewModelTest::setDepthItems_emptyInput_preservesIndexedBuc
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("All (3)"));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleTextRole)
+                 .toString(),
+        QStringLiteral("Alpha Note"));
+
+    viewModel.setSelectedIndex(4);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    viewModel.setSelectedIndex(7);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+
+    int highlightedCount = 0;
+    QString highlightedTitle;
+    for (int index = 0; index < viewModel.noteListModel()->rowCount(); ++index)
+    {
+        const bool highlighted = viewModel.noteListModel()
+                                          ->data(
+                                              viewModel.noteListModel()->index(index, 0),
+                                              LibraryNoteListModel::HighlightedRole)
+                                          .toBool();
+        if (!highlighted)
+        {
+            continue;
+        }
+        ++highlightedCount;
+        highlightedTitle = viewModel.noteListModel()
+                                    ->data(
+                                        viewModel.noteListModel()->index(index, 0),
+                                        LibraryNoteListModel::TitleTextRole)
+                                    .toString();
+    }
+
+    QCOMPARE(highlightedCount, 1);
+    QCOMPARE(highlightedTitle, QStringLiteral("Beta Note"));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath, QStringLiteral("Workspace.wslibrary")));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 }
 
 QTEST_APPLESS_MAIN(LibraryHierarchyViewModelTest)

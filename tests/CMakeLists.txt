@@ -125,6 +125,7 @@ add_executable(whatson_sidebar_selection_store_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
@@ -173,6 +174,7 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp

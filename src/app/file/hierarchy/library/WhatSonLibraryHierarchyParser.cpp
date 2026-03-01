@@ -44,6 +44,24 @@ namespace
                 {
                     values.push_back(text);
                 }
+                continue;
+            }
+
+            if (value.isObject())
+            {
+                const QJsonObject object = value.toObject();
+                const QString noteId = object.value(QStringLiteral("id")).toString().trimmed();
+                if (!noteId.isEmpty())
+                {
+                    values.push_back(noteId);
+                    continue;
+                }
+
+                const QString aliasNoteId = object.value(QStringLiteral("noteId")).toString().trimmed();
+                if (!aliasNoteId.isEmpty())
+                {
+                    values.push_back(aliasNoteId);
+                }
             }
         }
 
@@ -108,6 +126,39 @@ bool WhatSonLibraryHierarchyParser::parse(
             if (listValue.isString())
             {
                 outStore->setNoteIds(QStringList{listValue.toString().trimmed()});
+                return true;
+            }
+            if (listValue.isObject())
+            {
+                QStringList values;
+                const QJsonObject notesObject = listValue.toObject();
+                for (auto it = notesObject.constBegin(); it != notesObject.constEnd(); ++it)
+                {
+                    if (it.value().isObject())
+                    {
+                        const QJsonObject entry = it.value().toObject();
+                        const QString noteId = entry.value(QStringLiteral("id")).toString().trimmed();
+                        if (!noteId.isEmpty())
+                        {
+                            values.push_back(noteId);
+                        }
+                        else
+                        {
+                            values.push_back(it.key().trimmed());
+                        }
+                        continue;
+                    }
+
+                    if (it.value().isString())
+                    {
+                        const QString noteKey = it.key().trimmed();
+                        if (!noteKey.isEmpty())
+                        {
+                            values.push_back(noteKey);
+                        }
+                    }
+                }
+                outStore->setNoteIds(values);
                 return true;
             }
         }

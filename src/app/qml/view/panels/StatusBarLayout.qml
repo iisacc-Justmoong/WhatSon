@@ -32,7 +32,6 @@ Rectangle {
     }
     readonly property color searchHintColor: LV.Theme.descriptionColor
     readonly property color searchInputColor: LV.Theme.titleHeaderColor
-    property string searchPlaceholder: "Search"
     property string searchText: ""
 
     signal searchSubmitted(string text)
@@ -76,7 +75,6 @@ Rectangle {
             insetHorizontal: LV.Theme.gap7
             insetVertical: LV.Theme.gap3
             mode: searchMode
-            placeholderText: statusBar.searchPlaceholder
             selectByMouse: true
             sideSpacing: LV.Theme.gap5
             text: statusBar.searchText
@@ -177,7 +175,6 @@ Rectangle {
                     insetHorizontal: LV.Theme.gap7
                     insetVertical: LV.Theme.gap3
                     mode: searchMode
-                    placeholderText: statusBar.compactToolbarText.length > 0 ? statusBar.compactToolbarText : statusBar.searchPlaceholder
                     selectByMouse: true
                     sideSpacing: LV.Theme.gap5
                     text: statusBar.searchText

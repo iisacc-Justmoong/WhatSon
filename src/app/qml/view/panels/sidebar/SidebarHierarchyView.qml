@@ -22,7 +22,6 @@ Item {
     readonly property int horizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property color panelColor: LV.Theme.panelBackground04
     readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false
-    readonly property int rowHeight: 28
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     property string searchQuery: ""
     readonly property int searchRadius: 5
@@ -160,7 +159,6 @@ Item {
                 insetHorizontal: LV.Theme.gap7
                 insetVertical: LV.Theme.gap3
                 mode: searchMode
-                placeholderText: "Search"
                 selectByMouse: true
                 sideSpacing: LV.Theme.gap5
                 text: sidebarHierarchyView.searchQuery
@@ -201,32 +199,31 @@ Item {
                             required property string label
                             readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(label)
                             readonly property int renameLeftInset: LV.Theme.gap8 + indentLevel * 13 + LV.Theme.iconSm + LV.Theme.gap2
-                            readonly property int renameRightInset: showChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8
+                            readonly property int renameRightInset: effectiveShowChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8
                             required property bool showChevron
 
-                            height: matchesSearch ? sidebarHierarchyView.rowHeight : 0
+                            height: matchesSearch ? implicitHeight : 0
+                            implicitHeight: hierarchyRow.implicitHeight
                             visible: matchesSearch
                             width: hierarchyViewport.width
 
                             LV.HierarchyItem {
+                                id: hierarchyRow
+
                                 anchors.fill: parent
                                 baseLeftPadding: LV.Theme.gap8
                                 chevronColor: LV.Theme.darkGrey10
-                                chevronSize: LV.Theme.iconSm
                                 expanded: expanded
                                 iconPlaceholderColor: LV.Theme.accentGrayLight
-                                iconSize: LV.Theme.iconSm
                                 indentLevel: indentLevel
                                 indentStep: 13
-                                itemWidth: hierarchyViewport.width
                                 label: index === sidebarHierarchyView.editingIndex ? "" : label
                                 leadingSpacing: LV.Theme.gap2
                                 rowBackgroundColor: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowBackgroundColorHover: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowBackgroundColorPressed: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                                rowHeight: sidebarHierarchyView.rowHeight
                                 rowRightPadding: LV.Theme.gap8
-                                showChevron: showChevron
+                                showChevron: effectiveShowChevron
                                 textColorNormal: accent ? LV.Theme.accentBlue : LV.Theme.bodyColor
                             }
                             MouseArea {

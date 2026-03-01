@@ -219,6 +219,13 @@ namespace WhatSon::Hierarchy::Support
             ++ordinal;
         }
 
+        for (int index = 0; index < items.size(); ++index)
+        {
+            const int nextIndex = index + 1;
+            const bool hasChild = nextIndex < items.size() && items.at(nextIndex).depth > items.at(index).depth;
+            items[index].showChevron = items.at(index).showChevron && hasChild;
+        }
+
         return items;
     }
 
@@ -270,6 +277,13 @@ namespace WhatSon::Hierarchy::Support
             child.showChevron = false;
             items.push_back(std::move(child));
             ++ordinal;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            const int nextIndex = index + 1;
+            const bool hasChild = nextIndex < items.size() && items.at(nextIndex).depth > items.at(index).depth;
+            items[index].showChevron = items.at(index).showChevron && hasChild;
         }
 
         return items;

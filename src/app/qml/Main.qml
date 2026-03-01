@@ -7,7 +7,7 @@ import "view/panels" as BodyPanelView
 LV.ApplicationWindow {
     id: applicationWindow
 
-    readonly property bool adaptiveCompactMode: matchesMedia("mobile") || matchesMedia("compact")
+    readonly property bool adaptiveCompactMode: useMobileMainLayout || matchesMedia("compact")
     readonly property int adaptiveStatusBarHeight: adaptiveCompactMode ? 0 : statusBarHeight
     readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
@@ -93,141 +93,111 @@ LV.ApplicationWindow {
     }
     onBodyHeightChanged: clampPreferredSizes()
 
-    // Mobile must draw edge-to-edge; disable safe-area padding from the root window.
-    Binding {
-        "topPadding"
-        target: applicationWindow
-        value: 0
-        when: applicationWindow.matchesMedia("mobile")
-    }
-    Binding {
-        "rightPadding"
-        target: applicationWindow
-        value: 0
-        when: applicationWindow.matchesMedia("mobile")
-    }
-    Binding {
-        "bottomPadding"
-        target: applicationWindow
-        value: 0
-        when: applicationWindow.matchesMedia("mobile")
-    }
-    Binding {
-        "leftPadding"
-        target: applicationWindow
-        value: 0
-        when: applicationWindow.matchesMedia("mobile")
-    }
-    Binding {
-        "x"
-        target: applicationWindow.contentItem
-        value: 0
-        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
-    }
-    Binding {
-        "y"
-        target: applicationWindow.contentItem
-        value: 0
-        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
-    }
-    Binding {
-        "width"
-        target: applicationWindow.contentItem
-        value: applicationWindow.width
-        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
-    }
-    Binding {
-        "height"
-        target: applicationWindow.contentItem
-        value: applicationWindow.height
-        when: applicationWindow.matchesMedia("mobile") && applicationWindow.contentItem !== null
-    }
-    Item {
+    Loader {
+        id: mainLayoutLoader
+
         anchors.fill: parent
-        clip: true
+        sourceComponent: applicationWindow.useMobileMainLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent
+    }
+    Component {
+        id: desktopMainLayoutComponent
 
-        Rectangle {
+        Item {
             anchors.fill: parent
-            color: applicationWindow.canvasColor
+            clip: true
+
+            Rectangle {
+                anchors.fill: parent
+                color: applicationWindow.canvasColor
+            }
+            LV.VStack {
+                id: vStack
+
+                anchors.fill: parent
+                spacing: LV.Theme.gapNone
+
+                BodyPanelView.StatusBarLayout {
+                    id: statusBar
+
+                    Layout.preferredHeight: visible ? panelHeight : 0
+                    compactMode: false
+                    panelColor: applicationWindow.statusBarColor
+                    panelHeight: applicationWindow.statusBarHeight
+                    visible: !applicationWindow.adaptiveCompactMode
+
+                    onWindowMoveRequested: {
+                        applicationWindow.requestWindowMove();
+                    }
+                }
+                BodyPanelView.NavigationBarLayout {
+                    id: navigationBar
+
+                    compactMode: applicationWindow.adaptiveCompactMode
+                    panelColor: applicationWindow.navigationBarColor
+                    panelHeight: applicationWindow.navigationBarHeight
+                }
+                BodyPanelView.BodyLayout {
+                    id: hStack
+
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    compactCanvasColor: applicationWindow.canvasColor
+                    compactMode: applicationWindow.adaptiveCompactMode
+                    contentPanelColor: applicationWindow.contentPanelColor
+                    contentsDisplayColor: applicationWindow.contentsDisplayColor
+                    drawerColor: applicationWindow.drawerColor
+                    drawerHeight: applicationWindow.drawerHeight
+                    listViewColor: applicationWindow.listViewColor
+                    listViewWidth: applicationWindow.listViewWidth
+                    minContentWidth: applicationWindow.minContentWidth
+                    minDisplayHeight: applicationWindow.minDisplayHeight
+                    minDrawerHeight: applicationWindow.minDrawerHeight
+                    minListViewWidth: applicationWindow.minListViewWidth
+                    minRightPanelWidth: applicationWindow.minRightPanelWidth
+                    minSidebarWidth: applicationWindow.minSidebarWidth
+                    rightPanelColor: applicationWindow.rightPanelColor
+                    rightPanelWidth: applicationWindow.rightPanelWidth
+                    sidebarColor: applicationWindow.sidebarColor
+                    sidebarWidth: applicationWindow.sidebarWidth
+                    splitterColor: applicationWindow.bodySplitterColor
+                    splitterThickness: applicationWindow.bodySplitterThickness
+
+                    onDrawerHeightDragRequested: function (value) {
+                        if (value !== applicationWindow.preferredDrawerHeight)
+                            applicationWindow.preferredDrawerHeight = value;
+                    }
+                    onListViewWidthDragRequested: function (value) {
+                        if (value !== applicationWindow.preferredListViewWidth)
+                            applicationWindow.preferredListViewWidth = value;
+                    }
+                    onRightPanelWidthDragRequested: function (value) {
+                        if (value !== applicationWindow.preferredRightPanelWidth)
+                            applicationWindow.preferredRightPanelWidth = value;
+                    }
+                    onSidebarWidthDragRequested: function (value) {
+                        if (value !== applicationWindow.preferredSidebarWidth)
+                            applicationWindow.preferredSidebarWidth = value;
+                    }
+                }
+                BodyPanelView.StatusBarLayout {
+                    id: mobileStatusBar
+
+                    Layout.preferredHeight: visible ? effectivePanelHeight : 0
+                    compactMode: true
+                    panelColor: applicationWindow.statusBarColor
+                    panelHeight: applicationWindow.statusBarHeight
+                    visible: applicationWindow.adaptiveCompactMode
+                }
+            }
         }
-        LV.VStack {
-            id: vStack
+    }
+    Component {
+        id: mobileMainLayoutComponent
 
+        BodyPanelView.MobileNormalLayout {
             anchors.fill: parent
-            spacing: LV.Theme.gapNone
-
-            BodyPanelView.StatusBarLayout {
-                id: statusBar
-
-                Layout.preferredHeight: visible ? panelHeight : 0
-                compactMode: false
-                panelColor: applicationWindow.statusBarColor
-                panelHeight: applicationWindow.statusBarHeight
-                visible: !applicationWindow.adaptiveCompactMode
-
-                onWindowMoveRequested: {
-                    applicationWindow.requestWindowMove();
-                }
-            }
-            BodyPanelView.NavigationBarLayout {
-                id: navigationBar
-
-                compactMode: applicationWindow.adaptiveCompactMode
-                panelColor: applicationWindow.navigationBarColor
-                panelHeight: applicationWindow.navigationBarHeight
-            }
-            BodyPanelView.BodyLayout {
-                id: hStack
-
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                compactCanvasColor: applicationWindow.canvasColor
-                compactMode: applicationWindow.adaptiveCompactMode
-                contentPanelColor: applicationWindow.contentPanelColor
-                contentsDisplayColor: applicationWindow.contentsDisplayColor
-                drawerColor: applicationWindow.drawerColor
-                drawerHeight: applicationWindow.drawerHeight
-                listViewColor: applicationWindow.listViewColor
-                listViewWidth: applicationWindow.listViewWidth
-                minContentWidth: applicationWindow.minContentWidth
-                minDisplayHeight: applicationWindow.minDisplayHeight
-                minDrawerHeight: applicationWindow.minDrawerHeight
-                minListViewWidth: applicationWindow.minListViewWidth
-                minRightPanelWidth: applicationWindow.minRightPanelWidth
-                minSidebarWidth: applicationWindow.minSidebarWidth
-                rightPanelColor: applicationWindow.rightPanelColor
-                rightPanelWidth: applicationWindow.rightPanelWidth
-                sidebarColor: applicationWindow.sidebarColor
-                sidebarWidth: applicationWindow.sidebarWidth
-                splitterColor: applicationWindow.bodySplitterColor
-                splitterThickness: applicationWindow.bodySplitterThickness
-
-                onDrawerHeightDragRequested: function (value) {
-                    if (value !== applicationWindow.preferredDrawerHeight)
-                        applicationWindow.preferredDrawerHeight = value;
-                }
-                onListViewWidthDragRequested: function (value) {
-                    if (value !== applicationWindow.preferredListViewWidth)
-                        applicationWindow.preferredListViewWidth = value;
-                }
-                onRightPanelWidthDragRequested: function (value) {
-                    if (value !== applicationWindow.preferredRightPanelWidth)
-                        applicationWindow.preferredRightPanelWidth = value;
-                }
-                onSidebarWidthDragRequested: function (value) {
-                    if (value !== applicationWindow.preferredSidebarWidth)
-                        applicationWindow.preferredSidebarWidth = value;
-                }
-            }
-            BodyPanelView.StatusBarLayout {
-                id: mobileStatusBar
-
-                Layout.preferredHeight: visible ? effectivePanelHeight : 0
-                compactMode: true
-                panelColor: applicationWindow.statusBarColor
-                panelHeight: applicationWindow.statusBarHeight
-                visible: applicationWindow.adaptiveCompactMode
-            }
+            canvasColor: applicationWindow.canvasColor
+            controlSurfaceColor: LV.Theme.panelBackground10
         }
     }
     Window {

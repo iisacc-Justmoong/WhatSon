@@ -24,6 +24,7 @@ Item {
     property color rightPanelColor: LV.Theme.panelBackground08
     property int rightPanelWidth: LV.Theme.inputWidthMd - LV.Theme.gap12
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
+    readonly property var selectionStore: (typeof sidebarSelectionStore !== "undefined" && sidebarSelectionStore) ? sidebarSelectionStore : null
     property color sidebarColor: LV.Theme.panelBackground04
     property int sidebarWidth: LV.Theme.gap24 * 9
     property color splitterColor: LV.Theme.panelBackground10
@@ -60,6 +61,7 @@ Item {
             width += hStack.splitterThickness;
         if (hStack.rightVisible)
             width += hStack.splitterThickness;
+
     }
 
     Layout.fillHeight: true
@@ -124,8 +126,15 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.minListViewWidth
                 Layout.preferredWidth: hStack.listViewWidth
-                color: hStack.listViewColor
+                color: LV.Theme.accentTransparent
                 visible: hStack.listVisible
+
+                ListBarLayout {
+                    activeToolbarIndex: hStack.selectionStore ? hStack.selectionStore.activeIndex : 0
+                    anchors.fill: parent
+                    noteListModel: hStack.selectionStore ? hStack.selectionStore.listItemModel : null
+                    panelColor: hStack.sidebarColor
+                }
             }
             Rectangle {
                 id: listSplitter

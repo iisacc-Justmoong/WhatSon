@@ -1126,6 +1126,70 @@ class BuildAll:
             "iOS app launch retry limit was exceeded."
         )
 
+    def _run_ios_xcodebuild_with_destination_fallback(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            xcode_project: Path,
+            derived_data_dir: Path,
+            ios_device_id: str,
+    ) -> None:
+        primary_cmd = [
+            "xcodebuild",
+            "-project",
+            str(xcode_project),
+            "-scheme",
+            "WhatSon",
+            "-configuration",
+            "Release",
+            "-destination",
+            f"id={ios_device_id}",
+            "-derivedDataPath",
+            str(derived_data_dir),
+            "build",
+        ]
+        primary_result = self._capture_with_log(cmd=primary_cmd, log_path=log_path)
+        if primary_result.returncode == 0:
+            return
+
+        output = f"{primary_result.stdout}\n{primary_result.stderr}".lower()
+        missing_destination_markers = (
+            "unable to find a destination matching the provided destination specifier",
+            "available destinations for the \"whatson\" scheme",
+        )
+        if primary_result.returncode == 70 and all(marker in output for marker in missing_destination_markers):
+            self._log(
+                task,
+                "xcodebuild destination id was not available. Retrying with generic iOS destination.",
+            )
+            fallback_cmd = [
+                "xcodebuild",
+                "-project",
+                str(xcode_project),
+                "-scheme",
+                "WhatSon",
+                "-configuration",
+                "Release",
+                "-destination",
+                "generic/platform=iOS",
+                "-derivedDataPath",
+                str(derived_data_dir),
+                "build",
+            ]
+            fallback_result = self._capture_with_log(cmd=fallback_cmd, log_path=log_path)
+            if fallback_result.returncode == 0:
+                return
+            raise CommandError(
+                f"xcodebuild failed (exit={fallback_result.returncode}) after generic iOS fallback. "
+                f"See log: {log_path}"
+            )
+
+        raise CommandError(
+            f"xcodebuild failed (exit={primary_result.returncode}) for destination id={ios_device_id}. "
+            f"See log: {log_path}"
+        )
+
     def _host_platform_name(self) -> str:
         if self.system_name == "Darwin":
             return "macos"
@@ -1429,21 +1493,13 @@ class BuildAll:
             derived_data_dir = self.ios_project_dir / "derived-data"
             self._clean_path(task=task, path=derived_data_dir, log_path=log_path)
 
-            xcodebuild_cmd = [
-                "xcodebuild",
-                "-project",
-                str(xcode_project),
-                "-scheme",
-                "WhatSon",
-                "-configuration",
-                "Release",
-                "-destination",
-                f"id={ios_device_id}",
-                "-derivedDataPath",
-                str(derived_data_dir),
-                "build",
-            ]
-            self._run(task=task, cmd=xcodebuild_cmd, log_path=log_path)
+            self._run_ios_xcodebuild_with_destination_fallback(
+                task=task,
+                log_path=log_path,
+                xcode_project=xcode_project,
+                derived_data_dir=derived_data_dir,
+                ios_device_id=ios_device_id,
+            )
 
             app_bundle_candidates = [
                 derived_data_dir / "Build" / "Products" / "Release-iphoneos" / "WhatSon.app",

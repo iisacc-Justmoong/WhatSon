@@ -60,10 +60,20 @@ namespace
         QStringList roots;
         for (const QString& contentsDirectory : contentsDirectories)
         {
-            const QString libraryPath = QDir(contentsDirectory).filePath(QStringLiteral("Library.wslibrary"));
+            const QDir contentsDir(contentsDirectory);
+            const QString libraryPath = contentsDir.filePath(QStringLiteral("Library.wslibrary"));
             if (QFileInfo(libraryPath).isDir())
             {
                 roots.push_back(QDir::cleanPath(libraryPath));
+            }
+
+            const QStringList dynamicLibraries = contentsDir.entryList(
+                QStringList{QStringLiteral("*.wslibrary")},
+                QDir::Dirs | QDir::NoDotAndDotDot,
+                QDir::Name);
+            for (const QString& libraryDirName : dynamicLibraries)
+            {
+                roots.push_back(QDir::cleanPath(contentsDir.filePath(libraryDirName)));
             }
         }
         roots.removeDuplicates();
@@ -281,6 +291,50 @@ namespace
         if (parseError.error == QJsonParseError::NoError && !document.isNull())
         {
             QJsonArray noteArray;
+
+            auto appendObjectEntries = [&noteArray](const QJsonObject& object) -> bool
+            {
+                const bool looksLikeSingleRecord =
+                    object.contains(QStringLiteral("id"))
+                    || object.contains(QStringLiteral("noteId"))
+                    || object.contains(QStringLiteral("note_id"))
+                    || object.contains(QStringLiteral("title"))
+                    || object.contains(QStringLiteral("name"));
+                if (looksLikeSingleRecord)
+                {
+                    noteArray.append(object);
+                    return true;
+                }
+
+                bool appended = false;
+                for (auto it = object.constBegin(); it != object.constEnd(); ++it)
+                {
+                    if (it.value().isObject())
+                    {
+                        QJsonObject noteObject = it.value().toObject();
+                        if (!noteObject.contains(QStringLiteral("id"))
+                            && !noteObject.contains(QStringLiteral("noteId"))
+                            && !noteObject.contains(QStringLiteral("note_id")))
+                        {
+                            noteObject.insert(QStringLiteral("id"), it.key());
+                        }
+                        noteArray.append(noteObject);
+                        appended = true;
+                        continue;
+                    }
+
+                    if (it.value().isString())
+                    {
+                        QJsonObject noteObject;
+                        noteObject.insert(QStringLiteral("id"), it.key());
+                        noteObject.insert(QStringLiteral("title"), it.value().toString());
+                        noteArray.append(noteObject);
+                        appended = true;
+                    }
+                }
+                return appended;
+            };
+
             if (document.isArray())
             {
                 noteArray = document.array();
@@ -295,11 +349,15 @@ namespace
                 }
                 else if (notesValue.isObject())
                 {
-                    noteArray.append(notesValue.toObject());
+                    appendObjectEntries(notesValue.toObject());
                 }
                 else if (notesValue.isString())
                 {
                     noteArray.append(notesValue.toString());
+                }
+                else
+                {
+                    appendObjectEntries(root);
                 }
             }
 

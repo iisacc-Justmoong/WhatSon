@@ -182,7 +182,6 @@ namespace
                 {
                     entry.label = entry.id;
                 }
-                entry.depth = 0;
             }
 
             *outEntries = std::move(flattenedEntries);
@@ -427,6 +426,24 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
         return false;
     }
 
+    QVector<WhatSonTagDepthEntry> tagsFileEntries;
+    QString tagsFileError;
+    if (parseTagsWstags(
+        contentsDirectories,
+        m_fileReader,
+        m_jsonParser,
+        m_depthFlattener,
+        &tagsFileEntries,
+        &tagsFileError))
+    {
+        m_entries = std::move(tagsFileEntries);
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("load.success.fromTags"),
+            QStringLiteral("entryCount=%1").arg(m_entries.size()));
+        return true;
+    }
+
     QString noteHeadersError;
     const QVector<WhatSonTagDepthEntry> noteHeaderEntries =
         parseTagEntriesFromNoteHeaders(contentsDirectories, &noteHeadersError);
@@ -442,26 +459,26 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
             return false;
         }
 
-        QVector<WhatSonTagDepthEntry> tagsFileEntries;
-        QString tagsFileError;
+        QVector<WhatSonTagDepthEntry> syncedTagsFileEntries;
+        QString syncedTagsFileError;
         if (!parseTagsWstags(
             contentsDirectories,
             m_fileReader,
             m_jsonParser,
             m_depthFlattener,
-            &tagsFileEntries,
-            &tagsFileError))
+            &syncedTagsFileEntries,
+            &syncedTagsFileError))
         {
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral(
                         "Failed to parse Tags.wstags after note-header sync: %1")
-                    .arg(tagsFileError);
+                    .arg(syncedTagsFileError);
             }
             return false;
         }
 
-        m_entries = std::move(tagsFileEntries);
+        m_entries = std::move(syncedTagsFileEntries);
         WhatSon::Debug::trace(
             QStringLiteral("hub.tags.depth"),
             QStringLiteral("load.success.fromWsnhead"),
@@ -469,38 +486,20 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
         return true;
     }
 
-    QVector<WhatSonTagDepthEntry> tagsFileEntries;
-    QString tagsFileError;
-    if (!parseTagsWstags(
-        contentsDirectories,
-        m_fileReader,
-        m_jsonParser,
-        m_depthFlattener,
-        &tagsFileEntries,
-        &tagsFileError))
+    if (errorMessage != nullptr)
     {
-        if (errorMessage != nullptr)
+        if (!noteHeadersError.isEmpty())
         {
-            if (!noteHeadersError.isEmpty())
-            {
-                *errorMessage = QStringLiteral(
-                        "Failed to load tags from note headers (%1) and Tags.wstags (%2).")
-                    .arg(noteHeadersError, tagsFileError);
-            }
-            else
-            {
-                *errorMessage = tagsFileError;
-            }
+            *errorMessage = QStringLiteral(
+                    "Failed to load tags from Tags.wstags (%1) and note headers (%2).")
+                .arg(tagsFileError, noteHeadersError);
         }
-        return false;
+        else
+        {
+            *errorMessage = tagsFileError;
+        }
     }
-
-    m_entries = std::move(tagsFileEntries);
-    WhatSon::Debug::trace(
-        QStringLiteral("hub.tags.depth"),
-        QStringLiteral("load.success.fromTags"),
-        QStringLiteral("entryCount=%1").arg(m_entries.size()));
-    return true;
+    return false;
 }
 
 QVector<WhatSonTagDepthEntry> WhatSonHubTagsDepthProvider::tagDepthEntries() const

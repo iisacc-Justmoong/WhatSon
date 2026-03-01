@@ -17,15 +17,16 @@ private
 
 
 
-    void loadFromWshub_flattensNestedTagsAsDepthZero();
-    void loadFromWshub_normalizesExplicitDepthToZero();
+    void loadFromWshub_preservesNestedTagDepth();
+    void loadFromWshub_preservesExplicitDepth();
     void loadFromWshub_acceptsRootArrayFormat();
+    void loadFromWshub_prefersTagsFileWhenPresent();
     void loadFromWshub_readsTagsFromNoteHeadersAndWritesTagsFile();
     void loadFromWshub_failsWhenNoTagsSourceExists();
     void loadFromWshub_failsWhenPathIsNotWshub();
 };
 
-void WhatSonHubTagsDepthProviderTest::loadFromWshub_flattensNestedTagsAsDepthZero()
+void WhatSonHubTagsDepthProviderTest::loadFromWshub_preservesNestedTagDepth()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -67,12 +68,12 @@ void WhatSonHubTagsDepthProviderTest::loadFromWshub_flattensNestedTagsAsDepthZer
     QCOMPARE(entries.at(0).id, QStringLiteral("root"));
     QCOMPARE(entries.at(0).depth, 0);
     QCOMPARE(entries.at(1).id, QStringLiteral("root/child"));
-    QCOMPARE(entries.at(1).depth, 0);
+    QCOMPARE(entries.at(1).depth, 1);
     QCOMPARE(entries.at(2).id, QStringLiteral("root/child/grand"));
-    QCOMPARE(entries.at(2).depth, 0);
+    QCOMPARE(entries.at(2).depth, 2);
 }
 
-void WhatSonHubTagsDepthProviderTest::loadFromWshub_normalizesExplicitDepthToZero()
+void WhatSonHubTagsDepthProviderTest::loadFromWshub_preservesExplicitDepth()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -103,9 +104,9 @@ void WhatSonHubTagsDepthProviderTest::loadFromWshub_normalizesExplicitDepthToZer
     QCOMPARE(entries.at(0).label, QStringLiteral("Alpha"));
     QCOMPARE(entries.at(0).depth, 0);
     QCOMPARE(entries.at(1).label, QStringLiteral("Beta"));
-    QCOMPARE(entries.at(1).depth, 0);
+    QCOMPARE(entries.at(1).depth, 1);
     QCOMPARE(entries.at(2).label, QStringLiteral("Gamma"));
-    QCOMPARE(entries.at(2).depth, 0);
+    QCOMPARE(entries.at(2).depth, 2);
 }
 
 void WhatSonHubTagsDepthProviderTest::loadFromWshub_acceptsRootArrayFormat()
@@ -141,7 +142,70 @@ void WhatSonHubTagsDepthProviderTest::loadFromWshub_acceptsRootArrayFormat()
     QCOMPARE(entries.at(0).label, QStringLiteral("Root"));
     QCOMPARE(entries.at(0).depth, 0);
     QCOMPARE(entries.at(1).label, QStringLiteral("Child"));
-    QCOMPARE(entries.at(1).depth, 0);
+    QCOMPARE(entries.at(1).depth, 1);
+}
+
+void WhatSonHubTagsDepthProviderTest::loadFromWshub_prefersTagsFileWhenPresent()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Sample.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("Sample.wscontents"));
+    const QString notePath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/One.wsnote"));
+    QVERIFY(QDir().mkpath(contentsPath));
+    QVERIFY(QDir().mkpath(notePath));
+
+    const QString tagsPath = QDir(contentsPath).filePath(QStringLiteral("Tags.wstags"));
+    QFile tagsFile(tagsPath);
+    QVERIFY(tagsFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    tagsFile.write(
+        "{\n"
+        "  \"tags\": [\n"
+        "    {\n"
+        "      \"id\": \"root\",\n"
+        "      \"label\": \"Root\",\n"
+        "      \"children\": [\n"
+        "        {\"id\": \"root/child\", \"label\": \"Child\"}\n"
+        "      ]\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    tagsFile.close();
+
+    QFile noteHeadFile(QDir(notePath).filePath(QStringLiteral("One.wsnhead")));
+    QVERIFY(noteHeadFile.open(QIODevice::WriteOnly | QIODevice::Text));
+    noteHeadFile.write(
+        "<contents>\n"
+        "  <head>\n"
+        "    <tags>\n"
+        "      <tag>FromHeader</tag>\n"
+        "    </tags>\n"
+        "  </head>\n"
+        "</contents>\n");
+    noteHeadFile.close();
+
+    WhatSonHubTagsDepthProvider provider;
+    QString errorMessage;
+    QVERIFY2(provider.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    const QVector<WhatSonTagDepthEntry> entries = provider.tagDepthEntries();
+    QCOMPARE(entries.size(), 2);
+    QCOMPARE(entries.at(0).id, QStringLiteral("root"));
+    QCOMPARE(entries.at(0).depth, 0);
+    QCOMPARE(entries.at(1).id, QStringLiteral("root/child"));
+    QCOMPARE(entries.at(1).depth, 1);
+
+    QFile reloadedTagsFile(tagsPath);
+    QVERIFY(reloadedTagsFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QJsonDocument tagsDocument = QJsonDocument::fromJson(reloadedTagsFile.readAll());
+    reloadedTagsFile.close();
+    QVERIFY(tagsDocument.isObject());
+
+    const QJsonArray rootTags = tagsDocument.object().value(QStringLiteral("tags")).toArray();
+    QCOMPARE(rootTags.size(), 1);
+    QCOMPARE(rootTags.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("root"));
+    QCOMPARE(rootTags.at(0).toObject().value(QStringLiteral("children")).toArray().size(), 1);
 }
 
 void WhatSonHubTagsDepthProviderTest::loadFromWshub_readsTagsFromNoteHeadersAndWritesTagsFile()
