@@ -117,9 +117,8 @@ target_link_libraries(whatson_hub_tags_depth_provider_tests
 add_test(NAME whatson_hub_tags_depth_provider_tests COMMAND whatson_hub_tags_depth_provider_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
 
-add_executable(whatson_sidebar_selection_store_tests
-        app/test_sidebar_selection_store.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarSelectionStore.cpp
+add_executable(whatson_hierarchy_viewmodels_tests
+        app/test_hierarchy_viewmodels.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/common/FlatHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
@@ -141,6 +140,10 @@ add_executable(whatson_sidebar_selection_store_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/event/WhatSonEventHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/preset/WhatSonPresetHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp
@@ -150,29 +153,30 @@ add_executable(whatson_sidebar_selection_store_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/event/EventHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.cpp
 )
-set_target_properties(whatson_sidebar_selection_store_tests PROPERTIES AUTOMOC ON)
-target_include_directories(whatson_sidebar_selection_store_tests
+set_target_properties(whatson_hierarchy_viewmodels_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hierarchy_viewmodels_tests
         PRIVATE
         ${CMAKE_SOURCE_DIR}/src/app
         ${CMAKE_SOURCE_DIR}/src/app/file
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar
 )
-target_link_libraries(whatson_sidebar_selection_store_tests
+target_link_libraries(whatson_hierarchy_viewmodels_tests
         PRIVATE
         Qt6::Core
         Qt6::Test
 )
-add_test(NAME whatson_sidebar_selection_store_tests COMMAND whatson_sidebar_selection_store_tests)
-list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_selection_store_tests)
+add_test(NAME whatson_hierarchy_viewmodels_tests COMMAND whatson_hierarchy_viewmodels_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hierarchy_viewmodels_tests)
 
 add_executable(whatson_library_hierarchy_tests
         app/test_library_hierarchy_view_model.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
@@ -197,6 +201,10 @@ list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
 
 add_executable(whatson_tags_hierarchy_tests
         app/test_tags_hierarchy_view_model.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsDepthFlattener.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.cpp
 )

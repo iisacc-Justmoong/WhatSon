@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE WHATSONNOTE>
+<contents id=${id}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="wsn-type" content="wsnhead" />
+    <title>Placeholder. This is not requirements so it can be empty.</title>
+    <created>YYYY-MM-DD-hh-mm-ss</created>
+    <author>${ProfileName}</author>
+    <lastModified>YYYY-MM-DD-hh-mm-ss</lastModified>
+    <modifiedBy>${ProfileName}</modifiedBy>
+    <folders>
+      <folder>%{folder1}</folder>
+      <folder>%{folder2}</folder>
+      <folder>%{folder3}</folder>
+    </folders>
+    <project>
+        included project name
+    </project>
+    <bookmarks state=${bool} />
+    <tags>
+      <tag>${tag1}</tag>
+      <tag>${tag2}</tag>
+      <tag>${tag3}</tag>
+    </tags>
+    <progress enums={"Ready", Pending, InProgress, Done"}>
+        ${float: float}
+    </progress>
+    </ isPreset >
+  </head>
+</contents>

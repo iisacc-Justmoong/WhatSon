@@ -1,7 +1,11 @@
 #include "LibraryHierarchyViewModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
+#include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QVariantMap>
@@ -78,31 +82,12 @@ namespace
 
     QString noteListSummary(const LibraryNoteRecord& note)
     {
-        QStringList summaryParts;
-        if (!note.lastModifiedAt.trimmed().isEmpty())
+        const QString bodySummary = note.bodySummary.trimmed();
+        if (!bodySummary.isEmpty())
         {
-            summaryParts.push_back(QStringLiteral("Modified %1").arg(note.lastModifiedAt.trimmed()));
+            return bodySummary;
         }
-        else if (!note.createdAt.trimmed().isEmpty())
-        {
-            summaryParts.push_back(QStringLiteral("Created %1").arg(note.createdAt.trimmed()));
-        }
-
-        if (!note.project.trimmed().isEmpty())
-        {
-            summaryParts.push_back(QStringLiteral("Project %1").arg(note.project.trimmed()));
-        }
-
-        if (!note.tags.isEmpty())
-        {
-            summaryParts.push_back(note.tags.join(QStringLiteral(" • ")));
-        }
-
-        if (summaryParts.isEmpty())
-        {
-            return QStringLiteral("No metadata");
-        }
-        return summaryParts.join(QStringLiteral(" | "));
+        return QStringLiteral("No contents");
     }
 
     QString noteListFolders(const LibraryNoteRecord& note)
@@ -139,6 +124,33 @@ namespace
                 && items->at(nextIndex).depth > items->at(index).depth;
             (*items)[index].showChevron = items->at(index).showChevron && hasChild;
         }
+    }
+
+    QVector<LibraryHierarchyItem> buildFolderItems(const QVector<WhatSonFolderDepthEntry>& entries)
+    {
+        QVector<LibraryHierarchyItem> items;
+        items.reserve(entries.size());
+
+        int fallbackOrdinal = 1;
+        for (const WhatSonFolderDepthEntry& entry : entries)
+        {
+            LibraryHierarchyItem item;
+            item.depth = std::max(0, entry.depth);
+            item.label = entry.label.trimmed();
+            item.accent = false;
+            item.expanded = false;
+            item.showChevron = true;
+
+            if (item.label.isEmpty())
+            {
+                item.label = nextFolderName(fallbackOrdinal);
+            }
+
+            items.push_back(std::move(item));
+            ++fallbackOrdinal;
+        }
+
+        return items;
     }
 } // namespace
 
@@ -205,6 +217,16 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
     if (depthItems.isEmpty() && m_runtimeIndexLoaded)
     {
+        if (m_foldersHierarchyLoaded)
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("library.viewmodel"),
+                QStringLiteral("setDepthItems.keepFoldersHierarchy"),
+                QStringLiteral("folderCount=%1").arg(m_items.size()));
+            refreshNoteListForSelection();
+            return;
+        }
+
         WhatSon::Debug::trace(
             QStringLiteral("library.viewmodel"),
             QStringLiteral("setDepthItems.useIndexedBuckets"),
@@ -228,6 +250,7 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     }
 
     m_items = std::move(parsedItems);
+    m_foldersHierarchyLoaded = false;
     m_bucketRanges.clear();
     m_rowNoteIds.clear();
     m_rowNoteIds.resize(m_items.size());
@@ -249,6 +272,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         m_libraryDraft.clear();
         m_libraryToday.clear();
         m_runtimeIndexLoaded = false;
+        m_foldersHierarchyLoaded = false;
         if (errorMessage != nullptr)
         {
             *errorMessage = indexError;
@@ -265,13 +289,92 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
     m_libraryToday.rebuild(m_libraryAll.notes());
     m_runtimeIndexLoaded = true;
 
+    QStringList contentsDirectories;
+    QString resolveError;
+    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = resolveError;
+        }
+        return false;
+    }
+
+    WhatSonProjectsHierarchyParser foldersParser;
+    QVector<WhatSonFolderDepthEntry> folderEntries;
+    bool foldersFileFound = false;
+
+    for (const QString& contentsDirectory : contentsDirectories)
+    {
+        const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Folders.wsfolders"));
+        if (!QFileInfo(filePath).isFile())
+        {
+            continue;
+        }
+
+        foldersFileFound = true;
+
+        QString rawText;
+        QString readError;
+        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = readError;
+            }
+            return false;
+        }
+
+        WhatSonProjectsHierarchyStore foldersStore;
+        QString parseError;
+        if (!foldersParser.parse(rawText, &foldersStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+
+        const QVector<WhatSonFolderDepthEntry> parsedEntries = foldersStore.folderEntries();
+        for (const WhatSonFolderDepthEntry& entry : parsedEntries)
+        {
+            folderEntries.push_back(entry);
+        }
+    }
+
+    if (!folderEntries.isEmpty())
+    {
+        m_items = buildFolderItems(folderEntries);
+        m_foldersHierarchyLoaded = true;
+        m_bucketRanges.clear();
+        m_rowNoteIds.clear();
+        m_rowNoteIds.resize(m_items.size());
+        m_createdFolderSequence = nextFolderSequence(m_items);
+        syncModel();
+        setSelectedIndex(-1);
+        refreshNoteListForSelection();
+
+        WhatSon::Debug::trace(
+            QStringLiteral("library.viewmodel"),
+            QStringLiteral("loadFromWshub.folderHierarchy"),
+            QStringLiteral("path=%1 folderCount=%2 all=%3 draft=%4 today=%5")
+            .arg(wshubPath)
+            .arg(m_items.size())
+            .arg(m_libraryAll.notes().size())
+            .arg(m_libraryDraft.notes().size())
+            .arg(m_libraryToday.notes().size()));
+        return true;
+    }
+
     applyIndexedBuckets();
     setSelectedIndex(-1);
 
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),
         QStringLiteral("loadFromWshub.success"),
-        QStringLiteral("all=%1 draft=%2 today=%3")
+        QStringLiteral("foldersFileFound=%1 all=%2 draft=%3 today=%4")
+        .arg(foldersFileFound ? QStringLiteral("1") : QStringLiteral("0"))
         .arg(m_libraryAll.notes().size())
         .arg(m_libraryDraft.notes().size())
         .arg(m_libraryToday.notes().size()));
@@ -311,6 +414,10 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
     {
         return false;
     }
+    if (m_items.at(index).accent && m_items.at(index).depth == 0)
+    {
+        return false;
+    }
 
     const QString trimmedName = displayName.trimmed();
     if (trimmedName.isEmpty())
@@ -331,6 +438,26 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
         QStringLiteral("renameItem"),
         QStringLiteral("index=%1 label=%2").arg(index).arg(trimmedName));
     return true;
+}
+
+bool LibraryHierarchyViewModel::renameEnabled() const noexcept
+{
+    return true;
+}
+
+bool LibraryHierarchyViewModel::createFolderEnabled() const noexcept
+{
+    return true;
+}
+
+bool LibraryHierarchyViewModel::deleteFolderEnabled() const noexcept
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+    {
+        return false;
+    }
+
+    return !(m_items.at(m_selectedIndex).accent && m_items.at(m_selectedIndex).depth == 0);
 }
 
 void LibraryHierarchyViewModel::createFolder()
@@ -639,6 +766,7 @@ void LibraryHierarchyViewModel::applyIndexedBuckets()
     appendBucket(QStringLiteral("Today"), m_libraryToday.notes());
 
     m_items = std::move(indexedItems);
+    m_foldersHierarchyLoaded = false;
     rebuildBucketRanges();
     m_createdFolderSequence = nextFolderSequence(m_items);
     syncModel();

@@ -12,6 +12,7 @@ Item {
 
     ListView {
         anchors.fill: parent
+        anchors.margins: 2
         boundsBehavior: Flickable.StopAtBounds
         clip: true
         interactive: contentHeight > height
@@ -29,8 +30,7 @@ Item {
                 return entry.length > 0;
             }) : ["FolderName1", "FolderName2"]
             title: useRuntimeModel && roleModel && roleModel.titleText !== undefined ? String(roleModel.titleText) : "NoteTitle"
-            width: ListView.view ? ListView.view.width - 4 : listItemsPlaceholder.width - 4
-            x: 2
+            width: ListView.view ? ListView.view.width : listItemsPlaceholder.width
         }
     }
 }

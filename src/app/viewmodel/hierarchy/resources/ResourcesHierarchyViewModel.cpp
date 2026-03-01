@@ -48,6 +48,7 @@ void ResourcesHierarchyViewModel::setSelectedIndex(int index)
 void ResourcesHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
     m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Resource"));
+    syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
 }
@@ -57,13 +58,82 @@ QVariantList ResourcesHierarchyViewModel::depthItems() const
     return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
 }
 
+QString ResourcesHierarchyViewModel::itemLabel(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+
+    return m_items.at(index).label;
+}
+
+bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!renameEnabled())
+    {
+        return false;
+    }
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+    if (WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(index)))
+    {
+        return false;
+    }
+
+    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
+    {
+        return false;
+    }
+
+    syncDomainStoreFromItems();
+    syncModel();
+    return true;
+}
+
+void ResourcesHierarchyViewModel::createFolder()
+{
+    if (!createFolderEnabled())
+    {
+        return;
+    }
+
+    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
+        &m_items, m_selectedIndex, &m_createdFolderSequence);
+    if (insertIndex < 0)
+    {
+        return;
+    }
+
+    syncDomainStoreFromItems();
+    syncModel();
+    setSelectedIndex(insertIndex);
+}
+
+void ResourcesHierarchyViewModel::deleteSelectedFolder()
+{
+    if (!deleteFolderEnabled())
+    {
+        return;
+    }
+
+    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
+    syncDomainStoreFromItems();
+    syncModel();
+    setSelectedIndex(nextSelectedIndex);
+}
+
 void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
 {
     m_resourcePaths = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(resourcePaths));
+    m_store.setResourcePaths(m_resourcePaths);
     m_items = WhatSon::Hierarchy::Support::buildBucketItems(
         QStringLiteral("Resources"),
         m_resourcePaths,
         QStringLiteral("Resource"));
+    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -71,6 +141,26 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
 QStringList ResourcesHierarchyViewModel::resourcePaths() const
 {
     return m_resourcePaths;
+}
+
+bool ResourcesHierarchyViewModel::renameEnabled() const noexcept
+{
+    return true;
+}
+
+bool ResourcesHierarchyViewModel::createFolderEnabled() const noexcept
+{
+    return true;
+}
+
+bool ResourcesHierarchyViewModel::deleteFolderEnabled() const noexcept
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+    {
+        return false;
+    }
+
+    return !WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(m_selectedIndex));
 }
 
 bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -108,9 +198,8 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             return false;
         }
 
-        WhatSonResourcesHierarchyStore store;
         QString parseError;
-        if (!parser.parse(rawText, &store, &parseError))
+        if (!parser.parse(rawText, &m_store, &parseError))
         {
             if (errorMessage != nullptr)
             {
@@ -119,7 +208,7 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             return false;
         }
 
-        for (const QString& value : store.resourcePaths())
+        for (const QString& value : m_store.resourcePaths())
         {
             aggregated.push_back(value);
         }
@@ -132,4 +221,10 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
 void ResourcesHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+}
+
+void ResourcesHierarchyViewModel::syncDomainStoreFromItems()
+{
+    m_resourcePaths = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
+    m_store.setResourcePaths(m_resourcePaths);
 }

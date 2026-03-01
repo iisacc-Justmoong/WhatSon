@@ -5,6 +5,8 @@ import LVRS 1.0 as LV
 Item {
     id: hStack
 
+    property int activeToolbarIndex: 0
+    property var bookmarksViewModel: null
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentPanelColor: LV.Theme.panelBackground07
@@ -12,6 +14,7 @@ Item {
     property color drawerColor: LV.Theme.panelBackground11
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
+    property var libraryViewModel: null
     property color listViewColor: LV.Theme.panelBackground08
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property bool listVisible: hStack.listViewWidth > 0
@@ -21,16 +24,22 @@ Item {
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     property int minRightPanelWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
+    property var presetViewModel: null
+    property var progressViewModel: null
+    property var projectsViewModel: null
+    property var resourcesViewModel: null
     property color rightPanelColor: LV.Theme.panelBackground08
     property int rightPanelWidth: LV.Theme.inputWidthMd - LV.Theme.gap12
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
-    readonly property var selectionStore: (typeof sidebarSelectionStore !== "undefined" && sidebarSelectionStore) ? sidebarSelectionStore : null
     property color sidebarColor: LV.Theme.panelBackground04
     property int sidebarWidth: LV.Theme.gap24 * 9
     property color splitterColor: LV.Theme.panelBackground10
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
+    property var tagsViewModel: null
+    property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
+    signal activeToolbarIndexChangeRequested(int index)
     signal drawerHeightDragRequested(int value)
     signal listViewWidthDragRequested(int value)
     signal rightPanelWidthDragRequested(int value)
@@ -82,6 +91,21 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.effectiveMinSidebarWidth
                 Layout.preferredWidth: hStack.sidebarWidth
+                activeToolbarIndex: hStack.activeToolbarIndex
+                bookmarksViewModel: hStack.bookmarksViewModel
+                eventViewModel: hStack.eventViewModel
+                libraryViewModel: hStack.libraryViewModel
+                panelColor: hStack.sidebarColor
+                presetViewModel: hStack.presetViewModel
+                progressViewModel: hStack.progressViewModel
+                projectsViewModel: hStack.projectsViewModel
+                resourcesViewModel: hStack.resourcesViewModel
+                tagsViewModel: hStack.tagsViewModel
+                toolbarIconNames: hStack.toolbarIconNames
+
+                onActiveToolbarIndexChangeRequested: function (index) {
+                    hStack.activeToolbarIndexChangeRequested(index);
+                }
             }
             Rectangle {
                 id: sideBarSplitter
@@ -130,9 +154,9 @@ Item {
                 visible: hStack.listVisible
 
                 ListBarLayout {
-                    activeToolbarIndex: hStack.selectionStore ? hStack.selectionStore.activeIndex : 0
+                    activeToolbarIndex: hStack.activeToolbarIndex
                     anchors.fill: parent
-                    noteListModel: hStack.selectionStore ? hStack.selectionStore.listItemModel : null
+                    noteListModel: (hStack.activeToolbarIndex === 0 && hStack.libraryViewModel) ? hStack.libraryViewModel.noteListModel : null
                     panelColor: hStack.sidebarColor
                 }
             }

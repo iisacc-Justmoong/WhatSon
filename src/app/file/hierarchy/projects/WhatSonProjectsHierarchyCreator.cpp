@@ -19,22 +19,27 @@ QString WhatSonProjectsHierarchyCreator::targetRelativePath() const
 QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarchyStore& store) const
 {
     QJsonArray values;
-    for (const QString& value : store.projectNames())
+    const QVector<WhatSonFolderDepthEntry> entries = store.folderEntries();
+    for (const WhatSonFolderDepthEntry& entry : entries)
     {
-        values.push_back(value);
+        QJsonObject row;
+        row.insert(QStringLiteral("id"), entry.id);
+        row.insert(QStringLiteral("label"), entry.label);
+        row.insert(QStringLiteral("depth"), entry.depth);
+        values.push_back(row);
     }
 
     QJsonObject root;
     root.insert(QStringLiteral("version"), 1);
-    root.insert(QStringLiteral("schema"), QStringLiteral("whatson.projects.list"));
-    root.insert(QStringLiteral("projects"), values);
+    root.insert(QStringLiteral("schema"), QStringLiteral("whatson.folders.tree"));
+    root.insert(QStringLiteral("folders"), values);
 
     const QString text = QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
     WhatSon::Debug::trace(
         QStringLiteral("hierarchy.projects.creator"),
         QStringLiteral("createText"),
         QStringLiteral("count=%1 bytes=%2")
-        .arg(store.projectNames().size())
+        .arg(entries.size())
         .arg(text.toUtf8().size()));
     return text;
 }

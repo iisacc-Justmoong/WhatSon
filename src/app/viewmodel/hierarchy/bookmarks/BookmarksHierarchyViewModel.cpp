@@ -53,6 +53,7 @@ void BookmarksHierarchyViewModel::setSelectedIndex(int index)
 void BookmarksHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
     m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Bookmark"));
+    syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
 }
@@ -62,13 +63,82 @@ QVariantList BookmarksHierarchyViewModel::depthItems() const
     return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
 }
 
+QString BookmarksHierarchyViewModel::itemLabel(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+
+    return m_items.at(index).label;
+}
+
+bool BookmarksHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!renameEnabled())
+    {
+        return false;
+    }
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+    if (WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(index)))
+    {
+        return false;
+    }
+
+    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
+    {
+        return false;
+    }
+
+    syncDomainStoreFromItems();
+    syncModel();
+    return true;
+}
+
+void BookmarksHierarchyViewModel::createFolder()
+{
+    if (!createFolderEnabled())
+    {
+        return;
+    }
+
+    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
+        &m_items, m_selectedIndex, &m_createdFolderSequence);
+    if (insertIndex < 0)
+    {
+        return;
+    }
+
+    syncDomainStoreFromItems();
+    syncModel();
+    setSelectedIndex(insertIndex);
+}
+
+void BookmarksHierarchyViewModel::deleteSelectedFolder()
+{
+    if (!deleteFolderEnabled())
+    {
+        return;
+    }
+
+    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
+    syncDomainStoreFromItems();
+    syncModel();
+    setSelectedIndex(nextSelectedIndex);
+}
+
 void BookmarksHierarchyViewModel::setBookmarkIds(QStringList bookmarkIds)
 {
     m_bookmarkIds = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(bookmarkIds));
+    m_store.setBookmarkIds(m_bookmarkIds);
     m_items = WhatSon::Hierarchy::Support::buildBucketItems(
         QStringLiteral("Bookmarks"),
         m_bookmarkIds,
         QStringLiteral("Bookmark"));
+    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -76,6 +146,26 @@ void BookmarksHierarchyViewModel::setBookmarkIds(QStringList bookmarkIds)
 QStringList BookmarksHierarchyViewModel::bookmarkIds() const
 {
     return m_bookmarkIds;
+}
+
+bool BookmarksHierarchyViewModel::renameEnabled() const noexcept
+{
+    return true;
+}
+
+bool BookmarksHierarchyViewModel::createFolderEnabled() const noexcept
+{
+    return true;
+}
+
+bool BookmarksHierarchyViewModel::deleteFolderEnabled() const noexcept
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+    {
+        return false;
+    }
+
+    return !WhatSon::Hierarchy::Support::isBucketHeaderItem(m_items.at(m_selectedIndex));
 }
 
 bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -116,9 +206,8 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             return false;
         }
 
-        WhatSonBookmarksHierarchyStore store;
         QString parseError;
-        if (!parser.parse(rawText, &store, &parseError))
+        if (!parser.parse(rawText, &m_store, &parseError))
         {
             if (errorMessage != nullptr)
             {
@@ -127,7 +216,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             return false;
         }
 
-        for (const QString& value : store.bookmarkIds())
+        for (const QString& value : m_store.bookmarkIds())
         {
             aggregated.push_back(value);
         }
@@ -148,4 +237,10 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
 void BookmarksHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+}
+
+void BookmarksHierarchyViewModel::syncDomainStoreFromItems()
+{
+    m_bookmarkIds = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
+    m_store.setBookmarkIds(m_bookmarkIds);
 }

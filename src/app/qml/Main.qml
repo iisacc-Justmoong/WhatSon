@@ -7,7 +7,8 @@ import "view/panels" as BodyPanelView
 LV.ApplicationWindow {
     id: applicationWindow
 
-    readonly property bool adaptiveCompactMode: useMobileMainLayout || matchesMedia("compact")
+    readonly property string activeMainLayout: useMobileMainLayout ? "mobile" : "desktop"
+    readonly property bool adaptiveCompactMode: runtimeMobilePlatform || mediaCompactMode || mobileLayoutByMediaFallback
     readonly property int adaptiveStatusBarHeight: adaptiveCompactMode ? 0 : statusBarHeight
     readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
@@ -24,10 +25,11 @@ LV.ApplicationWindow {
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
+    property int hierarchyActiveToolbarIndex: 0
     readonly property int hierarchyHorizontalInset: LV.Theme.gap8
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
-    readonly property var hierarchyToolbarIconNames: (typeof sidebarSelectionStore !== "undefined" && sidebarSelectionStore && sidebarSelectionStore.toolbarIconNames) ? sidebarSelectionStore.toolbarIconNames : []
+    readonly property var hierarchyToolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property int hierarchyToolbarSpacing: LV.Theme.gap2
     readonly property int hierarchyToolbarWidth: hierarchyToolbarCount > 0 ? hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing : hierarchyToolbarButtonSize
     readonly property color listViewColor: LV.Theme.panelBackground08
@@ -71,6 +73,9 @@ LV.ApplicationWindow {
         var maxDrawerHeight = Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness);
         preferredDrawerHeight = Math.max(minDrawerHeight, Math.min(maxDrawerHeight, preferredDrawerHeight));
     }
+    function reportLayoutBranch(source) {
+        console.log("[whatson:debug][main.layout][" + source + "] os=" + runtimePlatformOs + " runtimeDesktop=" + runtimeDesktopPlatform + " runtimeMobile=" + runtimeMobilePlatform + " mediaMobile=" + mediaMobileMode + " mediaCompact=" + mediaCompactMode + " mobileByPlatform=" + mobileLayoutByPlatform + " mobileByMediaFallback=" + mobileLayoutByMediaFallback + " useMobileMainLayout=" + useMobileMainLayout + " adaptiveCompactMode=" + adaptiveCompactMode + " selectedLayout=" + activeMainLayout);
+    }
 
     autoAttachRuntimeEvents: true
     globalEventListenersEnabled: true
@@ -88,16 +93,20 @@ LV.ApplicationWindow {
 
     Component.onCompleted: {
         clampPreferredSizes();
+        reportLayoutBranch("completed");
         if (applicationWindow.onboardingVisible)
             onboardingSubWindow.show();
     }
     onBodyHeightChanged: clampPreferredSizes()
+    onUseMobileMainLayoutChanged: reportLayoutBranch("useMobileMainLayoutChanged")
 
     Loader {
         id: mainLayoutLoader
 
         anchors.fill: parent
-        sourceComponent: applicationWindow.useMobileMainLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent
+        sourceComponent: applicationWindow.activeMainLayout === "mobile" ? mobileMainLayoutComponent : desktopMainLayoutComponent
+
+        onSourceComponentChanged: applicationWindow.reportLayoutBranch("loaderSourceChanged")
     }
     Component {
         id: desktopMainLayoutComponent
@@ -141,12 +150,15 @@ LV.ApplicationWindow {
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
+                    bookmarksViewModel: (typeof bookmarksHierarchyViewModel !== "undefined") ? bookmarksHierarchyViewModel : null
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: applicationWindow.adaptiveCompactMode
                     contentPanelColor: applicationWindow.contentPanelColor
                     contentsDisplayColor: applicationWindow.contentsDisplayColor
                     drawerColor: applicationWindow.drawerColor
                     drawerHeight: applicationWindow.drawerHeight
+                    eventViewModel: (typeof eventHierarchyViewModel !== "undefined") ? eventHierarchyViewModel : null
+                    libraryViewModel: (typeof libraryHierarchyViewModel !== "undefined") ? libraryHierarchyViewModel : null
                     listViewColor: applicationWindow.listViewColor
                     listViewWidth: applicationWindow.listViewWidth
                     minContentWidth: applicationWindow.minContentWidth
@@ -155,6 +167,10 @@ LV.ApplicationWindow {
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
+                    presetViewModel: (typeof presetHierarchyViewModel !== "undefined") ? presetHierarchyViewModel : null
+                    progressViewModel: (typeof progressHierarchyViewModel !== "undefined") ? progressHierarchyViewModel : null
+                    projectsViewModel: (typeof projectsHierarchyViewModel !== "undefined") ? projectsHierarchyViewModel : null
+                    resourcesViewModel: (typeof resourcesHierarchyViewModel !== "undefined") ? resourcesHierarchyViewModel : null
                     rightPanelColor: applicationWindow.rightPanelColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.sidebarColor
@@ -162,6 +178,10 @@ LV.ApplicationWindow {
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
 
+                    onActiveToolbarIndexChangeRequested: function (index) {
+                        if (index >= 0 && index !== applicationWindow.hierarchyActiveToolbarIndex)
+                            applicationWindow.hierarchyActiveToolbarIndex = index;
+                    }
                     onDrawerHeightDragRequested: function (value) {
                         if (value !== applicationWindow.preferredDrawerHeight)
                             applicationWindow.preferredDrawerHeight = value;
@@ -198,6 +218,7 @@ LV.ApplicationWindow {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: LV.Theme.panelBackground10
+            statusPlaceholderText: "Placeholder"
         }
     }
     Window {

@@ -26,6 +26,7 @@ private
     void deleteSelectedFolder_removesDescendantSubtree();
     void loadFromWshub_buildsAllDraftTodayBuckets();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
+    void loadFromWshub_usesFoldersFileForSidebarItems();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
 };
@@ -65,6 +66,23 @@ namespace
         }
         text += QStringLiteral("    </folders>\n");
         text += QStringLiteral("  </head>\n");
+        text += QStringLiteral("</contents>\n");
+        return text;
+    }
+
+    QString makeWsnBodyText(const QString& bodyInnerXml)
+    {
+        QString text;
+        text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
+        text += QStringLiteral("<contents id=\"test-note\">\n");
+        text += QStringLiteral("  <body>\n");
+        text += bodyInnerXml;
+        if (!bodyInnerXml.endsWith(QLatin1Char('\n')))
+        {
+            text += QLatin1Char('\n');
+        }
+        text += QStringLiteral("  </body>\n");
         text += QStringLiteral("</contents>\n");
         return text;
     }
@@ -143,6 +161,12 @@ namespace
         {
             return false;
         }
+        if (!writeUtf8File(
+            QDir(noteAPath).filePath(QStringLiteral("Alpha.wsnbody")),
+            makeWsnBodyText(QStringLiteral("    <paragraph>Alpha body summary.</paragraph>\n"))))
+        {
+            return false;
+        }
 
         if (!writeUtf8File(
             QDir(noteBPath).filePath(QStringLiteral("Beta.wsnhead")),
@@ -155,6 +179,12 @@ namespace
         {
             return false;
         }
+        if (!writeUtf8File(
+            QDir(noteBPath).filePath(QStringLiteral("Beta.wsnbody")),
+            makeWsnBodyText(QStringLiteral("    <paragraph>Beta <bold>body</bold> summary.</paragraph>\n"))))
+        {
+            return false;
+        }
 
         if (!writeUtf8File(
             QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnhead")),
@@ -164,6 +194,12 @@ namespace
                 oldText,
                 oldText,
                 {})))
+        {
+            return false;
+        }
+        if (!writeUtf8File(
+            QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnbody")),
+            makeWsnBodyText(QStringLiteral("    <paragraph>Gamma body summary.</paragraph>\n"))))
         {
             return false;
         }
@@ -403,6 +439,16 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
                  ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleTextRole)
                  .toString(),
         QStringLiteral("Alpha Note"));
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::SummaryTextRole)
+                 .toString(),
+        QStringLiteral("Alpha body summary."));
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::SummaryTextRole)
+                 .toString(),
+        QStringLiteral("Beta body summary."));
 
     viewModel.setSelectedIndex(4);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
@@ -436,6 +482,49 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
 
     QCOMPARE(highlightedCount, 1);
     QCOMPARE(highlightedTitle, QStringLiteral("Beta Note"));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+
+    const QString foldersFilePath = QDir(hubDir.filePath(contentsDirs.first())).filePath(QStringLiteral(
+        "Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\"id\": \"Research\", \"label\": \"Research\", \"depth\": 0},\n"
+        "    {\"id\": \"Research/Competitor\", \"label\": \"Competitor\", \"depth\": 1},\n"
+        "    {\"id\": \"Brand\", \"label\": \"Brand\", \"depth\": 0}\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Research"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        1);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Brand"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory()

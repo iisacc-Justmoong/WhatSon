@@ -1,0 +1,36 @@
+{
+    "version": 1,
+    "schema": "whatson.folders.tree",
+    "folders": [
+        {
+            "id": "Research",
+            "label": "Research",
+            "depth": 0
+        },
+        {
+            "id": "Research/Competitor",
+            "label": "Competitor",
+            "depth": 1
+        },
+        {
+            "id": "Research/Competitor/Pricing",
+            "label": "Pricing",
+            "depth": 2
+        },
+        {
+            "id": "Brand",
+            "label": "Brand",
+            "depth": 0
+        },
+        {
+            "id": "Brand/Campaign",
+            "label": "Campaign",
+            "depth": 1
+        },
+        {
+            "id": "Product",
+            "label": "Product",
+            "depth": 0
+        }
+    ]
+}

@@ -57,6 +57,7 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
         QStringLiteral("setDepthItems.begin"),
         QStringLiteral("count=%1").arg(depthItems.size()));
     m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Project"));
+    syncDomainStoreFromItems();
     syncModel();
     setSelectedIndex(-1);
 }
@@ -66,13 +67,82 @@ QVariantList ProjectsHierarchyViewModel::depthItems() const
     return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
 }
 
+QString ProjectsHierarchyViewModel::itemLabel(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+
+    return m_items.at(index).label;
+}
+
+bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!renameEnabled())
+    {
+        return false;
+    }
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+    if (m_items.at(index).accent && m_items.at(index).depth == 0)
+    {
+        return false;
+    }
+
+    if (!WhatSon::Hierarchy::Support::renameFlatItem(&m_items, index, displayName))
+    {
+        return false;
+    }
+
+    syncDomainStoreFromItems();
+    syncModel();
+    return true;
+}
+
+void ProjectsHierarchyViewModel::createFolder()
+{
+    if (!createFolderEnabled())
+    {
+        return;
+    }
+
+    const int insertIndex = WhatSon::Hierarchy::Support::createFlatFolder(
+        &m_items, m_selectedIndex, &m_createdFolderSequence);
+    if (insertIndex < 0)
+    {
+        return;
+    }
+
+    syncDomainStoreFromItems();
+    syncModel();
+    setSelectedIndex(insertIndex);
+}
+
+void ProjectsHierarchyViewModel::deleteSelectedFolder()
+{
+    if (!deleteFolderEnabled())
+    {
+        return;
+    }
+
+    const int nextSelectedIndex = WhatSon::Hierarchy::Support::deleteFlatSubtree(&m_items, m_selectedIndex);
+    syncDomainStoreFromItems();
+    syncModel();
+    setSelectedIndex(nextSelectedIndex);
+}
+
 void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)
 {
     m_projectNames = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(projectNames));
+    m_store.setProjectNames(m_projectNames);
     m_items = WhatSon::Hierarchy::Support::buildBucketItems(
         QStringLiteral("Projects"),
         m_projectNames,
         QStringLiteral("Project"));
+    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -80,6 +150,27 @@ void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)
 QStringList ProjectsHierarchyViewModel::projectNames() const
 {
     return m_projectNames;
+}
+
+bool ProjectsHierarchyViewModel::renameEnabled() const noexcept
+{
+    return true;
+}
+
+bool ProjectsHierarchyViewModel::createFolderEnabled() const noexcept
+{
+    return true;
+}
+
+bool ProjectsHierarchyViewModel::deleteFolderEnabled() const noexcept
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+    {
+        return false;
+    }
+
+    const FlatHierarchyItem& selectedItem = m_items.at(m_selectedIndex);
+    return !(selectedItem.accent && selectedItem.depth == 0);
 }
 
 bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -120,9 +211,8 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             return false;
         }
 
-        WhatSonProjectsHierarchyStore store;
         QString parseError;
-        if (!parser.parse(rawText, &store, &parseError))
+        if (!parser.parse(rawText, &m_store, &parseError))
         {
             if (errorMessage != nullptr)
             {
@@ -131,7 +221,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             return false;
         }
 
-        for (const QString& value : store.projectNames())
+        for (const QString& value : m_store.projectNames())
         {
             aggregated.push_back(value);
         }
@@ -162,4 +252,10 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 void ProjectsHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+}
+
+void ProjectsHierarchyViewModel::syncDomainStoreFromItems()
+{
+    m_projectNames = WhatSon::Hierarchy::Support::extractDomainLabelsFromItems(m_items);
+    m_store.setProjectNames(m_projectNames);
 }

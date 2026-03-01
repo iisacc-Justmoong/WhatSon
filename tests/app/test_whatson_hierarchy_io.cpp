@@ -90,7 +90,11 @@ void WhatSonHierarchyIoTest::parse_blueprintFiles()
             &projectsStore,
             &errorMessage),
         qPrintable(errorMessage));
-    QVERIFY(projectsStore.projectNames().isEmpty());
+    QCOMPARE(projectsStore.folderEntries().size(), 6);
+    QCOMPARE(projectsStore.folderEntries().at(0).label, QStringLiteral("Research"));
+    QCOMPARE(projectsStore.folderEntries().at(1).depth, 1);
+    QCOMPARE(projectsStore.folderEntries().at(2).depth, 2);
+    QVERIFY(projectsStore.projectNames().contains(QStringLiteral("Campaign")));
 
     WhatSonLibraryHierarchyStore libraryStore;
     WhatSonLibraryHierarchyParser libraryParser;
@@ -151,6 +155,27 @@ void WhatSonHierarchyIoTest::creatorParser_roundTrip()
         WhatSonProjectsHierarchyParser parser;
         QVERIFY2(parser.parse(text, &decoded, &errorMessage), qPrintable(errorMessage));
         QCOMPARE(decoded.projectNames(), store.projectNames());
+        QCOMPARE(decoded.folderEntries().size(), 2);
+        QCOMPARE(decoded.folderEntries().at(0).depth, 0);
+    }
+
+    {
+        WhatSonProjectsHierarchyStore store;
+        store.setFolderEntries({
+            {QStringLiteral("Brand"), QStringLiteral("Brand"), 0},
+            {QStringLiteral("Brand/Social"), QStringLiteral("Social"), 1},
+            {QStringLiteral("Brand/Social/YouTube"), QStringLiteral("YouTube"), 2}
+        });
+        WhatSonProjectsHierarchyCreator creator;
+        const QString text = creator.createText(store);
+
+        WhatSonProjectsHierarchyStore decoded;
+        WhatSonProjectsHierarchyParser parser;
+        QVERIFY2(parser.parse(text, &decoded, &errorMessage), qPrintable(errorMessage));
+        QCOMPARE(decoded.folderEntries().size(), 3);
+        QCOMPARE(decoded.folderEntries().at(1).id, QStringLiteral("Brand/Social"));
+        QCOMPARE(decoded.folderEntries().at(2).depth, 2);
+        QVERIFY(decoded.projectNames().contains(QStringLiteral("YouTube")));
     }
 
     {

@@ -9,8 +9,9 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Adaptive Layout
 
-- `src/app/qml/Main.qml` selects `MobileNormalLayout` when runtime OS is iOS/Android, with media-query fallback for
-  mobile breakpoints.
+- `src/app/qml/Main.qml` classifies runtime platform via `Qt.platform.os`, resolves an explicit
+  `desktop/mobile` main-layout branch, and selects `MobileNormalLayout` on iOS/Android with media-query fallback for
+  desktop mobile breakpoints.
 
 ## Search Input Behavior
 
@@ -173,6 +174,12 @@ Filter only debug lines during a run:
 `src/app/file/hierarchy` now includes per-domain getter/setter store + parser + creator components
 for hub/note hierarchy payloads.
 
+- Sidebar routing no longer depends on a shared `SidebarSelectionStore`; QML binds directly to each hierarchy
+  viewmodel context (`libraryHierarchyViewModel`, `projectsHierarchyViewModel`, etc.).
+- Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
+  `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
+- Bucket header rows (`accent=true`, `depth=0`) are treated as structural labels and are excluded from
+  `renameItem`/`deleteSelectedFolder` targets.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
@@ -182,36 +189,50 @@ for hub/note hierarchy payloads.
 - `event`: `WhatSonEventHierarchy{Store,Parser,Creator}` (`Event.wsevent`)
 - `preset`: `WhatSonPresetHierarchy{Store,Parser,Creator}` (`Preset.wspreset`)
 
+Folders hierarchy file behavior (Library sidebar):
+
+- `Folders.wsfolders` supports tree-style JSON with `schema: "whatson.folders.tree"` and
+  `folders: [{id, label, depth}]`.
+- Legacy list/object formats are still accepted and normalized to depth entries.
+
 Library runtime classification behavior:
 
 - `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, `title`, created/modified
   timestamps, and related fields)
+- `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses it as note-list summary text
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
 - `Draft`: filters notes where `<folders>` resolves to an empty list
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
 
 ## Unified Build And Launch Automation
 
-`scripts/build_all.py` is a single entrypoint that runs the currently validated workflow:
+`scripts/build_all.py` now orchestrates platform-split scripts:
 
-- Build and launch on the current development machine.
-- Build, install, and launch on a connected Android physical device.
-- Build `.app`, install, and launch on a connected iOS physical device.
-- Export an Android Studio project artifact.
+- `scripts/build_host.py`: build + launch on the current development machine
+- `scripts/build_android.py`: build + install + launch on Android, then export Android Studio artifact
+- `scripts/build_ios.py`: build + install + launch on connected iOS physical device
 
-Default run (parallel):
+Default run (sequential to avoid peak CPU saturation):
 
 ```bash
 python3 scripts/build_all.py
 ```
 
-Task selection:
+Run a single platform script directly:
+
+```bash
+python3 scripts/build_host.py
+python3 scripts/build_android.py
+python3 scripts/build_ios.py --ios-device "<UDID-or-Device-Name>"
+```
+
+Task selection through orchestrator:
 
 ```bash
 python3 scripts/build_all.py --tasks host,android,ios
 python3 scripts/build_all.py --tasks host --no-host-run
-python3 scripts/build_all.py --tasks ios --sequential
 python3 scripts/build_all.py --tasks ios --ios-device "<UDID-or-Device-Name>"
+python3 scripts/build_all.py --tasks host,android,ios --parallel
 ```
 
 Behavior by OS:
@@ -240,7 +261,7 @@ It is intended to prove that the same UI codebase is built and launched across p
 
 What it does:
 
-- Runs `build_all.py` sequentially with clean build directories.
+- Runs `build_all.py` sequentially with clean build directories (which internally calls platform-split scripts).
 - Verifies shell-layout QML cache files exist in host and Android build outputs.
 - Runs host runtime smoke (launch + short liveness window).
 - Verifies Android runtime state (`com.lvrs.whatson` resumed) and captures screenshot artifact.

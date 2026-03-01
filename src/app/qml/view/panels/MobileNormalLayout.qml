@@ -8,6 +8,7 @@ Item {
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
     property color hintColor: LV.Theme.descriptionColor
+    property string statusPlaceholderText: "Placeholder"
     property color titleColor: LV.Theme.titleHeaderColor
 
     Rectangle {
@@ -113,7 +114,7 @@ Item {
                                 font.family: "Pretendard"
                                 font.pixelSize: 12
                                 font.weight: 500
-                                text: ""
+                                text: mobileNormalLayout.statusPlaceholderText
                             }
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter

@@ -288,4 +288,154 @@ namespace WhatSon::Hierarchy::Support
 
         return items;
     }
+
+    inline void applyChevronByDepth(QVector<FlatHierarchyItem>* items)
+    {
+        if (items == nullptr)
+        {
+            return;
+        }
+
+        for (int index = 0; index < items->size(); ++index)
+        {
+            const int nextIndex = index + 1;
+            const bool hasChild = nextIndex < items->size() && items->at(nextIndex).depth > items->at(index).depth;
+            (*items)[index].showChevron = items->at(index).showChevron && hasChild;
+        }
+    }
+
+    inline int nextGeneratedFolderSequence(const QVector<FlatHierarchyItem>& items)
+    {
+        static const QRegularExpression folderPattern(QStringLiteral("^Folder(\\d+)$"));
+
+        int maxSequence = 0;
+        for (const FlatHierarchyItem& item : items)
+        {
+            const QRegularExpressionMatch match = folderPattern.match(item.label);
+            if (!match.hasMatch())
+            {
+                continue;
+            }
+
+            bool converted = false;
+            const int value = match.captured(1).toInt(&converted);
+            if (converted)
+            {
+                maxSequence = std::max(maxSequence, value);
+            }
+        }
+
+        return maxSequence + 1;
+    }
+
+    inline bool renameFlatItem(QVector<FlatHierarchyItem>* items, int index, const QString& displayName)
+    {
+        if (items == nullptr || index < 0 || index >= items->size())
+        {
+            return false;
+        }
+
+        const QString trimmedName = displayName.trimmed();
+        if (trimmedName.isEmpty())
+        {
+            return false;
+        }
+
+        if (items->at(index).label == trimmedName)
+        {
+            return true;
+        }
+
+        (*items)[index].label = trimmedName;
+        return true;
+    }
+
+    inline bool isBucketHeaderItem(const FlatHierarchyItem& item)
+    {
+        return item.depth == 0 && item.accent;
+    }
+
+    inline int createFlatFolder(QVector<FlatHierarchyItem>* items, int selectedIndex, int* ioFolderSequence)
+    {
+        if (items == nullptr || ioFolderSequence == nullptr)
+        {
+            return -1;
+        }
+
+        int insertIndex = items->size();
+        int folderDepth = 0;
+
+        if (selectedIndex >= 0 && selectedIndex < items->size())
+        {
+            const int selectedDepth = items->at(selectedIndex).depth;
+            folderDepth = selectedDepth + 1;
+
+            insertIndex = selectedIndex + 1;
+            while (insertIndex < items->size() && items->at(insertIndex).depth > selectedDepth)
+            {
+                ++insertIndex;
+            }
+        }
+
+        FlatHierarchyItem newItem;
+        newItem.depth = folderDepth;
+        newItem.label = QStringLiteral("Folder%1").arg((*ioFolderSequence)++);
+        newItem.accent = false;
+        newItem.expanded = false;
+        newItem.showChevron = true;
+
+        items->insert(insertIndex, std::move(newItem));
+        applyChevronByDepth(items);
+        return insertIndex;
+    }
+
+    inline int deleteFlatSubtree(QVector<FlatHierarchyItem>* items, int selectedIndex)
+    {
+        if (items == nullptr || selectedIndex < 0 || selectedIndex >= items->size())
+        {
+            return -1;
+        }
+
+        const int startIndex = selectedIndex;
+        const int baseDepth = items->at(startIndex).depth;
+
+        int removeCount = 1;
+        while (startIndex + removeCount < items->size() && items->at(startIndex + removeCount).depth > baseDepth)
+        {
+            ++removeCount;
+        }
+
+        items->remove(startIndex, removeCount);
+        applyChevronByDepth(items);
+
+        if (items->isEmpty())
+        {
+            return -1;
+        }
+        return std::min(startIndex, static_cast<int>(items->size() - 1));
+    }
+
+    inline QStringList extractDomainLabelsFromItems(const QVector<FlatHierarchyItem>& items)
+    {
+        QStringList labels;
+        labels.reserve(items.size());
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            const FlatHierarchyItem& item = items.at(index);
+            if (index == 0 && item.depth == 0 && item.accent)
+            {
+                continue;
+            }
+
+            const QString label = item.label.trimmed();
+            if (label.isEmpty() || labels.contains(label))
+            {
+                continue;
+            }
+            labels.push_back(label);
+        }
+
+        return labels;
+    }
 } // namespace WhatSon::Hierarchy::Support

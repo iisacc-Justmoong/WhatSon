@@ -8,6 +8,8 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include <algorithm>
+
 namespace
 {
     constexpr auto kScope = "progress.viewmodel";
@@ -62,6 +64,9 @@ void ProgressHierarchyViewModel::setSelectedIndex(int index)
 void ProgressHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
     m_items = WhatSon::Hierarchy::Support::parseDepthItems(depthItems, QStringLiteral("Progress"));
+    syncProgressStatesFromItems();
+    syncProgressStore();
+    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -71,11 +76,88 @@ QVariantList ProgressHierarchyViewModel::depthItems() const
     return WhatSon::Hierarchy::Support::serializeDepthItems(m_items);
 }
 
+QString ProgressHierarchyViewModel::itemLabel(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+
+    return m_items.at(index).label;
+}
+
+bool ProgressHierarchyViewModel::renameItem(int index, const QString& displayName)
+{
+    if (!renameEnabled() || index <= 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    const QString trimmed = displayName.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return false;
+    }
+
+    const int stateIndex = index - 1;
+    if (stateIndex < 0 || stateIndex >= m_progressStates.size())
+    {
+        return false;
+    }
+
+    m_progressStates[stateIndex] = trimmed;
+    rebuildItems();
+    syncProgressStore();
+    syncModel();
+    setSelectedIndex(index);
+    return true;
+}
+
+void ProgressHierarchyViewModel::createFolder()
+{
+    if (!createFolderEnabled())
+    {
+        return;
+    }
+
+    m_progressStates.push_back(QStringLiteral("Folder%1").arg(m_createdFolderSequence++));
+    rebuildItems();
+    syncProgressStore();
+    syncModel();
+    setSelectedIndex(m_items.size() - 1);
+}
+
+void ProgressHierarchyViewModel::deleteSelectedFolder()
+{
+    if (!deleteFolderEnabled())
+    {
+        return;
+    }
+
+    const int stateIndex = m_selectedIndex - 1;
+    if (stateIndex < 0 || stateIndex >= m_progressStates.size())
+    {
+        return;
+    }
+
+    m_progressStates.removeAt(stateIndex);
+    if (m_progressValue >= m_progressStates.size())
+    {
+        m_progressValue = std::max(0, static_cast<int>(m_progressStates.size()) - 1);
+    }
+    rebuildItems();
+    syncProgressStore();
+    syncModel();
+    setSelectedIndex(std::min(m_selectedIndex, static_cast<int>(m_items.size()) - 1));
+}
+
 void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList progressStates)
 {
     m_progressValue = progressValue;
     m_progressStates = WhatSon::Hierarchy::Support::sanitizeStringList(std::move(progressStates));
     rebuildItems();
+    syncProgressStore();
+    m_createdFolderSequence = WhatSon::Hierarchy::Support::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
 }
@@ -88,6 +170,21 @@ int ProgressHierarchyViewModel::progressValue() const noexcept
 QStringList ProgressHierarchyViewModel::progressStates() const
 {
     return m_progressStates;
+}
+
+bool ProgressHierarchyViewModel::renameEnabled() const noexcept
+{
+    return true;
+}
+
+bool ProgressHierarchyViewModel::createFolderEnabled() const noexcept
+{
+    return true;
+}
+
+bool ProgressHierarchyViewModel::deleteFolderEnabled() const noexcept
+{
+    return m_selectedIndex > 0;
 }
 
 bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -104,7 +201,6 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
     }
 
     WhatSonProgressHierarchyParser parser;
-    WhatSonProgressHierarchyStore store;
 
     bool fileFound = false;
     for (const QString& contentsDirectory : contentsDirectories)
@@ -129,7 +225,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         }
 
         QString parseError;
-        if (!parser.parse(rawText, &store, &parseError))
+        if (!parser.parse(rawText, &m_store, &parseError))
         {
             if (errorMessage != nullptr)
             {
@@ -143,7 +239,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
     if (!fileFound)
     {
         QString parseError;
-        if (!parser.parse(QString(), &store, &parseError))
+        if (!parser.parse(QString(), &m_store, &parseError))
         {
             if (errorMessage != nullptr)
             {
@@ -153,7 +249,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         }
     }
 
-    setProgressState(store.progressValue(), store.progressStates());
+    setProgressState(m_store.progressValue(), m_store.progressStates());
 
     WhatSon::Debug::trace(
         QString::fromLatin1(kScope),
@@ -192,6 +288,30 @@ void ProgressHierarchyViewModel::rebuildItems()
     }
 
     m_items = std::move(rebuilt);
+}
+
+void ProgressHierarchyViewModel::syncProgressStore()
+{
+    m_store.setProgressValue(m_progressValue);
+    m_store.setProgressStates(m_progressStates);
+}
+
+void ProgressHierarchyViewModel::syncProgressStatesFromItems()
+{
+    m_progressStates.clear();
+    for (int index = 1; index < m_items.size(); ++index)
+    {
+        const QString label = m_items.at(index).label.trimmed();
+        if (label.isEmpty() || m_progressStates.contains(label))
+        {
+            continue;
+        }
+        m_progressStates.push_back(label);
+    }
+    if (m_progressValue >= m_progressStates.size())
+    {
+        m_progressValue = std::max(0, static_cast<int>(m_progressStates.size()) - 1);
+    }
 }
 
 void ProgressHierarchyViewModel::syncModel()

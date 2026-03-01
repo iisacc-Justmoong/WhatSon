@@ -7,6 +7,7 @@ struct LibraryNoteRecord
 {
     QString noteId;
     QString title;
+    QString bodySummary;
     QString createdAt;
     QString lastModifiedAt;
     QString author;

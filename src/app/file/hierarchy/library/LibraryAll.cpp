@@ -219,6 +219,116 @@ namespace
         return {};
     }
 
+    QString resolveWsnbodyPath(const QString& noteDirectoryPath)
+    {
+        const QString normalizedNoteDirectoryPath = normalizePath(noteDirectoryPath);
+        if (normalizedNoteDirectoryPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QDir noteDir(normalizedNoteDirectoryPath);
+        if (!noteDir.exists())
+        {
+            return {};
+        }
+
+        const QString noteStem = QFileInfo(normalizedNoteDirectoryPath).completeBaseName().trimmed();
+        if (!noteStem.isEmpty())
+        {
+            const QString stemBodyPath = noteDir.filePath(noteStem + QStringLiteral(".wsnbody"));
+            if (QFileInfo(stemBodyPath).isFile())
+            {
+                return QDir::cleanPath(stemBodyPath);
+            }
+        }
+
+        const QString canonicalBodyPath = noteDir.filePath(QStringLiteral("note.wsnbody"));
+        if (QFileInfo(canonicalBodyPath).isFile())
+        {
+            return QDir::cleanPath(canonicalBodyPath);
+        }
+
+        const QFileInfoList bodyCandidates = noteDir.entryInfoList(
+            QStringList{QStringLiteral("*.wsnbody")},
+            QDir::Files,
+            QDir::Name);
+        QString draftBodyPath;
+        for (const QFileInfo& fileInfo : bodyCandidates)
+        {
+            const QString loweredName = fileInfo.fileName().toCaseFolded();
+            if (loweredName.contains(QStringLiteral(".draft.")))
+            {
+                if (draftBodyPath.isEmpty())
+                {
+                    draftBodyPath = fileInfo.absoluteFilePath();
+                }
+                continue;
+            }
+            return QDir::cleanPath(fileInfo.absoluteFilePath());
+        }
+
+        if (!draftBodyPath.isEmpty())
+        {
+            return QDir::cleanPath(draftBodyPath);
+        }
+        return {};
+    }
+
+    QString decodeXmlEntities(QString text)
+    {
+        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+        return text;
+    }
+
+    QString extractBodySummaryFromWsnbody(const QString& wsnbodyText)
+    {
+        static const QRegularExpression bodyPattern(
+            QStringLiteral(R"(<body\b[^>]*>([\s\S]*?)</body>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch bodyMatch = bodyPattern.match(wsnbodyText);
+        if (!bodyMatch.hasMatch())
+        {
+            return {};
+        }
+
+        QString innerText = bodyMatch.captured(1);
+        innerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+        innerText.replace(QRegularExpression(QStringLiteral(R"(<[^>]+>)")), QStringLiteral(" "));
+        innerText = decodeXmlEntities(std::move(innerText));
+        innerText.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
+        return innerText.trimmed();
+    }
+
+    QString readBodySummary(const LibraryNoteRecord& record)
+    {
+        const QString bodyPath = resolveWsnbodyPath(record.noteDirectoryPath);
+        if (bodyPath.isEmpty())
+        {
+            return {};
+        }
+
+        QString readError;
+        const QString bodyText = readUtf8File(bodyPath, &readError);
+        if (bodyText.isEmpty())
+        {
+            if (!readError.isEmpty())
+            {
+                WhatSon::Debug::trace(
+                    QStringLiteral("library.all"),
+                    QStringLiteral("scan.wsnbody.readFailed"),
+                    QStringLiteral("file=%1 reason=%2").arg(bodyPath, readError));
+            }
+            return {};
+        }
+
+        return extractBodySummaryFromWsnbody(bodyText);
+    }
+
     LibraryNoteRecord parseIndexRecord(const QJsonObject& object)
     {
         LibraryNoteRecord record;
@@ -471,6 +581,7 @@ namespace
         overwriteIfNonEmpty(&base->author, overlay.author);
         overwriteIfNonEmpty(&base->modifiedBy, overlay.modifiedBy);
         overwriteIfNonEmpty(&base->project, overlay.project);
+        overwriteIfNonEmpty(&base->bodySummary, overlay.bodySummary);
         overwriteListIfNonEmpty(&base->folders, overlay.folders);
         overwriteListIfNonEmpty(&base->tags, overlay.tags);
         base->progress = overlay.progress;
@@ -769,6 +880,7 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
     for (LibraryNoteRecord& record : mergedRecords)
     {
         normalizeRecordFallbacks(&record);
+        record.bodySummary = readBodySummary(record);
     }
 
     m_sourceWshubPath = normalizedHubPath;

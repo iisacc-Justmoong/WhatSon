@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE WHATSONNOTE>
+<contents id=${id}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="wsn-type" content="wsndiff" />
+    <meta name="wsndiff-format" content="git-unified-v1" />
+    <title>ExampleNote Diff History</title>
+  </head>
+  <body>
+    <history noteId="note://TestHub/Library/ExampleNote" head="9b7a2f0">
+      <entry revision="9b7a2f0" parent="71e04c6" author="Infra Bot" date="2026-02-28T10:42:11+09:00" selectionHint="stable">
+        <message>Finalize action items and risks</message>
+        <patch><![CDATA[
+diff --git a/ExampleNote.wsnbody b/ExampleNote.wsnbody
+index 71e04c6..9b7a2f0 100644
+--- a/ExampleNote.wsnbody
++++ b/ExampleNote.wsnbody
+@@ -1,10 +1,15 @@
+-# Infra Weekly (Draft)
++# Infra Weekly
+ Date: 2026-02-28
+ Owner: Platform Team
+ 
+ ## Decisions
+ - Adopt staged rollout for renderer update.
++- Keep fallback renderer for one release cycle.
+ 
+ ## Action Items
+-- [ ] Add perf dashboard alerts.
++- [x] Add perf dashboard alerts.
++- [ ] Validate mobile input latency after patch.
++
++## Risks
++- Regression risk: hierarchy activation race under async item generation.
+        ]]></patch>
+      </entry>
+
+      <entry revision="71e04c6" parent="2f31a9b" author="Infra Bot" date="2026-02-28T09:08:33+09:00" selectionHint="candidate">
+        <message>Add decision and owners section</message>
+        <patch><![CDATA[
+diff --git a/ExampleNote.wsnbody b/ExampleNote.wsnbody
+index 2f31a9b..71e04c6 100644
+--- a/ExampleNote.wsnbody
++++ b/ExampleNote.wsnbody
+@@ -1,7 +1,10 @@
+ # Infra Weekly (Draft)
+ Date: 2026-02-28
++
++Owner: Platform Team
+ 
+ ## Decisions
++- Adopt staged rollout for renderer update.
+ 
+ ## Action Items
+ - [ ] Add perf dashboard alerts.
+        ]]></patch>
+      </entry>
+
+      <entry revision="2f31a9b" parent="0000000" author="Infra Bot" date="2026-02-28T08:35:02+09:00" selectionHint="base">
+        <message>Initial note skeleton</message>
+        <patch><![CDATA[
+diff --git a/ExampleNote.wsnbody b/ExampleNote.wsnbody
+new file mode 100644
+index 0000000..2f31a9b
+--- /dev/null
++++ b/ExampleNote.wsnbody
+@@ -0,0 +1,7 @@
++# Infra Weekly (Draft)
++Date: 2026-02-28
++
++## Decisions
++
++## Action Items
++- [ ] Add perf dashboard alerts.
+        ]]></patch>
+      </entry>
+    </history>
+  </body>
+</contents>

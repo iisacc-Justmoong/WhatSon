@@ -434,7 +434,7 @@ def _write_brief(path: Path, env_sh_path: Path, build_all_wrapper_path: Path, ma
         "================================",
         "",
         f"1) Load environment: source {env_sh_path}",
-        f"2) Run unified build: {build_all_wrapper_path} --tasks host,android,ios",
+        f"2) Run platform orchestrator (sequential default): {build_all_wrapper_path} --tasks host,android,ios",
         "",
     ]
     if manual_actions:

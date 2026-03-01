@@ -9,7 +9,6 @@
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
-#include "sidebar/SidebarSelectionStore.hpp"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -346,15 +345,6 @@ int main(int argc, char* argv[])
     ProgressHierarchyViewModel progressHierarchyViewModel;
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
-    SidebarSelectionStore sidebarSelectionStore(
-        &libraryHierarchyViewModel,
-        &projectsHierarchyViewModel,
-        &bookmarksHierarchyViewModel,
-        &tagsHierarchyViewModel,
-        &resourcesHierarchyViewModel,
-        &progressHierarchyViewModel,
-        &eventHierarchyViewModel,
-        &presetHierarchyViewModel);
     WhatSonHubRuntimeStore hubRuntimeStore;
     const QString blueprintHubPath = resolveBlueprintHubPath();
     if (!blueprintHubPath.isEmpty())
@@ -453,7 +443,20 @@ int main(int argc, char* argv[])
             QStringLiteral("loadFromWshub.skipped"),
             QStringLiteral("no blueprint .wshub detected"));
     }
-    engine.rootContext()->setContextProperty(QStringLiteral("sidebarSelectionStore"), &sidebarSelectionStore);
+    engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("projectsHierarchyViewModel"), &projectsHierarchyViewModel);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("bookmarksHierarchyViewModel"),
+        &bookmarksHierarchyViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("tagsHierarchyViewModel"), &tagsHierarchyViewModel);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("resourcesHierarchyViewModel"),
+        &resourcesHierarchyViewModel);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("progressHierarchyViewModel"),
+        &progressHierarchyViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("eventHierarchyViewModel"), &eventHierarchyViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("presetHierarchyViewModel"), &presetHierarchyViewModel);
 
     QObject::connect(
         &engine,

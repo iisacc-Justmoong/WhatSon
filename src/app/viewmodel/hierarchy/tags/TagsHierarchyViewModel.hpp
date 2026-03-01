@@ -2,8 +2,10 @@
 
 #include "TagsHierarchyModel.hpp"
 #include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
+#include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 
 #include <QObject>
+#include <QVariantList>
 #include <QVector>
 
 class TagsHierarchyViewModel final : public QObject
@@ -12,6 +14,9 @@ class TagsHierarchyViewModel final : public QObject
 
     Q_PROPERTY(TagsHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
+    Q_PROPERTY(bool renameEnabled READ renameEnabled CONSTANT)
+    Q_PROPERTY(bool createFolderEnabled READ createFolderEnabled CONSTANT)
+    Q_PROPERTY(bool deleteFolderEnabled READ deleteFolderEnabled NOTIFY selectedIndexChanged)
 
 public:
     explicit TagsHierarchyViewModel(QObject* parent = nullptr);
@@ -22,8 +27,19 @@ public:
     int selectedIndex() const noexcept;
     Q_INVOKABLE void setSelectedIndex(int index);
 
+    Q_INVOKABLE void setDepthItems(const QVariantList& depthItems);
+    Q_INVOKABLE QVariantList depthItems() const;
+    Q_INVOKABLE QString itemLabel(int index) const;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
+    Q_INVOKABLE void createFolder();
+    Q_INVOKABLE void deleteSelectedFolder();
+
     void setTagDepthEntries(QVector<WhatSonTagDepthEntry> entries);
     QVector<WhatSonTagDepthEntry> tagDepthEntries() const;
+    bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    bool renameEnabled() const noexcept;
+    bool createFolderEnabled() const noexcept;
+    bool deleteFolderEnabled() const noexcept;
 
     signals  :
 
@@ -32,12 +48,17 @@ public:
     void selectedIndexChanged();
 
 private:
+    static int extractDepth(const QVariantMap& entryMap);
     static QString fallbackLabel(int ordinal);
     static QVector<TagsHierarchyItem> buildItems(const QVector<WhatSonTagDepthEntry>& entries);
+    static int nextFolderSequence(const QVector<WhatSonTagDepthEntry>& entries);
+    void syncStore();
     void syncModel();
 
     QVector<WhatSonTagDepthEntry> m_entries;
     QVector<TagsHierarchyItem> m_items;
+    WhatSonTagsHierarchyStore m_store;
     TagsHierarchyModel m_itemModel;
     int m_selectedIndex = -1;
+    int m_createdFolderSequence = 1;
 };

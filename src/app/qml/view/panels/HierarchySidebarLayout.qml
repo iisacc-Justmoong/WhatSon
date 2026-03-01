@@ -4,9 +4,15 @@ import LVRS 1.0 as LV
 Item {
     id: hierarchyView
 
-    readonly property int activeToolbarIndex: hierarchyView.selectionStore ? hierarchyView.selectionStore.activeIndex : 0
+    property int activeToolbarIndex: 0
+    property var bookmarksViewModel: null
+    property var eventViewModel: null
+    property var libraryViewModel: null
     property color panelColor: LV.Theme.panelBackground04
-    readonly property var selectionStore: (typeof sidebarSelectionStore !== "undefined" && sidebarSelectionStore) ? sidebarSelectionStore : null
+    property var presetViewModel: null
+    property var progressViewModel: null
+    property var projectsViewModel: null
+    property var resourcesViewModel: null
     readonly property string sidebarSource: {
         switch (hierarchyView.activeToolbarIndex) {
         case 1:
@@ -27,25 +33,55 @@ Item {
             return "sidebar/HierarchyViewLibrary.qml";
         }
     }
-    readonly property var toolbarIconNames: hierarchyView.selectionStore ? hierarchyView.selectionStore.toolbarIconNames : []
+    property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
+    signal activeToolbarIndexChangeRequested(int index)
+
+    function modelForToolbar(index) {
+        switch (index) {
+        case 1:
+            return hierarchyView.projectsViewModel;
+        case 2:
+            return hierarchyView.bookmarksViewModel;
+        case 3:
+            return hierarchyView.tagsViewModel;
+        case 4:
+            return hierarchyView.resourcesViewModel;
+        case 5:
+            return hierarchyView.progressViewModel;
+        case 6:
+            return hierarchyView.eventViewModel;
+        case 7:
+            return hierarchyView.presetViewModel;
+        default:
+            return hierarchyView.libraryViewModel;
+        }
+    }
     function syncSidebarProperties() {
         if (!sidebarLoader.item)
             return;
         sidebarLoader.item.activeToolbarIndex = hierarchyView.activeToolbarIndex;
-        sidebarLoader.item.hierarchyViewModel = hierarchyView.selectionStore;
+        sidebarLoader.item.hierarchyViewModel = hierarchyView.modelForToolbar(hierarchyView.activeToolbarIndex);
         sidebarLoader.item.panelColor = hierarchyView.panelColor;
         sidebarLoader.item.toolbarIconNames = hierarchyView.toolbarIconNames;
     }
     function updateActiveToolbarIndex(index) {
-        if (index < 0 || !hierarchyView.selectionStore || hierarchyView.selectionStore.activeIndex === index)
+        if (index < 0 || hierarchyView.activeToolbarIndex === index)
             return;
-        hierarchyView.selectionStore.activeIndex = index;
+        hierarchyView.activeToolbarIndex = index;
+        hierarchyView.activeToolbarIndexChangeRequested(index);
     }
 
     onActiveToolbarIndexChanged: hierarchyView.syncSidebarProperties()
+    onBookmarksViewModelChanged: hierarchyView.syncSidebarProperties()
+    onEventViewModelChanged: hierarchyView.syncSidebarProperties()
+    onLibraryViewModelChanged: hierarchyView.syncSidebarProperties()
     onPanelColorChanged: hierarchyView.syncSidebarProperties()
-    onSelectionStoreChanged: hierarchyView.syncSidebarProperties()
+    onPresetViewModelChanged: hierarchyView.syncSidebarProperties()
+    onProgressViewModelChanged: hierarchyView.syncSidebarProperties()
+    onProjectsViewModelChanged: hierarchyView.syncSidebarProperties()
+    onResourcesViewModelChanged: hierarchyView.syncSidebarProperties()
+    onTagsViewModelChanged: hierarchyView.syncSidebarProperties()
     onToolbarIconNamesChanged: hierarchyView.syncSidebarProperties()
 
     Loader {

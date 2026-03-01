@@ -2,6 +2,14 @@
 
 #include <QString>
 #include <QStringList>
+#include <QVector>
+
+struct WhatSonFolderDepthEntry
+{
+    QString id;
+    QString label;
+    int depth = 0;
+};
 
 class WhatSonProjectsHierarchyStore
 {
@@ -16,8 +24,11 @@ public:
 
     QStringList projectNames() const;
     void setProjectNames(QStringList values);
+    QVector<WhatSonFolderDepthEntry> folderEntries() const;
+    void setFolderEntries(QVector<WhatSonFolderDepthEntry> entries);
 
 private:
     QString m_hubPath;
     QStringList m_projectNames;
+    QVector<WhatSonFolderDepthEntry> m_folderEntries;
 };

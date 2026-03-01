@@ -17,6 +17,9 @@ class LibraryHierarchyViewModel final : public QObject
     Q_PROPERTY(LibraryHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
+    Q_PROPERTY(bool renameEnabled READ renameEnabled CONSTANT)
+    Q_PROPERTY(bool createFolderEnabled READ createFolderEnabled CONSTANT)
+    Q_PROPERTY(bool deleteFolderEnabled READ deleteFolderEnabled NOTIFY selectedIndexChanged)
 
 public:
     explicit LibraryHierarchyViewModel(QObject* parent = nullptr);
@@ -32,6 +35,9 @@ public:
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const;
     Q_INVOKABLE bool renameItem(int index, const QString& displayName);
+    bool renameEnabled() const noexcept;
+    bool createFolderEnabled() const noexcept;
+    bool deleteFolderEnabled() const noexcept;
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
 
     Q_INVOKABLE void createFolder();
@@ -81,6 +87,7 @@ private:
     QVector<IndexedBucketRange> m_bucketRanges;
     QVector<QString> m_rowNoteIds;
     bool m_runtimeIndexLoaded = false;
+    bool m_foldersHierarchyLoaded = false;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
 };
