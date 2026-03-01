@@ -7,6 +7,11 @@ Item {
 
     signal createFileRequested
     signal selectFileRequested
+    signal viewHookRequested
+
+    function requestViewHook() {
+        viewHookRequested();
+    }
 
     Rectangle {
         anchors.fill: parent

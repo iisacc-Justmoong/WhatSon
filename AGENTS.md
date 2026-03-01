@@ -141,6 +141,8 @@ An exception is allowed only when all conditions are satisfied.
 3. `cmake --build build --target WhatSon_daemon -j` passes.
 4. `build/src/daemon/WhatSon_daemon --healthcheck` returns `status=ok`.
 5. Updated QML keeps consistent LVRS imports and component usage.
+6. Model/viewmodel/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
+   function in QML views).
 
 ## Maintenance Rules
 
@@ -148,6 +150,8 @@ An exception is allowed only when all conditions are satisfied.
 - Keep C++ entrypoints minimal and focused.
 - Prefer LVRS `Theme` for design tokens.
 - Keep command examples and real output paths synchronized in docs.
+- Keep model/viewmodel/view interfaces event-driven: every model, viewmodel, and view must expose at least one signal
+  and one slot/hook entrypoint.
 
 ## Troubleshooting Baseline
 

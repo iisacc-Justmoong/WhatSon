@@ -4,6 +4,12 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: addNewBar
 
+    signal viewHookRequested
+
+    function requestViewHook() {
+        viewHookRequested();
+    }
+
     spacing: 0
 
     LV.IconButton {

@@ -4,6 +4,12 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: calendarBar
 
+    signal viewHookRequested
+
+    function requestViewHook() {
+        viewHookRequested();
+    }
+
     spacing: 2
 
     LV.IconButton {
