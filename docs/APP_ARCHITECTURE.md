@@ -284,7 +284,7 @@ Detected package conventions:
           timestamps,
           participant list, and related summary attributes)
 - Hierarchy/auxiliary files (typically under `*.wscontents`):
-    - `Folders.wsfolders` (folder depth tree)
+    - `Folders.wsfolders` (hierarchical folder tree JSON; runtime computes depth from tree position)
     - `Tags.wstags` (tag tree or flat list)
     - `Bookmarks.wsbookmarks` (bookmark hierarchy source)
     - `Progress.wsprogress` (progress state domain)

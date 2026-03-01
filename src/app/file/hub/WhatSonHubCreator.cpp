@@ -380,7 +380,7 @@ bool WhatSonHubCreator::createHubScaffold(
         hubRootPath,
         joinPath(contentsDirectory, QStringLiteral("Folders.wsfolders")));
     const QString foldersText =
-        QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.projects.depth\",\n  \"folders\": []\n}\n");
+        QStringLiteral("{\n  \"version\": 1,\n  \"schema\": \"whatson.folders.tree\",\n  \"folders\": []\n}\n");
     if (!writeTextFile(foldersPath, foldersText, errorMessage))
     {
         WhatSon::Debug::traceSelf(this,

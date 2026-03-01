@@ -191,6 +191,7 @@ namespace
         entries.reserve(items.size());
         const int depthOffset =
             (!items.isEmpty() && items.first().accent && items.first().depth == 0) ? 1 : 0;
+        QStringList pathStack;
 
         for (const LibraryHierarchyItem& item : items)
         {
@@ -204,11 +205,34 @@ namespace
                 continue;
             }
 
+            int depth = std::max(0, item.depth - depthOffset);
+            if (depth > pathStack.size())
+            {
+                depth = pathStack.size();
+            }
+            while (pathStack.size() > depth)
+            {
+                pathStack.removeLast();
+            }
+
+            const QString parentPath = (depth > 0 && !pathStack.isEmpty()) ? pathStack.constLast() : QString();
+            const QString id = parentPath.isEmpty() ? label : parentPath + QLatin1Char('/') + label;
+
             WhatSonFolderDepthEntry entry;
-            entry.id = label;
+            entry.id = id;
             entry.label = label;
-            entry.depth = std::max(0, item.depth - depthOffset);
+            entry.depth = depth;
             entries.push_back(std::move(entry));
+
+            if (pathStack.size() <= depth)
+            {
+                pathStack.push_back(id);
+            }
+            else
+            {
+                pathStack[depth] = id;
+                pathStack = pathStack.mid(0, depth + 1);
+            }
         }
 
         return entries;

@@ -93,9 +93,11 @@ void WhatSonHierarchyIoTest::parse_blueprintFiles()
         qPrintable(errorMessage));
     QCOMPARE(projectsStore.folderEntries().size(), 6);
     QCOMPARE(projectsStore.folderEntries().at(0).label, QStringLiteral("Research"));
+    QCOMPARE(projectsStore.folderEntries().at(1).id, QStringLiteral("Research/Competitor"));
     QCOMPARE(projectsStore.folderEntries().at(1).depth, 1);
     QCOMPARE(projectsStore.folderEntries().at(2).depth, 2);
-    QVERIFY(projectsStore.projectNames().contains(QStringLiteral("Campaign")));
+    QVERIFY(projectsStore.projectNames().contains(QStringLiteral("Research")));
+    QVERIFY(projectsStore.projectNames().contains(QStringLiteral("Pricing")));
 
     WhatSonLibraryHierarchyStore libraryStore;
     WhatSonLibraryHierarchyParser libraryParser;

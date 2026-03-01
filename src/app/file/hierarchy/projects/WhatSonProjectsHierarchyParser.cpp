@@ -47,6 +47,91 @@ namespace
         return {};
     }
 
+    QString leafNameFromPath(const QString& path)
+    {
+        const QString normalized = path.trimmed();
+        if (normalized.isEmpty())
+        {
+            return {};
+        }
+
+        const int slashIndex = normalized.lastIndexOf(QLatin1Char('/'));
+        if (slashIndex < 0)
+        {
+            return normalized;
+        }
+
+        return normalized.mid(slashIndex + 1).trimmed();
+    }
+
+    void normalizeEntriesByDepthAndPath(QVector<WhatSonFolderDepthEntry>* entries)
+    {
+        if (entries == nullptr)
+        {
+            return;
+        }
+
+        QVector<WhatSonFolderDepthEntry> normalized;
+        normalized.reserve(entries->size());
+        QStringList pathStack;
+
+        for (WhatSonFolderDepthEntry entry : *entries)
+        {
+            entry.id = entry.id.trimmed();
+            entry.label = entry.label.trimmed();
+            if (entry.label.isEmpty() && !entry.id.isEmpty())
+            {
+                entry.label = leafNameFromPath(entry.id);
+            }
+            if (entry.id.isEmpty() && !entry.label.isEmpty())
+            {
+                entry.id = entry.label;
+            }
+            if (entry.id.isEmpty() || entry.label.isEmpty())
+            {
+                continue;
+            }
+
+            int depth = std::max(0, entry.depth);
+            if (depth > pathStack.size())
+            {
+                depth = pathStack.size();
+            }
+            while (pathStack.size() > depth)
+            {
+                pathStack.removeLast();
+            }
+            entry.depth = depth;
+
+            const QString parentPath = (depth > 0 && !pathStack.isEmpty()) ? pathStack.constLast() : QString();
+            if (!parentPath.isEmpty() && !entry.id.startsWith(parentPath + QLatin1Char('/')))
+            {
+                if (!entry.id.contains(QLatin1Char('/')))
+                {
+                    entry.id = parentPath + QLatin1Char('/') + entry.id;
+                }
+            }
+            if (entry.label.isEmpty())
+            {
+                entry.label = leafNameFromPath(entry.id);
+            }
+
+            normalized.push_back(entry);
+
+            if (pathStack.size() <= depth)
+            {
+                pathStack.push_back(entry.id);
+            }
+            else
+            {
+                pathStack[depth] = entry.id;
+                pathStack = pathStack.mid(0, depth + 1);
+            }
+        }
+
+        *entries = std::move(normalized);
+    }
+
     int parseDepthValue(const QJsonObject& object, int fallbackDepth)
     {
         auto parseIntField = [&object](const QString& key, int* outValue) -> bool
@@ -354,6 +439,7 @@ bool WhatSonProjectsHierarchyParser::parse(
             {
                 appendNodeRecursive(value, 0, &parsedEntries);
             }
+            normalizeEntriesByDepthAndPath(&parsedEntries);
             outStore->setFolderEntries(std::move(parsedEntries));
             return true;
         }
@@ -363,6 +449,7 @@ bool WhatSonProjectsHierarchyParser::parse(
             const QJsonObject object = document.object();
             if (parseRootObject(object, &parsedEntries))
             {
+                normalizeEntriesByDepthAndPath(&parsedEntries);
                 outStore->setFolderEntries(std::move(parsedEntries));
                 return true;
             }

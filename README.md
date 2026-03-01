@@ -217,8 +217,9 @@ for hub/note hierarchy payloads.
 Folders hierarchy file behavior (Library sidebar):
 
 - `Folders.wsfolders` supports tree-style JSON with `schema: "whatson.folders.tree"` and
-  `folders: [{id, label, depth}]`.
-- Legacy list/object formats are still accepted and normalized to depth entries.
+  `folders: [{id, label, children: [...] }]`.
+- `depth` is not a persisted file field; it is computed at parse/view-model mapping time for sidebar rendering.
+- Legacy list/object formats are still accepted and normalized into runtime depth entries.
 
 Library runtime classification behavior:
 

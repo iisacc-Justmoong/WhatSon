@@ -1,36 +1,36 @@
 {
-    "folders": [
+  "version": 1,
+  "schema": "whatson.folders.tree",
+  "folders": [
+    {
+      "id": "Research",
+      "label": "Research",
+      "children": [
         {
-            "depth": 0,
-            "id": "Research",
-            "label": "Research"
-        },
-        {
-            "depth": 1,
-            "id": "Competitor",
-            "label": "Competitor"
-        },
-        {
-            "depth": 2,
-            "id": "Pricing",
-            "label": "Pricing"
-        },
-        {
-            "depth": 0,
-            "id": "Brand",
-            "label": "Brand"
-        },
-        {
-            "depth": 1,
-            "id": "yugtftftyy",
-            "label": "yugtftftyy"
-        },
-        {
-            "depth": 0,
-            "id": "Product",
-            "label": "Product"
+          "id": "Research/Competitor",
+          "label": "Competitor",
+          "children": [
+            {
+              "id": "Research/Competitor/Pricing",
+              "label": "Pricing"
+            }
+          ]
         }
-    ],
-    "schema": "whatson.folders.tree",
-    "version": 1
+      ]
+    },
+    {
+      "id": "Brand",
+      "label": "Brand",
+      "children": [
+        {
+          "id": "Brand/yugtftftyy",
+          "label": "yugtftftyy"
+        }
+      ]
+    },
+    {
+      "id": "Product",
+      "label": "Product"
+    }
+  ]
 }

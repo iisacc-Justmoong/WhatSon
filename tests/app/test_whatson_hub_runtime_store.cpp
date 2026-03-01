@@ -56,7 +56,13 @@ namespace
 
         if (!writeUtf8File(
             QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders")),
-            "{\n  \"folders\": [{\"id\": \"Brand\", \"label\": \"Brand\", \"depth\": 0}]\n}\n"))
+            "{\n"
+            "  \"version\": 1,\n"
+            "  \"schema\": \"whatson.folders.tree\",\n"
+            "  \"folders\": [\n"
+            "    {\"id\": \"Brand\", \"label\": \"Brand\"}\n"
+            "  ]\n"
+            "}\n"))
         {
             return false;
         }

@@ -19,6 +19,7 @@ namespace
         entries.reserve(items.size());
         const int depthOffset =
             (!items.isEmpty() && items.first().accent && items.first().depth == 0) ? 1 : 0;
+        QStringList pathStack;
 
         for (const ProjectsHierarchyItem& item : items)
         {
@@ -32,14 +33,63 @@ namespace
                 continue;
             }
 
+            int depth = std::max(0, item.depth - depthOffset);
+            if (depth > pathStack.size())
+            {
+                depth = pathStack.size();
+            }
+            while (pathStack.size() > depth)
+            {
+                pathStack.removeLast();
+            }
+
+            const QString parentPath = (depth > 0 && !pathStack.isEmpty()) ? pathStack.constLast() : QString();
+            const QString id = parentPath.isEmpty() ? label : parentPath + QLatin1Char('/') + label;
+
             WhatSonFolderDepthEntry entry;
-            entry.id = label;
+            entry.id = id;
             entry.label = label;
-            entry.depth = std::max(0, item.depth - depthOffset);
+            entry.depth = depth;
             entries.push_back(std::move(entry));
+
+            if (pathStack.size() <= depth)
+            {
+                pathStack.push_back(id);
+            }
+            else
+            {
+                pathStack[depth] = id;
+                pathStack = pathStack.mid(0, depth + 1);
+            }
         }
 
         return entries;
+    }
+
+    QVector<ProjectsHierarchyItem> itemsFromFolderEntries(const QVector<WhatSonFolderDepthEntry>& entries)
+    {
+        QVector<ProjectsHierarchyItem> items;
+        items.reserve(entries.size());
+
+        for (const WhatSonFolderDepthEntry& entry : entries)
+        {
+            const QString label = entry.label.trimmed();
+            if (label.isEmpty())
+            {
+                continue;
+            }
+
+            ProjectsHierarchyItem item;
+            item.depth = std::max(0, entry.depth);
+            item.label = label;
+            item.accent = false;
+            item.expanded = false;
+            item.showChevron = true;
+            items.push_back(std::move(item));
+        }
+
+        WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&items);
+        return items;
     }
 }
 
@@ -336,7 +386,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         return false;
     }
 
-    QStringList aggregated;
+    QVector<WhatSonFolderDepthEntry> aggregatedEntries;
     bool fileFound = false;
 
     WhatSonProjectsHierarchyParser parser;
@@ -371,7 +421,8 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         }
 
         QString parseError;
-        if (!parser.parse(rawText, &m_store, &parseError))
+        WhatSonProjectsHierarchyStore parsedStore;
+        if (!parser.parse(rawText, &parsedStore, &parseError))
         {
             if (errorMessage != nullptr)
             {
@@ -385,9 +436,10 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             return false;
         }
 
-        for (const QString& value : m_store.projectNames())
+        const QVector<WhatSonFolderDepthEntry> parsedEntries = parsedStore.folderEntries();
+        for (const WhatSonFolderDepthEntry& entry : parsedEntries)
         {
-            aggregated.push_back(value);
+            aggregatedEntries.push_back(entry);
         }
     }
 
@@ -396,15 +448,28 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         m_foldersFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Folders.wsfolders"));
     }
 
-    setProjectNames(aggregated);
+    if (aggregatedEntries.isEmpty())
+    {
+        setProjectNames({});
+    }
+    else
+    {
+        m_store.setFolderEntries(std::move(aggregatedEntries));
+        m_projectNames = m_store.projectNames();
+        m_items = itemsFromFolderEntries(m_store.folderEntries());
+        m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
+        syncModel();
+        setSelectedIndex(-1);
+    }
 
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub"),
-                              QStringLiteral("path=%1 fileFound=%2 count=%3")
+                              QStringLiteral("path=%1 fileFound=%2 count=%3 entryCount=%4")
                               .arg(wshubPath)
                               .arg(fileFound ? QStringLiteral("1") : QStringLiteral("0"))
-                              .arg(m_projectNames.size()));
+                              .arg(m_projectNames.size())
+                              .arg(m_store.folderEntries().size()));
 
     if (WhatSon::Debug::isEnabled())
     {

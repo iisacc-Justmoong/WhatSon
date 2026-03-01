@@ -7,6 +7,37 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <algorithm>
+
+namespace
+{
+    struct FolderNode final
+    {
+        QString id;
+        QString label;
+        QVector<FolderNode> children;
+    };
+
+    QJsonObject serializeNode(const FolderNode& node)
+    {
+        QJsonObject object;
+        object.insert(QStringLiteral("id"), node.id);
+        object.insert(QStringLiteral("label"), node.label);
+
+        if (!node.children.isEmpty())
+        {
+            QJsonArray childArray;
+            for (const FolderNode& child : node.children)
+            {
+                childArray.push_back(serializeNode(child));
+            }
+            object.insert(QStringLiteral("children"), childArray);
+        }
+
+        return object;
+    }
+} // namespace
+
 WhatSonProjectsHierarchyCreator::WhatSonProjectsHierarchyCreator() = default;
 
 WhatSonProjectsHierarchyCreator::~WhatSonProjectsHierarchyCreator() = default;
@@ -18,15 +49,63 @@ QString WhatSonProjectsHierarchyCreator::targetRelativePath() const
 
 QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarchyStore& store) const
 {
-    QJsonArray values;
     const QVector<WhatSonFolderDepthEntry> entries = store.folderEntries();
+    QVector<FolderNode> roots;
+    roots.reserve(entries.size());
+    QVector<FolderNode*> stack;
+    stack.reserve(entries.size());
+
     for (const WhatSonFolderDepthEntry& entry : entries)
     {
-        QJsonObject row;
-        row.insert(QStringLiteral("id"), entry.id);
-        row.insert(QStringLiteral("label"), entry.label);
-        row.insert(QStringLiteral("depth"), entry.depth);
-        values.push_back(row);
+        const QString id = entry.id.trimmed();
+        const QString label = entry.label.trimmed();
+        if (id.isEmpty() || label.isEmpty())
+        {
+            continue;
+        }
+
+        int depth = std::max(0, entry.depth);
+        if (depth > stack.size())
+        {
+            depth = stack.size();
+        }
+        while (stack.size() > depth)
+        {
+            stack.removeLast();
+        }
+
+        FolderNode node;
+        node.id = id;
+        node.label = label;
+
+        FolderNode* insertedNode = nullptr;
+        if (depth == 0)
+        {
+            roots.push_back(std::move(node));
+            insertedNode = &roots.last();
+        }
+        else
+        {
+            FolderNode* parent = stack.at(depth - 1);
+            parent->children.push_back(std::move(node));
+            insertedNode = &parent->children.last();
+        }
+
+        if (stack.size() <= depth)
+        {
+            stack.push_back(insertedNode);
+        }
+        else
+        {
+            stack[depth] = insertedNode;
+            stack.resize(depth + 1);
+        }
+    }
+
+    QJsonArray values;
+    for (const FolderNode& node : roots)
+    {
+        values.push_back(serializeNode(node));
     }
 
     QJsonObject root;
