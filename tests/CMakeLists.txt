@@ -5,7 +5,6 @@ set(WHATSON_TEST_TARGETS)
 add_executable(whatson_hub_creator_tests
         app/test_whatson_workspace_hub_creator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonWorkspaceHubCreator.cpp
 )
 set_target_properties(whatson_hub_creator_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_hub_creator_tests

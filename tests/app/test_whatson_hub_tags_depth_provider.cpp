@@ -174,11 +174,13 @@ void WhatSonHubTagsDepthProviderTest::loadFromWshub_readsTagsFromNoteHeadersAndW
     QVERIFY2(provider.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
     const QVector<WhatSonTagDepthEntry> entries = provider.tagDepthEntries();
-    QCOMPARE(entries.size(), 2);
+    QCOMPARE(entries.size(), 3);
     QCOMPARE(entries.at(0).id, QStringLiteral("Brand"));
     QCOMPARE(entries.at(0).depth, 0);
     QCOMPARE(entries.at(1).id, QStringLiteral("Product/Beta"));
     QCOMPARE(entries.at(1).depth, 0);
+    QCOMPARE(entries.at(2).id, QStringLiteral("tag1"));
+    QCOMPARE(entries.at(2).depth, 0);
 
     QFile tagsFile(QDir(contentsPath).filePath(QStringLiteral("Tags.wstags")));
     QVERIFY(tagsFile.open(QIODevice::ReadOnly | QIODevice::Text));
@@ -189,9 +191,10 @@ void WhatSonHubTagsDepthProviderTest::loadFromWshub_readsTagsFromNoteHeadersAndW
     const QJsonObject rootObject = tagsDocument.object();
     QCOMPARE(rootObject.value(QStringLiteral("schema")).toString(), QStringLiteral("whatson.tags.tree"));
     const QJsonArray tagsArray = rootObject.value(QStringLiteral("tags")).toArray();
-    QCOMPARE(tagsArray.size(), 2);
+    QCOMPARE(tagsArray.size(), 3);
     QCOMPARE(tagsArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Brand"));
     QCOMPARE(tagsArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Product/Beta"));
+    QCOMPARE(tagsArray.at(2).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tag1"));
 }
 
 void WhatSonHubTagsDepthProviderTest::loadFromWshub_failsWhenNoTagsSourceExists()

@@ -1,5 +1,4 @@
 #include "WhatSonHubCreator.hpp"
-#include "WhatSonWorkspaceHubCreator.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -21,21 +20,6 @@ namespace
         {
         }
 
-        QString creatorName() const override
-        {
-            return QStringLiteral("HubCreatorProbe");
-        }
-
-        QStringList requiredRelativePaths() const override
-        {
-            return {};
-        }
-
-        bool createHub(const QString&, QString*, QString*) const override
-        {
-            return false;
-        }
-
         using WhatSonHubCreator::ensureDirectory;
         using WhatSonHubCreator::joinPath;
         using WhatSonHubCreator::sanitizeHubName;
@@ -47,7 +31,10 @@ class WhatSonWorkspaceHubCreatorTest final : public QObject
 {
     Q_OBJECT
 
-private slots:
+private
+    slots  :
+
+
     void sanitizeHubName_normalizesInput();
     void baseFileHelpers_createDirectoryAndFile();
     void createHub_createsWorkspacePackageAndManifest();
@@ -92,7 +79,7 @@ void WhatSonWorkspaceHubCreatorTest::createHub_createsWorkspacePackageAndManifes
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const WhatSonWorkspaceHubCreator creator(tempDir.path(), QStringLiteral("hubs"));
+    const WhatSonHubCreator creator(tempDir.path(), QStringLiteral("hubs"));
     QString packagePath;
     QString errorMessage;
     QVERIFY2(
@@ -121,7 +108,7 @@ void WhatSonWorkspaceHubCreatorTest::createHub_failsWhenHubAlreadyExists()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const WhatSonWorkspaceHubCreator creator(tempDir.path(), QStringLiteral("hubs"));
+    const WhatSonHubCreator creator(tempDir.path(), QStringLiteral("hubs"));
     QString packagePath;
     QString errorMessage;
     QVERIFY(creator.createHub(QStringLiteral("Alpha"), &packagePath, &errorMessage));
@@ -133,7 +120,7 @@ void WhatSonWorkspaceHubCreatorTest::createHub_failsWhenHubAlreadyExists()
 
 void WhatSonWorkspaceHubCreatorTest::createHub_failsWhenWorkspaceRootIsEmpty()
 {
-    const WhatSonWorkspaceHubCreator creator(QStringLiteral("   "), QStringLiteral("hubs"));
+    const WhatSonHubCreator creator(QStringLiteral("   "), QStringLiteral("hubs"));
     QString packagePath;
     QString errorMessage;
     QVERIFY(!creator.createHub(QStringLiteral("Alpha"), &packagePath, &errorMessage));
