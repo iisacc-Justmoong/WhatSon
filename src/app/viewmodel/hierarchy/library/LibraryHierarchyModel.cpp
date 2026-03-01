@@ -1,16 +1,16 @@
-#include "TagsHierarchyModel.hpp"
+#include "LibraryHierarchyModel.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 
 #include <utility>
 
-TagsHierarchyModel::TagsHierarchyModel(QObject* parent)
+LibraryHierarchyModel::LibraryHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::trace(QStringLiteral("tags.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::trace(QStringLiteral("library.model"), QStringLiteral("ctor"));
 }
 
-int TagsHierarchyModel::rowCount(const QModelIndex& parent) const
+int LibraryHierarchyModel::rowCount(const QModelIndex& parent) const
 {
     if (parent.isValid())
     {
@@ -20,18 +20,16 @@ int TagsHierarchyModel::rowCount(const QModelIndex& parent) const
     return m_items.size();
 }
 
-QVariant TagsHierarchyModel::data(const QModelIndex& index, int role) const
+QVariant LibraryHierarchyModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
     {
         return {};
     }
 
-    const TagsHierarchyItem& item = m_items.at(index.row());
+    const LibraryHierarchyItem& item = m_items.at(index.row());
     switch (role)
     {
-    case IdRole:
-        return item.id;
     case LabelRole:
         return item.label;
     case DepthRole:
@@ -48,10 +46,9 @@ QVariant TagsHierarchyModel::data(const QModelIndex& index, int role) const
     }
 }
 
-QHash<int, QByteArray> TagsHierarchyModel::roleNames() const
+QHash<int, QByteArray> LibraryHierarchyModel::roleNames() const
 {
     return {
-        {IdRole, "id"},
         {LabelRole, "label"},
         {DepthRole, "depth"},
         {IndentLevelRole, "indentLevel"},
@@ -61,10 +58,10 @@ QHash<int, QByteArray> TagsHierarchyModel::roleNames() const
     };
 }
 
-void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
+void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
 {
     WhatSon::Debug::trace(
-        QStringLiteral("tags.model"),
+        QStringLiteral("library.model"),
         QStringLiteral("setItems"),
         QStringLiteral("count=%1").arg(items.size()));
     beginResetModel();
@@ -72,7 +69,7 @@ void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
     endResetModel();
 }
 
-const QVector<TagsHierarchyItem>& TagsHierarchyModel::items() const noexcept
+const QVector<LibraryHierarchyItem>& LibraryHierarchyModel::items() const noexcept
 {
     return m_items;
 }

@@ -6,5 +6,5 @@ SidebarHierarchyView {
 
     defaultToolbarIndex: 2
     frameName: "HierarchyView-Bookmarks"
-    frameNodeId: "45:2902"
+    frameNodeId: "sidebar.hierarchy.bookmarks"
 }

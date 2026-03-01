@@ -6,5 +6,5 @@ SidebarHierarchyView {
 
     defaultToolbarIndex: 7
     frameName: "HierarchyView-Preset"
-    frameNodeId: "45:3727"
+    frameNodeId: "sidebar.hierarchy.preset"
 }

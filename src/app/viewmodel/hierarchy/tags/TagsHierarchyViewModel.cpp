@@ -1,6 +1,6 @@
 #include "TagsHierarchyViewModel.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 
 #include <algorithm>
 #include <utility>

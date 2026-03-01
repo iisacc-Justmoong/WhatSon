@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TagsHierarchyModel.hpp"
-#include "WhatSonTagDepthEntry.hpp"
+#include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
 
 #include <QObject>
 #include <QVector>
@@ -26,6 +26,7 @@ public:
     QVector<WhatSonTagDepthEntry> tagDepthEntries() const;
 
     signals  :
+
 
 
     void selectedIndexChanged();

@@ -141,7 +141,7 @@ Current trace coverage includes:
 - sidebar hierarchy per-section item model instantiation and activation path
 - sidebar selection store state transition and capabilities updates
 - Apple permission bridge request/callback flow
-- library placeholder object lifecycle (all/draft/today)
+- library note indexing and runtime classification lifecycle (`All`, `Draft`, `Today`)
 
 - Default: enabled
 - Disable explicitly:
@@ -175,6 +175,13 @@ for hub/note hierarchy payloads.
 - `progress`: `WhatSonProgressHierarchy{Store,Parser,Creator}` (`Progress.wsprogress`)
 - `event`: `WhatSonEventHierarchy{Store,Parser,Creator}` (`Event.wsevent`)
 - `preset`: `WhatSonPresetHierarchy{Store,Parser,Creator}` (`Preset.wspreset`)
+
+Library runtime classification behavior:
+
+- `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, `title`, created/modified
+  timestamps, and related fields)
+- `Draft`: filters notes where `<folders>` resolves to an empty list
+- `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
 
 ## Unified Build And Launch Automation
 

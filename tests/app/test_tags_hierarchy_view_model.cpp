@@ -1,4 +1,4 @@
-#include "hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
 #include <QtTest>
 
@@ -8,6 +8,7 @@ class TagsHierarchyViewModelTest final : public QObject
 
 private
     slots  :
+
 
 
     void defaultState_isEmpty();

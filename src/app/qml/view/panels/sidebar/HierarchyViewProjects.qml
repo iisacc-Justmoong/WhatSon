@@ -6,5 +6,5 @@ SidebarHierarchyView {
 
     defaultToolbarIndex: 1
     frameName: "HierarchyView-Projects"
-    frameNodeId: "45:2738"
+    frameNodeId: "sidebar.hierarchy.projects"
 }

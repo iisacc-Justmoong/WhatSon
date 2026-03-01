@@ -6,5 +6,5 @@ SidebarHierarchyView {
 
     defaultToolbarIndex: 6
     frameName: "HierarchyView-Event"
-    frameNodeId: "45:3562"
+    frameNodeId: "sidebar.hierarchy.event"
 }

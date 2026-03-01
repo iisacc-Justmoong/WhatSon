@@ -1,7 +1,8 @@
 #include "LibraryHierarchyViewModel.hpp"
 
-#include "WhatSonDebugTrace.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 
+#include <QFileInfo>
 #include <QRegularExpression>
 #include <QVariantMap>
 
@@ -14,6 +15,39 @@ namespace
     QString nextFolderName(int sequence)
     {
         return QStringLiteral("Folder%1").arg(sequence);
+    }
+
+    QString noteDisplayLabel(const LibraryNoteRecord& note)
+    {
+        QString primary = note.title.trimmed();
+        if (primary.isEmpty())
+        {
+            primary = note.noteId.trimmed();
+        }
+        if (primary.isEmpty() && !note.noteDirectoryPath.isEmpty())
+        {
+            primary = QFileInfo(note.noteDirectoryPath).completeBaseName();
+        }
+        if (primary.isEmpty())
+        {
+            primary = QStringLiteral("Untitled Note");
+        }
+
+        QStringList attributes;
+        if (!note.noteId.trimmed().isEmpty())
+        {
+            attributes.push_back(QStringLiteral("id=%1").arg(note.noteId.trimmed()));
+        }
+        if (!note.lastModifiedAt.trimmed().isEmpty())
+        {
+            attributes.push_back(QStringLiteral("modified=%1").arg(note.lastModifiedAt.trimmed()));
+        }
+
+        if (attributes.isEmpty())
+        {
+            return primary;
+        }
+        return QStringLiteral("%1 (%2)").arg(primary, attributes.join(QStringLiteral(", ")));
     }
 } // namespace
 
@@ -69,6 +103,21 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
         QStringLiteral("library.viewmodel"),
         QStringLiteral("setDepthItems.begin"),
         QStringLiteral("count=%1").arg(depthItems.size()));
+
+    if (depthItems.isEmpty() && m_runtimeIndexLoaded)
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("library.viewmodel"),
+            QStringLiteral("setDepthItems.useIndexedBuckets"),
+            QStringLiteral("all=%1 draft=%2 today=%3")
+            .arg(m_libraryAll.notes().size())
+            .arg(m_libraryDraft.notes().size())
+            .arg(m_libraryToday.notes().size()));
+        applyIndexedBuckets();
+        setSelectedIndex(-1);
+        return;
+    }
+
     QVector<LibraryHierarchyItem> parsedItems;
     parsedItems.reserve(depthItems.size());
 
@@ -87,6 +136,42 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
         QStringLiteral("library.viewmodel"),
         QStringLiteral("setDepthItems.success"),
         QStringLiteral("itemCount=%1 nextFolderSeq=%2").arg(m_items.size()).arg(m_createdFolderSequence));
+}
+
+bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
+{
+    QString indexError;
+    if (!m_libraryAll.indexFromWshub(wshubPath, &indexError))
+    {
+        m_libraryDraft.clear();
+        m_libraryToday.clear();
+        m_runtimeIndexLoaded = false;
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = indexError;
+        }
+        WhatSon::Debug::trace(
+            QStringLiteral("library.viewmodel"),
+            QStringLiteral("loadFromWshub.failed"),
+            QStringLiteral("path=%1 reason=%2").arg(wshubPath, indexError));
+        return false;
+    }
+
+    m_libraryDraft.rebuild(m_libraryAll.notes());
+    m_libraryToday.rebuild(m_libraryAll.notes());
+    m_runtimeIndexLoaded = true;
+
+    applyIndexedBuckets();
+    setSelectedIndex(-1);
+
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("loadFromWshub.success"),
+        QStringLiteral("all=%1 draft=%2 today=%3")
+        .arg(m_libraryAll.notes().size())
+        .arg(m_libraryDraft.notes().size())
+        .arg(m_libraryToday.notes().size()));
+    return true;
 }
 
 QVariantList LibraryHierarchyViewModel::depthItems() const
@@ -296,6 +381,41 @@ int LibraryHierarchyViewModel::nextFolderSequence(const QVector<LibraryHierarchy
     }
 
     return maxSequence + 1;
+}
+
+void LibraryHierarchyViewModel::applyIndexedBuckets()
+{
+    QVector<LibraryHierarchyItem> indexedItems;
+
+    auto appendBucket = [&indexedItems](const QString& label, const QVector<LibraryNoteRecord>& notes)
+    {
+        LibraryHierarchyItem bucket;
+        bucket.depth = 0;
+        bucket.accent = true;
+        bucket.expanded = true;
+        bucket.label = QStringLiteral("%1 (%2)").arg(label).arg(notes.size());
+        bucket.showChevron = !notes.isEmpty();
+        indexedItems.push_back(std::move(bucket));
+
+        for (const LibraryNoteRecord& note : notes)
+        {
+            LibraryHierarchyItem noteItem;
+            noteItem.depth = 1;
+            noteItem.accent = false;
+            noteItem.expanded = false;
+            noteItem.label = noteDisplayLabel(note);
+            noteItem.showChevron = false;
+            indexedItems.push_back(std::move(noteItem));
+        }
+    };
+
+    appendBucket(QStringLiteral("All"), m_libraryAll.notes());
+    appendBucket(QStringLiteral("Draft"), m_libraryDraft.notes());
+    appendBucket(QStringLiteral("Today"), m_libraryToday.notes());
+
+    m_items = std::move(indexedItems);
+    m_createdFolderSequence = nextFolderSequence(m_items);
+    syncModel();
 }
 
 void LibraryHierarchyViewModel::syncModel()

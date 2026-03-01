@@ -1,5 +1,12 @@
-#include "hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
 
+#include <QDate>
+#include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTemporaryDir>
 #include <QtTest>
 
 class LibraryHierarchyViewModelTest final : public QObject
@@ -10,12 +17,152 @@ private
     slots  :
 
 
+
     void defaultState_isEmptyAndCreatable();
     void setDepthItems_parsesDepthAndDpethKeys();
     void renameItem_updatesDisplayName();
     void createFolder_insertsAsChildOfSelectedSubtree();
     void deleteSelectedFolder_removesDescendantSubtree();
+    void loadFromWshub_buildsAllDraftTodayBuckets();
+    void setDepthItems_emptyInput_preservesIndexedBuckets();
 };
+
+namespace
+{
+    bool writeUtf8File(const QString& filePath, const QString& text)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            return false;
+        }
+        file.write(text.toUtf8());
+        return true;
+    }
+
+    QString makeWsnHeadText(
+        const QString& noteId,
+        const QString& title,
+        const QString& createdAt,
+        const QString& lastModifiedAt,
+        const QStringList& folders)
+    {
+        QString text;
+        text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
+        text += QStringLiteral("<contents id=\"%1\">\n").arg(noteId);
+        text += QStringLiteral("  <head>\n");
+        text += QStringLiteral("    <title>%1</title>\n").arg(title);
+        text += QStringLiteral("    <created>%1</created>\n").arg(createdAt);
+        text += QStringLiteral("    <lastModified>%1</lastModified>\n").arg(lastModifiedAt);
+        text += QStringLiteral("    <folders>\n");
+        for (const QString& folder : folders)
+        {
+            text += QStringLiteral("      <folder>%1</folder>\n").arg(folder);
+        }
+        text += QStringLiteral("    </folders>\n");
+        text += QStringLiteral("  </head>\n");
+        text += QStringLiteral("</contents>\n");
+        return text;
+    }
+
+    bool prepareIndexedLibraryHub(QString* outHubPath)
+    {
+        if (outHubPath == nullptr)
+        {
+            return false;
+        }
+
+        static QTemporaryDir tempDir;
+        if (!tempDir.isValid())
+        {
+            return false;
+        }
+
+        const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("LibraryHub.wshub"));
+        const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("LibraryHub.wscontents"));
+        const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+        const QString noteAPath = QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"));
+        const QString noteBPath = QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"));
+        const QString noteCPath = QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote"));
+        if (!QDir().mkpath(noteAPath) || !QDir().mkpath(noteBPath) || !QDir().mkpath(noteCPath))
+        {
+            return false;
+        }
+
+        const QString todayText = QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")) + QStringLiteral(
+            "-12-00-00");
+        const QString oldText = QStringLiteral("2024-01-01-00-00-00");
+
+        QJsonArray notesArray;
+        notesArray.append(QJsonObject{
+            {QStringLiteral("id"), QStringLiteral("note-a")},
+            {QStringLiteral("title"), QStringLiteral("Alpha Note")},
+            {QStringLiteral("lastModified"), oldText}
+        });
+        notesArray.append(QJsonObject{
+            {QStringLiteral("id"), QStringLiteral("note-b")},
+            {QStringLiteral("title"), QStringLiteral("Beta Note")},
+            {QStringLiteral("lastModified"), todayText}
+        });
+        notesArray.append(QJsonObject{
+            {QStringLiteral("id"), QStringLiteral("note-c")},
+            {QStringLiteral("title"), QStringLiteral("Gamma Note")},
+            {QStringLiteral("lastModified"), oldText}
+        });
+
+        QJsonObject root;
+        root.insert(QStringLiteral("version"), 1);
+        root.insert(QStringLiteral("schema"), QStringLiteral("whatson.library.index"));
+        root.insert(QStringLiteral("notes"), notesArray);
+
+        if (!writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented))))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+            QDir(noteAPath).filePath(QStringLiteral("Alpha.wsnhead")),
+            makeWsnHeadText(
+                QStringLiteral("note-a"),
+                QStringLiteral("Alpha Note"),
+                todayText,
+                oldText,
+                {})))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+            QDir(noteBPath).filePath(QStringLiteral("Beta.wsnhead")),
+            makeWsnHeadText(
+                QStringLiteral("note-b"),
+                QStringLiteral("Beta Note"),
+                oldText,
+                todayText,
+                {QStringLiteral("Workspace")})))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+            QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnhead")),
+            makeWsnHeadText(
+                QStringLiteral("note-c"),
+                QStringLiteral("Gamma Note"),
+                oldText,
+                oldText,
+                {})))
+        {
+            return false;
+        }
+
+        *outHubPath = hubPath;
+        return true;
+    }
+} // namespace
 
 void LibraryHierarchyViewModelTest::defaultState_isEmptyAndCreatable()
 {
@@ -147,6 +294,56 @@ void LibraryHierarchyViewModelTest::deleteSelectedFolder_removesDescendantSubtre
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("Sibling"));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_buildsAllDraftTodayBuckets()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("All (3)"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Draft (2)"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(7, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Today (2)"));
+
+    const QString allFirstLabel = viewModel.itemModel()
+                                           ->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::LabelRole)
+                                           .toString();
+    const QString allSecondLabel = viewModel.itemModel()
+                                            ->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole)
+                                            .toString();
+    const QString allThirdLabel = viewModel.itemModel()
+                                           ->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole)
+                                           .toString();
+    QVERIFY(allFirstLabel.startsWith(QStringLiteral("Alpha Note")));
+    QVERIFY(allSecondLabel.startsWith(QStringLiteral("Beta Note")));
+    QVERIFY(allThirdLabel.startsWith(QStringLiteral("Gamma Note")));
+}
+
+void LibraryHierarchyViewModelTest::setDepthItems_emptyInput_preservesIndexedBuckets()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setDepthItems({});
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("All (3)"));
 }
 
 QTEST_APPLESS_MAIN(LibraryHierarchyViewModelTest)

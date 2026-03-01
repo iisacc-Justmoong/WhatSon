@@ -6,5 +6,5 @@ SidebarHierarchyView {
 
     defaultToolbarIndex: 0
     frameName: "HierarchyView-Library"
-    frameNodeId: "32:602"
+    frameNodeId: "sidebar.hierarchy.library"
 }

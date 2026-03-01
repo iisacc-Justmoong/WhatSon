@@ -1,10 +1,10 @@
 #include "sidebar/SidebarHierarchyStore.hpp"
 #include "sidebar/SidebarSelectionStore.hpp"
 
-#include "hierarchy/library/LibraryHierarchyModel.hpp"
-#include "hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "hierarchy/tags/TagsHierarchyModel.hpp"
-#include "hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 
 #include <QtTest>
 

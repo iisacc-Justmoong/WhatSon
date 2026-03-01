@@ -1,8 +1,8 @@
 #include "SidebarSelectionStore.hpp"
 
 #include "../../file/WhatSonDebugTrace.hpp"
-#include "hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
 
 #include <algorithm>

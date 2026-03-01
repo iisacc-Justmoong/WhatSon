@@ -147,14 +147,17 @@ add_executable(whatson_sidebar_selection_store_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyViewModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.cpp
 )
 set_target_properties(whatson_sidebar_selection_store_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_sidebar_selection_store_tests
         PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
         ${CMAKE_SOURCE_DIR}/src/app/file
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
@@ -174,14 +177,18 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
 )
 set_target_properties(whatson_library_hierarchy_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_library_hierarchy_tests
         PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
         ${CMAKE_SOURCE_DIR}/src/app/file
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library
 )
 target_link_libraries(whatson_library_hierarchy_tests
         PRIVATE
@@ -193,14 +200,16 @@ list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
 
 add_executable(whatson_tags_hierarchy_tests
         app/test_tags_hierarchy_view_model.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyModel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/TagsHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.cpp
 )
 set_target_properties(whatson_tags_hierarchy_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_tags_hierarchy_tests
         PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
         ${CMAKE_SOURCE_DIR}/src/app/file
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags
 )
 target_link_libraries(whatson_tags_hierarchy_tests
         PRIVATE

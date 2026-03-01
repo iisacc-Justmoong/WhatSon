@@ -1,5 +1,5 @@
-#include "hierarchy/library/LibraryHierarchyViewModel.hpp"
-#include "hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
@@ -348,6 +348,24 @@ int main(int argc, char* argv[])
             QStringLiteral("main.runtime"),
             QStringLiteral("loadFromWshub.begin"),
             QStringLiteral("path=%1").arg(blueprintHubPath));
+        QString libraryIndexError;
+        if (!libraryHierarchyViewModel.loadFromWshub(blueprintHubPath, &libraryIndexError))
+        {
+            qWarning().noquote()
+                << QStringLiteral("Failed to index library hierarchy from .wshub: %1")
+                .arg(libraryIndexError);
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadLibraryIndex.failed"),
+                libraryIndexError);
+        }
+        else
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadLibraryIndex.success"),
+                QStringLiteral("path=%1").arg(blueprintHubPath));
+        }
         QString hubLoadError;
         if (!hubRuntimeStore.loadFromWshub(blueprintHubPath, &hubLoadError))
         {
