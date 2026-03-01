@@ -230,49 +230,53 @@ Item {
                     Repeater {
                         model: sidebarHierarchyView.folderModel
 
-                        delegate: Item {
+                        delegate: LV.HierarchyItem {
                             id: hierarchyDelegate
 
-                            required property bool accent
-                            required property bool expanded
-                            required property int indentLevel
                             required property int index
-                            readonly property bool itemAccent: accent
-                            readonly property bool itemExpanded: expanded
-                            readonly property int itemIndentLevel: indentLevel
-                            readonly property string itemLabel: label
-                            required property string label
+                            readonly property bool itemAccent: model.accent === undefined ? false : !!model.accent
+                            readonly property bool itemExpanded: model.expanded === undefined ? false : !!model.expanded
+                            readonly property int itemIndentLevel: {
+                                if (model.indentLevel === undefined || model.indentLevel === null)
+                                    return 0;
+                                var parsed = Number(model.indentLevel);
+                                if (!isFinite(parsed))
+                                    return 0;
+                                return Math.max(0, Math.floor(parsed));
+                            }
+                            readonly property string itemLabel: model.label === undefined || model.label === null ? "" : String(model.label)
+                            readonly property bool itemShowChevron: model.showChevron === undefined ? false : !!model.showChevron
                             readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(itemLabel)
+                            required property var model
                             readonly property int renameLeftInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding + itemIndentLevel * sidebarHierarchyView.hierarchyIndentStep + sidebarHierarchyView.hierarchyChevronSlotWidth
                             readonly property int renameRightInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding
-                            required property bool showChevron
+                            readonly property int selectionAreaRightMargin: itemShowChevron ? sidebarHierarchyView.hierarchyChevronSlotWidth + sidebarHierarchyView.hierarchyItemBaseLeftPadding : 0
+                            readonly property bool visibleInView: matchesSearch && rowVisible
 
-                            height: matchesSearch ? implicitHeight : 0
-                            implicitHeight: hierarchyRow.implicitHeight
-                            visible: matchesSearch
+                            baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
+                            chevronColor: LV.Theme.darkGrey10
+                            expanded: hierarchyDelegate.itemExpanded
+                            height: visibleInView ? implicitHeight : 0
+                            iconPlaceholderColor: LV.Theme.accentGrayLight
+                            indentLevel: hierarchyDelegate.itemIndentLevel
+                            indentStep: sidebarHierarchyView.hierarchyIndentStep
+                            label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
+                            leadingSpacing: LV.Theme.gap2
+                            rowBackgroundColor: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
+                            rowBackgroundColorHover: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
+                            rowBackgroundColorPressed: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
+                            rowRightPadding: LV.Theme.gap8
+                            showChevron: hierarchyDelegate.itemShowChevron
+                            textColorNormal: hierarchyDelegate.itemAccent ? LV.Theme.accentBlue : LV.Theme.bodyColor
+                            visible: visibleInView
                             width: hierarchyViewport.width
 
-                            LV.HierarchyItem {
-                                id: hierarchyRow
-
-                                anchors.fill: parent
-                                baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
-                                chevronColor: LV.Theme.darkGrey10
-                                expanded: hierarchyDelegate.itemExpanded
-                                iconPlaceholderColor: LV.Theme.accentGrayLight
-                                indentLevel: hierarchyDelegate.itemIndentLevel
-                                indentStep: sidebarHierarchyView.hierarchyIndentStep
-                                label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
-                                leadingSpacing: LV.Theme.gap2
-                                rowBackgroundColor: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                                rowBackgroundColorHover: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                                rowBackgroundColorPressed: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                                rowRightPadding: LV.Theme.gap8
-                                showChevron: hierarchyDelegate.showChevron
-                                textColorNormal: hierarchyDelegate.itemAccent ? LV.Theme.accentBlue : LV.Theme.bodyColor
-                            }
                             MouseArea {
-                                anchors.fill: parent
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.rightMargin: selectionAreaRightMargin
+                                anchors.top: parent.top
 
                                 onClicked: {
                                     if (sidebarHierarchyView.editingIndex >= 0)

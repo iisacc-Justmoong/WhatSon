@@ -130,8 +130,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     const QString mainQmlText = QString::fromUtf8(mainQmlFile.readAll());
 
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("readonly property bool useMobileMainLayout")),
-        "Main.qml must declare useMobileMainLayout.");
+        mainQmlText.contains(QStringLiteral("readonly property string activeMainLayout")),
+        "Main.qml must declare activeMainLayout for platform layout branching.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral(
+            "sourceComponent: applicationWindow.activeMainLayout === \"mobile\" ? mobileMainLayoutComponent : desktopMainLayoutComponent")),
+        "Main.qml must select desktop/mobile root layout from activeMainLayout.");
+    QVERIFY2(
+        !mainQmlText.contains(QStringLiteral("useMobileMainLayout")),
+        "Main.qml must not depend on legacy useMobileMainLayout helper.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("activeToolbarIndex: applicationWindow.hierarchyActiveToolbarIndex")),
         "Main.qml must forward hierarchyActiveToolbarIndex to BodyLayout.");
@@ -143,8 +150,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     const QString sidebarViewText = QString::fromUtf8(sidebarViewFile.readAll());
 
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("function hasExternalDepthItems()")),
-        "SidebarHierarchyView.qml must guard optional external depth item injection.");
+        sidebarViewText.contains(QStringLiteral(
+            "readonly property var folderModel: hierarchyViewModel ? hierarchyViewModel.itemModel : null")),
+        "SidebarHierarchyView.qml must source folder model directly from hierarchyViewModel.itemModel.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.activeToolbarIndex = index;")),
         "SidebarHierarchyView.qml must not overwrite activeToolbarIndex locally.");
@@ -168,8 +176,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         bodyLayoutText.contains(QStringLiteral("function totalSplitterWidth()")),
         "BodyLayout.qml must keep totalSplitterWidth helper.");
     QVERIFY2(
-        bodyLayoutText.contains(QStringLiteral("return width;")),
-        "BodyLayout.qml totalSplitterWidth must return width to keep splitter drag clamps finite.");
+        bodyLayoutText.contains(QStringLiteral("return isFinite(width) ? width : 0;")),
+        "BodyLayout.qml totalSplitterWidth must sanitize non-finite width values.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)

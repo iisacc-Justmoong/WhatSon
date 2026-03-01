@@ -205,6 +205,8 @@ for hub/note hierarchy payloads.
   `renameItem`/`deleteSelectedFolder` targets.
 - Hierarchy list chevrons are derived from parsed depth relationships only (visible only when a direct child exists),
   and sidebar indentation uses a fixed `8px` step per depth level.
+- Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded`, and sidebar delegates follow
+  `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not reserve row space.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)

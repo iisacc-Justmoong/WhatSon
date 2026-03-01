@@ -231,6 +231,11 @@ Library-specific modeling:
 Primary root:
 
 - `Main.qml` (`LV.ApplicationWindow`)
+- Render quality policy is enforced at app root for resize stability:
+    - Desktop and mobile (`isDesktopPlatform || isMobilePlatform`): resize events (`onWidthChanged` /
+      `onHeightChanged`) temporarily suspend dynamic
+      resolution, then a debounce end-handler restores max supersample scale and re-enables dynamic resolution.
+    - This keeps baseline image quality behavior unchanged while preventing repeated resize-induced quality drift.
 
 Desktop composition:
 
@@ -248,13 +253,17 @@ Hierarchy rendering pipeline:
 - `SidebarHierarchyView` handles search, selection, inline rename, create/delete folder, and toolbar event propagation
     - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
       UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
-    - Rename trigger policy: open text input overlay from selected item with `Enter/Return` key (double-click rename
-      disabled)
-    - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
-      opening the overlay. Global `renameEnabled` is treated as a fallback only.
-    - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to domain
-      store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
-      `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+    - Chevron fold/unfold is handled by LVRS `HierarchyItem` (`expanded` state +
+      `HierarchyList.notifyExpansionChanged`),
+      and delegate row visibility/height reflects `HierarchyItem.rowVisible`.
+        - Rename trigger policy: open text input overlay from selected item with `Enter/Return` key (double-click rename
+          disabled)
+        - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
+          opening the overlay. Global `renameEnabled` is treated as a fallback only.
+        - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
+          domain
+          store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+          `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
@@ -424,15 +433,16 @@ From `tests/app/**`, architecture is guarded by explicit tests:
     - runtime placement/tags loading and header-tag fallback
 - `test_qml_binding_syntax_guard.cpp`:
     - mandatory text patterns for sidebar and `Main.qml` wiring
-    - splitter clamp invariant in `BodyLayout.qml` (`totalSplitterWidth` must keep explicit `return width;`)
-    - binding syntax guard against invalid standalone literals in `Binding` blocks
+    - splitter clamp invariant in `BodyLayout.qml` (`totalSplitterWidth` must sanitize non-finite width)
+        - binding syntax guard against invalid standalone literals in `Binding` blocks
 
 Status update (2026-03-01):
 
-- The prior `Main.qml` contract drift around `useMobileMainLayout` has been resolved.
-- `Main.qml` now explicitly declares:
-    - `readonly property bool useMobileMainLayout`
-- This aligns runtime binding (`onUseMobileMainLayoutChanged`) with `test_qml_binding_syntax_guard.cpp` expectations.
+- The prior `Main.qml` contract drift around mobile/desktop branching has been resolved.
+- `Main.qml` now uses:
+    - `readonly property string activeMainLayout`
+    - loader source routing based on `activeMainLayout`
+- This removes dependence on legacy helper symbols and keeps desktop/mobile branching in one binding axis.
 - `HierarchySidebarLayout.qml` now returns a normalized valid index explicitly in `normalizeHierarchyIndex(...)`.
 - This prevents toolbar routing fallback to a single default hierarchy view-model.
 - Hierarchy model `ShowChevronRole` is now derived dynamically from depth adjacency at data-read time.

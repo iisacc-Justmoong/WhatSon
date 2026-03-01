@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
@@ -45,7 +47,11 @@ Item {
         spacing: 2
 
         delegate: NoteListItem {
-            readonly property var roleModel: typeof model === "object" ? model : null
+            id: noteItemDelegate
+
+            required property int index
+            required property var model
+            readonly property var roleModel: typeof noteItemDelegate.model === "object" ? noteItemDelegate.model : null
             readonly property bool useRuntimeModel: listItemsPlaceholder.noteModel !== null
 
             bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : ""
@@ -61,8 +67,8 @@ Item {
                 acceptedButtons: Qt.LeftButton
 
                 onTapped: {
-                    if (noteListView.currentIndex !== index)
-                        noteListView.currentIndex = index;
+                    if (noteListView.currentIndex !== noteItemDelegate.index)
+                        noteListView.currentIndex = noteItemDelegate.index;
                 }
             }
         }
