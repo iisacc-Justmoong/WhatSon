@@ -92,7 +92,9 @@ Runtime sequence:
 5. Construct runtime services:
     - `WhatSonHubRuntimeStore`
 6. Resolve first blueprint package path (`blueprint/*.wshub`)
-7. Load each domain from `.wshub` and apply runtime tag-depth entries directly to `TagsHierarchyViewModel`
+7. Load each runtime domain from `.wshub` in parallel worker threads via
+   `runtime/threading/WhatSonRuntimeParallelLoader` and apply runtime tag-depth entries directly to
+   `TagsHierarchyViewModel`
 8. Register hierarchy view-model context properties into QML root context
 9. Load QML module root (`WhatSon.App`, `Main`)
 10. Start permission bootstrap pipeline (Qt permission API + Apple permission callbacks)
@@ -100,6 +102,8 @@ Runtime sequence:
 Important behavior:
 
 - Runtime loading is optimistic per domain: one domain failure does not stop all others.
+- Startup runtime loading is parallelized by domain (library/projects/bookmarks/tags/resources/progress/event/preset
+  and runtime hub store), enabling multi-core utilization during bootstrap.
 - Operational state is observable through structured debug traces and domain view-model signal/slot propagation.
 
 ---

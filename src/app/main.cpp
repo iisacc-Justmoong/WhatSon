@@ -7,6 +7,7 @@
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
+#include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 
@@ -353,141 +354,49 @@ int main(int argc, char* argv[])
             QStringLiteral("main.runtime"),
             QStringLiteral("loadFromWshub.begin"),
             QStringLiteral("path=%1").arg(blueprintHubPath));
-        QString libraryIndexError;
-        if (!libraryHierarchyViewModel.loadFromWshub(blueprintHubPath, &libraryIndexError))
+        WhatSonRuntimeParallelLoader parallelLoader;
+        WhatSonRuntimeParallelLoader::Targets targets;
+        targets.libraryViewModel = &libraryHierarchyViewModel;
+        targets.projectsViewModel = &projectsHierarchyViewModel;
+        targets.bookmarksViewModel = &bookmarksHierarchyViewModel;
+        targets.tagsViewModel = &tagsHierarchyViewModel;
+        targets.resourcesViewModel = &resourcesHierarchyViewModel;
+        targets.progressViewModel = &progressHierarchyViewModel;
+        targets.eventViewModel = &eventHierarchyViewModel;
+        targets.presetViewModel = &presetHierarchyViewModel;
+        targets.hubRuntimeStore = &hubRuntimeStore;
+
+        QVector<WhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;
+        parallelLoader.loadFromWshub(blueprintHubPath, targets, &loadResults);
+
+        for (const WhatSonRuntimeParallelLoader::DomainLoadResult& result : loadResults)
         {
+            if (result.succeeded)
+            {
+                WhatSon::Debug::trace(
+                    QStringLiteral("main.runtime"),
+                    QStringLiteral("load.success"),
+                    QStringLiteral("domain=%1").arg(result.domain));
+                continue;
+            }
+
+            const QString errorMessage = result.error.trimmed().isEmpty()
+                                             ? QStringLiteral("unknown load error")
+                                             : result.error;
             qWarning().noquote()
-                << QStringLiteral("Failed to index library hierarchy from .wshub: %1")
-                .arg(libraryIndexError);
+                << QStringLiteral("Failed to load domain '%1' from .wshub: %2")
+                .arg(result.domain, errorMessage);
             WhatSon::Debug::trace(
                 QStringLiteral("main.runtime"),
-                QStringLiteral("loadLibraryIndex.failed"),
-                libraryIndexError);
+                QStringLiteral("load.failed"),
+                QStringLiteral("domain=%1 reason=%2").arg(result.domain, errorMessage));
         }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadLibraryIndex.success"),
-                QStringLiteral("path=%1").arg(blueprintHubPath));
-        }
-        QString hubLoadError;
-        if (!hubRuntimeStore.loadFromWshub(blueprintHubPath, &hubLoadError))
-        {
-            qWarning().noquote()
-                << QStringLiteral("Failed to load blueprint .wshub into runtime hub store: %1").arg(hubLoadError);
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadFromWshub.failed"),
-                hubLoadError);
-        }
-        else
-        {
-            const QVector<WhatSonTagDepthEntry> tags = hubRuntimeStore.tagDepthEntries(blueprintHubPath);
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadFromWshub.success"),
-                QStringLiteral("tagEntryCount=%1").arg(tags.size()));
-        }
-        QString tagsLoadError;
-        if (!tagsHierarchyViewModel.loadFromWshub(blueprintHubPath, &tagsLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadTags.failed"),
-                tagsLoadError);
-        }
+
         tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
         WhatSon::Debug::trace(
             QStringLiteral("main.runtime"),
             QStringLiteral("applyTagsDepthEntries.success"),
             QStringLiteral("itemCount=%1").arg(tagsHierarchyViewModel.itemModel()->rowCount()));
-
-        QString hierarchyLoadError;
-        if (!projectsHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadProjects.failed"),
-                hierarchyLoadError);
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("projects"),
-                QStringLiteral("load.success"),
-                QStringLiteral("itemCount=%1").arg(projectsHierarchyViewModel.itemModel()->rowCount()));
-        }
-        if (!bookmarksHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadBookmarks.failed"),
-                hierarchyLoadError);
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("bookmarks"),
-                QStringLiteral("load.success"),
-                QStringLiteral("itemCount=%1").arg(bookmarksHierarchyViewModel.itemModel()->rowCount()));
-        }
-        if (!resourcesHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadResources.failed"),
-                hierarchyLoadError);
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("resources"),
-                QStringLiteral("load.success"),
-                QStringLiteral("itemCount=%1").arg(resourcesHierarchyViewModel.itemModel()->rowCount()));
-        }
-        if (!progressHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadProgress.failed"),
-                hierarchyLoadError);
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("progress"),
-                QStringLiteral("load.success"),
-                QStringLiteral("itemCount=%1").arg(progressHierarchyViewModel.itemModel()->rowCount()));
-        }
-        if (!eventHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadEvent.failed"),
-                hierarchyLoadError);
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("event"),
-                QStringLiteral("load.success"),
-                QStringLiteral("itemCount=%1").arg(eventHierarchyViewModel.itemModel()->rowCount()));
-        }
-        if (!presetHierarchyViewModel.loadFromWshub(blueprintHubPath, &hierarchyLoadError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("loadPreset.failed"),
-                hierarchyLoadError);
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("preset"),
-                QStringLiteral("load.success"),
-                QStringLiteral("itemCount=%1").arg(presetHierarchyViewModel.itemModel()->rowCount()));
-        }
     }
     else
     {

@@ -21,11 +21,13 @@ every turn.
 - Hub placement store: `src/app/file/hub/WhatSonHubPlacementStore.*`
 - Tags depth provider: `src/app/file/hierarchy/tags/WhatSonHubTagsDepthProvider.*`
 - Hub runtime store: `src/app/file/hub/WhatSonHubRuntimeStore.*`
+- Runtime parallel bootstrap loader: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.*`
 - Tags runtime state store: `src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
 - Tags hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.*`,
   `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.*`
 - Sidebar selection store: `src/app/viewmodel/sidebar/SidebarSelectionStore.*`
-- Runtime bootstrap: app startup loads the first `blueprint/*.wshub` package into `WhatSonHubRuntimeStore`.
+- Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and loads hierarchy/runtime domains in
+  parallel worker threads via `WhatSonRuntimeParallelLoader`.
 
 ### Hierarchy ViewModel Ownership (Critical)
 

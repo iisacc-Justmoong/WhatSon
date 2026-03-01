@@ -1,0 +1,43 @@
+#pragma once
+
+#include <QString>
+#include <QVector>
+
+class LibraryHierarchyViewModel;
+class ProjectsHierarchyViewModel;
+class BookmarksHierarchyViewModel;
+class TagsHierarchyViewModel;
+class ResourcesHierarchyViewModel;
+class ProgressHierarchyViewModel;
+class EventHierarchyViewModel;
+class PresetHierarchyViewModel;
+class WhatSonHubRuntimeStore;
+
+class WhatSonRuntimeParallelLoader final
+{
+public:
+    struct DomainLoadResult
+    {
+        QString domain;
+        bool succeeded = false;
+        QString error;
+    };
+
+    struct Targets
+    {
+        LibraryHierarchyViewModel* libraryViewModel = nullptr;
+        ProjectsHierarchyViewModel* projectsViewModel = nullptr;
+        BookmarksHierarchyViewModel* bookmarksViewModel = nullptr;
+        TagsHierarchyViewModel* tagsViewModel = nullptr;
+        ResourcesHierarchyViewModel* resourcesViewModel = nullptr;
+        ProgressHierarchyViewModel* progressViewModel = nullptr;
+        EventHierarchyViewModel* eventViewModel = nullptr;
+        PresetHierarchyViewModel* presetViewModel = nullptr;
+        WhatSonHubRuntimeStore* hubRuntimeStore = nullptr;
+    };
+
+    bool loadFromWshub(
+        const QString& wshubPath,
+        const Targets& targets,
+        QVector<DomainLoadResult>* outResults = nullptr) const;
+};
