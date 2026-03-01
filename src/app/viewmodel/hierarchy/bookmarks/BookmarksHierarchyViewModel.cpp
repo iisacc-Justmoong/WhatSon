@@ -71,6 +71,23 @@ BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    QObject::connect(
+        &m_itemModel,
+        &FlatHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
+    QObject::connect(
+        &m_noteListModel,
+        &LibraryNoteListModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateNoteItemCount();
+        });
     setBookmarkIds({});
 }
 
@@ -91,9 +108,29 @@ int BookmarksHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int BookmarksHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+int BookmarksHierarchyViewModel::noteItemCount() const noexcept
+{
+    return m_noteItemCount;
+}
+
+bool BookmarksHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString BookmarksHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void BookmarksHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_items.size());
+    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -235,6 +272,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         {
             *errorMessage = indexError;
         }
+        updateLoadState(false, indexError);
         return false;
     }
 
@@ -271,6 +309,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
 
     setBookmarkIds(bookmarkLabels);
     m_noteListModel.setItems(std::move(bookmarkListItems));
+    updateNoteItemCount();
 
     WhatSon::Debug::trace(
         QString::fromLatin1(kScope),
@@ -278,12 +317,49 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         QStringLiteral("path=%1 source=wsnhead count=%2")
         .arg(wshubPath)
         .arg(m_bookmarkIds.size()));
+    updateLoadState(true);
     return true;
+}
+
+void BookmarksHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void BookmarksHierarchyViewModel::updateNoteItemCount()
+{
+    const int nextCount = m_noteListModel.rowCount();
+    if (m_noteItemCount == nextCount)
+    {
+        return;
+    }
+    m_noteItemCount = nextCount;
+    emit noteItemCountChanged();
+}
+
+void BookmarksHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }
 
 void BookmarksHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }
 
 void BookmarksHierarchyViewModel::syncDomainStoreFromItems()

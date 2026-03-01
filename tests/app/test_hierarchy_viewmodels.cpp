@@ -1,16 +1,21 @@
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/common/FlatHierarchyModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QDir>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QtTest>
+#include <stdexcept>
 
 namespace
 {
@@ -180,6 +185,7 @@ private
 
     void libraryViewModel_supportsCrudContract();
     void projectsViewModel_supportsCrudContract();
+    void projectsViewModel_reactsToModelMutation();
     void bookmarksViewModel_supportsCrudContract();
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
     void resourcesViewModel_supportsCrudContract();
@@ -187,6 +193,10 @@ private
     void eventViewModel_supportsCrudContract();
     void presetViewModel_supportsCrudContract();
     void tagsViewModel_supportsCrudContract();
+    void libraryViewModel_reactsToNoteListModelMutation();
+    void flatModel_appliesCorrectionAndRaisesHookSignal();
+    void flatModel_strictValidation_throwsException();
+    void noteListModel_correctsColorAndTextFields();
 };
 
 void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
@@ -236,6 +246,30 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemModel()->rowCount(), 4);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+}
+
+void HierarchyViewModelsTest::projectsViewModel_reactsToModelMutation()
+{
+    ProjectsHierarchyViewModel viewModel;
+    viewModel.setProjectNames({QStringLiteral("Alpha"), QStringLiteral("Beta")});
+    viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.itemCount(), 3);
+
+    QSignalSpy itemCountSpy(&viewModel, &ProjectsHierarchyViewModel::itemCountChanged);
+    QVector<FlatHierarchyItem> externalItems;
+    FlatHierarchyItem root;
+    root.depth = 0;
+    root.accent = true;
+    root.expanded = true;
+    root.label = QStringLiteral("Projects (0)");
+    root.showChevron = false;
+    externalItems.push_back(root);
+
+    viewModel.itemModel()->setItems(externalItems);
+
+    QCOMPARE(viewModel.itemCount(), 1);
+    QCOMPARE(viewModel.selectedIndex(), 0);
+    QVERIFY(itemCountSpy.count() > 0);
 }
 
 void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
@@ -397,6 +431,104 @@ void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+}
+
+void HierarchyViewModelsTest::libraryViewModel_reactsToNoteListModelMutation()
+{
+    LibraryHierarchyViewModel viewModel;
+    QCOMPARE(viewModel.noteItemCount(), 0);
+
+    QSignalSpy noteCountSpy(&viewModel, &LibraryHierarchyViewModel::noteItemCountChanged);
+    QVector<LibraryNoteListItem> items;
+    LibraryNoteListItem first;
+    first.noteId = QStringLiteral("note-a");
+    first.titleText = QStringLiteral("A");
+    first.summaryText = QStringLiteral("A summary");
+    items.push_back(first);
+    LibraryNoteListItem second;
+    second.noteId = QStringLiteral("note-b");
+    second.titleText = QStringLiteral("B");
+    second.summaryText = QStringLiteral("B summary");
+    items.push_back(second);
+
+    viewModel.noteListModel()->setItems(items);
+
+    QCOMPARE(viewModel.noteItemCount(), 2);
+    QVERIFY(noteCountSpy.count() > 0);
+}
+
+void HierarchyViewModelsTest::flatModel_appliesCorrectionAndRaisesHookSignal()
+{
+    FlatHierarchyModel model;
+    QSignalSpy issueSpy(&model, &FlatHierarchyModel::validationIssueRaised);
+    QSignalSpy correctedSpy(&model, &FlatHierarchyModel::itemCorrected);
+
+    QVector<FlatHierarchyItem> items;
+    FlatHierarchyItem item;
+    item.depth = -3;
+    item.label = QStringLiteral("   ");
+    items.push_back(item);
+
+    model.setItems(std::move(items));
+
+    QCOMPARE(model.rowCount(), 1);
+    const QModelIndex index = model.index(0, 0);
+    QCOMPARE(model.data(index, FlatHierarchyModel::DepthRole).toInt(), 0);
+    QCOMPARE(model.data(index, FlatHierarchyModel::LabelRole).toString(), QStringLiteral("Item1"));
+    QVERIFY(model.correctionCount() >= 2);
+    QVERIFY(issueSpy.count() >= 1);
+    QVERIFY(correctedSpy.count() >= 1);
+}
+
+void HierarchyViewModelsTest::flatModel_strictValidation_throwsException()
+{
+    FlatHierarchyModel model;
+    model.setStrictValidation(true);
+
+    QVector<FlatHierarchyItem> items;
+    FlatHierarchyItem item;
+    item.depth = -1;
+    item.label.clear();
+    items.push_back(item);
+
+    bool thrown = false;
+    try
+    {
+        model.setItems(std::move(items));
+    }
+    catch (const std::runtime_error&)
+    {
+        thrown = true;
+    }
+    QVERIFY(thrown);
+    QCOMPARE(model.rowCount(), 0);
+}
+
+void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
+{
+    LibraryNoteListModel model;
+
+    QVector<LibraryNoteListItem> items;
+    LibraryNoteListItem item;
+    item.noteId = QStringLiteral("note-1");
+    item.titleText = QStringLiteral("   ");
+    item.summaryText = QStringLiteral(" ");
+    item.foldersText.clear();
+    item.bookmarked = true;
+    item.bookmarkColorHex = QStringLiteral("not-a-hex");
+    items.push_back(item);
+
+    model.setItems(std::move(items));
+
+    QCOMPARE(model.rowCount(), 1);
+    const QModelIndex index = model.index(0, 0);
+    QCOMPARE(model.data(index, LibraryNoteListModel::TitleTextRole).toString(), QStringLiteral("note-1"));
+    QCOMPARE(model.data(index, LibraryNoteListModel::SummaryTextRole).toString(), QStringLiteral("No contents"));
+    QCOMPARE(model.data(index, LibraryNoteListModel::FoldersTextRole).toString(), QStringLiteral("No Folder"));
+    QCOMPARE(
+        model.data(index, LibraryNoteListModel::BookmarkColorHexRole).toString(),
+        WhatSon::Bookmarks::defaultBookmarkColorHex());
+    QVERIFY(model.correctionCount() >= 3);
 }
 
 QTEST_APPLESS_MAIN(HierarchyViewModelsTest)

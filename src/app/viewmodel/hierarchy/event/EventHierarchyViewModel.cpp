@@ -11,6 +11,15 @@ EventHierarchyViewModel::EventHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    QObject::connect(
+        &m_itemModel,
+        &FlatHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
     setEventNames({});
 }
 
@@ -26,9 +35,24 @@ int EventHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int EventHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+bool EventHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString EventHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void EventHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_items.size());
+    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -166,6 +190,7 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -188,6 +213,7 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -198,6 +224,7 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
 
@@ -208,12 +235,38 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
     }
 
     setEventNames(aggregated);
+    updateLoadState(true);
     return true;
+}
+
+void EventHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void EventHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }
 
 void EventHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }
 
 void EventHierarchyViewModel::syncDomainStoreFromItems()

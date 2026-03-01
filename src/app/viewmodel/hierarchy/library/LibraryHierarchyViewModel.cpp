@@ -171,6 +171,23 @@ LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
       , m_noteListModel(this)
 {
     WhatSon::Debug::trace(QStringLiteral("library.viewmodel"), QStringLiteral("ctor"));
+    QObject::connect(
+        &m_itemModel,
+        &LibraryHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
+    QObject::connect(
+        &m_noteListModel,
+        &LibraryNoteListModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateNoteItemCount();
+        });
     syncModel();
     refreshNoteListForSelection();
 }
@@ -192,9 +209,29 @@ int LibraryHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int LibraryHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+int LibraryHierarchyViewModel::noteItemCount() const noexcept
+{
+    return m_noteItemCount;
+}
+
+bool LibraryHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString LibraryHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void LibraryHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int maxIndex = m_items.size() - 1;
+    const int maxIndex = m_itemModel.rowCount() - 1;
     int clamped = index;
     if (maxIndex < 0)
     {
@@ -269,6 +306,7 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     m_createdFolderSequence = nextFolderSequence(m_items);
     syncModel();
     m_noteListModel.setItems({});
+    updateNoteItemCount();
     setSelectedIndex(-1);
     WhatSon::Debug::trace(
         QStringLiteral("library.viewmodel"),
@@ -290,6 +328,8 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
             *errorMessage = indexError;
         }
         m_noteListModel.setItems({});
+        updateNoteItemCount();
+        updateLoadState(false, indexError);
         WhatSon::Debug::trace(
             QStringLiteral("library.viewmodel"),
             QStringLiteral("loadFromWshub.failed"),
@@ -309,6 +349,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -334,6 +375,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -345,6 +387,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
 
@@ -376,6 +419,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
             .arg(m_libraryAll.notes().size())
             .arg(m_libraryDraft.notes().size())
             .arg(m_libraryToday.notes().size()));
+        updateLoadState(true);
         return true;
     }
 
@@ -390,6 +434,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         .arg(m_libraryAll.notes().size())
         .arg(m_libraryDraft.notes().size())
         .arg(m_libraryToday.notes().size()));
+    updateLoadState(true);
     return true;
 }
 
@@ -741,6 +786,7 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     if (!m_runtimeIndexLoaded)
     {
         m_noteListModel.setItems({});
+        updateNoteItemCount();
         return;
     }
 
@@ -748,6 +794,7 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     const QString highlighted = selectedNoteId();
     const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(bucket), highlighted);
     m_noteListModel.setItems(listItems);
+    updateNoteItemCount();
 }
 
 void LibraryHierarchyViewModel::applyIndexedBuckets()
@@ -796,4 +843,40 @@ void LibraryHierarchyViewModel::syncModel()
         QStringLiteral("syncModel"),
         QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
+    updateItemCount();
+}
+
+void LibraryHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void LibraryHierarchyViewModel::updateNoteItemCount()
+{
+    const int nextCount = m_noteListModel.rowCount();
+    if (m_noteItemCount == nextCount)
+    {
+        return;
+    }
+    m_noteItemCount = nextCount;
+    emit noteItemCountChanged();
+}
+
+void LibraryHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }

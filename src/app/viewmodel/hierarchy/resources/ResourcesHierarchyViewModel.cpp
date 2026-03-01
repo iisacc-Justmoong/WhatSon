@@ -18,6 +18,15 @@ ResourcesHierarchyViewModel::ResourcesHierarchyViewModel(QObject* parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    QObject::connect(
+        &m_itemModel,
+        &FlatHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
     setResourcePaths({});
 }
 
@@ -33,9 +42,24 @@ int ResourcesHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int ResourcesHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+bool ResourcesHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString ResourcesHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void ResourcesHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_items.size());
+    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -173,6 +197,7 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -195,6 +220,7 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -205,6 +231,7 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
 
@@ -215,12 +242,38 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
     }
 
     setResourcePaths(aggregated);
+    updateLoadState(true);
     return true;
+}
+
+void ResourcesHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void ResourcesHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }
 
 void ResourcesHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }
 
 void ResourcesHierarchyViewModel::syncDomainStoreFromItems()

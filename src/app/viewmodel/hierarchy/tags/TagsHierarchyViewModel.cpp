@@ -17,6 +17,15 @@ TagsHierarchyViewModel::TagsHierarchyViewModel(QObject* parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::trace(QStringLiteral("tags.viewmodel"), QStringLiteral("ctor"));
+    QObject::connect(
+        &m_itemModel,
+        &TagsHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
     syncModel();
 }
 
@@ -32,9 +41,24 @@ int TagsHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int TagsHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+bool TagsHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString TagsHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void TagsHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int maxIndex = m_items.size() - 1;
+    const int maxIndex = m_itemModel.rowCount() - 1;
     int clamped = index;
     if (maxIndex < 0)
     {
@@ -263,6 +287,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -285,6 +310,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -295,6 +321,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
 
@@ -306,6 +333,7 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
     }
 
     setTagDepthEntries(std::move(aggregated));
+    updateLoadState(true);
     return true;
 }
 
@@ -406,6 +434,30 @@ int TagsHierarchyViewModel::nextFolderSequence(const QVector<WhatSonTagDepthEntr
     return maxSequence + 1;
 }
 
+void TagsHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void TagsHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
+}
+
 void TagsHierarchyViewModel::syncStore()
 {
     m_store.setTagEntries(m_entries);
@@ -418,4 +470,5 @@ void TagsHierarchyViewModel::syncModel()
         QStringLiteral("syncModel"),
         QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }

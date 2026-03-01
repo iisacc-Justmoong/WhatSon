@@ -53,7 +53,17 @@ Item {
     property var viewOptionsMenuItems: []
 
     signal toolbarIndexChangeRequested(int index)
+    signal viewHookRequested
 
+    function applyExternalDepthItems() {
+        if (!sidebarHierarchyView.hierarchyViewModel)
+            return;
+        if (!sidebarHierarchyView.hasExternalDepthItems())
+            return;
+        if (sidebarHierarchyView.hierarchyViewModel.setDepthItems === undefined)
+            return;
+        sidebarHierarchyView.hierarchyViewModel.setDepthItems(sidebarHierarchyView.depthItems);
+    }
     function beginRename(index, currentLabel) {
         if (index < 0)
             return;
@@ -76,12 +86,18 @@ Item {
         sidebarHierarchyView.editingIndex = -1;
         sidebarHierarchyView.editingText = "";
     }
+    function hasExternalDepthItems() {
+        return sidebarHierarchyView.depthItems !== undefined && sidebarHierarchyView.depthItems !== null && sidebarHierarchyView.depthItems.length !== undefined && sidebarHierarchyView.depthItems.length > 0;
+    }
     function matchesSearchText(label) {
         var query = sidebarHierarchyView.searchQuery.trim().toLowerCase();
         if (query.length === 0)
             return true;
         var target = (label === undefined || label === null) ? "" : String(label).toLowerCase();
         return target.indexOf(query) >= 0;
+    }
+    function requestViewHook() {
+        viewHookRequested();
     }
     function toggleViewOptionsMenu() {
         if (viewOptionsContextMenu.opened) {

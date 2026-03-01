@@ -176,6 +176,17 @@ for hub/note hierarchy payloads.
 
 - Sidebar routing no longer depends on a shared `SidebarSelectionStore`; QML binds directly to each hierarchy
   viewmodel context (`libraryHierarchyViewModel`, `projectsHierarchyViewModel`, etc.).
+- `WhatSonBackendBridge` (`src/app/viewmodel/bridge`) is exposed to QML as `backendBridge` and provides a thin
+  signal/slot interface layer (`backendEvent`, `commandRequested`) between view and backend.
+- All hierarchy models and viewmodels expose at least one explicit hook slot/signal pair
+  (`requestModelHook`/`modelHookRequested`, `requestViewModelHook`/`viewModelHookRequested`) for future runtime
+  interception workflows.
+- All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair
+  (`viewHookRequested`, `requestViewHook()`).
+- Main runtime wires hierarchy selection changes and note-list model resets into `backendBridge.publish(...)`
+  so view-side listeners can observe backend state transitions without coupling to concrete stores.
+- View can issue lightweight commands through `backendBridge.request(...)`; current shallow routing supports
+  `bridge.ping` and `hierarchy.select`.
 - Sidebar hierarchy rendering is driven by a single enum-like toolbar state (`0..7`), and the current state selects
   both the active hierarchy viewmodel and the displayed sidebar variant.
 - Toolbar index ownership is top-level only (`Main.qml`), and sidebar components emit index-change requests upward
@@ -184,6 +195,12 @@ for hub/note hierarchy payloads.
   is provided, preventing accidental overwrite of runtime-loaded models.
 - Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
   `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
+- Hierarchy/list models (`FlatHierarchyModel`, `LibraryHierarchyModel`, `TagsHierarchyModel`,
+  `LibraryNoteListModel`) now expose validation hooks for backend/UI interception:
+  `strictValidation`, `correctionCount`, `lastValidationCode`, `lastValidationMessage`,
+  `validationIssueRaised(code, message, context)`, and `itemCorrected(code, context)`.
+- In non-strict mode, invalid payload fields are corrected and emitted as hook events; in strict mode, the first
+  validation issue raises a C++ `std::runtime_error` before mutating model state.
 - Bucket header rows (`accent=true`, `depth=0`) are treated as structural labels and are excluded from
   `renameItem`/`deleteSelectedFolder` targets.
 - Hierarchy list chevrons are derived from parsed depth relationships only (visible only when a direct child exists),

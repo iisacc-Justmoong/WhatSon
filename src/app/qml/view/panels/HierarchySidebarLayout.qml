@@ -6,6 +6,7 @@ Item {
 
     property int activeToolbarIndex: 0
     property var bookmarksViewModel: null
+    readonly property int currentHierarchy: normalizeHierarchyIndex(activeToolbarIndex)
     property var eventViewModel: null
     property var libraryViewModel: null
     property color panelColor: LV.Theme.panelBackground04
@@ -81,7 +82,7 @@ Item {
     function normalizeHierarchyIndex(index) {
         if (index < hierarchyEnum.library || index > hierarchyEnum.preset)
             return hierarchyEnum.library;
-        return index;
+
     }
 
     QtObject {

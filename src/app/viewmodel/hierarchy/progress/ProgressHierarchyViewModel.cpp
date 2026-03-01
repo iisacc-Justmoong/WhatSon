@@ -29,6 +29,15 @@ ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    QObject::connect(
+        &m_itemModel,
+        &FlatHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
     setProgressState(0, {
                          QStringLiteral("Ready"),
                          QStringLiteral("Pending"),
@@ -49,9 +58,24 @@ int ProgressHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int ProgressHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+bool ProgressHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString ProgressHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void ProgressHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_items.size());
+    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -197,6 +221,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -221,6 +246,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -231,6 +257,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
         break;
@@ -245,6 +272,7 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
     }
@@ -260,7 +288,32 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         .arg(m_progressValue)
         .arg(m_progressStates.size()));
 
+    updateLoadState(true);
     return true;
+}
+
+void ProgressHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void ProgressHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }
 
 void ProgressHierarchyViewModel::rebuildItems()
@@ -317,4 +370,5 @@ void ProgressHierarchyViewModel::syncProgressStatesFromItems()
 void ProgressHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }

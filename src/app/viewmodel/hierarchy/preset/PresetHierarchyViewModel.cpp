@@ -11,6 +11,15 @@ PresetHierarchyViewModel::PresetHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    QObject::connect(
+        &m_itemModel,
+        &FlatHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
     setPresetNames({});
 }
 
@@ -26,9 +35,24 @@ int PresetHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int PresetHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+bool PresetHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString PresetHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void PresetHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_items.size());
+    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -166,6 +190,7 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -188,6 +213,7 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -198,6 +224,7 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
 
@@ -208,12 +235,38 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
     }
 
     setPresetNames(aggregated);
+    updateLoadState(true);
     return true;
+}
+
+void PresetHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void PresetHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }
 
 void PresetHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }
 
 void PresetHierarchyViewModel::syncDomainStoreFromItems()

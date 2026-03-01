@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQml
 import QtQuick.Window
 import LVRS 1.0 as LV
 import "view/panels" as BodyPanelView
@@ -65,6 +66,8 @@ LV.ApplicationWindow {
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
     readonly property int windowMobileMinWidth: LV.Theme.controlHeightMd * 10
 
+    signal viewHookRequested
+
     function clampPreferredSizes() {
         preferredSidebarWidth = Math.max(minSidebarWidth, preferredSidebarWidth);
         preferredListViewWidth = Math.max(minListViewWidth, preferredListViewWidth);
@@ -100,6 +103,13 @@ LV.ApplicationWindow {
     onBodyHeightChanged: clampPreferredSizes()
     onUseMobileMainLayoutChanged: reportLayoutBranch("useMobileMainLayoutChanged")
 
+    Connections {
+        function onBackendEvent(domain, eventName, payload) {
+            console.log("[whatson:debug][main.backendBridge] domain=" + domain + " event=" + eventName + " count=" + applicationWindow.backendEventCount);
+        }
+
+        target: (typeof backendBridge !== "undefined" && backendBridge !== null) ? backendBridge : null
+    }
     Loader {
         id: mainLayoutLoader
 

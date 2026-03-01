@@ -19,6 +19,15 @@ ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::trace(QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    QObject::connect(
+        &m_itemModel,
+        &FlatHierarchyModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateItemCount();
+            setSelectedIndex(m_selectedIndex);
+        });
     setProjectNames({});
 }
 
@@ -34,9 +43,24 @@ int ProjectsHierarchyViewModel::selectedIndex() const noexcept
     return m_selectedIndex;
 }
 
+int ProjectsHierarchyViewModel::itemCount() const noexcept
+{
+    return m_itemCount;
+}
+
+bool ProjectsHierarchyViewModel::loadSucceeded() const noexcept
+{
+    return m_loadSucceeded;
+}
+
+QString ProjectsHierarchyViewModel::lastLoadError() const
+{
+    return m_lastLoadError;
+}
+
 void ProjectsHierarchyViewModel::setSelectedIndex(int index)
 {
-    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_items.size());
+    const int clamped = WhatSon::Hierarchy::Support::clampSelectionIndex(index, m_itemModel.rowCount());
     if (m_selectedIndex == clamped)
     {
         return;
@@ -183,6 +207,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         {
             *errorMessage = resolveError;
         }
+        updateLoadState(false, resolveError);
         return false;
     }
 
@@ -208,6 +233,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = readError;
             }
+            updateLoadState(false, readError);
             return false;
         }
 
@@ -218,6 +244,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
             {
                 *errorMessage = parseError;
             }
+            updateLoadState(false, parseError);
             return false;
         }
 
@@ -246,12 +273,38 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
                .arg(m_projectNames.join(QStringLiteral(", ")));
     }
 
+    updateLoadState(true);
     return true;
+}
+
+void ProjectsHierarchyViewModel::updateItemCount()
+{
+    const int nextCount = m_itemModel.rowCount();
+    if (m_itemCount == nextCount)
+    {
+        return;
+    }
+    m_itemCount = nextCount;
+    emit itemCountChanged();
+}
+
+void ProjectsHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
+{
+    errorMessage = errorMessage.trimmed();
+    const QString normalizedError = succeeded ? QString() : errorMessage;
+    const bool shouldEmit = (m_loadSucceeded != succeeded) || (m_lastLoadError != normalizedError);
+    m_loadSucceeded = succeeded;
+    m_lastLoadError = normalizedError;
+    if (shouldEmit)
+    {
+        emit loadStateChanged();
+    }
 }
 
 void ProjectsHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
+    updateItemCount();
 }
 
 void ProjectsHierarchyViewModel::syncDomainStoreFromItems()
