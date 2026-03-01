@@ -9,12 +9,36 @@
 
 namespace
 {
+    constexpr int kMaxNoteListDescLines = 5;
+
     struct ValidationIssue final
     {
         QString code;
         QString message;
         QVariantMap context;
     };
+
+    QString truncateToMaxLines(const QString& value, int maxLines)
+    {
+        if (maxLines <= 0)
+        {
+            return {};
+        }
+
+        const QStringList lines = value.split(QLatin1Char('\n'));
+        if (lines.size() <= maxLines)
+        {
+            return value;
+        }
+
+        QStringList truncated;
+        truncated.reserve(maxLines);
+        for (int i = 0; i < maxLines; ++i)
+        {
+            truncated.push_back(lines.at(i));
+        }
+        return truncated.join(QLatin1Char('\n'));
+    }
 
     bool isValidHexColor(const QString& value)
     {
@@ -26,6 +50,7 @@ namespace
     {
         value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        value = truncateToMaxLines(value, kMaxNoteListDescLines);
         return value.trimmed();
     }
 

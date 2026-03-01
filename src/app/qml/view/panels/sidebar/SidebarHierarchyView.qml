@@ -68,12 +68,21 @@ Item {
     function beginRename(index, currentLabel) {
         if (index < 0)
             return;
+        if (!sidebarHierarchyView.canRenameAtIndex(index))
+            return;
         if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
             sidebarHierarchyView.commitRename();
         if (sidebarHierarchyView.hierarchyViewModel)
             sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
         sidebarHierarchyView.editingIndex = index;
         sidebarHierarchyView.editingText = currentLabel;
+    }
+    function canRenameAtIndex(index) {
+        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.canRenameItem !== undefined)
+            return sidebarHierarchyView.hierarchyViewModel.canRenameItem(index);
+
     }
     function cancelRename() {
         sidebarHierarchyView.editingIndex = -1;
@@ -82,7 +91,7 @@ Item {
     function commitRename() {
         if (sidebarHierarchyView.editingIndex < 0)
             return;
-        if (sidebarHierarchyView.hierarchyViewModel)
+        if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.canRenameAtIndex(sidebarHierarchyView.editingIndex))
             sidebarHierarchyView.hierarchyViewModel.renameItem(sidebarHierarchyView.editingIndex, sidebarHierarchyView.editingText);
         sidebarHierarchyView.editingIndex = -1;
         sidebarHierarchyView.editingText = "";
@@ -122,10 +131,10 @@ Item {
             return;
         }
 
-        if (!sidebarHierarchyView.renameEnabled || sidebarHierarchyView.selectedFolderIndex < 0)
+        if (sidebarHierarchyView.selectedFolderIndex < 0)
             return;
 
-        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.itemLabel === undefined)
+        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.itemLabel === undefined || !sidebarHierarchyView.canRenameAtIndex(sidebarHierarchyView.selectedFolderIndex))
             return;
 
         sidebarHierarchyView.beginRename(sidebarHierarchyView.selectedFolderIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(sidebarHierarchyView.selectedFolderIndex));
@@ -373,9 +382,10 @@ Item {
                     sidebarHierarchyView.commitRename();
                     if (sidebarHierarchyView.hierarchyViewModel)
                         sidebarHierarchyView.hierarchyViewModel.createFolder();
-                    if (sidebarHierarchyView.renameEnabled && sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.selectedIndex >= 0) {
+                    if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.selectedIndex >= 0) {
                         var createdIndex = sidebarHierarchyView.hierarchyViewModel.selectedIndex;
-                        sidebarHierarchyView.beginRename(createdIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(createdIndex));
+                        if (sidebarHierarchyView.canRenameAtIndex(createdIndex))
+                            sidebarHierarchyView.beginRename(createdIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(createdIndex));
                     }
                 }
             })

@@ -198,6 +198,7 @@ private
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
     void noteListModel_correctsColorAndTextFields();
+    void noteListModel_limitsDescriptionToFiveLines();
 };
 
 void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
@@ -570,6 +571,24 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
         model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(),
         WhatSon::Bookmarks::defaultBookmarkColorHex());
     QVERIFY(model.correctionCount() >= 3);
+}
+
+void HierarchyViewModelsTest::noteListModel_limitsDescriptionToFiveLines()
+{
+    LibraryNoteListModel model;
+
+    LibraryNoteListItem item;
+    item.id = QStringLiteral("note-1");
+    item.title = QStringLiteral("Title");
+    item.desc = QStringLiteral("line1\nline2\nline3\nline4\nline5\nline6\nline7");
+
+    model.setItems({item});
+
+    QCOMPARE(model.rowCount(), 1);
+    const QModelIndex index = model.index(0, 0);
+    QCOMPARE(
+        model.data(index, LibraryNoteListModel::DescRole).toString(),
+        QStringLiteral("line1\nline2\nline3\nline4\nline5"));
 }
 
 QTEST_APPLESS_MAIN(HierarchyViewModelsTest)

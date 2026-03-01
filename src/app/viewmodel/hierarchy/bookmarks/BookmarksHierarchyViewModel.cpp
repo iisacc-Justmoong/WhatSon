@@ -12,6 +12,29 @@
 namespace
 {
     constexpr auto kScope = "bookmarks.viewmodel";
+    constexpr int kMaxNoteListSummaryLines = 5;
+
+    QString truncateToMaxLines(const QString& value, int maxLines)
+    {
+        if (maxLines <= 0)
+        {
+            return {};
+        }
+
+        const QStringList lines = value.split(QLatin1Char('\n'));
+        if (lines.size() <= maxLines)
+        {
+            return value;
+        }
+
+        QStringList truncated;
+        truncated.reserve(maxLines);
+        for (int index = 0; index < maxLines; ++index)
+        {
+            truncated.push_back(lines.at(index));
+        }
+        return truncated.join(QLatin1Char('\n'));
+    }
 
     QString bookmarkListTitle(const LibraryNoteRecord& note)
     {
@@ -47,7 +70,7 @@ namespace
 
     QString bookmarkListSummary(const LibraryNoteRecord& note)
     {
-        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
         if (!bodyPlainText.isEmpty())
         {
             return bodyPlainText;
