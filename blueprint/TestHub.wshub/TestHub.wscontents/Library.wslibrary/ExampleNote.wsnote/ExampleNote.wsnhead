@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="wsn-type" content="wsnhead" />
-    <title>Placeholder. This is not requirements so it can be empty.</title>
+    <title>This is not requirements so it can be empty.</title>
     <created>YYYY-MM-DD-hh-mm-ss</created>
     <author>${ProfileName}</author>
     <lastModified>YYYY-MM-DD-hh-mm-ss</lastModified>
@@ -17,7 +17,7 @@
     <project>
         included project name
     </project>
-    <bookmarks state=${bool} />
+    <bookmarks state=false colors={"red"}/>
     <tags>
       <tag>${tag1}</tag>
       <tag>${tag2}</tag>

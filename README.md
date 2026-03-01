@@ -176,10 +176,18 @@ for hub/note hierarchy payloads.
 
 - Sidebar routing no longer depends on a shared `SidebarSelectionStore`; QML binds directly to each hierarchy
   viewmodel context (`libraryHierarchyViewModel`, `projectsHierarchyViewModel`, etc.).
+- Sidebar hierarchy rendering is driven by a single enum-like toolbar state (`0..7`), and the current state selects
+  both the active hierarchy viewmodel and the displayed sidebar variant.
+- Toolbar index ownership is top-level only (`Main.qml`), and sidebar components emit index-change requests upward
+  without mutating their own bound index.
+- `SidebarHierarchyView` applies `depthItems` to the bound viewmodel only when explicit non-empty external depth data
+  is provided, preventing accidental overwrite of runtime-loaded models.
 - Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
   `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
 - Bucket header rows (`accent=true`, `depth=0`) are treated as structural labels and are excluded from
   `renameItem`/`deleteSelectedFolder` targets.
+- Hierarchy list chevrons are derived from parsed depth relationships only (visible only when a direct child exists),
+  and sidebar indentation uses a fixed `8px` step per depth level.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
@@ -203,6 +211,22 @@ Library runtime classification behavior:
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
 - `Draft`: filters notes where `<folders>` resolves to an empty list
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
+
+Runtime IO components (`src/app/file/IO`):
+
+- `WhatSonIoEventListener`: accepts LVRS/runtime event names with prefix filtering and queues IO events.
+- `WhatSonSystemIoGateway`: owns filesystem UTF-8 read/write/append/remove and directory utility operations.
+- `WhatSonIoRuntimeController`: bridges queued IO events to system IO operations (`io.ensureDir`,
+  `io.writeUtf8`, `io.appendUtf8`, `io.readUtf8`, `io.removeFile`) and stores structured last-result output.
+
+Bookmarks runtime behavior:
+
+- `.wsnhead` `<bookmarks state="...">` is parsed into bookmark state (`bool`) and bookmark colors (`string list`)
+- Bookmark colors support name tokens and hex tokens; both are normalized to hex for note-list rendering
+- Bookmarks hierarchy list is derived from runtime note records and includes only notes where `bookmarked == true`
+- `WhatSonBookmarksHierarchyStore` maintains a canonical 9-color hex criteria set that matches `.wsnhead` bookmark color
+  tokens:
+  `#EF4444`, `#F97316`, `#F59E0B`, `#EAB308`, `#22C55E`, `#14B8A6`, `#3B82F6`, `#8B5CF6`, `#EC4899`
 
 ## Unified Build And Launch Automation
 

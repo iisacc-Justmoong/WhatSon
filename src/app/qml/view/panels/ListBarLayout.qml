@@ -8,7 +8,7 @@ Rectangle {
     property int activeToolbarIndex: 0
     property color fieldColor: LV.Theme.panelBackground10
     property color hintColor: LV.Theme.descriptionColor
-    readonly property bool libraryMode: activeToolbarIndex === 0
+    readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
     property color panelColor: LV.Theme.panelBackground04
     property string searchText: ""
@@ -90,11 +90,11 @@ Rectangle {
                 ListItemsPlaceholder {
                     anchors.fill: parent
                     noteModel: listBarLayout.noteListModel
-                    visible: listBarLayout.libraryMode
+                    visible: listBarLayout.noteListMode
                 }
                 Item {
                     anchors.fill: parent
-                    visible: !listBarLayout.libraryMode
+                    visible: !listBarLayout.noteListMode
 
                     Text {
                         anchors.centerIn: parent

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/common/FlatHierarchyModel.hpp"
 
 #include <QObject>
@@ -13,6 +14,7 @@ class BookmarksHierarchyViewModel final : public QObject
     Q_OBJECT
 
     Q_PROPERTY(FlatHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(bool renameEnabled READ renameEnabled CONSTANT)
     Q_PROPERTY(bool createFolderEnabled READ createFolderEnabled CONSTANT)
@@ -23,6 +25,7 @@ public:
     ~BookmarksHierarchyViewModel() override;
 
     FlatHierarchyModel* itemModel() noexcept;
+    LibraryNoteListModel* noteListModel() noexcept;
 
     int selectedIndex() const noexcept;
     Q_INVOKABLE void setSelectedIndex(int index);
@@ -56,6 +59,7 @@ private:
     QVector<FlatHierarchyItem> m_items;
     WhatSonBookmarksHierarchyStore m_store;
     FlatHierarchyModel m_itemModel;
+    LibraryNoteListModel m_noteListModel;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
 };

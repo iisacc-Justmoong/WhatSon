@@ -13,90 +13,106 @@ Item {
     property var progressViewModel: null
     property var projectsViewModel: null
     property var resourcesViewModel: null
-    readonly property string sidebarSource: {
-        switch (hierarchyView.activeToolbarIndex) {
-        case 1:
-            return "sidebar/HierarchyViewProjects.qml";
-        case 2:
-            return "sidebar/HierarchyViewBookmarks.qml";
-        case 3:
-            return "sidebar/HierarchyViewTags.qml";
-        case 4:
-            return "sidebar/HierarchyViewResources.qml";
-        case 5:
-            return "sidebar/HierarchyViewProgress.qml";
-        case 6:
-            return "sidebar/HierarchyViewEvent.qml";
-        case 7:
-            return "sidebar/HierarchyViewPreset.qml";
-        default:
-            return "sidebar/HierarchyViewLibrary.qml";
-        }
-    }
+    property var tagsViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
     signal activeToolbarIndexChangeRequested(int index)
 
-    function modelForToolbar(index) {
+    function frameNameForHierarchy(index) {
         switch (index) {
-        case 1:
+        case hierarchyEnum.projects:
+            return "HierarchyView-Projects";
+        case hierarchyEnum.bookmarks:
+            return "HierarchyView-Bookmarks";
+        case hierarchyEnum.tags:
+            return "HierarchyView-Tags";
+        case hierarchyEnum.resources:
+            return "HierarchyView-Resources";
+        case hierarchyEnum.progress:
+            return "HierarchyView-Progress";
+        case hierarchyEnum.event:
+            return "HierarchyView-Event";
+        case hierarchyEnum.preset:
+            return "HierarchyView-Preset";
+        default:
+            return "HierarchyView-Library";
+        }
+    }
+    function frameNodeIdForHierarchy(index) {
+        switch (index) {
+        case hierarchyEnum.projects:
+            return "sidebar.hierarchy.projects";
+        case hierarchyEnum.bookmarks:
+            return "sidebar.hierarchy.bookmarks";
+        case hierarchyEnum.tags:
+            return "sidebar.hierarchy.tags";
+        case hierarchyEnum.resources:
+            return "sidebar.hierarchy.resources";
+        case hierarchyEnum.progress:
+            return "sidebar.hierarchy.progress";
+        case hierarchyEnum.event:
+            return "sidebar.hierarchy.event";
+        case hierarchyEnum.preset:
+            return "sidebar.hierarchy.preset";
+        default:
+            return "sidebar.hierarchy.library";
+        }
+    }
+    function modelForHierarchy(index) {
+        switch (index) {
+        case hierarchyEnum.projects:
             return hierarchyView.projectsViewModel;
-        case 2:
+        case hierarchyEnum.bookmarks:
             return hierarchyView.bookmarksViewModel;
-        case 3:
+        case hierarchyEnum.tags:
             return hierarchyView.tagsViewModel;
-        case 4:
+        case hierarchyEnum.resources:
             return hierarchyView.resourcesViewModel;
-        case 5:
+        case hierarchyEnum.progress:
             return hierarchyView.progressViewModel;
-        case 6:
+        case hierarchyEnum.event:
             return hierarchyView.eventViewModel;
-        case 7:
+        case hierarchyEnum.preset:
             return hierarchyView.presetViewModel;
         default:
             return hierarchyView.libraryViewModel;
         }
     }
-    function syncSidebarProperties() {
-        if (!sidebarLoader.item)
-            return;
-        sidebarLoader.item.activeToolbarIndex = hierarchyView.activeToolbarIndex;
-        sidebarLoader.item.hierarchyViewModel = hierarchyView.modelForToolbar(hierarchyView.activeToolbarIndex);
-        sidebarLoader.item.panelColor = hierarchyView.panelColor;
-        sidebarLoader.item.toolbarIconNames = hierarchyView.toolbarIconNames;
-    }
-    function updateActiveToolbarIndex(index) {
-        if (index < 0 || hierarchyView.activeToolbarIndex === index)
-            return;
-        hierarchyView.activeToolbarIndex = index;
-        hierarchyView.activeToolbarIndexChangeRequested(index);
+    function normalizeHierarchyIndex(index) {
+        if (index < hierarchyEnum.library || index > hierarchyEnum.preset)
+            return hierarchyEnum.library;
+        return index;
     }
 
-    onActiveToolbarIndexChanged: hierarchyView.syncSidebarProperties()
-    onBookmarksViewModelChanged: hierarchyView.syncSidebarProperties()
-    onEventViewModelChanged: hierarchyView.syncSidebarProperties()
-    onLibraryViewModelChanged: hierarchyView.syncSidebarProperties()
-    onPanelColorChanged: hierarchyView.syncSidebarProperties()
-    onPresetViewModelChanged: hierarchyView.syncSidebarProperties()
-    onProgressViewModelChanged: hierarchyView.syncSidebarProperties()
-    onProjectsViewModelChanged: hierarchyView.syncSidebarProperties()
-    onResourcesViewModelChanged: hierarchyView.syncSidebarProperties()
-    onTagsViewModelChanged: hierarchyView.syncSidebarProperties()
-    onToolbarIconNamesChanged: hierarchyView.syncSidebarProperties()
+    QtObject {
+        id: hierarchyEnum
 
-    Loader {
-        id: sidebarLoader
+        readonly property int bookmarks: 2
+        readonly property int event: 6
+        readonly property int library: 0
+        readonly property int preset: 7
+        readonly property int progress: 5
+        readonly property int projects: 1
+        readonly property int resources: 4
+        readonly property int tags: 3
+    }
+    SidebarHierarchyView {
+        id: sidebarView
 
+        activeToolbarIndex: hierarchyView.currentHierarchy
         anchors.fill: parent
-        hierarchyView.sidebarSource
+        defaultToolbarIndex: hierarchyEnum.library
+        frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
+        frameNodeId: hierarchyView.frameNodeIdForHierarchy(hierarchyView.currentHierarchy)
+        hierarchyViewModel: hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)
+        panelColor: hierarchyView.panelColor
+        toolbarIconNames: hierarchyView.toolbarIconNames
 
-        onLoaded: {
-            hierarchyView.syncSidebarProperties();
-        }
-    }
-    Connections {
-        function onToolbarIndexChangeRequested(index) {
-            hierarchyView.updateActiveToolbarIndex(index);
+        onToolbarIndexChangeRequested: function (index) {
+            const nextIndex = hierarchyView.normalizeHierarchyIndex(index);
+            if (nextIndex === hierarchyView.currentHierarchy)
+                return;
+            hierarchyView.activeToolbarIndexChangeRequested(nextIndex);
         }
     }
 }

@@ -352,6 +352,9 @@ namespace
         record.folders = firstStringList(
             object,
             {QStringLiteral("folders"), QStringLiteral("folder"), QStringLiteral("folderValues")});
+        record.bookmarkColors = firstStringList(
+            object,
+            {QStringLiteral("bookmarkColors"), QStringLiteral("bookmarkColor"), QStringLiteral("bookmarkColour")});
         record.tags = firstStringList(
             object,
             {QStringLiteral("tags"), QStringLiteral("tag"), QStringLiteral("tagValues")});
@@ -583,6 +586,7 @@ namespace
         overwriteIfNonEmpty(&base->project, overlay.project);
         overwriteIfNonEmpty(&base->bodySummary, overlay.bodySummary);
         overwriteListIfNonEmpty(&base->folders, overlay.folders);
+        overwriteListIfNonEmpty(&base->bookmarkColors, overlay.bookmarkColors);
         overwriteListIfNonEmpty(&base->tags, overlay.tags);
         base->progress = overlay.progress;
         base->bookmarked = overlay.bookmarked;
@@ -664,6 +668,7 @@ namespace
         record.modifiedBy = store.modifiedBy();
         record.project = store.project();
         record.folders = store.folders();
+        record.bookmarkColors = store.bookmarkColors();
         record.tags = store.tags();
         record.progress = store.progress();
         record.bookmarked = store.isBookmarked();

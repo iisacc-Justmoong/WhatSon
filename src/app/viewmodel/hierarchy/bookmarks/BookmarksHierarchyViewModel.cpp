@@ -1,17 +1,69 @@
 #include "BookmarksHierarchyViewModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/bookmarks/WhatSonBookmarksHierarchyParser.hpp"
-#include "file/hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
+#include "file/hierarchy/library/LibraryAll.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
-
-#include <QDebug>
-#include <QDir>
-#include <QFileInfo>
 
 namespace
 {
     constexpr auto kScope = "bookmarks.viewmodel";
+
+    QString bookmarkListTitle(const LibraryNoteRecord& note)
+    {
+        const QString title = note.title.trimmed();
+        if (!title.isEmpty())
+        {
+            return title;
+        }
+
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            return noteId;
+        }
+
+        return QStringLiteral("Untitled Note");
+    }
+
+    QString bookmarkListSummary(const LibraryNoteRecord& note)
+    {
+        const QString bodySummary = note.bodySummary.trimmed();
+        if (!bodySummary.isEmpty())
+        {
+            return bodySummary;
+        }
+        return QStringLiteral("No contents");
+    }
+
+    QString bookmarkListFolders(const LibraryNoteRecord& note)
+    {
+        QStringList folders;
+        folders.reserve(note.folders.size());
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                folders.push_back(trimmed);
+            }
+        }
+
+        if (folders.isEmpty())
+        {
+            return QStringLiteral("No Folder");
+        }
+        return folders.join(QStringLiteral(", "));
+    }
+
+    QString bookmarkColorHexForNote(const LibraryNoteRecord& note)
+    {
+        if (!note.bookmarkColors.isEmpty())
+        {
+            return WhatSon::Bookmarks::bookmarkColorToHex(note.bookmarkColors.first());
+        }
+        return WhatSon::Bookmarks::defaultBookmarkColorHex();
+    }
 }
 
 BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
@@ -27,6 +79,11 @@ BookmarksHierarchyViewModel::~BookmarksHierarchyViewModel() = default;
 FlatHierarchyModel* BookmarksHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
+}
+
+LibraryNoteListModel* BookmarksHierarchyViewModel::noteListModel() noexcept
+{
+    return &m_noteListModel;
 }
 
 int BookmarksHierarchyViewModel::selectedIndex() const noexcept
@@ -170,66 +227,56 @@ bool BookmarksHierarchyViewModel::deleteFolderEnabled() const noexcept
 
 bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
-    QStringList contentsDirectories;
-    QString resolveError;
-    if (!WhatSon::Hierarchy::Support::resolveContentsDirectories(wshubPath, &contentsDirectories, &resolveError))
+    LibraryAll libraryAll;
+    QString indexError;
+    if (!libraryAll.indexFromWshub(wshubPath, &indexError))
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = resolveError;
+            *errorMessage = indexError;
         }
         return false;
     }
 
-    QStringList aggregated;
-    bool fileFound = false;
+    const QVector<LibraryNoteRecord>& notes = libraryAll.notes();
+    QStringList bookmarkLabels;
+    bookmarkLabels.reserve(notes.size());
 
-    WhatSonBookmarksHierarchyParser parser;
-    for (const QString& contentsDirectory : contentsDirectories)
+    QVector<LibraryNoteListItem> bookmarkListItems;
+    bookmarkListItems.reserve(notes.size());
+
+    for (const LibraryNoteRecord& note : notes)
     {
-        const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Bookmarks.wsbookmarks"));
-        if (!QFileInfo(filePath).isFile())
+        if (!note.bookmarked)
         {
             continue;
         }
 
-        fileFound = true;
-
-        QString rawText;
-        QString readError;
-        if (!WhatSon::Hierarchy::Support::readUtf8File(filePath, &rawText, &readError))
+        const QString title = bookmarkListTitle(note);
+        if (!title.isEmpty())
         {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = readError;
-            }
-            return false;
+            bookmarkLabels.push_back(title);
         }
 
-        QString parseError;
-        if (!parser.parse(rawText, &m_store, &parseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = parseError;
-            }
-            return false;
-        }
-
-        for (const QString& value : m_store.bookmarkIds())
-        {
-            aggregated.push_back(value);
-        }
+        LibraryNoteListItem item;
+        item.noteId = note.noteId.trimmed();
+        item.titleText = title;
+        item.summaryText = bookmarkListSummary(note);
+        item.foldersText = bookmarkListFolders(note);
+        item.bookmarked = true;
+        item.bookmarkColorHex = bookmarkColorHexForNote(note);
+        item.highlighted = false;
+        bookmarkListItems.push_back(std::move(item));
     }
 
-    setBookmarkIds(aggregated);
+    setBookmarkIds(bookmarkLabels);
+    m_noteListModel.setItems(std::move(bookmarkListItems));
 
     WhatSon::Debug::trace(
         QString::fromLatin1(kScope),
         QStringLiteral("loadFromWshub"),
-        QStringLiteral("path=%1 fileFound=%2 count=%3")
+        QStringLiteral("path=%1 source=wsnhead count=%2")
         .arg(wshubPath)
-        .arg(fileFound ? QStringLiteral("1") : QStringLiteral("0"))
         .arg(m_bookmarkIds.size()));
     return true;
 }

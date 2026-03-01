@@ -1,6 +1,7 @@
 #include "LibraryHierarchyViewModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "viewmodel/hierarchy/common/HierarchyViewModelSupport.hpp"
@@ -110,6 +111,15 @@ namespace
         return folders.join(QStringLiteral(", "));
     }
 
+    QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
+    {
+        if (!note.bookmarkColors.isEmpty())
+        {
+            return WhatSon::Bookmarks::bookmarkColorToHex(note.bookmarkColors.first());
+        }
+        return WhatSon::Bookmarks::defaultBookmarkColorHex();
+    }
+
     void applyChevronByDepth(QVector<LibraryHierarchyItem>* items)
     {
         if (items == nullptr)
@@ -122,7 +132,7 @@ namespace
             const int nextIndex = index + 1;
             const bool hasChild = nextIndex < items->size()
                 && items->at(nextIndex).depth > items->at(index).depth;
-            (*items)[index].showChevron = items->at(index).showChevron && hasChild;
+            (*items)[index].showChevron = hasChild;
         }
     }
 
@@ -150,6 +160,7 @@ namespace
             ++fallbackOrdinal;
         }
 
+        applyChevronByDepth(&items);
         return items;
     }
 } // namespace
@@ -250,6 +261,7 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     }
 
     m_items = std::move(parsedItems);
+    applyChevronByDepth(&m_items);
     m_foldersHierarchyLoaded = false;
     m_bucketRanges.clear();
     m_rowNoteIds.clear();
@@ -485,6 +497,7 @@ void LibraryHierarchyViewModel::createFolder()
     newItem.showChevron = true;
 
     m_items.insert(insertIndex, std::move(newItem));
+    applyChevronByDepth(&m_items);
     m_bucketRanges.clear();
     m_rowNoteIds.clear();
     m_rowNoteIds.resize(m_items.size());
@@ -517,6 +530,7 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     }
 
     m_items.remove(startIndex, removeCount);
+    applyChevronByDepth(&m_items);
     m_bucketRanges.clear();
     m_rowNoteIds.clear();
     m_rowNoteIds.resize(m_items.size());
@@ -637,6 +651,7 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         item.summaryText = noteListSummary(note);
         item.foldersText = noteListFolders(note);
         item.bookmarked = note.bookmarked;
+        item.bookmarkColorHex = bookmarkColorHexFromNote(note);
         item.highlighted = !highlightedKey.isEmpty() && item.noteId.toCaseFolded() == highlightedKey;
         items.push_back(std::move(item));
     }

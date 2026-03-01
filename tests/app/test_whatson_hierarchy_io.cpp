@@ -40,6 +40,7 @@ private
     void parse_blueprintFiles();
     void creatorParser_roundTrip();
     void libraryParser_parsesObjectStyleNotes();
+    void bookmarksStore_hasNineHexCriteriaAndNormalizesInput();
 };
 
 namespace
@@ -317,6 +318,48 @@ void WhatSonHierarchyIoTest::libraryParser_parsesObjectStyleNotes()
         QStringLiteral("note-d")
     };
     QCOMPARE(store.noteIds(), expectedObjectStyleIds);
+}
+
+void WhatSonHierarchyIoTest::bookmarksStore_hasNineHexCriteriaAndNormalizesInput()
+{
+    WhatSonBookmarksHierarchyStore store;
+
+    const QStringList defaultCriteria = store.bookmarkColorCriteriaHex();
+    QCOMPARE(defaultCriteria.size(), 9);
+    for (const QString& hex : defaultCriteria)
+    {
+        QVERIFY2(hex.startsWith(QLatin1Char('#')), qPrintable(hex));
+        QCOMPARE(hex.size(), 7);
+    }
+
+    store.setBookmarkColorCriteriaHex({
+        QStringLiteral("blue"),
+        QStringLiteral("#ec4899"),
+        QStringLiteral("invalid-color"),
+        QStringLiteral("blue")
+    });
+
+    const QStringList normalized = store.bookmarkColorCriteriaHex();
+    QCOMPARE(normalized.size(), 9);
+    QCOMPARE(normalized.at(0), QStringLiteral("#3B82F6"));
+    QCOMPARE(normalized.at(1), QStringLiteral("#EC4899"));
+    QCOMPARE(normalized.at(2), QStringLiteral("#F59E0B"));
+
+    const QStringList expectedPalette{
+        QStringLiteral("#EF4444"),
+        QStringLiteral("#F97316"),
+        QStringLiteral("#F59E0B"),
+        QStringLiteral("#EAB308"),
+        QStringLiteral("#22C55E"),
+        QStringLiteral("#14B8A6"),
+        QStringLiteral("#3B82F6"),
+        QStringLiteral("#8B5CF6"),
+        QStringLiteral("#EC4899")
+    };
+    for (const QString& hex : expectedPalette)
+    {
+        QVERIFY2(normalized.contains(hex), qPrintable(hex));
+    }
 }
 
 QTEST_APPLESS_MAIN(WhatSonHierarchyIoTest)

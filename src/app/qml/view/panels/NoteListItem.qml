@@ -6,7 +6,8 @@ Item {
     id: noteListItem
 
     readonly property bool activeState: hovered
-    readonly property color bookmarkColor: "#F2C55C"
+    property color bookmarkColor: "#F2C55C"
+    property bool bookmarked: true
     readonly property color captionColor: Qt.rgba(1, 1, 1, 0.5)
     readonly property color cardColor: LV.Theme.panelBackground08
     property string desc: "Note Contents Thumbnail... is can has 2 lines..."
@@ -67,7 +68,7 @@ Item {
                 Item {
                     Layout.preferredHeight: 16
                     Layout.preferredWidth: 16
-                    visible: true
+                    visible: noteListItem.bookmarked
 
                     Canvas {
                         anchors.fill: parent

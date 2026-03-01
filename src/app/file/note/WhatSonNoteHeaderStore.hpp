@@ -37,6 +37,8 @@ public:
 
     bool isBookmarked() const noexcept;
     void setBookmarked(bool bookmarked) noexcept;
+    QStringList bookmarkColors() const;
+    void setBookmarkColors(QStringList colors);
 
     QStringList tags() const;
     void setTags(QStringList tags);
@@ -57,6 +59,7 @@ private:
     QStringList m_folders;
     QString m_project;
     bool m_bookmarked = false;
+    QStringList m_bookmarkColors;
     QStringList m_tags;
     int m_progress = 0;
     bool m_preset = false;

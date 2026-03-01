@@ -150,6 +150,7 @@ LV.ApplicationWindow {
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
+                    activeToolbarIndex: applicationWindow.hierarchyActiveToolbarIndex
                     bookmarksViewModel: (typeof bookmarksHierarchyViewModel !== "undefined") ? bookmarksHierarchyViewModel : null
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: applicationWindow.adaptiveCompactMode
@@ -177,6 +178,7 @@ LV.ApplicationWindow {
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
+                    tagsViewModel: (typeof tagsHierarchyViewModel !== "undefined") ? tagsHierarchyViewModel : null
 
                     onActiveToolbarIndexChangeRequested: function (index) {
                         if (index >= 0 && index !== applicationWindow.hierarchyActiveToolbarIndex)

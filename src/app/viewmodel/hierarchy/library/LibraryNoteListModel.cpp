@@ -40,6 +40,8 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
         return item.foldersText;
     case BookmarkedRole:
         return item.bookmarked;
+    case BookmarkColorHexRole:
+        return item.bookmarkColorHex;
     case HighlightedRole:
         return item.highlighted;
     default:
@@ -55,6 +57,7 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
         {SummaryTextRole, "summaryText"},
         {FoldersTextRole, "foldersText"},
         {BookmarkedRole, "bookmarked"},
+        {BookmarkColorHexRole, "bookmarkColorHex"},
         {HighlightedRole, "highlighted"}
     };
 }

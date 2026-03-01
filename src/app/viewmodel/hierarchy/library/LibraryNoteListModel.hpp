@@ -11,6 +11,7 @@ struct LibraryNoteListItem
     QString summaryText;
     QString foldersText;
     bool bookmarked = false;
+    QString bookmarkColorHex;
     bool highlighted = false;
 };
 
@@ -26,6 +27,7 @@ public:
         SummaryTextRole,
         FoldersTextRole,
         BookmarkedRole,
+        BookmarkColorHexRole,
         HighlightedRole
     };
 

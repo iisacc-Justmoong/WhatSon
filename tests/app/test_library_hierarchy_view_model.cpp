@@ -49,7 +49,9 @@ namespace
         const QString& title,
         const QString& createdAt,
         const QString& lastModifiedAt,
-        const QStringList& folders)
+        const QStringList& folders,
+        bool bookmarked = false,
+        const QStringList& bookmarkColors = {})
     {
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -65,6 +67,14 @@ namespace
             text += QStringLiteral("      <folder>%1</folder>\n").arg(folder);
         }
         text += QStringLiteral("    </folders>\n");
+        QString bookmarkTag = QStringLiteral("    <bookmarks state=%1").arg(
+            bookmarked ? QStringLiteral("true") : QStringLiteral("false"));
+        if (!bookmarkColors.isEmpty())
+        {
+            bookmarkTag += QStringLiteral(" colors={%1}").arg(bookmarkColors.join(QStringLiteral(",")));
+        }
+        bookmarkTag += QStringLiteral(" />\n");
+        text += bookmarkTag;
         text += QStringLiteral("  </head>\n");
         text += QStringLiteral("</contents>\n");
         return text;
@@ -175,7 +185,9 @@ namespace
                 QStringLiteral("Beta Note"),
                 oldText,
                 todayText,
-                {QStringLiteral("Workspace")})))
+                {QStringLiteral("Workspace")},
+                true,
+                {QStringLiteral("blue")})))
         {
             return false;
         }
@@ -340,6 +352,10 @@ void LibraryHierarchyViewModelTest::createFolder_insertsAsChildOfSelectedSubtree
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::DepthRole).toInt(),
         1);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
 }
 
 void LibraryHierarchyViewModelTest::deleteSelectedFolder_removesDescendantSubtree()
@@ -449,6 +465,16 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
                  ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::SummaryTextRole)
                  .toString(),
         QStringLiteral("Beta body summary."));
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkedRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkColorHexRole)
+                 .toString(),
+        QStringLiteral("#3B82F6"));
 
     viewModel.setSelectedIndex(4);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
@@ -524,6 +550,18 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("Brand"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 }
 

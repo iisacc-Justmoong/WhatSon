@@ -223,7 +223,7 @@ namespace WhatSon::Hierarchy::Support
         {
             const int nextIndex = index + 1;
             const bool hasChild = nextIndex < items.size() && items.at(nextIndex).depth > items.at(index).depth;
-            items[index].showChevron = items.at(index).showChevron && hasChild;
+            items[index].showChevron = hasChild;
         }
 
         return items;
@@ -283,7 +283,7 @@ namespace WhatSon::Hierarchy::Support
         {
             const int nextIndex = index + 1;
             const bool hasChild = nextIndex < items.size() && items.at(nextIndex).depth > items.at(index).depth;
-            items[index].showChevron = items.at(index).showChevron && hasChild;
+            items[index].showChevron = hasChild;
         }
 
         return items;
@@ -300,7 +300,7 @@ namespace WhatSon::Hierarchy::Support
         {
             const int nextIndex = index + 1;
             const bool hasChild = nextIndex < items->size() && items->at(nextIndex).depth > items->at(index).depth;
-            (*items)[index].showChevron = items->at(index).showChevron && hasChild;
+            (*items)[index].showChevron = hasChild;
         }
     }
 

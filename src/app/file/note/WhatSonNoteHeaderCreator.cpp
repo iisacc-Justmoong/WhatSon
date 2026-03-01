@@ -1,5 +1,6 @@
 #include "WhatSonNoteHeaderCreator.hpp"
 
+#include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 
 #include <QFileInfo>
@@ -93,7 +94,15 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     text += QStringLiteral("    </folders>\n");
 
     text += QStringLiteral("    <project>") + escapeXmlText(store.project()) + QStringLiteral("</project>\n");
-    text += QStringLiteral("    <bookmarks state=\"") + boolToText(store.isBookmarked()) + QStringLiteral("\" />\n");
+    QString bookmarkTag = QStringLiteral("    <bookmarks state=\"") + boolToText(store.isBookmarked()) +
+        QStringLiteral("\"");
+    const QString colorsAttribute = WhatSon::Bookmarks::serializeBookmarkColorsAttribute(store.bookmarkColors());
+    if (!colorsAttribute.isEmpty())
+    {
+        bookmarkTag += QStringLiteral(" colors=\"") + escapeXmlText(colorsAttribute) + QStringLiteral("\"");
+    }
+    bookmarkTag += QStringLiteral(" />\n");
+    text += bookmarkTag;
 
     text += QStringLiteral("    <tags>\n");
     for (const QString& tag : store.tags())

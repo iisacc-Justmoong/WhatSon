@@ -18,6 +18,9 @@ Item {
     readonly property int footerHeight: 24
     property string frameName: ""
     property string frameNodeId: ""
+    readonly property int hierarchyChevronSlotWidth: ((typeof LV.Theme.iconSm === "number" && isFinite(LV.Theme.iconSm)) ? LV.Theme.iconSm : 16) + ((typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2)
+    readonly property int hierarchyIndentStep: 8
+    readonly property int hierarchyItemBaseLeftPadding: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property var hierarchyViewModel: null
     readonly property int horizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property color panelColor: LV.Theme.panelBackground04
@@ -90,16 +93,15 @@ Item {
 
     clip: true
 
-    Component.onCompleted: {
-        if (sidebarHierarchyView.hierarchyViewModel)
-            sidebarHierarchyView.hierarchyViewModel.setDepthItems(sidebarHierarchyView.depthItems);
-    }
+    Component.onCompleted: sidebarHierarchyView.applyExternalDepthItems()
     onDepthItemsChanged: {
-        if (sidebarHierarchyView.hierarchyViewModel)
-            sidebarHierarchyView.hierarchyViewModel.setDepthItems(sidebarHierarchyView.depthItems);
+        sidebarHierarchyView.applyExternalDepthItems();
         sidebarHierarchyView.cancelRename();
     }
-    onHierarchyViewModelChanged: sidebarHierarchyView.cancelRename()
+    onHierarchyViewModelChanged: {
+        sidebarHierarchyView.cancelRename();
+        sidebarHierarchyView.applyExternalDepthItems();
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -139,7 +141,6 @@ Item {
                 onActiveChanged: function (button, buttonId, index) {
                     if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
                         return;
-                    sidebarHierarchyView.activeToolbarIndex = index;
                     sidebarHierarchyView.toolbarIndexChangeRequested(index);
                 }
             }
@@ -192,14 +193,16 @@ Item {
                         model: sidebarHierarchyView.folderModel
 
                         delegate: Item {
+                            id: hierarchyDelegate
+
                             required property bool accent
                             required property bool expanded
                             required property int indentLevel
                             required property int index
                             required property string label
                             readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(label)
-                            readonly property int renameLeftInset: LV.Theme.gap8 + indentLevel * 13 + LV.Theme.iconSm + LV.Theme.gap2
-                            readonly property int renameRightInset: effectiveShowChevron ? (LV.Theme.iconSm + LV.Theme.gap8) : LV.Theme.gap8
+                            readonly property int renameLeftInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding + indentLevel * sidebarHierarchyView.hierarchyIndentStep + sidebarHierarchyView.hierarchyChevronSlotWidth
+                            readonly property int renameRightInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding
                             required property bool showChevron
 
                             height: matchesSearch ? implicitHeight : 0
@@ -211,31 +214,34 @@ Item {
                                 id: hierarchyRow
 
                                 anchors.fill: parent
-                                baseLeftPadding: LV.Theme.gap8
+                                baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
                                 chevronColor: LV.Theme.darkGrey10
                                 expanded: expanded
                                 iconPlaceholderColor: LV.Theme.accentGrayLight
                                 indentLevel: indentLevel
-                                indentStep: 13
+                                indentStep: sidebarHierarchyView.hierarchyIndentStep
                                 label: index === sidebarHierarchyView.editingIndex ? "" : label
                                 leadingSpacing: LV.Theme.gap2
                                 rowBackgroundColor: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowBackgroundColorHover: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowBackgroundColorPressed: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
                                 rowRightPadding: LV.Theme.gap8
-                                showChevron: effectiveShowChevron
+                                showChevron: hierarchyDelegate.showChevron
                                 textColorNormal: accent ? LV.Theme.accentBlue : LV.Theme.bodyColor
                             }
                             MouseArea {
                                 anchors.fill: parent
 
                                 onClicked: {
-                                    if (sidebarHierarchyView.renameEnabled) {
-                                        sidebarHierarchyView.beginRename(index, label);
-                                        return;
-                                    }
                                     if (sidebarHierarchyView.hierarchyViewModel)
                                         sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
+                                }
+                                onDoubleClicked: {
+                                    if (!sidebarHierarchyView.renameEnabled)
+                                        return;
+                                    if (accent && indentLevel === 0)
+                                        return;
+                                    sidebarHierarchyView.beginRename(index, label);
                                 }
                             }
                             Item {

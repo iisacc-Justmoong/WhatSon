@@ -1,5 +1,6 @@
 #include "WhatSonNoteHeaderParser.hpp"
 
+#include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 
 #include <QRegularExpression>
@@ -265,6 +266,8 @@ bool WhatSonNoteHeaderParser::parse(
     outStore->setBookmarked(parseBooleanValue(
         extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("state")),
         false));
+    outStore->setBookmarkColors(WhatSon::Bookmarks::parseBookmarkColorsAttribute(
+        extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("colors"))));
     outStore->setTags(extractTagTexts(wsnHeadText, QStringLiteral("tag")));
     outStore->setProgress(parseProgressValue(wsnHeadText));
 
@@ -278,10 +281,12 @@ bool WhatSonNoteHeaderParser::parse(
     WhatSon::Debug::trace(
         QStringLiteral("note.header.parser"),
         QStringLiteral("parse.success"),
-        QStringLiteral("id=%1 title=%2 folderCount=%3 tagCount=%4 progress=%5 bookmarked=%6 preset=%7")
+        QStringLiteral(
+            "id=%1 title=%2 folderCount=%3 bookmarkColorCount=%4 tagCount=%5 progress=%6 bookmarked=%7 preset=%8")
         .arg(outStore->noteId())
         .arg(outStore->title())
         .arg(outStore->folders().size())
+        .arg(outStore->bookmarkColors().size())
         .arg(outStore->tags().size())
         .arg(outStore->progress())
         .arg(outStore->isBookmarked() ? QStringLiteral("true") : QStringLiteral("false"))

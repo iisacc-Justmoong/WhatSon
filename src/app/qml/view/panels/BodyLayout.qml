@@ -14,6 +14,7 @@ Item {
     property color drawerColor: LV.Theme.panelBackground11
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
+    property var eventViewModel: null
     property var libraryViewModel: null
     property color listViewColor: LV.Theme.panelBackground08
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
@@ -70,7 +71,6 @@ Item {
             width += hStack.splitterThickness;
         if (hStack.rightVisible)
             width += hStack.splitterThickness;
-
     }
 
     Layout.fillHeight: true
@@ -156,7 +156,13 @@ Item {
                 ListBarLayout {
                     activeToolbarIndex: hStack.activeToolbarIndex
                     anchors.fill: parent
-                    noteListModel: (hStack.activeToolbarIndex === 0 && hStack.libraryViewModel) ? hStack.libraryViewModel.noteListModel : null
+                    noteListModel: {
+                        if (hStack.activeToolbarIndex === 0 && hStack.libraryViewModel)
+                            return hStack.libraryViewModel.noteListModel;
+                        if (hStack.activeToolbarIndex === 2 && hStack.bookmarksViewModel)
+                            return hStack.bookmarksViewModel.noteListModel;
+                        return null;
+                    }
                     panelColor: hStack.sidebarColor
                 }
             }

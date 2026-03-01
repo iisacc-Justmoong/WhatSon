@@ -16,8 +16,11 @@ public:
 
     QStringList bookmarkIds() const;
     void setBookmarkIds(QStringList values);
+    QStringList bookmarkColorCriteriaHex() const;
+    void setBookmarkColorCriteriaHex(QStringList values);
 
 private:
     QString m_hubPath;
     QStringList m_bookmarkIds;
+    QStringList m_bookmarkColorCriteriaHex;
 };

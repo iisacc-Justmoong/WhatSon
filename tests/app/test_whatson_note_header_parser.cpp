@@ -39,7 +39,7 @@ void WhatSonNoteHeaderParserTest::parse_readsWsnHeadFieldsWithExpectedTypes()
             "      <folder>Q1/Brand</folder>\n"
             "    </folders>\n"
             "    <project>Main Project</project>\n"
-            "    <bookmarks state=true />\n"
+            "    <bookmarks state=true colors={blue,#ef4444,\"purple\"} />\n"
             "    <tags>\n"
             "      <tag>creative</tag>\n"
             "      <tag>launch</tag>\n"
@@ -63,6 +63,9 @@ void WhatSonNoteHeaderParserTest::parse_readsWsnHeadFieldsWithExpectedTypes()
     QCOMPARE(store.folders(), QStringList({QStringLiteral("Inbox"), QStringLiteral("Q1/Brand")}));
     QCOMPARE(store.project(), QStringLiteral("Main Project"));
     QVERIFY(store.isBookmarked());
+    QCOMPARE(store.bookmarkColors(), QStringList({
+                 QStringLiteral("blue"), QStringLiteral("#EF4444"), QStringLiteral("purple")
+             }));
     QCOMPARE(store.tags(), QStringList({QStringLiteral("creative"), QStringLiteral("launch")}));
     QCOMPARE(store.progress(), 2);
     QVERIFY(!store.isPreset());
@@ -155,6 +158,7 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
     seed.setFolders(QStringList({QStringLiteral("One"), QStringLiteral("Two")}));
     seed.setProject(QStringLiteral("Alpha"));
     seed.setBookmarked(true);
+    seed.setBookmarkColors(QStringList({QStringLiteral("blue"), QStringLiteral("pink")}));
     seed.setTags(QStringList({QStringLiteral("tag1"), QStringLiteral("tag2")}));
     seed.setProgress(3);
     seed.setPreset(true);
@@ -170,6 +174,7 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
     QCOMPARE(decoded.noteId(), seed.noteId());
     QCOMPARE(decoded.title(), seed.title());
     QCOMPARE(decoded.folders(), seed.folders());
+    QCOMPARE(decoded.bookmarkColors(), seed.bookmarkColors());
     QCOMPARE(decoded.tags(), seed.tags());
     QCOMPARE(decoded.progress(), seed.progress());
     QCOMPARE(decoded.isBookmarked(), seed.isBookmarked());

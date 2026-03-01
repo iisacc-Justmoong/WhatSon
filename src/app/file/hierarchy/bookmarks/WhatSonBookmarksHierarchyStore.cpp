@@ -1,5 +1,6 @@
 #include "WhatSonBookmarksHierarchyStore.hpp"
 
+#include "note/WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 
 #include <utility>
@@ -25,7 +26,10 @@ namespace
     }
 } // namespace
 
-WhatSonBookmarksHierarchyStore::WhatSonBookmarksHierarchyStore() = default;
+WhatSonBookmarksHierarchyStore::WhatSonBookmarksHierarchyStore()
+{
+    clear();
+}
 
 WhatSonBookmarksHierarchyStore::~WhatSonBookmarksHierarchyStore() = default;
 
@@ -33,6 +37,11 @@ void WhatSonBookmarksHierarchyStore::clear()
 {
     m_hubPath.clear();
     m_bookmarkIds.clear();
+    m_bookmarkColorCriteriaHex.clear();
+    for (const WhatSon::Bookmarks::BookmarkColorDefinition& definition : WhatSon::Bookmarks::kBookmarkColorDefinitions)
+    {
+        m_bookmarkColorCriteriaHex.push_back(QString::fromLatin1(definition.hex));
+    }
     WhatSon::Debug::trace(
         QStringLiteral("hierarchy.bookmarks.store"),
         QStringLiteral("clear"));
@@ -68,4 +77,49 @@ void WhatSonBookmarksHierarchyStore::setBookmarkIds(QStringList values)
         .arg(rawCount)
         .arg(m_bookmarkIds.size())
         .arg(m_bookmarkIds.join(QStringLiteral(", "))));
+}
+
+QStringList WhatSonBookmarksHierarchyStore::bookmarkColorCriteriaHex() const
+{
+    return m_bookmarkColorCriteriaHex;
+}
+
+void WhatSonBookmarksHierarchyStore::setBookmarkColorCriteriaHex(QStringList values)
+{
+    const int rawCount = values.size();
+    QStringList sanitized;
+    sanitized.reserve(rawCount);
+
+    for (const QString& value : values)
+    {
+        const QString colorHex = WhatSon::Bookmarks::bookmarkColorToHex(value);
+        if (sanitized.contains(colorHex))
+        {
+            continue;
+        }
+        sanitized.push_back(colorHex);
+    }
+
+    if (sanitized.size() < static_cast<int>(WhatSon::Bookmarks::kBookmarkColorDefinitions.size()))
+    {
+        for (const WhatSon::Bookmarks::BookmarkColorDefinition& definition :
+             WhatSon::Bookmarks::kBookmarkColorDefinitions)
+        {
+            const QString colorHex = QString::fromLatin1(definition.hex);
+            if (sanitized.contains(colorHex))
+            {
+                continue;
+            }
+            sanitized.push_back(colorHex);
+        }
+    }
+
+    m_bookmarkColorCriteriaHex = std::move(sanitized);
+    WhatSon::Debug::trace(
+        QStringLiteral("hierarchy.bookmarks.store"),
+        QStringLiteral("setBookmarkColorCriteriaHex"),
+        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+        .arg(rawCount)
+        .arg(m_bookmarkColorCriteriaHex.size())
+        .arg(m_bookmarkColorCriteriaHex.join(QStringLiteral(", "))));
 }

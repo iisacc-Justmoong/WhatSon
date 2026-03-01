@@ -1,5 +1,6 @@
 #include "WhatSonNoteHeaderStore.hpp"
 
+#include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 
 #include <QDateTime>
@@ -122,6 +123,7 @@ void WhatSonNoteHeaderStore::clear()
     m_folders.clear();
     m_project.clear();
     m_bookmarked = false;
+    m_bookmarkColors.clear();
     m_tags.clear();
     m_progress = 0;
     m_preset = false;
@@ -319,6 +321,37 @@ void WhatSonNoteHeaderStore::setBookmarked(bool bookmarked) noexcept
         QStringLiteral("note.header.store"),
         QStringLiteral("setBookmarked"),
         QStringLiteral("value=%1").arg(m_bookmarked ? QStringLiteral("true") : QStringLiteral("false")));
+}
+
+QStringList WhatSonNoteHeaderStore::bookmarkColors() const
+{
+    return m_bookmarkColors;
+}
+
+void WhatSonNoteHeaderStore::setBookmarkColors(QStringList colors)
+{
+    const int rawCount = colors.size();
+    QStringList sanitized;
+    sanitized.reserve(rawCount);
+
+    for (const QString& color : colors)
+    {
+        const QString canonical = WhatSon::Bookmarks::canonicalBookmarkColorToken(color);
+        if (canonical.isEmpty() || sanitized.contains(canonical))
+        {
+            continue;
+        }
+        sanitized.push_back(canonical);
+    }
+
+    m_bookmarkColors = std::move(sanitized);
+    WhatSon::Debug::trace(
+        QStringLiteral("note.header.store"),
+        QStringLiteral("setBookmarkColors"),
+        QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+        .arg(rawCount)
+        .arg(m_bookmarkColors.size())
+        .arg(m_bookmarkColors.join(QStringLiteral(", "))));
 }
 
 QStringList WhatSonNoteHeaderStore::tags() const

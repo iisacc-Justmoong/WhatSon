@@ -311,6 +311,27 @@ target_link_libraries(whatson_hierarchy_io_tests
 add_test(NAME whatson_hierarchy_io_tests COMMAND whatson_hierarchy_io_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hierarchy_io_tests)
 
+add_executable(whatson_io_runtime_tests
+        app/test_whatson_io_runtime.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonIoEventListener.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonIoRuntimeController.cpp
+)
+set_target_properties(whatson_io_runtime_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_io_runtime_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO
+)
+target_link_libraries(whatson_io_runtime_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_io_runtime_tests COMMAND whatson_io_runtime_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_io_runtime_tests)
+
 if (WHATSON_TEST_TARGETS)
     add_custom_target(whatson_tests DEPENDS ${WHATSON_TEST_TARGETS})
 endif ()
