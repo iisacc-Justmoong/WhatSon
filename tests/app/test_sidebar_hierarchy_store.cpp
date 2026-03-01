@@ -1,6 +1,7 @@
 #include "sidebar/HierarchyItemListModel.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
 
+#include <QSet>
 #include <QSignalSpy>
 #include <QtTest/QtTest>
 
@@ -15,6 +16,7 @@ private
 
     void defaultState_isLibrarySection();
     void setActiveIndex_clampsRangeAndEmitsSignal();
+    void sections_useDistinctItemModelInstances();
     void metadata_matchesSectionModels();
 };
 
@@ -54,6 +56,33 @@ void SidebarHierarchyStoreTest::setActiveIndex_clampsRangeAndEmitsSignal()
 
     store.setActiveIndex(0);
     QCOMPARE(activeIndexSpy.count(), 2);
+}
+
+void SidebarHierarchyStoreTest::sections_useDistinctItemModelInstances()
+{
+    SidebarHierarchyStore store;
+
+    const QStringList expectedObjectNames = {
+        QStringLiteral("libraryHierarchyItemModel"),
+        QStringLiteral("projectsHierarchyItemModel"),
+        QStringLiteral("bookmarksHierarchyItemModel"),
+        QStringLiteral("tagsHierarchyItemModel"),
+        QStringLiteral("resourcesHierarchyItemModel"),
+        QStringLiteral("progressHierarchyItemModel"),
+        QStringLiteral("eventHierarchyItemModel"),
+        QStringLiteral("presetHierarchyItemModel")
+    };
+
+    QSet<const void*> modelAddresses;
+    for (int index = 0; index < store.sectionCount(); ++index)
+    {
+        HierarchyItemListModel* sectionModel = store.itemModelForSection(index);
+        QVERIFY(sectionModel != nullptr);
+        QCOMPARE(sectionModel->objectName(), expectedObjectNames.at(index));
+        modelAddresses.insert(static_cast<const void*>(sectionModel));
+    }
+
+    QCOMPARE(modelAddresses.size(), store.sectionCount());
 }
 
 void SidebarHierarchyStoreTest::metadata_matchesSectionModels()

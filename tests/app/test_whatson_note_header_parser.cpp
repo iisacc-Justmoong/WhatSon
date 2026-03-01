@@ -2,6 +2,7 @@
 #include "note/WhatSonNoteHeaderParser.hpp"
 #include "note/WhatSonNoteHeaderStore.hpp"
 
+#include <QRegularExpression>
 #include <QtTest>
 
 class WhatSonNoteHeaderParserTest final : public QObject
@@ -12,9 +13,11 @@ private
     slots  :
 
 
+
     void parse_readsWsnHeadFieldsWithExpectedTypes();
     void parse_mapsProgressEnumLabelToInteger();
-    void parse_ignoresTemplateTokensInFolderAndTagArrays();
+    void parse_resolvesTemplateTokensInFolderAndTagArrays();
+    void parse_resolvesTemplateTokensInSingleFields();
     void createHeaderText_roundTripsThroughParser();
 };
 
@@ -83,7 +86,7 @@ void WhatSonNoteHeaderParserTest::parse_mapsProgressEnumLabelToInteger()
     QCOMPARE(store.progress(), 2);
 }
 
-void WhatSonNoteHeaderParserTest::parse_ignoresTemplateTokensInFolderAndTagArrays()
+void WhatSonNoteHeaderParserTest::parse_resolvesTemplateTokensInFolderAndTagArrays()
 {
     const QString input =
         QStringLiteral(
@@ -105,8 +108,39 @@ void WhatSonNoteHeaderParserTest::parse_ignoresTemplateTokensInFolderAndTagArray
     QString errorMessage;
     QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
 
-    QCOMPARE(store.folders(), QStringList({QStringLiteral("Folder-A")}));
-    QCOMPARE(store.tags(), QStringList({QStringLiteral("tag-a")}));
+    QCOMPARE(store.folders(), QStringList({QStringLiteral("folder1"), QStringLiteral("Folder-A")}));
+    QCOMPARE(store.tags(), QStringList({QStringLiteral("tag1"), QStringLiteral("tag-a")}));
+}
+
+void WhatSonNoteHeaderParserTest::parse_resolvesTemplateTokensInSingleFields()
+{
+    const QString input =
+        QStringLiteral(
+            "<contents id=${id}>\n"
+            "  <head>\n"
+            "    <title>Placeholder</title>\n"
+            "    <created>YYYY-MM-DD-hh-mm-ss</created>\n"
+            "    <author>${ProfileName}</author>\n"
+            "    <lastModified>YYYY-MM-DD-hh-mm-ss</lastModified>\n"
+            "    <modifiedBy>${ProfileName}</modifiedBy>\n"
+            "    <project>${projectName}</project>\n"
+            "  </head>\n"
+            "</contents>\n");
+
+    WhatSonNoteHeaderStore store;
+    WhatSonNoteHeaderParser parser;
+    QString errorMessage;
+    QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
+
+    QVERIFY(store.noteId().startsWith(QStringLiteral("note-")));
+    QCOMPARE(store.title(), QStringLiteral("Untitled Note"));
+    QCOMPARE(store.author(), QStringLiteral("ProfileName"));
+    QCOMPARE(store.modifiedBy(), QStringLiteral("ProfileName"));
+    QCOMPARE(store.project(), QStringLiteral("projectName"));
+
+    const QRegularExpression timestampRegex(QStringLiteral(R"(^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$)"));
+    QVERIFY(timestampRegex.match(store.createdAt()).hasMatch());
+    QVERIFY(timestampRegex.match(store.lastModifiedAt()).hasMatch());
 }
 
 void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()

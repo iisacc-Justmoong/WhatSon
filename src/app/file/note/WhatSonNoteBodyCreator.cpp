@@ -1,5 +1,7 @@
 #include "WhatSonNoteBodyCreator.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QFileInfo>
 
 #include <utility>
@@ -21,7 +23,12 @@ QString WhatSonNoteBodyCreator::targetPathForNote(const QString& noteId) const
     const QString noteDirPath = noteDirectoryPath(noteId);
     const QString noteStem = QFileInfo(noteDirPath).completeBaseName();
     const QString fileName = noteStem + QStringLiteral(".wsnbody");
-    return joinPath(noteDirPath, fileName);
+    const QString targetPath = joinPath(noteDirPath, fileName);
+    WhatSon::Debug::trace(
+        QStringLiteral("note.creator.body"),
+        QStringLiteral("targetPathForNote"),
+        QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
+    return targetPath;
 }
 
 QStringList WhatSonNoteBodyCreator::requiredRelativePaths() const

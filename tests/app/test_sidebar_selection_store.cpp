@@ -16,6 +16,7 @@ private
     slots  :
 
 
+
     void defaultState_usesLibraryModelAndToolbarSelection();
     void activeIndex_tags_switchesModelAndDisablesFolderActions();
     void activeIndex_projects_usesStaticSectionModel();
@@ -75,6 +76,10 @@ void SidebarSelectionStoreTest::activeIndex_projects_usesStaticSectionModel()
     selectionStore.setActiveIndex(1);
     QCOMPARE(selectionStore.activeIndex(), 1);
     QVERIFY(selectionStore.itemModel() == hierarchyStore.itemModel());
+    QVERIFY(selectionStore.itemModel() == hierarchyStore.itemModelForSection(1));
+    QVERIFY(selectionStore.itemModel() != hierarchyStore.itemModelForSection(2));
+    QVERIFY(selectionStore.itemModel() != libraryViewModel.itemModel());
+    QVERIFY(selectionStore.itemModel() != tagsViewModel.itemModel());
 
     selectionStore.setSelectedIndex(2);
     QCOMPARE(selectionStore.selectedIndex(), 2);

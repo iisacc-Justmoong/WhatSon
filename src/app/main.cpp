@@ -1,6 +1,7 @@
 #include "hierarchy/library/LibraryHierarchyViewModel.hpp"
 #include "hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "sidebar/SidebarHierarchyStore.hpp"
 #include "sidebar/SidebarSelectionStore.hpp"
@@ -56,21 +57,43 @@ namespace
             QCoreApplication::applicationDirPath()
         };
 
+        WhatSon::Debug::trace(
+            QStringLiteral("main.blueprint"),
+            QStringLiteral("resolve.start"),
+            QStringLiteral("basePathCount=%1").arg(basePaths.size()));
+
         for (const QString& basePath : basePaths)
         {
+            WhatSon::Debug::trace(
+                QStringLiteral("main.blueprint"),
+                QStringLiteral("resolve.base"),
+                QStringLiteral("basePath=%1").arg(basePath));
             QDir probe(basePath);
             for (int depth = 0; depth < 8; ++depth)
             {
                 const QDir blueprintDir(probe.filePath(QStringLiteral("blueprint")));
+                WhatSon::Debug::trace(
+                    QStringLiteral("main.blueprint"),
+                    QStringLiteral("resolve.probe"),
+                    QStringLiteral("depth=%1 probe=%2").arg(depth).arg(blueprintDir.path()));
                 if (blueprintDir.exists())
                 {
+                    WhatSon::Debug::trace(
+                        QStringLiteral("main.blueprint"),
+                        QStringLiteral("resolve.blueprintDirFound"),
+                        QStringLiteral("path=%1").arg(blueprintDir.path()));
                     const QFileInfoList hubCandidates = blueprintDir.entryInfoList(
                         QStringList{QStringLiteral("*.wshub")},
                         QDir::Dirs | QDir::NoDotAndDotDot,
                         QDir::Name);
                     if (!hubCandidates.isEmpty())
                     {
-                        return QDir::cleanPath(hubCandidates.first().absoluteFilePath());
+                        const QString resolvedPath = QDir::cleanPath(hubCandidates.first().absoluteFilePath());
+                        WhatSon::Debug::trace(
+                            QStringLiteral("main.blueprint"),
+                            QStringLiteral("resolve.found"),
+                            QStringLiteral("wshub=%1").arg(resolvedPath));
+                        return resolvedPath;
                     }
                 }
 
@@ -81,6 +104,9 @@ namespace
             }
         }
 
+        WhatSon::Debug::trace(
+            QStringLiteral("main.blueprint"),
+            QStringLiteral("resolve.notFound"));
         return QString();
     }
 
@@ -299,6 +325,13 @@ int main(int argc, char* argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("whatson.local"));
 
+    WhatSon::Debug::trace(
+        QStringLiteral("main"),
+        QStringLiteral("startup"),
+        QStringLiteral("debugMode=%1 cwd=%2 appDir=%3")
+        .arg(WhatSon::Debug::isEnabled() ? QStringLiteral("on") : QStringLiteral("off"))
+        .arg(QDir::currentPath(), QCoreApplication::applicationDirPath()));
+
     QQmlApplicationEngine engine;
     SidebarHierarchyStore sidebarHierarchyStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
@@ -311,17 +344,37 @@ int main(int argc, char* argv[])
     const QString blueprintHubPath = resolveBlueprintHubPath();
     if (!blueprintHubPath.isEmpty())
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("main.runtime"),
+            QStringLiteral("loadFromWshub.begin"),
+            QStringLiteral("path=%1").arg(blueprintHubPath));
         QString hubLoadError;
         if (!hubRuntimeStore.loadFromWshub(blueprintHubPath, &hubLoadError))
         {
             qWarning().noquote()
                 << QStringLiteral("Failed to load blueprint .wshub into runtime hub store: %1").arg(hubLoadError);
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadFromWshub.failed"),
+                hubLoadError);
+        }
+        else
+        {
+            const QVector<WhatSonTagDepthEntry> tags = hubRuntimeStore.tagDepthEntries(blueprintHubPath);
+            WhatSon::Debug::trace(
+                QStringLiteral("main.runtime"),
+                QStringLiteral("loadFromWshub.success"),
+                QStringLiteral("tagEntryCount=%1").arg(tags.size()));
         }
         tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
     }
     else
     {
         qWarning().noquote() << QStringLiteral("No .wshub package was found under blueprint directory.");
+        WhatSon::Debug::trace(
+            QStringLiteral("main.runtime"),
+            QStringLiteral("loadFromWshub.skipped"),
+            QStringLiteral("no blueprint .wshub detected"));
     }
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyStore"), &sidebarHierarchyStore);
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarSelectionStore"), &sidebarSelectionStore);

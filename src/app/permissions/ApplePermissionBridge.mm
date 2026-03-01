@@ -1,4 +1,5 @@
 #include "ApplePermissionBridge.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 
 #include <QCoreApplication>
 #include <QDesktopServices>
@@ -55,6 +56,8 @@
 
 
 
+
+
         });
 }
 
@@ -88,6 +91,8 @@ static NSMutableArray<LocalNetworkPermissionRequester*>* pendingLocalNetworkRequ
         &onceToken,
         ^{
             requesters = [[NSMutableArray alloc] init];
+
+
 
 
 
@@ -191,35 +196,68 @@ namespace WhatSon::Permissions
     void requestPhotoLibraryPermission(const PermissionCallback& completion)
     {
         const PermissionCallback completionCopy = completion;
+        WhatSon::Debug::trace(QStringLiteral("permissions.photo"), QStringLiteral("request"));
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
         if (@ available(macOS 11.0, iOS 14.0, *))
         {
             const PHAuthorizationStatus status =
                 [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
+            WhatSon::Debug::trace(
+                QStringLiteral("permissions.photo"),
+                QStringLiteral("status"),
+                QStringLiteral("mode=readWrite value=%1").arg(static_cast<int>(status)));
             if (status == PHAuthorizationStatusNotDetermined)
             {
                 [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelReadWrite
                     handler:^(PHAuthorizationStatus newStatus)
                     {
+                    WhatSon::Debug::trace(
+                        QStringLiteral("permissions.photo"),
+                        QStringLiteral("callback"),
+                        QStringLiteral("granted=%1 status=%2")
+                        .arg(isPhotoGranted(newStatus) ? QStringLiteral("1") : QStringLiteral("0"))
+                        .arg(static_cast<int>(newStatus)));
                     completeOnQtMain(completionCopy, isPhotoGranted(newStatus));
                     }];
                 return;
             }
+            WhatSon::Debug::trace(
+                QStringLiteral("permissions.photo"),
+                QStringLiteral("resolved"),
+                QStringLiteral("granted=%1").arg(isPhotoGranted(status) ? QStringLiteral("1") : QStringLiteral("0")));
             completeOnQtMain(completionCopy, isPhotoGranted(status));
             return;
         }
 
         const PHAuthorizationStatus status = [PHPhotoLibrary authorizationStatus];
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.photo"),
+            QStringLiteral("status"),
+            QStringLiteral("mode=legacy value=%1").arg(static_cast<int>(status)));
         if (status == PHAuthorizationStatusNotDetermined)
         {
             [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus newStatus)
                 {
+                WhatSon::Debug::trace(
+                    QStringLiteral("permissions.photo"),
+                    QStringLiteral("callback"),
+                    QStringLiteral("granted=%1 status=%2")
+                    .arg(isPhotoGranted(newStatus) ? QStringLiteral("1") : QStringLiteral("0"))
+                    .arg(static_cast<int>(newStatus)));
                 completeOnQtMain(completionCopy, isPhotoGranted(newStatus));
                 }];
             return;
         }
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.photo"),
+            QStringLiteral("resolved"),
+            QStringLiteral("granted=%1").arg(isPhotoGranted(status) ? QStringLiteral("1") : QStringLiteral("0")));
         completeOnQtMain(completionCopy, isPhotoGranted(status));
 #else
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.photo"),
+            QStringLiteral("resolved"),
+            QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completionCopy, true);
 #endif
     }
@@ -227,10 +265,20 @@ namespace WhatSon::Permissions
     void requestRemindersPermission(const PermissionCallback& completion)
     {
         const PermissionCallback completionCopy = completion;
+        WhatSon::Debug::trace(QStringLiteral("permissions.reminders"), QStringLiteral("request"));
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
         const EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeReminder];
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.reminders"),
+            QStringLiteral("status"),
+            QStringLiteral("value=%1").arg(static_cast<int>(status)));
         if (status != EKAuthorizationStatusNotDetermined)
         {
+            WhatSon::Debug::trace(
+                QStringLiteral("permissions.reminders"),
+                QStringLiteral("resolved"),
+                QStringLiteral("granted=%1")
+                .arg(isRemindersGranted(status) ? QStringLiteral("1") : QStringLiteral("0")));
             completeOnQtMain(completionCopy, isRemindersGranted(status));
             return;
         }
@@ -241,6 +289,10 @@ namespace WhatSon::Permissions
             [eventStore requestFullAccessToRemindersWithCompletion:^(BOOL granted, NSError* error)
                 {
                 Q_UNUSED(error);
+                WhatSon::Debug::trace(
+                    QStringLiteral("permissions.reminders"),
+                    QStringLiteral("callback"),
+                    QStringLiteral("granted=%1").arg(granted ? QStringLiteral("1") : QStringLiteral("0")));
                 completeOnQtMain(completionCopy, granted);
                 }];
             return;
@@ -250,15 +302,24 @@ namespace WhatSon::Permissions
             completion:^(BOOL granted, NSError* error)
             {
             Q_UNUSED(error);
+            WhatSon::Debug::trace(
+                QStringLiteral("permissions.reminders"),
+                QStringLiteral("callback"),
+                QStringLiteral("granted=%1").arg(granted ? QStringLiteral("1") : QStringLiteral("0")));
             completeOnQtMain(completionCopy, granted);
             }];
 #else
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.reminders"),
+            QStringLiteral("resolved"),
+            QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completionCopy, true);
 #endif
     }
 
     void requestAccessibilityPermission(const PermissionCallback& completion)
     {
+        WhatSon::Debug::trace(QStringLiteral("permissions.accessibility"), QStringLiteral("request"));
 #if defined(Q_OS_MACOS)
         const void* keys[] = {kAXTrustedCheckOptionPrompt};
         const void* values[] = {kCFBooleanTrue};
@@ -274,8 +335,16 @@ namespace WhatSon::Permissions
         {
             CFRelease(options);
         }
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.accessibility"),
+            QStringLiteral("resolved"),
+            QStringLiteral("granted=%1").arg(granted ? QStringLiteral("1") : QStringLiteral("0")));
         completeOnQtMain(completion, granted);
 #else
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.accessibility"),
+            QStringLiteral("resolved"),
+            QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completion, true);
 #endif
     }
@@ -283,34 +352,60 @@ namespace WhatSon::Permissions
     void requestLocalNetworkPermission(const PermissionCallback& completion)
     {
         const PermissionCallback completionCopy = completion;
+        WhatSon::Debug::trace(QStringLiteral("permissions.localNetwork"), QStringLiteral("request"));
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
         LocalNetworkPermissionRequester* requester =  [[LocalNetworkPermissionRequester alloc] init];
         requester.completion =  ^ (BOOL granted)
         {
+            WhatSon::Debug::trace(
+                QStringLiteral("permissions.localNetwork"),
+                QStringLiteral("callback"),
+                QStringLiteral("granted=%1").arg(granted ? QStringLiteral("1") : QStringLiteral("0")));
             completeOnQtMain(completionCopy, granted);
         };
 
         NSMutableArray<LocalNetworkPermissionRequester*>* requesters = pendingLocalNetworkRequesters();
         [requesters addObject:requester];
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.localNetwork"),
+            QStringLiteral("requesterQueued"),
+            QStringLiteral("pendingCount=%1").arg(static_cast<int>(requesters.count)));
         [requester start];
 #else
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.localNetwork"),
+            QStringLiteral("resolved"),
+            QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completionCopy, true);
 #endif
     }
 
     void requestFullDiskAccessPermission(const PermissionCallback& completion)
     {
+        WhatSon::Debug::trace(QStringLiteral("permissions.fullDisk"), QStringLiteral("request"));
 #if defined(Q_OS_MACOS)
         if (hasFullDiskAccessHeuristic())
         {
+            WhatSon::Debug::trace(
+                QStringLiteral("permissions.fullDisk"),
+                QStringLiteral("resolved"),
+                QStringLiteral("granted=1"));
             completeOnQtMain(completion, true);
             return;
         }
 
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.fullDisk"),
+            QStringLiteral("openSettings"),
+            QStringLiteral("granted=0"));
         QDesktopServices::openUrl(
             QUrl(QStringLiteral("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")));
         completeOnQtMain(completion, false);
 #else
+        WhatSon::Debug::trace(
+            QStringLiteral("permissions.fullDisk"),
+            QStringLiteral("resolved"),
+            QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completion, true);
 #endif
     }

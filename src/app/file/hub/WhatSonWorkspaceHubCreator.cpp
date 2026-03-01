@@ -1,5 +1,7 @@
 #include "WhatSonWorkspaceHubCreator.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -26,6 +28,10 @@ WhatSonWorkspaceHubCreator::~WhatSonWorkspaceHubCreator() = default;
 
 void WhatSonWorkspaceHubCreator::setHubsRootPath(QString hubsRootPath)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        QStringLiteral("setHubsRootPath"),
+        QStringLiteral("path=%1").arg(hubsRootPath));
     m_hubsRootPath = std::move(hubsRootPath);
 }
 
@@ -56,6 +62,11 @@ bool WhatSonWorkspaceHubCreator::createHub(
     QString* outPackagePath,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        QStringLiteral("createHub.begin"),
+        QStringLiteral("hubName=%1 workspace=%2 hubsRoot=%3")
+        .arg(hubName, workspaceRootPath(), m_hubsRootPath));
     if (workspaceRootPath().trimmed().isEmpty())
     {
         if (errorMessage != nullptr)
@@ -89,12 +100,20 @@ bool WhatSonWorkspaceHubCreator::createHub(
 
     if (!createHubScaffold(hubRootPath, errorMessage))
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator.workspace"),
+            QStringLiteral("createHub.failed.scaffold"),
+            errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
     const QString packagePath = hubRootPath + packageExtension();
     if (!packageHubDirectory(hubRootPath, packagePath, errorMessage))
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator.workspace"),
+            QStringLiteral("createHub.failed.package"),
+            errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
@@ -102,6 +121,10 @@ bool WhatSonWorkspaceHubCreator::createHub(
     {
         *outPackagePath = packagePath;
     }
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        QStringLiteral("createHub.success"),
+        QStringLiteral("hubRoot=%1 package=%2").arg(hubRootPath, packagePath));
     return true;
 }
 
@@ -125,6 +148,10 @@ bool WhatSonWorkspaceHubCreator::createHubScaffold(
     const QString& hubRootPath,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        QStringLiteral("createScaffold.begin"),
+        QStringLiteral("hubRoot=%1").arg(hubRootPath));
     const QStringList paths = requiredRelativePaths();
     for (const QString& relativePath : paths)
     {
@@ -151,7 +178,12 @@ bool WhatSonWorkspaceHubCreator::createHubScaffold(
     const QString manifestText = QString::fromUtf8(
         QJsonDocument(manifest).toJson(QJsonDocument::Indented));
 
-    return writeTextFile(manifestPath, manifestText, errorMessage);
+    const bool ok = writeTextFile(manifestPath, manifestText, errorMessage);
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        ok ? QStringLiteral("createScaffold.success") : QStringLiteral("createScaffold.failed"),
+        ok ? QStringLiteral("manifest=%1").arg(manifestPath) : (errorMessage != nullptr ? *errorMessage : QString()));
+    return ok;
 }
 
 bool WhatSonWorkspaceHubCreator::packageHubDirectory(
@@ -159,6 +191,10 @@ bool WhatSonWorkspaceHubCreator::packageHubDirectory(
     const QString& packagePath,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        QStringLiteral("package.begin"),
+        QStringLiteral("hubRoot=%1 package=%2").arg(hubRootPath, packagePath));
 #if !QT_CONFIG(process)
     Q_UNUSED(hubRootPath);
     Q_UNUSED(packagePath);
@@ -225,6 +261,10 @@ bool WhatSonWorkspaceHubCreator::packageHubDirectory(
         return false;
     }
 
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.workspace"),
+        QStringLiteral("package.success"),
+        QStringLiteral("package=%1").arg(packagePath));
     return true;
 #endif
 }

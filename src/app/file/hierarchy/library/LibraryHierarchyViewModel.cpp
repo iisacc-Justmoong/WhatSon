@@ -1,5 +1,7 @@
 #include "LibraryHierarchyViewModel.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QRegularExpression>
 #include <QVariantMap>
 
@@ -19,6 +21,7 @@ LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    WhatSon::Debug::trace(QStringLiteral("library.viewmodel"), QStringLiteral("ctor"));
     syncModel();
 }
 
@@ -53,11 +56,19 @@ void LibraryHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("setSelectedIndex"),
+        QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("setDepthItems.begin"),
+        QStringLiteral("count=%1").arg(depthItems.size()));
     QVector<LibraryHierarchyItem> parsedItems;
     parsedItems.reserve(depthItems.size());
 
@@ -72,6 +83,10 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     m_createdFolderSequence = nextFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("setDepthItems.success"),
+        QStringLiteral("itemCount=%1 nextFolderSeq=%2").arg(m_items.size()).arg(m_createdFolderSequence));
 }
 
 QVariantList LibraryHierarchyViewModel::depthItems() const
@@ -122,6 +137,10 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
 
     target.label = trimmedName;
     syncModel();
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("renameItem"),
+        QStringLiteral("index=%1 label=%2").arg(index).arg(trimmedName));
     return true;
 }
 
@@ -152,6 +171,13 @@ void LibraryHierarchyViewModel::createFolder()
     m_items.insert(insertIndex, std::move(newItem));
     syncModel();
     setSelectedIndex(insertIndex);
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("createFolder"),
+        QStringLiteral("insertIndex=%1 depth=%2 itemCount=%3")
+        .arg(insertIndex)
+        .arg(folderDepth)
+        .arg(m_items.size()));
 }
 
 void LibraryHierarchyViewModel::deleteSelectedFolder()
@@ -173,6 +199,13 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
 
     m_items.remove(startIndex, removeCount);
     syncModel();
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("deleteSelectedFolder"),
+        QStringLiteral("startIndex=%1 removeCount=%2 remaining=%3")
+        .arg(startIndex)
+        .arg(removeCount)
+        .arg(m_items.size()));
 
     if (m_items.isEmpty())
     {
@@ -267,5 +300,9 @@ int LibraryHierarchyViewModel::nextFolderSequence(const QVector<LibraryHierarchy
 
 void LibraryHierarchyViewModel::syncModel()
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("library.viewmodel"),
+        QStringLiteral("syncModel"),
+        QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
 }

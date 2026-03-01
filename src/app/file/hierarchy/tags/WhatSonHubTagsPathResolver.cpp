@@ -1,5 +1,7 @@
 #include "WhatSonHubTagsPathResolver.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QDir>
 #include <QFileInfo>
 
@@ -25,6 +27,10 @@ bool WhatSonHubTagsPathResolver::resolveTagsFilePath(
     QString* outTagsFilePath,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.tags.pathResolver"),
+        QStringLiteral("resolve.begin"),
+        QStringLiteral("wshubPath=%1").arg(wshubPath));
     if (outTagsFilePath == nullptr)
     {
         if (errorMessage != nullptr)
@@ -78,6 +84,10 @@ bool WhatSonHubTagsPathResolver::resolveTagsFilePath(
     if (QFileInfo::exists(fixedInternalPath))
     {
         *outTagsFilePath = fixedInternalPath;
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.pathResolver"),
+            QStringLiteral("resolve.success.fixed"),
+            QStringLiteral("path=%1").arg(*outTagsFilePath));
         return true;
     }
 
@@ -91,6 +101,10 @@ bool WhatSonHubTagsPathResolver::resolveTagsFilePath(
         if (QFileInfo::exists(candidatePath))
         {
             *outTagsFilePath = candidatePath;
+            WhatSon::Debug::trace(
+                QStringLiteral("hub.tags.pathResolver"),
+                QStringLiteral("resolve.success.dynamic"),
+                QStringLiteral("path=%1").arg(*outTagsFilePath));
             return true;
         }
     }
@@ -99,5 +113,9 @@ bool WhatSonHubTagsPathResolver::resolveTagsFilePath(
     {
         *errorMessage = QStringLiteral("Tags.wstags was not found inside .wshub: %1").arg(hubRootPath);
     }
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.tags.pathResolver"),
+        QStringLiteral("resolve.failed"),
+        errorMessage != nullptr ? *errorMessage : QString());
     return false;
 }

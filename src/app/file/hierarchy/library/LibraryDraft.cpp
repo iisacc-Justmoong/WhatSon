@@ -1,3 +1,12 @@
 #include "LibraryDraft.hpp"
+#include "WhatSonDebugTrace.hpp"
 
-// Placeholder implementation intentionally omitted.
+LibraryDraft::LibraryDraft()
+{
+    WhatSon::Debug::trace(QStringLiteral("library.draft"), QStringLiteral("ctor"));
+}
+
+LibraryDraft::~LibraryDraft()
+{
+    WhatSon::Debug::trace(QStringLiteral("library.draft"), QStringLiteral("dtor"));
+}

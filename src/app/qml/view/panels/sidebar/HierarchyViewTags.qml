@@ -5,6 +5,6 @@ SidebarHierarchyView {
     id: hierarchyViewTags
 
     defaultToolbarIndex: 3
-    frameName: "HierarchyView-tags"
+    frameName: "HierarchyView-Tags"
     frameNodeId: "45:3067"
 }

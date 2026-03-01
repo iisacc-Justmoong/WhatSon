@@ -1,5 +1,7 @@
 #include "WhatSonHubCreator.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QDir>
 #include <QRegularExpression>
 #include <QSaveFile>
@@ -15,6 +17,10 @@ WhatSonHubCreator::~WhatSonHubCreator() = default;
 
 void WhatSonHubCreator::setWorkspaceRootPath(QString workspaceRootPath)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.base"),
+        QStringLiteral("setWorkspaceRootPath"),
+        QStringLiteral("path=%1").arg(workspaceRootPath));
     m_workspaceRootPath = std::move(workspaceRootPath);
 }
 
@@ -31,9 +37,17 @@ QString WhatSonHubCreator::sanitizeHubName(const QString& hubName) const
 
     if (normalized.isEmpty())
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator.base"),
+            QStringLiteral("sanitizeHubName.fallback"),
+            QStringLiteral("input=%1").arg(hubName));
         return QStringLiteral("untitled-hub");
     }
 
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.base"),
+        QStringLiteral("sanitizeHubName.success"),
+        QStringLiteral("input=%1 output=%2").arg(hubName, normalized));
     return normalized;
 }
 
@@ -53,6 +67,10 @@ QString WhatSonHubCreator::joinPath(const QString& left, const QString& right) c
 
 bool WhatSonHubCreator::ensureDirectory(const QString& absolutePath, QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.base"),
+        QStringLiteral("ensureDirectory.begin"),
+        QStringLiteral("path=%1").arg(absolutePath));
     QDir dir;
     if (dir.exists(absolutePath))
     {
@@ -61,6 +79,10 @@ bool WhatSonHubCreator::ensureDirectory(const QString& absolutePath, QString* er
 
     if (dir.mkpath(absolutePath))
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.creator.base"),
+            QStringLiteral("ensureDirectory.created"),
+            QStringLiteral("path=%1").arg(absolutePath));
         return true;
     }
 
@@ -76,6 +98,10 @@ bool WhatSonHubCreator::writeTextFile(
     const QString& content,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.base"),
+        QStringLiteral("writeTextFile.begin"),
+        QStringLiteral("path=%1 bytes=%2").arg(absolutePath).arg(content.toUtf8().size()));
     QSaveFile file(absolutePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
     {
@@ -105,5 +131,9 @@ bool WhatSonHubCreator::writeTextFile(
         return false;
     }
 
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.creator.base"),
+        QStringLiteral("writeTextFile.success"),
+        QStringLiteral("path=%1").arg(absolutePath));
     return true;
 }

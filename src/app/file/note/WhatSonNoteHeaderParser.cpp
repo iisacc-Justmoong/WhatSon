@@ -1,5 +1,7 @@
 #include "WhatSonNoteHeaderParser.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QRegularExpression>
 
 namespace
@@ -219,12 +221,21 @@ bool WhatSonNoteHeaderParser::parse(
     WhatSonNoteHeaderStore* outStore,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("note.header.parser"),
+        QStringLiteral("parse.begin"),
+        QStringLiteral("textLength=%1").arg(wsnHeadText.size()));
+
     if (outStore == nullptr)
     {
         if (errorMessage != nullptr)
         {
             *errorMessage = QStringLiteral("outStore must not be null.");
         }
+        WhatSon::Debug::trace(
+            QStringLiteral("note.header.parser"),
+            QStringLiteral("parse.failed"),
+            QStringLiteral("outStore is null"));
         return false;
     }
 
@@ -235,6 +246,10 @@ bool WhatSonNoteHeaderParser::parse(
         {
             *errorMessage = QStringLiteral("wsnHeadText must not be empty.");
         }
+        WhatSon::Debug::trace(
+            QStringLiteral("note.header.parser"),
+            QStringLiteral("parse.failed"),
+            QStringLiteral("wsnHeadText is empty"));
         return false;
     }
 
@@ -259,6 +274,18 @@ bool WhatSonNoteHeaderParser::parse(
         isPresetValue = extractAttributeValue(wsnHeadText, QStringLiteral("isPreset"), QStringLiteral("value"));
     }
     outStore->setPreset(parseBooleanValue(isPresetValue, false));
+
+    WhatSon::Debug::trace(
+        QStringLiteral("note.header.parser"),
+        QStringLiteral("parse.success"),
+        QStringLiteral("id=%1 title=%2 folderCount=%3 tagCount=%4 progress=%5 bookmarked=%6 preset=%7")
+        .arg(outStore->noteId())
+        .arg(outStore->title())
+        .arg(outStore->folders().size())
+        .arg(outStore->tags().size())
+        .arg(outStore->progress())
+        .arg(outStore->isBookmarked() ? QStringLiteral("true") : QStringLiteral("false"))
+        .arg(outStore->isPreset() ? QStringLiteral("true") : QStringLiteral("false")));
 
     return true;
 }

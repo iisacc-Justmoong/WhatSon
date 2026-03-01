@@ -1,5 +1,7 @@
 #include "WhatSonTagsFileReader.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <QFile>
 
 WhatSonTagsFileReader::WhatSonTagsFileReader() = default;
@@ -11,6 +13,10 @@ bool WhatSonTagsFileReader::readTextFile(
     QString* outText,
     QString* errorMessage) const
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.tags.fileReader"),
+        QStringLiteral("read.begin"),
+        QStringLiteral("path=%1").arg(filePath));
     if (outText == nullptr)
     {
         if (errorMessage != nullptr)
@@ -31,5 +37,9 @@ bool WhatSonTagsFileReader::readTextFile(
     }
 
     *outText = QString::fromUtf8(file.readAll());
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.tags.fileReader"),
+        QStringLiteral("read.success"),
+        QStringLiteral("path=%1 bytes=%2").arg(filePath).arg(outText->toUtf8().size()));
     return true;
 }

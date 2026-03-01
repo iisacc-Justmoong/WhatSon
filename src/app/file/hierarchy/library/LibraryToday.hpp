@@ -3,6 +3,6 @@
 class LibraryToday final
 {
 public:
-    LibraryToday() = default;
-    ~LibraryToday() = default;
+    LibraryToday();
+    ~LibraryToday();
 };

@@ -3,6 +3,6 @@
 class LibraryDraft final
 {
 public:
-    LibraryDraft() = default;
-    ~LibraryDraft() = default;
+    LibraryDraft();
+    ~LibraryDraft();
 };

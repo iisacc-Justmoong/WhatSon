@@ -1,5 +1,7 @@
 #include "WhatSonNoteLinkManagerCreator.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <utility>
 
 WhatSonNoteLinkManagerCreator::WhatSonNoteLinkManagerCreator(
@@ -19,7 +21,12 @@ QString WhatSonNoteLinkManagerCreator::creatorName() const
 QString WhatSonNoteLinkManagerCreator::targetPathForNote(const QString& noteId) const
 {
     const QString noteDirPath = noteDirectoryPath(noteId);
-    return joinPath(noteDirPath, linksFileName());
+    const QString targetPath = joinPath(noteDirPath, linksFileName());
+    WhatSon::Debug::trace(
+        QStringLiteral("note.creator.link"),
+        QStringLiteral("targetPathForNote"),
+        QStringLiteral("noteId=%1 path=%2").arg(noteId, targetPath));
+    return targetPath;
 }
 
 QStringList WhatSonNoteLinkManagerCreator::requiredRelativePaths() const

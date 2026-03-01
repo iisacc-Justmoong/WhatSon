@@ -1,10 +1,13 @@
 #include "HierarchyItemListModel.hpp"
 
+#include "../../file/WhatSonDebugTrace.hpp"
+
 #include <utility>
 
 HierarchyItemListModel::HierarchyItemListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
+    WhatSon::Debug::trace(QStringLiteral("sidebar.itemModel"), QStringLiteral("ctor"));
 }
 
 int HierarchyItemListModel::rowCount(const QModelIndex& parent) const
@@ -55,7 +58,17 @@ QHash<int, QByteArray> HierarchyItemListModel::roleNames() const
 
 void HierarchyItemListModel::setItems(QVector<SidebarHierarchyItem> items)
 {
+    const int previousCount = static_cast<int>(m_items.size());
+    const int incomingCount = static_cast<int>(items.size());
+    WhatSon::Debug::trace(
+        QStringLiteral("sidebar.itemModel"),
+        QStringLiteral("setItems"),
+        QStringLiteral("previous=%1 incoming=%2").arg(previousCount).arg(incomingCount));
     beginResetModel();
     m_items = std::move(items);
     endResetModel();
+    WhatSon::Debug::trace(
+        QStringLiteral("sidebar.itemModel"),
+        QStringLiteral("setItemsApplied"),
+        QStringLiteral("current=%1").arg(static_cast<int>(m_items.size())));
 }

@@ -1,3 +1,12 @@
 #include "LibraryToday.hpp"
+#include "WhatSonDebugTrace.hpp"
 
-// Placeholder implementation intentionally omitted.
+LibraryToday::LibraryToday()
+{
+    WhatSon::Debug::trace(QStringLiteral("library.today"), QStringLiteral("ctor"));
+}
+
+LibraryToday::~LibraryToday()
+{
+    WhatSon::Debug::trace(QStringLiteral("library.today"), QStringLiteral("dtor"));
+}

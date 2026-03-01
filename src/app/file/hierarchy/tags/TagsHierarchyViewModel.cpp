@@ -1,5 +1,7 @@
 #include "TagsHierarchyViewModel.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <algorithm>
 #include <utility>
 
@@ -7,6 +9,7 @@ TagsHierarchyViewModel::TagsHierarchyViewModel(QObject* parent)
     : QObject(parent)
       , m_itemModel(this)
 {
+    WhatSon::Debug::trace(QStringLiteral("tags.viewmodel"), QStringLiteral("ctor"));
     syncModel();
 }
 
@@ -41,15 +44,27 @@ void TagsHierarchyViewModel::setSelectedIndex(int index)
     }
 
     m_selectedIndex = clamped;
+    WhatSon::Debug::trace(
+        QStringLiteral("tags.viewmodel"),
+        QStringLiteral("setSelectedIndex"),
+        QStringLiteral("value=%1").arg(m_selectedIndex));
     emit selectedIndexChanged();
 }
 
 void TagsHierarchyViewModel::setTagDepthEntries(QVector<WhatSonTagDepthEntry> entries)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("tags.viewmodel"),
+        QStringLiteral("setTagDepthEntries.begin"),
+        QStringLiteral("count=%1").arg(entries.size()));
     m_entries = std::move(entries);
     m_items = buildItems(m_entries);
     syncModel();
     setSelectedIndex(-1);
+    WhatSon::Debug::trace(
+        QStringLiteral("tags.viewmodel"),
+        QStringLiteral("setTagDepthEntries.success"),
+        QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
 QVector<WhatSonTagDepthEntry> TagsHierarchyViewModel::tagDepthEntries() const
@@ -96,5 +111,9 @@ QVector<TagsHierarchyItem> TagsHierarchyViewModel::buildItems(const QVector<What
 
 void TagsHierarchyViewModel::syncModel()
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("tags.viewmodel"),
+        QStringLiteral("syncModel"),
+        QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
 }

@@ -15,7 +15,7 @@ class SidebarHierarchyStore final : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int activeIndex READ activeIndex WRITE setActiveIndex NOTIFY activeIndexChanged)
-    Q_PROPERTY(HierarchyItemListModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(HierarchyItemListModel* itemModel READ itemModel NOTIFY activeIndexChanged)
     Q_PROPERTY(QStringList sectionNames READ sectionNames CONSTANT)
     Q_PROPERTY(QStringList toolbarIconNames READ toolbarIconNames CONSTANT)
 
@@ -27,6 +27,7 @@ public:
     void setActiveIndex(int index);
 
     HierarchyItemListModel* itemModel() noexcept;
+    HierarchyItemListModel* itemModelForSection(int index) const noexcept;
     QStringList sectionNames() const;
     QStringList toolbarIconNames() const;
 
@@ -35,12 +36,11 @@ public:
     signals  :
 
 
+
     void activeIndexChanged();
 
 private:
-    void syncActiveSection();
-
     std::vector<std::unique_ptr<HierarchySectionModel>> m_sections;
-    HierarchyItemListModel m_itemModel;
+    std::vector<std::unique_ptr<HierarchyItemListModel>> m_sectionItemModels;
     int m_activeIndex = 0;
 };

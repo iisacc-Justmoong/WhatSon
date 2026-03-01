@@ -126,6 +126,56 @@ cmake --build build --target whatson_run_app
 ./build/src/daemon/WhatSon_daemon --healthcheck
 ```
 
+## Debug Trace Mode
+
+The app now supports high-visibility runtime tracing for note/header indexing and hub runtime flow.
+Trace logs are printed with `[whatson:debug]` and `[wsnhead:index]` prefixes.
+
+Current trace coverage includes:
+
+- app startup and blueprint discovery
+- hub runtime / placement / tags state load path
+- tags file reader / JSON parser / depth flattener
+- note header parser / store setters
+- library and tags hierarchy model/viewmodel sync path
+- sidebar hierarchy per-section item model instantiation and activation path
+- sidebar selection store state transition and capabilities updates
+- Apple permission bridge request/callback flow
+- library placeholder object lifecycle (all/draft/today)
+
+- Default: enabled
+- Disable explicitly:
+
+```bash
+WHATSON_DEBUG_MODE=0 cmake --build build --target whatson_run_app
+```
+
+- Enable explicitly:
+
+```bash
+WHATSON_DEBUG_MODE=1 cmake --build build --target whatson_run_app
+```
+
+Filter only debug lines during a run:
+
+```bash
+./build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
+```
+
+## Hierarchy IO Components
+
+`src/app/file/hierarchy` now includes per-domain getter/setter store + parser + creator components
+for hub/note hierarchy payloads.
+
+- `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
+- `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
+- `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
+- `tags`: `WhatSonTagsHierarchy{Store,Parser,Creator}` (`Tags.wstags`, tree/flat JSON)
+- `resources`: `WhatSonResourcesHierarchy{Store,Parser,Creator}` (`Resources.wsresources`)
+- `progress`: `WhatSonProgressHierarchy{Store,Parser,Creator}` (`Progress.wsprogress`)
+- `event`: `WhatSonEventHierarchy{Store,Parser,Creator}` (`Event.wsevent`)
+- `preset`: `WhatSonPresetHierarchy{Store,Parser,Creator}` (`Preset.wspreset`)
+
 ## Unified Build And Launch Automation
 
 `scripts/build_all.py` is a single entrypoint that runs the currently validated workflow:

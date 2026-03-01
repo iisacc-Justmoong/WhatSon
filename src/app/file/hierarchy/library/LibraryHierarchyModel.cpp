@@ -1,10 +1,13 @@
 #include "LibraryHierarchyModel.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <utility>
 
 LibraryHierarchyModel::LibraryHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
+    WhatSon::Debug::trace(QStringLiteral("library.model"), QStringLiteral("ctor"));
 }
 
 int LibraryHierarchyModel::rowCount(const QModelIndex& parent) const
@@ -57,6 +60,10 @@ QHash<int, QByteArray> LibraryHierarchyModel::roleNames() const
 
 void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("library.model"),
+        QStringLiteral("setItems"),
+        QStringLiteral("count=%1").arg(items.size()));
     beginResetModel();
     m_items = std::move(items);
     endResetModel();

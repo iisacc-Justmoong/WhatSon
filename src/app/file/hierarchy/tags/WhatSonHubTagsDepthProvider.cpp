@@ -1,5 +1,10 @@
 #include "WhatSonHubTagsDepthProvider.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+#include "note/WhatSonNoteHeaderParser.hpp"
+#include "note/WhatSonNoteHeaderStore.hpp"
+
+#include <QDebug>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -7,12 +12,16 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QRegularExpression>
 #include <QSet>
 #include <utility>
 
 namespace
 {
+    QString boolToText(bool value)
+    {
+        return value ? QStringLiteral("true") : QStringLiteral("false");
+    }
+
     QString normalizeHubPath(const QString& input)
     {
         const QString trimmed = input.trimmed();
@@ -28,6 +37,10 @@ namespace
         QStringList* outContentsDirectories,
         QString* errorMessage)
     {
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("resolveContents.begin"),
+            QStringLiteral("path=%1").arg(wshubPath));
         if (outContentsDirectories == nullptr)
         {
             if (errorMessage != nullptr)
@@ -104,6 +117,10 @@ namespace
 
         contentsDirectories.removeDuplicates();
         *outContentsDirectories = contentsDirectories;
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("resolveContents.success"),
+            QStringLiteral("count=%1").arg(outContentsDirectories->size()));
         return true;
     }
 
@@ -129,8 +146,16 @@ namespace
             const QString tagsPath = QDir(contentsDirectory).filePath(QStringLiteral("Tags.wstags"));
             if (!QFileInfo(tagsPath).isFile())
             {
+                WhatSon::Debug::trace(
+                    QStringLiteral("hub.tags.depth"),
+                    QStringLiteral("parseTags.fileMissing"),
+                    QStringLiteral("path=%1").arg(tagsPath));
                 continue;
             }
+            WhatSon::Debug::trace(
+                QStringLiteral("hub.tags.depth"),
+                QStringLiteral("parseTags.fileFound"),
+                QStringLiteral("path=%1").arg(tagsPath));
 
             QString rawJson;
             if (!fileReader.readTextFile(tagsPath, &rawJson, errorMessage))
@@ -161,6 +186,10 @@ namespace
             }
 
             *outEntries = std::move(flattenedEntries);
+            WhatSon::Debug::trace(
+                QStringLiteral("hub.tags.depth"),
+                QStringLiteral("parseTags.success"),
+                QStringLiteral("entryCount=%1").arg(outEntries->size()));
             return true;
         }
 
@@ -171,26 +200,60 @@ namespace
         return false;
     }
 
-    bool isTemplateToken(const QString& token)
+    QVector<WhatSonTagDepthEntry> parseNoteTagEntries(
+        const QString& wsnHeadPath,
+        const QString& wsnHeadText)
     {
-        const QString trimmed = token.trimmed();
-        return (trimmed.startsWith(QStringLiteral("${")) && trimmed.endsWith(QLatin1Char('}')))
-            || (trimmed.startsWith(QStringLiteral("%{")) && trimmed.endsWith(QLatin1Char('}')));
-    }
+        WhatSonNoteHeaderParser parser;
+        WhatSonNoteHeaderStore store;
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("parseNoteHeader.begin"),
+            QStringLiteral("file=%1 bytes=%2").arg(wsnHeadPath).arg(wsnHeadText.size()));
+        QString parseError;
+        if (!parser.parse(wsnHeadText, &store, &parseError))
+        {
+            qWarning().noquote()
+                << QStringLiteral("[wsnhead:index] parse failed: file=%1 error=%2")
+                .arg(wsnHeadPath, parseError);
+            return {};
+        }
 
-    QVector<WhatSonTagDepthEntry> parseNoteTagEntries(const QString& wsnHeadText)
-    {
-        static const QRegularExpression kTagRegex(
-            QStringLiteral(R"(<\s*tag\b[^>]*>\s*([^<]*)\s*<\s*/\s*tag\s*>)"),
-            QRegularExpression::CaseInsensitiveOption);
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("parseNoteHeader.success"),
+            QStringLiteral("file=%1 tagCount=%2 folderCount=%3 progress=%4")
+            .arg(wsnHeadPath)
+            .arg(store.tags().size())
+            .arg(store.folders().size())
+            .arg(store.progress()));
+
+        if (WhatSon::Debug::isEnabled())
+        {
+            qWarning().noquote()
+                << QStringLiteral(
+                    "[wsnhead:index] file=%1 id=%2 title=%3 created=%4 author=%5 lastModified=%6 modifiedBy=%7 project=%8 bookmarked=%9 preset=%10 progress=%11 folders=[%12] tags=[%13]")
+                .arg(
+                    wsnHeadPath,
+                    store.noteId(),
+                    store.title(),
+                    store.createdAt(),
+                    store.author(),
+                    store.lastModifiedAt(),
+                    store.modifiedBy(),
+                    store.project(),
+                    boolToText(store.isBookmarked()),
+                    boolToText(store.isPreset()),
+                    QString::number(store.progress()),
+                    store.folders().join(QStringLiteral(", ")),
+                    store.tags().join(QStringLiteral(", ")));
+        }
 
         QVector<WhatSonTagDepthEntry> entries;
-        QRegularExpressionMatchIterator it = kTagRegex.globalMatch(wsnHeadText);
-        while (it.hasNext())
+        for (const QString& tag : store.tags())
         {
-            const QRegularExpressionMatch match = it.next();
-            const QString rawTagValue = match.captured(1).trimmed();
-            if (rawTagValue.isEmpty() || isTemplateToken(rawTagValue))
+            const QString rawTagValue = tag.trimmed();
+            if (rawTagValue.isEmpty())
             {
                 continue;
             }
@@ -220,11 +283,19 @@ namespace
                 QStringList{QStringLiteral("*.wsnhead")},
                 QDir::Files,
                 QDirIterator::Subdirectories);
+            WhatSon::Debug::trace(
+                QStringLiteral("hub.tags.depth"),
+                QStringLiteral("scanWsnhead.directory"),
+                QStringLiteral("path=%1").arg(contentsDirectory));
 
             while (iterator.hasNext())
             {
                 const QString wsnHeadPath = iterator.next();
                 wsnHeadFound = true;
+                WhatSon::Debug::trace(
+                    QStringLiteral("hub.tags.depth"),
+                    QStringLiteral("scanWsnhead.file"),
+                    QStringLiteral("path=%1").arg(wsnHeadPath));
 
                 QFile file(wsnHeadPath);
                 if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -233,7 +304,8 @@ namespace
                 }
                 const QString fileContents = QString::fromUtf8(file.readAll());
 
-                const QVector<WhatSonTagDepthEntry> parsedEntries = parseNoteTagEntries(fileContents);
+                const QVector<WhatSonTagDepthEntry> parsedEntries =
+                    parseNoteTagEntries(wsnHeadPath, fileContents);
                 for (const WhatSonTagDepthEntry& parsedEntry : parsedEntries)
                 {
                     const QString dedupKey = parsedEntry.id.trimmed().toCaseFolded();
@@ -324,6 +396,10 @@ namespace
         const QJsonDocument document(rootObject);
         file.write(document.toJson(QJsonDocument::Indented));
         file.close();
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("writeTags.success"),
+            QStringLiteral("path=%1 count=%2").arg(tagsPath).arg(tagsArray.size()));
         return true;
     }
 } // namespace
@@ -336,6 +412,10 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
     const QString& wshubPath,
     QString* errorMessage)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.tags.depth"),
+        QStringLiteral("load.begin"),
+        QStringLiteral("path=%1").arg(wshubPath));
     QStringList contentsDirectories;
     QString contentsError;
     if (!resolveContentsDirectories(wshubPath, &contentsDirectories, &contentsError))
@@ -382,6 +462,10 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
         }
 
         m_entries = std::move(tagsFileEntries);
+        WhatSon::Debug::trace(
+            QStringLiteral("hub.tags.depth"),
+            QStringLiteral("load.success.fromWsnhead"),
+            QStringLiteral("entryCount=%1").arg(m_entries.size()));
         return true;
     }
 
@@ -412,6 +496,10 @@ bool WhatSonHubTagsDepthProvider::loadFromWshub(
     }
 
     m_entries = std::move(tagsFileEntries);
+    WhatSon::Debug::trace(
+        QStringLiteral("hub.tags.depth"),
+        QStringLiteral("load.success.fromTags"),
+        QStringLiteral("entryCount=%1").arg(m_entries.size()));
     return true;
 }
 

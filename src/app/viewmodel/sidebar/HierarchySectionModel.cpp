@@ -1,5 +1,7 @@
 #include "HierarchySectionModel.hpp"
 
+#include "../../file/WhatSonDebugTrace.hpp"
+
 #include <initializer_list>
 
 namespace
@@ -7,6 +9,21 @@ namespace
     QVector<SidebarHierarchyItem> makeItems(std::initializer_list<SidebarHierarchyItem> items)
     {
         return QVector<SidebarHierarchyItem>(items);
+    }
+
+    QVector<SidebarHierarchyItem> traceItems(
+        const QString& scope,
+        const QString& sectionName,
+        std::initializer_list<SidebarHierarchyItem> items)
+    {
+        const QVector<SidebarHierarchyItem> builtItems = makeItems(items);
+        WhatSon::Debug::trace(
+            scope,
+            QStringLiteral("items"),
+            QStringLiteral("section=%1 count=%2")
+            .arg(sectionName)
+            .arg(static_cast<int>(builtItems.size())));
+        return builtItems;
     }
 } // namespace
 
@@ -24,18 +41,18 @@ QString LibraryModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> LibraryModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Library"), false, true},
-        {1, false, QStringLiteral("Collections"), false, true},
-        {2, true, QStringLiteral("Brand Kit"), false, true},
-        {1, false, QStringLiteral("Templates"), false, true},
-        {1, false, QStringLiteral("Assets"), false, true},
-        {1, false, QStringLiteral("References"), false, true},
-        {0, false, QStringLiteral("Archive"), false, true},
-        {0, false, QStringLiteral("Inbox"), false, true},
-        {0, false, QStringLiteral("Today"), false, true},
-        {0, false, QStringLiteral("Drafts"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.library"), sectionName(), {
+                          {0, false, QStringLiteral("Library"), false, true},
+                          {1, false, QStringLiteral("Collections"), false, true},
+                          {2, true, QStringLiteral("Brand Kit"), false, true},
+                          {1, false, QStringLiteral("Templates"), false, true},
+                          {1, false, QStringLiteral("Assets"), false, true},
+                          {1, false, QStringLiteral("References"), false, true},
+                          {0, false, QStringLiteral("Archive"), false, true},
+                          {0, false, QStringLiteral("Inbox"), false, true},
+                          {0, false, QStringLiteral("Today"), false, true},
+                          {0, false, QStringLiteral("Drafts"), false, true}
+                      });
 }
 
 QString ProjectsModel::sectionName() const
@@ -50,18 +67,18 @@ QString ProjectsModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> ProjectsModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Projects"), false, true},
-        {1, false, QStringLiteral("Active"), false, true},
-        {2, true, QStringLiteral("Alpha Launch"), false, true},
-        {1, false, QStringLiteral("Client A"), false, true},
-        {1, false, QStringLiteral("Client B"), false, true},
-        {1, false, QStringLiteral("Internal"), false, true},
-        {0, false, QStringLiteral("Roadmap"), false, true},
-        {0, false, QStringLiteral("Backlog"), false, true},
-        {0, false, QStringLiteral("Milestones"), false, true},
-        {0, false, QStringLiteral("Completed"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.projects"), sectionName(), {
+                          {0, false, QStringLiteral("Projects"), false, true},
+                          {1, false, QStringLiteral("Active"), false, true},
+                          {2, true, QStringLiteral("Alpha Launch"), false, true},
+                          {1, false, QStringLiteral("Client A"), false, true},
+                          {1, false, QStringLiteral("Client B"), false, true},
+                          {1, false, QStringLiteral("Internal"), false, true},
+                          {0, false, QStringLiteral("Roadmap"), false, true},
+                          {0, false, QStringLiteral("Backlog"), false, true},
+                          {0, false, QStringLiteral("Milestones"), false, true},
+                          {0, false, QStringLiteral("Completed"), false, true}
+                      });
 }
 
 QString BookmarksModel::sectionName() const
@@ -76,18 +93,18 @@ QString BookmarksModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> BookmarksModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Saved"), false, true},
-        {1, false, QStringLiteral("Recent"), false, true},
-        {2, true, QStringLiteral("Weekly Brief"), false, true},
-        {1, false, QStringLiteral("Research"), false, true},
-        {1, false, QStringLiteral("Inspiration"), false, true},
-        {1, false, QStringLiteral("Snippets"), false, true},
-        {0, false, QStringLiteral("Pinboard"), false, true},
-        {0, false, QStringLiteral("Watchlist"), false, true},
-        {0, false, QStringLiteral("Shared"), false, true},
-        {0, false, QStringLiteral("Archived"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.bookmarks"), sectionName(), {
+                          {0, false, QStringLiteral("Saved"), false, true},
+                          {1, false, QStringLiteral("Recent"), false, true},
+                          {2, true, QStringLiteral("Weekly Brief"), false, true},
+                          {1, false, QStringLiteral("Research"), false, true},
+                          {1, false, QStringLiteral("Inspiration"), false, true},
+                          {1, false, QStringLiteral("Snippets"), false, true},
+                          {0, false, QStringLiteral("Pinboard"), false, true},
+                          {0, false, QStringLiteral("Watchlist"), false, true},
+                          {0, false, QStringLiteral("Shared"), false, true},
+                          {0, false, QStringLiteral("Archived"), false, true}
+                      });
 }
 
 QString TagsModel::sectionName() const
@@ -102,18 +119,18 @@ QString TagsModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> TagsModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Tags"), false, true},
-        {1, false, QStringLiteral("Product"), false, true},
-        {2, true, QStringLiteral("Critical"), false, true},
-        {1, false, QStringLiteral("Design"), false, true},
-        {1, false, QStringLiteral("Marketing"), false, true},
-        {1, false, QStringLiteral("Operations"), false, true},
-        {0, false, QStringLiteral("Team"), false, true},
-        {0, false, QStringLiteral("Personal"), false, true},
-        {0, false, QStringLiteral("Ideas"), false, true},
-        {0, false, QStringLiteral("Later"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.tags"), sectionName(), {
+                          {0, false, QStringLiteral("Tags"), false, true},
+                          {1, false, QStringLiteral("Product"), false, true},
+                          {2, true, QStringLiteral("Critical"), false, true},
+                          {1, false, QStringLiteral("Design"), false, true},
+                          {1, false, QStringLiteral("Marketing"), false, true},
+                          {1, false, QStringLiteral("Operations"), false, true},
+                          {0, false, QStringLiteral("Team"), false, true},
+                          {0, false, QStringLiteral("Personal"), false, true},
+                          {0, false, QStringLiteral("Ideas"), false, true},
+                          {0, false, QStringLiteral("Later"), false, true}
+                      });
 }
 
 QString ResourcesModel::sectionName() const
@@ -128,18 +145,18 @@ QString ResourcesModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> ResourcesModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Resources"), false, true},
-        {1, false, QStringLiteral("Documents"), false, true},
-        {2, true, QStringLiteral("Brand Guide"), false, true},
-        {1, false, QStringLiteral("Playbooks"), false, true},
-        {1, false, QStringLiteral("Contracts"), false, true},
-        {1, false, QStringLiteral("Datasets"), false, true},
-        {0, false, QStringLiteral("Libraries"), false, true},
-        {0, false, QStringLiteral("Templates"), false, true},
-        {0, false, QStringLiteral("Integrations"), false, true},
-        {0, false, QStringLiteral("Attachments"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.resources"), sectionName(), {
+                          {0, false, QStringLiteral("Resources"), false, true},
+                          {1, false, QStringLiteral("Documents"), false, true},
+                          {2, true, QStringLiteral("Brand Guide"), false, true},
+                          {1, false, QStringLiteral("Playbooks"), false, true},
+                          {1, false, QStringLiteral("Contracts"), false, true},
+                          {1, false, QStringLiteral("Datasets"), false, true},
+                          {0, false, QStringLiteral("Libraries"), false, true},
+                          {0, false, QStringLiteral("Templates"), false, true},
+                          {0, false, QStringLiteral("Integrations"), false, true},
+                          {0, false, QStringLiteral("Attachments"), false, true}
+                      });
 }
 
 QString ProgressModel::sectionName() const
@@ -154,18 +171,18 @@ QString ProgressModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> ProgressModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Progress"), false, true},
-        {1, false, QStringLiteral("This Week"), false, true},
-        {2, true, QStringLiteral("Launch Readiness"), false, true},
-        {1, false, QStringLiteral("Campaign A"), false, true},
-        {1, false, QStringLiteral("Campaign B"), false, true},
-        {1, false, QStringLiteral("Experiments"), false, true},
-        {0, false, QStringLiteral("Goals"), false, true},
-        {0, false, QStringLiteral("Metrics"), false, true},
-        {0, false, QStringLiteral("Reviews"), false, true},
-        {0, false, QStringLiteral("Done"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.progress"), sectionName(), {
+                          {0, false, QStringLiteral("Progress"), false, true},
+                          {1, false, QStringLiteral("This Week"), false, true},
+                          {2, true, QStringLiteral("Launch Readiness"), false, true},
+                          {1, false, QStringLiteral("Campaign A"), false, true},
+                          {1, false, QStringLiteral("Campaign B"), false, true},
+                          {1, false, QStringLiteral("Experiments"), false, true},
+                          {0, false, QStringLiteral("Goals"), false, true},
+                          {0, false, QStringLiteral("Metrics"), false, true},
+                          {0, false, QStringLiteral("Reviews"), false, true},
+                          {0, false, QStringLiteral("Done"), false, true}
+                      });
 }
 
 QString EventModel::sectionName() const
@@ -180,18 +197,18 @@ QString EventModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> EventModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Events"), false, true},
-        {1, false, QStringLiteral("Calendar"), false, true},
-        {2, true, QStringLiteral("Product Sync"), false, true},
-        {1, false, QStringLiteral("Client Review"), false, true},
-        {1, false, QStringLiteral("Workshop"), false, true},
-        {1, false, QStringLiteral("Webinar"), false, true},
-        {0, false, QStringLiteral("Deadlines"), false, true},
-        {0, false, QStringLiteral("Releases"), false, true},
-        {0, false, QStringLiteral("Follow-ups"), false, true},
-        {0, false, QStringLiteral("History"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.event"), sectionName(), {
+                          {0, false, QStringLiteral("Events"), false, true},
+                          {1, false, QStringLiteral("Calendar"), false, true},
+                          {2, true, QStringLiteral("Product Sync"), false, true},
+                          {1, false, QStringLiteral("Client Review"), false, true},
+                          {1, false, QStringLiteral("Workshop"), false, true},
+                          {1, false, QStringLiteral("Webinar"), false, true},
+                          {0, false, QStringLiteral("Deadlines"), false, true},
+                          {0, false, QStringLiteral("Releases"), false, true},
+                          {0, false, QStringLiteral("Follow-ups"), false, true},
+                          {0, false, QStringLiteral("History"), false, true}
+                      });
 }
 
 QString PresetModel::sectionName() const
@@ -206,16 +223,16 @@ QString PresetModel::toolbarIconName() const
 
 QVector<SidebarHierarchyItem> PresetModel::items() const
 {
-    return makeItems({
-        {0, false, QStringLiteral("Presets"), false, true},
-        {1, false, QStringLiteral("Writing"), false, true},
-        {2, true, QStringLiteral("Executive Summary"), false, true},
-        {1, false, QStringLiteral("Blog Draft"), false, true},
-        {1, false, QStringLiteral("Meeting Notes"), false, true},
-        {1, false, QStringLiteral("Content Plan"), false, true},
-        {0, false, QStringLiteral("Automation"), false, true},
-        {0, false, QStringLiteral("Tag Set"), false, true},
-        {0, false, QStringLiteral("Saved Filters"), false, true},
-        {0, false, QStringLiteral("Quick Actions"), false, true}
-    });
+    return traceItems(QStringLiteral("sidebar.section.preset"), sectionName(), {
+                          {0, false, QStringLiteral("Presets"), false, true},
+                          {1, false, QStringLiteral("Writing"), false, true},
+                          {2, true, QStringLiteral("Executive Summary"), false, true},
+                          {1, false, QStringLiteral("Blog Draft"), false, true},
+                          {1, false, QStringLiteral("Meeting Notes"), false, true},
+                          {1, false, QStringLiteral("Content Plan"), false, true},
+                          {0, false, QStringLiteral("Automation"), false, true},
+                          {0, false, QStringLiteral("Tag Set"), false, true},
+                          {0, false, QStringLiteral("Saved Filters"), false, true},
+                          {0, false, QStringLiteral("Quick Actions"), false, true}
+                      });
 }

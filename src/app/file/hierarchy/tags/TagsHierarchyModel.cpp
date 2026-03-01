@@ -1,10 +1,13 @@
 #include "TagsHierarchyModel.hpp"
 
+#include "WhatSonDebugTrace.hpp"
+
 #include <utility>
 
 TagsHierarchyModel::TagsHierarchyModel(QObject* parent)
     : QAbstractListModel(parent)
 {
+    WhatSon::Debug::trace(QStringLiteral("tags.model"), QStringLiteral("ctor"));
 }
 
 int TagsHierarchyModel::rowCount(const QModelIndex& parent) const
@@ -60,6 +63,10 @@ QHash<int, QByteArray> TagsHierarchyModel::roleNames() const
 
 void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
 {
+    WhatSon::Debug::trace(
+        QStringLiteral("tags.model"),
+        QStringLiteral("setItems"),
+        QStringLiteral("count=%1").arg(items.size()));
     beginResetModel();
     m_items = std::move(items);
     endResetModel();

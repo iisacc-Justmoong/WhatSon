@@ -33,6 +33,7 @@ Rectangle {
     readonly property color searchHintColor: LV.Theme.descriptionColor
     readonly property color searchInputColor: LV.Theme.titleHeaderColor
     property string searchPlaceholder: "Search"
+    property string searchText: ""
 
     signal searchSubmitted(string text)
     signal searchTextEdited(string text)
