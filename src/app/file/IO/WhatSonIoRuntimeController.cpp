@@ -8,6 +8,12 @@
 
 namespace
 {
+    const QString kEnsureDirAction = QStringLiteral("io.ensuredir");
+    const QString kWriteUtf8Action = QStringLiteral("io.writeutf8");
+    const QString kAppendUtf8Action = QStringLiteral("io.appendutf8");
+    const QString kReadUtf8Action = QStringLiteral("io.readutf8");
+    const QString kRemoveFileAction = QStringLiteral("io.removefile");
+
     QString requiredPath(const QVariantMap& payload, QString* errorMessage)
     {
         const QString path = payload.value(QStringLiteral("path")).toString().trimmed();
@@ -73,8 +79,9 @@ int WhatSonIoRuntimeController::processAll(QString* errorMessage)
     int processedCount = 0;
     while (m_eventListener.hasPendingEvents())
     {
+        const WhatSonIoEvent next = m_eventListener.takeNextEvent();
         QString processError;
-        if (!processNext(&processError))
+        if (!processEvent(next, &processError))
         {
             if (errorMessage != nullptr)
             {
@@ -99,10 +106,11 @@ void WhatSonIoRuntimeController::clearLastResult()
 
 bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QString* errorMessage)
 {
-    const QString action = event.name.trimmed();
-    const QVariantMap payload = event.payload;
+    const QString actionRaw = event.name.trimmed();
+    const QString action = actionRaw.toCaseFolded();
+    const QVariantMap& payload = event.payload;
 
-    if (action.compare(QStringLiteral("io.ensureDir"), Qt::CaseInsensitive) == 0)
+    if (action == kEnsureDirAction)
     {
         QString commandError;
         const QString path = requiredPath(payload, &commandError);
@@ -112,7 +120,7 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
@@ -122,17 +130,17 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
-        m_lastResult = buildResult(true, action, QStringLiteral("Directory ensured."), QVariantMap{
+        m_lastResult = buildResult(true, actionRaw, QStringLiteral("Directory ensured."), QVariantMap{
                                        {QStringLiteral("path"), path}
                                    });
         return true;
     }
 
-    if (action.compare(QStringLiteral("io.writeUtf8"), Qt::CaseInsensitive) == 0)
+    if (action == kWriteUtf8Action)
     {
         QString commandError;
         const QString path = requiredPath(payload, &commandError);
@@ -142,7 +150,7 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
@@ -153,18 +161,18 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
-        m_lastResult = buildResult(true, action, QStringLiteral("UTF-8 file written."), QVariantMap{
+        m_lastResult = buildResult(true, actionRaw, QStringLiteral("UTF-8 file written."), QVariantMap{
                                        {QStringLiteral("path"), path},
                                        {QStringLiteral("bytes"), text.toUtf8().size()}
                                    });
         return true;
     }
 
-    if (action.compare(QStringLiteral("io.appendUtf8"), Qt::CaseInsensitive) == 0)
+    if (action == kAppendUtf8Action)
     {
         QString commandError;
         const QString path = requiredPath(payload, &commandError);
@@ -174,7 +182,7 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
@@ -185,18 +193,18 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
-        m_lastResult = buildResult(true, action, QStringLiteral("UTF-8 file appended."), QVariantMap{
+        m_lastResult = buildResult(true, actionRaw, QStringLiteral("UTF-8 file appended."), QVariantMap{
                                        {QStringLiteral("path"), path},
                                        {QStringLiteral("bytes"), text.toUtf8().size()}
                                    });
         return true;
     }
 
-    if (action.compare(QStringLiteral("io.readUtf8"), Qt::CaseInsensitive) == 0)
+    if (action == kReadUtf8Action)
     {
         QString commandError;
         const QString path = requiredPath(payload, &commandError);
@@ -206,7 +214,7 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
@@ -217,11 +225,11 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
-        m_lastResult = buildResult(true, action, QStringLiteral("UTF-8 file read."), QVariantMap{
+        m_lastResult = buildResult(true, actionRaw, QStringLiteral("UTF-8 file read."), QVariantMap{
                                        {QStringLiteral("path"), path},
                                        {QStringLiteral("text"), text},
                                        {QStringLiteral("bytes"), text.toUtf8().size()}
@@ -229,7 +237,7 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
         return true;
     }
 
-    if (action.compare(QStringLiteral("io.removeFile"), Qt::CaseInsensitive) == 0)
+    if (action == kRemoveFileAction)
     {
         QString commandError;
         const QString path = requiredPath(payload, &commandError);
@@ -239,7 +247,7 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
@@ -249,22 +257,22 @@ bool WhatSonIoRuntimeController::processEvent(const WhatSonIoEvent& event, QStri
             {
                 *errorMessage = commandError;
             }
-            m_lastResult = buildResult(false, action, commandError);
+            m_lastResult = buildResult(false, actionRaw, commandError);
             return false;
         }
 
-        m_lastResult = buildResult(true, action, QStringLiteral("File removed."), QVariantMap{
+        m_lastResult = buildResult(true, actionRaw, QStringLiteral("File removed."), QVariantMap{
                                        {QStringLiteral("path"), path}
                                    });
         return true;
     }
 
-    const QString unsupportedMessage = QStringLiteral("Unsupported IO action: %1").arg(action);
+    const QString unsupportedMessage = QStringLiteral("Unsupported IO action: %1").arg(actionRaw);
     if (errorMessage != nullptr)
     {
         *errorMessage = unsupportedMessage;
     }
-    m_lastResult = buildResult(false, action, unsupportedMessage);
+    m_lastResult = buildResult(false, actionRaw, unsupportedMessage);
     return false;
 }
 

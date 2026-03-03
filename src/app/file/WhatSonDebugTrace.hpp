@@ -47,16 +47,16 @@ namespace WhatSon::Debug
     {
         static const bool enabled = []()
         {
-            // Default-on for local development visibility.
+            // Default-off to keep runtime overhead minimal in production.
             const QByteArray raw = qgetenv("WHATSON_DEBUG_MODE");
             if (raw.trimmed().isEmpty())
             {
-                return true;
+                return false;
             }
 
             bool recognized = false;
             const bool parsed = parseBoolFlag(raw, &recognized);
-            return recognized ? parsed : true;
+            return recognized ? parsed : false;
         }();
 
         return enabled;
@@ -246,6 +246,11 @@ namespace WhatSon::Debug
         const QString& detail = QString(),
         const std::source_location& source = std::source_location::current())
     {
+        if (!isEnabled())
+        {
+            return;
+        }
+
         QString selfDetail = QStringLiteral("selfPtr=0x%1")
             .arg(QString::number(reinterpret_cast<quintptr>(self), 16));
 

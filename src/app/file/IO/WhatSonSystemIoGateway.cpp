@@ -8,6 +8,8 @@
 
 namespace
 {
+    constexpr int kMaxEnsuredDirectoryCacheSize = 4096;
+
     QString previewEntries(const QStringList& values, const int maxCount = 8)
     {
         if (values.isEmpty())
@@ -57,9 +59,22 @@ bool WhatSonSystemIoGateway::ensureDirectory(const QString& directoryPath, QStri
         return false;
     }
 
+    if (m_ensuredDirectories.contains(normalizedPath))
+    {
+        return true;
+    }
+
+    const QDir existingDirectory(normalizedPath);
+    if (existingDirectory.exists())
+    {
+        cacheEnsuredDirectory(normalizedPath);
+        return true;
+    }
+
     QDir directory;
     if (directory.mkpath(normalizedPath))
     {
+        cacheEnsuredDirectory(normalizedPath);
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("io.system.gateway"),
                                   QStringLiteral("ensureDirectory.success"),
@@ -368,6 +383,7 @@ bool WhatSonSystemIoGateway::removeDirectoryRecursively(const QString& directory
 
     if (directory.removeRecursively())
     {
+        invalidateDirectoryCachePrefix(normalizedPath);
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("io.system.gateway"),
                                   QStringLiteral("removeDirectoryRecursively.success"),
@@ -470,4 +486,39 @@ QString WhatSonSystemIoGateway::normalizePath(const QString& path) const
     }
 
     return QDir::cleanPath(trimmed);
+}
+
+void WhatSonSystemIoGateway::cacheEnsuredDirectory(const QString& normalizedDirectoryPath) const
+{
+    if (normalizedDirectoryPath.isEmpty())
+    {
+        return;
+    }
+
+    if (m_ensuredDirectories.size() >= kMaxEnsuredDirectoryCacheSize
+        && !m_ensuredDirectories.contains(normalizedDirectoryPath))
+    {
+        m_ensuredDirectories.clear();
+    }
+
+    m_ensuredDirectories.insert(normalizedDirectoryPath);
+}
+
+void WhatSonSystemIoGateway::invalidateDirectoryCachePrefix(const QString& normalizedDirectoryPath) const
+{
+    if (normalizedDirectoryPath.isEmpty() || m_ensuredDirectories.isEmpty())
+    {
+        return;
+    }
+
+    const QString prefix = normalizedDirectoryPath + QLatin1Char('/');
+    for (auto it = m_ensuredDirectories.begin(); it != m_ensuredDirectories.end();)
+    {
+        if (*it == normalizedDirectoryPath || it->startsWith(prefix))
+        {
+            it = m_ensuredDirectories.erase(it);
+            continue;
+        }
+        ++it;
+    }
 }

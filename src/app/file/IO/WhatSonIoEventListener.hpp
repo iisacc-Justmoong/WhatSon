@@ -28,8 +28,10 @@ public:
 
 private:
     bool acceptsEventName(const QString& eventName) const;
+    void compactQueueIfNeeded();
 
     bool m_enabled = true;
     QStringList m_acceptedEventPrefixes;
     QVector<WhatSonIoEvent> m_pendingEvents;
+    int m_pendingHead = 0;
 };

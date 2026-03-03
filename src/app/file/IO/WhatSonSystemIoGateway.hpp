@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <QSet>
 
 class WhatSonSystemIoGateway final
 {
@@ -23,4 +24,8 @@ public:
 
 private:
     QString normalizePath(const QString& path) const;
+    void cacheEnsuredDirectory(const QString& normalizedDirectoryPath) const;
+    void invalidateDirectoryCachePrefix(const QString& normalizedDirectoryPath) const;
+
+    mutable QSet<QString> m_ensuredDirectories;
 };

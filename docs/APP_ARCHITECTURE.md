@@ -196,6 +196,10 @@ Responsibilities:
     - default all instance member methods log with `traceSelf(this, ...)`
     - use plain `trace(...)` only in free/static contexts where `this` does not exist (parser-local helpers,
       lambdas without object capture, global bootstrap functions)
+- Trace activation policy:
+    - tracing is disabled by default to reduce runtime overhead
+    - set `WHATSON_DEBUG_MODE=1` to enable trace emission
+    - `traceSelf(...)` short-circuits before building detail payload when tracing is disabled
 - System I/O trace points (`WhatSonSystemIoGateway`) emit begin/success/fail/skip with:
     - normalized absolute path
     - byte counts for read/write/append
@@ -421,6 +425,14 @@ Decisions are persisted in `QSettings` under `permissions/*`.
 - `io.removeFile`
 
 Each processed action emits structured result metadata (`ok`, `action`, `message`, `timestamp`, and extra fields).
+
+Runtime performance notes:
+
+- `WhatSonIoEventListener` uses a head-index queue strategy to avoid `removeFirst()` shifting cost on every event pop.
+- `WhatSonIoRuntimeController::processAll(...)` consumes events directly and dispatches without recursive
+  `processNext(...)` calls.
+- `WhatSonSystemIoGateway` caches already-ensured directory paths to avoid repeated `mkpath` overhead on write/append
+  hot paths.
 
 ---
 

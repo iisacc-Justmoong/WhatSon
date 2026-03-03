@@ -45,6 +45,7 @@ WhatSonIoEventListener::~WhatSonIoEventListener() = default;
 void WhatSonIoEventListener::clear()
 {
     m_pendingEvents.clear();
+    m_pendingHead = 0;
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("io.event.listener"),
                               QStringLiteral("clear"));
@@ -116,28 +117,29 @@ void WhatSonIoEventListener::pushLvrsEvent(QString eventName, QVariantMap payloa
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("io.event.listener"),
                               QStringLiteral("pushLvrsEvent.accepted"),
-                              QStringLiteral("pendingCount=%1").arg(m_pendingEvents.size()));
+                              QStringLiteral("pendingCount=%1").arg(pendingCount()));
 }
 
 bool WhatSonIoEventListener::hasPendingEvents() const noexcept
 {
-    return !m_pendingEvents.isEmpty();
+    return pendingCount() > 0;
 }
 
 int WhatSonIoEventListener::pendingCount() const noexcept
 {
-    return m_pendingEvents.size();
+    return m_pendingEvents.size() - m_pendingHead;
 }
 
 WhatSonIoEvent WhatSonIoEventListener::takeNextEvent()
 {
-    if (m_pendingEvents.isEmpty())
+    if (!hasPendingEvents())
     {
         return {};
     }
 
-    const WhatSonIoEvent next = m_pendingEvents.front();
-    m_pendingEvents.removeFirst();
+    WhatSonIoEvent next = std::move(m_pendingEvents[m_pendingHead]);
+    ++m_pendingHead;
+    compactQueueIfNeeded();
     return next;
 }
 
@@ -159,4 +161,28 @@ bool WhatSonIoEventListener::acceptsEventName(const QString& eventName) const
     }
 
     return false;
+}
+
+void WhatSonIoEventListener::compactQueueIfNeeded()
+{
+    if (m_pendingHead <= 0)
+    {
+        return;
+    }
+
+    if (m_pendingHead >= m_pendingEvents.size())
+    {
+        m_pendingEvents.clear();
+        m_pendingHead = 0;
+        return;
+    }
+
+    constexpr int kCompactHeadThreshold = 256;
+    if (m_pendingHead < kCompactHeadThreshold && m_pendingHead * 2 < m_pendingEvents.size())
+    {
+        return;
+    }
+
+    m_pendingEvents = m_pendingEvents.mid(m_pendingHead);
+    m_pendingHead = 0;
 }
