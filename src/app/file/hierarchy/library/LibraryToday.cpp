@@ -4,6 +4,7 @@
 
 #include <QDateTime>
 #include <QDebug>
+#include <utility>
 
 namespace
 {
@@ -99,6 +100,15 @@ bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDa
     }
 
     return true;
+}
+
+void LibraryToday::setNotes(QVector<LibraryNoteRecord> notes)
+{
+    m_notes = std::move(notes);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.today"),
+                              QStringLiteral("setNotes"),
+                              QStringLiteral("count=%1").arg(m_notes.size()));
 }
 
 void LibraryToday::clear()

@@ -11,6 +11,7 @@ public:
     ~LibraryDraft();
 
     bool rebuild(const QVector<LibraryNoteRecord>& allNotes);
+    void setNotes(QVector<LibraryNoteRecord> notes);
     void clear();
 
     const QVector<LibraryNoteRecord>& notes() const noexcept;

@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <utility>
 
 namespace
 {
@@ -482,6 +483,37 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
     updateLoadState(true);
     return true;
+}
+
+void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
+    QVector<WhatSonFolderDepthEntry> folderEntries,
+    QString foldersFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_foldersFilePath = foldersFilePath.trimmed();
+
+    if (!loadSucceeded)
+    {
+        updateLoadState(false, std::move(errorMessage));
+        return;
+    }
+
+    if (folderEntries.isEmpty())
+    {
+        setProjectNames({});
+    }
+    else
+    {
+        m_store.setFolderEntries(std::move(folderEntries));
+        m_projectNames = m_store.projectNames();
+        m_items = itemsFromFolderEntries(m_store.folderEntries());
+        m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
+        syncModel();
+        setSelectedIndex(-1);
+    }
+
+    updateLoadState(true);
 }
 
 void ProjectsHierarchyViewModel::updateItemCount()

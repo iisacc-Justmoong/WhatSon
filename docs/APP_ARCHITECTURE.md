@@ -1,6 +1,6 @@
 # WhatSon Application Architecture Analysis
 
-Last Updated: 2026-03-01  
+Last Updated: 2026-03-03  
 Repository: `WhatSon`  
 Scope: Full application architecture (build, runtime, data, UI, eventing, and test contracts)
 
@@ -15,8 +15,9 @@ WhatSon is a cross-platform Qt 6.5+ application built with QML and LVRS 1.0. The
 - A Rust CLI launcher (optional target)
 - A test suite validating file-format parsing, runtime stores, hierarchy view-model behavior, and QML wiring contracts
 
-At runtime, the app auto-discovers the first `blueprint/*.wshub` package, loads hierarchy domains into dedicated
-view-models, and exposes those view-models to QML through context properties.
+At runtime, the app auto-discovers the first `blueprint/*.wshub` package, parses hierarchy domains in worker threads,
+applies snapshots to dedicated view-models on the main thread, and exposes those view-models to QML through context
+properties.
 
 The dominant architecture pattern is:
 
@@ -92,9 +93,9 @@ Runtime sequence:
 5. Construct runtime services:
     - `WhatSonHubRuntimeStore`
 6. Resolve first blueprint package path (`blueprint/*.wshub`)
-7. Load each runtime domain from `.wshub` in parallel worker threads via
-   `runtime/threading/WhatSonRuntimeParallelLoader` and apply runtime tag-depth entries directly to
-   `TagsHierarchyViewModel`
+7. Parse each runtime domain from `.wshub` in parallel worker threads via
+   `runtime/threading/WhatSonRuntimeParallelLoader` + `runtime/threading/WhatSonRuntimeDomainSnapshots`, then apply
+   parsed snapshots to view-models on the main thread
 8. Register hierarchy view-model context properties into QML root context
 9. Load QML module root (`WhatSon.App`, `Main`)
 10. Start permission bootstrap pipeline (Qt permission API + Apple permission callbacks)
@@ -103,7 +104,7 @@ Important behavior:
 
 - Runtime loading is optimistic per domain: one domain failure does not stop all others.
 - Startup runtime loading is parallelized by domain (library/projects/bookmarks/tags/resources/progress/event/preset
-  and runtime hub store), enabling multi-core utilization during bootstrap.
+  and runtime hub store), while view-model mutation remains on the main thread for Qt object-safety.
 - Operational state is observable through structured debug traces and domain view-model signal/slot propagation.
 
 ---

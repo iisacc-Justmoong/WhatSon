@@ -7,6 +7,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <utility>
 
 namespace
 {
@@ -371,6 +372,23 @@ bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* 
                                   fileFound ? QStringLiteral("1") : QStringLiteral("0")).arg(m_presetNames.size()));
     updateLoadState(true);
     return true;
+}
+
+void PresetHierarchyViewModel::applyRuntimeSnapshot(
+    QStringList presetNames,
+    QString presetFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_presetFilePath = presetFilePath.trimmed();
+    if (!loadSucceeded)
+    {
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    setPresetNames(std::move(presetNames));
+    updateLoadState(true);
 }
 
 void PresetHierarchyViewModel::updateItemCount()

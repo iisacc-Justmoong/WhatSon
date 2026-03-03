@@ -7,6 +7,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <utility>
 
 #include <algorithm>
 
@@ -303,6 +304,24 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
     updateLoadState(true);
     return true;
+}
+
+void ProgressHierarchyViewModel::applyRuntimeSnapshot(
+    int progressValue,
+    QStringList progressStates,
+    QString progressFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_progressFilePath = progressFilePath.trimmed();
+    if (!loadSucceeded)
+    {
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    setProgressState(progressValue, std::move(progressStates));
+    updateLoadState(true);
 }
 
 void ProgressHierarchyViewModel::updateItemCount()

@@ -1013,6 +1013,16 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
     return true;
 }
 
+void LibraryAll::setIndexedNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes)
+{
+    m_sourceWshubPath = normalizePath(sourceWshubPath);
+    m_notes = std::move(notes);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.all"),
+                              QStringLiteral("setIndexedNotes"),
+                              QStringLiteral("path=%1 noteCount=%2").arg(m_sourceWshubPath).arg(m_notes.size()));
+}
+
 void LibraryAll::clear()
 {
     WhatSon::Debug::traceSelf(this,

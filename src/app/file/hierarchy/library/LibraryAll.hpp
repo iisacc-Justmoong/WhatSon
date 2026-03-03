@@ -12,6 +12,7 @@ public:
     ~LibraryAll();
 
     bool indexFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    void setIndexedNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes);
     void clear();
 
     QString sourceWshubPath() const;

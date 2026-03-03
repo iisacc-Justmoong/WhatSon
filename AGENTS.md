@@ -26,8 +26,9 @@ every turn.
 - Tags hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.*`,
   `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.*`
 - Sidebar selection store: `src/app/viewmodel/sidebar/SidebarSelectionStore.*`
-- Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and loads hierarchy/runtime domains in
-  parallel worker threads via `WhatSonRuntimeParallelLoader`.
+- Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and runs domain parsing/store loading in
+  parallel worker threads via `WhatSonRuntimeParallelLoader`, then applies snapshots to ViewModel objects on the main
+  thread.
 
 ### Hierarchy ViewModel Ownership (Critical)
 

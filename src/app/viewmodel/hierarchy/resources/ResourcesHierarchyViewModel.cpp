@@ -7,6 +7,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <utility>
 
 namespace
 {
@@ -374,6 +375,23 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
                                   fileFound ? QStringLiteral("1") : QStringLiteral("0")).arg(m_resourcePaths.size()));
     updateLoadState(true);
     return true;
+}
+
+void ResourcesHierarchyViewModel::applyRuntimeSnapshot(
+    QStringList resourcePaths,
+    QString resourcesFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_resourcesFilePath = resourcesFilePath.trimmed();
+    if (!loadSucceeded)
+    {
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    setResourcePaths(std::move(resourcePaths));
+    updateLoadState(true);
 }
 
 void ResourcesHierarchyViewModel::updateItemCount()

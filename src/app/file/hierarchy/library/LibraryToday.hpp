@@ -12,6 +12,7 @@ public:
     ~LibraryToday();
 
     bool rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDate& today = QDate::currentDate());
+    void setNotes(QVector<LibraryNoteRecord> notes);
     void clear();
 
     const QVector<LibraryNoteRecord>& notes() const noexcept;

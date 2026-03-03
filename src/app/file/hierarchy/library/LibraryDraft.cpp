@@ -3,6 +3,7 @@
 #include "WhatSonDebugTrace.hpp"
 
 #include <QDebug>
+#include <utility>
 
 namespace
 {
@@ -59,6 +60,15 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
     }
 
     return true;
+}
+
+void LibraryDraft::setNotes(QVector<LibraryNoteRecord> notes)
+{
+    m_notes = std::move(notes);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.draft"),
+                              QStringLiteral("setNotes"),
+                              QStringLiteral("count=%1").arg(m_notes.size()));
 }
 
 void LibraryDraft::clear()

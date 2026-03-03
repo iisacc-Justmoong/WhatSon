@@ -7,6 +7,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <utility>
 
 namespace
 {
@@ -371,6 +372,23 @@ bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* e
                                   fileFound ? QStringLiteral("1") : QStringLiteral("0")).arg(m_eventNames.size()));
     updateLoadState(true);
     return true;
+}
+
+void EventHierarchyViewModel::applyRuntimeSnapshot(
+    QStringList eventNames,
+    QString eventFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_eventFilePath = eventFilePath.trimmed();
+    if (!loadSucceeded)
+    {
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    setEventNames(std::move(eventNames));
+    updateLoadState(true);
 }
 
 void EventHierarchyViewModel::updateItemCount()

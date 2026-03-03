@@ -450,6 +450,23 @@ bool TagsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* er
     return true;
 }
 
+void TagsHierarchyViewModel::applyRuntimeSnapshot(
+    QVector<WhatSonTagDepthEntry> entries,
+    QString tagsFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_tagsFilePath = tagsFilePath.trimmed();
+    if (!loadSucceeded)
+    {
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    setTagDepthEntries(std::move(entries));
+    updateLoadState(true);
+}
+
 bool TagsHierarchyViewModel::renameEnabled() const noexcept
 {
     return true;

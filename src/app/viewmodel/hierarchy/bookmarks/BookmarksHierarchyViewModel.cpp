@@ -8,6 +8,7 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <utility>
 
 namespace
 {
@@ -383,6 +384,43 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
                               .arg(m_allBookmarkedNotes.size()));
     updateLoadState(true);
     return true;
+}
+
+void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
+    QVector<LibraryNoteRecord> bookmarkedNotes,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    if (!loadSucceeded)
+    {
+        m_allBookmarkedNotes.clear();
+        rebuildColorFolders();
+        setSelectedIndex(-1);
+        refreshNoteListForSelection();
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    QVector<LibraryNoteListItem> bookmarkListItems;
+    bookmarkListItems.reserve(bookmarkedNotes.size());
+
+    for (const LibraryNoteRecord& note : bookmarkedNotes)
+    {
+        LibraryNoteListItem item;
+        item.id = note.noteId.trimmed();
+        item.title = bookmarkListTitle(note);
+        item.desc = bookmarkListSummary(note);
+        item.folders = bookmarkListFolders(note);
+        item.bookmarked = true;
+        item.bookmarkColor = bookmarkColorHexForNote(note);
+        bookmarkListItems.push_back(std::move(item));
+    }
+
+    m_allBookmarkedNotes = std::move(bookmarkListItems);
+    rebuildColorFolders();
+    setSelectedIndex(-1);
+    refreshNoteListForSelection();
+    updateLoadState(true);
 }
 
 void BookmarksHierarchyViewModel::updateItemCount()

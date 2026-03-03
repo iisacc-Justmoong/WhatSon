@@ -5,6 +5,7 @@
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/hierarchy/library/LibraryDraft.hpp"
 #include "file/hierarchy/library/LibraryToday.hpp"
+#include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 
 #include <QObject>
 #include <QVariantList>
@@ -48,6 +49,15 @@ public:
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    void applyRuntimeSnapshot(
+        const QString& wshubPath,
+        QVector<LibraryNoteRecord> allNotes,
+        QVector<LibraryNoteRecord> draftNotes,
+        QVector<LibraryNoteRecord> todayNotes,
+        QVector<WhatSonFolderDepthEntry> folderEntries,
+        QString foldersFilePath,
+        bool loadSucceeded,
+        QString errorMessage = QString());
 
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();

@@ -520,6 +520,58 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
     return true;
 }
 
+void LibraryHierarchyViewModel::applyRuntimeSnapshot(
+    const QString& wshubPath,
+    QVector<LibraryNoteRecord> allNotes,
+    QVector<LibraryNoteRecord> draftNotes,
+    QVector<LibraryNoteRecord> todayNotes,
+    QVector<WhatSonFolderDepthEntry> folderEntries,
+    QString foldersFilePath,
+    bool loadSucceeded,
+    QString errorMessage)
+{
+    m_foldersFilePath = foldersFilePath.trimmed();
+
+    if (!loadSucceeded)
+    {
+        m_libraryAll.clear();
+        m_libraryDraft.clear();
+        m_libraryToday.clear();
+        m_runtimeIndexLoaded = false;
+        m_foldersHierarchyLoaded = false;
+        m_items.clear();
+        m_bucketRanges.clear();
+        syncModel();
+        m_noteListModel.setItems({});
+        updateNoteItemCount();
+        updateLoadState(false, errorMessage);
+        return;
+    }
+
+    m_libraryAll.setIndexedNotes(wshubPath, std::move(allNotes));
+    m_libraryDraft.setNotes(std::move(draftNotes));
+    m_libraryToday.setNotes(std::move(todayNotes));
+    m_runtimeIndexLoaded = true;
+
+    if (!folderEntries.isEmpty())
+    {
+        m_items = buildFolderItems(folderEntries);
+        m_foldersHierarchyLoaded = true;
+        m_bucketRanges.clear();
+        m_createdFolderSequence = nextFolderSequence(m_items);
+        syncModel();
+        setSelectedIndex(-1);
+        refreshNoteListForSelection();
+    }
+    else
+    {
+        applyIndexedBuckets();
+        setSelectedIndex(-1);
+    }
+
+    updateLoadState(true);
+}
+
 QVariantList LibraryHierarchyViewModel::depthItems() const
 {
     QVariantList serializedItems;
@@ -668,13 +720,18 @@ void LibraryHierarchyViewModel::createFolder()
 
     LibraryHierarchyItem newItem;
     newItem.depth = folderDepth;
+    const QString folderLabel = QStringLiteral("Folder%1").arg(m_createdFolderSequence);
+    newItem.label = folderLabel;
     ++m_createdFolderSequence;
-    newItem.label.clear();
     newItem.accent = false;
     newItem.expanded = false;
     newItem.showChevron = true;
 
     m_items.insert(insertIndex, std::move(newItem));
+    if (insertIndex >= 0 && insertIndex < m_items.size())
+    {
+        m_items[insertIndex].label = folderLabel;
+    }
     applyChevronByDepth(&m_items);
     m_bucketRanges.clear();
     syncModel();

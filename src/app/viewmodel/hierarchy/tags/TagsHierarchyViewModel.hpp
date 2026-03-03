@@ -44,6 +44,11 @@ public:
     void setTagDepthEntries(QVector<WhatSonTagDepthEntry> entries);
     QVector<WhatSonTagDepthEntry> tagDepthEntries() const;
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    void applyRuntimeSnapshot(
+        QVector<WhatSonTagDepthEntry> entries,
+        QString tagsFilePath,
+        bool loadSucceeded,
+        QString errorMessage = QString());
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;

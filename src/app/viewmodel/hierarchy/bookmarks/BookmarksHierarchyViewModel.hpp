@@ -1,5 +1,6 @@
 #pragma once
 
+#include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
 
@@ -51,6 +52,10 @@ public:
     bool viewOptionsEnabled() const noexcept;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    void applyRuntimeSnapshot(
+        QVector<LibraryNoteRecord> bookmarkedNotes,
+        bool loadSucceeded,
+        QString errorMessage = QString());
 
 public
     slots  :

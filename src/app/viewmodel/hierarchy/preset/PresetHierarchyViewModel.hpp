@@ -48,6 +48,11 @@ public:
     bool deleteFolderEnabled() const noexcept;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    void applyRuntimeSnapshot(
+        QStringList presetNames,
+        QString presetFilePath,
+        bool loadSucceeded,
+        QString errorMessage = QString());
 
 public
     slots  :
