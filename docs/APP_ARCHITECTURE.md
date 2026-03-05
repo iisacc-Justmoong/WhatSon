@@ -252,10 +252,14 @@ Desktop composition:
 - `StatusBarLayout`
 - `NavigationBarLayout`
 - `BodyLayout` (sidebar/list/content/detail panel arrangement with splitter interactions)
-- `DetailPanelLayout` + `view/panels/detail/{RightPanel,DetailPanel,DetailPanelHeaderToolbar,DetailContents}`
+- `DetailPanelLayout` +
+  `view/panels/detail/{RightPanel,DetailPanel,DetailPanelHeaderToolbar,DetailPanelHeaderToolbarButton,DetailContents}`
   (Figma-driven right detail panel for node `134:3212`)
-    - State logic is backend-driven by `DetailPanelViewModel` (`src/app/viewmodel/detailPanel/DetailPanelViewModel.*`).
-    - `DetailPanelHeaderToolbar` reads `toolbarItems` from the C++ view-model and emits state-change events upward.
+    - State logic is backend-driven by `DetailPanelViewModel` (`src/app/viewmodel/detailPanel/DetailPanelViewModel.*`),
+      with SRP decomposition into `DetailPanelState.*` (state enum/name/value contract) and
+      `DetailPanelToolbarItemsFactory.*` (toolbar item projection).
+    - `DetailPanelHeaderToolbar` is a lightweight repeater container and delegates per-button rendering/click logic to
+      `DetailPanelHeaderToolbarButton`.
     - `DetailContents` binds to C++-computed `activeStateName`.
 
 Mobile composition:

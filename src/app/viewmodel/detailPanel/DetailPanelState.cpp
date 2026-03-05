@@ -44,8 +44,8 @@ namespace WhatSon::DetailPanel
         return QStringLiteral("fileInfo");
     }
 
-    QString stateNameFromValue(int stateValueValue)
+    QString stateNameFromValue(int stateValue)
     {
-        return stateName(stateFromValue(stateValueValue));
+        return stateName(stateFromValue(stateValue));
     }
 } // namespace WhatSon::DetailPanel

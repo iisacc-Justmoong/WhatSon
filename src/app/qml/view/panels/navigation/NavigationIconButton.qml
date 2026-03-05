@@ -5,6 +5,7 @@ LV.IconButton {
     id: navigationIconButton
 
     property string iconToken: ""
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationIconButton") : null
 
     checkable: false
     height: 20

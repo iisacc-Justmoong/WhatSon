@@ -5,6 +5,7 @@ LV.HStack {
     id: informationBar
 
     property bool compactMode: false
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationInformationBar") : null
 
     spacing: 4
 

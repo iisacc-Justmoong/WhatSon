@@ -3,7 +3,10 @@
 <contents id=${id}>
   <body>
   <canvas id="layer1">
-    ${canvas-data-bitmap}
+    ${canvas-data-layer1-bitmap}
   </canvas>
+  <canvas id="layer2">
+      ${canvas-data-layer2-bitmap}
+    </canvas>
   </body>
 </contents>

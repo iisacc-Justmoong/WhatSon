@@ -205,12 +205,27 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailToolbarText.contains(QStringLiteral("signal detailStateChangeRequested(int stateValue)")),
         "DetailPanelHeaderToolbar.qml must expose detailStateChangeRequested(int stateValue).");
     QVERIFY2(
-        detailToolbarText.contains(QStringLiteral("readonly property bool selected: buttonSpec.selected === true")),
-        "DetailPanelHeaderToolbar.qml must use C++ selected field from toolbar specs.");
+        detailToolbarText.contains(QStringLiteral("DetailPanelHeaderToolbarButton")),
+        "DetailPanelHeaderToolbar.qml must compose DetailPanelHeaderToolbarButton delegates.");
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral(
-            "onClicked: detailPanelHeaderToolbar.detailStateChangeRequested(buttonSpec.stateValue)")),
-        "DetailPanelHeaderToolbar.qml must emit detailStateChangeRequested from button clicks.");
+            "detailPanelHeaderToolbar.detailStateChangeRequested(stateValue);")),
+        "DetailPanelHeaderToolbar.qml must emit detailStateChangeRequested from delegate clicks.");
+
+    const QString detailToolbarButtonPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/detail/DetailPanelHeaderToolbarButton.qml"));
+    QFile detailToolbarButtonFile(detailToolbarButtonPath);
+    QVERIFY2(
+        detailToolbarButtonFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(detailToolbarButtonPath));
+    const QString detailToolbarButtonText = QString::fromUtf8(detailToolbarButtonFile.readAll());
+    QVERIFY2(
+        detailToolbarButtonText.contains(
+            QStringLiteral("property bool selected: buttonSpec && buttonSpec.selected === true")),
+        "DetailPanelHeaderToolbarButton.qml must use C++ selected field from toolbar specs.");
+    QVERIFY2(
+        detailToolbarButtonText.contains(QStringLiteral("stateClickRequested(nextState);")),
+        "DetailPanelHeaderToolbarButton.qml must emit stateClickRequested from icon button clicks.");
 
     const QString detailContentsPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailContents.qml"));

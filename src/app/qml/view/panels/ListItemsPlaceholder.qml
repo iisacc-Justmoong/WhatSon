@@ -8,6 +8,7 @@ Item {
     id: listItemsPlaceholder
 
     property var noteModel: null
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListItemsPlaceholder") : null
 
     function normalizeFolders(value) {
         if (value === undefined || value === null)

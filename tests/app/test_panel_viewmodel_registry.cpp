@@ -23,6 +23,7 @@ namespace
             QStringLiteral("detail.DetailContents"),
             QStringLiteral("detail.DetailPanel"),
             QStringLiteral("detail.DetailPanelHeaderToolbar"),
+            QStringLiteral("detail.DetailPanelHeaderToolbarButton"),
             QStringLiteral("detail.RightPanel"),
             QStringLiteral("DetailPanelLayout"),
             QStringLiteral("HierarchySidebarLayout"),
@@ -60,6 +61,10 @@ namespace
             {"view/panels/detail/DetailContents.qml", "detail.DetailContents"},
             {"view/panels/detail/DetailPanel.qml", "detail.DetailPanel"},
             {"view/panels/detail/DetailPanelHeaderToolbar.qml", "detail.DetailPanelHeaderToolbar"},
+            {
+                "view/panels/detail/DetailPanelHeaderToolbarButton.qml",
+                "detail.DetailPanelHeaderToolbarButton"
+            },
             {"view/panels/detail/RightPanel.qml", "detail.RightPanel"},
             {"view/panels/DetailPanelLayout.qml", "DetailPanelLayout"},
             {"view/panels/HierarchySidebarLayout.qml", "HierarchySidebarLayout"},

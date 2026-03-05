@@ -40,7 +40,6 @@ public
     signals  :
 
 
-
     void activeStateChanged();
     void toolbarItemsChanged();
     void viewModelHookRequested();
