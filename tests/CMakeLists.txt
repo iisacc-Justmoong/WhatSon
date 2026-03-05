@@ -332,6 +332,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_panel_viewmodel_registry_tests)
 
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailContentSectionViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelState.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelViewModel.cpp

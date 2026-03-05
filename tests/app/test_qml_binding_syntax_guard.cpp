@@ -190,6 +190,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailPanelText.contains(
             QStringLiteral(
+                "readonly property var activeDetailContentVm: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.activeContentViewModel : null")),
+        "DetailPanel.qml must map active state to dedicated content view-model instance.");
+    QVERIFY2(
+        detailPanelText.contains(
+            QStringLiteral(
                 "toolbarButtonSpecs: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.toolbarItems : []")),
         "DetailPanel.qml must source toolbar specs from C++ detailPanelViewModel.");
     QVERIFY2(
@@ -232,6 +237,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QFile detailContentsFile(detailContentsPath);
     QVERIFY2(detailContentsFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailContentsPath));
     const QString detailContentsText = QString::fromUtf8(detailContentsFile.readAll());
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("property var activeContentViewModel: null")),
+        "DetailContents.qml must expose activeContentViewModel for dedicated detail section view-model wiring.");
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("property string activeStateName: \"fileInfo\"")),
         "DetailContents.qml must expose activeStateName default.");

@@ -442,6 +442,24 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("eventHierarchyViewModel"), &eventHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("presetHierarchyViewModel"), &presetHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("detailPanelViewModel"), &detailPanelViewModel);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("detailFileInfoViewModel"),
+        detailPanelViewModel.fileInfoViewModel());
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("detailFileStatViewModel"),
+        detailPanelViewModel.fileStatViewModel());
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("detailFileFormatViewModel"),
+        detailPanelViewModel.fileFormatViewModel());
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("detailFileHistoryViewModel"),
+        detailPanelViewModel.fileHistoryViewModel());
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("detailAppearanceViewModel"),
+        detailPanelViewModel.appearanceViewModel());
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("detailHelpViewModel"),
+        detailPanelViewModel.helpViewModel());
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
 
     QObject::connect(

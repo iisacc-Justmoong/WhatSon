@@ -260,9 +260,15 @@ Desktop composition:
     - State logic is backend-driven by `DetailPanelViewModel` (`src/app/viewmodel/detailPanel/DetailPanelViewModel.*`),
       with SRP decomposition into `DetailPanelState.*` (state enum/name/value contract) and
       `DetailPanelToolbarItemsFactory.*` (toolbar item projection).
-    - `DetailPanelHeaderToolbar` is a lightweight repeater container and delegates per-button rendering/click logic to
-      `DetailPanelHeaderToolbarButton`.
-    - `DetailContents` binds to C++-computed `activeStateName`.
+    - Detail content sections are now backed by dedicated per-state view-model instances
+      (`fileInfo`, `fileStat`, `fileFormat`, `fileHistory`, `appearance`, `help`) through
+      `DetailContentSectionViewModel`, mapped from the state enum by `DetailPanelViewModel`.
+        - `DetailPanelHeaderToolbar` is a lightweight repeater container and delegates per-button rendering/click logic
+          to
+          `DetailPanelHeaderToolbarButton`.
+    - Toolbar icon order follows Figma node `134:4152`: `generalprojectStructure`, `statisticsPanel`, `fileFormat`,
+      `toolWindowClock`, `cwmPermissionView`, `featureAnswer`.
+        - `DetailContents` binds to C++-computed `activeStateName`.
 
 Mobile composition:
 

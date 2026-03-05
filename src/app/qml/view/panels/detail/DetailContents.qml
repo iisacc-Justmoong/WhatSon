@@ -3,6 +3,7 @@ import QtQuick
 Item {
     id: detailContents
 
+    property var activeContentViewModel: null
     property string activeStateName: "fileInfo"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
 

@@ -7,7 +7,7 @@ LV.IconButton {
     property var buttonSpec: ({})
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbarButton") : null
     property bool selected: buttonSpec && buttonSpec.selected === true
-    readonly property color selectedBackgroundColor: LV.Theme.accentBlueMuted
+    readonly property color selectedBackgroundColor: LV.Theme.panelBackground12
 
     signal stateClickRequested(int stateValue)
     signal viewHookRequested

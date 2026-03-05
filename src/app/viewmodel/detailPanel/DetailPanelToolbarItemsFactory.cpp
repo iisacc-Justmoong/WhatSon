@@ -15,7 +15,7 @@ namespace WhatSon::DetailPanel
         };
 
         constexpr std::array<ToolbarSpec, 6> kToolbarSpecs = {
-            ToolbarSpec{ContentState::FileInfo, "syncFilesModInfo"},
+            ToolbarSpec{ContentState::FileInfo, "generalprojectStructure"},
             ToolbarSpec{ContentState::FileStat, "statisticsPanel"},
             ToolbarSpec{ContentState::FileFormat, "fileFormat"},
             ToolbarSpec{ContentState::FileHistory, "toolWindowClock"},
