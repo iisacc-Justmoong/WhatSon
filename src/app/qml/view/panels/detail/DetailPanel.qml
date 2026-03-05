@@ -3,8 +3,9 @@ import QtQuick
 Item {
     id: detailPanel
 
-    property int detailContentsHeight: 324
-    property int detailContentsWidth: 165
+    readonly property int detailContentsHeight: Math.max(0, detailPanel.height - detailPanel.headerToolbarHeight - detailPanel.panelSpacing)
+    readonly property int detailContentsWidth: detailPanel.width
+    readonly property var detailPanelVm: detailPanelViewModel
     property int headerToolbarHeight: 20
     property int headerToolbarWidth: 145
     property int panelSpacing: 10

@@ -7,6 +7,7 @@ LV.IconButton {
     property var buttonSpec: ({})
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbarButton") : null
     property bool selected: buttonSpec && buttonSpec.selected === true
+    readonly property color selectedBackgroundColor: LV.Theme.accentBlueMuted
 
     signal stateClickRequested(int stateValue)
     signal viewHookRequested
@@ -15,10 +16,10 @@ LV.IconButton {
         viewHookRequested();
     }
 
-    backgroundColor: selected ? LV.Theme.panelBackground12 : "transparent"
-    backgroundColorDisabled: selected ? LV.Theme.panelBackground12 : "transparent"
-    backgroundColorHover: selected ? LV.Theme.panelBackground12 : "transparent"
-    backgroundColorPressed: selected ? LV.Theme.panelBackground12 : "transparent"
+    backgroundColor: selected ? selectedBackgroundColor : "transparent"
+    backgroundColorDisabled: selected ? selectedBackgroundColor : "transparent"
+    backgroundColorHover: selected ? selectedBackgroundColor : "transparent"
+    backgroundColorPressed: selected ? selectedBackgroundColor : "transparent"
     checkable: false
     cornerRadius: 4
     height: 20
