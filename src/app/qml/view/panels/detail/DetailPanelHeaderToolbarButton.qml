@@ -7,33 +7,27 @@ LV.IconButton {
     property var buttonSpec: ({})
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbarButton") : null
     property bool selected: buttonSpec && buttonSpec.selected === true
-    readonly property color selectedBackgroundColor: LV.Theme.panelBackground12
 
     signal stateClickRequested(int stateValue)
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 
-    backgroundColor: selected ? selectedBackgroundColor : "transparent"
-    backgroundColorDisabled: selected ? selectedBackgroundColor : "transparent"
-    backgroundColorHover: selected ? selectedBackgroundColor : "transparent"
-    backgroundColorPressed: selected ? selectedBackgroundColor : "transparent"
     checkable: false
-    cornerRadius: 4
-    height: 20
-    horizontalPadding: 2
     iconName: buttonSpec && buttonSpec.iconName !== undefined ? buttonSpec.iconName : ""
-    iconSize: 16
-    tone: selected ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
-    verticalPadding: 2
-    width: 20
 
     onClicked: {
         const nextState = buttonSpec && buttonSpec.stateValue !== undefined ? Number(buttonSpec.stateValue) : NaN;
-        if (!isFinite(nextState))
+        if (!isFinite(nextState)) {
+            requestViewHook("detailToolbarButtonClick.invalidState");
             return;
+        }
+        requestViewHook("detailToolbarButtonClick.stateValue=" + nextState);
         stateClickRequested(nextState);
     }
 }

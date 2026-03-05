@@ -1,6 +1,7 @@
 #include "DetailPanelViewModel.hpp"
 
 #include "DetailPanelToolbarItemsFactory.hpp"
+#include "file/WhatSonDebugTrace.hpp"
 
 DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
     : QObject(parent)
@@ -13,6 +14,10 @@ DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
 {
     applyActiveContentViewModel(m_activeState);
     m_toolbarItems = WhatSon::DetailPanel::buildToolbarItems(m_activeState);
+    const QString detail = QStringLiteral("activeState=%1 toolbarItemCount=%2")
+                           .arg(activeStateName())
+                           .arg(m_toolbarItems.size());
+    WhatSon::Debug::traceSelf(this, QStringLiteral("detail.panel.viewmodel"), QStringLiteral("ctor"), detail);
 }
 
 DetailPanelViewModel::~DetailPanelViewModel() = default;
@@ -97,24 +102,55 @@ void DetailPanelViewModel::setActiveState(int stateValue)
 {
     if (!WhatSon::DetailPanel::isValidStateValue(stateValue))
     {
+        const QString detail = QStringLiteral("requestedStateValue=%1 result=ignored_invalid").arg(stateValue);
+        WhatSon::Debug::traceSelf(
+            this,
+            QStringLiteral("detail.panel.viewmodel"),
+            QStringLiteral("setActiveState.ignoredInvalid"),
+            detail);
         return;
     }
 
+    const QString previousStateName = activeStateName();
     const DetailContentState nextState = WhatSon::DetailPanel::stateFromValue(stateValue);
     if (nextState == m_activeState)
     {
+        const QString detail = QStringLiteral("requestedStateValue=%1 requestedStateName=%2 result=ignored_same")
+                               .arg(stateValue)
+                               .arg(previousStateName);
+        WhatSon::Debug::traceSelf(
+            this,
+            QStringLiteral("detail.panel.viewmodel"),
+            QStringLiteral("setActiveState.ignoredSame"),
+            detail);
         return;
     }
 
     m_activeState = nextState;
     applyActiveContentViewModel(m_activeState);
     m_toolbarItems = WhatSon::DetailPanel::buildToolbarItems(m_activeState);
+    const QString detail = QStringLiteral("requestedStateValue=%1 previousState=%2 nextState=%3 toolbarItemCount=%4")
+                           .arg(stateValue)
+                           .arg(previousStateName)
+                           .arg(activeStateName())
+                           .arg(m_toolbarItems.size());
+    WhatSon::Debug::traceSelf(
+        this,
+        QStringLiteral("detail.panel.viewmodel"),
+        QStringLiteral("setActiveState.applied"),
+        detail);
     emit activeStateChanged();
     emit toolbarItemsChanged();
 }
 
 void DetailPanelViewModel::requestStateChange(int stateValue)
 {
+    const QString detail = QStringLiteral("requestedStateValue=%1").arg(stateValue);
+    WhatSon::Debug::traceSelf(
+        this,
+        QStringLiteral("detail.panel.viewmodel"),
+        QStringLiteral("requestStateChange"),
+        detail);
     setActiveState(stateValue);
 }
 

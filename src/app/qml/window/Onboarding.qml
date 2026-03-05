@@ -57,11 +57,9 @@ Window {
         spacing: LV.Theme.gap10
 
         LV.Label {
-            style: title
             text: "Onboarding"
         }
         LV.Label {
-            style: description
             text: "Create or select a hub."
         }
         LV.HStack {
@@ -69,19 +67,16 @@ Window {
 
             LV.LabelButton {
                 text: "Create"
-                tone: LV.AbstractButton.Primary
 
                 onClicked: root.createFileRequested()
             }
             LV.LabelButton {
                 text: "Select"
-                tone: LV.AbstractButton.Default
 
                 onClicked: root.selectFileRequested()
             }
             LV.LabelButton {
                 text: "Hook"
-                tone: LV.AbstractButton.Default
 
                 onClicked: root.viewHookRequested()
             }

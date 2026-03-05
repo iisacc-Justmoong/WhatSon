@@ -247,6 +247,8 @@ Library-specific modeling:
 Primary root:
 
 - `Main.qml` (`LV.ApplicationWindow`)
+- App bootstrap (`main.cpp`) enables `WHATSON_DEBUG_MODE=1` by default when the variable is not explicitly set,
+  so `WhatSon::Debug::trace/traceSelf`-based logs are available in development sessions without extra launch flags.
 - Render quality policy is enforced at app root for resize stability:
     - Desktop and mobile (`isDesktopPlatform || isMobilePlatform`): resize events (`onWidthChanged` /
       `onHeightChanged`) temporarily suspend dynamic
@@ -310,6 +312,15 @@ Hierarchy rendering pipeline:
       `panelViewModelRegistry.panelViewModel("<panel-key>")`.
     - Panel keys are path-scoped for nested groups (`navigation.*`, `sidebar.*`) and file-name scoped for root panel
       files (for example `BodyLayout`, `NavigationBarLayout`).
+    - Panel debug hook contract is standardized:
+        - QML-side `requestViewHook(reason)` must forward to `panelViewModel.requestViewModelHook(reason)` and then emit
+          `viewHookRequested`.
+        - C++-side `PanelViewModel::requestViewModelHook(reason)` emits a unified debug trace through
+          `WhatSon::Debug::traceSelf` with scope `panel.viewmodel` and action `hook.request`.
+        - Detail panel state transitions must be traced through `DetailPanelViewModel` /
+          `DetailContentSectionViewModel` using the same `WhatSon::Debug::traceSelf` path.
+        - New in-app debug output must not introduce ad-hoc `console.log`/`qWarning` formats when an existing
+          `WhatSon::Debug` trace contract already exists.
 
 ---
 

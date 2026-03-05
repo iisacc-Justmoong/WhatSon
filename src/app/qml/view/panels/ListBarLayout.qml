@@ -42,21 +42,10 @@ Rectangle {
 
                         Layout.fillWidth: true
                         Layout.preferredHeight: 18
-                        backgroundColor: listBarLayout.fieldColor
-                        backgroundColorDisabled: listBarLayout.fieldColor
-                        backgroundColorFocused: listBarLayout.fieldColor
-                        backgroundColorHover: listBarLayout.fieldColor
-                        backgroundColorPressed: listBarLayout.fieldColor
                         clearButtonVisible: true
-                        cornerRadius: 5
-                        fieldMinHeight: 18
-                        insetHorizontal: LV.Theme.gap7
-                        insetVertical: LV.Theme.gap3
                         mode: searchMode
                         selectByMouse: true
-                        sideSpacing: LV.Theme.gap5
                         text: listBarLayout.searchText
-                        textColor: listBarLayout.titleColor
 
                         onAccepted: function (text) {
                             listBarLayout.searchText = typeof text === "string" ? text : listSearchField.text;
@@ -70,16 +59,12 @@ Rectangle {
                         Layout.preferredWidth: 20
                         checkable: false
                         iconName: "cwmPermissionView"
-                        iconSize: 16
-                        tone: LV.AbstractButton.Borderless
                     }
                     LV.IconButton {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
                         checkable: false
                         iconName: "sortByType"
-                        iconSize: 16
-                        tone: LV.AbstractButton.Borderless
                     }
                 }
             }

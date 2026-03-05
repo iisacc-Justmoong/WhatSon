@@ -314,6 +314,11 @@ namespace
 int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
+
+    if (qEnvironmentVariableIsEmpty("WHATSON_DEBUG_MODE"))
+    {
+        qputenv("WHATSON_DEBUG_MODE", QByteArrayLiteral("1"));
+    }
 #if defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT) && defined(WHATSON_LVRS_RUNTIME_IMPORT_ROOT)
     Q_CLEANUP_RESOURCE(qmake_LVRS);
 

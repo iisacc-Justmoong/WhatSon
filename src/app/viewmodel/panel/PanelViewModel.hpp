@@ -20,8 +20,8 @@ public
     slots  :
 
 
-
-    void requestViewModelHook();
+    Q_INVOKABLE
+    void requestViewModelHook(const QString& reason = QString());
 
     signals  :
 

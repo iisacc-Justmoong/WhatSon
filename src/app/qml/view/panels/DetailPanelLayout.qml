@@ -10,7 +10,10 @@ Rectangle {
 
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 

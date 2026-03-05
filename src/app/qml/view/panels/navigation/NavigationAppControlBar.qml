@@ -8,7 +8,10 @@ LV.HStack {
 
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 
@@ -18,40 +21,24 @@ LV.HStack {
         id: makeStickyNoteButton
 
         checkable: false
-        height: 20
         iconName: "generalprojectStructure"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
     LV.IconButton {
         id: pinWindowButton
 
         checkable: false
-        height: 20
         iconName: "pin"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
     LV.IconButton {
         id: alertsButton
 
         checkable: false
-        height: 20
         iconName: "toolwindownotifications"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
     LV.IconButton {
         id: timerButton
 
         checkable: false
-        height: 20
         iconName: "startTimer"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
 }

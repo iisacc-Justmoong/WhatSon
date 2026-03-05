@@ -45,11 +45,7 @@ Item {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         checkable: false
-                        height: 20
                         iconName: "loggedInUser"
-                        iconSize: 16
-                        tone: LV.AbstractButton.Borderless
-                        width: 20
                     }
                     Row {
                         anchors.right: parent.right
@@ -58,19 +54,11 @@ Item {
 
                         LV.IconButton {
                             checkable: false
-                            height: 20
                             iconName: "audioToAudio"
-                            iconSize: 16
-                            tone: LV.AbstractButton.Borderless
-                            width: 20
                         }
                         LV.IconMenuButton {
                             checkable: false
-                            height: 20
                             iconName: "generalprojectStructure"
-                            iconSize: 16
-                            tone: LV.AbstractButton.Borderless
-                            width: 40
                         }
                     }
                 }
@@ -146,11 +134,7 @@ Item {
                     LV.IconButton {
                         anchors.centerIn: parent
                         checkable: false
-                        height: 20
                         iconName: "addFile"
-                        iconSize: 16
-                        tone: LV.AbstractButton.Borderless
-                        width: 20
                     }
                 }
             }

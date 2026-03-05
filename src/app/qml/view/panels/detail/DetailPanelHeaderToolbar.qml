@@ -9,7 +9,10 @@ Item {
     signal detailStateChangeRequested(int stateValue)
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 
@@ -24,6 +27,7 @@ Item {
                 buttonSpec: detailPanelHeaderToolbar.toolbarButtonSpecs[index]
 
                 onStateClickRequested: function (stateValue) {
+                    detailPanelHeaderToolbar.requestViewHook("toolbarDelegateStateClick.stateValue=" + stateValue);
                     detailPanelHeaderToolbar.detailStateChangeRequested(stateValue);
                 }
             }

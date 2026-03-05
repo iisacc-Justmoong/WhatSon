@@ -8,7 +8,10 @@ LV.HStack {
 
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 
@@ -18,30 +21,18 @@ LV.HStack {
         id: exportButton
 
         checkable: false
-        height: 20
         iconName: "generalupload"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
     LV.IconButton {
         id: printButton
 
         checkable: false
-        height: 20
         iconName: "generalprint"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
     LV.IconButton {
         id: mailingButton
 
         checkable: false
-        height: 20
         iconName: "mailer"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
 }

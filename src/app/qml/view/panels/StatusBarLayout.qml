@@ -64,21 +64,10 @@ Rectangle {
             id: searchBarInput
 
             anchors.fill: parent
-            backgroundColor: statusBar.searchFieldColor
-            backgroundColorDisabled: statusBar.searchFieldColor
-            backgroundColorFocused: statusBar.searchFieldColor
-            backgroundColorHover: statusBar.searchFieldColor
-            backgroundColorPressed: statusBar.searchFieldColor
             clearButtonVisible: true
-            cornerRadius: statusBar.searchFieldRadius
-            fieldMinHeight: statusBar.searchFieldHeight
-            insetHorizontal: LV.Theme.gap7
-            insetVertical: LV.Theme.gap3
             mode: searchMode
             selectByMouse: true
-            sideSpacing: LV.Theme.gap5
             text: statusBar.searchText
-            textColor: statusBar.searchInputColor
 
             onAccepted: function (text) {
                 var nextText = typeof text === "string" ? text : searchBarInput.text;
@@ -164,21 +153,10 @@ Rectangle {
                     id: compactSearchInput
 
                     anchors.fill: parent
-                    backgroundColor: statusBar.compactFieldColor
-                    backgroundColorDisabled: statusBar.compactFieldColor
-                    backgroundColorFocused: statusBar.compactFieldColor
-                    backgroundColorHover: statusBar.compactFieldColor
-                    backgroundColorPressed: statusBar.compactFieldColor
                     clearButtonVisible: true
-                    cornerRadius: statusBar.compactFieldRadius
-                    fieldMinHeight: statusBar.compactFieldHeight
-                    insetHorizontal: LV.Theme.gap7
-                    insetVertical: LV.Theme.gap3
                     mode: searchMode
                     selectByMouse: true
-                    sideSpacing: LV.Theme.gap5
                     text: statusBar.searchText
-                    textColor: statusBar.searchInputColor
 
                     onAccepted: function (text) {
                         var nextText = typeof text === "string" ? text : compactSearchInput.text;
@@ -203,11 +181,7 @@ Rectangle {
 
                     anchors.centerIn: parent
                     checkable: false
-                    height: LV.Theme.gap20
                     iconName: "addFile"
-                    iconSize: LV.Theme.iconSm
-                    tone: LV.AbstractButton.Borderless
-                    width: LV.Theme.gap20
                 }
             }
         }

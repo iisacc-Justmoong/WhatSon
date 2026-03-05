@@ -8,7 +8,10 @@ LV.HStack {
 
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 
@@ -18,20 +21,12 @@ LV.HStack {
         id: preferenceButton
 
         checkable: false
-        height: 20
         iconName: "audioToAudio"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
     LV.IconButton {
         id: detailPanelControlButton
 
         checkable: false
-        height: 20
         iconName: "columnIndex"
-        iconSize: 16
-        tone: LV.AbstractButton.Borderless
-        width: 20
     }
 }

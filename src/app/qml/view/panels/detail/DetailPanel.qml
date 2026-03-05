@@ -13,7 +13,10 @@ Item {
 
     signal viewHookRequested
 
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
 
@@ -28,6 +31,7 @@ Item {
             width: detailPanel.headerToolbarWidth
 
             onDetailStateChangeRequested: function (stateValue) {
+                detailPanel.requestViewHook("detailStateChangeRequested.stateValue=" + stateValue);
                 if (detailPanel.detailPanelVm)
                     detailPanel.detailPanelVm.requestStateChange(stateValue);
             }

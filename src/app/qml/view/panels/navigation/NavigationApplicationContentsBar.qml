@@ -154,11 +154,7 @@ Item {
                 id: applicationContentsMenuButton
 
                 checkable: false
-                height: 20
                 iconName: "generalprojectStructure"
-                iconSize: 16
-                tone: LV.AbstractButton.Borderless
-                width: 40
 
                 onClicked: {
                     if (applicationContentsContextMenu.opened) {
@@ -172,11 +168,7 @@ Item {
                 id: compactPreferenceButton
 
                 checkable: false
-                height: 20
                 iconName: "audioToAudio"
-                iconSize: 16
-                tone: LV.AbstractButton.Borderless
-                width: 20
             }
         }
     }

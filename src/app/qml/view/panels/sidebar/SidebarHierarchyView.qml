@@ -96,7 +96,10 @@ Item {
         var target = (label === undefined || label === null) ? "" : String(label).toLowerCase();
         return target.indexOf(query) >= 0;
     }
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
     function toggleViewOptionsMenu() {
@@ -165,12 +168,8 @@ Item {
                 Layout.preferredHeight: 20
                 Layout.preferredWidth: Math.max(sidebarHierarchyView.toolbarMinWidth, sidebarHierarchyView.contentWidth)
                 activeButtonId: sidebarHierarchyView.activeToolbarIndex
-                backgroundColor: "transparent"
-                backgroundOpacity: 1.0
                 buttonItems: sidebarHierarchyView.toolbarItems
-                horizontalPadding: 0
                 spacing: LV.Theme.gap2
-                verticalPadding: 0
 
                 onActiveChanged: function (button, buttonId, index) {
                     if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
@@ -184,19 +183,9 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: sidebarHierarchyView.searchHeight
-                backgroundColor: LV.Theme.panelBackground10
-                backgroundColorDisabled: LV.Theme.panelBackground10
-                backgroundColorFocused: LV.Theme.panelBackground10
-                backgroundColorHover: LV.Theme.panelBackground10
-                backgroundColorPressed: LV.Theme.panelBackground10
                 clearButtonVisible: true
-                cornerRadius: sidebarHierarchyView.searchRadius
-                fieldMinHeight: sidebarHierarchyView.searchHeight
-                insetHorizontal: LV.Theme.gap7
-                insetVertical: LV.Theme.gap3
                 mode: searchMode
                 selectByMouse: true
-                sideSpacing: LV.Theme.gap5
                 text: sidebarHierarchyView.searchQuery
 
                 onAccepted: function (text) {
@@ -224,7 +213,6 @@ Item {
                     id: hierarchyList
 
                     keyboardNavigationEnabled: false
-                    rowSpacing: 0
                     width: hierarchyViewport.width
 
                     Repeater {
@@ -234,7 +222,6 @@ Item {
                             id: hierarchyDelegate
 
                             required property int index
-                            readonly property bool itemAccent: model.accent === undefined ? false : !!model.accent
                             readonly property bool itemExpanded: model.expanded === undefined ? false : !!model.expanded
                             readonly property int itemIndentLevel: {
                                 if (model.indentLevel === undefined || model.indentLevel === null)
@@ -254,20 +241,12 @@ Item {
                             readonly property bool visibleInView: matchesSearch && rowVisible
 
                             baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
-                            chevronColor: LV.Theme.darkGrey10
                             expanded: hierarchyDelegate.itemExpanded
                             height: visibleInView ? implicitHeight : 0
-                            iconPlaceholderColor: LV.Theme.accentGrayLight
                             indentLevel: hierarchyDelegate.itemIndentLevel
                             indentStep: sidebarHierarchyView.hierarchyIndentStep
                             label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
-                            leadingSpacing: LV.Theme.gap2
-                            rowBackgroundColor: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                            rowBackgroundColorHover: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                            rowBackgroundColorPressed: index === sidebarHierarchyView.selectedFolderIndex ? LV.Theme.panelBackground12 : "transparent"
-                            rowRightPadding: LV.Theme.gap8
                             showChevron: hierarchyDelegate.itemShowChevron
-                            textColorNormal: hierarchyDelegate.itemAccent ? LV.Theme.accentBlue : LV.Theme.bodyColor
                             visible: visibleInView
                             width: hierarchyViewport.width
 
@@ -366,8 +345,6 @@ Item {
                 type: "icon",
                 enabled: sidebarHierarchyView.createFolderEnabled,
                 iconName: "addFile",
-                iconSize: LV.Theme.iconSm,
-                tone: LV.AbstractButton.Borderless,
                 onClicked: function () {
                     if (!sidebarHierarchyView.createFolderEnabled)
                         return;
@@ -385,8 +362,6 @@ Item {
                 type: "icon",
                 enabled: sidebarHierarchyView.deleteFolderEnabled,
                 iconName: "generaldelete",
-                iconSize: LV.Theme.iconSm,
-                tone: LV.AbstractButton.Borderless,
                 onClicked: function () {
                     if (!sidebarHierarchyView.deleteFolderEnabled)
                         return;
@@ -399,18 +374,13 @@ Item {
                 type: "menu",
                 enabled: sidebarHierarchyView.viewOptionsEnabled,
                 iconName: "settings",
-                iconSize: LV.Theme.iconSm,
-                tone: LV.AbstractButton.Default,
                 onClicked: function () {
                     if (!sidebarHierarchyView.viewOptionsEnabled)
                         return;
                     sidebarHierarchyView.toggleViewOptionsMenu();
                 }
             })
-        horizontalPadding: LV.Theme.gap2
         interactive: true
-        spacing: LV.Theme.gapNone
-        verticalPadding: LV.Theme.gap2
     }
     LV.ContextMenu {
         id: viewOptionsContextMenu
