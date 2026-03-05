@@ -45,7 +45,7 @@ LV.ApplicationWindow {
     readonly property int minDisplayHeight: LV.Theme.gap20 * 8
     readonly property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
-    readonly property int minRightPanelWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
+    readonly property int minRightPanelWidth: 145
     readonly property int minSidebarWidth: {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return Math.max(LV.Theme.gap20 * 7 + LV.Theme.gap12, toolbarWidth + hierarchyHorizontalInset * 2);

@@ -254,9 +254,10 @@ Desktop composition:
 - `BodyLayout` (sidebar/list/content/detail panel arrangement with splitter interactions)
 - `DetailPanelLayout` +
   `view/panels/detail/{RightPanel,DetailPanel,DetailPanelHeaderToolbar,DetailPanelHeaderToolbarButton,DetailContents}`
-  (Figma-driven right detail panel for node `134:3212`)
-    - `RightPanel` and `DetailPanel` stretch to the full right-column frame, and `DetailContents` consumes remaining
-      vertical space below the 20px toolbar and 10px gap.
+  (Figma-driven right detail panel for node `134:4150`)
+    - `RightPanel` centers `DetailPanel` horizontally.
+    - `DetailPanel` width contract is `min=145` (toolbar total length) and `default=194`, with full-height layout.
+    - `DetailContents` consumes remaining vertical space below the 20px toolbar and 10px gap.
     - State logic is backend-driven by `DetailPanelViewModel` (`src/app/viewmodel/detailPanel/DetailPanelViewModel.*`),
       with SRP decomposition into `DetailPanelState.*` (state enum/name/value contract) and
       `DetailPanelToolbarItemsFactory.*` (toolbar item projection).

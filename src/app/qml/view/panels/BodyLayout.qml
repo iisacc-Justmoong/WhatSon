@@ -23,7 +23,7 @@ Item {
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
-    property int minRightPanelWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
+    property int minRightPanelWidth: 145
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var presetViewModel: null
     property var progressViewModel: null

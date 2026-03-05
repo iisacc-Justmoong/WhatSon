@@ -34,7 +34,7 @@ Item {
         }
         DetailContents {
             activeContentViewModel: detailPanel.activeDetailContentVm
-            activeStateName: detailPanel.activeDetailContentVm && detailPanel.activeDetailContentVm.stateName !== undefined ? String(detailPanel.activeDetailContentVm.stateName) : "fileInfo"
+            activeStateName: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.activeStateName : "fileInfo"
             height: detailPanel.detailContentsHeight
             width: detailPanel.detailContentsWidth
         }
