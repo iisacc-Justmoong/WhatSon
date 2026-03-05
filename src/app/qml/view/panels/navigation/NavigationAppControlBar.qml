@@ -15,6 +15,16 @@ LV.HStack {
     spacing: 2
 
     LV.IconButton {
+        id: makeStickyNoteButton
+
+        checkable: false
+        height: 20
+        iconName: "generalprojectStructure"
+        iconSize: 16
+        tone: LV.AbstractButton.Borderless
+        width: 20
+    }
+    LV.IconButton {
         id: pinWindowButton
 
         checkable: false

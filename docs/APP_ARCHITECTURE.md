@@ -216,6 +216,12 @@ Domain-isolated support:
       `requestViewModelHook`, `viewModelHookRequested`).
     - `PanelViewModelRegistry` owns dedicated `PanelViewModel` instances for every QML panel under
       `src/app/qml/view/panels/**` and exposes lookup to QML through `panelViewModelRegistry`.
+- Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
+    - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
+    - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
+    - `WhatSonAsyncScheduler` owns the runtime `QTimer` tick loop, schedule hook/unhook API, and emits
+      `scheduleTriggered(...)` events.
+    - `main.cpp` exposes the scheduler instance to QML as context property `asyncScheduler`.
 
 Library-specific modeling:
 

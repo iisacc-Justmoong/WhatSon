@@ -300,6 +300,25 @@ target_link_libraries(whatson_tags_hierarchy_tests
 add_test(NAME whatson_tags_hierarchy_tests COMMAND whatson_tags_hierarchy_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_tags_hierarchy_tests)
 
+add_executable(whatson_async_scheduler_tests
+        app/test_async_scheduler.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/runtime/scheduler/WhatSonAsyncScheduler.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/runtime/scheduler/WhatSonCronExpression.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/runtime/scheduler/WhatSonUnixTimeAnalyzer.cpp
+)
+set_target_properties(whatson_async_scheduler_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_async_scheduler_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_async_scheduler_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_async_scheduler_tests COMMAND whatson_async_scheduler_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_async_scheduler_tests)
+
 add_executable(whatson_qml_binding_guard_tests
         app/test_qml_binding_syntax_guard.cpp
 )

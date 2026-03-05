@@ -10,6 +10,7 @@
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
+#include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 
@@ -349,6 +350,7 @@ int main(int argc, char* argv[])
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
     DetailPanelViewModel detailPanelViewModel;
+    WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     WhatSonHubRuntimeStore hubRuntimeStore;
     const QString blueprintHubPath = resolveBlueprintHubPath();
@@ -460,6 +462,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(
         QStringLiteral("detailHelpViewModel"),
         detailPanelViewModel.helpViewModel());
+    engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
 
     QObject::connect(
@@ -475,6 +478,8 @@ int main(int argc, char* argv[])
     {
         return EXIT_FAILURE;
     }
+
+    asyncScheduler.start();
 
     PermissionBootstrapper permissionBootstrapper(app);
     QTimer::singleShot(0, &permissionBootstrapper, [&permissionBootstrapper]()
