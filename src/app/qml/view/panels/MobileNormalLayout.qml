@@ -46,6 +46,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         checkable: false
                         iconName: "loggedInUser"
+                        tone: LV.AbstractButton.Borderless
                     }
                     Row {
                         anchors.right: parent.right
@@ -55,10 +56,12 @@ Item {
                         LV.IconButton {
                             checkable: false
                             iconName: "audioToAudio"
+                            tone: LV.AbstractButton.Borderless
                         }
                         LV.IconMenuButton {
                             checkable: false
                             iconName: "generalprojectStructure"
+                            tone: LV.AbstractButton.Borderless
                         }
                     }
                 }
@@ -135,6 +138,7 @@ Item {
                         anchors.centerIn: parent
                         checkable: false
                         iconName: "addFile"
+                        tone: LV.AbstractButton.Borderless
                     }
                 }
             }

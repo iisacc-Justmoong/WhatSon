@@ -22,5 +22,6 @@ LV.HStack {
 
         checkable: false
         iconName: "addFile"
+        tone: LV.AbstractButton.Borderless
     }
 }

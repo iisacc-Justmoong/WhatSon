@@ -22,17 +22,20 @@ LV.HStack {
 
         checkable: false
         iconName: "generalupload"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: printButton
 
         checkable: false
         iconName: "generalprint"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: mailingButton
 
         checkable: false
         iconName: "mailer"
+        tone: LV.AbstractButton.Borderless
     }
 }

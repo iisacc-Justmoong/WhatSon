@@ -9,4 +9,5 @@ LV.IconButton {
 
     checkable: false
     iconName: navigationIconButton.iconToken
+    tone: LV.AbstractButton.Borderless
 }

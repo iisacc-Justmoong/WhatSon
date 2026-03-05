@@ -22,23 +22,27 @@ LV.HStack {
 
         checkable: false
         iconName: "generalprojectStructure"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: pinWindowButton
 
         checkable: false
         iconName: "pin"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: alertsButton
 
         checkable: false
         iconName: "toolwindownotifications"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: timerButton
 
         checkable: false
         iconName: "startTimer"
+        tone: LV.AbstractButton.Borderless
     }
 }

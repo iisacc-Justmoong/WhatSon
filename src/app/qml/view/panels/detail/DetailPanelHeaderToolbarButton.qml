@@ -20,6 +20,7 @@ LV.IconButton {
 
     checkable: false
     iconName: buttonSpec && buttonSpec.iconName !== undefined ? buttonSpec.iconName : ""
+    tone: selected ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
 
     onClicked: {
         const nextState = buttonSpec && buttonSpec.stateValue !== undefined ? Number(buttonSpec.stateValue) : NaN;

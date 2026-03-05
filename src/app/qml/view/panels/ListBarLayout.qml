@@ -59,12 +59,14 @@ Rectangle {
                         Layout.preferredWidth: 20
                         checkable: false
                         iconName: "cwmPermissionView"
+                        tone: LV.AbstractButton.Borderless
                     }
                     LV.IconButton {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
                         checkable: false
                         iconName: "sortByType"
+                        tone: LV.AbstractButton.Borderless
                     }
                 }
             }

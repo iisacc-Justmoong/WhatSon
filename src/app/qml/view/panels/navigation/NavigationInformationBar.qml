@@ -14,6 +14,7 @@ LV.HStack {
 
         checkable: false
         iconName: "columnIndex"
+        tone: LV.AbstractButton.Borderless
         visible: !informationBar.compactMode
     }
     LV.IconButton {
@@ -21,12 +22,14 @@ LV.HStack {
 
         checkable: false
         iconName: "loggedInUser"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: syncButton
 
         checkable: false
         iconName: "syncFiles"
+        tone: LV.AbstractButton.Borderless
         visible: !informationBar.compactMode
     }
 }

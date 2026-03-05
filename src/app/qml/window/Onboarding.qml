@@ -67,16 +67,19 @@ Window {
 
             LV.LabelButton {
                 text: "Create"
+                tone: LV.AbstractButton.Primary
 
                 onClicked: root.createFileRequested()
             }
             LV.LabelButton {
                 text: "Select"
+                tone: LV.AbstractButton.Default
 
                 onClicked: root.selectFileRequested()
             }
             LV.LabelButton {
                 text: "Hook"
+                tone: LV.AbstractButton.Default
 
                 onClicked: root.viewHookRequested()
             }

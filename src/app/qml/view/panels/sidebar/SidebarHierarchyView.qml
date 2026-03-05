@@ -345,6 +345,7 @@ Item {
                 type: "icon",
                 enabled: sidebarHierarchyView.createFolderEnabled,
                 iconName: "addFile",
+                tone: LV.AbstractButton.Borderless,
                 onClicked: function () {
                     if (!sidebarHierarchyView.createFolderEnabled)
                         return;
@@ -362,6 +363,7 @@ Item {
                 type: "icon",
                 enabled: sidebarHierarchyView.deleteFolderEnabled,
                 iconName: "generaldelete",
+                tone: LV.AbstractButton.Borderless,
                 onClicked: function () {
                     if (!sidebarHierarchyView.deleteFolderEnabled)
                         return;
@@ -374,6 +376,7 @@ Item {
                 type: "menu",
                 enabled: sidebarHierarchyView.viewOptionsEnabled,
                 iconName: "settings",
+                tone: LV.AbstractButton.Default,
                 onClicked: function () {
                     if (!sidebarHierarchyView.viewOptionsEnabled)
                         return;

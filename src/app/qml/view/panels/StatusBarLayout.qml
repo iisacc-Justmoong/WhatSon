@@ -182,6 +182,7 @@ Rectangle {
                     anchors.centerIn: parent
                     checkable: false
                     iconName: "addFile"
+                    tone: LV.AbstractButton.Borderless
                 }
             }
         }

@@ -155,6 +155,7 @@ Item {
 
                 checkable: false
                 iconName: "generalprojectStructure"
+                tone: LV.AbstractButton.Borderless
 
                 onClicked: {
                     if (applicationContentsContextMenu.opened) {
@@ -169,6 +170,7 @@ Item {
 
                 checkable: false
                 iconName: "audioToAudio"
+                tone: LV.AbstractButton.Borderless
             }
         }
     }

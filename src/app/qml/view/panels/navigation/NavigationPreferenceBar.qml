@@ -22,11 +22,13 @@ LV.HStack {
 
         checkable: false
         iconName: "audioToAudio"
+        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: detailPanelControlButton
 
         checkable: false
         iconName: "columnIndex"
+        tone: LV.AbstractButton.Borderless
     }
 }
