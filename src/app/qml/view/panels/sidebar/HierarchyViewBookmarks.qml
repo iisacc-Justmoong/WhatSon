@@ -4,6 +4,8 @@ import LVRS 1.0 as LV
 SidebarHierarchyView {
     id: hierarchyViewBookmarks
 
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.HierarchyViewBookmarks") : null
+
     signal viewHookRequested
 
     function requestViewHook() {

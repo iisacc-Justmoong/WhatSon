@@ -159,7 +159,7 @@ Item {
             LV.HierarchyToolbar {
                 id: hierarchyHeaderToolbar
 
-                Layout.alignment: Qt.AlignLeft
+                Layout.alignment: Qt.AlignCenter
                 Layout.maximumWidth: Math.max(sidebarHierarchyView.toolbarMinWidth, sidebarHierarchyView.contentWidth)
                 Layout.minimumWidth: sidebarHierarchyView.toolbarMinWidth
                 Layout.preferredHeight: 20

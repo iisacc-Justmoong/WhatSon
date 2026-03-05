@@ -312,6 +312,24 @@ target_link_libraries(whatson_qml_binding_guard_tests
 add_test(NAME whatson_qml_binding_guard_tests COMMAND whatson_qml_binding_guard_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_qml_binding_guard_tests)
 
+add_executable(whatson_panel_viewmodel_registry_tests
+        app/test_panel_viewmodel_registry.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/PanelViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/PanelViewModelRegistry.cpp
+)
+set_target_properties(whatson_panel_viewmodel_registry_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_panel_viewmodel_registry_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_panel_viewmodel_registry_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_panel_viewmodel_registry_tests COMMAND whatson_panel_viewmodel_registry_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_panel_viewmodel_registry_tests)
+
 add_executable(whatson_note_header_tests
         app/test_whatson_note_header_parser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp

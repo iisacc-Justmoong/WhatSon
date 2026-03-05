@@ -211,6 +211,11 @@ Domain-isolated support:
 - Each hierarchy domain owns its model + support utilities in its own directory under
   `src/app/viewmodel/hierarchy/<domain>/`.
 - Shared cross-domain flat hierarchy model/support files were removed to prevent accidental single-path coupling.
+- Panel-level support is centralized in `src/app/viewmodel/panel/`:
+    - `PanelViewModel` provides per-panel hook observability (`panelKey`, `hookRequestCount`,
+      `requestViewModelHook`, `viewModelHookRequested`).
+    - `PanelViewModelRegistry` owns dedicated `PanelViewModel` instances for every QML panel under
+      `src/app/qml/view/panels/**` and exposes lookup to QML through `panelViewModelRegistry`.
 
 Library-specific modeling:
 
@@ -276,6 +281,11 @@ Hierarchy rendering pipeline:
 - Progress domain behavior is fixed-state driven:
     - Progress hierarchy labels are immutable constants at runtime.
     - Rename/create/delete actions are disabled in the progress hierarchy.
+- Panel rendering contract:
+    - Every QML file under `src/app/qml/view/panels/**` binds a panel-local `panelViewModel` property from
+      `panelViewModelRegistry.panelViewModel("<panel-key>")`.
+    - Panel keys are path-scoped for nested groups (`navigation.*`, `sidebar.*`) and file-name scoped for root panel
+      files (for example `BodyLayout`, `NavigationBarLayout`).
 
 ---
 
@@ -358,6 +368,8 @@ Audit result:
 
 - Tracked C++ model/view-model classes were re-audited after bridge removal.
 - No runtime command/event bus class remains under `src/app/viewmodel`.
+- Panel registry classes (`PanelViewModel`, `PanelViewModelRegistry`) follow the same explicit
+  signal/slot contract as hierarchy view-models.
 
 Conclusion:
 
@@ -511,6 +523,7 @@ Runtime stores:
 View-models and models:
 
 - `src/app/viewmodel/hierarchy/**`
+- `src/app/viewmodel/panel/**`
 
 QML shell:
 
@@ -529,6 +542,7 @@ Test contracts:
 - `tests/app/test_qml_binding_syntax_guard.cpp`
 - `tests/app/test_hierarchy_viewmodels.cpp`
 - `tests/app/test_whatson_hub_runtime_store.cpp`
+- `tests/app/test_panel_viewmodel_registry.cpp`
 
 ---
 

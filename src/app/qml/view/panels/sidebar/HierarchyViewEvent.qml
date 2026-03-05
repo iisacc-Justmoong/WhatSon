@@ -4,6 +4,8 @@ import LVRS 1.0 as LV
 SidebarHierarchyView {
     id: hierarchyViewEvent
 
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.HierarchyViewEvent") : null
+
     signal viewHookRequested
 
     function requestViewHook() {

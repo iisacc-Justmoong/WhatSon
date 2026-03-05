@@ -4,6 +4,8 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: exportBar
 
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationExportBar") : null
+
     signal viewHookRequested
 
     function requestViewHook() {

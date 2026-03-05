@@ -4,6 +4,8 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: appControlBar
 
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationAppControlBar") : null
+
     signal viewHookRequested
 
     function requestViewHook() {

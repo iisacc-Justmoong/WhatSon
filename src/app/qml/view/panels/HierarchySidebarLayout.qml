@@ -92,6 +92,7 @@ Item {
         var normalizedIndex = Math.floor(numericIndex);
         if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
             return -1;
+
     }
 
     QtObject {

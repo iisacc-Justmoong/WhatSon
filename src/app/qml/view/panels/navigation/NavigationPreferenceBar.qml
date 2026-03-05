@@ -4,6 +4,8 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: preferenceBar
 
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationPreferenceBar") : null
+
     signal viewHookRequested
 
     function requestViewHook() {

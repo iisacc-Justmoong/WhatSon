@@ -6,6 +6,7 @@
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 #include "file/WhatSonDebugTrace.hpp"
@@ -346,6 +347,7 @@ int main(int argc, char* argv[])
     ProgressHierarchyViewModel progressHierarchyViewModel;
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
+    PanelViewModelRegistry panelViewModelRegistry;
     WhatSonHubRuntimeStore hubRuntimeStore;
     const QString blueprintHubPath = resolveBlueprintHubPath();
     if (!blueprintHubPath.isEmpty())
@@ -437,6 +439,7 @@ int main(int argc, char* argv[])
         &progressHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("eventHierarchyViewModel"), &eventHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("presetHierarchyViewModel"), &presetHierarchyViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
 
     QObject::connect(
         &engine,

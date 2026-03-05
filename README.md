@@ -181,6 +181,9 @@ for hub/note hierarchy payloads.
 - All hierarchy models and viewmodels expose at least one explicit hook slot/signal pair
   (`requestModelHook`/`modelHookRequested`, `requestViewModelHook`/`viewModelHookRequested`) for future runtime
   interception workflows.
+- Panel-level MVVM is now explicit for every QML panel under `src/app/qml/view/panels/**`:
+  `main.cpp` injects `panelViewModelRegistry`, and each panel binds its own key
+  (`panelViewModelRegistry.panelViewModel("<panel-key>")`) to a dedicated `PanelViewModel` instance.
 - All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair
   (`viewHookRequested`, `requestViewHook()`).
 - Main runtime wires hierarchy selection changes and note-list model resets into `backendBridge.publish(...)`
