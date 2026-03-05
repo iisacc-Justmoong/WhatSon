@@ -185,14 +185,16 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(detailPanelFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailPanelPath));
     const QString detailPanelText = QString::fromUtf8(detailPanelFile.readAll());
     QVERIFY2(
-        detailPanelText.contains(QStringLiteral("enum DetailContentState")),
-        "DetailPanel.qml must declare DetailContentState enum.");
+        detailPanelText.contains(QStringLiteral("readonly property var detailPanelVm: detailPanelViewModel")),
+        "DetailPanel.qml must bind detailPanelVm from detailPanelViewModel context.");
     QVERIFY2(
-        detailPanelText.contains(QStringLiteral("property int activeDetailContentState: DetailPanel.FileInfo")),
-        "DetailPanel.qml must keep activeDetailContentState defaulting to DetailPanel.FileInfo.");
+        detailPanelText.contains(
+            QStringLiteral(
+                "toolbarButtonSpecs: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.toolbarItems : []")),
+        "DetailPanel.qml must source toolbar specs from C++ detailPanelViewModel.");
     QVERIFY2(
-        detailPanelText.contains(QStringLiteral("onDetailStateChangeRequested: function (stateValue)")),
-        "DetailPanel.qml must route DetailPanelHeaderToolbar state changes.");
+        detailPanelText.contains(QStringLiteral("detailPanel.detailPanelVm.requestStateChange(stateValue);")),
+        "DetailPanel.qml must forward toolbar state changes to C++ detailPanelViewModel.");
 
     const QString detailToolbarPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailPanelHeaderToolbar.qml"));
@@ -202,6 +204,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral("signal detailStateChangeRequested(int stateValue)")),
         "DetailPanelHeaderToolbar.qml must expose detailStateChangeRequested(int stateValue).");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("readonly property bool selected: buttonSpec.selected === true")),
+        "DetailPanelHeaderToolbar.qml must use C++ selected field from toolbar specs.");
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral(
             "onClicked: detailPanelHeaderToolbar.detailStateChangeRequested(buttonSpec.stateValue)")),
@@ -213,8 +218,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(detailContentsFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailContentsPath));
     const QString detailContentsText = QString::fromUtf8(detailContentsFile.readAll());
     QVERIFY2(
-        detailContentsText.contains(QStringLiteral("property int activeState: DetailPanel.FileInfo")),
-        "DetailContents.qml must expose activeState with DetailPanel enum default.");
+        detailContentsText.contains(QStringLiteral("property string activeStateName: \"fileInfo\"")),
+        "DetailContents.qml must expose activeStateName default.");
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("state: detailContents.activeStateName")),
         "DetailContents.qml must bind QML state to activeStateName.");
