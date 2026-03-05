@@ -178,6 +178,46 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("return isFinite(width) ? width : 0;")),
         "BodyLayout.qml totalSplitterWidth must sanitize non-finite width values.");
+
+    const QString detailPanelPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/detail/DetailPanel.qml"));
+    QFile detailPanelFile(detailPanelPath);
+    QVERIFY2(detailPanelFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailPanelPath));
+    const QString detailPanelText = QString::fromUtf8(detailPanelFile.readAll());
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("enum DetailContentState")),
+        "DetailPanel.qml must declare DetailContentState enum.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("property int activeDetailContentState: DetailPanel.FileInfo")),
+        "DetailPanel.qml must keep activeDetailContentState defaulting to DetailPanel.FileInfo.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("onDetailStateChangeRequested: function (stateValue)")),
+        "DetailPanel.qml must route DetailPanelHeaderToolbar state changes.");
+
+    const QString detailToolbarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/detail/DetailPanelHeaderToolbar.qml"));
+    QFile detailToolbarFile(detailToolbarPath);
+    QVERIFY2(detailToolbarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailToolbarPath));
+    const QString detailToolbarText = QString::fromUtf8(detailToolbarFile.readAll());
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("signal detailStateChangeRequested(int stateValue)")),
+        "DetailPanelHeaderToolbar.qml must expose detailStateChangeRequested(int stateValue).");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral(
+            "onClicked: detailPanelHeaderToolbar.detailStateChangeRequested(buttonSpec.stateValue)")),
+        "DetailPanelHeaderToolbar.qml must emit detailStateChangeRequested from button clicks.");
+
+    const QString detailContentsPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/detail/DetailContents.qml"));
+    QFile detailContentsFile(detailContentsPath);
+    QVERIFY2(detailContentsFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailContentsPath));
+    const QString detailContentsText = QString::fromUtf8(detailContentsFile.readAll());
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("property int activeState: DetailPanel.FileInfo")),
+        "DetailContents.qml must expose activeState with DetailPanel enum default.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("state: detailContents.activeStateName")),
+        "DetailContents.qml must bind QML state to activeStateName.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)

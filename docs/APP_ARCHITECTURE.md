@@ -254,6 +254,10 @@ Desktop composition:
 - `BodyLayout` (sidebar/list/content/detail panel arrangement with splitter interactions)
 - `DetailPanelLayout` + `view/panels/detail/{RightPanel,DetailPanel,DetailPanelHeaderToolbar,DetailContents}`
   (Figma-driven right detail panel for node `134:3212`)
+    - `DetailPanel.qml` declares `DetailContentState` enum (`FileInfo`, `FileStat`, `FileFormat`,
+      `FileHistory`, `Appearance`, `Help`).
+    - `DetailPanelHeaderToolbar` emits enum-backed state changes, and `DetailContents` binds to those states via
+      `activeState`.
 
 Mobile composition:
 
