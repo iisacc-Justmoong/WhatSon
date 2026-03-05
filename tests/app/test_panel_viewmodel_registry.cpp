@@ -20,6 +20,10 @@ namespace
         return {
             QStringLiteral("BodyLayout"),
             QStringLiteral("ContentViewLayout"),
+            QStringLiteral("detail.DetailContents"),
+            QStringLiteral("detail.DetailPanel"),
+            QStringLiteral("detail.DetailPanelHeaderToolbar"),
+            QStringLiteral("detail.RightPanel"),
             QStringLiteral("DetailPanelLayout"),
             QStringLiteral("HierarchySidebarLayout"),
             QStringLiteral("ListBarLayout"),
@@ -53,6 +57,10 @@ namespace
         return {
             {"view/panels/BodyLayout.qml", "BodyLayout"},
             {"view/panels/ContentViewLayout.qml", "ContentViewLayout"},
+            {"view/panels/detail/DetailContents.qml", "detail.DetailContents"},
+            {"view/panels/detail/DetailPanel.qml", "detail.DetailPanel"},
+            {"view/panels/detail/DetailPanelHeaderToolbar.qml", "detail.DetailPanelHeaderToolbar"},
+            {"view/panels/detail/RightPanel.qml", "detail.RightPanel"},
             {"view/panels/DetailPanelLayout.qml", "DetailPanelLayout"},
             {"view/panels/HierarchySidebarLayout.qml", "HierarchySidebarLayout"},
             {"view/panels/ListBarLayout.qml", "ListBarLayout"},

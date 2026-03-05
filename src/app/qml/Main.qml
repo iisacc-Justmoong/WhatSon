@@ -15,7 +15,7 @@ LV.ApplicationWindow {
     readonly property int adaptiveStatusBarHeight: activeMainLayout === "mobile" ? 0 : statusBarHeight
     readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
-    readonly property int baseRightPanelWidth: LV.Theme.inputWidthMd - LV.Theme.gap12
+    readonly property int baseRightPanelWidth: 194
     readonly property int baseSidebarWidth: minSidebarWidth
     readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: LV.Theme.panelBackground10
@@ -69,7 +69,7 @@ LV.ApplicationWindow {
     property int resizeRenderGuardDebounceMs: 220
     property bool resizeRenderGuardEnabled: true
     readonly property var resourcesHierarchyVm: resourcesHierarchyViewModel
-    readonly property color rightPanelColor: LV.Theme.panelBackground08
+    readonly property color rightPanelColor: LV.Theme.panelBackground06
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
     readonly property color sidebarColor: LV.Theme.panelBackground04
     readonly property int sidebarWidth: Math.max(minSidebarWidth, preferredSidebarWidth)

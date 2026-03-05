@@ -29,8 +29,8 @@ Item {
     property var progressViewModel: null
     property var projectsViewModel: null
     property var resourcesViewModel: null
-    property color rightPanelColor: LV.Theme.panelBackground08
-    property int rightPanelWidth: LV.Theme.inputWidthMd - LV.Theme.gap12
+    property color rightPanelColor: LV.Theme.panelBackground06
+    property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: LV.Theme.panelBackground04
     property int sidebarWidth: LV.Theme.gap24 * 9

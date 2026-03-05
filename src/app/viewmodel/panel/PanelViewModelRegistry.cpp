@@ -9,6 +9,10 @@ namespace
         return {
             QStringLiteral("BodyLayout"),
             QStringLiteral("ContentViewLayout"),
+            QStringLiteral("detail.DetailContents"),
+            QStringLiteral("detail.DetailPanel"),
+            QStringLiteral("detail.DetailPanelHeaderToolbar"),
+            QStringLiteral("detail.RightPanel"),
             QStringLiteral("DetailPanelLayout"),
             QStringLiteral("HierarchySidebarLayout"),
             QStringLiteral("ListBarLayout"),

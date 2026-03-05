@@ -124,19 +124,25 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/panels/MobileNormalLayout.qml` (Figma-driven mobile root layout for node `77:3144`)
     - `src/app/qml/view/panels/ListBarLayout.qml` (Figma-driven list bar panel for node `73:2635`)
     - `src/app/qml/view/panels/NoteListItem.qml` (Figma-driven note item card for node `119:3028`)
-    - `src/app/qml/view/panels/ListItemsPlaceholder.qml` (placeholder component used by `ListBarLayout`)
-        - `src/app/qml/view/body/HierarchySidebarLayout.qml`
-        - `src/app/qml/view/body/ContentViewLayout.qml`
-        - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
-        - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
-        - `src/app/qml/view/panels/sidebar/LibraryView.qml` (compatibility wrapper)
+    - `src/app/qml/view/panels/DetailPanelLayout.qml` (Figma-driven right panel wrapper for node `134:3212`)
+    - `src/app/qml/view/panels/detail/RightPanel.qml` (Figma frame `RightPanel`, node `134:3212`)
+    - `src/app/qml/view/panels/detail/DetailPanel.qml` (Figma frame `DetailPanel`, node `134:3641`)
+    - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml` (Figma frame `DetailPanelHeaderToolbar`, node
+      `134:3642`)
+    - `src/app/qml/view/panels/detail/DetailContents.qml` (Figma frame `DetailContents`, node `134:3649`)
+        - `src/app/qml/view/panels/ListItemsPlaceholder.qml` (placeholder component used by `ListBarLayout`)
+            - `src/app/qml/view/body/HierarchySidebarLayout.qml`
+            - `src/app/qml/view/body/ContentViewLayout.qml`
+            - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewBookmarks.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewTags.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewResources.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
+            - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
+            - `src/app/qml/view/panels/sidebar/LibraryView.qml` (compatibility wrapper)
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`

@@ -252,6 +252,8 @@ Desktop composition:
 - `StatusBarLayout`
 - `NavigationBarLayout`
 - `BodyLayout` (sidebar/list/content/detail panel arrangement with splitter interactions)
+- `DetailPanelLayout` + `view/panels/detail/{RightPanel,DetailPanel,DetailPanelHeaderToolbar,DetailContents}`
+  (Figma-driven right detail panel for node `134:3212`)
 
 Mobile composition:
 
