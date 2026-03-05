@@ -28,6 +28,7 @@ private
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
     void loadFromWshub_fallsBackTitleFromBodyFirstLineWhenHeadTitleEmpty();
     void loadFromWshub_usesFoldersFileForSidebarItems();
+    void loadFromWshub_filtersNoteListBySelectedFolder_whenFoldersHierarchyLoaded();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
 };
@@ -583,6 +584,118 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
                  .toBool(),
         false);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolder_whenFoldersHierarchyLoaded()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"children\": [\n"
+        "        {\n"
+        "          \"id\": \"Research/Competitor\",\n"
+        "          \"label\": \"Competitor\"\n"
+        "        }\n"
+        "      ]\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-a"),
+            QStringLiteral("Alpha Note"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {QStringLiteral("Research/Competitor")})));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote/Beta.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-b"),
+            QStringLiteral("Beta Note"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {QStringLiteral("Brand")})));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote/Gamma.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-c"),
+            QStringLiteral("Gamma Note"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {})));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+
+    auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole).
+                          toString()
+                == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int researchIndex = findIndexByLabel(QStringLiteral("Research"));
+    const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
+    const int brandIndex = findIndexByLabel(QStringLiteral("Brand"));
+    QVERIFY(researchIndex >= 0);
+    QVERIFY(competitorIndex >= 0);
+    QVERIFY(brandIndex >= 0);
+
+    viewModel.setSelectedIndex(researchIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole).
+                  toString(),
+        QStringLiteral("Alpha Note"));
+
+    viewModel.setSelectedIndex(competitorIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole).
+                  toString(),
+        QStringLiteral("Alpha Note"));
+
+    viewModel.setSelectedIndex(brandIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole).
+                  toString(),
+        QStringLiteral("Beta Note"));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory()

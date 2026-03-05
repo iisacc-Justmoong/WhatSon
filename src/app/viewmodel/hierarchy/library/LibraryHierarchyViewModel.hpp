@@ -8,6 +8,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 
 #include <QObject>
+#include <QSet>
 #include <QVariantList>
 #include <QVector>
 
@@ -98,12 +99,24 @@ private:
         int endRow = -1;
     };
 
+    struct FolderSelectionScope final
+    {
+        QString selectedLabelKey;
+        QString selectedPathKey;
+        QSet<QString> subtreeLabelKeys;
+        QSet<QString> subtreePathKeys;
+    };
+
     static int extractDepth(const QVariantMap& entryMap);
     static LibraryHierarchyItem parseItem(const QVariant& entry, int fallbackOrdinal);
     static int nextFolderSequence(const QVector<LibraryHierarchyItem>& items);
     static QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes);
     const QVector<LibraryNoteRecord>& notesForBucket(IndexedBucket bucket) const;
     IndexedBucket selectedBucket() const;
+    FolderSelectionScope selectedFolderScope() const;
+    static QString normalizeFolderKey(const QString& value);
+    QString folderPathForIndex(int index) const;
+    static bool noteMatchesFolderScope(const LibraryNoteRecord& note, const FolderSelectionScope& scope);
     void rebuildBucketRanges();
     void refreshNoteListForSelection();
     void applyIndexedBuckets();

@@ -17,7 +17,7 @@ LV.HStack {
 
     spacing: 0
 
-    LV.IconButton {
+    LV.IconMenuButton {
         id: newFileButton
 
         checkable: false

@@ -48,7 +48,6 @@ Rectangle {
 
                     LV.LabelButton {
                         text: "Prev"
-                        tone: LV.AbstractButton.Borderless
 
                         onClicked: {
                             if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.shiftYear)
@@ -57,11 +56,10 @@ Rectangle {
                         }
                     }
                     LV.Label {
-                        text: yearCalendarPage.calendarVm ? String(yearCalendarPage.calendarVm.displayedYear) + " · " + String(yearCalendarPage.calendarVm.calendarSystemName) : "Year Calendar"
+                        text: yearCalendarPage.calendarVm ? String(yearCalendarPage.calendarVm.displayedYear) + " · " + String(yearCalendarPage.calendarVm.calendarSystemName) : "Year calendar"
                     }
                     LV.LabelButton {
                         text: "Next"
-                        tone: LV.AbstractButton.Borderless
 
                         onClicked: {
                             if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.shiftYear)

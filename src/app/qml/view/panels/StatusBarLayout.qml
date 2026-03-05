@@ -64,7 +64,6 @@ Rectangle {
             id: searchBarInput
 
             anchors.fill: parent
-            clearButtonVisible: true
             mode: searchMode
             selectByMouse: true
             text: statusBar.searchText
@@ -153,7 +152,6 @@ Rectangle {
                     id: compactSearchInput
 
                     anchors.fill: parent
-                    clearButtonVisible: true
                     mode: searchMode
                     selectByMouse: true
                     text: statusBar.searchText
@@ -180,9 +178,7 @@ Rectangle {
                     id: newFileButton
 
                     anchors.centerIn: parent
-                    checkable: false
                     iconName: "addFile"
-                    tone: LV.AbstractButton.Borderless
                 }
             }
         }

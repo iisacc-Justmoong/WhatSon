@@ -183,7 +183,6 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: sidebarHierarchyView.searchHeight
-                clearButtonVisible: true
                 mode: searchMode
                 selectByMouse: true
                 text: sidebarHierarchyView.searchQuery
@@ -345,7 +344,6 @@ Item {
                 type: "icon",
                 enabled: sidebarHierarchyView.createFolderEnabled,
                 iconName: "addFile",
-                tone: LV.AbstractButton.Borderless,
                 onClicked: function () {
                     if (!sidebarHierarchyView.createFolderEnabled)
                         return;
@@ -363,7 +361,6 @@ Item {
                 type: "icon",
                 enabled: sidebarHierarchyView.deleteFolderEnabled,
                 iconName: "generaldelete",
-                tone: LV.AbstractButton.Borderless,
                 onClicked: function () {
                     if (!sidebarHierarchyView.deleteFolderEnabled)
                         return;
@@ -390,8 +387,6 @@ Item {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        dismissOnGlobalContextRequest: true
-        dismissOnGlobalPress: true
         itemWidth: 176
         items: sidebarHierarchyView.viewOptionsMenuItems
         modal: false

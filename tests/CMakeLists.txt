@@ -366,6 +366,27 @@ target_link_libraries(whatson_panel_viewmodel_registry_tests
 add_test(NAME whatson_panel_viewmodel_registry_tests COMMAND whatson_panel_viewmodel_registry_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_panel_viewmodel_registry_tests)
 
+add_executable(whatson_sidebar_hierarchy_module_tests
+        app/test_sidebar_hierarchy_module.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyViewModelProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp
+)
+set_target_properties(whatson_sidebar_hierarchy_module_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_sidebar_hierarchy_module_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_sidebar_hierarchy_module_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_sidebar_hierarchy_module_tests COMMAND whatson_sidebar_hierarchy_module_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_hierarchy_module_tests)
+
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailContentSectionViewModel.cpp

@@ -104,12 +104,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     const QString sidebarLayoutText = QString::fromUtf8(sidebarLayoutFile.readAll());
 
     QVERIFY2(
-        sidebarLayoutText.contains(QStringLiteral("property var tagsViewModel: null")),
-        "HierarchySidebarLayout.qml must declare tagsViewModel.");
+        sidebarLayoutText.contains(QStringLiteral("property var sidebarHierarchyViewModel: null")),
+        "HierarchySidebarLayout.qml must declare sidebarHierarchyViewModel.");
     QVERIFY2(
         sidebarLayoutText.contains(
-            QStringLiteral("readonly property int currentHierarchy: normalizeHierarchyIndex(activeToolbarIndex)")),
-        "HierarchySidebarLayout.qml must normalize active toolbar index into currentHierarchy.");
+            QStringLiteral(
+                "readonly property int currentHierarchy: normalizeHierarchyIndex(sidebarHierarchyViewModel && sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? sidebarHierarchyViewModel.activeHierarchyIndex : activeToolbarIndex)")),
+        "HierarchySidebarLayout.qml must normalize currentHierarchy from sidebarHierarchyViewModel first.");
     QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("return normalizedIndex;")),
         "HierarchySidebarLayout.qml normalizeHierarchyIndex must explicitly return normalized valid index.");
@@ -118,11 +119,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "HierarchySidebarLayout.qml must bind sidebar activeToolbarIndex from currentHierarchy.");
     QVERIFY2(
         sidebarLayoutText.contains(
-            QStringLiteral("hierarchyViewModel: hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)")),
-        "HierarchySidebarLayout.qml must resolve hierarchyViewModel from currentHierarchy.");
+            QStringLiteral(
+                "hierarchyViewModel: hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel !== undefined ? hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel : hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)")),
+        "HierarchySidebarLayout.qml must resolve hierarchyViewModel from sidebarHierarchyViewModel contract.");
     QVERIFY2(
-        sidebarLayoutText.contains(QStringLiteral("hierarchyView.activeToolbarIndexChangeRequested(nextIndex)")),
-        "HierarchySidebarLayout.qml must emit normalized index upward.");
+        sidebarLayoutText.contains(
+            QStringLiteral("hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(nextIndex);")),
+        "HierarchySidebarLayout.qml must route toolbar index updates through sidebarHierarchyViewModel interface.");
 
     const QString mainQmlPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("Main.qml"));
     QFile mainQmlFile(mainQmlPath);
@@ -140,8 +143,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !mainQmlText.contains(QStringLiteral("useMobileMainLayout")),
         "Main.qml must not depend on legacy useMobileMainLayout helper.");
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("activeToolbarIndex: applicationWindow.hierarchyActiveToolbarIndex")),
-        "Main.qml must forward hierarchyActiveToolbarIndex to BodyLayout.");
+        mainQmlText.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm")),
+        "Main.qml must forward sidebarHierarchyViewModel to BodyLayout.");
 
     const QString sidebarViewPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));

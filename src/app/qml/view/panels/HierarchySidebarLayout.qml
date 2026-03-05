@@ -5,16 +5,9 @@ Item {
     id: hierarchyView
 
     property int activeToolbarIndex: 0
-    property var bookmarksViewModel: null
-    readonly property int currentHierarchy: normalizeHierarchyIndex(activeToolbarIndex)
-    property var eventViewModel: null
-    property var libraryViewModel: null
+    readonly property int currentHierarchy: normalizeHierarchyIndex(sidebarHierarchyViewModel && sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? sidebarHierarchyViewModel.activeHierarchyIndex : activeToolbarIndex)
     property color panelColor: LV.Theme.panelBackground04
-    property var presetViewModel: null
-    property var progressViewModel: null
-    property var projectsViewModel: null
-    property var resourcesViewModel: null
-    property var tagsViewModel: null
+    property var sidebarHierarchyViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
     signal activeToolbarIndexChangeRequested(int index)
@@ -64,26 +57,9 @@ Item {
         }
     }
     function modelForHierarchy(index) {
-        switch (index) {
-        case hierarchyEnum.library:
-            return hierarchyView.libraryViewModel;
-        case hierarchyEnum.projects:
-            return hierarchyView.projectsViewModel;
-        case hierarchyEnum.bookmarks:
-            return hierarchyView.bookmarksViewModel;
-        case hierarchyEnum.tags:
-            return hierarchyView.tagsViewModel;
-        case hierarchyEnum.resources:
-            return hierarchyView.resourcesViewModel;
-        case hierarchyEnum.progress:
-            return hierarchyView.progressViewModel;
-        case hierarchyEnum.event:
-            return hierarchyView.eventViewModel;
-        case hierarchyEnum.preset:
-            return hierarchyView.presetViewModel;
-        default:
+        if (!hierarchyView.sidebarHierarchyViewModel || hierarchyView.sidebarHierarchyViewModel.hierarchyViewModelForIndex === undefined)
             return null;
-        }
+        return hierarchyView.sidebarHierarchyViewModel.hierarchyViewModelForIndex(index);
     }
     function normalizeHierarchyIndex(index) {
         var numericIndex = Number(index);
@@ -92,6 +68,7 @@ Item {
         var normalizedIndex = Math.floor(numericIndex);
         if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
             return -1;
+
     }
 
     QtObject {
@@ -114,7 +91,7 @@ Item {
         defaultToolbarIndex: hierarchyEnum.library
         frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
         frameNodeId: hierarchyView.frameNodeIdForHierarchy(hierarchyView.currentHierarchy)
-        hierarchyViewModel: hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)
+        hierarchyViewModel: hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel !== undefined ? hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel : hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)
         panelColor: hierarchyView.panelColor
         toolbarIconNames: hierarchyView.toolbarIconNames
 
@@ -124,6 +101,8 @@ Item {
                 return;
             if (nextIndex === hierarchyView.currentHierarchy)
                 return;
+            if (hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
+                hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(nextIndex);
             hierarchyView.activeToolbarIndexChangeRequested(nextIndex);
         }
     }

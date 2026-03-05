@@ -12,24 +12,18 @@ LV.HStack {
     LV.IconButton {
         id: sidebarControlButton
 
-        checkable: false
         iconName: "columnIndex"
-        tone: LV.AbstractButton.Borderless
         visible: !informationBar.compactMode
     }
     LV.IconButton {
         id: profileButton
 
-        checkable: false
         iconName: "loggedInUser"
-        tone: LV.AbstractButton.Borderless
     }
     LV.IconButton {
         id: syncButton
 
-        checkable: false
         iconName: "syncFiles"
-        tone: LV.AbstractButton.Borderless
         visible: !informationBar.compactMode
     }
 }

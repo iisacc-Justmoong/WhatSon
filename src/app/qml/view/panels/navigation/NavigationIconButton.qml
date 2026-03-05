@@ -7,7 +7,5 @@ LV.IconButton {
     property string iconToken: ""
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationIconButton") : null
 
-    checkable: false
     iconName: navigationIconButton.iconToken
-    tone: LV.AbstractButton.Borderless
 }

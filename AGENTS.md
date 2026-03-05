@@ -25,7 +25,11 @@ every turn.
 - Tags runtime state store: `src/app/file/hierarchy/tags/WhatSonHubTagsStateStore.*`
 - Tags hierarchy model/viewmodel: `src/app/viewmodel/hierarchy/tags/TagsHierarchyModel.*`,
   `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.*`
-- Sidebar selection store: `src/app/viewmodel/sidebar/SidebarSelectionStore.*`
+- Sidebar selection store interface/impl: `src/app/store/sidebar/ISidebarSelectionStore.*`,
+  `src/app/store/sidebar/SidebarSelectionStore.*`
+- Sidebar hierarchy wiring interfaces/viewmodel: `src/app/viewmodel/sidebar/IHierarchyViewModelProvider.*`,
+  `src/app/viewmodel/sidebar/HierarchyViewModelProvider.*`,
+  `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.*`
 - Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and runs domain parsing/store loading in
   parallel worker threads via `WhatSonRuntimeParallelLoader`, then applies snapshots to ViewModel objects on the main
   thread.

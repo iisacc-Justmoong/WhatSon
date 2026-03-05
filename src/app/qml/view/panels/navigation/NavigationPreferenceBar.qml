@@ -20,15 +20,11 @@ LV.HStack {
     LV.IconButton {
         id: preferenceButton
 
-        checkable: false
-        iconName: "audioToAudio"
-        tone: LV.AbstractButton.Borderless
+        iconName: "actionGroupNew"
     }
     LV.IconButton {
         id: detailPanelControlButton
 
-        checkable: false
         iconName: "columnIndex"
-        tone: LV.AbstractButton.Borderless
     }
 }

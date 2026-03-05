@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QSet>
 #include <QVariantMap>
 
 #include <algorithm>
@@ -929,6 +930,154 @@ LibraryHierarchyViewModel::IndexedBucket LibraryHierarchyViewModel::selectedBuck
     return IndexedBucket::All;
 }
 
+LibraryHierarchyViewModel::FolderSelectionScope LibraryHierarchyViewModel::selectedFolderScope() const
+{
+    FolderSelectionScope scope;
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+    {
+        return scope;
+    }
+
+    const LibraryHierarchyItem& selectedItem = m_items.at(m_selectedIndex);
+    scope.selectedLabelKey = normalizeFolderKey(selectedItem.label);
+    scope.selectedPathKey = normalizeFolderKey(folderPathForIndex(m_selectedIndex));
+
+    const int selectedDepth = selectedItem.depth;
+    for (int index = m_selectedIndex; index < m_items.size(); ++index)
+    {
+        if (index > m_selectedIndex && m_items.at(index).depth <= selectedDepth)
+        {
+            break;
+        }
+
+        const QString labelKey = normalizeFolderKey(m_items.at(index).label);
+        if (!labelKey.isEmpty())
+        {
+            scope.subtreeLabelKeys.insert(labelKey);
+        }
+
+        const QString pathKey = normalizeFolderKey(folderPathForIndex(index));
+        if (!pathKey.isEmpty())
+        {
+            scope.subtreePathKeys.insert(pathKey);
+        }
+    }
+
+    return scope;
+}
+
+QString LibraryHierarchyViewModel::normalizeFolderKey(const QString& value)
+{
+    QString normalized = value.trimmed();
+    normalized.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    while (normalized.contains(QStringLiteral("//")))
+    {
+        normalized.replace(QStringLiteral("//"), QStringLiteral("/"));
+    }
+    while (normalized.startsWith(QLatin1Char('/')))
+    {
+        normalized.remove(0, 1);
+    }
+    while (normalized.endsWith(QLatin1Char('/')))
+    {
+        normalized.chop(1);
+    }
+    return normalized.toCaseFolded();
+}
+
+QString LibraryHierarchyViewModel::folderPathForIndex(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+
+    QStringList pathSegments;
+    int cursor = index;
+    int targetDepth = m_items.at(index).depth;
+    if (targetDepth < 0)
+    {
+        targetDepth = 0;
+    }
+
+    for (int depth = targetDepth; depth >= 0; --depth)
+    {
+        bool foundAncestor = false;
+        for (int scan = cursor; scan >= 0; --scan)
+        {
+            if (m_items.at(scan).depth != depth)
+            {
+                continue;
+            }
+
+            const QString label = m_items.at(scan).label.trimmed();
+            if (!label.isEmpty())
+            {
+                pathSegments.prepend(label);
+            }
+            cursor = scan - 1;
+            foundAncestor = true;
+            break;
+        }
+
+        if (!foundAncestor)
+        {
+            break;
+        }
+    }
+
+    return pathSegments.join(QLatin1Char('/'));
+}
+
+bool LibraryHierarchyViewModel::noteMatchesFolderScope(
+    const LibraryNoteRecord& note,
+    const FolderSelectionScope& scope)
+{
+    if (scope.selectedLabelKey.isEmpty() && scope.selectedPathKey.isEmpty())
+    {
+        return true;
+    }
+
+    for (const QString& folder : note.folders)
+    {
+        const QString folderKey = normalizeFolderKey(folder);
+        if (folderKey.isEmpty())
+        {
+            continue;
+        }
+
+        if (!scope.selectedLabelKey.isEmpty() && folderKey == scope.selectedLabelKey)
+        {
+            return true;
+        }
+        if (!scope.selectedPathKey.isEmpty() && folderKey == scope.selectedPathKey)
+        {
+            return true;
+        }
+        if (!scope.selectedPathKey.isEmpty()
+            && folderKey.startsWith(scope.selectedPathKey + QLatin1Char('/')))
+        {
+            return true;
+        }
+        if (scope.subtreeLabelKeys.contains(folderKey) || scope.subtreePathKeys.contains(folderKey))
+        {
+            return true;
+        }
+
+        const int slashIndex = folderKey.lastIndexOf(QLatin1Char('/'));
+        if (slashIndex >= 0)
+        {
+            const QString tailLabel = folderKey.mid(slashIndex + 1);
+            if (scope.subtreeLabelKeys.contains(tailLabel))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void LibraryHierarchyViewModel::rebuildBucketRanges()
 {
     m_bucketRanges.clear();
@@ -962,6 +1111,32 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     if (!m_runtimeIndexLoaded)
     {
         m_noteListModel.setItems({});
+        updateNoteItemCount();
+        return;
+    }
+
+    if (m_foldersHierarchyLoaded)
+    {
+        if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
+        {
+            m_noteListModel.setItems(buildNoteListItems(m_libraryAll.notes()));
+            updateNoteItemCount();
+            return;
+        }
+
+        const FolderSelectionScope scope = selectedFolderScope();
+        QVector<LibraryNoteRecord> filtered;
+        filtered.reserve(m_libraryAll.notes().size());
+
+        for (const LibraryNoteRecord& note : m_libraryAll.notes())
+        {
+            if (noteMatchesFolderScope(note, scope))
+            {
+                filtered.push_back(note);
+            }
+        }
+
+        m_noteListModel.setItems(buildNoteListItems(filtered));
         updateNoteItemCount();
         return;
     }

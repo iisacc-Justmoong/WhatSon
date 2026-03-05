@@ -153,10 +153,7 @@ Item {
             LV.IconMenuButton {
                 id: applicationContentsMenuButton
 
-                checkable: false
                 iconName: "generalprojectStructure"
-                tone: LV.AbstractButton.Borderless
-
                 onClicked: {
                     if (applicationContentsContextMenu.opened) {
                         applicationContentsContextMenu.close();
@@ -168,9 +165,7 @@ Item {
             LV.IconButton {
                 id: compactPreferenceButton
 
-                checkable: false
                 iconName: "audioToAudio"
-                tone: LV.AbstractButton.Borderless
             }
         }
     }
@@ -179,8 +174,6 @@ Item {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        dismissOnGlobalContextRequest: true
-        dismissOnGlobalPress: true
         itemWidth: applicationContentsBar.menuItemWidth
         items: applicationContentsBar.applicationContentsMenuItems
         modal: false

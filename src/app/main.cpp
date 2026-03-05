@@ -8,11 +8,14 @@
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
+#include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
+#include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
+#include "store/sidebar/SidebarSelectionStore.hpp"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -354,6 +357,9 @@ int main(int argc, char* argv[])
     ProgressHierarchyViewModel progressHierarchyViewModel;
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
+    SidebarSelectionStore sidebarSelectionStore;
+    HierarchyViewModelProvider hierarchyViewModelProvider;
+    SidebarHierarchyViewModel sidebarHierarchyViewModel;
     DetailPanelViewModel detailPanelViewModel;
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
@@ -434,6 +440,19 @@ int main(int argc, char* argv[])
             QStringLiteral("no blueprint .wshub detected"));
     }
 
+    HierarchyViewModelProvider::Targets hierarchyViewModelTargets;
+    hierarchyViewModelTargets.libraryViewModel = &libraryHierarchyViewModel;
+    hierarchyViewModelTargets.projectsViewModel = &projectsHierarchyViewModel;
+    hierarchyViewModelTargets.bookmarksViewModel = &bookmarksHierarchyViewModel;
+    hierarchyViewModelTargets.tagsViewModel = &tagsHierarchyViewModel;
+    hierarchyViewModelTargets.resourcesViewModel = &resourcesHierarchyViewModel;
+    hierarchyViewModelTargets.progressViewModel = &progressHierarchyViewModel;
+    hierarchyViewModelTargets.eventViewModel = &eventHierarchyViewModel;
+    hierarchyViewModelTargets.presetViewModel = &presetHierarchyViewModel;
+    hierarchyViewModelProvider.setTargets(hierarchyViewModelTargets);
+    sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
+    sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
+
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("projectsHierarchyViewModel"), &projectsHierarchyViewModel);
     engine.rootContext()->setContextProperty(
@@ -467,6 +486,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(
         QStringLiteral("detailHelpViewModel"),
         detailPanelViewModel.helpViewModel());
+    engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), &sidebarHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
 

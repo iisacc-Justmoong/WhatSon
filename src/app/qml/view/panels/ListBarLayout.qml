@@ -42,7 +42,6 @@ Rectangle {
 
                         Layout.fillWidth: true
                         Layout.preferredHeight: 18
-                        clearButtonVisible: true
                         mode: searchMode
                         selectByMouse: true
                         text: listBarLayout.searchText
@@ -57,16 +56,12 @@ Rectangle {
                     LV.IconButton {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
-                        checkable: false
                         iconName: "cwmPermissionView"
-                        tone: LV.AbstractButton.Borderless
                     }
                     LV.IconButton {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
-                        checkable: false
                         iconName: "sortByType"
-                        tone: LV.AbstractButton.Borderless
                     }
                 }
             }

@@ -30,7 +30,6 @@ LV.ApplicationWindow {
     readonly property var eventHierarchyVm: eventHierarchyViewModel
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
-    property int hierarchyActiveToolbarIndex: 0
     readonly property int hierarchyHorizontalInset: LV.Theme.gap8
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
@@ -72,6 +71,7 @@ LV.ApplicationWindow {
     readonly property color rightPanelColor: LV.Theme.panelBackground06
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
     readonly property color sidebarColor: LV.Theme.panelBackground04
+    readonly property var sidebarHierarchyVm: sidebarHierarchyViewModel
     readonly property int sidebarWidth: Math.max(minSidebarWidth, preferredSidebarWidth)
     readonly property color statusBarColor: LV.Theme.panelBackground06
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
@@ -218,16 +218,12 @@ LV.ApplicationWindow {
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    activeToolbarIndex: applicationWindow.hierarchyActiveToolbarIndex
-                    bookmarksViewModel: applicationWindow.bookmarksHierarchyVm
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: applicationWindow.activeMainLayout === "mobile"
                     contentPanelColor: applicationWindow.contentPanelColor
                     contentsDisplayColor: applicationWindow.contentsDisplayColor
                     drawerColor: applicationWindow.drawerColor
                     drawerHeight: applicationWindow.drawerHeight
-                    eventViewModel: applicationWindow.eventHierarchyVm
-                    libraryViewModel: applicationWindow.libraryHierarchyVm
                     listViewColor: applicationWindow.listViewColor
                     listViewWidth: applicationWindow.listViewWidth
                     minContentWidth: applicationWindow.minContentWidth
@@ -236,22 +232,12 @@ LV.ApplicationWindow {
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
-                    presetViewModel: applicationWindow.presetHierarchyVm
-                    progressViewModel: applicationWindow.progressHierarchyVm
-                    projectsViewModel: applicationWindow.projectsHierarchyVm
-                    resourcesViewModel: applicationWindow.resourcesHierarchyVm
                     rightPanelColor: applicationWindow.rightPanelColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.sidebarColor
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
-                    tagsViewModel: applicationWindow.tagsHierarchyVm
-
-                    onActiveToolbarIndexChangeRequested: function (index) {
-                        if (index >= 0 && index !== applicationWindow.hierarchyActiveToolbarIndex)
-                            applicationWindow.hierarchyActiveToolbarIndex = index;
-                    }
                     onDrawerHeightDragRequested: function (value) {
                         if (value !== applicationWindow.preferredDrawerHeight)
                             applicationWindow.preferredDrawerHeight = value;

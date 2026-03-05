@@ -18,7 +18,6 @@ LV.IconButton {
         viewHookRequested();
     }
 
-    checkable: false
     iconName: buttonSpec && buttonSpec.iconName !== undefined ? buttonSpec.iconName : ""
     tone: selected ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
 
