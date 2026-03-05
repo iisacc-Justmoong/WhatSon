@@ -60,6 +60,8 @@
 
 
 
+
+
         });
 }
 
@@ -93,6 +95,8 @@ static NSMutableArray<LocalNetworkPermissionRequester*>* pendingLocalNetworkRequ
         &onceToken,
         ^{
             requesters = [[NSMutableArray alloc] init];
+
+
 
 
 
@@ -138,15 +142,22 @@ namespace
 
     bool isRemindersGranted(EKAuthorizationStatus status)
     {
-        if (status == EKAuthorizationStatusAuthorized)
-        {
-            return true;
-        }
+
+
 #if defined(EKAuthorizationStatusFullAccess)
     if (status== EKAuthorizationStatusFullAccess|| status== EKAuthorizationStatusWriteOnly)
         {
             return true;
         }
+#endif
+#if defined(EKAuthorizationStatusAuthorized)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        if (status== EKAuthorizationStatusAuthorized)
+        {
+            return true;
+        }
+#pragma clang diagnostic pop
 #endif
     return false;
     }
@@ -288,7 +299,7 @@ namespace WhatSon::Permissions
         }
 
         EKEventStore* eventStore =  [[EKEventStore alloc] init];
-        if ([eventStore respondsToSelector:@ selector(requestFullAccessToRemindersWithCompletion:)])
+        if (@ available(macOS 14.0, iOS 17.0, *))
         {
             [eventStore requestFullAccessToRemindersWithCompletion:^(BOOL granted, NSError* error)
                 {
@@ -302,6 +313,8 @@ namespace WhatSon::Permissions
             return;
         }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         [eventStore requestAccessToEntityType:EKEntityTypeReminder
             completion:^(BOOL granted, NSError* error)
             {
@@ -312,6 +325,7 @@ namespace WhatSon::Permissions
                 QStringLiteral("granted=%1").arg(granted ? QStringLiteral("1") : QStringLiteral("0")));
             completeOnQtMain(completionCopy, granted);
             }];
+#pragma clang diagnostic pop
 #else
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("permissions.reminders"),

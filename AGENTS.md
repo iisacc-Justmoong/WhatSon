@@ -30,6 +30,7 @@ every turn.
 - Sidebar hierarchy wiring interfaces/viewmodel: `src/app/viewmodel/sidebar/IHierarchyViewModelProvider.*`,
   `src/app/viewmodel/sidebar/HierarchyViewModelProvider.*`,
   `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.*`
+- Architecture policy lock and layer contract: `src/app/policy/ArchitecturePolicyLock.*`
 - Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and runs domain parsing/store loading in
   parallel worker threads via `WhatSonRuntimeParallelLoader`, then applies snapshots to ViewModel objects on the main
   thread.

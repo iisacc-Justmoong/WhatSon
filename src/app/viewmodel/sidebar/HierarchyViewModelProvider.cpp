@@ -1,7 +1,9 @@
 #include "HierarchyViewModelProvider.hpp"
 
+#include "policy/ArchitecturePolicyLock.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 
+#include <QDebug>
 #include <QMetaType>
 #include <QVariant>
 
@@ -14,6 +16,14 @@ HierarchyViewModelProvider::~HierarchyViewModelProvider() = default;
 
 void HierarchyViewModelProvider::setTargets(Targets targets)
 {
+    if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
+    {
+        qWarning().noquote()
+            << QStringLiteral(
+                "[whatson:policy][lock] HierarchyViewModelProvider::setTargets rejected because architecture policy is locked");
+        return;
+    }
+
     if (sameTargets(m_targets, targets))
     {
         return;

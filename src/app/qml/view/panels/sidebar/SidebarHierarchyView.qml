@@ -138,6 +138,10 @@ Item {
     onSelectedFolderIndexChanged: {
         if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== sidebarHierarchyView.selectedFolderIndex)
             sidebarHierarchyView.commitRename();
+        if (sidebarHierarchyView.selectedFolderIndex < 0)
+            return;
+        if (hierarchyList && hierarchyList.activateById !== undefined)
+            hierarchyList.activateById(sidebarHierarchyView.selectedFolderIndex);
     }
 
     Rectangle {
@@ -244,6 +248,7 @@ Item {
                             height: visibleInView ? implicitHeight : 0
                             indentLevel: hierarchyDelegate.itemIndentLevel
                             indentStep: sidebarHierarchyView.hierarchyIndentStep
+                            itemId: index
                             label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
                             showChevron: hierarchyDelegate.itemShowChevron
                             visible: visibleInView
@@ -260,6 +265,8 @@ Item {
                                     if (sidebarHierarchyView.editingIndex >= 0)
                                         sidebarHierarchyView.commitRename();
                                     sidebarHierarchyView.forceActiveFocus();
+                                    if (hierarchyList && hierarchyList.requestActivate !== undefined)
+                                        hierarchyList.requestActivate(hierarchyDelegate);
                                     if (sidebarHierarchyView.hierarchyViewModel)
                                         sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
                                 }

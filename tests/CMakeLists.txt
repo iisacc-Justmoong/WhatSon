@@ -366,8 +366,31 @@ target_link_libraries(whatson_panel_viewmodel_registry_tests
 add_test(NAME whatson_panel_viewmodel_registry_tests COMMAND whatson_panel_viewmodel_registry_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_panel_viewmodel_registry_tests)
 
+add_executable(whatson_architecture_policy_lock_tests
+        app/test_architecture_policy_lock.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyViewModelProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp
+)
+set_target_properties(whatson_architecture_policy_lock_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_architecture_policy_lock_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_architecture_policy_lock_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_architecture_policy_lock_tests COMMAND whatson_architecture_policy_lock_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_architecture_policy_lock_tests)
+
 add_executable(whatson_sidebar_hierarchy_module_tests
         app/test_sidebar_hierarchy_module.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp

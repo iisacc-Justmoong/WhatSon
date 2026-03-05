@@ -1,6 +1,9 @@
 #include "SidebarHierarchyViewModel.hpp"
 
+#include "policy/ArchitecturePolicyLock.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
+
+#include <QDebug>
 
 SidebarHierarchyViewModel::SidebarHierarchyViewModel(QObject* parent)
     : QObject(parent)
@@ -71,6 +74,14 @@ ISidebarSelectionStore* SidebarHierarchyViewModel::selectionStore() const noexce
 
 void SidebarHierarchyViewModel::setSelectionStore(ISidebarSelectionStore* store)
 {
+    if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
+    {
+        qWarning().noquote()
+            << QStringLiteral(
+                "[whatson:policy][lock] SidebarHierarchyViewModel::setSelectionStore rejected because architecture policy is locked");
+        return;
+    }
+
     if (m_selectionStore == store)
     {
         return;
@@ -112,6 +123,14 @@ IHierarchyViewModelProvider* SidebarHierarchyViewModel::viewModelProvider() cons
 
 void SidebarHierarchyViewModel::setViewModelProvider(IHierarchyViewModelProvider* provider)
 {
+    if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
+    {
+        qWarning().noquote()
+            << QStringLiteral(
+                "[whatson:policy][lock] SidebarHierarchyViewModel::setViewModelProvider rejected because architecture policy is locked");
+        return;
+    }
+
     if (m_viewModelProvider == provider)
     {
         return;

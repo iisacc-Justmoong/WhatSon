@@ -10,6 +10,7 @@
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
+#include "policy/ArchitecturePolicyLock.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
@@ -452,6 +453,7 @@ int main(int argc, char* argv[])
     hierarchyViewModelProvider.setTargets(hierarchyViewModelTargets);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
+    WhatSon::Policy::ArchitecturePolicyLock::lock();
 
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("projectsHierarchyViewModel"), &projectsHierarchyViewModel);
