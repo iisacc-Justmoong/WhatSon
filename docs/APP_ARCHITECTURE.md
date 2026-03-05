@@ -275,9 +275,9 @@ Desktop composition:
         - `DetailPanelHeaderToolbar` is a lightweight repeater container and delegates per-button rendering/click logic
           to
           `DetailPanelHeaderToolbarButton`.
-    - Toolbar icon order follows Figma node `134:4152`: `generalprojectStructure`, `statisticsPanel`, `fileFormat`,
-      `toolWindowClock`, `cwmPermissionView`, `featureAnswer`.
-        - `DetailContents` binds to C++-computed `activeStateName`.
+    - Toolbar icon order follows Figma node `134:4152`: `generalprojectStructure`, `chartBar`, `dataFile`,
+      `generalhistory`, `cwmPermissionView`, `featureAnswer`.
+      - `DetailContents` binds to C++-computed `activeStateName`.
 
 Mobile composition:
 

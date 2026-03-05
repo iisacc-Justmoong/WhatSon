@@ -319,6 +319,23 @@ target_link_libraries(whatson_async_scheduler_tests
 add_test(NAME whatson_async_scheduler_tests COMMAND whatson_async_scheduler_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_async_scheduler_tests)
 
+add_executable(whatson_year_calendar_viewmodel_tests
+        app/test_year_calendar_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/YearCalendarViewModel.cpp
+)
+set_target_properties(whatson_year_calendar_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_year_calendar_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_year_calendar_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_year_calendar_viewmodel_tests COMMAND whatson_year_calendar_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_year_calendar_viewmodel_tests)
+
 add_executable(whatson_qml_binding_guard_tests
         app/test_qml_binding_syntax_guard.cpp
 )

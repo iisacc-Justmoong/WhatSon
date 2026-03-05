@@ -30,9 +30,9 @@ void DetailPanelViewModelTest::defaults_mustExposeFileInfoState()
     QCOMPARE(toolbarItems.size(), 6);
     const QStringList expectedIconNames = {
         QStringLiteral("generalprojectStructure"),
-        QStringLiteral("statisticsPanel"),
-        QStringLiteral("fileFormat"),
-        QStringLiteral("toolWindowClock"),
+        QStringLiteral("chartBar"),
+        QStringLiteral("dataFile"),
+        QStringLiteral("generalhistory"),
         QStringLiteral("cwmPermissionView"),
         QStringLiteral("featureAnswer")
     };
