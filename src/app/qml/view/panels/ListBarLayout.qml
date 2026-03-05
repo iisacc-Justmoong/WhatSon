@@ -56,7 +56,7 @@ Rectangle {
                     LV.IconButton {
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
-                        iconName: "cwmPermissionView"
+                        iconName: "generalshow"
                     }
                     LV.IconButton {
                         Layout.preferredHeight: 20
