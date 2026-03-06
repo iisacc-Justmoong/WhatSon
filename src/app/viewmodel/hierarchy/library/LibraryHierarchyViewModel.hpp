@@ -27,8 +27,6 @@ class LibraryHierarchyViewModel final : public QObject
     Q_PROPERTY(bool renameEnabled READ renameEnabled CONSTANT)
     Q_PROPERTY(bool createFolderEnabled READ createFolderEnabled CONSTANT)
     Q_PROPERTY(bool deleteFolderEnabled READ deleteFolderEnabled NOTIFY selectedIndexChanged)
-    Q_PROPERTY(bool createTxtEnabled READ createTxtEnabled NOTIFY createTxtStateChanged)
-    Q_PROPERTY(QString lastCreateTxtError READ lastCreateTxtError NOTIFY createTxtStateChanged)
 
 public:
     explicit LibraryHierarchyViewModel(QObject* parent = nullptr);
@@ -52,8 +50,6 @@ public:
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;
-    bool createTxtEnabled() const noexcept;
-    QString lastCreateTxtError() const;
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(
         const QString& wshubPath,
@@ -67,7 +63,6 @@ public:
 
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
-    Q_INVOKABLE bool createTxtFile();
 
     void setHubStore(WhatSonHubStore store);
     WhatSonHubStore hubStore() const;
@@ -90,7 +85,6 @@ public
     void itemCountChanged();
     void noteItemCountChanged();
     void loadStateChanged();
-    void createTxtStateChanged();
     void viewModelHookRequested();
 
 private:
@@ -151,5 +145,4 @@ private:
     QString m_lastLoadError;
     QString m_foldersFilePath;
     WhatSonHubStore m_hubStore;
-    QString m_lastCreateTxtError;
 };

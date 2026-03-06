@@ -3,8 +3,6 @@
 #include "WhatSonDebugTrace.hpp"
 #include "note/WhatSonNoteHeaderParser.hpp"
 #include "note/WhatSonNoteHeaderStore.hpp"
-#include "txt/WhatSonTxtFileParser.hpp"
-#include "txt/WhatSonTxtFileStore.hpp"
 
 #include <QDebug>
 #include <QDateTime>
@@ -47,13 +45,7 @@ namespace
         {
             return {};
         }
-        if (value == QStringLiteral("text")
-            || value == QStringLiteral("plain-text")
-            || value == QStringLiteral("plaintext"))
-        {
-            return QStringLiteral("txt");
-        }
-        return value;
+        return QStringLiteral("wsnote");
     }
 
     QStringList resolveContentsDirectories(const QString& wshubPath)
@@ -723,29 +715,12 @@ namespace
 
         if (record->noteDirectoryPath.isEmpty() && !record->noteHeaderPath.isEmpty())
         {
-            if (record->storageKind == QStringLiteral("txt"))
-            {
-                record->noteDirectoryPath = record->noteHeaderPath;
-            }
-            else
-            {
-                record->noteDirectoryPath = QFileInfo(record->noteHeaderPath).absolutePath();
-            }
+            record->noteDirectoryPath = QFileInfo(record->noteHeaderPath).absolutePath();
         }
 
         if (record->storageKind.isEmpty())
         {
-            const QString candidatePath = !record->noteHeaderPath.isEmpty()
-                                              ? record->noteHeaderPath
-                                              : record->noteDirectoryPath;
-            if (candidatePath.endsWith(QStringLiteral(".txt"), Qt::CaseInsensitive))
-            {
-                record->storageKind = QStringLiteral("txt");
-            }
-            else
-            {
-                record->storageKind = QStringLiteral("wsnote");
-            }
+            record->storageKind = QStringLiteral("wsnote");
         }
 
         if (record->noteId.trimmed().isEmpty() && !record->noteDirectoryPath.isEmpty())
@@ -815,56 +790,6 @@ namespace
         record.progress = store.progress();
         record.bookmarked = store.isBookmarked();
         record.preset = store.isPreset();
-        normalizeRecordFallbacks(&record);
-        return record;
-    }
-
-    LibraryNoteRecord parseRecordFromTxtFile(const QString& txtFilePath)
-    {
-        LibraryNoteRecord record;
-        const QString normalizedPath = normalizePath(txtFilePath);
-        const QFileInfo fileInfo(normalizedPath);
-
-        record.noteId = fileInfo.completeBaseName().trimmed();
-        record.storageKind = QStringLiteral("txt");
-        record.noteDirectoryPath = normalizedPath;
-        record.noteHeaderPath = normalizedPath;
-
-        QDateTime createdAt = fileInfo.birthTime();
-        if (!createdAt.isValid())
-        {
-            createdAt = fileInfo.lastModified();
-        }
-        record.createdAt = formatTimestamp(createdAt);
-        record.lastModifiedAt = formatTimestamp(fileInfo.lastModified());
-
-        QString readError;
-        const QString text = readUtf8File(normalizedPath, &readError);
-        if (text.isEmpty() && !readError.isEmpty())
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("library.all"),
-                QStringLiteral("scan.txt.readFailed"),
-                QStringLiteral("file=%1 reason=%2").arg(normalizedPath, readError));
-            normalizeRecordFallbacks(&record);
-            return record;
-        }
-
-        WhatSonTxtFileParser parser;
-        WhatSonTxtFileStore store;
-        QString parseError;
-        if (!parser.parse(text, &store, &parseError))
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("library.all"),
-                QStringLiteral("scan.txt.parseFailed"),
-                QStringLiteral("file=%1 reason=%2").arg(normalizedPath, parseError));
-            normalizeRecordFallbacks(&record);
-            return record;
-        }
-
-        store.setFilePath(normalizedPath);
-        record.bodyPlainText = store.bodyPlainText();
         normalizeRecordFallbacks(&record);
         return record;
     }
@@ -1072,32 +997,14 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
             const QString wsnHeadPath = iterator.next();
             upsertRecord(parseRecordFromWsnhead(wsnHeadPath));
         }
-
-        QDirIterator txtIterator(
-            libraryRoot,
-            QStringList{QStringLiteral("*.txt")},
-            QDir::Files,
-            QDirIterator::Subdirectories);
-        while (txtIterator.hasNext())
-        {
-            const QString txtFilePath = txtIterator.next();
-            if (pathHasAncestorWithSuffix(txtFilePath, QStringLiteral(".wsnote"), libraryRoot))
-            {
-                continue;
-            }
-            upsertRecord(parseRecordFromTxtFile(txtFilePath));
-        }
     }
 
     for (LibraryNoteRecord& record : mergedRecords)
     {
         normalizeRecordFallbacks(&record);
-        if (record.storageKind != QStringLiteral("txt"))
-        {
-            const BodyContentExtract bodyContent = readBodyContent(record);
-            overwriteIfNonEmpty(&record.bodyPlainText, bodyContent.plainText);
-            overwriteIfNonEmpty(&record.bodyFirstLine, bodyContent.firstLine);
-        }
+        const BodyContentExtract bodyContent = readBodyContent(record);
+        overwriteIfNonEmpty(&record.bodyPlainText, bodyContent.plainText);
+        overwriteIfNonEmpty(&record.bodyFirstLine, bodyContent.firstLine);
         finalizeRecordContentFields(&record);
     }
 

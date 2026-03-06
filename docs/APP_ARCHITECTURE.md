@@ -232,9 +232,6 @@ Library-specific modeling:
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
-- `WhatSonTxtFile{Store,Parser,Creator}` owns standalone `.txt` file creation and parsing inside `*.wslibrary`.
-- `LibraryHierarchyViewModel` receives the active `WhatSonHubStore` and resolves txt writes strictly through
-  `hub.libraryPath()`, so custom `.wshub` locations remain writable without hard-coded blueprint paths.
 - Note primary text is derived from the top slice of `bodyPlainText`; when body text is empty it falls back to
   `noteId -> note directory stem`.
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
@@ -336,7 +333,7 @@ Detected package conventions:
     - or dynamic `<HubName>.wscontents`
 - Core hub domains:
     - `Library.wslibrary`
-        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsndiff`, `*.wsnpaint`, `*.txt`)
+        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsndiff`, `*.wsnpaint`)
         - Global note index (`index.wsnindex`)
     - `<HubName>.wsresources`
         - Binary/resource storage domain for note attachments (image/video/audio/other payloads)

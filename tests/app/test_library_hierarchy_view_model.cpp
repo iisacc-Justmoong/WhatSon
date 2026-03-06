@@ -32,8 +32,6 @@ private
     void loadFromWshub_filtersNoteListBySelectedFolder_whenFoldersHierarchyLoaded();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
-    void loadFromWshub_indexesTxtFilesInsideLibraryRoot();
-    void createTxtFile_writesIntoHubLibraryPath();
 };
 
 namespace
@@ -695,71 +693,6 @@ void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory
 
     QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
-}
-
-void LibraryHierarchyViewModelTest::loadFromWshub_indexesTxtFilesInsideLibraryRoot()
-{
-    QString hubPath;
-    QVERIFY(prepareIndexedLibraryHub(&hubPath));
-
-    const QDir hubDir(hubPath);
-    const QStringList contentsDirs = hubDir.entryList(
-        QStringList{QStringLiteral("*.wscontents")},
-        QDir::Dirs | QDir::NoDotAndDotDot,
-        QDir::Name);
-    QVERIFY(!contentsDirs.isEmpty());
-
-    const QString contentsPath = hubDir.filePath(contentsDirs.first());
-    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
-    QVERIFY(writeUtf8File(
-        QDir(libraryPath).filePath(QStringLiteral("MeetingNotes.txt")),
-        QStringLiteral("Meeting Notes\nAction item one\nAction item two\n")));
-
-    LibraryHierarchyViewModel viewModel;
-    QString errorMessage;
-    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
-
-    QCOMPARE(viewModel.noteListModel()->rowCount(), 4);
-    const QString meetingPrimaryText = viewModel.noteListModel()->data(
-        viewModel.noteListModel()->index(3, 0),
-        LibraryNoteListModel::PrimaryTextRole).toString();
-    QVERIFY(meetingPrimaryText.startsWith(QStringLiteral("Meeting Notes")));
-    QVERIFY(meetingPrimaryText.contains(QStringLiteral("Action item one")));
-}
-
-void LibraryHierarchyViewModelTest::createTxtFile_writesIntoHubLibraryPath()
-{
-    QString hubPath;
-    QVERIFY(prepareIndexedLibraryHub(&hubPath, QStringLiteral("Workspace.wslibrary")));
-
-    const QDir hubDir(hubPath);
-    const QStringList contentsDirs = hubDir.entryList(
-        QStringList{QStringLiteral("*.wscontents")},
-        QDir::Dirs | QDir::NoDotAndDotDot,
-        QDir::Name);
-    QVERIFY(!contentsDirs.isEmpty());
-
-    const QString contentsPath = hubDir.filePath(contentsDirs.first());
-    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Workspace.wslibrary"));
-
-    WhatSonHubStore hubStore;
-    hubStore.setHubPath(hubPath);
-    hubStore.setLibraryPath(libraryPath);
-
-    LibraryHierarchyViewModel viewModel;
-    viewModel.setHubStore(hubStore);
-
-    QString errorMessage;
-    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
-    QVERIFY(viewModel.createTxtEnabled());
-    QVERIFY(viewModel.createTxtFile());
-
-    const QFileInfoList createdFiles = QDir(libraryPath).entryInfoList(
-        QStringList{QStringLiteral("Txt-*.txt")},
-        QDir::Files,
-        QDir::Name);
-    QCOMPARE(createdFiles.size(), 1);
-    QCOMPARE(viewModel.noteListModel()->rowCount(), 4);
 }
 
 QTEST_APPLESS_MAIN(LibraryHierarchyViewModelTest)

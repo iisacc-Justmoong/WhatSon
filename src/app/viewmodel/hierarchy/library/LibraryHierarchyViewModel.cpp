@@ -4,7 +4,6 @@
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
-#include "file/txt/WhatSonTxtFileCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -673,17 +672,6 @@ bool LibraryHierarchyViewModel::deleteFolderEnabled() const noexcept
     return !(m_items.at(m_selectedIndex).accent && m_items.at(m_selectedIndex).depth == 0);
 }
 
-bool LibraryHierarchyViewModel::createTxtEnabled() const noexcept
-{
-    return !m_hubStore.hubPath().trimmed().isEmpty()
-        && !m_hubStore.libraryPath().trimmed().isEmpty();
-}
-
-QString LibraryHierarchyViewModel::lastCreateTxtError() const
-{
-    return m_lastCreateTxtError;
-}
-
 void LibraryHierarchyViewModel::createFolder()
 {
     WhatSon::Debug::traceSelf(this,
@@ -778,58 +766,6 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     setSelectedIndex(std::min(startIndex, static_cast<int>(m_items.size() - 1)));
 }
 
-bool LibraryHierarchyViewModel::createTxtFile()
-{
-    if (!createTxtEnabled())
-    {
-        m_lastCreateTxtError = QStringLiteral("Txt creation requires a loaded hub library path.");
-        emit createTxtStateChanged();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createTxtFile.rejected"),
-                                  m_lastCreateTxtError);
-        return false;
-    }
-
-    WhatSonTxtFileCreator creator(m_hubStore.libraryPath());
-    QString createdFilePath;
-    QString createError;
-    if (!creator.createFile(QString(), QString(), &createdFilePath, &createError))
-    {
-        m_lastCreateTxtError = createError;
-        emit createTxtStateChanged();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createTxtFile.failed"),
-                                  QStringLiteral("reason=%1").arg(createError));
-        return false;
-    }
-
-    QString reloadError;
-    if (!loadFromWshub(m_hubStore.hubPath(), &reloadError))
-    {
-        m_lastCreateTxtError = QStringLiteral("Txt file was created, but library reload failed: %1").arg(reloadError);
-        emit createTxtStateChanged();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createTxtFile.reloadFailed"),
-                                  QStringLiteral("path=%1 reason=%2").arg(createdFilePath, reloadError));
-        return false;
-    }
-
-    if (!m_lastCreateTxtError.isEmpty())
-    {
-        m_lastCreateTxtError.clear();
-        emit createTxtStateChanged();
-    }
-
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.viewmodel"),
-                              QStringLiteral("createTxtFile.success"),
-                              QStringLiteral("path=%1").arg(createdFilePath));
-    return true;
-}
-
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
 {
     const QString nextHubPath = store.hubPath().trimmed();
@@ -841,7 +777,6 @@ void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
     }
 
     m_hubStore = std::move(store);
-    emit createTxtStateChanged();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("setHubStore"),
