@@ -57,11 +57,10 @@ Item {
 
             bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : ""
             bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : false
-            desc: useRuntimeModel && roleModel && roleModel.desc !== undefined ? String(roleModel.desc) : ""
             folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listItemsPlaceholder.normalizeFolders(roleModel.folders) : []
             noteId: useRuntimeModel && roleModel && roleModel.id !== undefined ? String(roleModel.id) : ""
             pressed: ListView.isCurrentItem
-            title: useRuntimeModel && roleModel && roleModel.title !== undefined ? String(roleModel.title) : ""
+            primaryText: useRuntimeModel && roleModel && roleModel.primaryText !== undefined ? String(roleModel.primaryText) : ""
             width: ListView.view ? ListView.view.width : listItemsPlaceholder.width
 
             TapHandler {

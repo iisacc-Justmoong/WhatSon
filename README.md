@@ -211,6 +211,7 @@ for hub/note hierarchy payloads.
 - Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded`, and sidebar delegates follow
   `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not reserve row space.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
+- `txt`: `WhatSonTxtFile{Store,Parser,Creator}` (`*.txt` inside `*.wslibrary`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
 - `tags`: `WhatSonTagsHierarchy{Store,Parser,Creator}` (`Tags.wstags`, tree/flat JSON with preserved hierarchy depth)
@@ -228,10 +229,12 @@ Folders hierarchy file behavior (Library sidebar):
 
 Library runtime classification behavior:
 
-- `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, `title`, created/modified
+- `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, created/modified
   timestamps, and related fields)
 - `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses it as note-list summary text
+- `All`: indexes standalone `*.txt` files stored in each `*.wslibrary`
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
+- Library add-file action now creates `Txt-*.txt` in the active hub store's `libraryPath`
 - `Draft`: filters notes where `<folders>` resolves to an empty list
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
 

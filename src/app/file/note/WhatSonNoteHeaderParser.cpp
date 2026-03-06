@@ -256,7 +256,6 @@ bool WhatSonNoteHeaderParser::parse(
 
     outStore->clear();
     outStore->setNoteId(extractAttributeValue(wsnHeadText, QStringLiteral("contents"), QStringLiteral("id")));
-    outStore->setTitle(extractTagText(wsnHeadText, QStringLiteral("title")));
     outStore->setCreatedAt(extractTagText(wsnHeadText, QStringLiteral("created")));
     outStore->setAuthor(extractTagText(wsnHeadText, QStringLiteral("author")));
     outStore->setLastModifiedAt(extractTagText(wsnHeadText, QStringLiteral("lastModified")));
@@ -282,9 +281,8 @@ bool WhatSonNoteHeaderParser::parse(
                               QStringLiteral("note.header.parser"),
                               QStringLiteral("parse.success"),
                               QStringLiteral(
-                                  "id=%1 title=%2 folderCount=%3 bookmarkColorCount=%4 tagCount=%5 progress=%6 bookmarked=%7 preset=%8")
+                                  "id=%1 folderCount=%2 bookmarkColorCount=%3 tagCount=%4 progress=%5 bookmarked=%6 preset=%7")
                               .arg(outStore->noteId())
-                              .arg(outStore->title())
                               .arg(outStore->folders().size())
                               .arg(outStore->bookmarkColors().size())
                               .arg(outStore->tags().size())

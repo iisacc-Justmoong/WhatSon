@@ -32,7 +32,6 @@ namespace
 
     QString makeWsnHeadText(
         const QString& noteId,
-        const QString& title,
         bool bookmarked,
         const QStringList& bookmarkColors)
     {
@@ -41,7 +40,6 @@ namespace
         text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
         text += QStringLiteral("<contents id=\"%1\">\n").arg(noteId);
         text += QStringLiteral("  <head>\n");
-        text += QStringLiteral("    <title>%1</title>\n").arg(title);
         text += QStringLiteral("    <created>2026-03-01-00-00-00</created>\n");
         text += QStringLiteral("    <author>Tester</author>\n");
         text += QStringLiteral("    <lastModified>2026-03-01-00-00-00</lastModified>\n");
@@ -108,9 +106,9 @@ namespace
             "  \"version\": 1,\n"
             "  \"schema\": \"whatson.library.index\",\n"
             "  \"notes\": [\n"
-            "    {\"id\": \"note-blue\", \"title\": \"Blue Note\"},\n"
-            "    {\"id\": \"note-hidden\", \"title\": \"Hidden Note\"},\n"
-            "    {\"id\": \"note-pink\", \"title\": \"Pink Note\"}\n"
+            "    {\"id\": \"note-blue\"},\n"
+            "    {\"id\": \"note-hidden\"},\n"
+            "    {\"id\": \"note-pink\"}\n"
             "  ]\n"
             "}\n");
         if (!writeUtf8File(QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")), indexText))
@@ -122,7 +120,6 @@ namespace
             QDir(noteAPath).filePath(QStringLiteral("Blue.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-blue"),
-                QStringLiteral("Blue Note"),
                 true,
                 {QStringLiteral("blue")})))
         {
@@ -139,7 +136,6 @@ namespace
             QDir(noteBPath).filePath(QStringLiteral("Hidden.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-hidden"),
-                QStringLiteral("Hidden Note"),
                 false,
                 {QStringLiteral("red")})))
         {
@@ -156,7 +152,6 @@ namespace
             QDir(noteCPath).filePath(QStringLiteral("Pink.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-pink"),
-                QStringLiteral("Pink Note"),
                 true,
                 {QStringLiteral("#EC4899")})))
         {
@@ -182,7 +177,6 @@ private
     slots  :
 
 
-
     void libraryViewModel_supportsCrudContract();
     void projectsViewModel_supportsCrudContract();
     void projectsViewModel_reactsToModelMutation();
@@ -198,7 +192,7 @@ private
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
     void noteListModel_correctsColorAndTextFields();
-    void noteListModel_limitsDescriptionToFiveLines();
+    void noteListModel_limitsPrimaryTextToFiveLines();
 };
 
 void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
@@ -308,35 +302,39 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
 
-    QStringList titleAndColorPairs;
+    QStringList primaryTextAndColorPairs;
     for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
     {
         const QModelIndex index = viewModel.noteListModel()->index(row, 0);
         QVERIFY(viewModel.noteListModel()->data(index, LibraryNoteListModel::BookmarkedRole).toBool());
-        const QString title = viewModel.noteListModel()->data(index, LibraryNoteListModel::TitleRole).toString();
+        const QString primaryText = viewModel.noteListModel()
+                                             ->data(index, LibraryNoteListModel::PrimaryTextRole)
+                                             .toString();
         const QString color = viewModel.noteListModel()
                                        ->data(index, LibraryNoteListModel::BookmarkColorRole)
                                        .toString();
-        titleAndColorPairs.push_back(QStringLiteral("%1=%2").arg(title, color));
+        primaryTextAndColorPairs.push_back(QStringLiteral("%1=%2").arg(primaryText, color));
     }
-    titleAndColorPairs.sort();
+    primaryTextAndColorPairs.sort();
     QCOMPARE(
-        titleAndColorPairs,
-        QStringList({QStringLiteral("Blue Note=#3B82F6"), QStringLiteral("Pink Note=#EC4899")}));
+        primaryTextAndColorPairs,
+        QStringList({QStringLiteral("Blue summary=#3B82F6"), QStringLiteral("Pink summary=#EC4899")}));
 
     viewModel.setSelectedIndex(6); // blue
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole)
-                 .toString(),
-        QStringLiteral("Blue Note"));
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::PrimaryTextRole).toString(),
+        QStringLiteral("Blue summary"));
 
     viewModel.setSelectedIndex(8); // pink
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole)
-                 .toString(),
-        QStringLiteral("Pink Note"));
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::PrimaryTextRole).toString(),
+        QStringLiteral("Pink summary"));
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
@@ -441,13 +439,11 @@ void HierarchyViewModelsTest::libraryViewModel_reactsToNoteListModelMutation()
     QVector<LibraryNoteListItem> items;
     LibraryNoteListItem first;
     first.id = QStringLiteral("note-a");
-    first.title = QStringLiteral("A");
-    first.desc = QStringLiteral("A summary");
+    first.primaryText = QStringLiteral("A");
     items.push_back(first);
     LibraryNoteListItem second;
     second.id = QStringLiteral("note-b");
-    second.title = QStringLiteral("B");
-    second.desc = QStringLiteral("B summary");
+    second.primaryText = QStringLiteral("B");
     items.push_back(second);
 
     viewModel.noteListModel()->setItems(items);
@@ -541,8 +537,7 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
     QVector<LibraryNoteListItem> items;
     LibraryNoteListItem item;
     item.id = QStringLiteral("note-1");
-    item.title = QStringLiteral("   ");
-    item.desc = QStringLiteral(" ");
+    item.primaryText = QStringLiteral("   ");
     item.folders = {QStringLiteral(""), QStringLiteral("folder-a"), QStringLiteral("folder-a")};
     item.bookmarked = true;
     item.bookmarkColor = QStringLiteral("not-a-hex");
@@ -552,29 +547,27 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
 
     QCOMPARE(model.rowCount(), 1);
     const QModelIndex index = model.index(0, 0);
-    QCOMPARE(model.data(index, LibraryNoteListModel::TitleRole).toString(), QString());
-    QCOMPARE(model.data(index, LibraryNoteListModel::DescRole).toString(), QString());
+    QCOMPARE(model.data(index, LibraryNoteListModel::PrimaryTextRole).toString(), QString());
     QCOMPARE(model.data(index, LibraryNoteListModel::FoldersRole).toStringList(),
              QStringList({QStringLiteral("folder-a")}));
     QCOMPARE(model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(), QString());
     QVERIFY(model.correctionCount() >= 1);
 }
 
-void HierarchyViewModelsTest::noteListModel_limitsDescriptionToFiveLines()
+void HierarchyViewModelsTest::noteListModel_limitsPrimaryTextToFiveLines()
 {
     LibraryNoteListModel model;
 
     LibraryNoteListItem item;
     item.id = QStringLiteral("note-1");
-    item.title = QStringLiteral("Title");
-    item.desc = QStringLiteral("line1\nline2\nline3\nline4\nline5\nline6\nline7");
+    item.primaryText = QStringLiteral("line1\nline2\nline3\nline4\nline5\nline6\nline7");
 
     model.setItems({item});
 
     QCOMPARE(model.rowCount(), 1);
     const QModelIndex index = model.index(0, 0);
     QCOMPARE(
-        model.data(index, LibraryNoteListModel::DescRole).toString(),
+        model.data(index, LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("line1\nline2\nline3\nline4\nline5"));
 }
 

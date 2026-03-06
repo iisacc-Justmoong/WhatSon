@@ -37,46 +37,40 @@ namespace
         return truncated.join(QLatin1Char('\n'));
     }
 
-    QString bookmarkListTitle(const LibraryNoteRecord& note)
+    QString bookmarkLabelText(const LibraryNoteRecord& note)
     {
-        QString title = note.title.trimmed();
-        if (!title.isEmpty())
+        QString primary = note.bodyFirstLine.trimmed();
+        if (!primary.isEmpty())
         {
-            return title;
+            return primary;
         }
 
-        title = note.bodyFirstLine.trimmed();
-        if (!title.isEmpty())
+        primary = note.noteId.trimmed();
+        if (!primary.isEmpty())
         {
-            return title;
-        }
-
-        title = note.noteId.trimmed();
-        if (!title.isEmpty())
-        {
-            return title;
+            return primary;
         }
 
         if (!note.noteDirectoryPath.isEmpty())
         {
-            title = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
-            if (!title.isEmpty())
+            primary = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
+            if (!primary.isEmpty())
             {
-                return title;
+                return primary;
             }
         }
 
         return {};
     }
 
-    QString bookmarkListSummary(const LibraryNoteRecord& note)
+    QString bookmarkPrimaryText(const LibraryNoteRecord& note)
     {
         const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
         if (!bodyPlainText.isEmpty())
         {
             return bodyPlainText;
         }
-        return {};
+        return bookmarkLabelText(note);
     }
 
     QStringList bookmarkListFolders(const LibraryNoteRecord& note)
@@ -363,8 +357,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
 
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
-        item.title = bookmarkListTitle(note);
-        item.desc = bookmarkListSummary(note);
+        item.primaryText = bookmarkPrimaryText(note);
         item.folders = bookmarkListFolders(note);
         item.bookmarked = true;
         item.bookmarkColor = bookmarkColorHexForNote(note);
@@ -408,8 +401,7 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
     {
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
-        item.title = bookmarkListTitle(note);
-        item.desc = bookmarkListSummary(note);
+        item.primaryText = bookmarkPrimaryText(note);
         item.folders = bookmarkListFolders(note);
         item.bookmarked = true;
         item.bookmarkColor = bookmarkColorHexForNote(note);

@@ -4,6 +4,7 @@
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "file/txt/WhatSonTxtFileCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -42,13 +43,9 @@ namespace
         return truncated.join(QLatin1Char('\n'));
     }
 
-    QString noteDisplayLabel(const LibraryNoteRecord& note)
+    QString noteLabelText(const LibraryNoteRecord& note)
     {
-        QString primary = note.title.trimmed();
-        if (primary.isEmpty())
-        {
-            primary = note.bodyFirstLine.trimmed();
-        }
+        QString primary = note.bodyFirstLine.trimmed();
         if (primary.isEmpty())
         {
             primary = note.noteId.trimmed();
@@ -56,6 +53,16 @@ namespace
         if (primary.isEmpty() && !note.noteDirectoryPath.isEmpty())
         {
             primary = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
+        }
+        return primary;
+    }
+
+    QString noteDisplayLabel(const LibraryNoteRecord& note)
+    {
+        const QString primary = noteLabelText(note);
+        if (primary.isEmpty())
+        {
+            return {};
         }
 
         QStringList attributes;
@@ -75,46 +82,14 @@ namespace
         return QStringLiteral("%1 (%2)").arg(primary, attributes.join(QStringLiteral(", ")));
     }
 
-    QString noteListTitle(const LibraryNoteRecord& note)
-    {
-        QString title = note.title.trimmed();
-        if (!title.isEmpty())
-        {
-            return title;
-        }
-
-        title = note.bodyFirstLine.trimmed();
-        if (!title.isEmpty())
-        {
-            return title;
-        }
-
-        title = note.noteId.trimmed();
-        if (!title.isEmpty())
-        {
-            return title;
-        }
-
-        if (!note.noteDirectoryPath.isEmpty())
-        {
-            const QString fromPath = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
-            if (!fromPath.isEmpty())
-            {
-                return fromPath;
-            }
-        }
-
-        return {};
-    }
-
-    QString noteListSummary(const LibraryNoteRecord& note)
+    QString notePrimaryText(const LibraryNoteRecord& note)
     {
         const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
         if (!bodyPlainText.isEmpty())
         {
             return bodyPlainText;
         }
-        return {};
+        return noteLabelText(note);
     }
 
     QStringList noteListFolders(const LibraryNoteRecord& note)
@@ -698,6 +673,17 @@ bool LibraryHierarchyViewModel::deleteFolderEnabled() const noexcept
     return !(m_items.at(m_selectedIndex).accent && m_items.at(m_selectedIndex).depth == 0);
 }
 
+bool LibraryHierarchyViewModel::createTxtEnabled() const noexcept
+{
+    return !m_hubStore.hubPath().trimmed().isEmpty()
+        && !m_hubStore.libraryPath().trimmed().isEmpty();
+}
+
+QString LibraryHierarchyViewModel::lastCreateTxtError() const
+{
+    return m_lastCreateTxtError;
+}
+
 void LibraryHierarchyViewModel::createFolder()
 {
     WhatSon::Debug::traceSelf(this,
@@ -790,6 +776,82 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     }
 
     setSelectedIndex(std::min(startIndex, static_cast<int>(m_items.size() - 1)));
+}
+
+bool LibraryHierarchyViewModel::createTxtFile()
+{
+    if (!createTxtEnabled())
+    {
+        m_lastCreateTxtError = QStringLiteral("Txt creation requires a loaded hub library path.");
+        emit createTxtStateChanged();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createTxtFile.rejected"),
+                                  m_lastCreateTxtError);
+        return false;
+    }
+
+    WhatSonTxtFileCreator creator(m_hubStore.libraryPath());
+    QString createdFilePath;
+    QString createError;
+    if (!creator.createFile(QString(), QString(), &createdFilePath, &createError))
+    {
+        m_lastCreateTxtError = createError;
+        emit createTxtStateChanged();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createTxtFile.failed"),
+                                  QStringLiteral("reason=%1").arg(createError));
+        return false;
+    }
+
+    QString reloadError;
+    if (!loadFromWshub(m_hubStore.hubPath(), &reloadError))
+    {
+        m_lastCreateTxtError = QStringLiteral("Txt file was created, but library reload failed: %1").arg(reloadError);
+        emit createTxtStateChanged();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createTxtFile.reloadFailed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(createdFilePath, reloadError));
+        return false;
+    }
+
+    if (!m_lastCreateTxtError.isEmpty())
+    {
+        m_lastCreateTxtError.clear();
+        emit createTxtStateChanged();
+    }
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("createTxtFile.success"),
+                              QStringLiteral("path=%1").arg(createdFilePath));
+    return true;
+}
+
+void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
+{
+    const QString nextHubPath = store.hubPath().trimmed();
+    const QString nextLibraryPath = store.libraryPath().trimmed();
+    if (m_hubStore.hubPath() == nextHubPath
+        && m_hubStore.libraryPath() == nextLibraryPath)
+    {
+        return;
+    }
+
+    m_hubStore = std::move(store);
+    emit createTxtStateChanged();
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("setHubStore"),
+                              QStringLiteral("hub=%1 library=%2")
+                              .arg(m_hubStore.hubPath(), m_hubStore.libraryPath()));
+}
+
+WhatSonHubStore LibraryHierarchyViewModel::hubStore() const
+{
+    return m_hubStore;
 }
 
 int LibraryHierarchyViewModel::extractDepth(const QVariantMap& entryMap)
@@ -887,8 +949,7 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
     {
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
-        item.title = noteListTitle(note);
-        item.desc = noteListSummary(note);
+        item.primaryText = notePrimaryText(note);
         item.folders = noteListFolders(note);
         item.bookmarked = note.bookmarked;
         item.bookmarkColor = bookmarkColorHexFromNote(note);

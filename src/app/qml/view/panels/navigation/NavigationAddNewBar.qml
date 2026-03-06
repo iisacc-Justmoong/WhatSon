@@ -4,6 +4,7 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: addNewBar
 
+    readonly property bool createTxtEnabled: sidebarHierarchyViewModel && sidebarHierarchyViewModel.activeHierarchyIndex === 0 && libraryHierarchyViewModel && libraryHierarchyViewModel.createTxtEnabled !== undefined ? libraryHierarchyViewModel.createTxtEnabled : false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationAddNewBar") : null
 
     signal viewHookRequested
@@ -23,5 +24,13 @@ LV.HStack {
         checkable: false
         iconName: "addFile"
         tone: LV.AbstractButton.Borderless
+
+        onClicked: {
+            addNewBar.requestViewHook("create-txt");
+            if (!libraryHierarchyViewModel || libraryHierarchyViewModel.createTxtFile === undefined)
+                return;
+            if (!libraryHierarchyViewModel.createTxtFile() && libraryHierarchyViewModel.lastCreateTxtError !== undefined)
+                console.warn("[whatson][txt] " + String(libraryHierarchyViewModel.lastCreateTxtError));
+        }
     }
 }

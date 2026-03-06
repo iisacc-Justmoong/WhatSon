@@ -4,7 +4,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="wsn-type" content="wsnhead" />
-    <title>This is not requirements so it can be empty.</title>
     <created>YYYY-MM-DD-hh-mm-ss</created>
     <author>${ProfileName}</author>
     <lastModified>YYYY-MM-DD-hh-mm-ss</lastModified>

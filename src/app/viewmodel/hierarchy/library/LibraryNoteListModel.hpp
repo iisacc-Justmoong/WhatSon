@@ -9,8 +9,7 @@
 struct LibraryNoteListItem
 {
     QString id;
-    QString title;
-    QString desc;
+    QString primaryText;
     QStringList folders;
     bool bookmarked = false;
     QString bookmarkColor;
@@ -29,8 +28,7 @@ public:
     enum Role
     {
         IdRole = Qt::UserRole + 1,
-        TitleRole,
-        DescRole,
+        PrimaryTextRole,
         FoldersRole,
         BookmarkedRole,
         BookmarkColorRole
@@ -65,7 +63,6 @@ public
     }
 
     signals  :
-
 
 
     void itemCountChanged(int itemCount);

@@ -94,8 +94,8 @@ bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDa
         {
             qWarning().noquote()
                 << QStringLiteral(
-                    "[wsnindex:today] id=%1 title=%2 created=%3 modified=%4")
-                .arg(record.noteId, record.title, record.createdAt, record.lastModifiedAt);
+                    "[wsnindex:today] id=%1 firstLine=%2 created=%3 modified=%4")
+                .arg(record.noteId, record.bodyFirstLine, record.createdAt, record.lastModifiedAt);
         }
     }
 

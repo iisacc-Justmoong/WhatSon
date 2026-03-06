@@ -191,6 +191,11 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
@@ -249,6 +254,11 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyCreator.cpp
@@ -273,6 +283,26 @@ target_link_libraries(whatson_library_hierarchy_tests
 )
 add_test(NAME whatson_library_hierarchy_tests COMMAND whatson_library_hierarchy_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
+
+add_executable(whatson_txt_file_tests
+        app/test_whatson_txt_file.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt/WhatSonTxtFileStore.cpp
+)
+set_target_properties(whatson_txt_file_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_txt_file_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/txt
+)
+target_link_libraries(whatson_txt_file_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_txt_file_tests COMMAND whatson_txt_file_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_txt_file_tests)
 
 add_executable(whatson_tags_hierarchy_tests
         app/test_tags_hierarchy_view_model.cpp

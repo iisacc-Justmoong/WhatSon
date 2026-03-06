@@ -54,8 +54,8 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
         {
             qWarning().noquote()
                 << QStringLiteral(
-                    "[wsnindex:draft] id=%1 title=%2 folders=[%3]")
-                .arg(record.noteId, record.title, record.folders.join(QStringLiteral(", ")));
+                    "[wsnindex:draft] id=%1 firstLine=%2 folders=[%3]")
+                .arg(record.noteId, record.bodyFirstLine, record.folders.join(QStringLiteral(", ")));
         }
     }
 

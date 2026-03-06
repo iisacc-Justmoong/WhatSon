@@ -9,7 +9,7 @@
 
 namespace
 {
-    constexpr int kMaxNoteListDescLines = 5;
+    constexpr int kMaxNoteListPrimaryTextLines = 5;
 
     struct ValidationIssue final
     {
@@ -46,11 +46,11 @@ namespace
         return kHexColorPattern.match(value).hasMatch();
     }
 
-    QString normalizeDesc(QString value)
+    QString normalizePrimaryText(QString value)
     {
         value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-        value = truncateToMaxLines(value, kMaxNoteListDescLines);
+        value = truncateToMaxLines(value, kMaxNoteListPrimaryTextLines);
         return value.trimmed();
     }
 }
@@ -83,10 +83,8 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
     {
     case IdRole:
         return item.id;
-    case TitleRole:
-        return item.title;
-    case DescRole:
-        return item.desc;
+    case PrimaryTextRole:
+        return item.primaryText;
     case FoldersRole:
         return item.folders;
     case BookmarkedRole:
@@ -102,8 +100,7 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
 {
     return {
         {IdRole, "id"},
-        {TitleRole, "title"},
-        {DescRole, "desc"},
+        {PrimaryTextRole, "primaryText"},
         {FoldersRole, "folders"},
         {BookmarkedRole, "bookmarked"},
         {BookmarkColorRole, "bookmarkColor"}
@@ -157,14 +154,12 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     for (int index = 0; index < items.size(); ++index)
     {
         LibraryNoteListItem item = std::move(items[index]);
-        const QString originalTitle = item.title;
-        const QString originalDesc = item.desc;
+        const QString originalPrimaryText = item.primaryText;
         const QStringList originalFolders = item.folders;
         const QString originalColor = item.bookmarkColor;
 
         item.id = item.id.trimmed();
-        item.title = item.title.trimmed();
-        item.desc = normalizeDesc(std::move(item.desc));
+        item.primaryText = normalizePrimaryText(std::move(item.primaryText));
         item.bookmarkColor = item.bookmarkColor.trimmed();
 
         QStringList folders;
@@ -180,20 +175,14 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         }
         item.folders = std::move(folders);
 
-        if (item.desc.isEmpty())
+        if (item.primaryText.isEmpty())
         {
             WhatSon::Debug::traceSelf(this,
                                       QStringLiteral("library.notelist.model"),
-                                      QStringLiteral("setItems.emptyDescKept"),
-                                      QStringLiteral("index=%1 originalDesc=%2").arg(index).arg(originalDesc));
-        }
-
-        if (item.title.isEmpty())
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.notelist.model"),
-                                      QStringLiteral("setItems.emptyTitleKept"),
-                                      QStringLiteral("index=%1 originalTitle=%2").arg(index).arg(originalTitle));
+                                      QStringLiteral("setItems.emptyPrimaryTextKept"),
+                                      QStringLiteral("index=%1 originalPrimaryText=%2")
+                                      .arg(index)
+                                      .arg(originalPrimaryText));
         }
 
         if (item.folders != originalFolders)

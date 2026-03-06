@@ -111,7 +111,6 @@ void WhatSonNoteHeaderStore::clear()
 {
     WhatSon::Debug::traceSelf(this, QStringLiteral("note.header.store"), QStringLiteral("clear"));
     m_noteId.clear();
-    m_title.clear();
     m_createdAt.clear();
     m_author.clear();
     m_lastModifiedAt.clear();
@@ -148,28 +147,6 @@ void WhatSonNoteHeaderStore::setNoteId(QString noteId)
                               QStringLiteral("note.header.store"),
                               QStringLiteral("setNoteId"),
                               QStringLiteral("value=%1").arg(m_noteId));
-}
-
-QString WhatSonNoteHeaderStore::title() const
-{
-    return m_title;
-}
-
-void WhatSonNoteHeaderStore::setTitle(QString title)
-{
-    QString value = sanitizeText(std::move(title));
-    if (value.isEmpty()
-        || isTemplateToken(value)
-        || value.startsWith(QStringLiteral("Placeholder"), Qt::CaseInsensitive))
-    {
-        value.clear();
-    }
-
-    m_title = value;
-    WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("note.header.store"),
-                              QStringLiteral("setTitle"),
-                              QStringLiteral("value=%1").arg(m_title));
 }
 
 QString WhatSonNoteHeaderStore::createdAt() const

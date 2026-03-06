@@ -231,11 +231,10 @@ namespace
         {
             qWarning().noquote()
                 << QStringLiteral(
-                    "[wsnhead:index] file=%1 id=%2 title=%3 created=%4 author=%5 lastModified=%6 modifiedBy=%7 project=%8 bookmarked=%9 preset=%10 progress=%11 folders=[%12] tags=[%13]")
+                    "[wsnhead:index] file=%1 id=%2 created=%3 author=%4 lastModified=%5 modifiedBy=%6 project=%7 bookmarked=%8 preset=%9 progress=%10 folders=[%11] tags=[%12]")
                 .arg(
                     wsnHeadPath,
                     store.noteId(),
-                    store.title(),
                     store.createdAt(),
                     store.author(),
                     store.lastModifiedAt(),

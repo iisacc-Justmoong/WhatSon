@@ -2,7 +2,6 @@
 #include "note/WhatSonNoteHeaderParser.hpp"
 #include "note/WhatSonNoteHeaderStore.hpp"
 
-#include <QRegularExpression>
 #include <QtTest>
 
 class WhatSonNoteHeaderParserTest final : public QObject
@@ -11,7 +10,6 @@ class WhatSonNoteHeaderParserTest final : public QObject
 
 private
     slots  :
-
 
 
     void parse_readsWsnHeadFieldsWithExpectedTypes();
@@ -55,7 +53,6 @@ void WhatSonNoteHeaderParserTest::parse_readsWsnHeadFieldsWithExpectedTypes()
     QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
 
     QCOMPARE(store.noteId(), QStringLiteral("note-001"));
-    QCOMPARE(store.title(), QStringLiteral("Brand Plan"));
     QCOMPARE(store.createdAt(), QStringLiteral("2026-03-01-11-12-13"));
     QCOMPARE(store.author(), QStringLiteral("Planner"));
     QCOMPARE(store.lastModifiedAt(), QStringLiteral("2026-03-02-01-02-03"));
@@ -136,21 +133,18 @@ void WhatSonNoteHeaderParserTest::parse_resolvesTemplateTokensInSingleFields()
     QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
 
     QVERIFY(store.noteId().startsWith(QStringLiteral("note-")));
-    QCOMPARE(store.title(), QStringLiteral("Untitled Note"));
     QCOMPARE(store.author(), QStringLiteral("ProfileName"));
     QCOMPARE(store.modifiedBy(), QStringLiteral("ProfileName"));
     QCOMPARE(store.project(), QStringLiteral("projectName"));
 
-    const QRegularExpression timestampRegex(QStringLiteral(R"(^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$)"));
-    QVERIFY(timestampRegex.match(store.createdAt()).hasMatch());
-    QVERIFY(timestampRegex.match(store.lastModifiedAt()).hasMatch());
+    QCOMPARE(store.createdAt(), QString());
+    QCOMPARE(store.lastModifiedAt(), QString());
 }
 
 void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
 {
     WhatSonNoteHeaderStore seed;
     seed.setNoteId(QStringLiteral("seed-note"));
-    seed.setTitle(QStringLiteral("Roadmap"));
     seed.setCreatedAt(QStringLiteral("2026-03-01-00-00-00"));
     seed.setAuthor(QStringLiteral("Author"));
     seed.setLastModifiedAt(QStringLiteral("2026-03-01-10-10-10"));
@@ -165,6 +159,7 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
 
     const WhatSonNoteHeaderCreator creator(QStringLiteral("/tmp"));
     const QString encoded = creator.createHeaderText(seed);
+    QVERIFY(!encoded.contains(QStringLiteral("<title>")));
 
     WhatSonNoteHeaderStore decoded;
     WhatSonNoteHeaderParser parser;
@@ -172,7 +167,6 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
     QVERIFY2(parser.parse(encoded, &decoded, &errorMessage), qPrintable(errorMessage));
 
     QCOMPARE(decoded.noteId(), seed.noteId());
-    QCOMPARE(decoded.title(), seed.title());
     QCOMPARE(decoded.folders(), seed.folders());
     QCOMPARE(decoded.bookmarkColors(), seed.bookmarkColors());
     QCOMPARE(decoded.tags(), seed.tags());

@@ -1,8 +1,10 @@
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "file/hub/WhatSonHubStore.hpp"
 
 #include <QDate>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -17,7 +19,6 @@ private
     slots  :
 
 
-
     void defaultState_isEmptyAndCreatable();
     void setDepthItems_parsesDepthAndDpethKeys();
     void setDepthItems_setsChevronOnlyWhenChildExists();
@@ -26,11 +27,13 @@ private
     void deleteSelectedFolder_removesDescendantSubtree();
     void loadFromWshub_buildsAllDraftTodayBuckets();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
-    void loadFromWshub_fallsBackTitleFromBodyFirstLineWhenHeadTitleEmpty();
+    void loadFromWshub_usesBodyFirstLineForPrimaryText();
     void loadFromWshub_usesFoldersFileForSidebarItems();
     void loadFromWshub_filtersNoteListBySelectedFolder_whenFoldersHierarchyLoaded();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
+    void loadFromWshub_indexesTxtFilesInsideLibraryRoot();
+    void createTxtFile_writesIntoHubLibraryPath();
 };
 
 namespace
@@ -48,7 +51,6 @@ namespace
 
     QString makeWsnHeadText(
         const QString& noteId,
-        const QString& title,
         const QString& createdAt,
         const QString& lastModifiedAt,
         const QStringList& folders,
@@ -60,7 +62,6 @@ namespace
         text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
         text += QStringLiteral("<contents id=\"%1\">\n").arg(noteId);
         text += QStringLiteral("  <head>\n");
-        text += QStringLiteral("    <title>%1</title>\n").arg(title);
         text += QStringLiteral("    <created>%1</created>\n").arg(createdAt);
         text += QStringLiteral("    <lastModified>%1</lastModified>\n").arg(lastModifiedAt);
         text += QStringLiteral("    <folders>\n");
@@ -102,7 +103,7 @@ namespace
     bool prepareIndexedLibraryHub(
         QString* outHubPath,
         const QString& libraryDirectoryName = QStringLiteral("Library.wslibrary"),
-        bool emptyHeadTitleForGamma = false)
+        bool useBodyFirstLineForGamma = false)
     {
         if (outHubPath == nullptr)
         {
@@ -137,17 +138,14 @@ namespace
         QJsonArray notesArray;
         notesArray.append(QJsonObject{
             {QStringLiteral("id"), QStringLiteral("note-a")},
-            {QStringLiteral("title"), QStringLiteral("Alpha Note")},
             {QStringLiteral("lastModified"), oldText}
         });
         notesArray.append(QJsonObject{
             {QStringLiteral("id"), QStringLiteral("note-b")},
-            {QStringLiteral("title"), QStringLiteral("Beta Note")},
             {QStringLiteral("lastModified"), todayText}
         });
         notesArray.append(QJsonObject{
             {QStringLiteral("id"), QStringLiteral("note-c")},
-            {QStringLiteral("title"), emptyHeadTitleForGamma ? QString() : QStringLiteral("Gamma Note")},
             {QStringLiteral("lastModified"), oldText}
         });
 
@@ -167,7 +165,6 @@ namespace
             QDir(noteAPath).filePath(QStringLiteral("Alpha.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-a"),
-                QStringLiteral("Alpha Note"),
                 todayText,
                 oldText,
                 {})))
@@ -185,7 +182,6 @@ namespace
             QDir(noteBPath).filePath(QStringLiteral("Beta.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-b"),
-                QStringLiteral("Beta Note"),
                 oldText,
                 todayText,
                 {QStringLiteral("Workspace")},
@@ -205,7 +201,6 @@ namespace
             QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnhead")),
             makeWsnHeadText(
                 QStringLiteral("note-c"),
-                emptyHeadTitleForGamma ? QString() : QStringLiteral("Gamma Note"),
                 oldText,
                 oldText,
                 {})))
@@ -214,7 +209,7 @@ namespace
         }
         if (!writeUtf8File(
             QDir(noteCPath).filePath(QStringLiteral("Gamma.wsnbody")),
-            emptyHeadTitleForGamma
+            useBodyFirstLineForGamma
                 ? makeWsnBodyText(
                     QStringLiteral(
                         "    <Bold>Body Fallback Title</Bold>\n    <paragraph>Gamma body summary.</paragraph>\n"))
@@ -426,9 +421,9 @@ void LibraryHierarchyViewModelTest::loadFromWshub_buildsAllDraftTodayBuckets()
     const QString allThirdLabel = viewModel.itemModel()
                                            ->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole)
                                            .toString();
-    QVERIFY(allFirstLabel.startsWith(QStringLiteral("Alpha Note")));
-    QVERIFY(allSecondLabel.startsWith(QStringLiteral("Beta Note")));
-    QVERIFY(allThirdLabel.startsWith(QStringLiteral("Gamma Note")));
+    QVERIFY(allFirstLabel.startsWith(QStringLiteral("Alpha body summary.")));
+    QVERIFY(allSecondLabel.startsWith(QStringLiteral("Beta body summary.")));
+    QVERIFY(allThirdLabel.startsWith(QStringLiteral("Gamma body summary.")));
 }
 
 void LibraryHierarchyViewModelTest::setDepthItems_emptyInput_preservesIndexedBuckets()
@@ -459,19 +454,9 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole)
-                 .toString(),
-        QStringLiteral("Alpha Note"));
-    QCOMPARE(
-        viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::DescRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::PrimaryTextRole)
                  .toString(),
         QStringLiteral("Alpha body summary."));
-    QCOMPARE(
-        viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::DescRole)
-                 .toString(),
-        QStringLiteral("Beta body summary."));
     QCOMPARE(
         viewModel.noteListModel()
                  ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkedRole)
@@ -493,12 +478,12 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::TitleRole)
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::PrimaryTextRole)
                  .toString(),
-        QStringLiteral("Beta Note"));
+        QStringLiteral("Beta body summary."));
 }
 
-void LibraryHierarchyViewModelTest::loadFromWshub_fallsBackTitleFromBodyFirstLineWhenHeadTitleEmpty()
+void LibraryHierarchyViewModelTest::loadFromWshub_usesBodyFirstLineForPrimaryText()
 {
     QString hubPath;
     QVERIFY(prepareIndexedLibraryHub(&hubPath, QStringLiteral("Library.wslibrary"), true));
@@ -508,16 +493,14 @@ void LibraryHierarchyViewModelTest::loadFromWshub_fallsBackTitleFromBodyFirstLin
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
-    QCOMPARE(
-        viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(2, 0), LibraryNoteListModel::TitleRole)
-                 .toString(),
-        QStringLiteral("Body Fallback Title"));
+    const QString gammaPrimaryText = viewModel.noteListModel()
+                                              ->data(
+                                                  viewModel.noteListModel()->index(2, 0),
+                                                  LibraryNoteListModel::PrimaryTextRole)
+                                              .toString();
+    QVERIFY(gammaPrimaryText.startsWith(QStringLiteral("Body Fallback Title")));
     QVERIFY(
-        viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(2, 0), LibraryNoteListModel::DescRole)
-                 .toString()
-                 .contains(QStringLiteral("Gamma body summary.")));
+        gammaPrimaryText.contains(QStringLiteral("Gamma body summary.")));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems()
@@ -628,7 +611,6 @@ void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolde
         QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
         makeWsnHeadText(
             QStringLiteral("note-a"),
-            QStringLiteral("Alpha Note"),
             QStringLiteral("2024-01-01-00-00-00"),
             QStringLiteral("2024-01-01-00-00-00"),
             {QStringLiteral("Research/Competitor")})));
@@ -636,7 +618,6 @@ void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolde
         QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote/Beta.wsnhead")),
         makeWsnHeadText(
             QStringLiteral("note-b"),
-            QStringLiteral("Beta Note"),
             QStringLiteral("2024-01-01-00-00-00"),
             QStringLiteral("2024-01-01-00-00-00"),
             {QStringLiteral("Brand")})));
@@ -644,7 +625,6 @@ void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolde
         QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote/Gamma.wsnhead")),
         makeWsnHeadText(
             QStringLiteral("note-c"),
-            QStringLiteral("Gamma Note"),
             QStringLiteral("2024-01-01-00-00-00"),
             QStringLiteral("2024-01-01-00-00-00"),
             {})));
@@ -679,23 +659,29 @@ void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolde
     viewModel.setSelectedIndex(researchIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole).
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::PrimaryTextRole).
                   toString(),
-        QStringLiteral("Alpha Note"));
+        QStringLiteral("Alpha body summary."));
 
     viewModel.setSelectedIndex(competitorIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole).
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::PrimaryTextRole).
                   toString(),
-        QStringLiteral("Alpha Note"));
+        QStringLiteral("Alpha body summary."));
 
     viewModel.setSelectedIndex(brandIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TitleRole).
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::PrimaryTextRole).
                   toString(),
-        QStringLiteral("Beta Note"));
+        QStringLiteral("Beta body summary."));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory()
@@ -709,6 +695,71 @@ void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory
 
     QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_indexesTxtFilesInsideLibraryRoot()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("MeetingNotes.txt")),
+        QStringLiteral("Meeting Notes\nAction item one\nAction item two\n")));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 4);
+    const QString meetingPrimaryText = viewModel.noteListModel()->data(
+        viewModel.noteListModel()->index(3, 0),
+        LibraryNoteListModel::PrimaryTextRole).toString();
+    QVERIFY(meetingPrimaryText.startsWith(QStringLiteral("Meeting Notes")));
+    QVERIFY(meetingPrimaryText.contains(QStringLiteral("Action item one")));
+}
+
+void LibraryHierarchyViewModelTest::createTxtFile_writesIntoHubLibraryPath()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath, QStringLiteral("Workspace.wslibrary")));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Workspace.wslibrary"));
+
+    WhatSonHubStore hubStore;
+    hubStore.setHubPath(hubPath);
+    hubStore.setLibraryPath(libraryPath);
+
+    LibraryHierarchyViewModel viewModel;
+    viewModel.setHubStore(hubStore);
+
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(viewModel.createTxtEnabled());
+    QVERIFY(viewModel.createTxtFile());
+
+    const QFileInfoList createdFiles = QDir(libraryPath).entryInfoList(
+        QStringList{QStringLiteral("Txt-*.txt")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(createdFiles.size(), 1);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 4);
 }
 
 QTEST_APPLESS_MAIN(LibraryHierarchyViewModelTest)

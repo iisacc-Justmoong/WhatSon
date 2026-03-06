@@ -14,9 +14,6 @@ public:
     QString noteId() const;
     void setNoteId(QString noteId);
 
-    QString title() const;
-    void setTitle(QString title);
-
     QString createdAt() const;
     void setCreatedAt(QString createdAt);
 
@@ -51,7 +48,6 @@ public:
 
 private:
     QString m_noteId;
-    QString m_title;
     QString m_createdAt;
     QString m_author;
     QString m_lastModifiedAt;

@@ -10,7 +10,6 @@ Item {
     property bool bookmarked: false
     readonly property color captionColor: Qt.rgba(1, 1, 1, 0.5)
     readonly property color cardColor: LV.Theme.panelBackground08
-    property string desc: "Note Contents Thumbnail... is can has 2 lines..."
     readonly property color folderStrokeColor: "#CED0D6"
     property var folders: ["FolderName1", "FolderName2"]
     readonly property string foldersText: {
@@ -26,8 +25,8 @@ Item {
     readonly property bool hovered: noteHoverHandler.hovered
     property string noteId: ""
     property bool pressed: false
-    property string title: "NoteTitle"
-    readonly property color titleColor: LV.Theme.bodyColor
+    property string primaryText: "NotePrimaryText"
+    readonly property color primaryTextColor: LV.Theme.bodyColor
 
     implicitHeight: 86
     implicitWidth: 194
@@ -54,23 +53,23 @@ Item {
             spacing: 8
 
             RowLayout {
-                clip: true
+                spacing: 8
                 width: parent.width
 
                 Text {
                     Layout.fillWidth: true
                     clip: true
-                    color: noteListItem.titleColor
+                    color: noteListItem.primaryTextColor
                     elide: Text.ElideRight
                     font.family: "Pretendard"
                     font.pixelSize: 12
-                    font.weight: 500
+                    font.weight: 400
                     lineHeight: 12
                     lineHeightMode: Text.FixedHeight
-                    maximumLineCount: 1
-                    text: noteListItem.title
-                    verticalAlignment: Text.AlignVCenter
-                    wrapMode: Text.NoWrap
+                    maximumLineCount: 3
+                    text: noteListItem.primaryText
+                    verticalAlignment: Text.AlignTop
+                    wrapMode: Text.WordWrap
                 }
                 Item {
                     Layout.preferredHeight: 16
@@ -96,20 +95,6 @@ Item {
                         }
                     }
                 }
-            }
-            Text {
-                clip: true
-                color: noteListItem.captionColor
-                elide: Text.ElideRight
-                font.family: "Pretendard"
-                font.pixelSize: 11
-                font.weight: 400
-                lineHeight: 11
-                lineHeightMode: Text.FixedHeight
-                maximumLineCount: 2
-                text: noteListItem.desc
-                width: parent.width
-                wrapMode: Text.WordWrap
             }
             RowLayout {
                 width: parent.width

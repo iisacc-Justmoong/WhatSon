@@ -232,15 +232,17 @@ Library-specific modeling:
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
-- Title fallback order is now deterministic: `head.title -> bodyFirstLine -> noteId -> note directory stem` (no
-  `Untitled` placeholder fallback).
+- `WhatSonTxtFile{Store,Parser,Creator}` owns standalone `.txt` file creation and parsing inside `*.wslibrary`.
+- `LibraryHierarchyViewModel` receives the active `WhatSonHubStore` and resolves txt writes strictly through
+  `hub.libraryPath()`, so custom `.wshub` locations remain writable without hard-coded blueprint paths.
+- Note primary text is derived from the top slice of `bodyPlainText`; when body text is empty it falls back to
+  `noteId -> note directory stem`.
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
     - `id` (string)
-    - `title` (string)
-    - `desc` (string, plain text body)
-    - `folders` (`QStringList`)
-    - `bookmarked` (bool)
-    - `bookmarkColor` (hex string, bookmark icon tint)
+    - `primaryText` (string)
+        - `folders` (`QStringList`)
+        - `bookmarked` (bool)
+        - `bookmarkColor` (hex string, bookmark icon tint)
 
 ## 4.4 QML View Layer (`src/app/qml/**`)
 
@@ -277,7 +279,7 @@ Desktop composition:
           `DetailPanelHeaderToolbarButton`.
     - Toolbar icon order follows Figma node `134:4152`: `generalprojectStructure`, `chartBar`, `dataFile`,
       `generalhistory`, `cwmPermissionView`, `featureAnswer`.
-      - `DetailContents` binds to C++-computed `activeStateName`.
+        - `DetailContents` binds to C++-computed `activeStateName`.
 
 Mobile composition:
 
@@ -334,7 +336,7 @@ Detected package conventions:
     - or dynamic `<HubName>.wscontents`
 - Core hub domains:
     - `Library.wslibrary`
-        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsndiff`, `*.wsnpaint`)
+        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsndiff`, `*.wsnpaint`, `*.txt`)
         - Global note index (`index.wsnindex`)
     - `<HubName>.wsresources`
         - Binary/resource storage domain for note attachments (image/video/audio/other payloads)

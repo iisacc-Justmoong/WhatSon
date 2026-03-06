@@ -418,6 +418,7 @@ int main(int argc, char* argv[])
 
         if (hubRuntimeLoadSucceeded)
         {
+            libraryHierarchyViewModel.setHubStore(hubRuntimeStore.hub(blueprintHubPath));
             tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
             WhatSon::Debug::trace(
                 QStringLiteral("main.runtime"),

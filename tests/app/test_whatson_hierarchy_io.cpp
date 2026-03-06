@@ -273,12 +273,10 @@ void WhatSonHierarchyIoTest::libraryParser_parsesObjectStyleNotes()
         {
             QStringLiteral("notes"), QJsonArray{
                 QJsonObject{
-                    {QStringLiteral("id"), QStringLiteral("note-a")},
-                    {QStringLiteral("title"), QStringLiteral("Alpha")}
+                    {QStringLiteral("id"), QStringLiteral("note-a")}
                 },
                 QJsonObject{
-                    {QStringLiteral("noteId"), QStringLiteral("note-b")},
-                    {QStringLiteral("title"), QStringLiteral("Beta")}
+                    {QStringLiteral("noteId"), QStringLiteral("note-b")}
                 }
             }
         }
@@ -300,9 +298,7 @@ void WhatSonHierarchyIoTest::libraryParser_parsesObjectStyleNotes()
         {
             QStringLiteral("notes"), QJsonObject{
                 {
-                    QStringLiteral("note-c"), QJsonObject{
-                        {QStringLiteral("title"), QStringLiteral("Gamma")}
-                    }
+                    QStringLiteral("note-c"), QJsonObject{}
                 },
                 {QStringLiteral("note-d"), QStringLiteral("Delta")}
             }
