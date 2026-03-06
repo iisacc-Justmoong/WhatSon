@@ -24,7 +24,7 @@ Item {
     readonly property int hierarchyIndentStep: 8
     readonly property int hierarchyItemBaseLeftPadding: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property var hierarchyViewModel: null
-    readonly property int horizontalInset: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
+    readonly property int horizontalInset: 2
     property color panelColor: LV.Theme.panelBackground04
     readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
@@ -51,7 +51,7 @@ Item {
             return 20;
         return count * 20 + (count - 1) * ((typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2);
     }
-    readonly property int verticalInset: (typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2
+    readonly property int verticalInset: 2
     readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? hierarchyViewModel.viewOptionsEnabled : true
     property var viewOptionsMenuItems: []
 
@@ -161,25 +161,28 @@ Item {
 
         LV.VStack {
             anchors.fill: parent
-            spacing: LV.Theme.gap2
+            spacing: 2
 
-            LV.HierarchyToolbar {
-                id: hierarchyHeaderToolbar
-
-                Layout.alignment: Qt.AlignLeft
-                Layout.maximumWidth: Math.max(sidebarHierarchyView.toolbarMinWidth, sidebarHierarchyView.contentWidth)
+            Item {
+                Layout.fillWidth: true
                 Layout.minimumWidth: sidebarHierarchyView.toolbarMinWidth
                 Layout.preferredHeight: 20
-                Layout.preferredWidth: Math.max(sidebarHierarchyView.toolbarMinWidth, sidebarHierarchyView.contentWidth)
-                activeButtonId: sidebarHierarchyView.activeToolbarIndex
-                buttonItems: sidebarHierarchyView.toolbarItems
-                spacing: LV.Theme.gap2
 
-                onActiveChanged: function (button, buttonId, index) {
-                    if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
-                        return;
-                    sidebarHierarchyView.commitRename();
-                    sidebarHierarchyView.toolbarIndexChangeRequested(index);
+                LV.HierarchyToolbar {
+                    id: hierarchyHeaderToolbar
+
+                    activeButtonId: sidebarHierarchyView.activeToolbarIndex
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    buttonItems: sidebarHierarchyView.toolbarItems
+                    height: 20
+
+                    onActiveChanged: function (button, buttonId, index) {
+                        if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
+                            return;
+                        sidebarHierarchyView.commitRename();
+                        sidebarHierarchyView.toolbarIndexChangeRequested(index);
+                    }
                 }
             }
             LV.InputField {
