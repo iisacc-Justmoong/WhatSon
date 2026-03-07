@@ -190,14 +190,20 @@ for hub/note hierarchy payloads.
 - Editor view mode state is centralized in `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`:
   `main.cpp` injects `editorViewModeViewModel`, and the navigation bar editor-view combo binds to the dedicated
   enum-backed `Plain/Page/Print/Web` state plus its per-view QObject viewmodels.
+- The sidebar initial width now follows the effective rendered width of the hierarchy toolbar.
 - Figma navigation frames are split into dedicated QML files under `src/app/qml/view/panels/navigation/`:
   `NavigationPropertiesBar.qml`, `NavigationInformationBar.qml`, `NavigationModeBar.qml`,
   and `NavigationEditorViewBar.qml`.
 - The right-side application area is also split by navigation mode into dedicated QML files:
   `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
   `NavigationApplicationControlBar.qml`, and `NavigationApplicationPresentationBar.qml`.
+- `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`, and
+  `NavigationApplicationPresentationBar.qml` mount the same baseline `NavigationPreferenceBar.qml` used by the
+  control mode until mode-specific tools are added.
 - `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
   text editor currently owns focus.
+- `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` use `LV.ComboBox` as the trigger surface and open
+  `LV.ContextMenu` enumerations on click instead of cycling state directly.
 - All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair
   (`viewHookRequested`, `requestViewHook()`).
 - Main runtime wires hierarchy selection changes and note-list model resets into `backendBridge.publish(...)`

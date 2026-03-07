@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Layouts
+import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
 
 LV.HStack {
@@ -7,6 +7,25 @@ LV.HStack {
 
     readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "Control"
     readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
+    readonly property int comboLabelRightInset: 20
+    readonly property var modeMenuItems: [
+        {
+            label: "View",
+            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 0
+        },
+        {
+            label: "Edit",
+            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 1
+        },
+        {
+            label: "Control",
+            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 2
+        },
+        {
+            label: "Presentation",
+            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 3
+        }
+    ]
     property var navigationModeViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationModeBar") : null
 
@@ -17,6 +36,14 @@ LV.HStack {
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
+    }
+    function toggleModeMenu() {
+        if (modeContextMenu.opened) {
+            modeContextMenu.close();
+            return;
+        }
+        modeContextMenu.openFor(modeComboFrame, 0, modeComboFrame.height + 2);
+        modeBar.requestViewHook("open-navigation-mode-menu");
     }
 
     spacing: 8
@@ -31,48 +58,65 @@ LV.HStack {
         text: "Mode"
     }
     Item {
+        id: modeComboFrame
+
         height: 20
         implicitHeight: 20
         implicitWidth: 97
         width: 97
 
-        Rectangle {
+        LV.ComboBox {
+            id: modeCombo
+
             anchors.fill: parent
-            color: LV.Theme.panelBackground10
-            radius: 5
+            arrow: modeContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
+            tone: LV.ComboBox.Primary
+
+            onClicked: modeBar.toggleModeMenu()
         }
-        RowLayout {
+        Rectangle {
+            anchors.bottom: parent.bottom
             anchors.bottomMargin: 1
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 1
+            anchors.left: parent.left
+            anchors.leftMargin: 1
+            anchors.right: parent.right
+            anchors.rightMargin: modeBar.comboLabelRightInset
+            anchors.top: parent.top
             anchors.topMargin: 1
-            spacing: 0
+            color: modeCombo.resolvedBackgroundColor
+            radius: LV.Theme.radiusBase
+        }
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 8
+            anchors.right: parent.right
+            anchors.rightMargin: modeBar.comboLabelRightInset
+            anchors.verticalCenter: parent.verticalCenter
+            color: LV.Theme.accentWhite
+            elide: Text.ElideRight
+            font.family: "Pretendard"
+            font.pixelSize: 12
+            font.weight: 500
+            lineHeight: 12
+            lineHeightMode: Text.FixedHeight
+            text: modeBar.activeModeText
+        }
+    }
+    LV.ContextMenu {
+        id: modeContextMenu
 
-            Text {
-                Layout.alignment: Qt.AlignVCenter
-                color: LV.Theme.accentWhite
-                font.family: "Pretendard"
-                font.pixelSize: 12
-                font.weight: 500
-                lineHeight: 12
-                lineHeightMode: Text.FixedHeight
-                text: modeBar.activeModeText
-            }
-            Item {
-                Layout.fillWidth: true
-            }
-            LV.Stepper {
-                Layout.alignment: Qt.AlignVCenter
-                arrow: LV.Stepper.UpDown
-                tone: LV.AbstractButton.Primary
+        autoCloseOnTrigger: true
+        closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
+        itemWidth: 132
+        items: modeBar.modeMenuItems
+        modal: false
+        parent: Controls.Overlay.overlay
+        selectedIndex: navigationModeViewModel && navigationModeViewModel.activeMode !== undefined ? navigationModeViewModel.activeMode : 2
 
-                onClicked: {
-                    if (modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.requestNextMode !== undefined)
-                        modeBar.navigationModeViewModel.requestNextMode();
-                    modeBar.requestViewHook("next-navigation-mode");
-                }
-            }
+        onItemTriggered: function (index) {
+            if (modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.requestModeChange !== undefined)
+                modeBar.navigationModeViewModel.requestModeChange(index);
+            modeBar.requestViewHook("select-navigation-mode");
         }
     }
 }

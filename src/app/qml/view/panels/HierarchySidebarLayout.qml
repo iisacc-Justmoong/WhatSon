@@ -6,6 +6,7 @@ Item {
 
     property int activeToolbarIndex: 0
     readonly property int currentHierarchy: normalizeHierarchyIndex(sidebarHierarchyViewModel && sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? sidebarHierarchyViewModel.activeHierarchyIndex : activeToolbarIndex)
+    property int horizontalInset: 2
     property color panelColor: LV.Theme.panelBackground04
     property var sidebarHierarchyViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
@@ -91,6 +92,7 @@ Item {
         frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
         frameNodeId: hierarchyView.frameNodeIdForHierarchy(hierarchyView.currentHierarchy)
         hierarchyViewModel: hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel !== undefined ? hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel : hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)
+        horizontalInset: hierarchyView.horizontalInset
         panelColor: hierarchyView.panelColor
         toolbarIconNames: hierarchyView.toolbarIconNames
 

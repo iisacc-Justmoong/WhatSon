@@ -16,7 +16,7 @@ LV.ApplicationWindow {
     readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: 194
-    readonly property int baseSidebarWidth: minSidebarWidth
+    readonly property int baseSidebarWidth: hierarchyToolbarWidth
     readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: LV.Theme.panelBackground10
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
@@ -31,12 +31,13 @@ LV.ApplicationWindow {
     readonly property var eventHierarchyVm: eventHierarchyViewModel
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
-    readonly property int hierarchyHorizontalInset: LV.Theme.gap8
+    readonly property int hierarchyHorizontalInset: 2
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
     readonly property var hierarchyToolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property int hierarchyToolbarSpacing: LV.Theme.gap2
-    readonly property int hierarchyToolbarWidth: hierarchyToolbarCount > 0 ? hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing : hierarchyToolbarButtonSize
+    readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing : hierarchyToolbarButtonSize
+    readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
     // Fail-fast binding contract: these context properties must exist from main.cpp.
     readonly property var libraryHierarchyVm: libraryHierarchyViewModel
     readonly property color listViewColor: LV.Theme.panelBackground08
@@ -48,7 +49,7 @@ LV.ApplicationWindow {
     readonly property int minRightPanelWidth: 145
     readonly property int minSidebarWidth: {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
-        return Math.max(LV.Theme.gap20 * 7 + LV.Theme.gap12, toolbarWidth + hierarchyHorizontalInset * 2);
+        return toolbarWidth;
     }
     readonly property color navigationBarColor: LV.Theme.panelBackground06
     readonly property int navigationBarHeight: LV.Theme.gap24
@@ -61,7 +62,7 @@ LV.ApplicationWindow {
     property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
-    property int preferredSidebarWidth: minSidebarWidth
+    property int preferredSidebarWidth: baseSidebarWidth
     readonly property var presetHierarchyVm: presetHierarchyViewModel
     readonly property var progressHierarchyVm: progressHierarchyViewModel
     readonly property var projectsHierarchyVm: projectsHierarchyViewModel
@@ -263,6 +264,7 @@ LV.ApplicationWindow {
                     rightPanelColor: applicationWindow.rightPanelColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.sidebarColor
+                    sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness

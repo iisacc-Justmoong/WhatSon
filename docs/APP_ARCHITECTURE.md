@@ -227,10 +227,15 @@ Domain-isolated support:
     - `NavigationBarLayout.qml` switches the right-side application bar through the active navigation mode and loads
       one of `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
       `NavigationApplicationControlBar.qml`, or `NavigationApplicationPresentationBar.qml`.
-    - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a text
-      input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
-    - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design case
-      through those active state objects.
+    - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`, matching
+      the default preference controls shown in the control-mode layout.
+    - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.
+        - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a
+          text
+          input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
+        - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design case
+          through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
+          `LV.ContextMenu`, not direct next-state cycling.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.

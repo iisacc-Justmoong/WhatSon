@@ -89,6 +89,7 @@ Item {
                 Layout.minimumWidth: hStack.effectiveMinSidebarWidth
                 Layout.preferredWidth: hStack.sidebarWidth
                 activeToolbarIndex: hStack.sidebarHierarchyViewModel && hStack.sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? hStack.sidebarHierarchyViewModel.activeHierarchyIndex : 0
+                horizontalInset: hStack.sidebarHorizontalInset
                 panelColor: hStack.sidebarColor
                 sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
                 toolbarIconNames: hStack.toolbarIconNames

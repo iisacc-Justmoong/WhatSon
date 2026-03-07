@@ -30,13 +30,34 @@ private
 
 
 
+    void mainQml_mustBindSidebarInitWidthToHierarchyToolbarWidth();
     void navigationPanels_mustExposeFrameScopedPanelKeys();
     void mainQml_mustBindTabShortcutForNavigationModeCycling();
     void navigationBar_mustComposePropertiesFrame();
     void navigationBar_mustSwitchApplicationBarsByNavigationMode();
     void navigationPropertiesFrame_mustComposeSeparatedChildFrames();
     void navigationChildFrames_mustBindPanelViewModelContracts();
+    void navigationSelectionBars_mustUseContextMenuCombos();
+    void hierarchySidebar_mustReceiveSharedHorizontalInset();
 };
+
+void NavigationQmlFramesTest::mainQml_mustBindSidebarInitWidthToHierarchyToolbarWidth()
+{
+    const QString mainQml = readQml(QStringLiteral("Main.qml"));
+    const QString bodyLayout = readQml(QStringLiteral("view/panels/BodyLayout.qml"));
+    const QString hierarchySidebarLayout = readQml(QStringLiteral("view/panels/HierarchySidebarLayout.qml"));
+    const QString sidebarHierarchyView = readQml(QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!mainQml.isEmpty());
+    QVERIFY(mainQml.contains(QStringLiteral("readonly property int baseSidebarWidth: hierarchyToolbarWidth")));
+    QVERIFY(mainQml.contains(QStringLiteral("property int preferredSidebarWidth: baseSidebarWidth")));
+    QVERIFY(mainQml.contains(QStringLiteral("sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property int sidebarHorizontalInset: 2")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("horizontalInset: hStack.sidebarHorizontalInset")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("property int horizontalInset: 2")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("horizontalInset: hierarchyView.horizontalInset")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("property int horizontalInset: 2")));
+}
 
 void NavigationQmlFramesTest::navigationPanels_mustExposeFrameScopedPanelKeys()
 {
@@ -73,19 +94,37 @@ void NavigationQmlFramesTest::navigationBar_mustComposePropertiesFrame()
     const QString navigationBarLayout = readQml(QStringLiteral("view/panels/NavigationBarLayout.qml"));
 
     QVERIFY(!navigationBarLayout.isEmpty());
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("property var editorViewModeViewModel: null")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("property var navigationModeViewModel: null")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationPropertiesBar {")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "editorViewModeViewModel: navigationBar.editorViewModeViewModel")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationModeViewModel: navigationBar.navigationModeViewModel")));
 }
 
 void NavigationQmlFramesTest::navigationBar_mustSwitchApplicationBarsByNavigationMode()
 {
     const QString navigationBarLayout = readQml(QStringLiteral("view/panels/NavigationBarLayout.qml"));
+    const QString applicationViewBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationViewBar.qml"));
+    const QString applicationEditBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationEditBar.qml"));
+    const QString applicationPresentationBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationPresentationBar.qml"));
 
     QVERIFY(!navigationBarLayout.isEmpty());
+    QVERIFY(!applicationViewBar.isEmpty());
+    QVERIFY(!applicationEditBar.isEmpty());
+    QVERIFY(!applicationPresentationBar.isEmpty());
     QVERIFY(navigationBarLayout.contains(QStringLiteral("readonly property string activeNavigationModeName")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationViewBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationEditBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationControlBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationPresentationBar {")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationPreferenceBar {")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationPreferenceBar {")));
+    QVERIFY(applicationPresentationBar.contains(QStringLiteral("NavigationPreferenceBar {")));
 }
 
 void NavigationQmlFramesTest::navigationPropertiesFrame_mustComposeSeparatedChildFrames()
@@ -129,6 +168,37 @@ void NavigationQmlFramesTest::navigationChildFrames_mustBindPanelViewModelContra
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationControlBar\")")));
     QVERIFY(applicationPresentationBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationPresentationBar\")")));
+}
+
+void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
+{
+    const QString modeBar = readQml(QStringLiteral("view/panels/navigation/NavigationModeBar.qml"));
+    const QString editorViewBar = readQml(QStringLiteral("view/panels/navigation/NavigationEditorViewBar.qml"));
+
+    QVERIFY(!modeBar.isEmpty());
+    QVERIFY(!editorViewBar.isEmpty());
+
+    QVERIFY(modeBar.contains(QStringLiteral("LV.ComboBox {")));
+    QVERIFY(modeBar.contains(QStringLiteral("LV.ContextMenu {")));
+    QVERIFY(modeBar.contains(QStringLiteral("requestModeChange(index)")));
+    QVERIFY(!modeBar.contains(QStringLiteral("requestNextMode();")));
+
+    QVERIFY(editorViewBar.contains(QStringLiteral("LV.ComboBox {")));
+    QVERIFY(editorViewBar.contains(QStringLiteral("LV.ContextMenu {")));
+    QVERIFY(editorViewBar.contains(QStringLiteral("requestViewModeChange(index)")));
+    QVERIFY(!editorViewBar.contains(QStringLiteral("requestNextViewMode();")));
+}
+
+void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset()
+{
+    const QString hierarchySidebarLayout = readQml(QStringLiteral("view/panels/HierarchySidebarLayout.qml"));
+    const QString sidebarHierarchyView = readQml(QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));
+
+    QVERIFY(!hierarchySidebarLayout.isEmpty());
+    QVERIFY(!sidebarHierarchyView.isEmpty());
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("horizontalInset: hierarchyView.horizontalInset")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.leftMargin: sidebarHierarchyView.horizontalInset")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.rightMargin: sidebarHierarchyView.horizontalInset")));
 }
 
 QTEST_APPLESS_MAIN(NavigationQmlFramesTest)

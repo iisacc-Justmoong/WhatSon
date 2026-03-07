@@ -1,6 +1,8 @@
 import QtQuick
+import QtQuick.Layouts
+import LVRS 1.0 as LV
 
-Item {
+LV.HStack {
     id: applicationPresentationBar
 
     property bool compactMode: false
@@ -15,6 +17,9 @@ Item {
         viewHookRequested();
     }
 
-    implicitHeight: 20
-    implicitWidth: 0
+    spacing: LV.Theme.gap12
+
+    NavigationPreferenceBar {
+        Layout.alignment: Qt.AlignVCenter
+    }
 }

@@ -6,11 +6,13 @@ import "navigation" as NavigationView
 Rectangle {
     id: navigationBar
 
+    readonly property string activeNavigationModeName: navigationModeViewModel && navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : "Control"
     readonly property int bottomInset: 2
     readonly property int compactHorizontalInset: Math.max(12, Math.min(24, Math.round(width * 0.04)))
     property bool compactMode: false
     property color compactSurfaceColor: LV.Theme.panelBackground06
     readonly property int compactTopInset: compactHorizontalInset
+    property var editorViewModeViewModel: null
     readonly property int effectivePanelHeight: compactMode ? (compactTopInset + panelHeight) : panelHeight
     property var navigationModeViewModel: null
     property color panelColor: LV.Theme.panelBackground06
