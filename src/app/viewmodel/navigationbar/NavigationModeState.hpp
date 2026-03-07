@@ -8,8 +8,7 @@ namespace WhatSon::NavigationBar
     {
         View = 0,
         Edit,
-        Control,
-        Presentation
+        Control
     };
 
     bool isValidModeValue(int value) noexcept;

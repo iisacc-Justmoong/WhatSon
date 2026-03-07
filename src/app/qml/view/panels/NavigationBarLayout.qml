@@ -84,8 +84,6 @@ Rectangle {
                             return applicationViewBarComponent;
                         case "Edit":
                             return applicationEditBarComponent;
-                        case "Presentation":
-                            return applicationPresentationBarComponent;
                         case "Control":
                         default:
                             return applicationControlBarComponent;
@@ -113,13 +111,6 @@ Rectangle {
         id: applicationControlBarComponent
 
         NavigationView.NavigationApplicationControlBar {
-            compactMode: navigationBar.compactMode
-        }
-    }
-    Component {
-        id: applicationPresentationBarComponent
-
-        NavigationView.NavigationApplicationPresentationBar {
             compactMode: navigationBar.compactMode
         }
     }

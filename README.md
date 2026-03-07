@@ -334,6 +334,10 @@ Default artifacts are generated at:
 - iOS Xcode project: `build/ios-xcode-artifact/WhatSon.xcodeproj`
 - Android Studio project: `build/android-studio-artifact`
 
+The generated iOS configure path disables optional `Qt6GrpcQuick` / `Qt6ProtobufQuick`
+package discovery because WhatSon does not use those modules and cross-compiling may
+otherwise emit host `protoc` warnings.
+
 You can override artifact locations:
 
 ```bash

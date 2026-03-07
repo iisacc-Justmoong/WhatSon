@@ -217,7 +217,7 @@ Domain-isolated support:
     - `PanelViewModelRegistry` owns dedicated `PanelViewModel` instances for every QML panel under
       `src/app/qml/view/panels/**` and exposes lookup to QML through `panelViewModelRegistry`.
 - Navigation bar mode support is centralized in `src/app/viewmodel/navigationbar/`:
-    - `NavigationModeViewModel` owns the enum-backed `View/Edit/Control/Presentation` state exposed to QML.
+    - `NavigationModeViewModel` owns the enum-backed `View/Edit/Control` state exposed to QML.
     - `NavigationModeSectionViewModel` provides one dedicated QObject case per mode plus the active case object.
     - `EditorViewModeViewModel` owns the enum-backed `Plain/Page/Print/Web` editor view state exposed to QML.
     - `EditorViewSectionViewModel` provides one dedicated QObject case per editor view plus the active case object.
@@ -226,7 +226,7 @@ Domain-isolated support:
       `NavigationInformationBar.qml`, `NavigationModeBar.qml`, and `NavigationEditorViewBar.qml`.
     - `NavigationBarLayout.qml` switches the right-side application bar through the active navigation mode and loads
       one of `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
-      `NavigationApplicationControlBar.qml`, or `NavigationApplicationPresentationBar.qml`.
+      or `NavigationApplicationControlBar.qml`.
     - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`, matching
       the default preference controls shown in the control-mode layout.
     - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.

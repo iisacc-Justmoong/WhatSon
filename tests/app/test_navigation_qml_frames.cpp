@@ -70,7 +70,6 @@ void NavigationQmlFramesTest::navigationPanels_mustExposeFrameScopedPanelKeys()
     QVERIFY(registry.containsPanel(QStringLiteral("navigation.NavigationApplicationViewBar")));
     QVERIFY(registry.containsPanel(QStringLiteral("navigation.NavigationApplicationEditBar")));
     QVERIFY(registry.containsPanel(QStringLiteral("navigation.NavigationApplicationControlBar")));
-    QVERIFY(registry.containsPanel(QStringLiteral("navigation.NavigationApplicationPresentationBar")));
 }
 
 void NavigationQmlFramesTest::mainQml_mustBindTabShortcutForNavigationModeCycling()
@@ -110,21 +109,16 @@ void NavigationQmlFramesTest::navigationBar_mustSwitchApplicationBarsByNavigatio
         QStringLiteral("view/panels/navigation/NavigationApplicationViewBar.qml"));
     const QString applicationEditBar = readQml(
         QStringLiteral("view/panels/navigation/NavigationApplicationEditBar.qml"));
-    const QString applicationPresentationBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationPresentationBar.qml"));
 
     QVERIFY(!navigationBarLayout.isEmpty());
     QVERIFY(!applicationViewBar.isEmpty());
     QVERIFY(!applicationEditBar.isEmpty());
-    QVERIFY(!applicationPresentationBar.isEmpty());
     QVERIFY(navigationBarLayout.contains(QStringLiteral("readonly property string activeNavigationModeName")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationViewBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationEditBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationControlBar {")));
-    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationPresentationBar {")));
     QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationPreferenceBar {")));
     QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationPreferenceBar {")));
-    QVERIFY(applicationPresentationBar.contains(QStringLiteral("NavigationPreferenceBar {")));
 }
 
 void NavigationQmlFramesTest::navigationPropertiesFrame_mustComposeSeparatedChildFrames()
@@ -149,8 +143,6 @@ void NavigationQmlFramesTest::navigationChildFrames_mustBindPanelViewModelContra
         QStringLiteral("view/panels/navigation/NavigationApplicationEditBar.qml"));
     const QString applicationControlBar = readQml(
         QStringLiteral("view/panels/navigation/NavigationApplicationControlBar.qml"));
-    const QString applicationPresentationBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationPresentationBar.qml"));
 
     QVERIFY(propertiesBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationPropertiesBar\")")));
@@ -166,8 +158,6 @@ void NavigationQmlFramesTest::navigationChildFrames_mustBindPanelViewModelContra
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationEditBar\")")));
     QVERIFY(applicationControlBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationControlBar\")")));
-    QVERIFY(applicationPresentationBar.contains(QStringLiteral(
-        "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationPresentationBar\")")));
 }
 
 void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()

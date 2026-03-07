@@ -143,7 +143,6 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/panels/navigation/NavigationApplicationViewBar.qml`
     - `src/app/qml/view/panels/navigation/NavigationApplicationEditBar.qml`
     - `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`
-    - `src/app/qml/view/panels/navigation/NavigationApplicationPresentationBar.qml`
         - `src/app/qml/view/panels/detail/RightPanel.qml` (Figma frame `RightPanel`, node `134:3212`)
         - `src/app/qml/view/panels/detail/DetailPanel.qml` (Figma frame `DetailPanel`, node `134:3641`)
         - `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml` (Figma frame `DetailPanelHeaderToolbar`, node

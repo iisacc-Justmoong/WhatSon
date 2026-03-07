@@ -181,7 +181,7 @@ Item {
                                             fillMode: Image.PreserveAspectFit
                                             height: 14
                                             smooth: true
-                                            noteListItem.folderIconSource
+                                            source: noteListItem.folderIconSource
                                             sourceSize.height: 14
                                             sourceSize.width: 14
                                             width: 14
@@ -236,7 +236,7 @@ Item {
                                             fillMode: Image.PreserveAspectFit
                                             height: 16
                                             smooth: true
-                                            noteListItem.tagIconSource
+                                            source: noteListItem.tagIconSource
                                             sourceSize.height: 16
                                             sourceSize.width: 16
                                             width: 16

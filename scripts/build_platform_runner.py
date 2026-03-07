@@ -1783,6 +1783,8 @@ class BuildAll:
                 *self._ios_backtrace_cmake_args("iphoneos"),
                 "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE=Automatic",
                 f"-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER={self.ios_bundle_id}",
+                "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE",
+                "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE",
             ]
             if self.ios_development_team:
                 ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={self.ios_development_team}")

@@ -30,7 +30,6 @@ void NavigationModeViewModelTest::defaults_mustExposeControlCase()
     QCOMPARE(viewModel.controlModeViewModel()->property("modeName").toString(), QStringLiteral("Control"));
     QCOMPARE(viewModel.viewModeViewModel()->property("active").toBool(), false);
     QCOMPARE(viewModel.editModeViewModel()->property("active").toBool(), false);
-    QCOMPARE(viewModel.presentationModeViewModel()->property("active").toBool(), false);
 }
 
 void NavigationModeViewModelTest::modeViewModels_mustMapEachEnumState()
@@ -40,17 +39,14 @@ void NavigationModeViewModelTest::modeViewModels_mustMapEachEnumState()
     QObject* viewModeVm = viewModel.viewModeViewModel();
     QObject* editModeVm = viewModel.editModeViewModel();
     QObject* controlModeVm = viewModel.controlModeViewModel();
-    QObject* presentationModeVm = viewModel.presentationModeViewModel();
 
     QVERIFY(viewModeVm != nullptr);
     QVERIFY(editModeVm != nullptr);
     QVERIFY(controlModeVm != nullptr);
-    QVERIFY(presentationModeVm != nullptr);
 
     QCOMPARE(viewModeVm->property("modeName").toString(), QStringLiteral("View"));
     QCOMPARE(editModeVm->property("modeName").toString(), QStringLiteral("Edit"));
     QCOMPARE(controlModeVm->property("modeName").toString(), QStringLiteral("Control"));
-    QCOMPARE(presentationModeVm->property("modeName").toString(), QStringLiteral("Presentation"));
 
     QCOMPARE(
         viewModel.modeViewModelForState(static_cast<int>(NavigationModeViewModel::NavigationMode::View)),
@@ -61,9 +57,7 @@ void NavigationModeViewModelTest::modeViewModels_mustMapEachEnumState()
     QCOMPARE(
         viewModel.modeViewModelForState(static_cast<int>(NavigationModeViewModel::NavigationMode::Control)),
         controlModeVm);
-    QCOMPARE(
-        viewModel.modeViewModelForState(static_cast<int>(NavigationModeViewModel::NavigationMode::Presentation)),
-        presentationModeVm);
+    QCOMPARE(viewModel.modeViewModelForState(3), nullptr);
     QCOMPARE(viewModel.modeViewModelForState(-1), nullptr);
 }
 
@@ -87,7 +81,7 @@ void NavigationModeViewModelTest::requestNextMode_mustWrapAcrossEnum()
 {
     NavigationModeViewModel viewModel;
 
-    viewModel.setActiveMode(static_cast<int>(NavigationModeViewModel::NavigationMode::Presentation));
+    viewModel.setActiveMode(static_cast<int>(NavigationModeViewModel::NavigationMode::Control));
     viewModel.requestNextMode();
 
     QCOMPARE(viewModel.activeMode(), static_cast<int>(NavigationModeViewModel::NavigationMode::View));
@@ -102,6 +96,12 @@ void NavigationModeViewModelTest::requestModeChange_invalidValue_mustBeIgnored()
     QSignalSpy activeModeSpy(&viewModel, &NavigationModeViewModel::activeModeChanged);
 
     viewModel.requestModeChange(999);
+
+    QCOMPARE(activeModeSpy.count(), 0);
+    QCOMPARE(viewModel.activeMode(), static_cast<int>(NavigationModeViewModel::NavigationMode::Control));
+    QCOMPARE(viewModel.activeModeName(), QStringLiteral("Control"));
+
+    viewModel.requestModeChange(3);
 
     QCOMPARE(activeModeSpy.count(), 0);
     QCOMPARE(viewModel.activeMode(), static_cast<int>(NavigationModeViewModel::NavigationMode::Control));

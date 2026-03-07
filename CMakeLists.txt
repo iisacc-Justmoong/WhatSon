@@ -192,6 +192,12 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
         if (NOT EXISTS "${_whatson_ios_toolchain}")
             message(WARNING "Qt iOS toolchain file was not found: ${_whatson_ios_toolchain}")
         else ()
+            # Qt's optional gRPC / Protobuf Quick plugin packages try to resolve host protoc during
+            # cross-compiling even though WhatSon does not use those modules.
+            set(_whatson_ios_optional_qml_package_flags
+                    -DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE
+                    -DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE
+            )
             set(_whatson_ios_configure_cmd
                     "${CMAKE_COMMAND}"
                     -G Xcode
@@ -212,6 +218,7 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                     "-DWHATSON_ENTITLEMENTS=${WHATSON_ENTITLEMENTS}"
                     "-DWHATSON_APPLE_BUNDLE_ID=${WHATSON_APPLE_BUNDLE_ID}"
                     "-DWHATSON_ANDROID_PACKAGE_ID=${WHATSON_ANDROID_PACKAGE_ID}"
+                    ${_whatson_ios_optional_qml_package_flags}
             )
 
             if (DEFINED WHATSON_LVRS_IOS_PREFIX AND EXISTS "${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")

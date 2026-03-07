@@ -5,7 +5,6 @@ NavigationModeViewModel::NavigationModeViewModel(QObject* parent)
       , m_viewModeViewModel(NavigationMode::View, this)
       , m_editModeViewModel(NavigationMode::Edit, this)
       , m_controlModeViewModel(NavigationMode::Control, this)
-      , m_presentationModeViewModel(NavigationMode::Presentation, this)
 {
     applyActiveModeViewModel(m_activeMode);
 }
@@ -42,11 +41,6 @@ QObject* NavigationModeViewModel::controlModeViewModel() const noexcept
     return const_cast<NavigationModeSectionViewModel*>(&m_controlModeViewModel);
 }
 
-QObject* NavigationModeViewModel::presentationModeViewModel() const noexcept
-{
-    return const_cast<NavigationModeSectionViewModel*>(&m_presentationModeViewModel);
-}
-
 QObject* NavigationModeViewModel::modeViewModelForState(int modeValue) const noexcept
 {
     if (!WhatSon::NavigationBar::isValidModeValue(modeValue))
@@ -62,8 +56,6 @@ QObject* NavigationModeViewModel::modeViewModelForState(int modeValue) const noe
         return editModeViewModel();
     case NavigationMode::Control:
         return controlModeViewModel();
-    case NavigationMode::Presentation:
-        return presentationModeViewModel();
     }
 
     return nullptr;
@@ -102,6 +94,5 @@ void NavigationModeViewModel::applyActiveModeViewModel(NavigationMode activeMode
     m_viewModeViewModel.setActive(activeMode == NavigationMode::View);
     m_editModeViewModel.setActive(activeMode == NavigationMode::Edit);
     m_controlModeViewModel.setActive(activeMode == NavigationMode::Control);
-    m_presentationModeViewModel.setActive(activeMode == NavigationMode::Presentation);
     m_activeModeViewModel = modeViewModelForState(WhatSon::NavigationBar::modeValue(activeMode));
 }

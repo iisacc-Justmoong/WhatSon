@@ -37,7 +37,6 @@ namespace
             QStringLiteral("navigation.NavigationAppControlBar"),
             QStringLiteral("navigation.NavigationApplicationControlBar"),
             QStringLiteral("navigation.NavigationApplicationEditBar"),
-            QStringLiteral("navigation.NavigationApplicationPresentationBar"),
             QStringLiteral("navigation.NavigationApplicationViewBar"),
             QStringLiteral("navigation.NavigationCalendarBar"),
             QStringLiteral("navigation.NavigationEditorViewBar"),
@@ -87,10 +86,6 @@ namespace
                 "navigation.NavigationApplicationControlBar"
             },
             {"view/panels/navigation/NavigationApplicationEditBar.qml", "navigation.NavigationApplicationEditBar"},
-            {
-                "view/panels/navigation/NavigationApplicationPresentationBar.qml",
-                "navigation.NavigationApplicationPresentationBar"
-            },
             {"view/panels/navigation/NavigationApplicationViewBar.qml", "navigation.NavigationApplicationViewBar"},
             {"view/panels/navigation/NavigationCalendarBar.qml", "navigation.NavigationCalendarBar"},
             {"view/panels/navigation/NavigationEditorViewBar.qml", "navigation.NavigationEditorViewBar"},

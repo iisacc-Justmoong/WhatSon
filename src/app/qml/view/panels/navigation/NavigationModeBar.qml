@@ -19,10 +19,6 @@ LV.HStack {
         {
             label: "Control",
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 2
-        },
-        {
-            label: "Presentation",
-            selected: navigationModeViewModel && navigationModeViewModel.activeMode === 3
         }
     ]
     property var navigationModeViewModel: null

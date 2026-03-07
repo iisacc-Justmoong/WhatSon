@@ -16,7 +16,6 @@ class NavigationModeViewModel final : public QObject
     Q_PROPERTY(QObject* viewModeViewModel READ viewModeViewModel CONSTANT)
     Q_PROPERTY(QObject* editModeViewModel READ editModeViewModel CONSTANT)
     Q_PROPERTY(QObject* controlModeViewModel READ controlModeViewModel CONSTANT)
-    Q_PROPERTY(QObject* presentationModeViewModel READ presentationModeViewModel CONSTANT)
 
 public:
     using NavigationMode = WhatSon::NavigationBar::Mode;
@@ -30,7 +29,6 @@ public:
     QObject* viewModeViewModel() const noexcept;
     QObject* editModeViewModel() const noexcept;
     QObject* controlModeViewModel() const noexcept;
-    QObject* presentationModeViewModel() const noexcept;
 
     Q_INVOKABLE QObject* modeViewModelForState(int modeValue) const noexcept;
     Q_INVOKABLE void setActiveMode(int modeValue);
@@ -62,6 +60,5 @@ private:
     NavigationModeSectionViewModel m_viewModeViewModel;
     NavigationModeSectionViewModel m_editModeViewModel;
     NavigationModeSectionViewModel m_controlModeViewModel;
-    NavigationModeSectionViewModel m_presentationModeViewModel;
     QObject* m_activeModeViewModel = nullptr;
 };

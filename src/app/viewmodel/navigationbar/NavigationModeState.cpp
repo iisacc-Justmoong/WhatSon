@@ -4,7 +4,7 @@ namespace WhatSon::NavigationBar
 {
     bool isValidModeValue(int value) noexcept
     {
-        return value >= modeValue(Mode::View) && value <= modeValue(Mode::Presentation);
+        return value >= modeValue(Mode::View) && value <= modeValue(Mode::Control);
     }
 
     Mode modeFromValue(int value) noexcept
@@ -17,8 +17,6 @@ namespace WhatSon::NavigationBar
             return Mode::Edit;
         case 2:
             return Mode::Control;
-        case 3:
-            return Mode::Presentation;
         default:
             return Mode::View;
         }
@@ -39,8 +37,6 @@ namespace WhatSon::NavigationBar
             return QStringLiteral("Edit");
         case Mode::Control:
             return QStringLiteral("Control");
-        case Mode::Presentation:
-            return QStringLiteral("Presentation");
         }
 
         return QString();
@@ -65,8 +61,6 @@ namespace WhatSon::NavigationBar
         case Mode::Edit:
             return Mode::Control;
         case Mode::Control:
-            return Mode::Presentation;
-        case Mode::Presentation:
             return Mode::View;
         }
 

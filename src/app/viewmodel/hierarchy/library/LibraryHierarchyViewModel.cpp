@@ -20,8 +20,8 @@
 namespace
 {
     constexpr int kMaxNoteListSummaryLines = 5;
-    constexpr auto kLibraryAllLabel = "All";
     constexpr auto kLibraryDraftLabel = "Draft";
+    constexpr auto kLibraryAllLabel = "All";
     constexpr auto kLibraryTodayLabel = "Today";
 
     QString truncateToMaxLines(const QString& value, int maxLines)
@@ -219,8 +219,8 @@ namespace
     {
         QVector<LibraryHierarchyItem> combined;
         combined.reserve(3 + items.size());
-        combined.push_back(makeSystemBucketItem(QStringLiteral("All")));
         combined.push_back(makeSystemBucketItem(QStringLiteral("Draft")));
+        combined.push_back(makeSystemBucketItem(QStringLiteral("All")));
         combined.push_back(makeSystemBucketItem(QStringLiteral("Today")));
 
         for (LibraryHierarchyItem& item : items)
