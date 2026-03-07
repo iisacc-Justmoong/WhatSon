@@ -59,7 +59,6 @@ LV.HStack {
     LV.ComboBox {
         id: editorViewCombo
 
-        arrow: editorViewContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
         text: editorViewBar.activeViewText
         tone: LV.ComboBox.Borderless
 

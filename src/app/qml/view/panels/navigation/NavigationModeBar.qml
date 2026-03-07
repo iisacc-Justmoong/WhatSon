@@ -59,9 +59,7 @@ LV.HStack {
     LV.ComboBox {
         id: modeCombo
 
-        arrow: modeContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
         text: modeBar.activeModeText
-        tone: LV.ComboBox.Primary
 
         onClicked: modeBar.toggleModeMenu()
     }
