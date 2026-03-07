@@ -11,11 +11,20 @@ Item {
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
     property color panelColor: LV.Theme.panelBackground07
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
 
     signal drawerHeightDragRequested(int value)
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     function clampDrawerHeight(value) {
         var maxDrawer = Math.max(contentsView.minDrawerHeight, contentsView.height - contentsView.minDisplayHeight - contentsView.splitterThickness);

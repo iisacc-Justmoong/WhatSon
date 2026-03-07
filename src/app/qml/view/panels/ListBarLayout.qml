@@ -10,9 +10,19 @@ Rectangle {
     property color hintColor: LV.Theme.descriptionColor
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property color panelColor: LV.Theme.panelBackground04
     property string searchText: ""
     property color titleColor: LV.Theme.titleHeaderColor
+
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     color: panelColor
 
@@ -78,11 +88,10 @@ Rectangle {
                     anchors.fill: parent
                     visible: !listBarLayout.noteListMode
 
-                    Text {
+                    LV.Label {
                         anchors.centerIn: parent
                         color: listBarLayout.hintColor
-                        font.family: "Pretendard"
-                        font.pixelSize: 11
+                        style: caption
                         text: "No list data"
                     }
                 }

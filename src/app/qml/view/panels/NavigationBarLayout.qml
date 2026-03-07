@@ -16,9 +16,19 @@ Rectangle {
     readonly property int effectivePanelHeight: compactMode ? (compactTopInset + panelHeight) : panelHeight
     property var navigationModeViewModel: null
     property color panelColor: LV.Theme.panelBackground06
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
     property int panelHeight: 24
     readonly property int sideInset: compactMode ? 8 : 4
     readonly property int topInset: 2
+
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     Layout.fillWidth: true
     Layout.preferredHeight: navigationBar.effectivePanelHeight

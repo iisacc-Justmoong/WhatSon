@@ -18,6 +18,7 @@ Rectangle {
     readonly property int effectivePanelHeight: compactMode ? (compactBottomInset + compactToolbarHeight) : panelHeight
     property color panelColor: LV.Theme.panelBackground06
     property int panelHeight: LV.Theme.controlHeightMd
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("StatusBarLayout") : null
     readonly property color searchFieldColor: LV.Theme.panelBackground10
     readonly property int searchFieldHeight: LV.Theme.gap18
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
@@ -36,7 +37,15 @@ Rectangle {
 
     signal searchSubmitted(string text)
     signal searchTextEdited(string text)
+    signal viewHookRequested
     signal windowMoveRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     Layout.fillWidth: true
     Layout.preferredHeight: statusBar.effectivePanelHeight

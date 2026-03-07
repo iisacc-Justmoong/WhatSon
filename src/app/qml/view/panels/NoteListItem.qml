@@ -6,11 +6,11 @@ Item {
     id: noteListItem
 
     readonly property bool activeState: hovered || pressed
-    property color bookmarkColor: "#F2C55C"
+    property color bookmarkColor: LV.Theme.accentYellow
     property bool bookmarked: false
-    readonly property color captionColor: Qt.rgba(1, 1, 1, 0.5)
+    readonly property color captionColor: LV.Theme.captionColor
     readonly property color cardColor: LV.Theme.panelBackground08
-    readonly property color folderStrokeColor: "#CED0D6"
+    readonly property color folderStrokeColor: LV.Theme.accentGrayLight
     property var folders: ["FolderName1", "FolderName2"]
     readonly property string foldersText: {
         const value = noteListItem.folders;
@@ -24,9 +24,19 @@ Item {
     }
     readonly property bool hovered: noteHoverHandler.hovered
     property string noteId: ""
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NoteListItem") : null
     property bool pressed: false
     property string primaryText: "NotePrimaryText"
     readonly property color primaryTextColor: LV.Theme.bodyColor
+
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     implicitHeight: 86
     implicitWidth: 194
@@ -56,16 +66,12 @@ Item {
                 spacing: 8
                 width: parent.width
 
-                Text {
+                LV.Label {
                     Layout.fillWidth: true
                     clip: true
                     color: noteListItem.primaryTextColor
                     elide: Text.ElideRight
-                    font.family: "Pretendard"
-                    font.pixelSize: 12
-                    font.weight: 400
-                    lineHeight: 12
-                    lineHeightMode: Text.FixedHeight
+                    style: body
                     maximumLineCount: 3
                     text: noteListItem.primaryText
                     verticalAlignment: Text.AlignTop
@@ -124,15 +130,11 @@ Item {
                         }
                     }
                 }
-                Text {
+                LV.Label {
                     Layout.fillWidth: true
                     color: noteListItem.captionColor
                     elide: Text.ElideRight
-                    font.family: "Pretendard"
-                    font.pixelSize: 11
-                    font.weight: 400
-                    lineHeight: 11
-                    lineHeightMode: Text.FixedHeight
+                    style: caption
                     text: noteListItem.foldersText
                 }
             }

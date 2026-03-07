@@ -8,10 +8,19 @@ Item {
     readonly property int currentHierarchy: normalizeHierarchyIndex(sidebarHierarchyViewModel && sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? sidebarHierarchyViewModel.activeHierarchyIndex : activeToolbarIndex)
     property int horizontalInset: 2
     property color panelColor: LV.Theme.panelBackground04
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
     property var sidebarHierarchyViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
     signal activeToolbarIndexChangeRequested(int index)
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     function frameNameForHierarchy(index) {
         switch (index) {
@@ -69,6 +78,7 @@ Item {
         var normalizedIndex = Math.floor(numericIndex);
         if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
             return -1;
+        return normalizedIndex;
     }
 
     QtObject {

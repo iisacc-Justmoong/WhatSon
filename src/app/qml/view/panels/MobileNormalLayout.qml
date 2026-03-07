@@ -8,8 +8,18 @@ Item {
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
     property color hintColor: LV.Theme.descriptionColor
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("MobileNormalLayout") : null
     property string statusPlaceholderText: ""
     property color titleColor: LV.Theme.titleHeaderColor
+
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -94,11 +104,9 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 0
 
-                            Text {
+                            LV.Label {
                                 color: mobileNormalLayout.titleColor
-                                font.family: "Pretendard"
-                                font.pixelSize: 12
-                                font.weight: 500
+                                style: body
                                 text: mobileNormalLayout.statusPlaceholderText
                                 visible: text.length > 0
                             }
@@ -110,13 +118,16 @@ Item {
                                 width: 1
                             }
                         }
-                        Text {
+                        Image {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
-                            color: mobileNormalLayout.hintColor
-                            font.family: "SF Pro"
-                            font.pixelSize: 13
-                            text: "\u2715"
+                            fillMode: Image.PreserveAspectFit
+                            height: LV.Theme.iconSm
+                            smooth: true
+                            source: LV.Theme.iconPath("generalcloseSmall")
+                            sourceSize.height: height
+                            sourceSize.width: width
+                            width: LV.Theme.iconSm
                         }
                     }
                 }

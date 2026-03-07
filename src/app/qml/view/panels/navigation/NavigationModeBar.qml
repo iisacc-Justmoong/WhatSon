@@ -47,19 +47,16 @@ LV.HStack {
 
     spacing: 8
 
-    Text {
-        color: Qt.rgba(1, 1, 1, 0.8)
-        font.family: "Pretendard"
-        font.pixelSize: 12
-        font.weight: 500
-        lineHeight: 12
-        lineHeightMode: Text.FixedHeight
+    LV.Label {
+        color: LV.Theme.bodyColor
+        style: body
         text: "Mode"
     }
     LV.ComboBox {
         id: modeCombo
 
         text: modeBar.activeModeText
+        tone: LV.ComboBox.Tone.Primary
 
         onClicked: modeBar.toggleModeMenu()
     }

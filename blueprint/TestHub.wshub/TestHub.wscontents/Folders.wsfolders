@@ -1,36 +1,22 @@
 {
-  "version": 1,
-  "schema": "whatson.folders.tree",
-  "folders": [
-    {
-      "id": "Research",
-      "label": "Research",
-      "children": [
+    "folders": [
         {
-          "id": "Research/Competitor",
-          "label": "Competitor",
-          "children": [
-            {
-              "id": "Research/Competitor/Pricing",
-              "label": "Pricing"
-            }
-          ]
+            "children": [
+                {
+                    "children": [
+                        {
+                            "id": "Product/All/All2?",
+                            "label": "All2?"
+                        }
+                    ],
+                    "id": "Product/All",
+                    "label": "All"
+                }
+            ],
+            "id": "Product",
+            "label": "Product"
         }
-      ]
-    },
-    {
-      "id": "Brand",
-      "label": "Brand",
-      "children": [
-        {
-          "id": "Brand/yugtftftyy",
-          "label": "yugtftftyy"
-        }
-      ]
-    },
-    {
-      "id": "Product",
-      "label": "Product"
-    }
-  ]
+    ],
+    "schema": "whatson.folders.tree",
+    "version": 1
 }

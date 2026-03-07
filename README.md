@@ -18,6 +18,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - Status bar search uses `LV.InputField` in `searchMode` and exposes editable state via QML properties/signals.
 - Sidebar hierarchy search uses `LV.InputField` in `searchMode` and filters visible hierarchy rows in real time.
 
+## Theme Token Usage
+
+- `NoteListItem.qml`, `ListBarLayout.qml`, `MobileNormalLayout.qml`, `NavigationModeBar.qml`, and
+  `NavigationEditorViewBar.qml` consume LVRS theme tokens for label typography and accent colors.
+- Local hardcoded font-family names and ad-hoc RGBA/hex UI colors are not part of the view contract for those panels;
+  use `LV.Label`, `LV.Theme.fontBody`, and the matching `LV.Theme` color tokens instead.
+
 ## LVRS Integration Pattern
 
 The app CMake file follows the minimum recommended LVRS configuration.

@@ -25,6 +25,7 @@ Item {
     property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: LV.Theme.panelBackground04
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property var sidebarHierarchyViewModel: null
     property int sidebarHorizontalInset: 2
     property int sidebarWidth: LV.Theme.gap24 * 9
@@ -37,6 +38,14 @@ Item {
     signal listViewWidthDragRequested(int value)
     signal rightPanelWidthDragRequested(int value)
     signal sidebarWidthDragRequested(int value)
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
 
     function clampListViewWidth(value) {
         // CRITICAL: Drag-resize clamps must always use finite occupied width.

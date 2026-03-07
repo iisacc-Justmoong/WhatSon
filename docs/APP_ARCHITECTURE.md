@@ -236,6 +236,9 @@ Domain-isolated support:
         - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design case
           through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
           `LV.ContextMenu`, not direct next-state cycling.
+        - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
+          use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
+          text-color literals.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -260,6 +263,10 @@ Library-specific modeling:
         - `folders` (`QStringList`)
         - `bookmarked` (bool)
         - `bookmarkColor` (hex string, bookmark icon tint)
+- `NoteListItem.qml` resolves note-card fallback visuals from LVRS theme tokens:
+    - bookmark tint fallback: `LV.Theme.accentYellow`
+    - folder stroke fallback: `LV.Theme.accentGrayLight`
+    - caption text fallback: `LV.Theme.captionColor`
 
 ## 4.4 QML View Layer (`src/app/qml/**`)
 
