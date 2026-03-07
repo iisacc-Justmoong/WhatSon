@@ -25,8 +25,8 @@ Item {
     readonly property int hierarchyItemBaseLeftPadding: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property var hierarchyViewModel: null
     property int horizontalInset: 2
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     property color panelColor: LV.Theme.panelBackground04
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     property string searchQuery: ""
@@ -90,6 +90,11 @@ Item {
         sidebarHierarchyView.editingIndex = -1;
         sidebarHierarchyView.editingText = "";
     }
+    function draggedNoteId(event) {
+        if (!event || !event.source || event.source.noteId === undefined || event.source.noteId === null)
+            return "";
+        return String(event.source.noteId).trim();
+    }
     function matchesSearchText(label) {
         var query = sidebarHierarchyView.searchQuery.trim().toLowerCase();
         if (query.length === 0)
@@ -141,8 +146,7 @@ Item {
             sidebarHierarchyView.commitRename();
         if (sidebarHierarchyView.selectedFolderIndex < 0)
             return;
-        if (hierarchyList && hierarchyList.activateById !== undefined)
-            hierarchyList.activateById(sidebarHierarchyView.selectedFolderIndex);
+        sidebarHierarchyView.activateSelectedHierarchyItem(true);
     }
 
     Rectangle {
@@ -228,6 +232,8 @@ Item {
                         delegate: LV.HierarchyItem {
                             id: hierarchyDelegate
 
+                            readonly property bool dropHighlighted: sidebarHierarchyView.noteDropTargetIndex === index
+                            required property int index
                             required property int index
                             readonly property bool itemExpanded: model.expanded === undefined ? false : !!model.expanded
                             readonly property int itemIndentLevel: {
@@ -258,6 +264,13 @@ Item {
                             visible: visibleInView
                             width: hierarchyViewport.width
 
+                            Rectangle {
+                                anchors.fill: parent
+                                color: LV.Theme.accentBlueMuted
+                                opacity: 0.55
+                                visible: hierarchyDelegate.dropHighlighted
+                                z: 1
+                            }
                             MouseArea {
                                 anchors.bottom: parent.bottom
                                 anchors.left: parent.left
@@ -273,6 +286,27 @@ Item {
                                         hierarchyList.requestActivate(hierarchyDelegate);
                                     if (sidebarHierarchyView.hierarchyViewModel)
                                         sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
+                                }
+                            }
+                            DropArea {
+                                anchors.fill: parent
+                                keys: ["whatson.library.note"]
+
+                                onDropped: function (drop) {
+                                    const noteId = sidebarHierarchyView.draggedNoteId(drop);
+                                    const accepted = sidebarHierarchyView.assignNoteToFolder(index, noteId);
+                                    sidebarHierarchyView.noteDropTargetIndex = -1;
+                                    if (!accepted)
+                                        return;
+                                    sidebarHierarchyView.requestViewHook("drop-note-to-folder");
+                                }
+                                onEntered: function (drag) {
+                                    const noteId = sidebarHierarchyView.draggedNoteId(drag);
+                                    sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;
+                                }
+                                onExited: {
+                                    if (sidebarHierarchyView.noteDropTargetIndex === index)
+                                        sidebarHierarchyView.noteDropTargetIndex = -1;
                                 }
                             }
                             Item {
@@ -363,8 +397,11 @@ Item {
                         sidebarHierarchyView.hierarchyViewModel.createFolder();
                     if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.selectedIndex >= 0) {
                         var createdIndex = sidebarHierarchyView.hierarchyViewModel.selectedIndex;
+                        sidebarHierarchyView.activateSelectedHierarchyItem(true);
                         if (sidebarHierarchyView.canRenameAtIndex(createdIndex))
-                            sidebarHierarchyView.beginRename(createdIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(createdIndex));
+                            Qt.callLater(function () {
+                                sidebarHierarchyView.beginRename(createdIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(createdIndex));
+                            });
                     }
                 }
             })

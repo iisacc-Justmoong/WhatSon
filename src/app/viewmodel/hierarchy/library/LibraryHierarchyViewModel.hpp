@@ -63,6 +63,8 @@ public:
 
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
+    Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);
 
     void setHubStore(WhatSonHubStore store);
     WhatSonHubStore hubStore() const;
@@ -79,7 +81,6 @@ public
     }
 
     signals  :
-
 
 
     void selectedIndexChanged();

@@ -6,14 +6,12 @@ Rectangle {
     id: listBarLayout
 
     property int activeToolbarIndex: 0
-    property color fieldColor: LV.Theme.panelBackground10
     property color hintColor: LV.Theme.descriptionColor
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property color panelColor: LV.Theme.panelBackground04
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property string searchText: ""
-    property color titleColor: LV.Theme.titleHeaderColor
 
     signal viewHookRequested
 
@@ -39,39 +37,15 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 24
 
-                RowLayout {
-                    anchors.bottomMargin: 2
+                ListBarHeader {
                     anchors.fill: parent
-                    anchors.leftMargin: 2
-                    anchors.rightMargin: 2
-                    anchors.topMargin: 2
-                    spacing: 0
+                    searchText: listBarLayout.searchText
 
-                    LV.InputField {
-                        id: listSearchField
-
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 18
-                        mode: searchMode
-                        selectByMouse: true
-                        text: listBarLayout.searchText
-
-                        onAccepted: function (text) {
-                            listBarLayout.searchText = typeof text === "string" ? text : listSearchField.text;
-                        }
-                        onTextEdited: function (text) {
-                            listBarLayout.searchText = typeof text === "string" ? text : listSearchField.text;
-                        }
+                    onSearchSubmitted: function (text) {
+                        listBarLayout.searchText = text;
                     }
-                    LV.IconButton {
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-                        iconName: "generalshow"
-                    }
-                    LV.IconButton {
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-                        iconName: "sortByType"
+                    onSearchTextEdited: function (text) {
+                        listBarLayout.searchText = text;
                     }
                 }
             }

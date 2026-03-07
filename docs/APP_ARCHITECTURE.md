@@ -239,6 +239,11 @@ Domain-isolated support:
         - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
           use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
           text-color literals.
+        - `ListBarLayout.qml` now composes the dedicated `ListBarHeader.qml` frame (Figma node `134:3180`), where the
+          search field keeps LVRS defaults and only applies the minimum inline-variant overrides through local header
+          properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
+          `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
+          assets `cwmPermissionView` and `sortByType` without extra color-token overrides.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -251,8 +256,12 @@ Library-specific modeling:
 - `LibraryAll`: full note index and metadata assembly
 - `LibraryDraft`: filter notes without folders
 - `LibraryToday`: filter notes by `createdAt/lastModifiedAt == today`
-- `LibraryHierarchyViewModel` exposes `All`, `Draft`, and `Today` as immutable depth-0 system folders and synchronizes
+- `LibraryHierarchyViewModel` exposes `All Library`, `Draft`, and `Today` as immutable depth-0 system folders and
+  synchronizes
   note-list filtering from those buckets plus persisted library folders
+- Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
+  resolved folder path to the note header `<folders>` list, updates `lastModified`, and rebuilds the `All Library` /
+  `Draft` / `Today` bucket snapshots.
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
@@ -327,10 +336,14 @@ Hierarchy rendering pipeline:
           disabled)
         - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
           opening the overlay. Global `renameEnabled` is treated as a fallback only.
-        - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
-          domain
-          store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
-          `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+        - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row before
+          opening inline rename.
+        - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops through
+          `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
+            - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
+              domain
+              store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+              `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
@@ -375,7 +388,7 @@ Detected package conventions:
           participant list, and related summary attributes)
 - Hierarchy/auxiliary files (typically under `*.wscontents`):
     - `Folders.wsfolders` (hierarchical folder tree JSON for user folders; runtime prepends immutable library system
-      roots `All`, `Draft`, and `Today` ahead of this tree)
+      roots `All Library`, `Draft`, and `Today` ahead of this tree)
     - `Tags.wstags` (tag tree or flat list)
     - `Bookmarks.wsbookmarks` (bookmark hierarchy source)
     - `Progress.wsprogress` (progress state domain)
@@ -447,21 +460,19 @@ Conclusion:
 
 Audit result:
 
-- Total QML files: 30
-- Files declaring explicit `signal`: 20
-- Files without explicit `signal`: 10
+- Total QML files: 46
+- Files declaring explicit `signal`: 39
+- Files without explicit `signal`: 7
 
 Files without explicit signal declarations:
 
 - `src/app/qml/DesignTokens.qml`
-- `src/app/qml/view/panels/DetailPanelLayout.qml`
-- `src/app/qml/view/panels/ListBarLayout.qml`
 - `src/app/qml/view/panels/ListItemsPlaceholder.qml`
-- `src/app/qml/view/panels/MobileNormalLayout.qml`
-- `src/app/qml/view/panels/NavigationBarLayout.qml`
-- `src/app/qml/view/panels/NoteListItem.qml`
-- `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`
 - `src/app/qml/view/panels/navigation/NavigationIconButton.qml`
+- `src/app/qml/window/DebugConsole.qml`
+- `src/app/qml/window/Preference.qml`
+- `src/app/qml/window/ProfileControl.qml`
+- `src/app/qml/window/QuickNote.qml`
 
 Implication:
 

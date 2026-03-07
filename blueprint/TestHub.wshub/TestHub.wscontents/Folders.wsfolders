@@ -7,6 +7,16 @@
                         {
                             "id": "Product/All/All2?",
                             "label": "All2?"
+                        },
+                        {
+                            "children": [
+                                {
+                                    "id": "Product/All/Folder1/Folder4",
+                                    "label": "Folder4"
+                                }
+                            ],
+                            "id": "Product/All/Folder1",
+                            "label": "Folder1"
                         }
                     ],
                     "id": "Product/All",

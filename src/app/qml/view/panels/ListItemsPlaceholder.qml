@@ -60,11 +60,17 @@ Item {
             displayDate: useRuntimeModel && roleModel && roleModel.displayDate !== undefined ? String(roleModel.displayDate) : ""
             folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listItemsPlaceholder.normalizeEntries(roleModel.folders) : []
             noteId: useRuntimeModel && roleModel && roleModel.id !== undefined ? String(roleModel.id) : ""
+            opacity: noteDragHandler.active ? 0.72 : 1
             pressed: ListView.isCurrentItem
             primaryText: useRuntimeModel && roleModel && roleModel.primaryText !== undefined ? String(roleModel.primaryText) : ""
             tags: useRuntimeModel && roleModel && roleModel.tags !== undefined ? listItemsPlaceholder.normalizeEntries(roleModel.tags) : []
             width: ListView.view ? ListView.view.width : listItemsPlaceholder.width
 
+            DragHandler {
+                id: noteDragHandler
+
+                target: null
+            }
             TapHandler {
                 acceptedButtons: Qt.LeftButton
 

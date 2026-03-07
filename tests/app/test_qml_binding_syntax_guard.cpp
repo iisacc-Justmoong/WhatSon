@@ -168,6 +168,77 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("onDoubleClicked")),
         "SidebarHierarchyView.qml must not use double-click rename trigger.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function activateSelectedHierarchyItem(focusView)")),
+        "SidebarHierarchyView.qml must expose activateSelectedHierarchyItem(focusView) for programmatic focus sync.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral(
+            "sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;")),
+        "SidebarHierarchyView.qml must derive note-drop highlight state from hierarchyViewModel.canAcceptNoteDrop.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder(index, noteId)")),
+        "SidebarHierarchyView.qml must route accepted note drops through hierarchyViewModel.assignNoteToFolder(index, noteId).");
+
+    const QString listItemsPlaceholderPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ListItemsPlaceholder.qml"));
+    QFile listItemsPlaceholderFile(listItemsPlaceholderPath);
+    QVERIFY2(
+        listItemsPlaceholderFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(listItemsPlaceholderPath));
+    const QString listItemsPlaceholderText = QString::fromUtf8(listItemsPlaceholderFile.readAll());
+    QVERIFY2(
+        listItemsPlaceholderText.contains(QStringLiteral("DragHandler {")),
+        "ListItemsPlaceholder.qml must expose DragHandler on note delegates.");
+    QVERIFY2(
+        listItemsPlaceholderText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
+        "ListItemsPlaceholder.qml note delegates must advertise whatson.library.note drag keys.");
+
+    const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ListBarLayout.qml"));
+    QFile listBarLayoutFile(listBarLayoutPath);
+    QVERIFY2(listBarLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(listBarLayoutPath));
+    const QString listBarLayoutText = QString::fromUtf8(listBarLayoutFile.readAll());
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("ListBarHeader {")),
+        "ListBarLayout.qml must compose the dedicated ListBarHeader Figma frame.");
+
+    const QString listBarHeaderPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ListBarHeader.qml"));
+    QFile listBarHeaderFile(listBarHeaderPath);
+    QVERIFY2(listBarHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(listBarHeaderPath));
+    const QString listBarHeaderText = QString::fromUtf8(listBarHeaderFile.readAll());
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("mode: searchMode")),
+        "ListBarHeader.qml search field must use LV.InputField searchMode so the built-in search icon is shown.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("clearButtonVisible: false")),
+        "ListBarHeader.qml search field must suppress the default clear affordance for the Figma inline style.");
+    QVERIFY2(
+        listBarHeaderText.contains(
+            QStringLiteral("readonly property color inlineFieldBackgroundColor: \"transparent\"")),
+        "ListBarHeader.qml inline input must centralize the transparent inline background override.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("shapeStyle: shapeCylinder")),
+        "ListBarHeader.qml inline input must use the cylindrical pill shape from Figma.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHeight: 18")),
+        "ListBarHeader.qml inline input must keep the 18px height contract from Figma.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldTextHeight: 12")),
+        "ListBarHeader.qml inline input must keep the 12px text line box from Figma.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHorizontalInset: 7")),
+        "ListBarHeader.qml inline input must use the 7px horizontal inset from Figma.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldVerticalInset: 3")),
+        "ListBarHeader.qml inline input must use the 3px vertical inset from Figma.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("iconName: \"cwmPermissionView\"")),
+        "ListBarHeader.qml visibility button must use the Figma eye icon asset.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("iconName: \"sortByType\"")),
+        "ListBarHeader.qml sort button must keep the Figma sort icon asset.");
 
     const QString bodyLayoutPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/BodyLayout.qml"));

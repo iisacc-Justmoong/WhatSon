@@ -1,13 +1,17 @@
 #include "LibraryHierarchyViewModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteHeaderCreator.hpp"
+#include "file/note/WhatSonNoteHeaderParser.hpp"
+#include "file/note/WhatSonNoteHeaderStore.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
@@ -20,8 +24,9 @@
 namespace
 {
     constexpr int kMaxNoteListSummaryLines = 5;
+    constexpr auto kNoteTimestampFormat = "yyyy-MM-dd-hh-mm-ss";
     constexpr auto kLibraryDraftLabel = "Draft";
-    constexpr auto kLibraryAllLabel = "All";
+    constexpr auto kLibraryAllLabel = "All Library";
     constexpr auto kLibraryTodayLabel = "Today";
 
     QString truncateToMaxLines(const QString& value, int maxLines)
@@ -170,6 +175,168 @@ namespace
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
 
+    QString normalizeFolderPath(QString value)
+    {
+        value = value.trimmed();
+        value.replace(QLatin1Char('\\'), QLatin1Char('/'));
+        while (value.contains(QStringLiteral("//")))
+        {
+            value.replace(QStringLiteral("//"), QStringLiteral("/"));
+        }
+        while (value.startsWith(QLatin1Char('/')))
+        {
+            value.remove(0, 1);
+        }
+        while (value.endsWith(QLatin1Char('/')))
+        {
+            value.chop(1);
+        }
+        return value;
+    }
+
+    QString normalizeFolderLookupKey(QString value)
+    {
+        return normalizeFolderPath(std::move(value)).toCaseFolded();
+    }
+
+    QString currentNoteTimestamp()
+    {
+        return QDateTime::currentDateTime().toString(QString::fromLatin1(kNoteTimestampFormat));
+    }
+
+    bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write file: %1").arg(filePath);
+            }
+            return false;
+        }
+
+        if (file.write(text.toUtf8()) < 0)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write file bytes: %1").arg(filePath);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    QString resolveNoteHeaderPath(const LibraryNoteRecord& note)
+    {
+        const QString directPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(note.noteHeaderPath);
+        if (!directPath.isEmpty() && QFileInfo(directPath).isFile())
+        {
+            return directPath;
+        }
+
+        const QString noteDirectoryPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(note.noteDirectoryPath);
+        if (noteDirectoryPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QDir noteDir(noteDirectoryPath);
+        if (!noteDir.exists())
+        {
+            return {};
+        }
+
+        const QString noteStem = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
+        if (!noteStem.isEmpty())
+        {
+            const QString stemHeaderPath = noteDir.filePath(noteStem + QStringLiteral(".wsnhead"));
+            if (QFileInfo(stemHeaderPath).isFile())
+            {
+                return QDir::cleanPath(stemHeaderPath);
+            }
+        }
+
+        const QString canonicalHeaderPath = noteDir.filePath(QStringLiteral("note.wsnhead"));
+        if (QFileInfo(canonicalHeaderPath).isFile())
+        {
+            return QDir::cleanPath(canonicalHeaderPath);
+        }
+
+        const QFileInfoList headerCandidates = noteDir.entryInfoList(
+            QStringList{QStringLiteral("*.wsnhead")},
+            QDir::Files,
+            QDir::Name);
+        QString draftHeaderPath;
+        for (const QFileInfo& fileInfo : headerCandidates)
+        {
+            const QString loweredName = fileInfo.fileName().toCaseFolded();
+            if (loweredName.contains(QStringLiteral(".draft.")))
+            {
+                if (draftHeaderPath.isEmpty())
+                {
+                    draftHeaderPath = fileInfo.absoluteFilePath();
+                }
+                continue;
+            }
+            return QDir::cleanPath(fileInfo.absoluteFilePath());
+        }
+
+        if (!draftHeaderPath.isEmpty())
+        {
+            return QDir::cleanPath(draftHeaderPath);
+        }
+
+        return {};
+    }
+
+    int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < notes.size(); ++index)
+        {
+            if (notes.at(index).noteId.trimmed() == normalizedNoteId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    QStringList appendFolderAssignment(QStringList folders, const QString& folderPath)
+    {
+        QStringList merged;
+        merged.reserve(folders.size() + 1);
+        QSet<QString> seenKeys;
+
+        auto appendUnique = [&merged, &seenKeys](QString rawValue)
+        {
+            rawValue = normalizeFolderPath(std::move(rawValue));
+            const QString key = normalizeFolderLookupKey(rawValue);
+            if (rawValue.isEmpty() || key.isEmpty() || seenKeys.contains(key))
+            {
+                return;
+            }
+
+            seenKeys.insert(key);
+            merged.push_back(std::move(rawValue));
+        };
+
+        for (QString& folder : folders)
+        {
+            appendUnique(std::move(folder));
+        }
+        appendUnique(folderPath);
+
+        return merged;
+    }
+
     void applyChevronByDepth(QVector<LibraryHierarchyItem>* items)
     {
         if (items == nullptr)
@@ -219,9 +386,9 @@ namespace
     {
         QVector<LibraryHierarchyItem> combined;
         combined.reserve(3 + items.size());
-        combined.push_back(makeSystemBucketItem(QStringLiteral("Draft")));
-        combined.push_back(makeSystemBucketItem(QStringLiteral("All")));
-        combined.push_back(makeSystemBucketItem(QStringLiteral("Today")));
+        combined.push_back(makeSystemBucketItem(QLatin1String(kLibraryAllLabel)));
+        combined.push_back(makeSystemBucketItem(QLatin1String(kLibraryDraftLabel)));
+        combined.push_back(makeSystemBucketItem(QLatin1String(kLibraryTodayLabel)));
 
         for (LibraryHierarchyItem& item : items)
         {
@@ -812,21 +979,41 @@ void LibraryHierarchyViewModel::createFolder()
         }
     }
 
+    const QString folderLabel = QStringLiteral("Folder%1").arg(m_createdFolderSequence);
+    ++m_createdFolderSequence;
     LibraryHierarchyItem newItem;
     newItem.depth = folderDepth;
-    const QString folderLabel = QStringLiteral("Folder%1").arg(m_createdFolderSequence);
     newItem.label = folderLabel;
-    ++m_createdFolderSequence;
     newItem.accent = false;
     newItem.expanded = false;
     newItem.showChevron = true;
 
-    m_items.insert(insertIndex, std::move(newItem));
-    if (insertIndex >= 0 && insertIndex < m_items.size())
+    QVector<LibraryHierarchyItem> stagedItems = m_items;
+    stagedItems.insert(insertIndex, std::move(newItem));
+    if (insertIndex >= 0 && insertIndex < stagedItems.size())
     {
-        m_items[insertIndex].label = folderLabel;
+        stagedItems[insertIndex].label = folderLabel;
     }
-    applyChevronByDepth(&m_items);
+    applyChevronByDepth(&stagedItems);
+
+    WhatSonProjectsHierarchyStore stagedStore;
+    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+    if (!m_foldersFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("createFolder.writeFailed"),
+                                      QStringLiteral("insertIndex=%1 path=%2 reason=%3").arg(insertIndex).arg(
+                                          m_foldersFilePath, writeError));
+            return;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_foldersHierarchyLoaded = true;
     rebuildBucketRanges();
     syncModel();
     setSelectedIndex(insertIndex);
@@ -873,8 +1060,28 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
         ++removeCount;
     }
 
-    m_items.remove(startIndex, removeCount);
-    applyChevronByDepth(&m_items);
+    QVector<LibraryHierarchyItem> stagedItems = m_items;
+    stagedItems.remove(startIndex, removeCount);
+    applyChevronByDepth(&stagedItems);
+
+    WhatSonProjectsHierarchyStore stagedStore;
+    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+    if (!m_foldersFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("deleteSelectedFolder.writeFailed"),
+                                      QStringLiteral("startIndex=%1 path=%2 reason=%3").arg(startIndex).arg(
+                                          m_foldersFilePath, writeError));
+            return;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
     rebuildBucketRanges();
     syncModel();
     WhatSon::Debug::traceSelf(this,
@@ -892,6 +1099,151 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     }
 
     setSelectedIndex(std::min(startIndex, static_cast<int>(m_items.size() - 1)));
+}
+
+bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& noteId) const
+{
+    if (!m_runtimeIndexLoaded)
+    {
+        return false;
+    }
+
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (isProtectedRootItem(m_items.at(index)))
+    {
+        return false;
+    }
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QString targetFolderPath = normalizeFolderPath(folderPathForIndex(index));
+    if (targetFolderPath.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_libraryAll.notes(), normalizedNoteId);
+    if (noteIndex < 0)
+    {
+        return false;
+    }
+
+    const LibraryNoteRecord& note = m_libraryAll.notes().at(noteIndex);
+    if (resolveNoteHeaderPath(note).isEmpty())
+    {
+        return false;
+    }
+
+    const QString targetFolderKey = normalizeFolderLookupKey(targetFolderPath);
+    for (const QString& folder : note.folders)
+    {
+        if (normalizeFolderLookupKey(folder) == targetFolderKey)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& noteId)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("assignNoteToFolder.begin"),
+                              QStringLiteral("index=%1 noteId=%2").arg(index).arg(noteId));
+
+    if (!canAcceptNoteDrop(index, noteId))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("assignNoteToFolder.rejected"),
+                                  QStringLiteral("index=%1 noteId=%2").arg(index).arg(noteId));
+        return false;
+    }
+
+    QVector<LibraryNoteRecord> allNotes = m_libraryAll.notes();
+    const int noteIndex = indexOfNoteRecordById(allNotes, noteId);
+    if (noteIndex < 0)
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = allNotes[noteIndex];
+    const QString targetFolderPath = normalizeFolderPath(folderPathForIndex(index));
+    const QString headerPath = resolveNoteHeaderPath(note);
+    if (targetFolderPath.isEmpty() || headerPath.isEmpty())
+    {
+        return false;
+    }
+
+    QString rawHeaderText;
+    QString ioError;
+    if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(headerPath, &rawHeaderText, &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("assignNoteToFolder.failed"),
+                                  QStringLiteral("reason=readHeader path=%1 error=%2").arg(headerPath, ioError));
+        return false;
+    }
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    if (!headerParser.parse(rawHeaderText, &headerStore, &parseError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("assignNoteToFolder.failed"),
+                                  QStringLiteral("reason=parseHeader path=%1 error=%2").arg(headerPath, parseError));
+        return false;
+    }
+
+    headerStore.setFolders(appendFolderAssignment(headerStore.folders(), targetFolderPath));
+    headerStore.setLastModifiedAt(currentNoteTimestamp());
+
+    WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());
+    const QString nextHeaderText = headerCreator.createHeaderText(headerStore);
+
+    QString writeError;
+    if (!writeUtf8File(headerPath, nextHeaderText, &writeError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("assignNoteToFolder.failed"),
+                                  QStringLiteral("reason=writeHeader path=%1 error=%2").arg(headerPath, writeError));
+        return false;
+    }
+
+    note.folders = headerStore.folders();
+    note.lastModifiedAt = headerStore.lastModifiedAt();
+    note.noteHeaderPath = headerPath;
+    if (note.noteDirectoryPath.isEmpty())
+    {
+        note.noteDirectoryPath = QFileInfo(headerPath).absolutePath();
+    }
+
+    m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
+    m_libraryDraft.rebuild(m_libraryAll.notes());
+    m_libraryToday.rebuild(m_libraryAll.notes());
+    refreshNoteListForSelection();
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("assignNoteToFolder.success"),
+                              QStringLiteral("index=%1 noteId=%2 folder=%3")
+                              .arg(index)
+                              .arg(noteId, targetFolderPath));
+    return true;
 }
 
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
@@ -1111,21 +1463,7 @@ LibraryHierarchyViewModel::FolderSelectionScope LibraryHierarchyViewModel::selec
 
 QString LibraryHierarchyViewModel::normalizeFolderKey(const QString& value)
 {
-    QString normalized = value.trimmed();
-    normalized.replace(QLatin1Char('\\'), QLatin1Char('/'));
-    while (normalized.contains(QStringLiteral("//")))
-    {
-        normalized.replace(QStringLiteral("//"), QStringLiteral("/"));
-    }
-    while (normalized.startsWith(QLatin1Char('/')))
-    {
-        normalized.remove(0, 1);
-    }
-    while (normalized.endsWith(QLatin1Char('/')))
-    {
-        normalized.chop(1);
-    }
-    return normalized.toCaseFolded();
+    return normalizeFolderLookupKey(value);
 }
 
 QString LibraryHierarchyViewModel::folderPathForIndex(int index) const
