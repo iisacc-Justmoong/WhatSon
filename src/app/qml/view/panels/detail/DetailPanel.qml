@@ -3,6 +3,7 @@ import QtQuick
 Item {
     id: detailPanel
 
+    readonly property var activeDetailContentVm: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.activeContentViewModel : null
     readonly property int detailContentsHeight: Math.max(0, detailPanel.height - detailPanel.headerToolbarHeight - detailPanel.panelSpacing)
     readonly property int detailContentsWidth: detailPanel.width
     readonly property var detailPanelVm: detailPanelViewModel

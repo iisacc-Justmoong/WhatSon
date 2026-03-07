@@ -179,14 +179,20 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
     QVERIFY(!editorViewBar.isEmpty());
 
     QVERIFY(modeBar.contains(QStringLiteral("LV.ComboBox {")));
+    QVERIFY(modeBar.contains(QStringLiteral("text: modeBar.activeModeText")));
     QVERIFY(modeBar.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(modeBar.contains(QStringLiteral("requestModeChange(index)")));
     QVERIFY(!modeBar.contains(QStringLiteral("requestNextMode();")));
+    QVERIFY(!modeBar.contains(QStringLiteral("comboLabelRightInset")));
+    QVERIFY(!modeBar.contains(QStringLiteral("resolvedBackgroundColor")));
 
     QVERIFY(editorViewBar.contains(QStringLiteral("LV.ComboBox {")));
+    QVERIFY(editorViewBar.contains(QStringLiteral("text: editorViewBar.activeViewText")));
     QVERIFY(editorViewBar.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(editorViewBar.contains(QStringLiteral("requestViewModeChange(index)")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("requestNextViewMode();")));
+    QVERIFY(!editorViewBar.contains(QStringLiteral("comboLabelRightInset")));
+    QVERIFY(!editorViewBar.contains(QStringLiteral("resolvedBackgroundColor")));
 }
 
 void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset()

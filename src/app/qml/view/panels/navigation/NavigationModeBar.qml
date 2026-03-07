@@ -7,7 +7,6 @@ LV.HStack {
 
     readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "Control"
     readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
-    readonly property int comboLabelRightInset: 20
     readonly property var modeMenuItems: [
         {
             label: "View",
@@ -42,7 +41,7 @@ LV.HStack {
             modeContextMenu.close();
             return;
         }
-        modeContextMenu.openFor(modeComboFrame, 0, modeComboFrame.height + 2);
+        modeContextMenu.openFor(modeCombo, 0, modeCombo.height + 2);
         modeBar.requestViewHook("open-navigation-mode-menu");
     }
 
@@ -57,50 +56,14 @@ LV.HStack {
         lineHeightMode: Text.FixedHeight
         text: "Mode"
     }
-    Item {
-        id: modeComboFrame
+    LV.ComboBox {
+        id: modeCombo
 
-        height: 20
-        implicitHeight: 20
-        implicitWidth: 97
-        width: 97
+        arrow: modeContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
+        text: modeBar.activeModeText
+        tone: LV.ComboBox.Primary
 
-        LV.ComboBox {
-            id: modeCombo
-
-            anchors.fill: parent
-            arrow: modeContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
-            tone: LV.ComboBox.Primary
-
-            onClicked: modeBar.toggleModeMenu()
-        }
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
-            anchors.left: parent.left
-            anchors.leftMargin: 1
-            anchors.right: parent.right
-            anchors.rightMargin: modeBar.comboLabelRightInset
-            anchors.top: parent.top
-            anchors.topMargin: 1
-            color: modeCombo.resolvedBackgroundColor
-            radius: LV.Theme.radiusBase
-        }
-        Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 8
-            anchors.right: parent.right
-            anchors.rightMargin: modeBar.comboLabelRightInset
-            anchors.verticalCenter: parent.verticalCenter
-            color: LV.Theme.accentWhite
-            elide: Text.ElideRight
-            font.family: "Pretendard"
-            font.pixelSize: 12
-            font.weight: 500
-            lineHeight: 12
-            lineHeightMode: Text.FixedHeight
-            text: modeBar.activeModeText
-        }
+        onClicked: modeBar.toggleModeMenu()
     }
     LV.ContextMenu {
         id: modeContextMenu

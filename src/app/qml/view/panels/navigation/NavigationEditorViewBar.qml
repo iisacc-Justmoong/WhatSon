@@ -7,7 +7,6 @@ LV.HStack {
 
     readonly property var activeEditorViewModeViewModel: editorViewModeViewModel && editorViewModeViewModel.activeViewModeViewModel !== undefined ? editorViewModeViewModel.activeViewModeViewModel : null
     readonly property string activeViewText: activeEditorViewModeViewModel && activeEditorViewModeViewModel.editorViewName !== undefined ? activeEditorViewModeViewModel.editorViewName : "Plain"
-    readonly property int comboLabelRightInset: 20
     readonly property var editorViewMenuItems: [
         {
             label: "Plain",
@@ -42,7 +41,7 @@ LV.HStack {
             editorViewContextMenu.close();
             return;
         }
-        editorViewContextMenu.openFor(editorViewComboFrame, 0, editorViewComboFrame.height + 2);
+        editorViewContextMenu.openFor(editorViewCombo, 0, editorViewCombo.height + 2);
         editorViewBar.requestViewHook("open-editor-view-menu");
     }
 
@@ -57,50 +56,14 @@ LV.HStack {
         lineHeightMode: Text.FixedHeight
         text: "View"
     }
-    Item {
-        id: editorViewComboFrame
+    LV.ComboBox {
+        id: editorViewCombo
 
-        height: 20
-        implicitHeight: 20
-        implicitWidth: 97
-        width: 97
+        arrow: editorViewContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
+        text: editorViewBar.activeViewText
+        tone: LV.ComboBox.Borderless
 
-        LV.ComboBox {
-            id: editorViewCombo
-
-            anchors.fill: parent
-            arrow: editorViewContextMenu.opened ? LV.Stepper.Up : LV.Stepper.Down
-            tone: LV.ComboBox.Borderless
-
-            onClicked: editorViewBar.toggleEditorViewMenu()
-        }
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
-            anchors.left: parent.left
-            anchors.leftMargin: 1
-            anchors.right: parent.right
-            anchors.rightMargin: editorViewBar.comboLabelRightInset
-            anchors.top: parent.top
-            anchors.topMargin: 1
-            color: editorViewCombo.resolvedBackgroundColor
-            radius: LV.Theme.radiusBase
-        }
-        Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 8
-            anchors.right: parent.right
-            anchors.rightMargin: editorViewBar.comboLabelRightInset
-            anchors.verticalCenter: parent.verticalCenter
-            color: LV.Theme.accentWhite
-            elide: Text.ElideRight
-            font.family: "Pretendard"
-            font.pixelSize: 12
-            font.weight: 500
-            lineHeight: 12
-            lineHeightMode: Text.FixedHeight
-            text: editorViewBar.activeViewText
-        }
+        onClicked: editorViewBar.toggleEditorViewMenu()
     }
     LV.ContextMenu {
         id: editorViewContextMenu

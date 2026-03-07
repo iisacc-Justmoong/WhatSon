@@ -264,6 +264,7 @@ LV.ApplicationWindow {
                     rightPanelColor: applicationWindow.rightPanelColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.sidebarColor
+                    sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm
                     sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor

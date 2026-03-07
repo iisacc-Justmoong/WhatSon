@@ -26,6 +26,7 @@ Item {
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: LV.Theme.panelBackground04
     property var sidebarHierarchyViewModel: null
+    property int sidebarHorizontalInset: 2
     property int sidebarWidth: LV.Theme.gap24 * 9
     property color splitterColor: LV.Theme.panelBackground10
     property int splitterHandleThickness: LV.Theme.gap12
