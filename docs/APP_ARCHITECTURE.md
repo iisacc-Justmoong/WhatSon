@@ -216,6 +216,21 @@ Domain-isolated support:
       `requestViewModelHook`, `viewModelHookRequested`).
     - `PanelViewModelRegistry` owns dedicated `PanelViewModel` instances for every QML panel under
       `src/app/qml/view/panels/**` and exposes lookup to QML through `panelViewModelRegistry`.
+- Navigation bar mode support is centralized in `src/app/viewmodel/navigationbar/`:
+    - `NavigationModeViewModel` owns the enum-backed `View/Edit/Control/Presentation` state exposed to QML.
+    - `NavigationModeSectionViewModel` provides one dedicated QObject case per mode plus the active case object.
+    - `EditorViewModeViewModel` owns the enum-backed `Plain/Page/Print/Web` editor view state exposed to QML.
+    - `EditorViewSectionViewModel` provides one dedicated QObject case per editor view plus the active case object.
+    - `main.cpp` exposes the runtime instances to QML as `navigationModeViewModel` and
+      `editorViewModeViewModel`, while `NavigationPropertiesBar.qml` composes the split Figma frame files
+      `NavigationInformationBar.qml`, `NavigationModeBar.qml`, and `NavigationEditorViewBar.qml`.
+    - `NavigationBarLayout.qml` switches the right-side application bar through the active navigation mode and loads
+      one of `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
+      `NavigationApplicationControlBar.qml`, or `NavigationApplicationPresentationBar.qml`.
+    - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a text
+      input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
+    - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design case
+      through those active state objects.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -427,9 +442,8 @@ Files without explicit signal declarations:
 - `src/app/qml/view/panels/MobileNormalLayout.qml`
 - `src/app/qml/view/panels/NavigationBarLayout.qml`
 - `src/app/qml/view/panels/NoteListItem.qml`
-- `src/app/qml/view/panels/navigation/NavigationApplicationContentsBar.qml`
+- `src/app/qml/view/panels/navigation/NavigationApplicationControlBar.qml`
 - `src/app/qml/view/panels/navigation/NavigationIconButton.qml`
-- `src/app/qml/view/panels/navigation/NavigationInformationBar.qml`
 
 Implication:
 

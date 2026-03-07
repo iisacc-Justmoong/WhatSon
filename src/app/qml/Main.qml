@@ -27,6 +27,7 @@ LV.ApplicationWindow {
     readonly property int desktopMinimumBodyWidth: minSidebarWidth + minListViewWidth + minContentWidth + minRightPanelWidth + bodySplitterThickness * 3
     readonly property color drawerColor: LV.Theme.panelBackground11
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
+    readonly property var editorViewModeVm: editorViewModeViewModel
     readonly property var eventHierarchyVm: eventHierarchyViewModel
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
@@ -49,8 +50,9 @@ LV.ApplicationWindow {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return Math.max(LV.Theme.gap20 * 7 + LV.Theme.gap12, toolbarWidth + hierarchyHorizontalInset * 2);
     }
-    readonly property color navigationBarColor: LV.Theme.panelBackground05
+    readonly property color navigationBarColor: LV.Theme.panelBackground06
     readonly property int navigationBarHeight: LV.Theme.gap24
+    readonly property var navigationModeVm: navigationModeViewModel
     readonly property int onboardingDefaultHeight: LV.Theme.gap20 * 21
     readonly property int onboardingDefaultWidth: LV.Theme.gap20 * 28
     readonly property int onboardingMinHeight: LV.Theme.controlHeightMd * 10
@@ -97,6 +99,12 @@ LV.ApplicationWindow {
         var maxDrawerHeight = Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness);
         preferredDrawerHeight = Math.max(minDrawerHeight, Math.min(maxDrawerHeight, preferredDrawerHeight));
     }
+    function cycleNavigationModeFromShortcut() {
+        if (applicationWindow.hasFocusedTextInput())
+            return;
+        if (applicationWindow.navigationModeVm && applicationWindow.navigationModeVm.requestNextMode !== undefined)
+            applicationWindow.navigationModeVm.requestNextMode();
+    }
     function finalizeResizeRenderQualityPolicy() {
         if (!resizeRenderGuardEnabled || (!isMobilePlatform && !isDesktopPlatform))
             return;
@@ -130,6 +138,16 @@ LV.ApplicationWindow {
         }
 
         resizeDebounceTimer.restart();
+    }
+    function hasFocusedTextInput() {
+        let current = applicationWindow.activeFocusItem;
+        while (current) {
+            const isTextEditingItem = current.text !== undefined && current.cursorPosition !== undefined && current.selectedText !== undefined;
+            if (isTextEditingItem)
+                return true;
+            current = current.parent;
+        }
+        return false;
     }
     function reportLayoutBranch(source) {
         console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " isDesktopPlatform=" + isDesktopPlatform + " isMobilePlatform=" + isMobilePlatform + " selectedLayout=" + activeMainLayout);
@@ -167,6 +185,14 @@ LV.ApplicationWindow {
         repeat: false
 
         onTriggered: applicationWindow.finalizeResizeRenderQualityPolicy()
+    }
+    Shortcut {
+        autoRepeat: false
+        context: Qt.ApplicationShortcut
+        enabled: !applicationWindow.hasFocusedTextInput()
+        sequence: "Tab"
+
+        onActivated: applicationWindow.cycleNavigationModeFromShortcut()
     }
     Loader {
         id: mainLayoutLoader
@@ -210,6 +236,8 @@ LV.ApplicationWindow {
                     id: navigationBar
 
                     compactMode: applicationWindow.activeMainLayout === "mobile"
+                    editorViewModeViewModel: applicationWindow.editorViewModeVm
+                    navigationModeViewModel: applicationWindow.navigationModeVm
                     panelColor: applicationWindow.navigationBarColor
                     panelHeight: applicationWindow.navigationBarHeight
                 }
@@ -238,6 +266,7 @@ LV.ApplicationWindow {
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
+
                     onDrawerHeightDragRequested: function (value) {
                         if (value !== applicationWindow.preferredDrawerHeight)
                             applicationWindow.preferredDrawerHeight = value;

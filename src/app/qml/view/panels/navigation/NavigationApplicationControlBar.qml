@@ -4,9 +4,9 @@ import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
 
 Item {
-    id: applicationContentsBar
+    id: applicationControlBar
 
-    property var applicationContentsMenuItems: [
+    property var applicationControlMenuItems: [
         {
             "label": "Show Structure",
             "iconName": "columnIndex",
@@ -90,28 +90,38 @@ Item {
     property bool compactMode: false
     property int menuItemWidth: 176
     property int menuYOffset: 2
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationControlBar") : null
 
-    implicitHeight: applicationContentsRow.implicitHeight
-    implicitWidth: applicationContentsRow.implicitWidth
+    signal viewHookRequested
+
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
+
+    implicitHeight: applicationControlRow.implicitHeight
+    implicitWidth: applicationControlRow.implicitWidth
 
     LV.HStack {
-        id: applicationContentsRow
+        id: applicationControlRow
 
         anchors.fill: parent
         spacing: LV.Theme.gap12
 
         Loader {
-            id: applicationContentsLoader
+            id: applicationControlLoader
 
             Layout.alignment: Qt.AlignVCenter
-            sourceComponent: applicationContentsBar.compactMode ? compactApplicationContentsComponent : fullApplicationContentsComponent
+            sourceComponent: applicationControlBar.compactMode ? compactApplicationControlComponent : fullApplicationControlComponent
         }
     }
     Component {
-        id: fullApplicationContentsComponent
+        id: fullApplicationControlComponent
 
         LV.HStack {
-            id: fullApplicationContentsBar
+            id: fullApplicationControlBar
 
             spacing: 12
 
@@ -143,23 +153,24 @@ Item {
         }
     }
     Component {
-        id: compactApplicationContentsComponent
+        id: compactApplicationControlComponent
 
         LV.HStack {
-            id: compactApplicationContentsBar
+            id: compactApplicationControlBar
 
             spacing: 12
 
             LV.IconMenuButton {
-                id: applicationContentsMenuButton
+                id: applicationControlMenuButton
 
                 iconName: "generalprojectStructure"
+
                 onClicked: {
-                    if (applicationContentsContextMenu.opened) {
-                        applicationContentsContextMenu.close();
+                    if (applicationControlContextMenu.opened) {
+                        applicationControlContextMenu.close();
                         return;
                     }
-                    applicationContentsContextMenu.openFor(applicationContentsMenuButton, 0, height + applicationContentsBar.menuYOffset);
+                    applicationControlContextMenu.openFor(applicationControlMenuButton, 0, height + applicationControlBar.menuYOffset);
                 }
             }
             LV.IconButton {
@@ -170,12 +181,12 @@ Item {
         }
     }
     LV.ContextMenu {
-        id: applicationContentsContextMenu
+        id: applicationControlContextMenu
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        itemWidth: applicationContentsBar.menuItemWidth
-        items: applicationContentsBar.applicationContentsMenuItems
+        itemWidth: applicationControlBar.menuItemWidth
+        items: applicationControlBar.applicationControlMenuItems
         modal: false
         parent: Controls.Overlay.overlay
     }

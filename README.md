@@ -184,6 +184,20 @@ for hub/note hierarchy payloads.
 - Panel-level MVVM is now explicit for every QML panel under `src/app/qml/view/panels/**`:
   `main.cpp` injects `panelViewModelRegistry`, and each panel binds its own key
   (`panelViewModelRegistry.panelViewModel("<panel-key>")`) to a dedicated `PanelViewModel` instance.
+- Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
+  `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
+  `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.
+- Editor view mode state is centralized in `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`:
+  `main.cpp` injects `editorViewModeViewModel`, and the navigation bar editor-view combo binds to the dedicated
+  enum-backed `Plain/Page/Print/Web` state plus its per-view QObject viewmodels.
+- Figma navigation frames are split into dedicated QML files under `src/app/qml/view/panels/navigation/`:
+  `NavigationPropertiesBar.qml`, `NavigationInformationBar.qml`, `NavigationModeBar.qml`,
+  and `NavigationEditorViewBar.qml`.
+- The right-side application area is also split by navigation mode into dedicated QML files:
+  `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
+  `NavigationApplicationControlBar.qml`, and `NavigationApplicationPresentationBar.qml`.
+- `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
+  text editor currently owns focus.
 - All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair
   (`viewHookRequested`, `requestViewHook()`).
 - Main runtime wires hierarchy selection changes and note-list model resets into `backendBridge.publish(...)`

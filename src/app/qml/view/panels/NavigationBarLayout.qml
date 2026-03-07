@@ -9,10 +9,11 @@ Rectangle {
     readonly property int bottomInset: 2
     readonly property int compactHorizontalInset: Math.max(12, Math.min(24, Math.round(width * 0.04)))
     property bool compactMode: false
-    property color compactSurfaceColor: LV.Theme.panelBackground10
+    property color compactSurfaceColor: LV.Theme.panelBackground06
     readonly property int compactTopInset: compactHorizontalInset
     readonly property int effectivePanelHeight: compactMode ? (compactTopInset + panelHeight) : panelHeight
-    property color panelColor: LV.Theme.panelBackground05
+    property var navigationModeViewModel: null
+    property color panelColor: LV.Theme.panelBackground06
     property int panelHeight: 24
     readonly property int sideInset: compactMode ? 8 : 4
     readonly property int topInset: 2
@@ -48,24 +49,66 @@ Rectangle {
                 anchors.fill: parent
                 spacing: 0
 
-                NavigationView.NavigationInformationBar {
-                    id: informationBar
+                NavigationView.NavigationPropertiesBar {
+                    id: propertiesBar
 
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: 20
                     compactMode: navigationBar.compactMode
+                    editorViewModeViewModel: navigationBar.editorViewModeViewModel
+                    navigationModeViewModel: navigationBar.navigationModeViewModel
                 }
                 Item {
                     Layout.fillWidth: true
                 }
-                NavigationView.NavigationApplicationContentsBar {
-                    id: applicationContentsBar
+                Loader {
+                    id: applicationBarLoader
 
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: 20
-                    compactMode: navigationBar.compactMode
+                    sourceComponent: {
+                        switch (navigationBar.activeNavigationModeName) {
+                        case "View":
+                            return applicationViewBarComponent;
+                        case "Edit":
+                            return applicationEditBarComponent;
+                        case "Presentation":
+                            return applicationPresentationBarComponent;
+                        case "Control":
+                        default:
+                            return applicationControlBarComponent;
+                        }
+                    }
                 }
             }
+        }
+    }
+    Component {
+        id: applicationViewBarComponent
+
+        NavigationView.NavigationApplicationViewBar {
+            compactMode: navigationBar.compactMode
+        }
+    }
+    Component {
+        id: applicationEditBarComponent
+
+        NavigationView.NavigationApplicationEditBar {
+            compactMode: navigationBar.compactMode
+        }
+    }
+    Component {
+        id: applicationControlBarComponent
+
+        NavigationView.NavigationApplicationControlBar {
+            compactMode: navigationBar.compactMode
+        }
+    }
+    Component {
+        id: applicationPresentationBarComponent
+
+        NavigationView.NavigationApplicationPresentationBar {
+            compactMode: navigationBar.compactMode
         }
     }
 }

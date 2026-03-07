@@ -370,6 +370,24 @@ target_link_libraries(whatson_panel_viewmodel_registry_tests
 add_test(NAME whatson_panel_viewmodel_registry_tests COMMAND whatson_panel_viewmodel_registry_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_panel_viewmodel_registry_tests)
 
+add_executable(whatson_navigation_qml_frames_tests
+        app/test_navigation_qml_frames.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/PanelViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/PanelViewModelRegistry.cpp
+)
+set_target_properties(whatson_navigation_qml_frames_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_navigation_qml_frames_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_navigation_qml_frames_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_navigation_qml_frames_tests COMMAND whatson_navigation_qml_frames_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_navigation_qml_frames_tests)
+
 add_executable(whatson_architecture_policy_lock_tests
         app/test_architecture_policy_lock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
@@ -433,6 +451,44 @@ target_link_libraries(whatson_detail_panel_viewmodel_tests
 )
 add_test(NAME whatson_detail_panel_viewmodel_tests COMMAND whatson_detail_panel_viewmodel_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_detail_panel_viewmodel_tests)
+
+add_executable(whatson_navigationbar_viewmodel_tests
+        app/test_navigation_mode_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/NavigationModeState.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/NavigationModeSectionViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/NavigationModeViewModel.cpp
+)
+set_target_properties(whatson_navigationbar_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_navigationbar_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_navigationbar_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_navigationbar_viewmodel_tests COMMAND whatson_navigationbar_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_navigationbar_viewmodel_tests)
+
+add_executable(whatson_editor_view_mode_viewmodel_tests
+        app/test_editor_view_mode_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewState.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewSectionViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/navigationbar/EditorViewModeViewModel.cpp
+)
+set_target_properties(whatson_editor_view_mode_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_editor_view_mode_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_editor_view_mode_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_editor_view_mode_viewmodel_tests COMMAND whatson_editor_view_mode_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_editor_view_mode_viewmodel_tests)
 
 add_executable(whatson_note_header_tests
         app/test_whatson_note_header_parser.cpp

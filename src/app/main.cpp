@@ -6,6 +6,8 @@
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
+#include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -362,6 +364,8 @@ int main(int argc, char* argv[])
     HierarchyViewModelProvider hierarchyViewModelProvider;
     SidebarHierarchyViewModel sidebarHierarchyViewModel;
     DetailPanelViewModel detailPanelViewModel;
+    EditorViewModeViewModel editorViewModeViewModel;
+    NavigationModeViewModel navigationModeViewModel;
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     WhatSonHubRuntimeStore hubRuntimeStore;
@@ -471,6 +475,8 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("eventHierarchyViewModel"), &eventHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("presetHierarchyViewModel"), &presetHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("detailPanelViewModel"), &detailPanelViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("editorViewModeViewModel"), &editorViewModeViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("navigationModeViewModel"), &navigationModeViewModel);
     engine.rootContext()->setContextProperty(
         QStringLiteral("detailFileInfoViewModel"),
         detailPanelViewModel.fileInfoViewModel());

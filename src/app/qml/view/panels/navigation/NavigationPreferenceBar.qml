@@ -20,7 +20,7 @@ LV.HStack {
     LV.IconButton {
         id: preferenceButton
 
-        iconName: "actionGroupNew"
+        iconName: "audioToAudio"
     }
     LV.IconButton {
         id: detailPanelControlButton
