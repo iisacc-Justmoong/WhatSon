@@ -261,12 +261,16 @@ Library-specific modeling:
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
     - `id` (string)
     - `primaryText` (string)
-        - `folders` (`QStringList`)
-        - `bookmarked` (bool)
-        - `bookmarkColor` (hex string, bookmark icon tint)
-- `NoteListItem.qml` resolves note-card fallback visuals from LVRS theme tokens:
+    - `displayDate` (formatted `yyyy-MM-dd` string)
+    - `folders` (`QStringList`)
+    - `tags` (`QStringList`)
+    - `bookmarked` (bool)
+    - `bookmarkColor` (hex string, bookmark icon tint)
+- `NoteListItem.qml` resolves note-card visuals from LVRS theme tokens:
+    - active background: `LV.Theme.accentBlueMuted`
+    - hover background: `LV.Theme.panelBackground06`
     - bookmark tint fallback: `LV.Theme.accentYellow`
-    - folder stroke fallback: `LV.Theme.accentGrayLight`
+    - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
     - caption text fallback: `LV.Theme.captionColor`
 
 ## 4.4 QML View Layer (`src/app/qml/**`)

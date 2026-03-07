@@ -10,7 +10,7 @@ Item {
     property var noteModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListItemsPlaceholder") : null
 
-    function normalizeFolders(value) {
+    function normalizeEntries(value) {
         if (value === undefined || value === null)
             return [];
         if (typeof value === "string")
@@ -57,10 +57,12 @@ Item {
 
             bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : ""
             bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : false
-            folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listItemsPlaceholder.normalizeFolders(roleModel.folders) : []
+            displayDate: useRuntimeModel && roleModel && roleModel.displayDate !== undefined ? String(roleModel.displayDate) : ""
+            folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listItemsPlaceholder.normalizeEntries(roleModel.folders) : []
             noteId: useRuntimeModel && roleModel && roleModel.id !== undefined ? String(roleModel.id) : ""
             pressed: ListView.isCurrentItem
             primaryText: useRuntimeModel && roleModel && roleModel.primaryText !== undefined ? String(roleModel.primaryText) : ""
+            tags: useRuntimeModel && roleModel && roleModel.tags !== undefined ? listItemsPlaceholder.normalizeEntries(roleModel.tags) : []
             width: ListView.view ? ListView.view.width : listItemsPlaceholder.width
 
             TapHandler {

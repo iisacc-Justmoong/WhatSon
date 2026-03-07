@@ -10,7 +10,9 @@ struct LibraryNoteListItem
 {
     QString id;
     QString primaryText;
+    QString displayDate;
     QStringList folders;
+    QStringList tags;
     bool bookmarked = false;
     QString bookmarkColor;
 };
@@ -29,7 +31,9 @@ public:
     {
         IdRole = Qt::UserRole + 1,
         PrimaryTextRole,
+        DisplayDateRole,
         FoldersRole,
+        TagsRole,
         BookmarkedRole,
         BookmarkColorRole
     };
@@ -63,6 +67,7 @@ public
     }
 
     signals  :
+
 
 
     void itemCountChanged(int itemCount);

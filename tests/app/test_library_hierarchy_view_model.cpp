@@ -56,7 +56,8 @@ namespace
         const QString& lastModifiedAt,
         const QStringList& folders,
         bool bookmarked = false,
-        const QStringList& bookmarkColors = {})
+        const QStringList& bookmarkColors = {},
+        const QStringList& tags = {})
     {
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -79,6 +80,12 @@ namespace
         }
         bookmarkTag += QStringLiteral(" />\n");
         text += bookmarkTag;
+        text += QStringLiteral("    <tags>\n");
+        for (const QString& tag : tags)
+        {
+            text += QStringLiteral("      <tag>%1</tag>\n").arg(tag);
+        }
+        text += QStringLiteral("    </tags>\n");
         text += QStringLiteral("  </head>\n");
         text += QStringLiteral("</contents>\n");
         return text;
@@ -187,7 +194,8 @@ namespace
                 todayText,
                 {QStringLiteral("Workspace")},
                 true,
-                {QStringLiteral("blue")})))
+                {QStringLiteral("blue")},
+                {QStringLiteral("Only"), QStringLiteral("1 Line")})))
         {
             return false;
         }
@@ -510,6 +518,16 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
                  ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkColorRole)
                  .toString(),
         QStringLiteral("#3B82F6"));
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::DisplayDateRole)
+                 .toString(),
+        QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")));
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::TagsRole)
+                 .toStringList(),
+        QStringList({QStringLiteral("Only"), QStringLiteral("1 Line")}));
 
     viewModel.setSelectedIndex(1);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);

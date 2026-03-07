@@ -53,6 +53,22 @@ namespace
         value = truncateToMaxLines(value, kMaxNoteListPrimaryTextLines);
         return value.trimmed();
     }
+
+    QStringList sanitizeMetadataList(QStringList values)
+    {
+        QStringList sanitized;
+        sanitized.reserve(values.size());
+        for (QString value : values)
+        {
+            value = value.trimmed();
+            if (value.isEmpty() || sanitized.contains(value))
+            {
+                continue;
+            }
+            sanitized.push_back(std::move(value));
+        }
+        return sanitized;
+    }
 }
 
 LibraryNoteListModel::LibraryNoteListModel(QObject* parent)
@@ -85,8 +101,12 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
         return item.id;
     case PrimaryTextRole:
         return item.primaryText;
+    case DisplayDateRole:
+        return item.displayDate;
     case FoldersRole:
         return item.folders;
+    case TagsRole:
+        return item.tags;
     case BookmarkedRole:
         return item.bookmarked;
     case BookmarkColorRole:
@@ -101,7 +121,9 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
     return {
         {IdRole, "id"},
         {PrimaryTextRole, "primaryText"},
+        {DisplayDateRole, "displayDate"},
         {FoldersRole, "folders"},
+        {TagsRole, "tags"},
         {BookmarkedRole, "bookmarked"},
         {BookmarkColorRole, "bookmarkColor"}
     };
@@ -149,31 +171,23 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     sanitized.reserve(items.size());
 
     QVector<ValidationIssue> issues;
-    issues.reserve(items.size() * 4);
+    issues.reserve(items.size() * 5);
 
     for (int index = 0; index < items.size(); ++index)
     {
         LibraryNoteListItem item = std::move(items[index]);
         const QString originalPrimaryText = item.primaryText;
+        const QString originalDisplayDate = item.displayDate;
         const QStringList originalFolders = item.folders;
+        const QStringList originalTags = item.tags;
         const QString originalColor = item.bookmarkColor;
 
         item.id = item.id.trimmed();
         item.primaryText = normalizePrimaryText(std::move(item.primaryText));
+        item.displayDate = item.displayDate.trimmed();
         item.bookmarkColor = item.bookmarkColor.trimmed();
-
-        QStringList folders;
-        folders.reserve(item.folders.size());
-        for (QString folder : item.folders)
-        {
-            folder = folder.trimmed();
-            if (folder.isEmpty() || folders.contains(folder))
-            {
-                continue;
-            }
-            folders.push_back(std::move(folder));
-        }
-        item.folders = std::move(folders);
+        item.folders = sanitizeMetadataList(std::move(item.folders));
+        item.tags = sanitizeMetadataList(std::move(item.tags));
 
         if (item.primaryText.isEmpty())
         {
@@ -194,6 +208,32 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
                 {QStringLiteral("index"), index},
                 {QStringLiteral("originalCount"), originalFolders.size()},
                 {QStringLiteral("sanitizedCount"), item.folders.size()}
+            };
+            issues.push_back(std::move(issue));
+        }
+
+        if (item.tags != originalTags)
+        {
+            ValidationIssue issue;
+            issue.code = QStringLiteral("notelist.tags.sanitized");
+            issue.message = QStringLiteral("Tags list was sanitized.");
+            issue.context = QVariantMap{
+                {QStringLiteral("index"), index},
+                {QStringLiteral("originalCount"), originalTags.size()},
+                {QStringLiteral("sanitizedCount"), item.tags.size()}
+            };
+            issues.push_back(std::move(issue));
+        }
+
+        if (item.displayDate != originalDisplayDate)
+        {
+            ValidationIssue issue;
+            issue.code = QStringLiteral("notelist.displayDate.trimmed");
+            issue.message = QStringLiteral("Display date was trimmed.");
+            issue.context = QVariantMap{
+                {QStringLiteral("index"), index},
+                {QStringLiteral("originalDisplayDate"), originalDisplayDate},
+                {QStringLiteral("correctedDisplayDate"), item.displayDate}
             };
             issues.push_back(std::move(issue));
         }

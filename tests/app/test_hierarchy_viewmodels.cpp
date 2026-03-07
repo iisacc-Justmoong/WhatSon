@@ -33,7 +33,8 @@ namespace
     QString makeWsnHeadText(
         const QString& noteId,
         bool bookmarked,
-        const QStringList& bookmarkColors)
+        const QStringList& bookmarkColors,
+        const QStringList& tags = {})
     {
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -54,7 +55,12 @@ namespace
         }
         bookmarkTag += QStringLiteral(" />\n");
         text += bookmarkTag;
-        text += QStringLiteral("    <tags></tags>\n");
+        text += QStringLiteral("    <tags>\n");
+        for (const QString& tag : tags)
+        {
+            text += QStringLiteral("      <tag>%1</tag>\n").arg(tag);
+        }
+        text += QStringLiteral("    </tags>\n");
         text += QStringLiteral("    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n");
         text += QStringLiteral("    <isPreset>false</isPreset>\n");
         text += QStringLiteral("  </head>\n");
@@ -121,7 +127,8 @@ namespace
             makeWsnHeadText(
                 QStringLiteral("note-blue"),
                 true,
-                {QStringLiteral("blue")})))
+                {QStringLiteral("blue")},
+                {QStringLiteral("brand"), QStringLiteral("campaign")})))
         {
             return false;
         }
@@ -153,7 +160,8 @@ namespace
             makeWsnHeadText(
                 QStringLiteral("note-pink"),
                 true,
-                {QStringLiteral("#EC4899")})))
+                {QStringLiteral("#EC4899")},
+                {QStringLiteral("release")})))
         {
             return false;
         }
@@ -175,6 +183,7 @@ class HierarchyViewModelsTest final : public QObject
 
 private
     slots  :
+
 
 
     void libraryViewModel_supportsCrudContract();
@@ -327,6 +336,16 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Blue summary"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::DisplayDateRole).toString(),
+        QStringLiteral("2026-03-01"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::TagsRole).toStringList(),
+        QStringList({QStringLiteral("brand"), QStringLiteral("campaign")}));
 
     viewModel.setSelectedIndex(8); // pink
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
@@ -335,6 +354,11 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Pink summary"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::TagsRole).toStringList(),
+        QStringList({QStringLiteral("release")}));
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
@@ -538,7 +562,9 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
     LibraryNoteListItem item;
     item.id = QStringLiteral("note-1");
     item.primaryText = QStringLiteral("   ");
+    item.displayDate = QStringLiteral(" 2026-03-07 ");
     item.folders = {QStringLiteral(""), QStringLiteral("folder-a"), QStringLiteral("folder-a")};
+    item.tags = {QStringLiteral(""), QStringLiteral("tag-a"), QStringLiteral("tag-a")};
     item.bookmarked = true;
     item.bookmarkColor = QStringLiteral("not-a-hex");
     items.push_back(item);
@@ -548,8 +574,11 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
     QCOMPARE(model.rowCount(), 1);
     const QModelIndex index = model.index(0, 0);
     QCOMPARE(model.data(index, LibraryNoteListModel::PrimaryTextRole).toString(), QString());
+    QCOMPARE(model.data(index, LibraryNoteListModel::DisplayDateRole).toString(), QStringLiteral("2026-03-07"));
     QCOMPARE(model.data(index, LibraryNoteListModel::FoldersRole).toStringList(),
              QStringList({QStringLiteral("folder-a")}));
+    QCOMPARE(model.data(index, LibraryNoteListModel::TagsRole).toStringList(),
+             QStringList({QStringLiteral("tag-a")}));
     QCOMPARE(model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(), QString());
     QVERIFY(model.correctionCount() >= 1);
 }

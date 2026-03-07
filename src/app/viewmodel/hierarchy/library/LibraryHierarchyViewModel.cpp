@@ -6,6 +6,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -83,6 +84,81 @@ namespace
         }
         folders.removeDuplicates();
         return folders;
+    }
+
+    QStringList noteListTags(const LibraryNoteRecord& note)
+    {
+        QStringList tags;
+        tags.reserve(note.tags.size());
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                tags.push_back(trimmed);
+            }
+        }
+        tags.removeDuplicates();
+        return tags;
+    }
+
+    QDate parseNoteListDate(const QString& value)
+    {
+        const QString trimmed = value.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return {};
+        }
+
+        const QList<QString> formats{
+            QStringLiteral("yyyy-MM-dd-hh-mm-ss"),
+            QStringLiteral("yyyy-MM-dd hh:mm:ss"),
+            QStringLiteral("yyyy/MM/dd hh:mm:ss"),
+            QStringLiteral("yyyy-MM-dd")
+        };
+
+        for (const QString& format : formats)
+        {
+            const QDateTime dateTime = QDateTime::fromString(trimmed, format);
+            if (dateTime.isValid())
+            {
+                return dateTime.date();
+            }
+
+            const QDate date = QDate::fromString(trimmed, format);
+            if (date.isValid())
+            {
+                return date;
+            }
+        }
+
+        const QDateTime isoDateTime = QDateTime::fromString(trimmed, Qt::ISODate);
+        if (isoDateTime.isValid())
+        {
+            return isoDateTime.date();
+        }
+
+        const QDateTime isoDateTimeWithMs = QDateTime::fromString(trimmed, Qt::ISODateWithMs);
+        if (isoDateTimeWithMs.isValid())
+        {
+            return isoDateTimeWithMs.date();
+        }
+
+        return {};
+    }
+
+    QString noteListDisplayDate(const LibraryNoteRecord& note)
+    {
+        QDate date = parseNoteListDate(note.lastModifiedAt);
+        if (!date.isValid())
+        {
+            date = parseNoteListDate(note.createdAt);
+        }
+        if (!date.isValid())
+        {
+            return {};
+        }
+        return date.toString(QStringLiteral("yyyy-MM-dd"));
     }
 
     QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
@@ -937,7 +1013,9 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = notePrimaryText(note);
+        item.displayDate = noteListDisplayDate(note);
         item.folders = noteListFolders(note);
+        item.tags = noteListTags(note);
         item.bookmarked = note.bookmarked;
         item.bookmarkColor = bookmarkColorHexFromNote(note);
         items.push_back(std::move(item));

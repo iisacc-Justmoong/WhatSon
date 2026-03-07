@@ -4,6 +4,7 @@
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 
+#include <QDateTime>
 #include <QFileInfo>
 #include <QVariantMap>
 
@@ -87,6 +88,81 @@ namespace
         }
         folders.removeDuplicates();
         return folders;
+    }
+
+    QStringList bookmarkListTags(const LibraryNoteRecord& note)
+    {
+        QStringList tags;
+        tags.reserve(note.tags.size());
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                tags.push_back(trimmed);
+            }
+        }
+        tags.removeDuplicates();
+        return tags;
+    }
+
+    QDate parseBookmarkDate(const QString& value)
+    {
+        const QString trimmed = value.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return {};
+        }
+
+        const QList<QString> formats{
+            QStringLiteral("yyyy-MM-dd-hh-mm-ss"),
+            QStringLiteral("yyyy-MM-dd hh:mm:ss"),
+            QStringLiteral("yyyy/MM/dd hh:mm:ss"),
+            QStringLiteral("yyyy-MM-dd")
+        };
+
+        for (const QString& format : formats)
+        {
+            const QDateTime dateTime = QDateTime::fromString(trimmed, format);
+            if (dateTime.isValid())
+            {
+                return dateTime.date();
+            }
+
+            const QDate date = QDate::fromString(trimmed, format);
+            if (date.isValid())
+            {
+                return date;
+            }
+        }
+
+        const QDateTime isoDateTime = QDateTime::fromString(trimmed, Qt::ISODate);
+        if (isoDateTime.isValid())
+        {
+            return isoDateTime.date();
+        }
+
+        const QDateTime isoDateTimeWithMs = QDateTime::fromString(trimmed, Qt::ISODateWithMs);
+        if (isoDateTimeWithMs.isValid())
+        {
+            return isoDateTimeWithMs.date();
+        }
+
+        return {};
+    }
+
+    QString bookmarkDisplayDate(const LibraryNoteRecord& note)
+    {
+        QDate date = parseBookmarkDate(note.lastModifiedAt);
+        if (!date.isValid())
+        {
+            date = parseBookmarkDate(note.createdAt);
+        }
+        if (!date.isValid())
+        {
+            return {};
+        }
+        return date.toString(QStringLiteral("yyyy-MM-dd"));
     }
 
     QString bookmarkColorHexForNote(const LibraryNoteRecord& note)
@@ -358,7 +434,9 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = bookmarkPrimaryText(note);
+        item.displayDate = bookmarkDisplayDate(note);
         item.folders = bookmarkListFolders(note);
+        item.tags = bookmarkListTags(note);
         item.bookmarked = true;
         item.bookmarkColor = bookmarkColorHexForNote(note);
         bookmarkListItems.push_back(std::move(item));
@@ -402,7 +480,9 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = bookmarkPrimaryText(note);
+        item.displayDate = bookmarkDisplayDate(note);
         item.folders = bookmarkListFolders(note);
+        item.tags = bookmarkListTags(note);
         item.bookmarked = true;
         item.bookmarkColor = bookmarkColorHexForNote(note);
         bookmarkListItems.push_back(std::move(item));
