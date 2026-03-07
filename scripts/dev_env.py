@@ -16,6 +16,8 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 import sys
 from pathlib import Path
 
+from build_platform_runner import _path_state, emit_state
+
 DEFAULT_ANDROID_PACKAGE_ID = "com.iisacc.app.whatson"
 DEFAULT_APPLE_BUNDLE_ID = "com.iisacc.app.whatson"
 
@@ -477,6 +479,15 @@ def main() -> int:
     output_dir = _expand(args.output_dir)
     system_name = platform.system()
     home = _expand("~")
+    emit_state(
+        "dev_env",
+        "script_start",
+        repo_root=_path_state(repo_root),
+        output_dir=_path_state(output_dir),
+        strict=args.strict,
+        print_only=args.print_only,
+        system=system_name,
+    )
 
     qt_version_root = _expand(
         os.environ.get(
@@ -536,6 +547,28 @@ def main() -> int:
         "xcrun": shutil.which("xcrun") is not None,
     }
     manual_actions = _build_manual_actions(system_name, env_map, tools)
+    emit_state(
+        "dev_env",
+        "environment_resolved",
+        repo_root=_path_state(repo_root),
+        output_dir=_path_state(output_dir),
+        qt_version_root=_path_state(qt_version_root),
+        qt_host_prefix=_path_state(qt_host_prefix),
+        qt_ios_prefix=_path_state(qt_ios_prefix),
+        qt_android_prefix=_path_state(qt_android_prefix),
+        lvrs_prefix=_path_state(lvrs_prefix),
+        lvrs_dir=_path_state(lvrs_dir),
+        lvrs_android_prefix=_path_state(lvrs_android_prefix),
+        lvrs_source_dir=_path_state(lvrs_source_dir),
+        android_sdk_root=_path_state(android_sdk_root),
+        android_ndk_root=_path_state(android_ndk_root),
+        android_avd=android_avd,
+        java21_home=_path_state(java21_home),
+        android_package=android_package,
+        apple_bundle_id=apple_bundle_id,
+        tools=tools,
+        manual_actions=manual_actions,
+    )
 
     if not args.print_only:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -561,22 +594,32 @@ def main() -> int:
         _write_shell(sh_path, env_map, generated_at)
         _write_build_all_wrapper(build_all_wrapper_path, repo_root, sh_path)
         _write_brief(brief_path, sh_path, build_all_wrapper_path, manual_actions)
+        emit_state(
+            "dev_env",
+            "artifacts_written",
+            json_path=_path_state(json_path),
+            shell_path=_path_state(sh_path),
+            build_all_wrapper_path=_path_state(build_all_wrapper_path),
+            brief_path=_path_state(brief_path),
+        )
 
-    print(f"[dev_env] repo_root={repo_root}")
-    print(f"[dev_env] output_dir={output_dir}")
-    print("[dev_env] resolved environment:")
+    print(f"[dev_env] repo_root={repo_root}", flush=True)
+    print(f"[dev_env] output_dir={output_dir}", flush=True)
+    print("[dev_env] resolved environment:", flush=True)
     for key in sorted(env_map.keys()):
-        print(f"  - {key}={env_map[key]}")
+        print(f"  - {key}={env_map[key]}", flush=True)
 
     if manual_actions:
-        print("[dev_env] manual actions required:")
+        print("[dev_env] manual actions required:", flush=True)
         for idx, action in enumerate(manual_actions, start=1):
-            print(f"  {idx}. {action}")
+            print(f"  {idx}. {action}", flush=True)
     else:
-        print("[dev_env] manual actions required: none")
+        print("[dev_env] manual actions required: none", flush=True)
 
     if args.strict and manual_actions:
+        emit_state("dev_env", "script_finish", status="failed", exit_code=2, manual_actions=manual_actions)
         return 2
+    emit_state("dev_env", "script_finish", status="success", exit_code=0, manual_actions=manual_actions)
     return 0
 
 

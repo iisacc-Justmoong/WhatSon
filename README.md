@@ -285,12 +285,19 @@ Default run (sequential to avoid peak CPU saturation):
 python3 scripts/build_all.py
 ```
 
+Native build parallelism is now bounded by default to `min(cpu_count, 8)`.
+Use `--jobs <N>` to override the total job budget. `--parallel` splits that budget across active platform tasks, and the
+same limit is forwarded to downstream native builders such as `cmake --build`, `xcodebuild`, and Android `gradlew`.
+All build scripts now emit structured debug snapshots as `[state] {json}` lines so long-running phases, selected
+devices, command start/finish, and task results can be captured directly from stdout.
+
 Run a single platform script directly:
 
 ```bash
 python3 scripts/build_host.py
 python3 scripts/build_android.py
 python3 scripts/build_ios.py --ios-device "<UDID-or-Device-Name>"
+python3 scripts/build_host.py --jobs 4
 ```
 
 Task selection through orchestrator:
@@ -299,7 +306,14 @@ Task selection through orchestrator:
 python3 scripts/build_all.py --tasks host,android,ios
 python3 scripts/build_all.py --tasks host --no-host-run
 python3 scripts/build_all.py --tasks ios --ios-device "<UDID-or-Device-Name>"
+python3 scripts/build_all.py --tasks host,android,ios --jobs 6
 python3 scripts/build_all.py --tasks host,android,ios --parallel
+```
+
+Example debug capture:
+
+```bash
+python3 scripts/build_all.py --tasks host,android --jobs 4 | rg '^\[state\]'
 ```
 
 Behavior by OS:
@@ -325,6 +339,7 @@ python3 scripts/build_all.py \
 
 `scripts/runtime_smoke_matrix.py` provides an execution-focused verification layer on top of `build_all.py`.
 It is intended to prove that the same UI codebase is built and launched across platforms with clean state.
+It emits the same `[state] {json}` debug snapshots for each phase and command.
 
 What it does:
 
@@ -339,6 +354,7 @@ Examples:
 
 ```bash
 python3 scripts/runtime_smoke_matrix.py
+python3 scripts/runtime_smoke_matrix.py --jobs 4
 python3 scripts/runtime_smoke_matrix.py --tasks host,android --skip-ios-smoke
 python3 scripts/runtime_smoke_matrix.py --tasks ios --strict-ios-smoke
 ```

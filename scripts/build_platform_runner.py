@@ -29,6 +29,9 @@ TASK_IOS = "ios"
 ALL_TASKS = (TASK_HOST, TASK_ANDROID, TASK_IOS)
 DEFAULT_ANDROID_PACKAGE_ID = "com.iisacc.app.whatson"
 DEFAULT_APPLE_BUNDLE_ID = "com.iisacc.app.whatson"
+DEFAULT_BUILD_JOBS_CAP = 8
+STATE_TEXT_PREVIEW_LIMIT = 240
+STATE_ENV_PREFIXES = ("ANDROID", "CMAKE_", "JAVA", "LVRS", "QT", "WHATSON")
 
 
 @dataclass
@@ -49,6 +52,119 @@ class MissingPhysicalDeviceError(CommandError):
 
 def _expand(path: str) -> Path:
     return Path(os.path.expandvars(os.path.expanduser(path))).resolve()
+
+
+def _timestamp_now() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+
+
+def _preview_text(value: Optional[str], limit: int = STATE_TEXT_PREVIEW_LIMIT) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = value.replace("\r\n", "\n").replace("\r", "\n")
+    if len(normalized) <= limit:
+        return normalized
+    remaining = len(normalized) - limit
+    return f"{normalized[:limit]}...(truncated,{remaining} more chars)"
+
+
+def _state_value(value):  # noqa: ANN001
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _state_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_state_value(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
+def _path_state(path: Optional[Path | str]) -> Optional[Dict[str, object]]:
+    if path is None:
+        return None
+    candidate = path if isinstance(path, Path) else Path(str(path))
+    return {
+        "path": str(candidate),
+        "exists": candidate.exists(),
+        "is_dir": candidate.is_dir(),
+        "is_file": candidate.is_file(),
+    }
+
+
+def _env_debug_overrides(env: Optional[Dict[str, str]]) -> Dict[str, str]:
+    if not env:
+        return {}
+
+    overrides: Dict[str, str] = {}
+    for key, value in env.items():
+        if os.environ.get(key) == value:
+            continue
+        if key == "PATH":
+            preview = _preview_text(value, limit=320)
+            if preview is not None:
+                overrides[key] = preview
+            continue
+        if key.startswith(STATE_ENV_PREFIXES):
+            overrides[key] = value
+    return overrides
+
+
+def emit_state(script: str, event: str, **fields) -> None:
+    payload = {
+        "ts": _timestamp_now(),
+        "pid": os.getpid(),
+        "cwd": str(Path.cwd()),
+        "script": script,
+        "event": event,
+    }
+    for key, value in fields.items():
+        if value is None:
+            continue
+        payload[key] = _state_value(value)
+    print(f"[state] {json.dumps(payload, ensure_ascii=False, sort_keys=True)}", flush=True)
+
+
+def _positive_int_arg(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"Expected a positive integer, got '{value}'.") from exc
+    if parsed < 1:
+        raise argparse.ArgumentTypeError(f"Expected a positive integer, got '{value}'.")
+    return parsed
+
+
+def _default_build_jobs() -> int:
+    cpu_count = os.cpu_count() or 1
+    return max(1, min(cpu_count, DEFAULT_BUILD_JOBS_CAP))
+
+
+def _parallel_worker_count(task_count: int, total_jobs: int) -> int:
+    if task_count < 1:
+        return 0
+    return max(1, min(task_count, total_jobs))
+
+
+def _distribute_job_budget(total_jobs: int, slots: int) -> List[int]:
+    if slots < 1:
+        return []
+
+    base = total_jobs // slots
+    remainder = total_jobs % slots
+    budgets = [base] * slots
+    for index in range(remainder):
+        budgets[index] += 1
+    return [max(1, budget) for budget in budgets]
+
+
+def _task_job_limits(tasks: Sequence[str], total_jobs: int) -> Dict[str, int]:
+    worker_count = _parallel_worker_count(len(tasks), total_jobs)
+    budgets = _distribute_job_budget(total_jobs, worker_count)
+    return {
+        task: budgets[index % worker_count]
+        for index, task in enumerate(tasks)
+    }
 
 
 def _default_android_sdk(system_name: str, home: Path) -> Path:
@@ -393,14 +509,35 @@ class BuildAll:
         self.skip_android_lvrs_build = args.skip_android_lvrs_build
         self.no_host_run = args.no_host_run
         self.sequential = args.sequential
+        self.build_jobs = args.jobs
+        self._task_job_limit_map: Dict[str, int] = {}
 
         self.java21_home = _expand(args.java21_home) if args.java21_home else None
 
+    def _emit_state(self, event: str, **fields) -> None:
+        emit_state("build_platform_runner", event, **fields)
+
     def _log(self, task: str, message: str) -> None:
-        print(f"[{task}] {message}")
+        print(f"[{task}] {message}", flush=True)
 
     def _quote_cmd(self, cmd: Sequence[str]) -> str:
         return " ".join(shlex.quote(str(item)) for item in cmd)
+
+    def _task_job_limit(self, task: str) -> int:
+        return max(1, self._task_job_limit_map.get(task, self.build_jobs))
+
+    def _build_parallel_args(self, task: str) -> List[str]:
+        return ["--parallel", str(self._task_job_limit(task))]
+
+    def _xcodebuild_job_args(self, task: str) -> List[str]:
+        return ["-jobs", str(self._task_job_limit(task))]
+
+    def _gradle_job_args(self, task: str) -> List[str]:
+        return [
+            "--max-workers",
+            str(self._task_job_limit(task)),
+            "-Dorg.gradle.parallel=false",
+        ]
 
     def _run(
             self,
@@ -417,12 +554,26 @@ class BuildAll:
         if env:
             merged_env.update(env)
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        cmd_list = [str(item) for item in cmd]
+        cmd_text = self._quote_cmd(cmd)
+        env_overrides = _env_debug_overrides(merged_env)
+        started_at = time.monotonic()
+
+        self._emit_state(
+            "command_start",
+            task=task,
+            cmd=cmd_list,
+            cmd_text=cmd_text,
+            cwd=_path_state(cwd_path),
+            log_path=_path_state(log_path),
+            env_overrides=env_overrides or None,
+        )
 
         with log_path.open("a", encoding="utf-8") as fp:
-            fp.write(f"$ {self._quote_cmd(cmd)}\n")
+            fp.write(f"$ {cmd_text}\n")
             fp.write(f"# cwd: {cwd_path}\n")
             process = subprocess.run(
-                [str(item) for item in cmd],
+                cmd_list,
                 cwd=str(cwd_path),
                 env=merged_env,
                 stdout=fp,
@@ -431,8 +582,19 @@ class BuildAll:
             )
             fp.write(f"[exit] {process.returncode}\n\n")
 
+        duration_seconds = round(time.monotonic() - started_at, 3)
+        self._emit_state(
+            "command_finish",
+            task=task,
+            cmd=cmd_list,
+            cmd_text=cmd_text,
+            returncode=process.returncode,
+            duration_seconds=duration_seconds,
+            log_path=_path_state(log_path),
+        )
+
         if check and process.returncode != 0:
-            raise CommandError(f"Command failed ({process.returncode}): {self._quote_cmd(cmd)}")
+            raise CommandError(f"Command failed ({process.returncode}): {cmd_text}")
         return process.returncode
 
     def _capture(
@@ -445,14 +607,34 @@ class BuildAll:
         merged_env = os.environ.copy()
         if env:
             merged_env.update(env)
-        return subprocess.run(
-            [str(item) for item in cmd],
+        cmd_list = [str(item) for item in cmd]
+        cmd_text = self._quote_cmd(cmd)
+        started_at = time.monotonic()
+        self._emit_state(
+            "capture_start",
+            cmd=cmd_list,
+            cmd_text=cmd_text,
+            cwd=_path_state(cwd or self.root),
+            env_overrides=_env_debug_overrides(merged_env) or None,
+        )
+        process = subprocess.run(
+            cmd_list,
             cwd=str(cwd or self.root),
             env=merged_env,
             capture_output=True,
             text=True,
             check=False,
         )
+        self._emit_state(
+            "capture_finish",
+            cmd=cmd_list,
+            cmd_text=cmd_text,
+            returncode=process.returncode,
+            duration_seconds=round(time.monotonic() - started_at, 3),
+            stdout_preview=_preview_text(process.stdout),
+            stderr_preview=_preview_text(process.stderr),
+        )
+        return process
 
     def _capture_with_log(
             self,
@@ -464,6 +646,7 @@ class BuildAll:
     ) -> subprocess.CompletedProcess[str]:
         process = self._capture(cmd=cmd, cwd=cwd, env=env)
         cwd_path = cwd or self.root
+        cmd_list = [str(item) for item in cmd]
 
         with log_path.open("a", encoding="utf-8") as fp:
             fp.write(f"$ {self._quote_cmd(cmd)}\n")
@@ -477,12 +660,25 @@ class BuildAll:
                 if not process.stderr.endswith("\n"):
                     fp.write("\n")
             fp.write(f"[exit] {process.returncode}\n\n")
+        self._emit_state(
+            "capture_logged",
+            cmd=cmd_list,
+            cmd_text=self._quote_cmd(cmd),
+            returncode=process.returncode,
+            log_path=_path_state(log_path),
+        )
         return process
 
     def _clean_path(self, *, task: str, path: Path, log_path: Path) -> None:
         if not path.exists() and not path.is_symlink():
             return
         self._log(task, f"Cleaning path: {path}")
+        self._emit_state(
+            "clean_path",
+            task=task,
+            target=_path_state(path),
+            log_path=_path_state(log_path),
+        )
         with log_path.open("a", encoding="utf-8") as fp:
             fp.write(f"# clean path: {path}\n")
         if path.is_symlink() or path.is_file():
@@ -494,6 +690,7 @@ class BuildAll:
         if log_path.exists():
             log_path.unlink()
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        self._emit_state("reset_task_log", log_path=_path_state(log_path))
 
     def _stop_host_app_best_effort(self, *, task: str, log_path: Path, app_bin: Path) -> None:
         if self.system_name == "Windows":
@@ -614,8 +811,18 @@ class BuildAll:
             last_serial = serial
             adb_cmd = [str(adb_path), "-s", serial]
             install_cmd = adb_cmd + ["install", "-r", str(apk_path)]
+            self._emit_state(
+                "android_install_attempt",
+                task=task,
+                attempt=attempt,
+                attempts=attempts,
+                serial=serial,
+                apk_path=_path_state(apk_path),
+                package_name=package_name,
+            )
             return_code = self._run(task=task, cmd=install_cmd, log_path=log_path, check=False)
             if return_code == 0:
+                self._emit_state("android_install_result", task=task, attempt=attempt, status="success", serial=serial)
                 return serial
 
             # Best-effort cleanup for stale package state (e.g. DELETE_FAILED_INTERNAL_ERROR)
@@ -640,6 +847,15 @@ class BuildAll:
             if attempt < attempts:
                 time.sleep(2)
 
+        self._emit_state(
+            "android_install_result",
+            task=task,
+            attempts=attempts,
+            status="failed",
+            last_serial=last_serial,
+            apk_path=_path_state(apk_path),
+            package_name=package_name,
+        )
         raise CommandError(
             f"adb install failed after {attempts} attempts for '{apk_path}'"
             + (f" (last-serial={last_serial})" if last_serial else "")
@@ -779,9 +995,22 @@ class BuildAll:
         # Refresh adb state before device inspection.
         self._run(task=task, cmd=[str(adb_path), "start-server"], log_path=log_path, check=False)
 
+        connected_devices = self._connected_android_devices(adb_path)
+        self._emit_state(
+            "android_device_scan",
+            task=task,
+            adb_path=_path_state(adb_path),
+            devices=[
+                {"serial": serial, "is_emulator": is_emulator}
+                for serial, is_emulator in connected_devices
+            ],
+            android_allow_emulator=self.android_allow_emulator,
+        )
+
         serial = self._connected_android_serial(adb_path, physical_only=True)
         if serial:
             self._log(task, f"Using connected Android physical device: {serial}")
+            self._emit_state("android_device_ready", task=task, serial=serial, device_kind="physical")
             return serial
 
         snapshot = self._adb_devices_snapshot(adb_path)
@@ -821,11 +1050,11 @@ class BuildAll:
                 f"{joined}. Unlock device and accept USB debugging authorization, then run build_all again."
             )
 
-        connected_devices = self._connected_android_devices(adb_path)
         if self.android_allow_emulator:
             for emulator_serial, is_emulator in connected_devices:
                 if is_emulator:
                     self._log(task, f"Using running Android emulator: {emulator_serial}")
+                    self._emit_state("android_device_ready", task=task, serial=emulator_serial, device_kind="emulator")
                     return emulator_serial
 
         if connected_devices and not self.android_allow_emulator:
@@ -851,6 +1080,13 @@ class BuildAll:
             raise CommandError("No Android AVD was found.")
 
         self._log(task, f"Starting Android emulator AVD: {avd}")
+        self._emit_state(
+            "android_emulator_launch",
+            task=task,
+            avd=avd,
+            emulator_path=_path_state(emulator_path),
+            log_path=_path_state(log_path.with_name(f"{log_path.stem}.emulator.log")),
+        )
         emu_log = log_path.with_name(f"{log_path.stem}.emulator.log")
         with emu_log.open("a", encoding="utf-8") as fp:
             fp.write(f"$ {self._quote_cmd([str(emulator_path), '-avd', avd])}\n")
@@ -882,6 +1118,7 @@ class BuildAll:
                 serial = self._connected_android_serial(adb_path, physical_only=False)
                 if serial:
                     self._log(task, f"Android emulator is ready: {serial}")
+                    self._emit_state("android_device_ready", task=task, serial=serial, device_kind="emulator")
                     return serial
             time.sleep(2)
 
@@ -980,6 +1217,13 @@ class BuildAll:
 
     def _ensure_ios_device(self, *, task: str, log_path: Path) -> Dict[str, str]:
         devices = self._connected_ios_devices()
+        self._emit_state(
+            "ios_device_scan",
+            task=task,
+            requested_device=(self.ios_device or "").strip() or None,
+            devices=devices,
+            log_path=_path_state(log_path),
+        )
         if not devices:
             raise CommandError(
                 "No connected iOS physical device was detected. "
@@ -991,6 +1235,7 @@ class BuildAll:
             for device in devices:
                 if requested in {device["identifier"], device["name"]}:
                     self._log(task, f"Using requested iOS device: {device['name']} ({device['identifier']})")
+                    self._emit_state("ios_device_ready", task=task, device=device)
                     return device
             available = ", ".join(f"{item['name']}({item['identifier']})" for item in devices)
             raise CommandError(
@@ -999,6 +1244,7 @@ class BuildAll:
 
         selected = devices[0]
         self._log(task, f"Using connected iOS device: {selected['name']} ({selected['identifier']})")
+        self._emit_state("ios_device_ready", task=task, device=selected)
         with log_path.open("a", encoding="utf-8") as fp:
             fp.write(f"# ios-device: {selected['name']} ({selected['identifier']})\n")
         return selected
@@ -1100,10 +1346,19 @@ class BuildAll:
         )
 
         for attempt in range(1, max_attempts + 1):
+            self._emit_state(
+                "ios_launch_attempt",
+                task=task,
+                attempt=attempt,
+                max_attempts=max_attempts,
+                ios_device_id=ios_device_id,
+                bundle_id=bundle_id,
+            )
             result = self._capture_with_log(cmd=launch_cmd, log_path=log_path)
             if result.returncode == 0:
                 if attempt > 1:
                     self._log(task, f"iOS launch succeeded after retry (attempt={attempt}).")
+                self._emit_state("ios_launch_result", task=task, status="success", attempt=attempt, bundle_id=bundle_id)
                 return
 
             output = f"{result.stdout}\n{result.stderr}".lower()
@@ -1113,6 +1368,7 @@ class BuildAll:
                         task,
                         "iOS device appears locked. Waiting for unlock and retrying app launch automatically.",
                     )
+                    self._emit_state("ios_launch_waiting_for_unlock", task=task, attempt=attempt, bundle_id=bundle_id)
                 if attempt < max_attempts:
                     time.sleep(interval_seconds)
                     continue
@@ -1141,6 +1397,7 @@ class BuildAll:
     ) -> None:
         primary_cmd = [
             "xcodebuild",
+            *self._xcodebuild_job_args(task),
             "-project",
             str(xcode_project),
             "-scheme",
@@ -1167,8 +1424,15 @@ class BuildAll:
                 task,
                 "xcodebuild destination id was not available. Retrying with generic iOS destination.",
             )
+            self._emit_state(
+                "ios_xcodebuild_destination_fallback",
+                task=task,
+                ios_device_id=ios_device_id,
+                derived_data_dir=_path_state(derived_data_dir),
+            )
             fallback_cmd = [
                 "xcodebuild",
+                *self._xcodebuild_job_args(task),
                 "-project",
                 str(xcode_project),
                 "-scheme",
@@ -1275,7 +1539,12 @@ class BuildAll:
             env=env,
             log_path=log_path,
         )
-        self._run(task=task, cmd=["cmake", "--build", str(lvrs_build_dir), "-j"], env=env, log_path=log_path)
+        self._run(
+            task=task,
+            cmd=["cmake", "--build", str(lvrs_build_dir), *self._build_parallel_args(task)],
+            env=env,
+            log_path=log_path,
+        )
         self._run(task=task, cmd=["cmake", "--install", str(lvrs_build_dir)], env=env, log_path=log_path)
 
         installed_config = _resolve_package_cmake_dir(self.android_lvrs_prefix, "LVRS") / "LVRSConfig.cmake"
@@ -1337,7 +1606,7 @@ class BuildAll:
         )
         self._run(
             task=task,
-            cmd=["cmake", "--build", str(lvrs_build_dir), "--config", "Release", "-j"],
+            cmd=["cmake", "--build", str(lvrs_build_dir), "--config", "Release", *self._build_parallel_args(task)],
             log_path=log_path,
         )
         self._run(
@@ -1356,6 +1625,17 @@ class BuildAll:
     def task_host(self) -> TaskResult:
         task = TASK_HOST
         log_path = self.logs_dir / f"{task}.log"
+        self._emit_state(
+            "task_prepare",
+            task=task,
+            log_path=_path_state(log_path),
+            build_dir=_path_state(self.host_build_dir),
+            root=_path_state(self.root),
+            logs_dir=_path_state(self.logs_dir),
+            no_host_run=self.no_host_run,
+            qt_host_prefix=_path_state(self.qt_host_prefix),
+            lvrs_prefix=_path_state(self.lvrs_prefix),
+        )
         try:
             self._reset_task_log(log_path)
             self._stop_host_processes_best_effort(task=task, log_path=log_path)
@@ -1380,7 +1660,14 @@ class BuildAll:
             self._run(task=task, cmd=cmake_cmd, log_path=log_path)
             self._run(
                 task=task,
-                cmd=["cmake", "--build", str(self.host_build_dir), "--target", "whatson_build_all", "-j"],
+                cmd=[
+                    "cmake",
+                    "--build",
+                    str(self.host_build_dir),
+                    "--target",
+                    "whatson_build_all",
+                    *self._build_parallel_args(task),
+                ],
                 log_path=log_path,
             )
 
@@ -1389,6 +1676,8 @@ class BuildAll:
                 self._run(task=task, cmd=[str(daemon), "--healthcheck"], log_path=log_path)
 
             if self.no_host_run:
+                self._emit_state("task_finish", task=task, status="success",
+                                 detail="Build completed (host run skipped by flag).")
                 return TaskResult(task, "success", "Build completed (host run skipped by flag).", log_path)
 
             app_bin = self._host_app_binary()
@@ -1430,16 +1719,32 @@ class BuildAll:
                         check=False,
                     )
 
-            return TaskResult(task, "success", f"Host app launched (pid={process.pid}).", log_path)
+            detail = f"Host app launched (pid={process.pid})."
+            self._emit_state("task_finish", task=task, status="success", detail=detail, app_bin=_path_state(app_bin))
+            return TaskResult(task, "success", detail, log_path)
         except Exception as exc:  # noqa: BLE001
+            self._emit_state("task_finish", task=task, status="failed", detail=str(exc), log_path=_path_state(log_path))
             return TaskResult(task, "failed", str(exc), log_path)
 
     def task_ios(self) -> TaskResult:
         task = TASK_IOS
         log_path = self.logs_dir / f"{task}.log"
         if self.system_name != "Darwin":
+            self._emit_state("task_finish", task=task, status="skipped",
+                             detail="iOS Xcode project generation is macOS-only.")
             return TaskResult(task, "skipped", "iOS Xcode project generation is macOS-only.", log_path)
 
+        self._emit_state(
+            "task_prepare",
+            task=task,
+            log_path=_path_state(log_path),
+            project_dir=_path_state(self.ios_project_dir),
+            root=_path_state(self.root),
+            ios_bundle_id=self.ios_bundle_id,
+            ios_device=self.ios_device,
+            qt_ios_prefix=_path_state(self.qt_ios_prefix),
+            lvrs_prefix=_path_state(self.lvrs_prefix),
+        )
         try:
             self._reset_task_log(log_path)
             ios_device = self._ensure_ios_device(task=task, log_path=log_path)
@@ -1566,18 +1871,31 @@ class BuildAll:
                 bundle_id=launch_bundle_id,
             )
 
-            return TaskResult(
-                task,
-                "success",
-                f"Installed .app on iOS device {ios_device['name']} ({ios_device_id}): {app_bundle}",
-                log_path,
-            )
+            detail = f"Installed .app on iOS device {ios_device['name']} ({ios_device_id}): {app_bundle}"
+            self._emit_state("task_finish", task=task, status="success", detail=detail,
+                             app_bundle=_path_state(app_bundle))
+            return TaskResult(task, "success", detail, log_path)
         except Exception as exc:  # noqa: BLE001
+            self._emit_state("task_finish", task=task, status="failed", detail=str(exc), log_path=_path_state(log_path))
             return TaskResult(task, "failed", str(exc), log_path)
 
     def task_android(self) -> TaskResult:
         task = TASK_ANDROID
         log_path = self.logs_dir / f"{task}.log"
+        self._emit_state(
+            "task_prepare",
+            task=task,
+            log_path=_path_state(log_path),
+            build_dir=_path_state(self.android_build_dir),
+            studio_dir=_path_state(self.android_studio_dir),
+            root=_path_state(self.root),
+            android_package=self.android_package,
+            android_allow_emulator=self.android_allow_emulator,
+            android_sdk_root=_path_state(self.android_sdk_root),
+            android_ndk_root=_path_state(self.android_ndk_root),
+            qt_android_prefix=_path_state(self.qt_android_prefix),
+            lvrs_prefix=_path_state(self.lvrs_prefix),
+        )
         try:
             self._reset_task_log(log_path)
             adb_path = self._find_adb()
@@ -1607,16 +1925,22 @@ class BuildAll:
                     serial=serial,
                 )
                 if result:
+                    self._emit_state("task_finish", task=task, status="success", detail=result)
                     return TaskResult(task, "success", result, log_path)
             else:
                 result = self._task_android_generic(task=task, log_path=log_path)
                 if result:
+                    self._emit_state("task_finish", task=task, status="success", detail=result)
                     return TaskResult(task, "success", result, log_path)
 
+            self._emit_state("task_finish", task=task, status="failed", detail="Android launch did not complete.")
             return TaskResult(task, "failed", "Android launch did not complete.", log_path)
         except MissingPhysicalDeviceError as exc:
+            self._emit_state("task_finish", task=task, status="skipped", detail=str(exc),
+                             log_path=_path_state(log_path))
             return TaskResult(task, "skipped", str(exc), log_path)
         except Exception as exc:  # noqa: BLE001
+            self._emit_state("task_finish", task=task, status="failed", detail=str(exc), log_path=_path_state(log_path))
             return TaskResult(task, "failed", str(exc), log_path)
 
     def _task_android_generic(self, *, task: str, log_path: Path) -> str:
@@ -1637,9 +1961,18 @@ class BuildAll:
             cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
 
         self._run(task=task, cmd=cmake_cmd, log_path=log_path)
-        self._run(task=task,
-                  cmd=["cmake", "--build", str(self.android_build_dir), "--target", "launch_WhatSon_android"],
-                  log_path=log_path)
+        self._run(
+            task=task,
+            cmd=[
+                "cmake",
+                "--build",
+                str(self.android_build_dir),
+                "--target",
+                "launch_WhatSon_android",
+                *self._build_parallel_args(task),
+            ],
+            log_path=log_path,
+        )
         gradle_dir = self._find_android_gradle_dir()
         if gradle_dir is None:
             return "launch_WhatSon_android completed."
@@ -1706,7 +2039,14 @@ class BuildAll:
 
         self._run(
             task=task,
-            cmd=["cmake", "--build", str(self.android_build_dir), "--target", "WhatSon_make_apk", "-j"],
+            cmd=[
+                "cmake",
+                "--build",
+                str(self.android_build_dir),
+                "--target",
+                "WhatSon_make_apk",
+                *self._build_parallel_args(task),
+            ],
             env=env,
             log_path=log_path,
         )
@@ -1720,9 +2060,9 @@ class BuildAll:
         if gradlew.exists():
             if self.system_name != "Windows":
                 gradlew.chmod(0o755)
-            gradle_cmd = [str(gradlew), "assembleDebug"]
+            gradle_cmd = [str(gradlew), *self._gradle_job_args(task), "assembleDebug"]
         elif gradlew_bat.exists():
-            gradle_cmd = [str(gradlew_bat), "assembleDebug"]
+            gradle_cmd = [str(gradlew_bat), *self._gradle_job_args(task), "assembleDebug"]
         else:
             raise CommandError("gradlew script was not found in android-build output.")
 
@@ -1881,20 +2221,61 @@ class BuildAll:
             TASK_IOS: self.task_ios,
         }
 
+        self._emit_state(
+            "runner_start",
+            requested_tasks=list(tasks),
+            selected_tasks=selected,
+            mode="sequential" if self.sequential else "parallel",
+            build_jobs=self.build_jobs,
+            root=_path_state(self.root),
+            logs_dir=_path_state(self.logs_dir),
+        )
+
         if self.sequential:
-            return [task_map[name]() for name in selected]
+            self._task_job_limit_map = {name: self.build_jobs for name in selected}
+            try:
+                self._emit_state("runner_job_budget", task_job_limits=self._task_job_limit_map)
+                results = [task_map[name]() for name in selected]
+                self._emit_state(
+                    "runner_finish",
+                    results=[
+                        {"task": result.name, "status": result.status, "detail": result.detail}
+                        for result in results
+                    ],
+                )
+                return results
+            finally:
+                self._task_job_limit_map = {}
+
+        worker_count = _parallel_worker_count(len(selected), self.build_jobs)
+        self._task_job_limit_map = _task_job_limits(selected, self.build_jobs)
+        self._emit_state(
+            "runner_job_budget",
+            worker_count=worker_count,
+            task_job_limits=self._task_job_limit_map,
+        )
 
         results: Dict[str, TaskResult] = {}
-        with ThreadPoolExecutor(max_workers=len(selected)) as executor:
-            future_map = {executor.submit(task_map[name]): name for name in selected}
-            for future in as_completed(future_map):
-                name = future_map[future]
-                try:
-                    results[name] = future.result()
-                except Exception as exc:  # noqa: BLE001
-                    results[name] = TaskResult(name, "failed", str(exc), self.logs_dir / f"{name}.log")
+        try:
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                future_map = {executor.submit(task_map[name]): name for name in selected}
+                for future in as_completed(future_map):
+                    name = future_map[future]
+                    try:
+                        results[name] = future.result()
+                    except Exception as exc:  # noqa: BLE001
+                        results[name] = TaskResult(name, "failed", str(exc), self.logs_dir / f"{name}.log")
+        finally:
+            self._task_job_limit_map = {}
 
         ordered = [results[name] for name in selected]
+        self._emit_state(
+            "runner_finish",
+            results=[
+                {"task": result.name, "status": result.status, "detail": result.detail}
+                for result in ordered
+            ],
+        )
         return ordered
 
 
@@ -1938,7 +2319,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root", default=str(repo_root), help="Repository root path.")
     parser.add_argument("--logs-dir", default=str(repo_root / "build" / "automation-logs"))
     parser.add_argument("--tasks", default="host,android,ios", help="Comma-separated tasks: host,android,ios")
-    parser.add_argument("--sequential", action="store_true", help="Run tasks sequentially instead of parallel.")
+
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--sequential",
+        action="store_true",
+        help="Run tasks sequentially (default).",
+    )
+    mode_group.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Run tasks in parallel and split the build job budget across active tasks.",
+    )
+    parser.add_argument(
+        "--jobs",
+        type=_positive_int_arg,
+        default=_default_build_jobs(),
+        help="Maximum number of native build jobs to use across active tasks (default: %(default)s).",
+    )
     parser.add_argument("--no-host-run", action="store_true", help="Skip launching the host desktop app.")
 
     parser.add_argument("--host-build-dir", default=str(repo_root / "build" / "host-auto"))
@@ -2028,7 +2426,10 @@ def parse_args() -> argparse.Namespace:
         default=_pick_setting("JAVA21_HOME", dev_env_profile, java21_default),
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.sequential and not args.parallel:
+        args.sequential = True
+    return args
 
 
 def main() -> int:
@@ -2036,23 +2437,35 @@ def main() -> int:
     tasks = [item.strip() for item in args.tasks.split(",") if item.strip()]
     runner = BuildAll(args)
 
-    print(f"[build_all] root={runner.root}")
-    print(f"[build_all] tasks={','.join(tasks)}")
-    print(f"[build_all] mode={'sequential' if runner.sequential else 'parallel'}")
+    emit_state(
+        "build_platform_runner",
+        "script_entry",
+        root=_path_state(runner.root),
+        tasks=tasks,
+        mode="sequential" if runner.sequential else "parallel",
+        jobs=runner.build_jobs,
+        logs_dir=_path_state(runner.logs_dir),
+    )
+    print(f"[build_all] root={runner.root}", flush=True)
+    print(f"[build_all] tasks={','.join(tasks)}", flush=True)
+    print(f"[build_all] mode={'sequential' if runner.sequential else 'parallel'}", flush=True)
+    print(f"[build_all] jobs={runner.build_jobs}", flush=True)
 
     try:
         results = runner.run(tasks)
     except Exception as exc:  # noqa: BLE001
-        print(f"[build_all] fatal: {exc}")
+        emit_state("build_platform_runner", "script_finish", status="failed", detail=str(exc))
+        print(f"[build_all] fatal: {exc}", flush=True)
         return 1
 
     has_failure = False
     for result in results:
-        print(f"[{result.name}] {result.status}: {result.detail}")
-        print(f"[{result.name}] log: {result.log_path}")
+        print(f"[{result.name}] {result.status}: {result.detail}", flush=True)
+        print(f"[{result.name}] log: {result.log_path}", flush=True)
         if result.status == "failed":
             has_failure = True
 
+    emit_state("build_platform_runner", "script_finish", status="failed" if has_failure else "success")
     return 1 if has_failure else 0
 
 
