@@ -81,6 +81,7 @@ public
     signals  :
 
 
+
     void selectedIndexChanged();
     void itemCountChanged();
     void noteItemCountChanged();
@@ -115,11 +116,13 @@ private:
     static int nextFolderSequence(const QVector<LibraryHierarchyItem>& items);
     static QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes);
     const QVector<LibraryNoteRecord>& notesForBucket(IndexedBucket bucket) const;
+    const IndexedBucketRange* bucketRangeForIndex(int index) const noexcept;
     IndexedBucket selectedBucket() const;
     FolderSelectionScope selectedFolderScope() const;
     static QString normalizeFolderKey(const QString& value);
     QString folderPathForIndex(int index) const;
     static bool noteMatchesFolderScope(const LibraryNoteRecord& note, const FolderSelectionScope& scope);
+    int firstEditableInsertIndex() const noexcept;
     void rebuildBucketRanges();
     void refreshNoteListForSelection();
     void applyIndexedBuckets();

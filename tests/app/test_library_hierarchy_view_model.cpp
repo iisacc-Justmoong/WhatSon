@@ -19,13 +19,16 @@ private
     slots  :
 
 
+
     void defaultState_isEmptyAndCreatable();
     void setDepthItems_parsesDepthAndDpethKeys();
     void setDepthItems_setsChevronOnlyWhenChildExists();
     void renameItem_updatesDisplayName();
     void createFolder_insertsAsChildOfSelectedSubtree();
+    void createFolder_whenSystemBucketSelected_insertsAfterSystemFolders();
     void deleteSelectedFolder_removesDescendantSubtree();
     void loadFromWshub_buildsAllDraftTodayBuckets();
+    void loadFromWshub_protectsAllDraftTodaySystemFolders();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
     void loadFromWshub_usesBodyFirstLineForPrimaryText();
     void loadFromWshub_usesFoldersFileForSidebarItems();
@@ -358,6 +361,31 @@ void LibraryHierarchyViewModelTest::createFolder_insertsAsChildOfSelectedSubtree
         false);
 }
 
+void LibraryHierarchyViewModelTest::createFolder_whenSystemBucketSelected_insertsAfterSystemFolders()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(0);
+    viewModel.createFolder();
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
+    QCOMPARE(viewModel.selectedIndex(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("All"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Folder1"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        0);
+}
+
 void LibraryHierarchyViewModelTest::deleteSelectedFolder_removesDescendantSubtree()
 {
     LibraryHierarchyViewModel viewModel;
@@ -399,29 +427,46 @@ void LibraryHierarchyViewModelTest::loadFromWshub_buildsAllDraftTodayBuckets()
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
-        QStringLiteral("All (3)"));
+        QStringLiteral("All"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::LabelRole).toString(),
-        QStringLiteral("Draft (2)"));
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Draft"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(7, 0), LibraryHierarchyModel::LabelRole).toString(),
-        QStringLiteral("Today (2)"));
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Today"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        0);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        0);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        0);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
+}
 
-    const QString allFirstLabel = viewModel.itemModel()
-                                           ->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::LabelRole)
-                                           .toString();
-    const QString allSecondLabel = viewModel.itemModel()
-                                            ->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole)
-                                            .toString();
-    const QString allThirdLabel = viewModel.itemModel()
-                                           ->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole)
-                                           .toString();
-    QVERIFY(allFirstLabel.startsWith(QStringLiteral("Alpha body summary.")));
-    QVERIFY(allSecondLabel.startsWith(QStringLiteral("Beta body summary.")));
-    QVERIFY(allThirdLabel.startsWith(QStringLiteral("Gamma body summary.")));
+void LibraryHierarchyViewModelTest::loadFromWshub_protectsAllDraftTodaySystemFolders()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    for (int row = 0; row < 3; ++row)
+    {
+        QVERIFY(!viewModel.canRenameItem(row));
+        viewModel.setSelectedIndex(row);
+        QVERIFY(!viewModel.deleteFolderEnabled());
+    }
 }
 
 void LibraryHierarchyViewModelTest::setDepthItems_emptyInput_preservesIndexedBuckets()
@@ -434,10 +479,10 @@ void LibraryHierarchyViewModelTest::setDepthItems_emptyInput_preservesIndexedBuc
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
     viewModel.setDepthItems({});
-    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
-        QStringLiteral("All (3)"));
+        QStringLiteral("All"));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket()
@@ -466,13 +511,13 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
                  .toString(),
         QStringLiteral("#3B82F6"));
 
-    viewModel.setSelectedIndex(4);
-    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
-
-    viewModel.setSelectedIndex(7);
+    viewModel.setSelectedIndex(1);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
 
     viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    viewModel.setSelectedIndex(0);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.noteListModel()
@@ -542,26 +587,38 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 6);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
-        QStringLiteral("Research"));
+        QStringLiteral("All"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::DepthRole).toInt(),
-        1);
+        0);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Draft"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Today"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Research"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        1);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(5, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("Brand"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ShowChevronRole)
                  .toBool(),
-        true);
-    QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::ShowChevronRole)
-                 .toBool(),
         false);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::ShowChevronRole)
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::ShowChevronRole)
                  .toBool(),
         false);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
@@ -650,9 +707,14 @@ void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolde
     const int researchIndex = findIndexByLabel(QStringLiteral("Research"));
     const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
     const int brandIndex = findIndexByLabel(QStringLiteral("Brand"));
+    const int allIndex = findIndexByLabel(QStringLiteral("All"));
     QVERIFY(researchIndex >= 0);
     QVERIFY(competitorIndex >= 0);
     QVERIFY(brandIndex >= 0);
+    QVERIFY(allIndex >= 0);
+
+    viewModel.setSelectedIndex(allIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 
     viewModel.setSelectedIndex(researchIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
@@ -691,7 +753,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 }
 

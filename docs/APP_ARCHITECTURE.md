@@ -251,7 +251,8 @@ Library-specific modeling:
 - `LibraryAll`: full note index and metadata assembly
 - `LibraryDraft`: filter notes without folders
 - `LibraryToday`: filter notes by `createdAt/lastModifiedAt == today`
-- `LibraryHierarchyViewModel` composes All/Draft/Today buckets and note list model synchronization
+- `LibraryHierarchyViewModel` exposes `All`, `Draft`, and `Today` as immutable depth-0 system folders and synchronizes
+  note-list filtering from those buckets plus persisted library folders
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
@@ -369,7 +370,8 @@ Detected package conventions:
           timestamps,
           participant list, and related summary attributes)
 - Hierarchy/auxiliary files (typically under `*.wscontents`):
-    - `Folders.wsfolders` (hierarchical folder tree JSON; runtime computes depth from tree position)
+    - `Folders.wsfolders` (hierarchical folder tree JSON for user folders; runtime prepends immutable library system
+      roots `All`, `Draft`, and `Today` ahead of this tree)
     - `Tags.wstags` (tag tree or flat list)
     - `Bookmarks.wsbookmarks` (bookmark hierarchy source)
     - `Progress.wsprogress` (progress state domain)
