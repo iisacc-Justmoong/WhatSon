@@ -595,7 +595,7 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
 
     const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");
-    QVERIFY(viewModel.saveCurrentBodyText(editedBody));
+    QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-a"), editedBody));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
 
     const QString bodyPath = QDir(hubPath).filePath(

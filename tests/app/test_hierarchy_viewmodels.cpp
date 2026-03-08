@@ -422,7 +422,7 @@ void HierarchyViewModelsTest::bookmarksViewModel_saveCurrentBodyText_rewritesWsn
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-blue"));
 
     const QString editedBody = QStringLiteral("\nBlue edited first line\nBlue edited second line\n");
-    QVERIFY(viewModel.saveCurrentBodyText(editedBody));
+    QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-blue"), editedBody));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
 
     const QString bodyPath = QDir(hubPath).filePath(

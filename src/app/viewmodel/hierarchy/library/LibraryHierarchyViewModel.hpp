@@ -70,6 +70,7 @@ public:
     Q_INVOKABLE bool moveFolderToRoot(int sourceIndex);
     Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
     Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);
+    Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 
     void setHubStore(WhatSonHubStore store);

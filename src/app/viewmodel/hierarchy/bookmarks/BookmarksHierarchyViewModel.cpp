@@ -455,15 +455,15 @@ void BookmarksHierarchyViewModel::deleteSelectedFolder()
                               QStringLiteral("reason=bookmarks hierarchy is read-only"));
 }
 
-bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
+bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const QString& text)
 {
-    const QString noteId = m_noteListModel.currentNoteId().trimmed();
-    if (noteId.isEmpty())
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
     {
         return false;
     }
 
-    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, noteId);
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
     if (noteIndex < 0)
     {
         return false;
@@ -485,7 +485,7 @@ bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
         WhatSon::Debug::traceSelf(this,
                                   QString::fromLatin1(kScope),
                                   QStringLiteral("saveCurrentBodyText.failed"),
-                                  QStringLiteral("noteId=%1 error=%2").arg(noteId, saveError));
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, saveError));
         return false;
     }
 
@@ -498,6 +498,11 @@ bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
 
     refreshNoteListForSelection();
     return true;
+}
+
+bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
 }
 
 bool BookmarksHierarchyViewModel::renameEnabled() const noexcept

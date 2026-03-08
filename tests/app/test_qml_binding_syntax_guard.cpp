@@ -117,17 +117,35 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("property var contentViewModel: null")),
         "ContentViewLayout.qml must accept the active hierarchy view-model for body persistence.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("property bool pendingBodySave: false")),
+        "ContentViewLayout.qml must track debounced body persistence state.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("function visibleLineNumbers()")),
         "ContentViewLayout.qml must derive visible line numbers for the gutter viewport.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("const firstVisibleLine = contentsView.firstVisibleLogicalLine();")),
+        "ContentViewLayout.qml must choose the initial visible gutter line from viewport-space line positions.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral(
-            "readonly property var logicalLineStartOffsets: contentsView.buildLogicalLineStartOffsets(contentsView.editorText)")),
+            "readonly property var logicalLineStartOffsets: contentsView.normalizeLogicalLineOffsets(")),
         "ContentViewLayout.qml must track logical-line offsets independently from wrapped visual rows.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function buildLogicalLineStartOffsets(text)")),
         "ContentViewLayout.qml must derive logical line starts for wrap-safe gutter numbering.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("positionToRectangle(offset)")),
+        contentViewText.contains(QStringLiteral("return offsets;")),
+        "ContentViewLayout.qml must return the computed logical-line offsets so gutter numbers remain visible.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function logicalLineNumberForOffset(offset)")),
+        "ContentViewLayout.qml must resolve cursor line numbers from the logical-line offset table instead of reparsing the whole document every keypress.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function logicalLineNumberForDocumentY(documentY)")),
+        "ContentViewLayout.qml must derive the first visible logical line from document Y rather than rescanning from line 1 each repaint.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function firstVisibleLogicalLine()")),
+        "ContentViewLayout.qml must derive the first rendered gutter row from viewport-space line positions.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("positionToRectangle(safeOffset)")),
         "ContentViewLayout.qml must map gutter positions through editorItem.positionToRectangle for wrapped text.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function lineVisualHeight(startLine, lineSpan)")),
@@ -187,17 +205,84 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("wrapMode: TextEdit.Wrap")),
         "ContentViewLayout.qml must soft-wrap the editor while keeping gutter numbers on logical lines.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("function scheduleEditorPersistence()")),
+        "ContentViewLayout.qml must debounce body persistence instead of rewriting files on every keystroke.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("saveBodyTextForNote(noteId, text)")),
+        "ContentViewLayout.qml must persist body edits against an explicit note id so selection changes do not misroute pending saves.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("Component.onDestruction: contentsView.flushPendingEditorText()")),
+        "ContentViewLayout.qml must flush pending body edits when the surface is torn down.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("Timer {")),
+        "ContentViewLayout.qml must use a Timer-backed debounce for body persistence.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("readonly property var editorFlickable: contentsView.resolveEditorFlickable()")),
+        "ContentViewLayout.qml must resolve the internal TextEditor flickable for minimap scrolling.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function resolveEditorFlickable()")),
+        "ContentViewLayout.qml must expose a helper that resolves the internal editor flickable.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function scrollEditorViewportToMinimapPosition(localY)")),
+        "ContentViewLayout.qml must expose a minimap scroll helper that repositions the editor viewport.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("id: minimapCanvas")),
+        "ContentViewLayout.qml must render a right-side minimap canvas for the editor document overview.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function minimapContentYForLine(lineNumber)")),
+        "ContentViewLayout.qml minimap must project each bar from the editor text start offset rather than gutter state.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function minimapTrackYForContentY(contentY)")),
+        "ContentViewLayout.qml minimap must map document content Y into track Y so short notes stay top-aligned instead of filling the whole rail.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(")),
+        "ContentViewLayout.qml minimap must cache visual-row segments from the live editor layout instead of painting one carved block per logical line.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("function buildMinimapVisualRows(text, editorWidth, editorContentHeight)")),
+        "ContentViewLayout.qml minimap must derive rows from the editor's actual wrapped visual layout.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function minimapVisualRowPaintHeight(rowSpec)")),
+        "ContentViewLayout.qml minimap must thin each painted row below the full slot height so the text silhouette stays crisp.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("Layout.preferredWidth: contentsView.minimapOuterWidth")),
+        "ContentViewLayout.qml minimap rail must reserve its own right-side layout width.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("anchors.rightMargin: contentsView.minimapTrackInset")),
+        "ContentViewLayout.qml minimap track must sit inline against the right edge instead of using a framed centered rail.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("border.width: 0")),
+        "ContentViewLayout.qml minimap viewport must remain borderless.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("color: contentsView.minimapViewportFillColor")),
+        "ContentViewLayout.qml minimap viewport must use a subtle inline fill instead of a framed outline.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("width: contentsView.minimapCurrentLineWidth()")),
+        "ContentViewLayout.qml current-line minimap indicator must follow the active visual-row silhouette width instead of spanning the whole rail.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("LV.WheelScrollGuard {")),
+        "ContentViewLayout.qml minimap must route wheel scroll into the editor flickable.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("targetFlickable: contentsView.editorFlickable")),
+        "ContentViewLayout.qml minimap wheel routing must target the resolved editor flickable.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("fontFamily: LV.Theme.fontBody")),
         "ContentViewLayout.qml must bind TextEditor typography to the LVRS body font family.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("fontLetterSpacing: 0")),
         "ContentViewLayout.qml must keep the Figma body token's zero letter spacing.");
     QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("fieldMinHeight: Math.max(contentsView.minEditorHeight, editorViewport.height)")),
+        "ContentViewLayout.qml must keep the editor surface on Fill height even when the body text is empty.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("property: \"y\"")),
         "ContentViewLayout.qml must override the internal TextEditor y-position for top-left body alignment.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("value: contentsView.editorVerticalInset")),
-        "ContentViewLayout.qml must anchor body text to the 16px top inset.");
+        contentViewText.contains(QStringLiteral("value: contentsView.editorTopInset")),
+        "ContentViewLayout.qml must anchor body text to the 48px top inset.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("text: contentsView.editorText")),
         "ContentViewLayout.qml must bind the editor and gutter to the same document text source.");
@@ -205,14 +290,14 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("property bool syncingEditorTextFromModel: false")),
         "ContentViewLayout.qml must guard model-driven body sync from recursive save attempts.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("function persistEditorText(text)")),
+        contentViewText.contains(QStringLiteral("function persistEditorTextForNote(noteId, text)")),
         "ContentViewLayout.qml must route body persistence through a content view-model hook.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("function syncEditorTextFromSelection(text)")),
+        contentViewText.contains(QStringLiteral("function syncEditorTextFromSelection(noteId, text)")),
         "ContentViewLayout.qml must resync selection changes through an explicit editor-sync helper.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("return Boolean(contentViewModel.saveCurrentBodyText(text));")),
-        "ContentViewLayout.qml must save editor text through contentViewModel.saveCurrentBodyText(text).");
+        contentViewText.contains(QStringLiteral("return Boolean(contentViewModel.saveBodyTextForNote(noteId, text));")),
+        "ContentViewLayout.qml must save editor text through contentViewModel.saveBodyTextForNote(noteId, text).");
     QVERIFY2(
         contentViewText.contains(QStringLiteral(
             "readonly property string selectedNoteBodyText: noteListModel && noteListModel.currentBodyText !== undefined ? String(noteListModel.currentBodyText) : \"\"")),
@@ -222,19 +307,20 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentViewLayout.qml must resync editor text when the selected note body changes.");
     QVERIFY2(
         contentViewText.contains(
-            QStringLiteral("contentsView.syncEditorTextFromSelection(contentsView.selectedNoteBodyText);")),
+            QStringLiteral(
+                "contentsView.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);")),
         "ContentViewLayout.qml must sync incoming note bodies through the guarded editor helper.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("if (contentsView.syncingEditorTextFromModel)")),
         "ContentViewLayout.qml must skip file persistence while replaying model-driven editor text.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("contentsView.persistEditorText(text);")),
-        "ContentViewLayout.qml must persist user edits to the active note body.");
+        contentViewText.contains(QStringLiteral("contentsView.scheduleEditorPersistence();")),
+        "ContentViewLayout.qml must debounce persistence for user edits to the active note body.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("contentsView.editorTextEdited(text);")),
         "ContentViewLayout.qml must emit editorTextEdited(text) from TextEditor edits.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorVerticalInset")),
+        contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorTopInset")),
         "ContentViewLayout.qml placeholder label must also align to the top inset.");
 }
 
@@ -366,8 +452,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listItemsPlaceholderText.contains(QStringLiteral("listItemsPlaceholder.noteModel.currentIndex = index;")),
         "ListItemsPlaceholder.qml must push tapped note selection into noteModel.currentIndex.");
     QVERIFY2(
+        listItemsPlaceholderText.contains(QStringLiteral("function pushCurrentIndexToModel(index)")),
+        "ListItemsPlaceholder.qml must expose an explicit helper that pushes ListView selection into the note model.");
+    QVERIFY2(
         listItemsPlaceholderText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
         "ListItemsPlaceholder.qml must pull currentIndex from the note model back into ListView state.");
+    QVERIFY2(
+        listItemsPlaceholderText.contains(QStringLiteral("onNoteModelChanged: {")),
+        "ListItemsPlaceholder.qml must resync the visible note selection whenever the active note model changes.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);
@@ -462,6 +554,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldVerticalInset: 3")),
         "ListBarHeader.qml inline input must use the 3px vertical inset from Figma.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("readonly property int resolvedInputTextHeight: Math.max(")),
+        "ListBarHeader.qml must derive the live search text box height from the InputField contentHeight so whitespace edits stay vertically centered.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("target: searchField.inputItem")),
+        "ListBarHeader.qml must override the underlying LVRS input item directly for stable inline search alignment.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("property: \"height\"")),
+        "ListBarHeader.qml must bind the underlying input height for stable search text centering.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("property: \"y\"")),
+        "ListBarHeader.qml must bind the underlying input y-position for stable search text centering.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral(
+            "value: Math.max(0, Math.floor((searchField.height - searchField.resolvedInputTextHeight) / 2))")),
+        "ListBarHeader.qml must recenter the live input item from its resolved text height.");
     QVERIFY2(
         listBarHeaderText.contains(QStringLiteral("iconName: \"cwmPermissionView\"")),
         "ListBarHeader.qml visibility button must use the Figma eye icon asset.");

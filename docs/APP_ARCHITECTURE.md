@@ -250,21 +250,46 @@ Domain-isolated support:
               assets `cwmPermissionView` and `sortByType` without extra color-token overrides. The active query is
               pushed into the active domain note-list model (`LibraryNoteListModel` or `BookmarksNoteListModel`), so
               visible note cards filter against runtime-parsed note body text without reparsing `.wsnote` content on
-              each edit.
+              each edit. The inline search header also recenters the underlying `LV.InputField.inputItem` from its live
+              `contentHeight`, which prevents `Space`/`Backspace` transitions from snapping the text/caret between two
+              fixed vertical positions. `ListItemsPlaceholder.qml` owns the bidirectional selection bridge between the
+              visible
+              `ListView` and the active domain note-list model, so note taps and runtime selection changes stay aligned
+              even when the active hierarchy domain swaps the underlying note-list model instance.
             - `ContentViewLayout.qml` now implements the Figma `ContentsDisplayView` editing surface with
               `LV.TextEditor` plus a dedicated `74px` left gutter. The gutter computes visible line numbers from the
               same `editorText` source, cursor line, and editor render metrics. `wrapMode: TextEdit.Wrap` is enabled,
               but gutter numbering still stays on logical document lines by mapping each logical line start through
               `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not change the line-number
-              sequence. The editable body block is top-left aligned with `16px` inset on all sides, overriding the
-              LVRS internal centered multi-line placement. Figma node `155:5345` is treated as the source of truth for
+              sequence. The editor surface itself keeps Fill height even when the current body is empty, and the
+              editable body block is top-left aligned with `48px` top inset plus `16px` horizontal / bottom inset,
+              overriding the LVRS internal centered multi-line placement. Figma node `155:5345` is treated as the source
+              of truth for
               the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
               active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned number
               text mirrored against the editor's `16px` left inset, and the fixed `18px` icon-rail anchor at `x=40`.
               Figma node `155:5352` is treated as the source of truth for body typography (`LV.Theme.fontBody`, `12px`,
               medium, zero letter spacing). `editorText` is projected from the selected note's `.wsnbody` `<body>`
               plain-text payload through the active note-list model's `currentBodyText`, and persisted back through the
-              active hierarchy view-model's `saveCurrentBodyText(...)` so edits rewrite the backing `.wsnbody` file.
+              active hierarchy view-model's `saveBodyTextForNote(...)` after a short debounce so typing does not force
+              a full `.wsnbody` rewrite and note-list refresh on every keystroke.
+              The gutter keeps its own logical-line offset array through `buildLogicalLineStartOffsets(...)`; if that
+              array stops being returned, the editor can still paint body text while the line-number column goes empty.
+              Cursor-line lookup and visible-line enumeration must use that offset table plus viewport-derived search
+              instead of reparsing the entire body or rescanning line `1..N` for every edit.
+              The first visible gutter row must be chosen from viewport-space rendered line positions so the initial
+              line number shown after opening a note matches the actual topmost visible text row.
+              A right-side Xcode-style minimap is also attached to the same editor document. It resolves the internal
+              `TextEditor` flickable, draws a compressed body-text silhouette on `Canvas`, and maps each bar through the
+              editor's actual content height plus text-start offset instead of distributing rows evenly across the rail.
+              That keeps short notes top-aligned and visually tied to the text body rather than the gutter marker lane.
+              The minimap paint path now rebuilds actual wrapped visual-row segments from
+              `TextEditor.positionToRectangle(...)`
+              instead of stretching one logical-line rectangle across the whole wrapped block; each row is painted as a
+              thinner centered stroke so the silhouette reads like text rather than a carved slab.
+              The minimap stays borderless and inline: the visible viewport is only a translucent fill without an
+              outline, the current cursor line is reduced to the active text-line silhouette width, and click/drag plus
+              `LV.WheelScrollGuard`-routed scrolling remain available.
               The left rounded marker rail is state-driven: implicit current-line marker `current -> blue
               (LV.Theme.primary)`, externally supplied `changed -> #FFF567`, and externally supplied `conflict ->
               LV.Theme.danger`. Sync and conflict producers are not wired yet, but the QML contract already accepts
@@ -638,7 +663,13 @@ Status update (2026-03-01):
     - LVRS host/iOS fallback logic in app CMake is substantial and platform-conditional.
     - This area is high-impact for onboarding and CI reproducibility.
 
-5. File format tolerance vs strictness
+5. Developer quality tooling bootstrap state
+    - Root CMake now provides `whatson_qmllint`, `whatson_qmlformat_check`, `whatson_qmlformat_fix`,
+      `whatson_clang_tidy`, and `whatson_dev_checks`.
+    - `clang-tidy` remains environment-dependent because the executable is not bundled with Qt/LVRS; the target is a
+      contract surface, not a guarantee that the host already has LLVM tooling installed.
+
+6. File format tolerance vs strictness
     - Parser permissiveness improves compatibility but may mask malformed upstream data unless strict validation mode is
       activated consistently.
 

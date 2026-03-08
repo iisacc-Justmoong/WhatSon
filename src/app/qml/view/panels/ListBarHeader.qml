@@ -59,6 +59,16 @@ Item {
                 listBarHeader.searchTextEdited(nextText);
             }
         }
+        Binding {
+            "height"
+            target: searchField.inputItem
+            value: searchField.resolvedInputTextHeight
+        }
+        Binding {
+            "y"
+            target: searchField.inputItem
+            value: Math.max(0, Math.floor((searchField.height - searchField.resolvedInputTextHeight) / 2))
+        }
         LV.IconButton {
             Layout.preferredHeight: 20
             Layout.preferredWidth: 20

@@ -24,6 +24,9 @@ WhatSon is an LVRS-based Qt Quick application.
   domain-specific note-list model (`LibraryNoteListModel` for Library, `BookmarksNoteListModel` for Bookmarks).
   Filtering is performed against runtime-parsed note body text assembled from `.wsnbody` `<body>` content instead of
   reparsing `.wsnote` files on every keystroke.
+- The note-list search header also recenters the underlying LVRS `inputItem` from its live `contentHeight`, so
+  whitespace-only edits (`Space`, `Backspace`) no longer flip the inline text/caret between two fixed vertical
+  positions on macOS.
 - Library folder filtering resolves nested note membership against the active hierarchy, so child-folder selection can
   still match notes whose header stores folder ancestry as separate `<folder>` entries or leaf-only values such as
   `/Competitor` instead of the full `Research/Competitor` path.
@@ -47,14 +50,16 @@ WhatSon is an LVRS-based Qt Quick application.
   payload extracted from `.wsnbody` `<body>` content.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
   the same logical document and current cursor line.
+- That gutter depends on a concrete logical-line offset array returned from `buildLogicalLineStartOffsets(...)`; when
+  the offset model is broken, the editor text can still render while every visible gutter number disappears.
 - The gutter now follows the Figma `ContentsDisplayView` token contract directly: `panelBackground04` background,
   `#4E5157` inactive caption line numbers and `#9DA0A8` active line number.
 - The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
   terminate on the same vertical edge that the editable text begins from.
 - The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
   anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
-- The editor content is top-left aligned with `16px` padding on all sides; it is not vertically centered inside the
-  available surface.
+- The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
+  top-left aligned with `48px` top padding plus `16px` horizontal / bottom padding instead of vertical centering.
 - `LV.TextEditor` disables rendered preview output and forced wrap defaults
   (`showRenderedOutput: false`, `enforceModeDefaults: false`) while enabling `wrapMode: TextEdit.Wrap`; the gutter
   still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
@@ -64,10 +69,27 @@ WhatSon is an LVRS-based Qt Quick application.
 - `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
   state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
   without cross-domain model reuse.
+- `ListItemsPlaceholder.qml` is responsible for the bidirectional selection bridge between `ListView.currentIndex` and
+  the active domain note-list model; note-card taps must update the model selection, and model changes must resync the
+  visible current row immediately when the active hierarchy domain changes.
 - `ContentViewLayout.qml` persists edited body text through the active hierarchy view-model's
-  `saveCurrentBodyText(...)`, which rewrites the backing `.wsnbody` file and refreshes the selected note in-memory.
+  `saveBodyTextForNote(...)` contract with a short idle debounce, so `.wsnbody` rewrites and note-list refreshes no
+  longer happen on every keystroke.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
   lines survive editor round-trips into `.wsnbody`.
+- Gutter cursor-line lookup now comes from the prebuilt logical-line offset table and visible-range lookup starts from
+  the current viewport instead of rescanning every logical line from the top on each paint.
+- The first visible gutter line is chosen from rendered viewport-space line positions, so opening a note starts with
+  the same line number that is actually visible at the top of the editor surface.
+- The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
+  silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
+  offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
+- That silhouette is now painted from actual wrapped visual-row segments taken from the `TextEditor` layout rather than
+  from one height-scaled logical-line block, so wrapped paragraphs appear as separate thin text strokes instead of
+  carved slabs.
+- The current cursor line on that minimap is reduced to the active line's own silhouette width, and the visible
+  viewport is shown as a subtle translucent fill without an outline border. Click/drag plus wheel-routed scrolling are
+  still supported.
 - The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
   current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
 - Conflict detection and sync integration are not implemented yet, but `ContentViewLayout.qml` already accepts external
@@ -119,6 +141,22 @@ LVRS platform-layout reference:
 cmake -S . -B build
 cmake --build build -j
 ```
+
+## Developer Tooling
+
+- Root CMake now exposes developer quality targets:
+    - `whatson_qmllint`: runs `qmllint` over `src/app/qml/**` with LVRS/Qt/build import paths configured.
+    - `whatson_qmlformat_check`: verifies `src/app/qml/**` formatting without modifying files.
+    - `whatson_qmlformat_fix`: rewrites `src/app/qml/**` in-place with `qmlformat`.
+    - `whatson_clang_tidy`: runs `clang-tidy` against configured C++ translation units using
+      `build/compile_commands.json`.
+    - `whatson_dev_checks`: default aggregate target (`qmllint` + `qmlformat_check`, plus `clang-tidy` when installed).
+- `qmllint` is intentionally configured to fail on syntax/import errors while tolerating the repository's current
+  warning
+  baseline, so it is immediately useful for catching broken QML without forcing a full warning cleanup first.
+- `whatson_clang_tidy` reads repository policy from [.clang-tidy](/Volumes/Storage/static/Product/WhatSon/.clang-tidy).
+- If a tool is missing at configure time, the corresponding target still exists but fails with an explicit installation
+  hint when invoked.
 
 ## Unified Root CMake Targets
 

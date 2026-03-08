@@ -39,8 +39,34 @@ Item {
             });
         return [];
     }
+    function pushCurrentIndexToModel(index) {
+        if (!listItemsPlaceholder.noteModel)
+            return;
+        const normalizedIndex = Number(index);
+        if (listItemsPlaceholder.noteModel.currentIndex !== undefined) {
+            if (Number(listItemsPlaceholder.noteModel.currentIndex) === normalizedIndex)
+                return;
+            listItemsPlaceholder.noteModel.currentIndex = index;
+            return;
+        }
+        if (listItemsPlaceholder.noteModel.setCurrentIndex !== undefined)
+            listItemsPlaceholder.noteModel.setCurrentIndex(normalizedIndex);
+    }
+    function syncCurrentIndexFromModel() {
+        const nextIndex = listItemsPlaceholder.currentIndexFromModel();
+        if (noteListView.currentIndex === nextIndex)
+            return;
+        noteListView.currentIndex = nextIndex;
+    }
 
     clip: true
+
+    Component.onCompleted: {
+        listItemsPlaceholder.syncCurrentIndexFromModel();
+    }
+    onNoteModelChanged: {
+        listItemsPlaceholder.syncCurrentIndexFromModel();
+    }
 
     ListView {
         id: noteListView

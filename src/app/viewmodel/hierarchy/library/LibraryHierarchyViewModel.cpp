@@ -1806,16 +1806,16 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     return true;
 }
 
-bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
+bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const QString& text)
 {
-    const QString noteId = m_noteListModel.currentNoteId().trimmed();
-    if (noteId.isEmpty())
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
     {
         return false;
     }
 
     QVector<LibraryNoteRecord> allNotes = m_libraryAll.notes();
-    const int noteIndex = indexOfNoteRecordById(allNotes, noteId);
+    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
     if (noteIndex < 0)
     {
         return false;
@@ -1837,7 +1837,7 @@ bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("saveCurrentBodyText.failed"),
-                                  QStringLiteral("noteId=%1 error=%2").arg(noteId, saveError));
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, saveError));
         return false;
     }
 
@@ -1853,6 +1853,11 @@ bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
     m_libraryToday.rebuild(m_libraryAll.notes());
     refreshNoteListForSelection();
     return true;
+}
+
+bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
 }
 
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
