@@ -17,6 +17,7 @@ class EditorViewModeViewModel final : public QObject
     Q_PROPERTY(QObject* pageViewModeViewModel READ pageViewModeViewModel CONSTANT)
     Q_PROPERTY(QObject* printViewModeViewModel READ printViewModeViewModel CONSTANT)
     Q_PROPERTY(QObject* webViewModeViewModel READ webViewModeViewModel CONSTANT)
+    Q_PROPERTY(QObject* presentationViewModeViewModel READ presentationViewModeViewModel CONSTANT)
 
 public:
     using EditorView = WhatSon::NavigationBar::EditorView;
@@ -31,6 +32,7 @@ public:
     QObject* pageViewModeViewModel() const noexcept;
     QObject* printViewModeViewModel() const noexcept;
     QObject* webViewModeViewModel() const noexcept;
+    QObject* presentationViewModeViewModel() const noexcept;
 
     Q_INVOKABLE QObject* viewModeViewModelForState(int viewModeValue) const noexcept;
     Q_INVOKABLE void setActiveViewMode(int viewModeValue);
@@ -63,5 +65,6 @@ private:
     EditorViewSectionViewModel m_pageViewModeViewModel;
     EditorViewSectionViewModel m_printViewModeViewModel;
     EditorViewSectionViewModel m_webViewModeViewModel;
+    EditorViewSectionViewModel m_presentationViewModeViewModel;
     QObject* m_activeViewModeViewModel = nullptr;
 };

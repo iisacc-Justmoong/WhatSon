@@ -4,7 +4,8 @@ namespace WhatSon::NavigationBar
 {
     bool isValidEditorViewValue(int value) noexcept
     {
-        return value >= editorViewValue(EditorView::Plain) && value <= editorViewValue(EditorView::Web);
+        return value >= editorViewValue(EditorView::Plain)
+            && value <= editorViewValue(EditorView::Presentation);
     }
 
     EditorView editorViewFromValue(int value) noexcept
@@ -19,6 +20,8 @@ namespace WhatSon::NavigationBar
             return EditorView::Print;
         case 3:
             return EditorView::Web;
+        case 4:
+            return EditorView::Presentation;
         default:
             return EditorView::Plain;
         }
@@ -41,6 +44,8 @@ namespace WhatSon::NavigationBar
             return QStringLiteral("Print");
         case EditorView::Web:
             return QStringLiteral("Web");
+        case EditorView::Presentation:
+            return QStringLiteral("Presentation");
         }
 
         return QString();
@@ -67,6 +72,8 @@ namespace WhatSon::NavigationBar
         case EditorView::Print:
             return EditorView::Web;
         case EditorView::Web:
+            return EditorView::Presentation;
+        case EditorView::Presentation:
             return EditorView::Plain;
         }
 

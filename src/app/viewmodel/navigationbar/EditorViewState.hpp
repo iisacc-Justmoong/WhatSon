@@ -9,7 +9,8 @@ namespace WhatSon::NavigationBar
         Plain = 0,
         Page,
         Print,
-        Web
+        Web,
+        Presentation
     };
 
     bool isValidEditorViewValue(int value) noexcept;

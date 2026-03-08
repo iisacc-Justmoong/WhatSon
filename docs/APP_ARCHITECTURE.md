@@ -219,31 +219,35 @@ Domain-isolated support:
 - Navigation bar mode support is centralized in `src/app/viewmodel/navigationbar/`:
     - `NavigationModeViewModel` owns the enum-backed `View/Edit/Control` state exposed to QML.
     - `NavigationModeSectionViewModel` provides one dedicated QObject case per mode plus the active case object.
-    - `EditorViewModeViewModel` owns the enum-backed `Plain/Page/Print/Web` editor view state exposed to QML.
-    - `EditorViewSectionViewModel` provides one dedicated QObject case per editor view plus the active case object.
-    - `main.cpp` exposes the runtime instances to QML as `navigationModeViewModel` and
-      `editorViewModeViewModel`, while `NavigationPropertiesBar.qml` composes the split Figma frame files
-      `NavigationInformationBar.qml`, `NavigationModeBar.qml`, and `NavigationEditorViewBar.qml`.
-    - `NavigationBarLayout.qml` switches the right-side application bar through the active navigation mode and loads
-      one of `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
-      or `NavigationApplicationControlBar.qml`.
-    - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`, matching
-      the default preference controls shown in the control-mode layout.
-    - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.
-        - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a
-          text
-          input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
-        - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design case
-          through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
-          `LV.ContextMenu`, not direct next-state cycling.
-        - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
-          use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
-          text-color literals.
-        - `ListBarLayout.qml` now composes the dedicated `ListBarHeader.qml` frame (Figma node `134:3180`), where the
-          search field keeps LVRS defaults and only applies the minimum inline-variant overrides through local header
-          properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
-          `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
-          assets `cwmPermissionView` and `sortByType` without extra color-token overrides.
+    - `EditorViewModeViewModel` owns the enum-backed `Plain/Page/Print/Web/Presentation` editor view state exposed to
+      QML.
+        - `EditorViewSectionViewModel` provides one dedicated QObject case per editor view plus the active case object.
+        - `main.cpp` exposes the runtime instances to QML as `navigationModeViewModel` and
+          `editorViewModeViewModel`, while `NavigationPropertiesBar.qml` composes the split Figma frame files
+          `NavigationInformationBar.qml`, `NavigationModeBar.qml`, and `NavigationEditorViewBar.qml`.
+        - `NavigationBarLayout.qml` switches the right-side application bar through the active navigation mode and loads
+          one of `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
+          or `NavigationApplicationControlBar.qml`.
+        - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`, matching
+          the default preference controls shown in the control-mode layout.
+        - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.
+            - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a
+              text
+              input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
+            - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design
+              case
+              through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
+              `LV.ContextMenu`, not direct next-state cycling.
+            - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
+              use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
+              text-color literals.
+            - `ListBarLayout.qml` now composes the dedicated `ListBarHeader.qml` frame (Figma node `134:3180`), where
+              the
+              search field keeps LVRS defaults and only applies the minimum inline-variant overrides through local
+              header
+              properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
+              `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
+              assets `cwmPermissionView` and `sortByType` without extra color-token overrides.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.

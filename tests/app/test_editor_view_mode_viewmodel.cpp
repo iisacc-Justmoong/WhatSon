@@ -31,6 +31,7 @@ void EditorViewModeViewModelTest::defaults_mustExposePlainCase()
     QCOMPARE(viewModel.pageViewModeViewModel()->property("active").toBool(), false);
     QCOMPARE(viewModel.printViewModeViewModel()->property("active").toBool(), false);
     QCOMPARE(viewModel.webViewModeViewModel()->property("active").toBool(), false);
+    QCOMPARE(viewModel.presentationViewModeViewModel()->property("active").toBool(), false);
 }
 
 void EditorViewModeViewModelTest::viewModeViewModels_mustMapEachEnumState()
@@ -41,16 +42,19 @@ void EditorViewModeViewModelTest::viewModeViewModels_mustMapEachEnumState()
     QObject* pageVm = viewModel.pageViewModeViewModel();
     QObject* printVm = viewModel.printViewModeViewModel();
     QObject* webVm = viewModel.webViewModeViewModel();
+    QObject* presentationVm = viewModel.presentationViewModeViewModel();
 
     QVERIFY(plainVm != nullptr);
     QVERIFY(pageVm != nullptr);
     QVERIFY(printVm != nullptr);
     QVERIFY(webVm != nullptr);
+    QVERIFY(presentationVm != nullptr);
 
     QCOMPARE(plainVm->property("editorViewName").toString(), QStringLiteral("Plain"));
     QCOMPARE(pageVm->property("editorViewName").toString(), QStringLiteral("Page"));
     QCOMPARE(printVm->property("editorViewName").toString(), QStringLiteral("Print"));
     QCOMPARE(webVm->property("editorViewName").toString(), QStringLiteral("Web"));
+    QCOMPARE(presentationVm->property("editorViewName").toString(), QStringLiteral("Presentation"));
 
     QCOMPARE(
         viewModel.viewModeViewModelForState(static_cast<int>(EditorViewModeViewModel::EditorView::Plain)),
@@ -64,6 +68,9 @@ void EditorViewModeViewModelTest::viewModeViewModels_mustMapEachEnumState()
     QCOMPARE(
         viewModel.viewModeViewModelForState(static_cast<int>(EditorViewModeViewModel::EditorView::Web)),
         webVm);
+    QCOMPARE(
+        viewModel.viewModeViewModelForState(static_cast<int>(EditorViewModeViewModel::EditorView::Presentation)),
+        presentationVm);
     QCOMPARE(viewModel.viewModeViewModelForState(-1), nullptr);
 }
 
@@ -73,13 +80,13 @@ void EditorViewModeViewModelTest::requestViewModeChange_mustSwitchActiveViewMode
 
     QSignalSpy activeViewModeSpy(&viewModel, &EditorViewModeViewModel::activeViewModeChanged);
 
-    viewModel.requestViewModeChange(static_cast<int>(EditorViewModeViewModel::EditorView::Web));
+    viewModel.requestViewModeChange(static_cast<int>(EditorViewModeViewModel::EditorView::Presentation));
 
     QCOMPARE(activeViewModeSpy.count(), 1);
-    QCOMPARE(viewModel.activeViewMode(), static_cast<int>(EditorViewModeViewModel::EditorView::Web));
-    QCOMPARE(viewModel.activeViewModeName(), QStringLiteral("Web"));
-    QCOMPARE(viewModel.activeViewModeViewModel(), viewModel.webViewModeViewModel());
-    QCOMPARE(viewModel.webViewModeViewModel()->property("active").toBool(), true);
+    QCOMPARE(viewModel.activeViewMode(), static_cast<int>(EditorViewModeViewModel::EditorView::Presentation));
+    QCOMPARE(viewModel.activeViewModeName(), QStringLiteral("Presentation"));
+    QCOMPARE(viewModel.activeViewModeViewModel(), viewModel.presentationViewModeViewModel());
+    QCOMPARE(viewModel.presentationViewModeViewModel()->property("active").toBool(), true);
     QCOMPARE(viewModel.plainViewModeViewModel()->property("active").toBool(), false);
 }
 
@@ -88,6 +95,12 @@ void EditorViewModeViewModelTest::requestNextViewMode_mustWrapAcrossEnum()
     EditorViewModeViewModel viewModel;
 
     viewModel.setActiveViewMode(static_cast<int>(EditorViewModeViewModel::EditorView::Web));
+    viewModel.requestNextViewMode();
+
+    QCOMPARE(viewModel.activeViewMode(), static_cast<int>(EditorViewModeViewModel::EditorView::Presentation));
+    QCOMPARE(viewModel.activeViewModeName(), QStringLiteral("Presentation"));
+    QCOMPARE(viewModel.activeViewModeViewModel(), viewModel.presentationViewModeViewModel());
+
     viewModel.requestNextViewMode();
 
     QCOMPARE(viewModel.activeViewMode(), static_cast<int>(EditorViewModeViewModel::EditorView::Plain));

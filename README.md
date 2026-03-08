@@ -196,7 +196,7 @@ for hub/note hierarchy payloads.
   `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.
 - Editor view mode state is centralized in `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`:
   `main.cpp` injects `editorViewModeViewModel`, and the navigation bar editor-view combo binds to the dedicated
-  enum-backed `Plain/Page/Print/Web` state plus its per-view QObject viewmodels.
+  enum-backed `Plain/Page/Print/Web/Presentation` state plus its per-view QObject viewmodels.
 - The sidebar initial width now follows the effective rendered width of the hierarchy toolbar.
 - Figma navigation frames are split into dedicated QML files under `src/app/qml/view/panels/navigation/`:
   `NavigationPropertiesBar.qml`, `NavigationInformationBar.qml`, `NavigationModeBar.qml`,

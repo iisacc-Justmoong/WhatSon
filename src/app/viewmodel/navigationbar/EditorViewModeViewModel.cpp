@@ -6,6 +6,7 @@ EditorViewModeViewModel::EditorViewModeViewModel(QObject* parent)
       , m_pageViewModeViewModel(EditorView::Page, this)
       , m_printViewModeViewModel(EditorView::Print, this)
       , m_webViewModeViewModel(EditorView::Web, this)
+      , m_presentationViewModeViewModel(EditorView::Presentation, this)
 {
     applyActiveViewModeViewModel(m_activeViewMode);
 }
@@ -47,6 +48,11 @@ QObject* EditorViewModeViewModel::webViewModeViewModel() const noexcept
     return const_cast<EditorViewSectionViewModel*>(&m_webViewModeViewModel);
 }
 
+QObject* EditorViewModeViewModel::presentationViewModeViewModel() const noexcept
+{
+    return const_cast<EditorViewSectionViewModel*>(&m_presentationViewModeViewModel);
+}
+
 QObject* EditorViewModeViewModel::viewModeViewModelForState(int viewModeValue) const noexcept
 {
     if (!WhatSon::NavigationBar::isValidEditorViewValue(viewModeValue))
@@ -64,6 +70,8 @@ QObject* EditorViewModeViewModel::viewModeViewModelForState(int viewModeValue) c
         return printViewModeViewModel();
     case EditorView::Web:
         return webViewModeViewModel();
+    case EditorView::Presentation:
+        return presentationViewModeViewModel();
     }
 
     return nullptr;
@@ -104,5 +112,6 @@ void EditorViewModeViewModel::applyActiveViewModeViewModel(EditorView activeView
     m_pageViewModeViewModel.setActive(activeViewMode == EditorView::Page);
     m_printViewModeViewModel.setActive(activeViewMode == EditorView::Print);
     m_webViewModeViewModel.setActive(activeViewMode == EditorView::Web);
+    m_presentationViewModeViewModel.setActive(activeViewMode == EditorView::Presentation);
     m_activeViewModeViewModel = viewModeViewModelForState(WhatSon::NavigationBar::editorViewValue(activeViewMode));
 }

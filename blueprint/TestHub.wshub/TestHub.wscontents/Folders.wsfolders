@@ -5,6 +5,28 @@
                 {
                     "children": [
                         {
+                            "children": [
+                                {
+                                    "id": "Folder5/Folder6/Folder7/Folder8",
+                                    "label": "Folder8"
+                                }
+                            ],
+                            "id": "Folder5/Folder6/Folder7",
+                            "label": "Folder7"
+                        }
+                    ],
+                    "id": "Folder5/Folder6",
+                    "label": "Folder6"
+                }
+            ],
+            "id": "Folder5",
+            "label": "Folder5"
+        },
+        {
+            "children": [
+                {
+                    "children": [
+                        {
                             "id": "Product/All/All2?",
                             "label": "All2?"
                         },

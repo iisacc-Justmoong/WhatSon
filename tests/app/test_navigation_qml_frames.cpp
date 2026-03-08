@@ -180,6 +180,7 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
     QVERIFY(editorViewBar.contains(QStringLiteral("text: editorViewBar.activeViewText")));
     QVERIFY(editorViewBar.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(editorViewBar.contains(QStringLiteral("requestViewModeChange(index)")));
+    QVERIFY(editorViewBar.contains(QStringLiteral("label: \"Presentation\"")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("requestNextViewMode();")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("comboLabelRightInset")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("resolvedBackgroundColor")));

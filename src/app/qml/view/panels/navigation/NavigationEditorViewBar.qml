@@ -23,6 +23,10 @@ LV.HStack {
         {
             label: "Web",
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 3
+        },
+        {
+            label: "Presentation",
+            selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 4
         }
     ]
     property var editorViewModeViewModel: null
