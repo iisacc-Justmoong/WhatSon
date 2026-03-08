@@ -294,9 +294,9 @@ Library-specific modeling:
           empty
     - bottom metadata rows: `11px` regular labels with `folder@14x14` and `vcscurrentBranch` icons inside `16px` frames,
       clipped to the card frame so metadata never bleeds past the note item bounds
-      - bookmark tint fallback: `LV.Theme.accentYellow`
-      - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
-      - caption text fallback: `LV.Theme.captionColor`
+        - bookmark tint fallback: `LV.Theme.accentYellow`
+        - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
+        - caption text fallback: `LV.Theme.captionColor`
 
 ## 4.4 QML View Layer (`src/app/qml/**`)
 
@@ -331,9 +331,11 @@ Desktop composition:
         - `DetailPanelHeaderToolbar` is a lightweight repeater container and delegates per-button rendering/click logic
           to
           `DetailPanelHeaderToolbarButton`.
-    - Toolbar icon order follows Figma node `134:4152`: `generalprojectStructure`, `chartBar`, `dataFile`,
-      `generalhistory`, `cwmPermissionView`, `featureAnswer`.
-        - `DetailContents` binds to C++-computed `activeStateName`.
+    - Toolbar frame follows Figma node `142:4198`: `145x20`, `5px` inter-button spacing, and `20x20` icon-button cells
+      with `16px` glyphs.
+    - Toolbar icon order follows Figma node `142:4198`: `generalprojectStructure`, `chartBar`, `generaladd`,
+      `toolwindowdependencies`, `toolWindowClock`, `featureAnswer`.
+      - `DetailContents` binds to C++-computed `activeStateName`.
 
 Mobile composition:
 

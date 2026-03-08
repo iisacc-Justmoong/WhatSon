@@ -3,6 +3,7 @@ import QtQuick
 Item {
     id: detailPanelHeaderToolbar
 
+    readonly property int buttonSpacing: 5
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbar") : null
     property var toolbarButtonSpecs: []
 
@@ -16,9 +17,12 @@ Item {
         viewHookRequested();
     }
 
+    implicitHeight: 20
+    implicitWidth: 145
+
     Row {
         anchors.fill: parent
-        spacing: 5
+        spacing: detailPanelHeaderToolbar.buttonSpacing
 
         Repeater {
             model: detailPanelHeaderToolbar.toolbarButtonSpecs.length

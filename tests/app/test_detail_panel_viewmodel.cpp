@@ -31,9 +31,9 @@ void DetailPanelViewModelTest::defaults_mustExposeFileInfoState()
     const QStringList expectedIconNames = {
         QStringLiteral("generalprojectStructure"),
         QStringLiteral("chartBar"),
-        QStringLiteral("dataFile"),
-        QStringLiteral("generalhistory"),
-        QStringLiteral("cwmPermissionView"),
+        QStringLiteral("generaladd"),
+        QStringLiteral("toolwindowdependencies"),
+        QStringLiteral("toolWindowClock"),
         QStringLiteral("featureAnswer")
     };
 
@@ -107,8 +107,12 @@ void DetailPanelViewModelTest::requestStateChange_mustUpdateActiveStateAndToolba
     for (int index = 0; index < toolbarItems.size(); ++index)
     {
         const QVariantMap item = toolbarItems.at(index).toMap();
-        QCOMPARE(item.value(QStringLiteral("selected")).toBool(), index == 4);
+        QCOMPARE(item.value(QStringLiteral("selected")).toBool(), index == 3);
     }
+    QCOMPARE(toolbarItems.at(3).toMap().value(QStringLiteral("iconName")).toString(),
+             QStringLiteral("toolwindowdependencies"));
+    QCOMPARE(toolbarItems.at(4).toMap().value(QStringLiteral("iconName")).toString(),
+             QStringLiteral("toolWindowClock"));
 }
 
 void DetailPanelViewModelTest::requestStateChange_invalidValue_mustBeIgnored()

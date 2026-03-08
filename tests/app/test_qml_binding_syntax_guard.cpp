@@ -345,6 +345,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailToolbarText.contains(QStringLiteral("signal detailStateChangeRequested(int stateValue)")),
         "DetailPanelHeaderToolbar.qml must expose detailStateChangeRequested(int stateValue).");
     QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("implicitHeight: 20")),
+        "DetailPanelHeaderToolbar.qml must keep the Figma 20px frame height.");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("implicitWidth: 145")),
+        "DetailPanelHeaderToolbar.qml must keep the Figma 145px frame width.");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("spacing: detailPanelHeaderToolbar.buttonSpacing")),
+        "DetailPanelHeaderToolbar.qml must keep the Figma 5px inter-button spacing contract.");
+    QVERIFY2(
         detailToolbarText.contains(QStringLiteral("DetailPanelHeaderToolbarButton")),
         "DetailPanelHeaderToolbar.qml must compose DetailPanelHeaderToolbarButton delegates.");
     QVERIFY2(
@@ -363,6 +372,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailToolbarButtonText.contains(
             QStringLiteral("property bool selected: buttonSpec && buttonSpec.selected === true")),
         "DetailPanelHeaderToolbarButton.qml must use C++ selected field from toolbar specs.");
+    QVERIFY2(
+        detailToolbarButtonText.contains(QStringLiteral("iconSize: 16")),
+        "DetailPanelHeaderToolbarButton.qml must keep the Figma 16px icon size.");
+    QVERIFY2(
+        detailToolbarButtonText.contains(
+            QStringLiteral("tone: selected ? LV.AbstractButton.Default : LV.AbstractButton.Borderless")),
+        "DetailPanelHeaderToolbarButton.qml must map selected state to filled/default tone and others to borderless.");
     QVERIFY2(
         detailToolbarButtonText.contains(QStringLiteral("stateClickRequested(nextState);")),
         "DetailPanelHeaderToolbarButton.qml must emit stateClickRequested from icon button clicks.");
