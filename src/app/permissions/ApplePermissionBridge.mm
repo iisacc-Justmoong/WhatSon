@@ -62,6 +62,8 @@
 
 
 
+
+
         });
 }
 
@@ -95,6 +97,8 @@ static NSMutableArray<LocalNetworkPermissionRequester*>* pendingLocalNetworkRequ
         &onceToken,
         ^{
             requesters = [[NSMutableArray alloc] init];
+
+
 
 
 
@@ -142,6 +146,7 @@ namespace
 
     bool isRemindersGranted(EKAuthorizationStatus status)
     {
+
 
 
 #if defined(EKAuthorizationStatusFullAccess)
@@ -269,10 +274,9 @@ namespace WhatSon::Permissions
             QStringLiteral("granted=%1").arg(isPhotoGranted(status) ? QStringLiteral("1") : QStringLiteral("0")));
         completeOnQtMain(completionCopy, isPhotoGranted(status));
 #else
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("permissions.photo"),
-                                  QStringLiteral("resolved"),
-                                  QStringLiteral("platformStubGranted=1"));
+        WhatSon::Debug::trace(QStringLiteral("permissions.photo"),
+                              QStringLiteral("resolved"),
+                              QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completionCopy, true);
 #endif
     }
@@ -327,10 +331,9 @@ namespace WhatSon::Permissions
             }];
 #pragma clang diagnostic pop
 #else
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("permissions.reminders"),
-                                  QStringLiteral("resolved"),
-                                  QStringLiteral("platformStubGranted=1"));
+        WhatSon::Debug::trace(QStringLiteral("permissions.reminders"),
+                              QStringLiteral("resolved"),
+                              QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completionCopy, true);
 #endif
     }
@@ -359,10 +362,9 @@ namespace WhatSon::Permissions
             QStringLiteral("granted=%1").arg(granted ? QStringLiteral("1") : QStringLiteral("0")));
         completeOnQtMain(completion, granted);
 #else
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("permissions.accessibility"),
-                                  QStringLiteral("resolved"),
-                                  QStringLiteral("platformStubGranted=1"));
+        WhatSon::Debug::trace(QStringLiteral("permissions.accessibility"),
+                              QStringLiteral("resolved"),
+                              QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completion, true);
 #endif
     }
@@ -390,10 +392,9 @@ namespace WhatSon::Permissions
             QStringLiteral("pendingCount=%1").arg(static_cast<int>(requesters.count)));
         [requester start];
 #else
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("permissions.localNetwork"),
-                                  QStringLiteral("resolved"),
-                                  QStringLiteral("platformStubGranted=1"));
+        WhatSon::Debug::trace(QStringLiteral("permissions.localNetwork"),
+                              QStringLiteral("resolved"),
+                              QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completionCopy, true);
 #endif
     }
@@ -420,10 +421,9 @@ namespace WhatSon::Permissions
             QUrl(QStringLiteral("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")));
         completeOnQtMain(completion, false);
 #else
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("permissions.fullDisk"),
-                                  QStringLiteral("resolved"),
-                                  QStringLiteral("platformStubGranted=1"));
+        WhatSon::Debug::trace(QStringLiteral("permissions.fullDisk"),
+                              QStringLiteral("resolved"),
+                              QStringLiteral("platformStubGranted=1"));
         completeOnQtMain(completion, true);
 #endif
     }

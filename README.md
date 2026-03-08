@@ -274,6 +274,7 @@ Current trace coverage includes:
 - sidebar hierarchy per-section item model instantiation and activation path
 - sidebar selection store state transition and capabilities updates
 - Apple permission bridge request/callback flow
+- Apple permission bridge source guard against free-function `traceSelf(this, ...)` misuse
 - library note indexing and runtime classification lifecycle (`All`, `Draft`, `Today`)
 
 - Default: enabled

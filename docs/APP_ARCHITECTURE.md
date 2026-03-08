@@ -614,6 +614,8 @@ Decisions are persisted in `QSettings` under `permissions/*`.
 
 - Real native permission paths for macOS/iOS
 - Stub implementation on non-Apple platforms grants permission immediately
+- Both implementations are free-function based; debug tracing must use `WhatSon::Debug::trace(...)`, not
+  `traceSelf(this, ...)`
 
 ## 7.2 IO Runtime Controller
 
