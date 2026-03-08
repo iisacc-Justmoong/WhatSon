@@ -1,5 +1,6 @@
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
+#include "calendar/SystemCalendarStore.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
@@ -204,6 +205,7 @@ private
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
     void bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent();
     void bookmarksViewModel_saveCurrentBodyText_rewritesWsnbody();
+    void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
     void resourcesViewModel_supportsCrudContract();
     void progressViewModel_supportsCrudContract();
     void eventViewModel_supportsCrudContract();
@@ -217,6 +219,7 @@ private
     void noteListModel_currentSelection_exposesBodyText();
     void noteListModel_searchText_filtersAgainstSearchableBodyContent();
     void noteListModel_limitsPrimaryTextToFiveLines();
+    void libraryViewModel_formatsDisplayDateWithSystemCalendarStore();
 };
 
 void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
@@ -431,6 +434,32 @@ void HierarchyViewModelsTest::bookmarksViewModel_saveCurrentBodyText_rewritesWsn
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph></paragraph>")));
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Blue edited first line</paragraph>")));
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Blue edited second line</paragraph>")));
+}
+
+void HierarchyViewModelsTest::bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore()
+{
+    SystemCalendarStore calendarStore;
+    BookmarksHierarchyViewModel viewModel;
+    viewModel.setSystemCalendarStore(&calendarStore);
+
+    LibraryNoteRecord note;
+    note.noteId = QStringLiteral("bookmark-note");
+    note.bodyPlainText = QStringLiteral("Bookmark body");
+    note.bodyFirstLine = QStringLiteral("Bookmark body");
+    note.createdAt = QStringLiteral("2026-03-08-09-30-00");
+    note.lastModifiedAt = QStringLiteral("2026-03-09-10-20-00");
+    note.bookmarked = true;
+    note.bookmarkColors = {QStringLiteral("blue")};
+
+    viewModel.applyRuntimeSnapshot({note}, true);
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+                     viewModel.noteListModel()->index(0, 0),
+                     BookmarksNoteListModel::DisplayDateRole)
+                 .toString(),
+        calendarStore.formatNoteDate(note.lastModifiedAt, note.createdAt));
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
@@ -741,6 +770,37 @@ void HierarchyViewModelsTest::noteListModel_limitsPrimaryTextToFiveLines()
     QCOMPARE(
         model.data(index, LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("line1\nline2\nline3\nline4\nline5"));
+}
+
+void HierarchyViewModelsTest::libraryViewModel_formatsDisplayDateWithSystemCalendarStore()
+{
+    SystemCalendarStore calendarStore;
+    LibraryHierarchyViewModel viewModel;
+    viewModel.setSystemCalendarStore(&calendarStore);
+
+    LibraryNoteRecord note;
+    note.noteId = QStringLiteral("library-note");
+    note.bodyPlainText = QStringLiteral("Library body");
+    note.bodyFirstLine = QStringLiteral("Library body");
+    note.createdAt = QStringLiteral("2026-03-05-08-00-00");
+    note.lastModifiedAt = QStringLiteral("2026-03-11-18-45-00");
+
+    viewModel.applyRuntimeSnapshot(
+        QStringLiteral("/tmp/TestLocale.wshub"),
+        {note},
+        {},
+        {},
+        {},
+        QString(),
+        true);
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+                     viewModel.noteListModel()->index(0, 0),
+                     LibraryNoteListModel::DisplayDateRole)
+                 .toString(),
+        calendarStore.formatNoteDate(note.lastModifiedAt, note.createdAt));
 }
 
 QTEST_APPLESS_MAIN(HierarchyViewModelsTest)

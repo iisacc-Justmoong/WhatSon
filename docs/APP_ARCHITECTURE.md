@@ -355,7 +355,7 @@ Library-specific modeling:
     - `id` (string)
     - `primaryText` (string)
     - `bodyText` (full parsed plain-text body from `.wsnbody` `<body>`)
-        - `displayDate` (formatted `yyyy-MM-dd` string)
+        - `displayDate` (formatted localized short-date string from the shared system calendar store)
         - `folders` (`QStringList`)
         - `tags` (`QStringList`)
         - `bookmarked` (bool)
@@ -373,8 +373,9 @@ Library-specific modeling:
       padding,
       and an inner `86px` top/middle/bottom content stack separated by `8px` vertical gaps
     - primary text: 2-line `12px` semibold block with fixed `12px` line height
-        - fixed date row: always reserves the Figma middle slot and falls back to `YYYY-MM-dd` when `displayDate` is
-          empty
+        - fixed date row: always reserves the Figma middle slot and falls back to
+          `systemCalendarStore.shortDatePlaceholderText` when `displayDate` is empty, or a generic `Date` label if
+          the app-level calendar store is unavailable
     - bottom metadata rows: `11px` regular labels with `folder@14x14` and `vcscurrentBranch` icons inside `16px` frames,
       clipped to the card frame so metadata never bleeds past the note item bounds
         - bookmark tint fallback: `LV.Theme.accentYellow`

@@ -12,6 +12,7 @@
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
+#include "calendar/SystemCalendarStore.hpp"
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
@@ -352,6 +353,7 @@ int main(int argc, char* argv[])
         .arg(QDir::currentPath(), QCoreApplication::applicationDirPath()));
 
     QQmlApplicationEngine engine;
+    SystemCalendarStore systemCalendarStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
     ProjectsHierarchyViewModel projectsHierarchyViewModel;
     BookmarksHierarchyViewModel bookmarksHierarchyViewModel;
@@ -369,6 +371,22 @@ int main(int argc, char* argv[])
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     WhatSonHubRuntimeStore hubRuntimeStore;
+
+    libraryHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
+    bookmarksHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
+
+    QObject::connect(
+        &app,
+        &QGuiApplication::applicationStateChanged,
+        &systemCalendarStore,
+        [&systemCalendarStore](Qt::ApplicationState state)
+        {
+            if (state == Qt::ApplicationActive)
+            {
+                systemCalendarStore.refreshFromSystem();
+            }
+        });
+
     const QString blueprintHubPath = resolveBlueprintHubPath();
     if (!blueprintHubPath.isEmpty())
     {
@@ -497,6 +515,7 @@ int main(int argc, char* argv[])
         detailPanelViewModel.helpViewModel());
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), &sidebarHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
+    engine.rootContext()->setContextProperty(QStringLiteral("systemCalendarStore"), &systemCalendarStore);
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
 
     QObject::connect(

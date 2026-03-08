@@ -1,5 +1,6 @@
 #include "LibraryHierarchyViewModel.hpp"
 
+#include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
@@ -150,65 +151,6 @@ namespace
         }
         tags.removeDuplicates();
         return tags;
-    }
-
-    QDate parseNoteListDate(const QString& value)
-    {
-        const QString trimmed = value.trimmed();
-        if (trimmed.isEmpty())
-        {
-            return {};
-        }
-
-        const QList<QString> formats{
-            QStringLiteral("yyyy-MM-dd-hh-mm-ss"),
-            QStringLiteral("yyyy-MM-dd hh:mm:ss"),
-            QStringLiteral("yyyy/MM/dd hh:mm:ss"),
-            QStringLiteral("yyyy-MM-dd")
-        };
-
-        for (const QString& format : formats)
-        {
-            const QDateTime dateTime = QDateTime::fromString(trimmed, format);
-            if (dateTime.isValid())
-            {
-                return dateTime.date();
-            }
-
-            const QDate date = QDate::fromString(trimmed, format);
-            if (date.isValid())
-            {
-                return date;
-            }
-        }
-
-        const QDateTime isoDateTime = QDateTime::fromString(trimmed, Qt::ISODate);
-        if (isoDateTime.isValid())
-        {
-            return isoDateTime.date();
-        }
-
-        const QDateTime isoDateTimeWithMs = QDateTime::fromString(trimmed, Qt::ISODateWithMs);
-        if (isoDateTimeWithMs.isValid())
-        {
-            return isoDateTimeWithMs.date();
-        }
-
-        return {};
-    }
-
-    QString noteListDisplayDate(const LibraryNoteRecord& note)
-    {
-        QDate date = parseNoteListDate(note.lastModifiedAt);
-        if (!date.isValid())
-        {
-            date = parseNoteListDate(note.createdAt);
-        }
-        if (!date.isValid())
-        {
-            return {};
-        }
-        return date.toString(QStringLiteral("yyyy-MM-dd"));
     }
 
     QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
@@ -837,6 +779,43 @@ LibraryHierarchyModel* LibraryHierarchyViewModel::itemModel() noexcept
 LibraryNoteListModel* LibraryHierarchyViewModel::noteListModel() noexcept
 {
     return &m_noteListModel;
+}
+
+void LibraryHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* store)
+{
+    if (m_systemCalendarStore == store)
+    {
+        return;
+    }
+
+    if (m_systemCalendarStoreChangedConnection)
+    {
+        QObject::disconnect(m_systemCalendarStoreChangedConnection);
+    }
+
+    m_systemCalendarStore = store;
+    if (m_systemCalendarStore)
+    {
+        m_systemCalendarStoreChangedConnection = QObject::connect(
+            m_systemCalendarStore,
+            &SystemCalendarStore::systemInfoChanged,
+            this,
+            [this]()
+            {
+                refreshNoteListForSelection();
+            });
+    }
+    else
+    {
+        m_systemCalendarStoreChangedConnection = {};
+    }
+
+    refreshNoteListForSelection();
+}
+
+SystemCalendarStore* LibraryHierarchyViewModel::systemCalendarStore() const noexcept
+{
+    return m_systemCalendarStore;
 }
 
 int LibraryHierarchyViewModel::selectedIndex() const noexcept
@@ -1973,7 +1952,7 @@ int LibraryHierarchyViewModel::nextFolderSequence(const QVector<LibraryHierarchy
 }
 
 QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
-    const QVector<LibraryNoteRecord>& notes)
+    const QVector<LibraryNoteRecord>& notes) const
 {
     QVector<LibraryNoteListItem> items;
     items.reserve(notes.size());
@@ -1985,7 +1964,9 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         item.primaryText = notePrimaryText(note);
         item.searchableText = noteSearchableText(note);
         item.bodyText = note.bodyPlainText;
-        item.displayDate = noteListDisplayDate(note);
+        item.displayDate = m_systemCalendarStore
+                               ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
+                               : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
         item.folders = noteListFolders(note);
         item.tags = noteListTags(note);
         item.bookmarked = note.bookmarked;

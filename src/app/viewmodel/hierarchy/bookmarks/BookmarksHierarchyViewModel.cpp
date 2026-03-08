@@ -1,11 +1,11 @@
 #include "BookmarksHierarchyViewModel.hpp"
 
+#include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 
-#include <QDateTime>
 #include <QFileInfo>
 #include <QVariantMap>
 
@@ -150,65 +150,6 @@ namespace
         return tags;
     }
 
-    QDate parseBookmarkDate(const QString& value)
-    {
-        const QString trimmed = value.trimmed();
-        if (trimmed.isEmpty())
-        {
-            return {};
-        }
-
-        const QList<QString> formats{
-            QStringLiteral("yyyy-MM-dd-hh-mm-ss"),
-            QStringLiteral("yyyy-MM-dd hh:mm:ss"),
-            QStringLiteral("yyyy/MM/dd hh:mm:ss"),
-            QStringLiteral("yyyy-MM-dd")
-        };
-
-        for (const QString& format : formats)
-        {
-            const QDateTime dateTime = QDateTime::fromString(trimmed, format);
-            if (dateTime.isValid())
-            {
-                return dateTime.date();
-            }
-
-            const QDate date = QDate::fromString(trimmed, format);
-            if (date.isValid())
-            {
-                return date;
-            }
-        }
-
-        const QDateTime isoDateTime = QDateTime::fromString(trimmed, Qt::ISODate);
-        if (isoDateTime.isValid())
-        {
-            return isoDateTime.date();
-        }
-
-        const QDateTime isoDateTimeWithMs = QDateTime::fromString(trimmed, Qt::ISODateWithMs);
-        if (isoDateTimeWithMs.isValid())
-        {
-            return isoDateTimeWithMs.date();
-        }
-
-        return {};
-    }
-
-    QString bookmarkDisplayDate(const LibraryNoteRecord& note)
-    {
-        QDate date = parseBookmarkDate(note.lastModifiedAt);
-        if (!date.isValid())
-        {
-            date = parseBookmarkDate(note.createdAt);
-        }
-        if (!date.isValid())
-        {
-            return {};
-        }
-        return date.toString(QStringLiteral("yyyy-MM-dd"));
-    }
-
     QString bookmarkColorHexForNote(const LibraryNoteRecord& note)
     {
         if (!note.bookmarkColors.isEmpty())
@@ -235,21 +176,6 @@ namespace
         }
 
         return -1;
-    }
-
-    BookmarksNoteListItem buildBookmarksListItem(const LibraryNoteRecord& note)
-    {
-        BookmarksNoteListItem item;
-        item.id = note.noteId.trimmed();
-        item.primaryText = bookmarkPrimaryText(note);
-        item.searchableText = bookmarkSearchableText(note);
-        item.bodyText = note.bodyPlainText;
-        item.displayDate = bookmarkDisplayDate(note);
-        item.folders = bookmarkListFolders(note);
-        item.tags = bookmarkListTags(note);
-        item.bookmarked = true;
-        item.bookmarkColor = bookmarkColorHexForNote(note);
-        return item;
     }
 
     QString colorHexForLabel(const QString& label)
@@ -322,6 +248,43 @@ BookmarksHierarchyModel* BookmarksHierarchyViewModel::itemModel() noexcept
 BookmarksNoteListModel* BookmarksHierarchyViewModel::noteListModel() noexcept
 {
     return &m_noteListModel;
+}
+
+void BookmarksHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* store)
+{
+    if (m_systemCalendarStore == store)
+    {
+        return;
+    }
+
+    if (m_systemCalendarStoreChangedConnection)
+    {
+        QObject::disconnect(m_systemCalendarStoreChangedConnection);
+    }
+
+    m_systemCalendarStore = store;
+    if (m_systemCalendarStore)
+    {
+        m_systemCalendarStoreChangedConnection = QObject::connect(
+            m_systemCalendarStore,
+            &SystemCalendarStore::systemInfoChanged,
+            this,
+            [this]()
+            {
+                refreshNoteListForSelection();
+            });
+    }
+    else
+    {
+        m_systemCalendarStoreChangedConnection = {};
+    }
+
+    refreshNoteListForSelection();
+}
+
+SystemCalendarStore* BookmarksHierarchyViewModel::systemCalendarStore() const noexcept
+{
+    return m_systemCalendarStore;
 }
 
 int BookmarksHierarchyViewModel::selectedIndex() const noexcept
@@ -638,6 +601,23 @@ void BookmarksHierarchyViewModel::rebuildColorFolders()
 {
     m_items = buildColorFolderItems();
     syncModel();
+}
+
+BookmarksNoteListItem BookmarksHierarchyViewModel::buildBookmarksListItem(const LibraryNoteRecord& note) const
+{
+    BookmarksNoteListItem item;
+    item.id = note.noteId.trimmed();
+    item.primaryText = bookmarkPrimaryText(note);
+    item.searchableText = bookmarkSearchableText(note);
+    item.bodyText = note.bodyPlainText;
+    item.displayDate = m_systemCalendarStore
+                           ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
+                           : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
+    item.folders = bookmarkListFolders(note);
+    item.tags = bookmarkListTags(note);
+    item.bookmarked = true;
+    item.bookmarkColor = bookmarkColorHexForNote(note);
+    return item;
 }
 
 void BookmarksHierarchyViewModel::refreshNoteListForSelection()

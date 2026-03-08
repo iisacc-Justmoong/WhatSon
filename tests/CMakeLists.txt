@@ -182,6 +182,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
 
 add_executable(whatson_hierarchy_viewmodels_tests
         app/test_hierarchy_viewmodels.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp
@@ -252,6 +253,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hierarchy_viewmodels_tests)
 
 add_executable(whatson_library_hierarchy_tests
         app/test_library_hierarchy_view_model.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
@@ -346,6 +348,23 @@ target_link_libraries(whatson_year_calendar_viewmodel_tests
 )
 add_test(NAME whatson_year_calendar_viewmodel_tests COMMAND whatson_year_calendar_viewmodel_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_year_calendar_viewmodel_tests)
+
+add_executable(whatson_system_calendar_store_tests
+        app/test_system_calendar_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
+)
+set_target_properties(whatson_system_calendar_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_system_calendar_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_system_calendar_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_system_calendar_store_tests COMMAND whatson_system_calendar_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_system_calendar_store_tests)
 
 add_executable(whatson_qml_binding_guard_tests
         app/test_qml_binding_syntax_guard.cpp

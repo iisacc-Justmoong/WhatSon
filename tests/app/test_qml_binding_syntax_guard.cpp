@@ -520,8 +520,18 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(noteListItemFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(noteListItemPath));
     const QString noteListItemText = QString::fromUtf8(noteListItemFile.readAll());
     QVERIFY2(
-        noteListItemText.contains(QStringLiteral("readonly property string displayDatePlaceholder: \"YYYY-MM-dd\"")),
-        "NoteListItem.qml must expose the Figma date placeholder token.");
+        noteListItemText.contains(
+            QStringLiteral(
+                "readonly property var calendarStore: typeof systemCalendarStore !== \"undefined\" ? systemCalendarStore : null")),
+        "NoteListItem.qml must resolve the app-level system calendar store when available.");
+    QVERIFY2(
+        noteListItemText.contains(
+            QStringLiteral(
+                "readonly property string displayDatePlaceholder: calendarStore && calendarStore.shortDatePlaceholderText !== undefined ? String(calendarStore.shortDatePlaceholderText) : qsTr(\"Date\")")),
+        "NoteListItem.qml date placeholder must defer to the system calendar store instead of hardcoding a single region format.");
+    QVERIFY2(
+        !noteListItemText.contains(QStringLiteral("readonly property string displayDatePlaceholder: \"YYYY-MM-dd\"")),
+        "NoteListItem.qml must not hardcode YYYY-MM-dd as the only placeholder date format.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("implicitHeight: 102")),
         "NoteListItem.qml must keep the Figma 102px outer frame height.");

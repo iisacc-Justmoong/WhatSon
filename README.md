@@ -78,6 +78,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
   state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
   without cross-domain model reuse.
+- `SystemCalendarStore` now reads the active system locale, UI languages, territory, time zone, first weekday, and
+  localized short/long date patterns from `src/app/calendar/SystemCalendarStore.*`. `Library` and `Bookmarks`
+  note-list dates are formatted through that shared store instead of a hardcoded `yyyy-MM-dd` contract, and
+  `NoteListItem.qml` falls back to the store's short-date placeholder text when a card has no display date, with a
+  generic `Date` label only as the last-resort UI fallback when that store is unavailable.
 - `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
   `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
   model changes must resync the visible current row immediately when the active hierarchy domain changes.

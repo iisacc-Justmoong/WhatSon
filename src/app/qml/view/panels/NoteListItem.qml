@@ -11,7 +11,7 @@ Item {
     readonly property color captionColor: LV.Theme.captionColor
     readonly property color cardColor: LV.Theme.accentBlueMuted
     property string displayDate: ""
-    readonly property string displayDatePlaceholder: "YYYY-MM-dd"
+    readonly property string displayDatePlaceholder: calendarStore && calendarStore.shortDatePlaceholderText !== undefined ? String(calendarStore.shortDatePlaceholderText) : qsTr("Date")
     readonly property url folderIconSource: LV.Theme.iconPath("folder@14x14")
     readonly property color folderLabelColor: LV.Theme.captionColor
     property var folders: []
@@ -186,7 +186,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconSize
-                                        source: noteListItem.folderIconSource
+                                        noteListItem.folderIconSource
                                         sourceSize.height: noteListItem.metadataIconSize
                                         sourceSize.width: noteListItem.metadataIconSize
                                         width: noteListItem.metadataIconSize
@@ -233,7 +233,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconFrameSize
-                                        source: noteListItem.tagIconSource
+                                        noteListItem.tagIconSource
                                         sourceSize.height: noteListItem.metadataIconFrameSize
                                         sourceSize.width: noteListItem.metadataIconFrameSize
                                         width: noteListItem.metadataIconFrameSize

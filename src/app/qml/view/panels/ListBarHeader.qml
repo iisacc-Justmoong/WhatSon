@@ -10,6 +10,7 @@ Item {
     readonly property int inlineFieldHorizontalInset: 7
     readonly property int inlineFieldTextHeight: 12
     readonly property int inlineFieldVerticalInset: 3
+    readonly property int resolvedInputTextHeight: Math.max(listBarHeader.inlineFieldTextHeight, Number(searchField && searchField.inputItem && searchField.inputItem.contentHeight !== undefined ? searchField.inputItem.contentHeight : listBarHeader.inlineFieldTextHeight) || listBarHeader.inlineFieldTextHeight)
     property string searchText: ""
 
     signal searchSubmitted(string text)

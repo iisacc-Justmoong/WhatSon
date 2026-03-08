@@ -9,9 +9,12 @@
 #include "file/hub/WhatSonHubStore.hpp"
 
 #include <QObject>
+#include <QPointer>
 #include <QSet>
 #include <QVariantList>
 #include <QVector>
+
+class SystemCalendarStore;
 
 class LibraryHierarchyViewModel final : public QObject
 {
@@ -73,6 +76,8 @@ public:
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 
+    void setSystemCalendarStore(SystemCalendarStore* store);
+    SystemCalendarStore* systemCalendarStore() const noexcept;
     void setHubStore(WhatSonHubStore store);
     WhatSonHubStore hubStore() const;
 
@@ -120,7 +125,7 @@ private:
     static int extractDepth(const QVariantMap& entryMap);
     static LibraryHierarchyItem parseItem(const QVariant& entry, int fallbackOrdinal);
     static int nextFolderSequence(const QVector<LibraryHierarchyItem>& items);
-    static QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes);
+    QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes) const;
     const QVector<LibraryNoteRecord>& notesForBucket(IndexedBucket bucket) const;
     const IndexedBucketRange* bucketRangeForIndex(int index) const noexcept;
     IndexedBucket selectedBucket() const;
@@ -153,5 +158,7 @@ private:
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
     QString m_foldersFilePath;
+    QPointer<SystemCalendarStore> m_systemCalendarStore;
+    QMetaObject::Connection m_systemCalendarStoreChangedConnection;
     WhatSonHubStore m_hubStore;
 };

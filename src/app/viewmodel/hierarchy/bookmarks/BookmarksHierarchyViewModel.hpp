@@ -5,8 +5,11 @@
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
 
 #include <QObject>
+#include <QPointer>
 #include <QVariantList>
 #include <QVector>
+
+class SystemCalendarStore;
 
 class BookmarksHierarchyViewModel final : public QObject
 {
@@ -48,6 +51,8 @@ public:
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 
+    void setSystemCalendarStore(SystemCalendarStore* store);
+    SystemCalendarStore* systemCalendarStore() const noexcept;
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;
@@ -85,6 +90,7 @@ private:
     void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void rebuildColorFolders();
+    BookmarksNoteListItem buildBookmarksListItem(const LibraryNoteRecord& note) const;
     void refreshNoteListForSelection();
     QString selectedColorLabel() const;
     void syncModel();
@@ -98,4 +104,6 @@ private:
     int m_noteItemCount = 0;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
+    QPointer<SystemCalendarStore> m_systemCalendarStore;
+    QMetaObject::Connection m_systemCalendarStoreChangedConnection;
 };
