@@ -3,6 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QDateTime>
 #include <QFileInfo>
@@ -217,6 +218,40 @@ namespace
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
 
+    int indexOfBookmarkedNoteById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < notes.size(); ++index)
+        {
+            if (notes.at(index).noteId.trimmed() == normalizedNoteId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    BookmarksNoteListItem buildBookmarksListItem(const LibraryNoteRecord& note)
+    {
+        BookmarksNoteListItem item;
+        item.id = note.noteId.trimmed();
+        item.primaryText = bookmarkPrimaryText(note);
+        item.searchableText = bookmarkSearchableText(note);
+        item.bodyText = note.bodyPlainText;
+        item.displayDate = bookmarkDisplayDate(note);
+        item.folders = bookmarkListFolders(note);
+        item.tags = bookmarkListTags(note);
+        item.bookmarked = true;
+        item.bookmarkColor = bookmarkColorHexForNote(note);
+        return item;
+    }
+
     QString colorHexForLabel(const QString& label)
     {
         const QString normalized = label.trimmed().toCaseFolded();
@@ -266,7 +301,7 @@ BookmarksHierarchyViewModel::BookmarksHierarchyViewModel(QObject* parent)
         });
     QObject::connect(
         &m_noteListModel,
-        &LibraryNoteListModel::itemCountChanged,
+        &BookmarksNoteListModel::itemCountChanged,
         this,
         [this](int)
         {
@@ -284,7 +319,7 @@ BookmarksHierarchyModel* BookmarksHierarchyViewModel::itemModel() noexcept
     return &m_itemModel;
 }
 
-LibraryNoteListModel* BookmarksHierarchyViewModel::noteListModel() noexcept
+BookmarksNoteListModel* BookmarksHierarchyViewModel::noteListModel() noexcept
 {
     return &m_noteListModel;
 }
@@ -420,6 +455,51 @@ void BookmarksHierarchyViewModel::deleteSelectedFolder()
                               QStringLiteral("reason=bookmarks hierarchy is read-only"));
 }
 
+bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    const QString noteId = m_noteListModel.currentNoteId().trimmed();
+    if (noteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, noteId);
+    if (noteIndex < 0)
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = m_bookmarkedNotes[noteIndex];
+    QString normalizedBodyText;
+    QString lastModifiedAt;
+    QString saveError;
+    if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
+        note.noteId,
+        note.noteDirectoryPath,
+        note.noteHeaderPath,
+        text,
+        &normalizedBodyText,
+        &lastModifiedAt,
+        &saveError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("saveCurrentBodyText.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(noteId, saveError));
+        return false;
+    }
+
+    note.bodyPlainText = normalizedBodyText;
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+    if (!lastModifiedAt.isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt;
+    }
+
+    refreshNoteListForSelection();
+    return true;
+}
+
 bool BookmarksHierarchyViewModel::renameEnabled() const noexcept
 {
     return false;
@@ -464,8 +544,8 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
 
     const QVector<LibraryNoteRecord>& notes = libraryAll.notes();
 
-    QVector<LibraryNoteListItem> bookmarkListItems;
-    bookmarkListItems.reserve(notes.size());
+    QVector<LibraryNoteRecord> bookmarkedNotes;
+    bookmarkedNotes.reserve(notes.size());
 
     for (const LibraryNoteRecord& note : notes)
     {
@@ -474,20 +554,10 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
             continue;
         }
 
-        LibraryNoteListItem item;
-        item.id = note.noteId.trimmed();
-        item.primaryText = bookmarkPrimaryText(note);
-        item.searchableText = bookmarkSearchableText(note);
-        item.bodyText = note.bodyPlainText.trimmed();
-        item.displayDate = bookmarkDisplayDate(note);
-        item.folders = bookmarkListFolders(note);
-        item.tags = bookmarkListTags(note);
-        item.bookmarked = true;
-        item.bookmarkColor = bookmarkColorHexForNote(note);
-        bookmarkListItems.push_back(std::move(item));
+        bookmarkedNotes.push_back(note);
     }
 
-    m_allBookmarkedNotes = std::move(bookmarkListItems);
+    m_bookmarkedNotes = std::move(bookmarkedNotes);
     rebuildColorFolders();
     setSelectedIndex(-1);
     refreshNoteListForSelection();
@@ -497,7 +567,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
                               QStringLiteral("loadFromWshub"),
                               QStringLiteral("path=%1 source=wsnhead count=%2")
                               .arg(wshubPath)
-                              .arg(m_allBookmarkedNotes.size()));
+                              .arg(m_bookmarkedNotes.size()));
     updateLoadState(true);
     return true;
 }
@@ -509,7 +579,7 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
 {
     if (!loadSucceeded)
     {
-        m_allBookmarkedNotes.clear();
+        m_bookmarkedNotes.clear();
         rebuildColorFolders();
         setSelectedIndex(-1);
         refreshNoteListForSelection();
@@ -517,25 +587,7 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
-    QVector<LibraryNoteListItem> bookmarkListItems;
-    bookmarkListItems.reserve(bookmarkedNotes.size());
-
-    for (const LibraryNoteRecord& note : bookmarkedNotes)
-    {
-        LibraryNoteListItem item;
-        item.id = note.noteId.trimmed();
-        item.primaryText = bookmarkPrimaryText(note);
-        item.searchableText = bookmarkSearchableText(note);
-        item.bodyText = note.bodyPlainText.trimmed();
-        item.displayDate = bookmarkDisplayDate(note);
-        item.folders = bookmarkListFolders(note);
-        item.tags = bookmarkListTags(note);
-        item.bookmarked = true;
-        item.bookmarkColor = bookmarkColorHexForNote(note);
-        bookmarkListItems.push_back(std::move(item));
-    }
-
-    m_allBookmarkedNotes = std::move(bookmarkListItems);
+    m_bookmarkedNotes = std::move(bookmarkedNotes);
     rebuildColorFolders();
     setSelectedIndex(-1);
     refreshNoteListForSelection();
@@ -588,15 +640,22 @@ void BookmarksHierarchyViewModel::refreshNoteListForSelection()
     const QString selectedColorHex = colorHexForLabel(selectedColorLabel());
     if (selectedColorHex.isEmpty())
     {
-        m_noteListModel.setItems(m_allBookmarkedNotes);
+        QVector<BookmarksNoteListItem> allItems;
+        allItems.reserve(m_bookmarkedNotes.size());
+        for (const LibraryNoteRecord& note : std::as_const(m_bookmarkedNotes))
+        {
+            allItems.push_back(buildBookmarksListItem(note));
+        }
+        m_noteListModel.setItems(std::move(allItems));
         updateNoteItemCount();
         return;
     }
 
-    QVector<LibraryNoteListItem> filtered;
-    filtered.reserve(m_allBookmarkedNotes.size());
-    for (const LibraryNoteListItem& item : m_allBookmarkedNotes)
+    QVector<BookmarksNoteListItem> filtered;
+    filtered.reserve(m_bookmarkedNotes.size());
+    for (const LibraryNoteRecord& note : std::as_const(m_bookmarkedNotes))
     {
+        const BookmarksNoteListItem item = buildBookmarksListItem(note);
         if (item.bookmarkColor.compare(selectedColorHex, Qt::CaseInsensitive) != 0)
         {
             continue;

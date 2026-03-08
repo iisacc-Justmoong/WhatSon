@@ -1,7 +1,7 @@
 #pragma once
 
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
+#include "viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
 
 #include <QObject>
@@ -13,7 +13,7 @@ class BookmarksHierarchyViewModel final : public QObject
     Q_OBJECT
 
     Q_PROPERTY(BookmarksHierarchyModel* itemModel READ itemModel CONSTANT)
-    Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
+    Q_PROPERTY(BookmarksNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
     Q_PROPERTY(int noteItemCount READ noteItemCount NOTIFY noteItemCountChanged)
@@ -29,7 +29,7 @@ public:
     ~BookmarksHierarchyViewModel() override;
 
     BookmarksHierarchyModel* itemModel() noexcept;
-    LibraryNoteListModel* noteListModel() noexcept;
+    BookmarksNoteListModel* noteListModel() noexcept;
 
     int selectedIndex() const noexcept;
     Q_INVOKABLE void setSelectedIndex(int index);
@@ -45,6 +45,7 @@ public:
     Q_INVOKABLE bool renameItem(int index, const QString& displayName);
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
@@ -88,9 +89,9 @@ private:
     void syncModel();
 
     QVector<BookmarksHierarchyItem> m_items;
-    QVector<LibraryNoteListItem> m_allBookmarkedNotes;
+    QVector<LibraryNoteRecord> m_bookmarkedNotes;
     BookmarksHierarchyModel m_itemModel;
-    LibraryNoteListModel m_noteListModel;
+    BookmarksNoteListModel m_noteListModel;
     int m_selectedIndex = -1;
     int m_itemCount = 0;
     int m_noteItemCount = 0;

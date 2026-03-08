@@ -1,4 +1,5 @@
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
@@ -28,6 +29,16 @@ namespace
         }
         file.write(text.toUtf8());
         return true;
+    }
+
+    QString readUtf8File(const QString& filePath)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            return {};
+        }
+        return QString::fromUtf8(file.readAll());
     }
 
     QString makeWsnHeadText(
@@ -192,6 +203,7 @@ private
     void bookmarksViewModel_supportsCrudContract();
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
     void bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent();
+    void bookmarksViewModel_saveCurrentBodyText_rewritesWsnbody();
     void resourcesViewModel_supportsCrudContract();
     void progressViewModel_supportsCrudContract();
     void eventViewModel_supportsCrudContract();
@@ -302,6 +314,7 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
     BookmarksHierarchyViewModel viewModel;
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(qobject_cast<BookmarksNoteListModel*>(viewModel.noteListModel()) != nullptr);
 
     QCOMPARE(viewModel.itemModel()->rowCount(), 9);
     QCOMPARE(
@@ -320,12 +333,12 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
     for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
     {
         const QModelIndex index = viewModel.noteListModel()->index(row, 0);
-        QVERIFY(viewModel.noteListModel()->data(index, LibraryNoteListModel::BookmarkedRole).toBool());
+        QVERIFY(viewModel.noteListModel()->data(index, BookmarksNoteListModel::BookmarkedRole).toBool());
         const QString primaryText = viewModel.noteListModel()
-                                             ->data(index, LibraryNoteListModel::PrimaryTextRole)
+                                             ->data(index, BookmarksNoteListModel::PrimaryTextRole)
                                              .toString();
         const QString color = viewModel.noteListModel()
-                                       ->data(index, LibraryNoteListModel::BookmarkColorRole)
+                                       ->data(index, BookmarksNoteListModel::BookmarkColorRole)
                                        .toString();
         primaryTextAndColorPairs.push_back(QStringLiteral("%1=%2").arg(primaryText, color));
     }
@@ -339,17 +352,17 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::PrimaryTextRole).toString(),
+            BookmarksNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Blue summary"));
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::DisplayDateRole).toString(),
+            BookmarksNoteListModel::DisplayDateRole).toString(),
         QStringLiteral("2026-03-01"));
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::TagsRole).toStringList(),
+            BookmarksNoteListModel::TagsRole).toStringList(),
         QStringList({QStringLiteral("brand"), QStringLiteral("campaign")}));
 
     viewModel.setSelectedIndex(8); // pink
@@ -357,12 +370,12 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::PrimaryTextRole).toString(),
+            BookmarksNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Pink summary"));
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::TagsRole).toStringList(),
+            BookmarksNoteListModel::TagsRole).toStringList(),
         QStringList({QStringLiteral("release")}));
 }
 
@@ -380,7 +393,7 @@ void HierarchyViewModelsTest::bookmarksViewModel_searchText_filtersVisibleNotesB
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::IdRole).toString(),
+            BookmarksNoteListModel::IdRole).toString(),
         QStringLiteral("note-pink"));
 
     viewModel.setSelectedIndex(6); // blue
@@ -391,8 +404,33 @@ void HierarchyViewModelsTest::bookmarksViewModel_searchText_filtersVisibleNotesB
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
-            LibraryNoteListModel::IdRole).toString(),
+            BookmarksNoteListModel::IdRole).toString(),
         QStringLiteral("note-blue"));
+}
+
+void HierarchyViewModelsTest::bookmarksViewModel_saveCurrentBodyText_rewritesWsnbody()
+{
+    QString hubPath;
+    QVERIFY(prepareBookmarksHub(&hubPath));
+
+    BookmarksHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(6); // blue
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-blue"));
+
+    const QString editedBody = QStringLiteral("\nBlue edited first line\nBlue edited second line\n");
+    QVERIFY(viewModel.saveCurrentBodyText(editedBody));
+    QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
+
+    const QString bodyPath = QDir(hubPath).filePath(
+        QStringLiteral("BookmarksVmHub.wscontents/Library.wslibrary/Blue.wsnote/Blue.wsnbody"));
+    const QString savedBodyXml = readUtf8File(bodyPath);
+    QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph></paragraph>")));
+    QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Blue edited first line</paragraph>")));
+    QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Blue edited second line</paragraph>")));
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
@@ -629,7 +667,7 @@ void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
     LibraryNoteListItem alpha;
     alpha.id = QStringLiteral("note-alpha");
     alpha.primaryText = QStringLiteral("Alpha preview");
-    alpha.bodyText = QStringLiteral("Alpha body first line\nAlpha body second line");
+    alpha.bodyText = QStringLiteral("\nAlpha body first line\nAlpha body second line\n");
     alpha.searchableText = alpha.bodyText;
 
     LibraryNoteListItem beta;
@@ -642,9 +680,9 @@ void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
 
     QCOMPARE(model.currentIndex(), 0);
     QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
-    QCOMPARE(model.currentBodyText(), QStringLiteral("Alpha body first line\nAlpha body second line"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
     QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::BodyTextRole).toString(),
-             QStringLiteral("Alpha body first line\nAlpha body second line"));
+             QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
 
     model.setCurrentIndex(1);
     QCOMPARE(model.currentIndex(), 1);
@@ -655,7 +693,7 @@ void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
     QCOMPARE(model.rowCount(), 1);
     QCOMPARE(model.currentIndex(), 0);
     QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
-    QCOMPARE(model.currentBodyText(), QStringLiteral("Alpha body first line\nAlpha body second line"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
     QVERIFY(currentBodySpy.count() >= 2);
 }
 

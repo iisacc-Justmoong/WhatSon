@@ -32,6 +32,7 @@ private
     void loadFromWshub_protectsAllDraftTodaySystemFolders();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
     void loadFromWshub_noteListModel_exposesCurrentBodyTextFromWsnbody();
+    void saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines();
     void loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview();
     void loadFromWshub_usesBodyFirstLineForPrimaryText();
     void loadFromWshub_usesFoldersFileForSidebarItems();
@@ -58,6 +59,16 @@ namespace
         }
         file.write(text.toUtf8());
         return true;
+    }
+
+    QString readUtf8File(const QString& filePath)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            return {};
+        }
+        return QString::fromUtf8(file.readAll());
     }
 
     QString makeWsnHeadText(
@@ -570,6 +581,29 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesCurrentBo
     viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Beta body summary."));
+}
+
+void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
+
+    const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");
+    QVERIFY(viewModel.saveCurrentBodyText(editedBody));
+    QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
+
+    const QString bodyPath = QDir(hubPath).filePath(
+        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnbody"));
+    const QString savedBodyXml = readUtf8File(bodyPath);
+    QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph></paragraph>")));
+    QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Edited first line</paragraph>")));
+    QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Edited second line</paragraph>")));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview()

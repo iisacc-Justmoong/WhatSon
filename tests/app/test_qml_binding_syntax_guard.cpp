@@ -114,8 +114,24 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("property var noteListModel: null")),
         "ContentViewLayout.qml must accept the active note list model for body-text projection.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("property var contentViewModel: null")),
+        "ContentViewLayout.qml must accept the active hierarchy view-model for body persistence.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("function visibleLineNumbers()")),
         "ContentViewLayout.qml must derive visible line numbers for the gutter viewport.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property var logicalLineStartOffsets: contentsView.buildLogicalLineStartOffsets(contentsView.editorText)")),
+        "ContentViewLayout.qml must track logical-line offsets independently from wrapped visual rows.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function buildLogicalLineStartOffsets(text)")),
+        "ContentViewLayout.qml must derive logical line starts for wrap-safe gutter numbering.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("positionToRectangle(offset)")),
+        "ContentViewLayout.qml must map gutter positions through editorItem.positionToRectangle for wrapped text.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function lineVisualHeight(startLine, lineSpan)")),
+        "ContentViewLayout.qml must expand gutter markers to the visual height of wrapped logical lines.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color lineNumberColor: \"#4E5157\"")),
         "ContentViewLayout.qml must keep the gutter caption token color from Figma.");
@@ -124,13 +140,40 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentViewLayout.qml must keep the focused line-number tint from Figma.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color decorativeMarkerYellow: \"#FFF567\"")),
-        "ContentViewLayout.qml must keep the yellow gutter marker color from Figma.");
+        "ContentViewLayout.qml must keep the changed-line gutter marker color contract.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("readonly property color decorativeMarkerGreen: \"#0AFF60\"")),
-        "ContentViewLayout.qml must keep the green gutter marker color from Figma.");
+        contentViewText.contains(QStringLiteral("readonly property color gutterMarkerCurrentColor: LV.Theme.primary")),
+        "ContentViewLayout.qml must expose the current-line gutter marker color contract.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property color gutterMarkerConflictColor: LV.Theme.danger")),
+        "ContentViewLayout.qml must expose the conflict gutter marker color contract.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property var gutterMarkers: []")),
+        "ContentViewLayout.qml must accept external gutter markers for changed/conflict ranges.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function markerColorForType(markerType)")),
+        "ContentViewLayout.qml must normalize gutter marker types into stable colors.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function normalizeGutterMarker(markerSpec)")),
+        "ContentViewLayout.qml must normalize externally supplied gutter marker specs.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("readonly property int lineNumberRightInset: contentsView.editorHorizontalInset")),
+        "ContentViewLayout.qml must right-align gutter numbers against the editor inset.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset")),
+        "ContentViewLayout.qml must widen the gutter text column up to the mirrored editor inset.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("x: contentsView.lineNumberColumnLeft")),
-        "ContentViewLayout.qml must place the line-number text column at the Figma x=14 gutter offset.");
+        "ContentViewLayout.qml must keep the gutter number column anchored from the left rail origin.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("model: contentsView.effectiveGutterMarkers")),
+        "ContentViewLayout.qml must render the effective gutter marker model instead of decorative placeholders.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("markerType !== \"changed\" && markerType !== \"conflict\" && markerType !== \"current\"")),
+        "ContentViewLayout.qml gutter marker contract must explicitly validate current/changed/conflict marker types.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("LV.TextEditor {")),
         "ContentViewLayout.qml must compose LV.TextEditor for the contents editing surface.");
@@ -139,10 +182,10 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentViewLayout.qml must disable TextEditor preview output inside the contents display surface.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("enforceModeDefaults: false")),
-        "ContentViewLayout.qml must opt out of TextEditor forced defaults so gutter-safe no-wrap mode can be set.");
+        "ContentViewLayout.qml must opt out of TextEditor forced defaults so wrapped logical-line gutter mapping can be set.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("wrapMode: TextEdit.NoWrap")),
-        "ContentViewLayout.qml must keep logical lines aligned with gutter numbers by disabling wrapping.");
+        contentViewText.contains(QStringLiteral("wrapMode: TextEdit.Wrap")),
+        "ContentViewLayout.qml must soft-wrap the editor while keeping gutter numbers on logical lines.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("fontFamily: LV.Theme.fontBody")),
         "ContentViewLayout.qml must bind TextEditor typography to the LVRS body font family.");
@@ -159,12 +202,34 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("text: contentsView.editorText")),
         "ContentViewLayout.qml must bind the editor and gutter to the same document text source.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("property bool syncingEditorTextFromModel: false")),
+        "ContentViewLayout.qml must guard model-driven body sync from recursive save attempts.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function persistEditorText(text)")),
+        "ContentViewLayout.qml must route body persistence through a content view-model hook.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function syncEditorTextFromSelection(text)")),
+        "ContentViewLayout.qml must resync selection changes through an explicit editor-sync helper.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("return Boolean(contentViewModel.saveCurrentBodyText(text));")),
+        "ContentViewLayout.qml must save editor text through contentViewModel.saveCurrentBodyText(text).");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral(
             "readonly property string selectedNoteBodyText: noteListModel && noteListModel.currentBodyText !== undefined ? String(noteListModel.currentBodyText) : \"\"")),
         "ContentViewLayout.qml must source editor text from noteListModel.currentBodyText.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("onSelectedNoteBodyTextChanged: {")),
         "ContentViewLayout.qml must resync editor text when the selected note body changes.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("contentsView.syncEditorTextFromSelection(contentsView.selectedNoteBodyText);")),
+        "ContentViewLayout.qml must sync incoming note bodies through the guarded editor helper.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("if (contentsView.syncingEditorTextFromModel)")),
+        "ContentViewLayout.qml must skip file persistence while replaying model-driven editor text.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("contentsView.persistEditorText(text);")),
+        "ContentViewLayout.qml must persist user edits to the active note body.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("contentsView.editorTextEdited(text);")),
         "ContentViewLayout.qml must emit editorTextEdited(text) from TextEditor edits.");

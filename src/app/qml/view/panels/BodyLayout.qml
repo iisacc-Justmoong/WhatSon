@@ -201,6 +201,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.minimumWidth: hStack.minContentWidth
+                contentViewModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeHierarchyViewModel : null
                 displayColor: hStack.contentsDisplayColor
                 drawerColor: hStack.drawerColor
                 drawerHeight: hStack.drawerHeight

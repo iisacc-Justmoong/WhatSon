@@ -4,6 +4,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 #include "file/note/WhatSonNoteHeaderStore.hpp"
@@ -1805,6 +1806,55 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     return true;
 }
 
+bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    const QString noteId = m_noteListModel.currentNoteId().trimmed();
+    if (noteId.isEmpty())
+    {
+        return false;
+    }
+
+    QVector<LibraryNoteRecord> allNotes = m_libraryAll.notes();
+    const int noteIndex = indexOfNoteRecordById(allNotes, noteId);
+    if (noteIndex < 0)
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = allNotes[noteIndex];
+    QString normalizedBodyText;
+    QString lastModifiedAt;
+    QString saveError;
+    if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
+        note.noteId,
+        note.noteDirectoryPath,
+        note.noteHeaderPath,
+        text,
+        &normalizedBodyText,
+        &lastModifiedAt,
+        &saveError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("saveCurrentBodyText.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(noteId, saveError));
+        return false;
+    }
+
+    note.bodyPlainText = normalizedBodyText;
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+    if (!lastModifiedAt.isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt;
+    }
+
+    m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
+    m_libraryDraft.rebuild(m_libraryAll.notes());
+    m_libraryToday.rebuild(m_libraryAll.notes());
+    refreshNoteListForSelection();
+    return true;
+}
+
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
 {
     const QString nextHubPath = store.hubPath().trimmed();
@@ -1929,7 +1979,7 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         item.id = note.noteId.trimmed();
         item.primaryText = notePrimaryText(note);
         item.searchableText = noteSearchableText(note);
-        item.bodyText = note.bodyPlainText.trimmed();
+        item.bodyText = note.bodyPlainText;
         item.displayDate = noteListDisplayDate(note);
         item.folders = noteListFolders(note);
         item.tags = noteListTags(note);

@@ -21,8 +21,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Status bar search uses `LV.InputField` in `searchMode` and exposes editable state via QML properties/signals.
 - Sidebar hierarchy search uses `LV.InputField` in `searchMode` and filters visible hierarchy rows in real time.
 - Note-list search uses `LV.InputField` in `searchMode` and forwards the active query into the bound
-  `LibraryNoteListModel.searchText`; filtering is performed against the runtime-parsed note body text assembled from
-  `.wsnbody` `<body>` content instead of reparsing `.wsnote` files on every keystroke.
+  domain-specific note-list model (`LibraryNoteListModel` for Library, `BookmarksNoteListModel` for Bookmarks).
+  Filtering is performed against runtime-parsed note body text assembled from `.wsnbody` `<body>` content instead of
+  reparsing `.wsnote` files on every keystroke.
 - Library folder filtering resolves nested note membership against the active hierarchy, so child-folder selection can
   still match notes whose header stores folder ancestry as separate `<folder>` entries or leaf-only values such as
   `/Competitor` instead of the full `Research/Competitor` path.
@@ -47,21 +48,31 @@ WhatSon is an LVRS-based Qt Quick application.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
   the same logical document and current cursor line.
 - The gutter now follows the Figma `ContentsDisplayView` token contract directly: `panelBackground04` background,
-  `#4E5157` inactive caption line numbers, `#9DA0A8` active line number, and decorative marker colors `#FFF567` /
-  `#0AFF60`.
+  `#4E5157` inactive caption line numbers and `#9DA0A8` active line number.
+- The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
+  terminate on the same vertical edge that the editable text begins from.
 - The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
-  anchored at `x=14` with `22px` text width inside the `26px` column frame, and the reserved `18px` icon rail at
-  `x=40`.
+  anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
 - The editor content is top-left aligned with `16px` padding on all sides; it is not vertically centered inside the
   available surface.
 - `LV.TextEditor` disables rendered preview output and forced wrap defaults
-  (`showRenderedOutput: false`, `enforceModeDefaults: false`, `wrapMode: TextEdit.NoWrap`) so gutter rows remain
-  aligned with visible text lines.
+  (`showRenderedOutput: false`, `enforceModeDefaults: false`) while enabling `wrapMode: TextEdit.Wrap`; the gutter
+  still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
+  document.
 - `LV.TextEditor` now binds the body token more explicitly for this surface: `LV.Theme.fontBody`, `12px` medium weight,
   and zero letter spacing, matching the Figma `Body` token.
-- `LibraryNoteListModel` now carries each note's full `bodyText` plus current selection state (`currentIndex`,
-  `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized.
-- The rounded marker rail on the far left is currently decorative only and does not affect editing behavior yet.
+- `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
+  state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
+  without cross-domain model reuse.
+- `ContentViewLayout.qml` persists edited body text through the active hierarchy view-model's
+  `saveCurrentBodyText(...)`, which rewrites the backing `.wsnbody` file and refreshes the selected note in-memory.
+- Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
+  lines survive editor round-trips into `.wsnbody`.
+- The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
+  current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
+- Conflict detection and sync integration are not implemented yet, but `ContentViewLayout.qml` already accepts external
+  gutter marker ranges via `gutterMarkers` using `{ type: "changed" | "conflict", startLine, lineSpan }` or
+  `{ type, startLine, endLine }`.
 
 ## Theme Token Usage
 
@@ -273,7 +284,7 @@ for hub/note hierarchy payloads.
 - Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
   `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
 - Hierarchy/list models (`FlatHierarchyModel`, `LibraryHierarchyModel`, `TagsHierarchyModel`,
-  `LibraryNoteListModel`) now expose validation hooks for backend/UI interception:
+  `LibraryNoteListModel`, `BookmarksNoteListModel`) now expose validation hooks for backend/UI interception:
   `strictValidation`, `correctionCount`, `lastValidationCode`, `lastValidationMessage`,
   `validationIssueRaised(code, message, context)`, and `itemCorrected(code, context)`.
 - In non-strict mode, invalid payload fields are corrected and emitted as hook events; in strict mode, the first

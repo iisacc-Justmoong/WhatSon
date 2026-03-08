@@ -184,6 +184,7 @@ add_executable(whatson_hierarchy_viewmodels_tests
         app/test_hierarchy_viewmodels.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/event/EventHierarchyModel.cpp
@@ -199,6 +200,7 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
@@ -264,6 +266,7 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
 )
 set_target_properties(whatson_library_hierarchy_tests PROPERTIES AUTOMOC ON)

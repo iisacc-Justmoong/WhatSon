@@ -7,24 +7,12 @@ Item {
     id: contentsView
 
     readonly property color activeLineNumberColor: "#9DA0A8"
+    property var contentViewModel: null
     readonly property int currentCursorLineNumber: {
         const value = contentsView.editorText || "";
         const cursor = Math.max(0, Math.min(value.length, Number(contentEditor.cursorPosition) || 0));
         return value.slice(0, cursor).split(/\r\n|\n/).length;
     }
-    readonly property color decorativeMarkerGreen: "#0AFF60"
-    readonly property var decorativeMarkerSpecs: [
-        {
-            "color": contentsView.decorativeMarkerYellow,
-            "lineSpan": 3,
-            "startLine": 2
-        },
-        {
-            "color": contentsView.decorativeMarkerGreen,
-            "lineSpan": 8,
-            "startLine": 5
-        }
-    ]
     readonly property color decorativeMarkerYellow: "#FFF567"
     property color displayColor: LV.Theme.panelBackground09
     property color drawerColor: LV.Theme.panelBackground11
@@ -35,14 +23,28 @@ Item {
         return Number(contentEditor.editorItem.parent.y) || 0;
     }
     readonly property int editorHorizontalInset: 16
-    readonly property real editorLineHeight: {
-        const logicalLineCount = Math.max(1, Number(contentEditor.lineCount) || 1);
-        const renderedContentHeight = Number(contentEditor.contentHeight) || 0;
-        return renderedContentHeight > 0 ? renderedContentHeight / logicalLineCount : contentsView.editorTextLineBoxHeight;
-    }
+    readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
     property string editorText: ""
     readonly property int editorTextLineBoxHeight: 12
     readonly property int editorVerticalInset: 16
+    readonly property var effectiveGutterMarkers: {
+        const normalizedMarkers = [];
+        if (contentsView.showCurrentLineMarker) {
+            normalizedMarkers.push({
+                "color": contentsView.gutterMarkerCurrentColor,
+                "lineSpan": 1,
+                "startLine": contentsView.currentCursorLineNumber,
+                "type": "current"
+            });
+        }
+        const externalMarkers = Array.isArray(contentsView.gutterMarkers) ? contentsView.gutterMarkers : [];
+        for (let i = 0; i < externalMarkers.length; ++i) {
+            const normalizedMarker = contentsView.normalizeGutterMarker(externalMarkers[i]);
+            if (normalizedMarker)
+                normalizedMarkers.push(normalizedMarker);
+        }
+        return normalizedMarkers;
+    }
     readonly property int frameHorizontalInset: 2
     readonly property color gutterColor: LV.Theme.panelBackground04
     readonly property int gutterCommentMarkerOffset: 2
@@ -50,12 +52,19 @@ Item {
     readonly property int gutterCommentRailWidth: 10
     readonly property int gutterIconRailLeft: 40
     readonly property int gutterIconRailWidth: 18
+    readonly property color gutterMarkerChangedColor: contentsView.decorativeMarkerYellow
+    readonly property color gutterMarkerConflictColor: LV.Theme.danger
+    readonly property color gutterMarkerCurrentColor: LV.Theme.primary
+    property var gutterMarkers: []
     readonly property int gutterWidth: 74
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     readonly property color lineNumberColor: "#4E5157"
     readonly property int lineNumberColumnLeft: 14
-    readonly property int lineNumberColumnTextWidth: 22
+    readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
     readonly property int lineNumberColumnWidth: 26
+    readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
+    readonly property int logicalLineCount: Math.max(1, contentsView.logicalLineStartOffsets.length)
+    readonly property var logicalLineStartOffsets: contentsView.buildLogicalLineStartOffsets(contentsView.editorText)
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
@@ -64,9 +73,11 @@ Item {
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
     readonly property string selectedNoteBodyText: noteListModel && noteListModel.currentBodyText !== undefined ? String(noteListModel.currentBodyText) : ""
     readonly property string selectedNoteId: noteListModel && noteListModel.currentNoteId !== undefined ? String(noteListModel.currentNoteId) : ""
+    readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
+    property bool syncingEditorTextFromModel: false
     readonly property real textOriginY: {
         if (!contentEditor.editorItem)
             return contentsView.editorVerticalInset;
@@ -77,15 +88,90 @@ Item {
     signal editorTextEdited(string text)
     signal viewHookRequested
 
+    function buildLogicalLineStartOffsets(text) {
+        const value = text === undefined || text === null ? "" : String(text);
+        const offsets = [0];
+        for (let index = 0; index < value.length; ++index) {
+            if (value.charAt(index) === "\n")
+                offsets.push(index + 1);
+        }
+
+    }
     function clampDrawerHeight(value) {
         var maxDrawer = Math.max(contentsView.minDrawerHeight, contentsView.height - contentsView.minDisplayHeight - contentsView.splitterThickness);
         return Math.max(contentsView.minDrawerHeight, Math.min(maxDrawer, value));
     }
+    function editorViewportYForDocumentY(documentY) {
+        const editorY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.editorVerticalInset : contentsView.editorVerticalInset;
+        return editorY + documentY + contentsView.editorContentOffsetY;
+    }
+    function lineDocumentY(lineNumber) {
+        const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
+        if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined)
+            return (safeLineNumber - 1) * contentsView.editorLineHeight;
+        const offset = contentsView.logicalLineStartOffsets[safeLineNumber - 1];
+        const rect = contentEditor.editorItem.positionToRectangle(offset);
+        return Number(rect.y) || 0;
+    }
+    function lineVisualHeight(startLine, lineSpan) {
+        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
+        const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
+        const startDocumentY = contentsView.lineDocumentY(safeStartLine);
+        const nextLineNumber = safeStartLine + safeLineSpan;
+        let endDocumentY = 0;
+        if (nextLineNumber <= contentsView.logicalLineCount) {
+            endDocumentY = contentsView.lineDocumentY(nextLineNumber);
+        } else {
+            const contentHeight = Number(contentEditor.contentHeight) || 0;
+            endDocumentY = contentHeight > 0 ? contentHeight : startDocumentY + safeLineSpan * contentsView.editorLineHeight;
+        }
+        return Math.max(contentsView.editorLineHeight, endDocumentY - startDocumentY);
+    }
+    function lineY(lineNumber) {
+        return contentsView.editorViewportYForDocumentY(contentsView.lineDocumentY(lineNumber));
+    }
+    function markerColorForType(markerType) {
+        const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
+        if (normalizedType === "conflict")
+            return contentsView.gutterMarkerConflictColor;
+        if (normalizedType === "changed")
+            return contentsView.gutterMarkerChangedColor;
+
+    }
     function markerY(markerSpec) {
         if (!markerSpec)
-            return contentsView.textOriginY;
+            return contentsView.editorVerticalInset;
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
-        return contentsView.textOriginY + (startLine - 1) * contentsView.editorLineHeight;
+        return contentsView.lineY(startLine);
+    }
+    function normalizeGutterMarker(markerSpec) {
+        if (!markerSpec)
+            return null;
+        const rawStartLine = markerSpec.startLine !== undefined ? markerSpec.startLine : markerSpec.line;
+        const startLine = Math.max(1, Number(rawStartLine) || 1);
+        const hasExplicitSpan = markerSpec.lineSpan !== undefined && markerSpec.lineSpan !== null;
+        const explicitSpan = hasExplicitSpan ? Math.max(1, Number(markerSpec.lineSpan) || 1) : 0;
+        const endLine = Math.max(startLine, Number(markerSpec.endLine) || startLine);
+        const lineSpan = explicitSpan > 0 ? explicitSpan : Math.max(1, endLine - startLine + 1);
+        const markerType = markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
+        if (markerType !== "changed" && markerType !== "conflict" && markerType !== "current")
+            return null;
+        return {
+            "color": contentsView.markerColorForType(markerType),
+            "lineSpan": lineSpan,
+            "startLine": startLine,
+            "type": markerType
+        };
+    }
+    function persistEditorText(text) {
+        if (!contentViewModel || contentViewModel.saveCurrentBodyText === undefined)
+            return false;
+        return Boolean(contentViewModel.saveCurrentBodyText(text));
+    }
+    function releaseEditorSyncGuard() {
+        Qt.callLater(function () {
+            contentsView.syncingEditorTextFromModel = false;
+        });
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -93,16 +179,23 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function syncEditorTextFromSelection(text) {
+        const nextText = text === undefined || text === null ? "" : String(text);
+        contentsView.syncingEditorTextFromModel = true;
+        if (contentsView.editorText !== nextText)
+            contentsView.editorText = nextText;
+        contentsView.releaseEditorSyncGuard();
+    }
     function visibleLineNumbers() {
-        const logicalLineCount = Math.max(1, Number(contentEditor.lineCount) || 1);
-        const lineHeight = Math.max(1, contentsView.editorLineHeight);
-        const viewportTop = Math.max(0, -contentsView.textOriginY);
-        const viewportLineCount = Math.max(1, Math.ceil(lineNumberViewport.height / lineHeight) + 2);
-        const startLine = Math.max(1, Math.floor(viewportTop / lineHeight) + 1);
-        const endLine = Math.min(logicalLineCount, startLine + viewportLineCount);
         const visibleLines = [];
-        for (let lineNumber = startLine; lineNumber <= endLine; ++lineNumber)
+        for (let lineNumber = 1; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
+            const lineY = contentsView.lineY(lineNumber);
+            if (lineY > lineNumberViewport.height)
+                break;
+            if (lineY + contentsView.editorLineHeight < 0)
+                continue;
             visibleLines.push(lineNumber);
+        }
 
     }
 
@@ -111,11 +204,10 @@ Item {
     clip: true
 
     Component.onCompleted: {
-        contentsView.editorText = contentsView.selectedNoteBodyText;
+        contentsView.syncEditorTextFromSelection(contentsView.selectedNoteBodyText);
     }
     onSelectedNoteBodyTextChanged: {
-        if (contentsView.editorText !== contentsView.selectedNoteBodyText)
-            contentsView.editorText = contentsView.selectedNoteBodyText;
+        contentsView.syncEditorTextFromSelection(contentsView.selectedNoteBodyText);
     }
 
     Rectangle {
@@ -160,13 +252,13 @@ Item {
                             x: contentsView.gutterIconRailLeft
                         }
                         Repeater {
-                            model: contentsView.decorativeMarkerSpecs
+                            model: contentsView.effectiveGutterMarkers
 
                             delegate: Rectangle {
                                 required property var modelData
 
                                 color: modelData.color
-                                height: Math.max(20, (Number(modelData.lineSpan) || 1) * contentsView.editorLineHeight)
+                                height: Math.max(20, contentsView.lineVisualHeight(modelData.startLine, modelData.lineSpan))
                                 radius: width / 2
                                 width: 4
                                 x: contentsView.gutterCommentRailLeft + contentsView.gutterCommentMarkerOffset
@@ -191,7 +283,7 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                                 width: contentsView.lineNumberColumnTextWidth
                                 x: contentsView.lineNumberColumnLeft
-                                y: contentsView.textOriginY + (modelData - 1) * contentsView.editorLineHeight
+                                y: contentsView.lineY(modelData)
                             }
                         }
                     }
@@ -234,11 +326,14 @@ Item {
                         text: contentsView.editorText
                         textColor: LV.Theme.textSecondary
                         textFormat: TextEdit.PlainText
-                        wrapMode: TextEdit.NoWrap
+                        wrapMode: TextEdit.Wrap
 
                         onTextEdited: function (text) {
                             if (contentsView.editorText !== text)
                                 contentsView.editorText = text;
+                            if (contentsView.syncingEditorTextFromModel)
+                                return;
+                            contentsView.persistEditorText(text);
                             contentsView.editorTextEdited(text);
                         }
                     }

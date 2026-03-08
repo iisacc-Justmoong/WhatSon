@@ -248,22 +248,27 @@ Domain-isolated support:
               properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
               `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
               assets `cwmPermissionView` and `sortByType` without extra color-token overrides. The active query is
-              pushed into `LibraryNoteListModel.searchText`, so visible note cards filter against runtime-parsed note
-              body text without reparsing `.wsnote` content on each edit.
+              pushed into the active domain note-list model (`LibraryNoteListModel` or `BookmarksNoteListModel`), so
+              visible note cards filter against runtime-parsed note body text without reparsing `.wsnote` content on
+              each edit.
             - `ContentViewLayout.qml` now implements the Figma `ContentsDisplayView` editing surface with
               `LV.TextEditor` plus a dedicated `74px` left gutter. The gutter computes visible line numbers from the
-              same `editorText` source, cursor line, and editor render metrics (`lineCount`, `contentHeight`,
-              scroll-derived text origin), while `showRenderedOutput: false` and `TextEdit.NoWrap` keep logical lines
-              and visual lines aligned. The editable body block is top-left aligned with `16px` inset on all sides,
-              overriding the LVRS internal centered multi-line placement. Figma node `155:5345` is treated as the
-              source of truth for the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption
-              numbers, `#9DA0A8` active line number, marker colors `#FFF567` / `#0AFF60`, `2px` horizontal frame
-              inset, `x=14` line-number column placement with `22px` text width inside the `26px` column frame, and
-              the reserved `18px` icon rail at `x=40`. Figma node `155:5352` is treated as the source of truth for
-              body typography (`LV.Theme.fontBody`, `12px`, medium, zero letter spacing). `editorText` is projected
-              from the selected note's `.wsnbody` `<body>` plain-text payload through
-              `LibraryNoteListModel.currentBodyText`.
-              The left rounded marker rail is currently decorative only.
+              same `editorText` source, cursor line, and editor render metrics. `wrapMode: TextEdit.Wrap` is enabled,
+              but gutter numbering still stays on logical document lines by mapping each logical line start through
+              `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not change the line-number
+              sequence. The editable body block is top-left aligned with `16px` inset on all sides, overriding the
+              LVRS internal centered multi-line placement. Figma node `155:5345` is treated as the source of truth for
+              the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
+              active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned number
+              text mirrored against the editor's `16px` left inset, and the fixed `18px` icon-rail anchor at `x=40`.
+              Figma node `155:5352` is treated as the source of truth for body typography (`LV.Theme.fontBody`, `12px`,
+              medium, zero letter spacing). `editorText` is projected from the selected note's `.wsnbody` `<body>`
+              plain-text payload through the active note-list model's `currentBodyText`, and persisted back through the
+              active hierarchy view-model's `saveCurrentBodyText(...)` so edits rewrite the backing `.wsnbody` file.
+              The left rounded marker rail is state-driven: implicit current-line marker `current -> blue
+              (LV.Theme.primary)`, externally supplied `changed -> #FFF567`, and externally supplied `conflict ->
+              LV.Theme.danger`. Sync and conflict producers are not wired yet, but the QML contract already accepts
+              `gutterMarkers` entries with `type`, `startLine`, and `lineSpan` or `endLine`.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -300,6 +305,8 @@ Library-specific modeling:
 - `LibraryNoteListModel.searchText` filters the current visible note set against preassembled searchable body text
   sourced from `LibraryNoteRecord.bodyPlainText` plus note metadata, so note-list search remains in-memory and
   selection-aware (`All Library` / `Draft` / `Today` / folder / bookmark color).
+- `BookmarksHierarchyViewModel` uses its own `BookmarksNoteListModel`; Bookmarks must not reuse
+  `LibraryNoteListModel` because note-list contracts remain domain-owned even when role shapes are similar.
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
     - `id` (string)
     - `primaryText` (string)
@@ -313,6 +320,8 @@ Library-specific modeling:
     - `currentIndex` (selected visible row)
     - `currentNoteId` (selected note id)
     - `currentBodyText` (selected note full plain-text body)
+- Note-list `bodyText` values are newline-normalized but not trimmed, so editor round-trips preserve leading/trailing
+  blank lines when serializing `.wsnbody` `<paragraph>` nodes.
 - `NoteListItem.qml` resolves note-card visuals from LVRS theme tokens:
     - active background: `LV.Theme.accentBlueMuted`
     - hover background: `LV.Theme.panelBackground06`

@@ -1,7 +1,6 @@
-#include "LibraryNoteListModel.hpp"
+#include "BookmarksNoteListModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QRegularExpression>
 #include <algorithm>
@@ -72,7 +71,7 @@ namespace
         return value;
     }
 
-    QString buildFallbackSearchableText(const LibraryNoteListItem& item)
+    QString buildFallbackSearchableText(const BookmarksNoteListItem& item)
     {
         QStringList parts;
         if (!item.id.trimmed().isEmpty())
@@ -116,7 +115,7 @@ namespace
         return normalized.split(QLatin1Char(' '), Qt::SkipEmptyParts);
     }
 
-    bool itemMatchesSearch(const LibraryNoteListItem& item, const QStringList& terms)
+    bool itemMatchesSearch(const BookmarksNoteListItem& item, const QStringList& terms)
     {
         if (terms.isEmpty())
         {
@@ -153,7 +152,7 @@ namespace
         return sanitized;
     }
 
-    QString itemIdAt(const QVector<LibraryNoteListItem>& items, int index)
+    QString itemIdAt(const QVector<BookmarksNoteListItem>& items, int index)
     {
         if (index < 0 || index >= items.size())
         {
@@ -162,7 +161,7 @@ namespace
         return items.at(index).id;
     }
 
-    QString itemBodyTextAt(const QVector<LibraryNoteListItem>& items, int index)
+    QString itemBodyTextAt(const QVector<BookmarksNoteListItem>& items, int index)
     {
         if (index < 0 || index >= items.size())
         {
@@ -171,7 +170,7 @@ namespace
         return items.at(index).bodyText;
     }
 
-    int indexOfItemById(const QVector<LibraryNoteListItem>& items, const QString& noteId)
+    int indexOfItemById(const QVector<BookmarksNoteListItem>& items, const QString& noteId)
     {
         const QString normalizedNoteId = noteId.trimmed();
         if (normalizedNoteId.isEmpty())
@@ -191,13 +190,13 @@ namespace
     }
 }
 
-LibraryNoteListModel::LibraryNoteListModel(QObject* parent)
+BookmarksNoteListModel::BookmarksNoteListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    WhatSon::Debug::traceSelf(this, QStringLiteral("library.notelist.model"), QStringLiteral("ctor"));
+    WhatSon::Debug::traceSelf(this, QStringLiteral("bookmarks.notelist.model"), QStringLiteral("ctor"));
 }
 
-int LibraryNoteListModel::rowCount(const QModelIndex& parent) const
+int BookmarksNoteListModel::rowCount(const QModelIndex& parent) const
 {
     if (parent.isValid())
     {
@@ -207,14 +206,14 @@ int LibraryNoteListModel::rowCount(const QModelIndex& parent) const
     return m_items.size();
 }
 
-QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
+QVariant BookmarksNoteListModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() < 0 || index.row() >= m_items.size())
     {
         return {};
     }
 
-    const LibraryNoteListItem& item = m_items.at(index.row());
+    const BookmarksNoteListItem& item = m_items.at(index.row());
     switch (role)
     {
     case IdRole:
@@ -238,7 +237,7 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
     }
 }
 
-QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
+QHash<int, QByteArray> BookmarksNoteListModel::roleNames() const
 {
     return {
         {IdRole, "id"},
@@ -252,27 +251,27 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
     };
 }
 
-int LibraryNoteListModel::itemCount() const noexcept
+int BookmarksNoteListModel::itemCount() const noexcept
 {
     return m_items.size();
 }
 
-int LibraryNoteListModel::currentIndex() const noexcept
+int BookmarksNoteListModel::currentIndex() const noexcept
 {
     return m_currentIndex;
 }
 
-QString LibraryNoteListModel::currentNoteId() const
+QString BookmarksNoteListModel::currentNoteId() const
 {
     return itemIdAt(m_items, m_currentIndex);
 }
 
-QString LibraryNoteListModel::currentBodyText() const
+QString BookmarksNoteListModel::currentBodyText() const
 {
     return itemBodyTextAt(m_items, m_currentIndex);
 }
 
-void LibraryNoteListModel::setCurrentIndex(int index)
+void BookmarksNoteListModel::setCurrentIndex(int index)
 {
     int nextIndex = index;
     if (m_items.isEmpty())
@@ -305,12 +304,12 @@ void LibraryNoteListModel::setCurrentIndex(int index)
     }
 }
 
-QString LibraryNoteListModel::searchText() const
+QString BookmarksNoteListModel::searchText() const
 {
     return m_searchText;
 }
 
-void LibraryNoteListModel::setSearchText(const QString& text)
+void BookmarksNoteListModel::setSearchText(const QString& text)
 {
     if (m_searchText == text)
     {
@@ -322,12 +321,12 @@ void LibraryNoteListModel::setSearchText(const QString& text)
     emit searchTextChanged();
 }
 
-bool LibraryNoteListModel::strictValidation() const noexcept
+bool BookmarksNoteListModel::strictValidation() const noexcept
 {
     return m_strictValidation;
 }
 
-void LibraryNoteListModel::setStrictValidation(bool enabled)
+void BookmarksNoteListModel::setStrictValidation(bool enabled)
 {
     if (m_strictValidation == enabled)
     {
@@ -337,24 +336,24 @@ void LibraryNoteListModel::setStrictValidation(bool enabled)
     emit strictValidationChanged();
 }
 
-int LibraryNoteListModel::correctionCount() const noexcept
+int BookmarksNoteListModel::correctionCount() const noexcept
 {
     return m_correctionCount;
 }
 
-QString LibraryNoteListModel::lastValidationCode() const
+QString BookmarksNoteListModel::lastValidationCode() const
 {
     return m_lastValidationCode;
 }
 
-QString LibraryNoteListModel::lastValidationMessage() const
+QString BookmarksNoteListModel::lastValidationMessage() const
 {
     return m_lastValidationMessage;
 }
 
-void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
+void BookmarksNoteListModel::setItems(QVector<BookmarksNoteListItem> items)
 {
-    QVector<LibraryNoteListItem> sanitized;
+    QVector<BookmarksNoteListItem> sanitized;
     sanitized.reserve(items.size());
 
     QVector<ValidationIssue> issues;
@@ -362,7 +361,7 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
 
     for (int index = 0; index < items.size(); ++index)
     {
-        LibraryNoteListItem item = std::move(items[index]);
+        BookmarksNoteListItem item = std::move(items[index]);
         const QString originalPrimaryText = item.primaryText;
         const QString originalDisplayDate = item.displayDate;
         const QStringList originalFolders = item.folders;
@@ -385,7 +384,7 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         if (item.primaryText.isEmpty())
         {
             WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.notelist.model"),
+                                      QStringLiteral("bookmarks.notelist.model"),
                                       QStringLiteral("setItems.emptyPrimaryTextKept"),
                                       QStringLiteral("index=%1 originalPrimaryText=%2")
                                       .arg(index)
@@ -471,7 +470,7 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     }
 
     WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("library.notelist.model"),
+                              QStringLiteral("bookmarks.notelist.model"),
                               QStringLiteral("setItems"),
                               QStringLiteral("count=%1").arg(sanitized.size()));
     m_sourceItems = std::move(sanitized);
@@ -491,12 +490,12 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     emit itemsChanged();
 }
 
-const QVector<LibraryNoteListItem>& LibraryNoteListModel::items() const noexcept
+const QVector<BookmarksNoteListItem>& BookmarksNoteListModel::items() const noexcept
 {
     return m_items;
 }
 
-void LibraryNoteListModel::applySearchFilter()
+void BookmarksNoteListModel::applySearchFilter()
 {
     const QString previousNoteId = currentNoteId();
     const QString previousBodyText = currentBodyText();
@@ -504,7 +503,7 @@ void LibraryNoteListModel::applySearchFilter()
     const int previousCount = m_items.size();
     const QStringList terms = searchTerms(m_searchText);
 
-    QVector<LibraryNoteListItem> filtered;
+    QVector<BookmarksNoteListItem> filtered;
     if (terms.isEmpty())
     {
         filtered = m_sourceItems;
@@ -512,7 +511,7 @@ void LibraryNoteListModel::applySearchFilter()
     else
     {
         filtered.reserve(m_sourceItems.size());
-        for (const LibraryNoteListItem& item : std::as_const(m_sourceItems))
+        for (const BookmarksNoteListItem& item : std::as_const(m_sourceItems))
         {
             if (itemMatchesSearch(item, terms))
             {
@@ -552,7 +551,7 @@ void LibraryNoteListModel::applySearchFilter()
     emit itemsChanged();
 }
 
-void LibraryNoteListModel::setValidationState(QString code, QString message)
+void BookmarksNoteListModel::setValidationState(QString code, QString message)
 {
     code = code.trimmed();
     message = message.trimmed();
