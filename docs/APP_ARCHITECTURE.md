@@ -282,9 +282,10 @@ Library-specific modeling:
 - `NoteListItem.qml` resolves note-card visuals from LVRS theme tokens:
     - active background: `LV.Theme.accentBlueMuted`
     - hover background: `LV.Theme.panelBackground06`
-    - bookmark tint fallback: `LV.Theme.accentYellow`
-    - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
-    - caption text fallback: `LV.Theme.captionColor`
+    - fixed date row: always reserves the Figma middle slot and falls back to `YYYY-MM-dd` when `displayDate` is empty
+        - bookmark tint fallback: `LV.Theme.accentYellow`
+        - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
+        - caption text fallback: `LV.Theme.captionColor`
 
 ## 4.4 QML View Layer (`src/app/qml/**`)
 

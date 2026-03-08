@@ -1,52 +1,18 @@
 {
     "folders": [
         {
-            "children": [
-                {
-                    "children": [
-                        {
-                            "children": [
-                                {
-                                    "id": "Folder5/Folder6/Folder7/Folder8",
-                                    "label": "Folder8"
-                                }
-                            ],
-                            "id": "Folder5/Folder6/Folder7",
-                            "label": "Folder7"
-                        }
-                    ],
-                    "id": "Folder5/Folder6",
-                    "label": "Folder6"
-                }
-            ],
-            "id": "Folder5",
-            "label": "Folder5"
+            "id": "Folder2",
+            "label": "Folder2"
         },
         {
             "children": [
                 {
-                    "children": [
-                        {
-                            "id": "Product/All/All2?",
-                            "label": "All2?"
-                        },
-                        {
-                            "children": [
-                                {
-                                    "id": "Product/All/Folder1/Folder4",
-                                    "label": "Folder4"
-                                }
-                            ],
-                            "id": "Product/All/Folder1",
-                            "label": "Folder1"
-                        }
-                    ],
-                    "id": "Product/All",
-                    "label": "All"
+                    "id": "ㄴㅇㄴㅁㅇㅇ/Folder 1",
+                    "label": "Folder 1"
                 }
             ],
-            "id": "Product",
-            "label": "Product"
+            "id": "ㄴㅇㄴㅁㅇㅇ",
+            "label": "ㄴㅇㄴㅁㅇㅇ"
         }
     ],
     "schema": "whatson.folders.tree",

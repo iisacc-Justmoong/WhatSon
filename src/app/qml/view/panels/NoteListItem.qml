@@ -11,6 +11,7 @@ Item {
     readonly property color captionColor: LV.Theme.captionColor
     readonly property color cardColor: LV.Theme.accentBlueMuted
     property string displayDate: ""
+    readonly property string displayDatePlaceholder: "YYYY-MM-dd"
     readonly property url folderIconSource: LV.Theme.iconPath("folder@14x14")
     readonly property color folderStrokeColor: LV.Theme.accentGrayLight
     property var folders: []
@@ -133,16 +134,17 @@ Item {
                 }
             }
             Item {
-                height: visible ? 12 : 0
-                visible: noteListItem.displayDate.length > 0
+                height: 12
                 width: parent.width
 
                 LV.Label {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     color: noteListItem.captionColor
-                    style: caption
-                    text: noteListItem.displayDate
+                    lineHeight: 12
+                    lineHeightMode: Text.FixedHeight
+                    style: body
+                    text: noteListItem.resolvedDisplayDate
                 }
             }
             Column {
@@ -181,7 +183,7 @@ Item {
                                             fillMode: Image.PreserveAspectFit
                                             height: 14
                                             smooth: true
-                                            source: noteListItem.folderIconSource
+                                            noteListItem.folderIconSource
                                             sourceSize.height: 14
                                             sourceSize.width: 14
                                             width: 14
@@ -236,7 +238,7 @@ Item {
                                             fillMode: Image.PreserveAspectFit
                                             height: 16
                                             smooth: true
-                                            source: noteListItem.tagIconSource
+                                            noteListItem.tagIconSource
                                             sourceSize.height: 16
                                             sourceSize.width: 16
                                             width: 16

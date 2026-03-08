@@ -194,6 +194,23 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listItemsPlaceholderText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListItemsPlaceholder.qml note delegates must advertise whatson.library.note drag keys.");
 
+    const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
+    QFile noteListItemFile(noteListItemPath);
+    QVERIFY2(noteListItemFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(noteListItemPath));
+    const QString noteListItemText = QString::fromUtf8(noteListItemFile.readAll());
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("readonly property string displayDatePlaceholder: \"YYYY-MM-dd\"")),
+        "NoteListItem.qml must expose the Figma date placeholder token.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("readonly property string resolvedDisplayDate: {")),
+        "NoteListItem.qml must resolve a visible display-date string.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("text: noteListItem.resolvedDisplayDate")),
+        "NoteListItem.qml date label must render the resolved display date.");
+    QVERIFY2(
+        !noteListItemText.contains(QStringLiteral("visible: noteListItem.displayDate.length > 0")),
+        "NoteListItem.qml must not collapse the Figma date row when displayDate is empty.");
+
     const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/ListBarLayout.qml"));
     QFile listBarLayoutFile(listBarLayoutPath);
