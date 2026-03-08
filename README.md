@@ -251,6 +251,10 @@ Folders hierarchy file behavior (Library sidebar):
 - `Folders.wsfolders` supports tree-style JSON with `schema: "whatson.folders.tree"` and
   `folders: [{id, label, children: [...] }]`.
 - `depth` is not a persisted file field; it is computed at parse/view-model mapping time for sidebar rendering.
+- Library sidebar filtering uses the persisted folder `id`/path as the canonical scope key, not the display `label`,
+  so duplicate leaf labels under different parents stay disambiguated.
+- Runtime-injected `All Library`, `Draft`, and `Today` are explicit system buckets; user-created folders such as
+  `All` remain regular editable folders.
 - Legacy list/object formats are still accepted and normalized into runtime depth entries.
 
 Library runtime classification behavior:

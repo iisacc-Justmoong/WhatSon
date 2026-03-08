@@ -63,6 +63,11 @@ public:
 
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE bool canMoveFolder(int index) const;
+    Q_INVOKABLE bool canAcceptFolderDrop(int sourceIndex, int targetIndex, bool asChild) const;
+    Q_INVOKABLE bool moveFolder(int sourceIndex, int targetIndex, bool asChild);
+    Q_INVOKABLE bool canMoveFolderToRoot(int sourceIndex) const;
+    Q_INVOKABLE bool moveFolderToRoot(int sourceIndex);
     Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
     Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);
 
@@ -81,6 +86,7 @@ public
     }
 
     signals  :
+
 
 
     void selectedIndexChanged();
@@ -106,10 +112,9 @@ private:
 
     struct FolderSelectionScope final
     {
-        QString selectedLabelKey;
         QString selectedPathKey;
-        QSet<QString> subtreeLabelKeys;
-        QSet<QString> subtreePathKeys;
+        QString legacyLeafKey;
+        bool allowLegacyLeafMatch = false;
     };
 
     static int extractDepth(const QVariantMap& entryMap);

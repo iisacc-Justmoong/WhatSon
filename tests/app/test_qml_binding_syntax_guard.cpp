@@ -176,6 +176,20 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             "sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;")),
         "SidebarHierarchyView.qml must derive note-drop highlight state from hierarchyViewModel.canAcceptNoteDrop.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("Drag.keys: [\"whatson.hierarchy.folder\"]")),
+        "SidebarHierarchyView.qml hierarchy delegates must advertise whatson.hierarchy.folder drag keys.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop")),
+        "SidebarHierarchyView.qml must query hierarchyViewModel.canAcceptFolderDrop for folder reparenting.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.moveFolder(sourceIndex, targetIndex, asChild)")),
+        "SidebarHierarchyView.qml must route folder reparent drops through hierarchyViewModel.moveFolder(...).");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.moveFolderToRoot(sourceIndex)")),
+        "SidebarHierarchyView.qml must expose folder extraction to root through hierarchyViewModel.moveFolderToRoot(...).");
+    QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder(index, noteId)")),
         "SidebarHierarchyView.qml must route accepted note drops through hierarchyViewModel.assignNoteToFolder(index, noteId).");
@@ -207,6 +221,18 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("text: noteListItem.resolvedDisplayDate")),
         "NoteListItem.qml date label must render the resolved display date.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("source: noteListItem.folderIconSource")),
+        "NoteListItem.qml folder icon must bind through source: noteListItem.folderIconSource.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("source: noteListItem.tagIconSource")),
+        "NoteListItem.qml tag icon must bind through source: noteListItem.tagIconSource.");
+    QVERIFY2(
+        !noteListItemText.contains(QStringLiteral("noteListItem: folderIconSource")),
+        "NoteListItem.qml must not use the invalid noteListItem: folderIconSource binding.");
+    QVERIFY2(
+        !noteListItemText.contains(QStringLiteral("noteListItem: tagIconSource")),
+        "NoteListItem.qml must not use the invalid noteListItem: tagIconSource binding.");
     QVERIFY2(
         !noteListItemText.contains(QStringLiteral("visible: noteListItem.displayDate.length > 0")),
         "NoteListItem.qml must not collapse the Figma date row when displayDate is empty.");

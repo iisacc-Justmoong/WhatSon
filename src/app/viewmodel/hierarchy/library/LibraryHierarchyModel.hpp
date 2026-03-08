@@ -11,6 +11,17 @@ struct LibraryHierarchyItem
     bool accent = false;
     bool expanded = false;
     QString label;
+    QString folderPath;
+
+    enum class SystemBucket
+    {
+        None,
+        All,
+        Draft,
+        Today
+    };
+
+    SystemBucket systemBucket = SystemBucket::None;
     bool showChevron = true;
 };
 
@@ -63,6 +74,7 @@ public
     }
 
     signals  :
+
 
 
     void itemCountChanged(int itemCount);

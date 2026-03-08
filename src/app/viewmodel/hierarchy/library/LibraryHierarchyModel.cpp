@@ -121,6 +121,12 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
     for (int index = 0; index < items.size(); ++index)
     {
         LibraryHierarchyItem item = std::move(items[index]);
+        if (item.systemBucket != LibraryHierarchyItem::SystemBucket::None)
+        {
+            item.depth = 0;
+            item.accent = true;
+            item.folderPath.clear();
+        }
         if (item.depth < 0)
         {
             ValidationIssue issue;

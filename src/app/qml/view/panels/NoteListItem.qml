@@ -238,7 +238,6 @@ Item {
                                             fillMode: Image.PreserveAspectFit
                                             height: 16
                                             smooth: true
-                                            noteListItem.tagIconSource
                                             sourceSize.height: 16
                                             sourceSize.width: 16
                                             width: 16

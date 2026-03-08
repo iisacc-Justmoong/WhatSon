@@ -263,6 +263,10 @@ Library-specific modeling:
 - `LibraryHierarchyViewModel` exposes `All Library`, `Draft`, and `Today` as immutable depth-0 system folders and
   synchronizes
   note-list filtering from those buckets plus persisted library folders
+- Folder selection/filtering is path-based (`Folders.wsfolders.id` / normalized folder path), so nested folders and
+  duplicate leaf labels do not alias each other.
+- System-bucket behavior is identity-based rather than label-based; user folders named `All`, `Draft`, or similar are
+  still treated as normal folders unless they are one of the runtime-injected system buckets.
 - Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
   resolved folder path to the note header `<folders>` list, updates `lastModified`, and rebuilds the `All Library` /
   `Draft` / `Today` bucket snapshots.
@@ -345,10 +349,13 @@ Hierarchy rendering pipeline:
           opening inline rename.
         - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops through
           `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
-            - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
-              domain
-              store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
-              `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+        - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
+          accepted drops through `LibraryHierarchyViewModel::moveFolder(...)` for child/sibling reparenting and
+          `moveFolderToRoot(...)` for root extraction.
+          - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
+          domain
+          store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+          `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
