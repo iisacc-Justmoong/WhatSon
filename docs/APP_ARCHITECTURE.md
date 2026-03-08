@@ -286,10 +286,17 @@ Library-specific modeling:
 - `NoteListItem.qml` resolves note-card visuals from LVRS theme tokens:
     - active background: `LV.Theme.accentBlueMuted`
     - hover background: `LV.Theme.panelBackground06`
-    - fixed date row: always reserves the Figma middle slot and falls back to `YYYY-MM-dd` when `displayDate` is empty
-        - bookmark tint fallback: `LV.Theme.accentYellow`
-        - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
-        - caption text fallback: `LV.Theme.captionColor`
+    - Figma node `119:3028` frame contract: outer frame `194x102`, with `12px` horizontal padding, `8px` vertical
+      padding,
+      and an inner `86px` top/middle/bottom content stack separated by `8px` vertical gaps
+    - primary text: 2-line `12px` semibold block with fixed `12px` line height
+        - fixed date row: always reserves the Figma middle slot and falls back to `YYYY-MM-dd` when `displayDate` is
+          empty
+    - bottom metadata rows: `11px` regular labels with `folder@14x14` and `vcscurrentBranch` icons inside `16px` frames,
+      clipped to the card frame so metadata never bleeds past the note item bounds
+      - bookmark tint fallback: `LV.Theme.accentYellow`
+      - folder/tag icon assets: `folder@14x14`, `vcscurrentBranch`
+      - caption text fallback: `LV.Theme.captionColor`
 
 ## 4.4 QML View Layer (`src/app/qml/**`)
 
@@ -352,10 +359,10 @@ Hierarchy rendering pipeline:
         - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
           accepted drops through `LibraryHierarchyViewModel::moveFolder(...)` for child/sibling reparenting and
           `moveFolderToRoot(...)` for root extraction.
-          - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
-          domain
-          store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
-          `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+            - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
+              domain
+              store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+              `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.

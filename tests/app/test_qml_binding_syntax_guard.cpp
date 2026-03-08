@@ -216,11 +216,29 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         noteListItemText.contains(QStringLiteral("readonly property string displayDatePlaceholder: \"YYYY-MM-dd\"")),
         "NoteListItem.qml must expose the Figma date placeholder token.");
     QVERIFY2(
+        noteListItemText.contains(QStringLiteral("implicitHeight: 102")),
+        "NoteListItem.qml must keep the Figma 102px outer frame height.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("implicitWidth: 194")),
+        "NoteListItem.qml must keep the Figma 194px width.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("anchors.leftMargin: noteListItem.horizontalPadding")),
+        "NoteListItem.qml must apply horizontal content padding from the Figma frame.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("anchors.topMargin: noteListItem.verticalPadding")),
+        "NoteListItem.qml must apply vertical content padding from the Figma frame.");
+    QVERIFY2(
         noteListItemText.contains(QStringLiteral("readonly property string resolvedDisplayDate: {")),
         "NoteListItem.qml must resolve a visible display-date string.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("text: noteListItem.resolvedDisplayDate")),
         "NoteListItem.qml date label must render the resolved display date.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("font.pixelSize: noteListItem.primaryTextSize")),
+        "NoteListItem.qml primary text must use the dedicated 12px Figma size property.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("font.pixelSize: noteListItem.metadataTextSize")),
+        "NoteListItem.qml metadata text must use the dedicated 11px Figma size property.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("source: noteListItem.folderIconSource")),
         "NoteListItem.qml folder icon must bind through source: noteListItem.folderIconSource.");
