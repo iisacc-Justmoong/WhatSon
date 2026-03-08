@@ -27,6 +27,10 @@ WhatSon is an LVRS-based Qt Quick application.
 - The note-list search header also recenters the underlying LVRS `inputItem` from its live `contentHeight`, so
   whitespace-only edits (`Space`, `Backspace`) no longer flip the inline text/caret between two fixed vertical
   positions on macOS.
+- Hierarchy-folder reparenting and note-to-folder assignment are app-side drag contracts, not an LVRS prohibition.
+  `SidebarHierarchyView.qml` and `ListBarLayout.qml` now force their `DragHandler` instances to use
+  `PointerHandler.CanTakeOverFromAnything`, so row click handlers and parent scrolling containers do not immediately
+  consume every drag attempt.
 - Library folder filtering resolves nested note membership against the active hierarchy, so child-folder selection can
   still match notes whose header stores folder ancestry as separate `<folder>` entries or leaf-only values such as
   `/Competitor` instead of the full `Research/Competitor` path.
@@ -38,14 +42,18 @@ WhatSon is an LVRS-based Qt Quick application.
 
 - `SidebarHierarchyView.qml` opens inline folder rename from both `Enter/Return` and mouse double-tap on the folder row.
 - Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
-  reparent them by drag-and-drop instead of only through model-side helpers.
+  reparent them by drag-and-drop instead of only through model-side helpers. LVRS does not block this path; WhatSon's
+  custom delegates must explicitly let `DragHandler` take pointer ownership away from row clicks and sidebar scrolling.
+- Note-card selection now uses `TapHandler.DragThreshold`, so note-to-folder drags are allowed to cross the system drag
+  threshold before the tap path commits the current note selection.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
   `Folder1`.
 
 ## Content Editor Surface
 
-- `src/app/qml/view/panels/ContentViewLayout.qml` now renders the Figma `ContentsDisplayView` edit surface with
-  `LV.TextEditor` instead of a placeholder rectangle.
+- `src/app/qml/view/panels/ContentViewLayout.qml` is now a panel-level wrapper only; the actual Figma
+  `ContentsDisplayView` editor implementation lives in
+  `src/app/qml/view/content/editor/ContentsDisplayView.qml`.
 - The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
   payload extracted from `.wsnbody` `<body>` content.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
@@ -65,35 +73,47 @@ WhatSon is an LVRS-based Qt Quick application.
   still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
   document.
 - `LV.TextEditor` now binds the body token more explicitly for this surface: `LV.Theme.fontBody`, `12px` medium weight,
-  and zero letter spacing, matching the Figma `Body` token.
+  zero letter spacing, and the standard LVRS input selection highlight (`LV.Theme.accent`), matching the Figma `Body`
+  token and the rest of the app's input controls.
 - `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
   state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
   without cross-domain model reuse.
-- `ListItemsPlaceholder.qml` is responsible for the bidirectional selection bridge between `ListView.currentIndex` and
-  the active domain note-list model; note-card taps must update the model selection, and model changes must resync the
-  visible current row immediately when the active hierarchy domain changes.
-- `ContentViewLayout.qml` persists edited body text through the active hierarchy view-model's
+- `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
+  `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
+  model changes must resync the visible current row immediately when the active hierarchy domain changes.
+- `ContentsDisplayView.qml` persists edited body text through the active hierarchy view-model's
   `saveBodyTextForNote(...)` contract with a short idle debounce, so `.wsnbody` rewrites and note-list refreshes no
   longer happen on every keystroke.
+- When the active folder resolves to zero visible notes, `ContentsDisplayView.qml` no longer pretends that an unsaved
+  line-1 draft exists. The entire editor surface is replaced with a centered `No files in this folder` placeholder
+  using title typography plus `LV.Theme.disabledColor`.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
   lines survive editor round-trips into `.wsnbody`.
 - Gutter cursor-line lookup now comes from the prebuilt logical-line offset table and visible-range lookup starts from
   the current viewport instead of rescanning every logical line from the top on each paint.
 - The first visible gutter line is chosen from rendered viewport-space line positions, so opening a note starts with
   the same line number that is actually visible at the top of the editor surface.
+- The gutter also keeps an explicit refresh-revision pulse with a short multi-pass timer, so when a user re-enters the
+  editor surface, opens a different note, or the `TextEditor` finishes a delayed relayout, the visible line numbers
+  and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a
+  previous note/session.
+- The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
+  through the whole remaining editor height when the cursor sits on the last logical line.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
   offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
 - That silhouette is now painted from actual wrapped visual-row segments taken from the `TextEditor` layout rather than
   from one height-scaled logical-line block, so wrapped paragraphs appear as separate thin text strokes instead of
   carved slabs.
+- Minimap rows are packed with a fixed `1px` gap between bars, which keeps the overview denser than the main editor and
+  prevents sparse empty rails from making the minimap appear longer than the body it represents.
 - The current cursor line on that minimap is reduced to the active line's own silhouette width, and the visible
   viewport is shown as a subtle translucent fill without an outline border. Click/drag plus wheel-routed scrolling are
   still supported.
 - The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
   current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
-- Conflict detection and sync integration are not implemented yet, but `ContentViewLayout.qml` already accepts external
-  gutter marker ranges via `gutterMarkers` using `{ type: "changed" | "conflict", startLine, lineSpan }` or
+- Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts
+  external gutter marker ranges via `gutterMarkers` using `{ type: "changed" | "conflict", startLine, lineSpan }` or
   `{ type, startLine, endLine }`.
 
 ## Theme Token Usage

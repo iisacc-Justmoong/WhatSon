@@ -98,8 +98,22 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
     const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
 
-    const QString contentViewPath = QDir(qmlRoot).absoluteFilePath(
+    const QString contentViewLayoutPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/ContentViewLayout.qml"));
+    QFile contentViewLayoutFile(contentViewLayoutPath);
+    QVERIFY2(contentViewLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewLayoutPath));
+    const QString contentViewLayoutText = QString::fromUtf8(contentViewLayoutFile.readAll());
+    QVERIFY2(
+        contentViewLayoutText.contains(QStringLiteral("ContentsDisplayView {")),
+        "ContentViewLayout.qml must remain a panel-level wrapper that composes the dedicated contents surface.");
+    QVERIFY2(
+        contentViewLayoutText.contains(
+            QStringLiteral(
+                "panelViewModelRegistry ? panelViewModelRegistry.panelViewModel(\"ContentViewLayout\") : null")),
+        "ContentViewLayout.qml must keep panel-view-model wiring at the panel wrapper layer.");
+
+    const QString contentViewPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsDisplayView.qml"));
     QFile contentViewFile(contentViewPath);
     QVERIFY2(contentViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewPath));
     const QString contentViewText = QString::fromUtf8(contentViewFile.readAll());
@@ -114,14 +128,34 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("property var noteListModel: null")),
         "ContentViewLayout.qml must accept the active note list model for body-text projection.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property int visibleNoteCount: noteListModel && noteListModel.itemCount !== undefined ? Math.max(0, Number(noteListModel.itemCount) || 0) : 0")),
+        "ContentViewLayout.qml must derive the visible note count from the active domain note-list model.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("readonly property bool showEmptyFolderPlaceholder: contentsView.visibleNoteCount === 0")),
+        "ContentViewLayout.qml must expose an explicit empty-folder state instead of treating an empty folder as a new unsaved note.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("property var contentViewModel: null")),
         "ContentViewLayout.qml must accept the active hierarchy view-model for body persistence.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("property bool pendingBodySave: false")),
         "ContentViewLayout.qml must track debounced body persistence state.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("property int gutterRefreshRevision: 0")),
+        "ContentViewLayout.qml must expose an explicit gutter refresh revision so late TextEditor layout can be re-sampled.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function scheduleGutterRefresh(passCount)")),
+        "ContentViewLayout.qml must expose a helper that schedules multi-pass gutter refresh after note/view transitions.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function commitGutterRefresh()")),
+        "ContentViewLayout.qml must separate the actual gutter refresh pulse from the scheduling path.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("function visibleLineNumbers()")),
         "ContentViewLayout.qml must derive visible line numbers for the gutter viewport.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("const refreshRevision = contentsView.gutterRefreshRevision;")),
+        "ContentViewLayout.qml gutter calculations must depend on an explicit refresh revision so visibility refresh pulses invalidate stale layout samples.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("const firstVisibleLine = contentsView.firstVisibleLogicalLine();")),
         "ContentViewLayout.qml must choose the initial visible gutter line from viewport-space line positions.");
@@ -150,6 +184,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function lineVisualHeight(startLine, lineSpan)")),
         "ContentViewLayout.qml must expand gutter markers to the visual height of wrapped logical lines.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function currentCursorVisualLineHeight()")),
+        "ContentViewLayout.qml must expose the active cursor-row height so the current-line gutter marker can track the visual row being edited.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function markerHeight(markerSpec)")),
+        "ContentViewLayout.qml must route gutter marker height through a dedicated helper so current-line and range markers can use different height rules.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("height: contentsView.markerHeight(markerSpec)")),
+        "ContentViewLayout.qml gutter marker delegate must use markerHeight(markerSpec) rather than stretching every marker from logical-line span alone.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color lineNumberColor: \"#4E5157\"")),
         "ContentViewLayout.qml must keep the gutter caption token color from Figma.");
@@ -196,6 +239,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("LV.TextEditor {")),
         "ContentViewLayout.qml must compose LV.TextEditor for the contents editing surface.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("text: \"No files in this folder\"")),
+        "ContentViewLayout.qml must replace the editor surface with a centered empty-folder placeholder when the active folder has no notes.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("style: title")),
+        "ContentViewLayout.qml empty-folder placeholder must use title typography.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("color: LV.Theme.disabledColor")),
+        "ContentViewLayout.qml empty-folder placeholder must use the LVRS disabled text color.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("showRenderedOutput: false")),
         "ContentViewLayout.qml must disable TextEditor preview output inside the contents display surface.");
     QVERIFY2(
@@ -216,6 +268,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("Timer {")),
         "ContentViewLayout.qml must use a Timer-backed debounce for body persistence.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("id: gutterRefreshTimer")),
+        "ContentViewLayout.qml must use a dedicated timer to resample gutter layout after note changes and resurfacing.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("contentsView.scheduleGutterRefresh(4);")),
+        "ContentViewLayout.qml must trigger extra gutter refresh passes when a note body is rebound or the surface is shown.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function onContentHeightChanged()")),
+        "ContentViewLayout.qml must resample the gutter when the internal TextEditor content height changes after layout settles.");
     QVERIFY2(
         contentViewText.contains(
             QStringLiteral("readonly property var editorFlickable: contentsView.resolveEditorFlickable()")),
@@ -247,6 +308,16 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("function minimapVisualRowPaintHeight(rowSpec)")),
         "ContentViewLayout.qml minimap must thin each painted row below the full slot height so the text silhouette stays crisp.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property int minimapRowGap: 1")),
+        "ContentViewLayout.qml minimap must keep a fixed 1px gap between packed silhouette rows.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function minimapSilhouetteHeight()")),
+        "ContentViewLayout.qml minimap must expose a packed silhouette height instead of relying on the whole editor rail height.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "return visualIndex * (contentsView.minimapRowGap + contentsView.minimapVisualRowPaintHeight(rowSpec));")),
+        "ContentViewLayout.qml minimap row Y positions must be packed from visual-row index plus a fixed 1px gap.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("Layout.preferredWidth: contentsView.minimapOuterWidth")),
         "ContentViewLayout.qml minimap rail must reserve its own right-side layout width.");
     QVERIFY2(
@@ -273,6 +344,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("fontLetterSpacing: 0")),
         "ContentViewLayout.qml must keep the Figma body token's zero letter spacing.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("selectionColor: LV.Theme.accent")),
+        "ContentViewLayout.qml must keep the editor selection highlight aligned with the LVRS input accent color.");
     QVERIFY2(
         contentViewText.contains(
             QStringLiteral("fieldMinHeight: Math.max(contentsView.minEditorHeight, editorViewport.height)")),
@@ -420,6 +494,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("Drag.keys: [\"whatson.hierarchy.folder\"]")),
         "SidebarHierarchyView.qml hierarchy delegates must advertise whatson.hierarchy.folder drag keys.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
+        "SidebarHierarchyView.qml folder drag handler must be able to take pointer ownership away from row click handlers and Flickable scrolling.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("Drag.supportedActions: Qt.MoveAction")),
+        "SidebarHierarchyView.qml folder drag contract must advertise move semantics.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop")),
         "SidebarHierarchyView.qml must query hierarchyViewModel.canAcceptFolderDrop for folder reparenting.");
     QVERIFY2(
@@ -434,32 +514,6 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder(index, noteId)")),
         "SidebarHierarchyView.qml must route accepted note drops through hierarchyViewModel.assignNoteToFolder(index, noteId).");
-
-    const QString listItemsPlaceholderPath = QDir(qmlRoot).absoluteFilePath(
-        QStringLiteral("view/panels/ListItemsPlaceholder.qml"));
-    QFile listItemsPlaceholderFile(listItemsPlaceholderPath);
-    QVERIFY2(
-        listItemsPlaceholderFile.open(QIODevice::ReadOnly | QIODevice::Text),
-        qPrintable(listItemsPlaceholderPath));
-    const QString listItemsPlaceholderText = QString::fromUtf8(listItemsPlaceholderFile.readAll());
-    QVERIFY2(
-        listItemsPlaceholderText.contains(QStringLiteral("DragHandler {")),
-        "ListItemsPlaceholder.qml must expose DragHandler on note delegates.");
-    QVERIFY2(
-        listItemsPlaceholderText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
-        "ListItemsPlaceholder.qml note delegates must advertise whatson.library.note drag keys.");
-    QVERIFY2(
-        listItemsPlaceholderText.contains(QStringLiteral("listItemsPlaceholder.noteModel.currentIndex = index;")),
-        "ListItemsPlaceholder.qml must push tapped note selection into noteModel.currentIndex.");
-    QVERIFY2(
-        listItemsPlaceholderText.contains(QStringLiteral("function pushCurrentIndexToModel(index)")),
-        "ListItemsPlaceholder.qml must expose an explicit helper that pushes ListView selection into the note model.");
-    QVERIFY2(
-        listItemsPlaceholderText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
-        "ListItemsPlaceholder.qml must pull currentIndex from the note model back into ListView state.");
-    QVERIFY2(
-        listItemsPlaceholderText.contains(QStringLiteral("onNoteModelChanged: {")),
-        "ListItemsPlaceholder.qml must resync the visible note selection whenever the active note model changes.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);
@@ -523,6 +577,47 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.
         contains(QStringLiteral("listBarLayout.noteListModel.searchText = listBarLayout.searchText;")),
         "ListBarLayout.qml must push the active search text into the bound note list model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function pushCurrentIndexToModel(index)")),
+        "ListBarLayout.qml must expose an explicit helper that pushes ListView selection into the note model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
+        "ListBarLayout.qml must pull currentIndex from the note model back into ListView state.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property bool noteDragActive: false")),
+        "ListBarLayout.qml must track whether a note-card drag is active so the parent ListView can stop treating the gesture as scrolling.");
+    QVERIFY2(
+        listBarLayoutText.contains(
+            QStringLiteral("interactive: contentHeight > height && !listBarLayout.noteDragActive")),
+        "ListBarLayout.qml must disable ListView scrolling while a note drag is active.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "model: listBarLayout.noteListMode && listBarLayout.noteListModel ? listBarLayout.noteListModel : null")),
+        "ListBarLayout.qml must null the note-list model outside note-list mode once the old placeholder adapter is removed.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
+        "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("Drag.supportedActions: Qt.CopyAction")),
+        "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
+        "ListBarLayout.qml note drag handler must be able to take pointer ownership away from tap selection and list scrolling.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("dragThreshold: 4")),
+        "ListBarLayout.qml note drag handler should lower the drag threshold so note-to-folder drags start before vertical scrolling wins.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
+        "ListBarLayout.qml must keep note-card tap handling passive until drag threshold so note drags can start from the same surface.");
+    QVERIFY2(
+        !listBarLayoutText.contains(QStringLiteral("TapHandler.ReleaseWithinBounds")),
+        "ListBarLayout.qml note tap handler must not take an exclusive press grab that blocks drag startup.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("listBarLayout.noteListModel.currentIndex = index;")),
+        "ListBarLayout.qml must push tapped note selection into noteModel.currentIndex.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onNoteListModelChanged: {")),
+        "ListBarLayout.qml must resync the visible note selection whenever the active note model changes.");
 
     const QString listBarHeaderPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/ListBarHeader.qml"));

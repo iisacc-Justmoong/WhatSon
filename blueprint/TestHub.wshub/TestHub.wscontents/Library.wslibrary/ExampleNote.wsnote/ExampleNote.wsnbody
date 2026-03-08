@@ -6,9 +6,11 @@
     <paragraph>이렇게 2단으로 줄을 갈아버리면 역시 빈 paragrapth가 되는구나. 그럼 &lt;next/&gt;는 필요 없겠다. 어차피 시각적으로 같은 거라면</paragraph>
     <paragraph>Edit에는 그걸 넣자. perl과 셸, 파이썬으로 구축하려 했던 그 복잡하고 정교한 텍스트 조작 기능. 노트 분리나 병합 등은 Control에 있는 게 맞겠지만 예를 들어 모든 문자열 치환 이런 기능은 Edit에 있는 게 맞겠다. 아니면 Control이라는 이름을 다른 걸로 바꾸던가. 솔직히 지금으로써는 Edit과 Control이 이름만 놓고 보면 겹치는 느낌이 있다.</paragraph>
     <paragraph>그래 이거야!!! 일부지만 실제로 동작하는 왓슨을 보니 기쁨이 넘치는구나.</paragraph>
-    <paragraph>ㅁㄴㅇㅁㄴㅇ</paragraph>
+    <paragraph>ㅁㄴㅇㅁㄴㅇ 음</paragraph>
     <paragraph>일단 텍스트가 막 길어져 그래서 텍스트 에디터에서 무시하지 못 할 두께를 가지게 되면 뭐랄까 미니맵에도 비중이 커지지</paragraph>
     <paragraph>그런데 일정 수준 이상은 의미가 없다. 이것 또한 치명적인 문제인게, 매우 두꺼운 부분과 꽉찬 부분이 시각적으로 차이가 적다는 말이다. 심지어 줄갈이의 경우 윗줄을 계승하여 미니맵에 윗줄과 같은 두께가 보인다. 같은 태그 내에 있다는 이유만으로도 말이다.</paragraph>
+    <paragraph>아직 노트 추가 기능이 없다. 이걸 먼저 구현해도 되지만 제발 온보딩 먼저 하자. 허브를 프로젝트 디렉터리에서 격리시킬 수가 있어야 실제로 운용하면서 UX를 있는 그대로 느낄 수 있다.</paragraph>
+    <paragraph>거터 실린더가 움직이지 않는다?</paragraph>
     <paragraph></paragraph>
   </body>
 </contents>

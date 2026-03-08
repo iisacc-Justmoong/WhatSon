@@ -381,8 +381,11 @@ Item {
                             readonly property bool visibleInView: matchesSearch && rowVisible
 
                             Drag.active: folderDragHandler.active
+                            Drag.hotSpot.x: width * 0.5
+                            Drag.hotSpot.y: height * 0.5
                             Drag.keys: ["whatson.hierarchy.folder"]
                             Drag.source: hierarchyDelegate
+                            Drag.supportedActions: Qt.MoveAction
                             baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
                             expanded: hierarchyDelegate.itemExpanded
                             height: visibleInView ? implicitHeight : 0
@@ -446,7 +449,9 @@ Item {
                             DragHandler {
                                 id: folderDragHandler
 
+                                acceptedButtons: Qt.LeftButton
                                 enabled: sidebarHierarchyView.canMoveFolder(index) && sidebarHierarchyView.editingIndex !== index
+                                grabPermissions: PointerHandler.CanTakeOverFromAnything
                                 target: null
 
                                 onActiveChanged: {

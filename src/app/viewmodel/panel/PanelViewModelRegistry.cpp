@@ -17,7 +17,6 @@ namespace
             QStringLiteral("DetailPanelLayout"),
             QStringLiteral("HierarchySidebarLayout"),
             QStringLiteral("ListBarLayout"),
-            QStringLiteral("ListItemsPlaceholder"),
             QStringLiteral("MobileNormalLayout"),
             QStringLiteral("NavigationBarLayout"),
             QStringLiteral("NoteListItem"),
