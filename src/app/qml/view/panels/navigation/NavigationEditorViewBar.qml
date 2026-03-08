@@ -10,22 +10,27 @@ LV.HStack {
     readonly property var editorViewMenuItems: [
         {
             label: "Plain",
+            keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 0
         },
         {
             label: "Page",
+            keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 1
         },
         {
             label: "Print",
+            keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 2
         },
         {
             label: "Web",
+            keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 3
         },
         {
             label: "Presentation",
+            keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 4
         }
     ]

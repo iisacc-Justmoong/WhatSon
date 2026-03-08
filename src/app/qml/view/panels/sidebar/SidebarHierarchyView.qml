@@ -59,6 +59,32 @@ Item {
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
 
+    function activateSelectedHierarchyItem(focusView) {
+        if (sidebarHierarchyView.selectedFolderIndex < 0)
+            return;
+        var delegate = folderRepeater.itemAt(sidebarHierarchyView.selectedFolderIndex);
+        if (!delegate || delegate.visible === false || delegate.height <= 0)
+            return;
+        if (hierarchyList && hierarchyList.requestActivate !== undefined)
+            hierarchyList.requestActivate(delegate);
+        if (focusView)
+            sidebarHierarchyView.forceActiveFocus();
+        var itemTop = delegate.y;
+        var itemBottom = itemTop + delegate.height;
+        if (itemTop < hierarchyViewport.contentY)
+            hierarchyViewport.contentY = itemTop;
+        else if (itemBottom > hierarchyViewport.contentY + hierarchyViewport.height)
+            hierarchyViewport.contentY = itemBottom - hierarchyViewport.height;
+    }
+    function assignNoteToFolder(index, noteId) {
+        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (noteId === undefined || noteId === null || String(noteId).trim().length === 0)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder(index, noteId);
+    }
     function beginRename(index, currentLabel) {
         if (index < 0)
             return;
@@ -70,6 +96,27 @@ Item {
             sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
         sidebarHierarchyView.editingIndex = index;
         sidebarHierarchyView.editingText = currentLabel;
+    }
+    function beginRename(index, currentLabel) {
+        if (index < 0)
+            return;
+        if (!sidebarHierarchyView.canRenameAtIndex(index))
+            return;
+        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
+            sidebarHierarchyView.commitRename();
+        if (sidebarHierarchyView.hierarchyViewModel)
+            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
+        sidebarHierarchyView.editingIndex = index;
+        sidebarHierarchyView.editingText = currentLabel;
+    }
+    function canAcceptNoteDrop(index, noteId) {
+        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (noteId === undefined || noteId === null || String(noteId).trim().length === 0)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.canAcceptNoteDrop === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.canAcceptNoteDrop(index, noteId);
     }
     function canRenameAtIndex(index) {
         if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
@@ -227,13 +274,14 @@ Item {
                     width: hierarchyViewport.width
 
                     Repeater {
+                        id: folderRepeater
+
                         model: sidebarHierarchyView.folderModel
 
                         delegate: LV.HierarchyItem {
                             id: hierarchyDelegate
 
                             readonly property bool dropHighlighted: sidebarHierarchyView.noteDropTargetIndex === index
-                            required property int index
                             required property int index
                             readonly property bool itemExpanded: model.expanded === undefined ? false : !!model.expanded
                             readonly property int itemIndentLevel: {

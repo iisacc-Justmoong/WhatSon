@@ -55,6 +55,9 @@ Item {
             readonly property var roleModel: typeof noteItemDelegate.model === "object" ? noteItemDelegate.model : null
             readonly property bool useRuntimeModel: listItemsPlaceholder.noteModel !== null
 
+            Drag.active: noteDragHandler.active
+            Drag.keys: ["whatson.library.note"]
+            Drag.source: noteItemDelegate
             bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : ""
             bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : false
             displayDate: useRuntimeModel && roleModel && roleModel.displayDate !== undefined ? String(roleModel.displayDate) : ""

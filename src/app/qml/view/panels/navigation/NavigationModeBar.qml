@@ -10,14 +10,17 @@ LV.HStack {
     readonly property var modeMenuItems: [
         {
             label: "View",
+            keyVisible: false,
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 0
         },
         {
             label: "Edit",
+            keyVisible: false,
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 1
         },
         {
             label: "Control",
+            keyVisible: false,
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 2
         }
     ]

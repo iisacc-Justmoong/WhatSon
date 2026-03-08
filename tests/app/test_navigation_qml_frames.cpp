@@ -172,6 +172,7 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
     QVERIFY(modeBar.contains(QStringLiteral("text: modeBar.activeModeText")));
     QVERIFY(modeBar.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(modeBar.contains(QStringLiteral("requestModeChange(index)")));
+    QVERIFY(modeBar.contains(QStringLiteral("keyVisible: false")));
     QVERIFY(!modeBar.contains(QStringLiteral("requestNextMode();")));
     QVERIFY(!modeBar.contains(QStringLiteral("comboLabelRightInset")));
     QVERIFY(!modeBar.contains(QStringLiteral("resolvedBackgroundColor")));
@@ -180,6 +181,7 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
     QVERIFY(editorViewBar.contains(QStringLiteral("text: editorViewBar.activeViewText")));
     QVERIFY(editorViewBar.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(editorViewBar.contains(QStringLiteral("requestViewModeChange(index)")));
+    QVERIFY(editorViewBar.contains(QStringLiteral("keyVisible: false")));
     QVERIFY(editorViewBar.contains(QStringLiteral("label: \"Presentation\"")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("requestNextViewMode();")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("comboLabelRightInset")));
