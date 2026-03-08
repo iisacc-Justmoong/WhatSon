@@ -478,6 +478,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         item.id = note.noteId.trimmed();
         item.primaryText = bookmarkPrimaryText(note);
         item.searchableText = bookmarkSearchableText(note);
+        item.bodyText = note.bodyPlainText.trimmed();
         item.displayDate = bookmarkDisplayDate(note);
         item.folders = bookmarkListFolders(note);
         item.tags = bookmarkListTags(note);
@@ -525,6 +526,7 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
         item.id = note.noteId.trimmed();
         item.primaryText = bookmarkPrimaryText(note);
         item.searchableText = bookmarkSearchableText(note);
+        item.bodyText = note.bodyPlainText.trimmed();
         item.displayDate = bookmarkDisplayDate(note);
         item.folders = bookmarkListFolders(note);
         item.tags = bookmarkListTags(note);

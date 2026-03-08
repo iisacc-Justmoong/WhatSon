@@ -202,6 +202,7 @@ private
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
     void noteListModel_correctsColorAndTextFields();
+    void noteListModel_currentSelection_exposesBodyText();
     void noteListModel_searchText_filtersAgainstSearchableBodyContent();
     void noteListModel_limitsPrimaryTextToFiveLines();
 };
@@ -222,6 +223,7 @@ void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("RenamedRoot"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 
@@ -247,6 +249,7 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Alpha-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
 }
@@ -405,6 +408,7 @@ void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("assets/logo-renamed.png"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
@@ -444,6 +448,7 @@ void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Kickoff-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
@@ -461,6 +466,7 @@ void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Executive-Summary-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
@@ -481,6 +487,7 @@ void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Social-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
 }
@@ -612,6 +619,44 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
              QStringList({QStringLiteral("tag-a")}));
     QCOMPARE(model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(), QString());
     QVERIFY(model.correctionCount() >= 1);
+}
+
+void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
+{
+    LibraryNoteListModel model;
+    QSignalSpy currentBodySpy(&model, &LibraryNoteListModel::currentBodyTextChanged);
+
+    LibraryNoteListItem alpha;
+    alpha.id = QStringLiteral("note-alpha");
+    alpha.primaryText = QStringLiteral("Alpha preview");
+    alpha.bodyText = QStringLiteral("Alpha body first line\nAlpha body second line");
+    alpha.searchableText = alpha.bodyText;
+
+    LibraryNoteListItem beta;
+    beta.id = QStringLiteral("note-beta");
+    beta.primaryText = QStringLiteral("Beta preview");
+    beta.bodyText = QStringLiteral("Beta body summary");
+    beta.searchableText = beta.bodyText;
+
+    model.setItems({alpha, beta});
+
+    QCOMPARE(model.currentIndex(), 0);
+    QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("Alpha body first line\nAlpha body second line"));
+    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::BodyTextRole).toString(),
+             QStringLiteral("Alpha body first line\nAlpha body second line"));
+
+    model.setCurrentIndex(1);
+    QCOMPARE(model.currentIndex(), 1);
+    QCOMPARE(model.currentNoteId(), QStringLiteral("note-beta"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("Beta body summary"));
+
+    model.setSearchText(QStringLiteral("alpha"));
+    QCOMPARE(model.rowCount(), 1);
+    QCOMPARE(model.currentIndex(), 0);
+    QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("Alpha body first line\nAlpha body second line"));
+    QVERIFY(currentBodySpy.count() >= 2);
 }
 
 void HierarchyViewModelsTest::noteListModel_searchText_filtersAgainstSearchableBodyContent()

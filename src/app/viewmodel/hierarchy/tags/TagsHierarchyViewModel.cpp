@@ -254,7 +254,7 @@ void TagsHierarchyViewModel::createFolder()
     WhatSonTagDepthEntry entry;
     ++m_createdFolderSequence;
     entry.id.clear();
-    entry.label.clear();
+    entry.label = QStringLiteral("Untitled");
     entry.depth = depth;
     m_entries.insert(insertIndex, std::move(entry));
 

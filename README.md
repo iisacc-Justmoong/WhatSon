@@ -23,6 +23,45 @@ WhatSon is an LVRS-based Qt Quick application.
 - Note-list search uses `LV.InputField` in `searchMode` and forwards the active query into the bound
   `LibraryNoteListModel.searchText`; filtering is performed against the runtime-parsed note body text assembled from
   `.wsnbody` `<body>` content instead of reparsing `.wsnote` files on every keystroke.
+- Library folder filtering resolves nested note membership against the active hierarchy, so child-folder selection can
+  still match notes whose header stores folder ancestry as separate `<folder>` entries or leaf-only values such as
+  `/Competitor` instead of the full `Research/Competitor` path.
+- When library folder structure changes keep the selected row visually pinned to the same visible slot, the note list
+  reapplies that effective selection as well; deleting or reparenting the focused folder no longer leaves the right
+  pane filtered by the removed folder.
+
+## Hierarchy Interaction
+
+- `SidebarHierarchyView.qml` opens inline folder rename from both `Enter/Return` and mouse double-tap on the folder row.
+- Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
+  reparent them by drag-and-drop instead of only through model-side helpers.
+- Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
+  `Folder1`.
+
+## Content Editor Surface
+
+- `src/app/qml/view/panels/ContentViewLayout.qml` now renders the Figma `ContentsDisplayView` edit surface with
+  `LV.TextEditor` instead of a placeholder rectangle.
+- The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
+  payload extracted from `.wsnbody` `<body>` content.
+- The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
+  the same logical document and current cursor line.
+- The gutter now follows the Figma `ContentsDisplayView` token contract directly: `panelBackground04` background,
+  `#4E5157` inactive caption line numbers, `#9DA0A8` active line number, and decorative marker colors `#FFF567` /
+  `#0AFF60`.
+- The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
+  anchored at `x=14` with `22px` text width inside the `26px` column frame, and the reserved `18px` icon rail at
+  `x=40`.
+- The editor content is top-left aligned with `16px` padding on all sides; it is not vertically centered inside the
+  available surface.
+- `LV.TextEditor` disables rendered preview output and forced wrap defaults
+  (`showRenderedOutput: false`, `enforceModeDefaults: false`, `wrapMode: TextEdit.NoWrap`) so gutter rows remain
+  aligned with visible text lines.
+- `LV.TextEditor` now binds the body token more explicitly for this surface: `LV.Theme.fontBody`, `12px` medium weight,
+  and zero letter spacing, matching the Figma `Body` token.
+- `LibraryNoteListModel` now carries each note's full `bodyText` plus current selection state (`currentIndex`,
+  `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized.
+- The rounded marker rail on the far left is currently decorative only and does not affect editing behavior yet.
 
 ## Theme Token Usage
 

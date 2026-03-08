@@ -397,7 +397,7 @@ namespace WhatSon::Hierarchy::ProjectsSupport
 
         ProjectsHierarchyItem newItem;
         newItem.depth = folderDepth;
-        newItem.label.clear();
+        newItem.label = QStringLiteral("Untitled");
         ++(*ioFolderSequence);
         newItem.accent = false;
         newItem.expanded = false;

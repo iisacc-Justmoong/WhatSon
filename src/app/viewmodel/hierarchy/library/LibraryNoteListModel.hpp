@@ -11,6 +11,7 @@ struct LibraryNoteListItem
     QString id;
     QString primaryText;
     QString searchableText;
+    QString bodyText;
     QString displayDate;
     QStringList folders;
     QStringList tags;
@@ -22,6 +23,9 @@ class LibraryNoteListModel final : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
+    Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
+    Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
+    Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(bool strictValidation READ strictValidation WRITE setStrictValidation NOTIFY strictValidationChanged)
     Q_PROPERTY(int correctionCount READ correctionCount NOTIFY correctionCountChanged)
@@ -33,6 +37,7 @@ public:
     {
         IdRole = Qt::UserRole + 1,
         PrimaryTextRole,
+        BodyTextRole,
         DisplayDateRole,
         FoldersRole,
         TagsRole,
@@ -48,6 +53,10 @@ public:
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
     int itemCount() const noexcept;
+    int currentIndex() const noexcept;
+    QString currentNoteId() const;
+    QString currentBodyText() const;
+    Q_INVOKABLE void setCurrentIndex(int index);
     QString searchText() const;
     void setSearchText(const QString& text);
     bool strictValidation() const noexcept;
@@ -76,6 +85,9 @@ public
 
     void itemCountChanged(int itemCount);
     void itemsChanged();
+    void currentIndexChanged();
+    void currentNoteIdChanged();
+    void currentBodyTextChanged();
     void searchTextChanged();
     void strictValidationChanged();
     void correctionCountChanged();
@@ -93,6 +105,7 @@ private:
     QString m_searchText;
     bool m_strictValidation = false;
     int m_correctionCount = 0;
+    int m_currentIndex = -1;
     QString m_lastValidationCode;
     QString m_lastValidationMessage;
 };

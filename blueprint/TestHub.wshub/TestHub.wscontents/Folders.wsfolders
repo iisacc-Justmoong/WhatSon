@@ -1,16 +1,16 @@
 {
     "folders": [
         {
+            "children": [
+                {
+                    "id": "Folder2/Folder3",
+                    "label": "Folder3"
+                }
+            ],
             "id": "Folder2",
             "label": "Folder2"
         },
         {
-            "children": [
-                {
-                    "id": "ㄴㅇㄴㅁㅇㅇ/Folder 1",
-                    "label": "Folder 1"
-                }
-            ],
             "id": "ㄴㅇㄴㅁㅇㅇ",
             "label": "ㄴㅇㄴㅁㅇㅇ"
         }

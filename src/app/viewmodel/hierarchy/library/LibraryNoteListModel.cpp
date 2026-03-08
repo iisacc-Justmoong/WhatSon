@@ -4,6 +4,7 @@
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QRegularExpression>
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
@@ -64,6 +65,13 @@ namespace
         return value.trimmed();
     }
 
+    QString normalizeBodyText(QString value)
+    {
+        value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return value.trimmed();
+    }
+
     QString buildFallbackSearchableText(const LibraryNoteListItem& item)
     {
         QStringList parts;
@@ -74,6 +82,10 @@ namespace
         if (!item.primaryText.trimmed().isEmpty())
         {
             parts.push_back(item.primaryText.trimmed());
+        }
+        if (!item.bodyText.trimmed().isEmpty())
+        {
+            parts.push_back(item.bodyText.trimmed());
         }
         for (const QString& folder : item.folders)
         {
@@ -140,6 +152,43 @@ namespace
         }
         return sanitized;
     }
+
+    QString itemIdAt(const QVector<LibraryNoteListItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+        return items.at(index).id;
+    }
+
+    QString itemBodyTextAt(const QVector<LibraryNoteListItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+        return items.at(index).bodyText;
+    }
+
+    int indexOfItemById(const QVector<LibraryNoteListItem>& items, const QString& noteId)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (items.at(index).id.trimmed() == normalizedNoteId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
 }
 
 LibraryNoteListModel::LibraryNoteListModel(QObject* parent)
@@ -172,6 +221,8 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
         return item.id;
     case PrimaryTextRole:
         return item.primaryText;
+    case BodyTextRole:
+        return item.bodyText;
     case DisplayDateRole:
         return item.displayDate;
     case FoldersRole:
@@ -192,6 +243,7 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
     return {
         {IdRole, "id"},
         {PrimaryTextRole, "primaryText"},
+        {BodyTextRole, "bodyText"},
         {DisplayDateRole, "displayDate"},
         {FoldersRole, "folders"},
         {TagsRole, "tags"},
@@ -203,6 +255,54 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
 int LibraryNoteListModel::itemCount() const noexcept
 {
     return m_items.size();
+}
+
+int LibraryNoteListModel::currentIndex() const noexcept
+{
+    return m_currentIndex;
+}
+
+QString LibraryNoteListModel::currentNoteId() const
+{
+    return itemIdAt(m_items, m_currentIndex);
+}
+
+QString LibraryNoteListModel::currentBodyText() const
+{
+    return itemBodyTextAt(m_items, m_currentIndex);
+}
+
+void LibraryNoteListModel::setCurrentIndex(int index)
+{
+    int nextIndex = index;
+    if (m_items.isEmpty())
+    {
+        nextIndex = -1;
+    }
+    else
+    {
+        nextIndex = std::clamp(index, -1, static_cast<int>(m_items.size()) - 1);
+    }
+
+    if (m_currentIndex == nextIndex)
+    {
+        return;
+    }
+
+    const QString previousNoteId = currentNoteId();
+    const QString previousBodyText = currentBodyText();
+
+    m_currentIndex = nextIndex;
+    emit currentIndexChanged();
+
+    if (currentNoteId() != previousNoteId)
+    {
+        emit currentNoteIdChanged();
+    }
+    if (currentBodyText() != previousBodyText)
+    {
+        emit currentBodyTextChanged();
+    }
 }
 
 QString LibraryNoteListModel::searchText() const
@@ -272,6 +372,7 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         item.id = item.id.trimmed();
         item.primaryText = normalizePrimaryText(std::move(item.primaryText));
         item.searchableText = normalizeSearchableText(std::move(item.searchableText));
+        item.bodyText = normalizeBodyText(std::move(item.bodyText));
         item.displayDate = item.displayDate.trimmed();
         item.bookmarkColor = item.bookmarkColor.trimmed();
         item.folders = sanitizeMetadataList(std::move(item.folders));
@@ -397,6 +498,9 @@ const QVector<LibraryNoteListItem>& LibraryNoteListModel::items() const noexcept
 
 void LibraryNoteListModel::applySearchFilter()
 {
+    const QString previousNoteId = currentNoteId();
+    const QString previousBodyText = currentBodyText();
+    const int previousIndex = m_currentIndex;
     const int previousCount = m_items.size();
     const QStringList terms = searchTerms(m_searchText);
 
@@ -421,10 +525,29 @@ void LibraryNoteListModel::applySearchFilter()
     m_items = std::move(filtered);
     endResetModel();
 
+    int nextCurrentIndex = indexOfItemById(m_items, previousNoteId);
+    if (nextCurrentIndex < 0 && !m_items.isEmpty())
+    {
+        nextCurrentIndex = 0;
+    }
+    m_currentIndex = nextCurrentIndex;
+
     const int nextCount = m_items.size();
     if (nextCount != previousCount)
     {
         emit itemCountChanged(nextCount);
+    }
+    if (previousIndex != m_currentIndex)
+    {
+        emit currentIndexChanged();
+    }
+    if (currentNoteId() != previousNoteId)
+    {
+        emit currentNoteIdChanged();
+    }
+    if (currentBodyText() != previousBodyText)
+    {
+        emit currentBodyTextChanged();
     }
     emit itemsChanged();
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE WHATSONNOTE>
+<!DOCTYPE WHATSONNOTEDIFF>
 <contents id=${id}>
   <head>
     <meta charset="UTF-8" />
@@ -21,11 +21,11 @@ index 71e04c6..9b7a2f0 100644
 +# Infra Weekly
  Date: 2026-02-28
  Owner: Platform Team
- 
+
  ## Decisions
  - Adopt staged rollout for renderer update.
 +- Keep fallback renderer for one release cycle.
- 
+
  ## Action Items
 -- [ ] Add perf dashboard alerts.
 +- [x] Add perf dashboard alerts.
@@ -48,10 +48,10 @@ index 2f31a9b..71e04c6 100644
  Date: 2026-02-28
 +
 +Owner: Platform Team
- 
+
  ## Decisions
 +- Adopt staged rollout for renderer update.
- 
+
  ## Action Items
  - [ ] Add perf dashboard alerts.
         ]]></patch>

@@ -276,6 +276,191 @@ namespace
         return normalizedParent + QLatin1Char('/') + normalizedLabel;
     }
 
+    bool isProtectedRootItem(const LibraryHierarchyItem& item);
+
+    struct FolderHierarchyLookup final
+    {
+        QHash<QString, QStringList> pathKeysByLeafKey;
+        QHash<QString, QSet<QString>> ancestorLeafKeysByPathKey;
+    };
+
+    QStringList folderPathSegments(const QString& folderPath)
+    {
+        const QString normalized = normalizeFolderPath(folderPath);
+        if (normalized.isEmpty())
+        {
+            return {};
+        }
+        return normalized.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    }
+
+    FolderHierarchyLookup buildFolderHierarchyLookup(const QVector<LibraryHierarchyItem>& items)
+    {
+        FolderHierarchyLookup lookup;
+
+        for (const LibraryHierarchyItem& item : items)
+        {
+            if (isProtectedRootItem(item))
+            {
+                continue;
+            }
+
+            const QString pathKey = normalizeFolderLookupKey(item.folderPath);
+            if (pathKey.isEmpty())
+            {
+                continue;
+            }
+
+            QString leafKey = normalizeFolderLookupKey(item.label);
+            if (leafKey.isEmpty())
+            {
+                leafKey = normalizeFolderLookupKey(leafNameFromFolderPath(item.folderPath));
+            }
+            if (leafKey.isEmpty())
+            {
+                continue;
+            }
+
+            QStringList& pathKeys = lookup.pathKeysByLeafKey[leafKey];
+            if (!pathKeys.contains(pathKey))
+            {
+                pathKeys.push_back(pathKey);
+            }
+
+            const QStringList segments = folderPathSegments(item.folderPath);
+            QSet<QString>& ancestorLeafKeys = lookup.ancestorLeafKeysByPathKey[pathKey];
+            for (int index = 0; index + 1 < segments.size(); ++index)
+            {
+                const QString ancestorKey = normalizeFolderLookupKey(segments.at(index));
+                if (!ancestorKey.isEmpty())
+                {
+                    ancestorLeafKeys.insert(ancestorKey);
+                }
+            }
+        }
+
+        return lookup;
+    }
+
+    QStringList resolvedNoteFolderPathKeys(
+        const LibraryNoteRecord& note,
+        const FolderHierarchyLookup& lookup)
+    {
+        struct NoteFolderToken final
+        {
+            QString key;
+            bool hierarchical = false;
+        };
+
+        QVector<NoteFolderToken> tokens;
+        tokens.reserve(note.folders.size());
+        QSet<QString> rawKeys;
+
+        for (const QString& rawFolder : note.folders)
+        {
+            const QString normalizedFolder = normalizeFolderPath(rawFolder);
+            const QString key = normalizeFolderLookupKey(normalizedFolder);
+            if (key.isEmpty())
+            {
+                continue;
+            }
+
+            rawKeys.insert(key);
+            tokens.push_back(NoteFolderToken{
+                key,
+                normalizedFolder.contains(QLatin1Char('/'))
+            });
+        }
+
+        QStringList resolved;
+        QSet<QString> resolvedSet;
+        auto appendResolved = [&resolved, &resolvedSet](const QString& pathKey)
+        {
+            if (pathKey.isEmpty() || resolvedSet.contains(pathKey))
+            {
+                return;
+            }
+            resolvedSet.insert(pathKey);
+            resolved.push_back(pathKey);
+        };
+
+        for (const NoteFolderToken& token : tokens)
+        {
+            if (token.hierarchical)
+            {
+                appendResolved(token.key);
+            }
+        }
+
+        for (const NoteFolderToken& token : tokens)
+        {
+            if (token.hierarchical)
+            {
+                continue;
+            }
+
+            const QStringList candidates = lookup.pathKeysByLeafKey.value(token.key);
+            if (candidates.isEmpty())
+            {
+                continue;
+            }
+
+            QStringList contextualMatches;
+            for (const QString& candidatePathKey : candidates)
+            {
+                const QSet<QString> ancestorLeafKeys = lookup.ancestorLeafKeysByPathKey.value(candidatePathKey);
+                bool matchesAllAncestors = true;
+                for (const QString& ancestorLeafKey : ancestorLeafKeys)
+                {
+                    if (!rawKeys.contains(ancestorLeafKey))
+                    {
+                        matchesAllAncestors = false;
+                        break;
+                    }
+                }
+
+                if (matchesAllAncestors)
+                {
+                    contextualMatches.push_back(candidatePathKey);
+                }
+            }
+
+            const QStringList& matches = contextualMatches.isEmpty() ? candidates : contextualMatches;
+            for (const QString& candidatePathKey : matches)
+            {
+                appendResolved(candidatePathKey);
+            }
+        }
+
+        return resolved;
+    }
+
+    bool noteMatchesFolderScope(
+        const LibraryNoteRecord& note,
+        const QString& selectedPathKey,
+        const FolderHierarchyLookup& lookup)
+    {
+        if (selectedPathKey.isEmpty())
+        {
+            return true;
+        }
+
+        const QStringList resolvedFolderPathKeys = resolvedNoteFolderPathKeys(note, lookup);
+        for (const QString& folderPathKey : resolvedFolderPathKeys)
+        {
+            if (folderPathKey == selectedPathKey)
+            {
+                return true;
+            }
+            if (folderPathKey.startsWith(selectedPathKey + QLatin1Char('/')))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     QString currentNoteTimestamp()
     {
         return QDateTime::currentDateTime().toString(QString::fromLatin1(kNoteTimestampFormat));
@@ -680,6 +865,11 @@ QString LibraryHierarchyViewModel::lastLoadError() const
 
 void LibraryHierarchyViewModel::setSelectedIndex(int index)
 {
+    applySelectedIndex(index, false);
+}
+
+void LibraryHierarchyViewModel::applySelectedIndex(int index, bool forceReapply)
+{
     const int maxIndex = m_itemModel.rowCount() - 1;
     int clamped = index;
     if (maxIndex < 0)
@@ -693,6 +883,17 @@ void LibraryHierarchyViewModel::setSelectedIndex(int index)
 
     if (m_selectedIndex == clamped)
     {
+        if (!forceReapply)
+        {
+            return;
+        }
+
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("reapplySelectedIndex"),
+                                  QStringLiteral("value=%1").arg(m_selectedIndex));
+        refreshNoteListForSelection();
+        emit selectedIndexChanged();
         return;
     }
 
@@ -1064,6 +1265,7 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
 
     m_items = std::move(stagedItems);
     syncModel();
+    applySelectedIndex(m_selectedIndex, true);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("renameItem"),
@@ -1119,7 +1321,7 @@ void LibraryHierarchyViewModel::createFolder()
         }
     }
 
-    const QString folderLabel = QStringLiteral("Folder%1").arg(m_createdFolderSequence);
+    const QString folderLabel = QStringLiteral("Untitled");
     ++m_createdFolderSequence;
     LibraryHierarchyItem newItem;
     newItem.depth = folderDepth;
@@ -1238,7 +1440,7 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
         return;
     }
 
-    setSelectedIndex(std::min(startIndex, static_cast<int>(m_items.size() - 1)));
+    applySelectedIndex(std::min(startIndex, static_cast<int>(m_items.size() - 1)), true);
 }
 
 bool LibraryHierarchyViewModel::canMoveFolder(int index) const
@@ -1372,7 +1574,7 @@ bool LibraryHierarchyViewModel::moveFolder(int sourceIndex, int targetIndex, boo
     m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
     rebuildBucketRanges();
     syncModel();
-    setSelectedIndex(insertIndex);
+    applySelectedIndex(insertIndex, true);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("moveFolder.success"),
@@ -1450,7 +1652,7 @@ bool LibraryHierarchyViewModel::moveFolderToRoot(int sourceIndex)
     m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
     rebuildBucketRanges();
     syncModel();
-    setSelectedIndex(insertIndex);
+    applySelectedIndex(insertIndex, true);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("moveFolderToRoot.success"),
@@ -1727,6 +1929,7 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         item.id = note.noteId.trimmed();
         item.primaryText = notePrimaryText(note);
         item.searchableText = noteSearchableText(note);
+        item.bodyText = note.bodyPlainText.trimmed();
         item.displayDate = noteListDisplayDate(note);
         item.folders = noteListFolders(note);
         item.tags = noteListTags(note);
@@ -1795,35 +1998,10 @@ LibraryHierarchyViewModel::FolderSelectionScope LibraryHierarchyViewModel::selec
         return scope;
     }
 
-    const LibraryHierarchyItem& selectedItem = m_items.at(m_selectedIndex);
     scope.selectedPathKey = normalizeFolderKey(folderPathForIndex(m_selectedIndex));
     if (scope.selectedPathKey.isEmpty())
     {
         return scope;
-    }
-
-    const QString selectedLeafKey = normalizeFolderKey(selectedItem.label);
-    if (selectedLeafKey.isEmpty())
-    {
-        return scope;
-    }
-
-    int matchingLabelCount = 0;
-    for (const LibraryHierarchyItem& item : m_items)
-    {
-        if (isProtectedRootItem(item))
-        {
-            continue;
-        }
-        if (normalizeFolderKey(item.label) == selectedLeafKey)
-        {
-            ++matchingLabelCount;
-        }
-    }
-    if (matchingLabelCount == 1)
-    {
-        scope.legacyLeafKey = selectedLeafKey;
-        scope.allowLegacyLeafMatch = true;
     }
 
     return scope;
@@ -1841,42 +2019,6 @@ QString LibraryHierarchyViewModel::folderPathForIndex(int index) const
         return {};
     }
     return normalizeFolderPath(m_items.at(index).folderPath);
-}
-
-bool LibraryHierarchyViewModel::noteMatchesFolderScope(
-    const LibraryNoteRecord& note,
-    const FolderSelectionScope& scope)
-{
-    if (scope.selectedPathKey.isEmpty())
-    {
-        return true;
-    }
-
-    for (const QString& folder : note.folders)
-    {
-        const QString folderKey = normalizeFolderKey(folder);
-        if (folderKey.isEmpty())
-        {
-            continue;
-        }
-
-        if (folderKey == scope.selectedPathKey)
-        {
-            return true;
-        }
-        if (folderKey.startsWith(scope.selectedPathKey + QLatin1Char('/')))
-        {
-            return true;
-        }
-        if (scope.allowLegacyLeafMatch
-            && !folderKey.contains(QLatin1Char('/'))
-            && folderKey == scope.legacyLeafKey)
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 int LibraryHierarchyViewModel::firstEditableInsertIndex() const noexcept
@@ -1947,12 +2089,13 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
         }
 
         const FolderSelectionScope scope = selectedFolderScope();
+        const FolderHierarchyLookup lookup = buildFolderHierarchyLookup(m_items);
         QVector<LibraryNoteRecord> filtered;
         filtered.reserve(m_libraryAll.notes().size());
 
         for (const LibraryNoteRecord& note : m_libraryAll.notes())
         {
-            if (noteMatchesFolderScope(note, scope))
+            if (noteMatchesFolderScope(note, scope.selectedPathKey, lookup))
             {
                 filtered.push_back(note);
             }

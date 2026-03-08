@@ -250,6 +250,20 @@ Domain-isolated support:
               assets `cwmPermissionView` and `sortByType` without extra color-token overrides. The active query is
               pushed into `LibraryNoteListModel.searchText`, so visible note cards filter against runtime-parsed note
               body text without reparsing `.wsnote` content on each edit.
+            - `ContentViewLayout.qml` now implements the Figma `ContentsDisplayView` editing surface with
+              `LV.TextEditor` plus a dedicated `74px` left gutter. The gutter computes visible line numbers from the
+              same `editorText` source, cursor line, and editor render metrics (`lineCount`, `contentHeight`,
+              scroll-derived text origin), while `showRenderedOutput: false` and `TextEdit.NoWrap` keep logical lines
+              and visual lines aligned. The editable body block is top-left aligned with `16px` inset on all sides,
+              overriding the LVRS internal centered multi-line placement. Figma node `155:5345` is treated as the
+              source of truth for the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption
+              numbers, `#9DA0A8` active line number, marker colors `#FFF567` / `#0AFF60`, `2px` horizontal frame
+              inset, `x=14` line-number column placement with `22px` text width inside the `26px` column frame, and
+              the reserved `18px` icon rail at `x=40`. Figma node `155:5352` is treated as the source of truth for
+              body typography (`LV.Theme.fontBody`, `12px`, medium, zero letter spacing). `editorText` is projected
+              from the selected note's `.wsnbody` `<body>` plain-text payload through
+              `LibraryNoteListModel.currentBodyText`.
+              The left rounded marker rail is currently decorative only.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -266,7 +280,13 @@ Library-specific modeling:
   synchronizes
   note-list filtering from those buckets plus persisted library folders
 - Folder selection/filtering is path-based (`Folders.wsfolders.id` / normalized folder path), so nested folders and
-  duplicate leaf labels do not alias each other.
+  duplicate leaf labels do not alias each other. When note headers persist nested folder membership as split ancestor /
+  leaf `<folder>` entries or leaf-only values such as `/Competitor`, the view-model rebuilds candidate full paths from
+  the active hierarchy before applying note-list filters.
+- Selection reapplication is identity-aware rather than raw-index-only for the library sidebar. If a structural edit
+  keeps the same numeric row focused but swaps in a different visible folder (for example after deleting the focused
+  folder and collapsing to its neighbor), `LibraryHierarchyViewModel` re-emits selection state and rebuilds the note
+  list for the newly focused folder.
 - System-bucket behavior is identity-based rather than label-based; user folders named `All`, `Draft`, or similar are
   still treated as normal folders unless they are one of the runtime-injected system buckets.
 - Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
@@ -283,11 +303,16 @@ Library-specific modeling:
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
     - `id` (string)
     - `primaryText` (string)
-    - `displayDate` (formatted `yyyy-MM-dd` string)
-    - `folders` (`QStringList`)
-    - `tags` (`QStringList`)
-    - `bookmarked` (bool)
-    - `bookmarkColor` (hex string, bookmark icon tint)
+    - `bodyText` (full parsed plain-text body from `.wsnbody` `<body>`)
+        - `displayDate` (formatted `yyyy-MM-dd` string)
+        - `folders` (`QStringList`)
+        - `tags` (`QStringList`)
+        - `bookmarked` (bool)
+        - `bookmarkColor` (hex string, bookmark icon tint)
+- `LibraryNoteListModel` also exposes current note selection state to QML:
+    - `currentIndex` (selected visible row)
+    - `currentNoteId` (selected note id)
+    - `currentBodyText` (selected note full plain-text body)
 - `NoteListItem.qml` resolves note-card visuals from LVRS theme tokens:
     - active background: `LV.Theme.accentBlueMuted`
     - hover background: `LV.Theme.panelBackground06`
@@ -345,7 +370,7 @@ Desktop composition:
       with `16px` glyphs.
     - Toolbar icon order follows Figma node `142:4198`: `generalprojectStructure`, `chartBar`, `generaladd`,
       `toolwindowdependencies`, `toolWindowClock`, `featureAnswer`.
-      - `DetailContents` binds to C++-computed `activeStateName`.
+        - `DetailContents` binds to C++-computed `activeStateName`.
 
 Mobile composition:
 
@@ -360,12 +385,15 @@ Hierarchy rendering pipeline:
     - Chevron fold/unfold is handled by LVRS `HierarchyItem` (`expanded` state +
       `HierarchyList.notifyExpansionChanged`),
       and delegate row visibility/height reflects `HierarchyItem.rowVisible`.
-        - Rename trigger policy: open text input overlay from selected item with `Enter/Return` key (double-click rename
-          disabled)
+        - Rename trigger policy: open text input overlay from the selected item with `Enter/Return` or mouse
+          double-tap on the folder row.
         - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
           opening the overlay. Global `renameEnabled` is treated as a fallback only.
         - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row before
-          opening inline rename.
+          opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
+        - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route child,
+          sibling, and root extraction drops through `canAcceptFolderDrop(...)`, `moveFolder(...)`, and
+          `moveFolderToRoot(...)` on the active hierarchy view-model.
         - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops through
           `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
         - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route

@@ -113,8 +113,6 @@ private:
     struct FolderSelectionScope final
     {
         QString selectedPathKey;
-        QString legacyLeafKey;
-        bool allowLegacyLeafMatch = false;
     };
 
     static int extractDepth(const QVariantMap& entryMap);
@@ -127,7 +125,7 @@ private:
     FolderSelectionScope selectedFolderScope() const;
     static QString normalizeFolderKey(const QString& value);
     QString folderPathForIndex(int index) const;
-    static bool noteMatchesFolderScope(const LibraryNoteRecord& note, const FolderSelectionScope& scope);
+    void applySelectedIndex(int index, bool forceReapply = false);
     int firstEditableInsertIndex() const noexcept;
     void rebuildBucketRanges();
     void refreshNoteListForSelection();

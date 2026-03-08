@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Item {
@@ -10,6 +9,13 @@ Item {
     property var noteModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListItemsPlaceholder") : null
 
+    function currentIndexFromModel() {
+        if (!listItemsPlaceholder.noteModel)
+            return -1;
+        if (listItemsPlaceholder.noteModel.currentIndex !== undefined)
+            return Number(listItemsPlaceholder.noteModel.currentIndex);
+        return -1;
+    }
     function normalizeEntries(value) {
         if (value === undefined || value === null)
             return [];
@@ -47,6 +53,10 @@ Item {
         model: listItemsPlaceholder.noteModel ? listItemsPlaceholder.noteModel : null
         spacing: 2
 
+        onCurrentIndexChanged: {
+            listItemsPlaceholder.pushCurrentIndexToModel(noteListView.currentIndex);
+        }
+
         delegate: NoteListItem {
             id: noteItemDelegate
 
@@ -83,5 +93,12 @@ Item {
                 }
             }
         }
+    }
+    Connections {
+        function onCurrentIndexChanged() {
+            listItemsPlaceholder.syncCurrentIndexFromModel();
+        }
+
+        target: listItemsPlaceholder.noteModel
     }
 }

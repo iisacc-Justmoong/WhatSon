@@ -100,6 +100,13 @@ Item {
         sidebarHierarchyView.editingIndex = index;
         sidebarHierarchyView.editingText = currentLabel;
     }
+    function canAcceptFolderDrop(sourceIndex, targetIndex, asChild) {
+        if (sourceIndex < 0 || targetIndex < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop(sourceIndex, targetIndex, asChild);
+    }
     function canAcceptNoteDrop(index, noteId) {
         if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
             return false;
@@ -108,6 +115,20 @@ Item {
         if (sidebarHierarchyView.hierarchyViewModel.canAcceptNoteDrop === undefined)
             return false;
         return sidebarHierarchyView.hierarchyViewModel.canAcceptNoteDrop(index, noteId);
+    }
+    function canMoveFolder(index) {
+        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.canMoveFolder === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.canMoveFolder(index);
+    }
+    function canMoveFolderToRoot(sourceIndex) {
+        if (sourceIndex < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.canMoveFolderToRoot === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.canMoveFolderToRoot(sourceIndex);
     }
     function canRenameAtIndex(index) {
         if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
@@ -401,6 +422,16 @@ Item {
                                 TapHandler {
                                     acceptedButtons: Qt.LeftButton
 
+                                    onDoubleTapped: {
+                                        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
+                                            sidebarHierarchyView.commitRename();
+                                        sidebarHierarchyView.forceActiveFocus();
+                                        if (hierarchyList && hierarchyList.requestActivate !== undefined)
+                                            hierarchyList.requestActivate(hierarchyDelegate);
+                                        if (sidebarHierarchyView.hierarchyViewModel)
+                                            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
+                                        sidebarHierarchyView.beginRename(index, hierarchyDelegate.itemLabel);
+                                    }
                                     onTapped: {
                                         if (sidebarHierarchyView.editingIndex >= 0)
                                             sidebarHierarchyView.commitRename();

@@ -404,7 +404,7 @@ namespace WhatSon::Hierarchy::ProgressSupport
 
         ProgressHierarchyItem newItem;
         newItem.depth = folderDepth;
-        newItem.label.clear();
+        newItem.label = QStringLiteral("Untitled");
         ++(*ioFolderSequence);
         newItem.accent = false;
         newItem.expanded = false;

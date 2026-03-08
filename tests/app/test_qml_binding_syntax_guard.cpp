@@ -24,6 +24,7 @@ private
 
 
     void bindingBlocks_mustNotContainStandaloneStringLiteral();
+    void contentView_mustComposeTextEditorGutter();
     void hierarchySidebarWiring_mustBindLoaderAndToolbarTarget();
 };
 
@@ -90,6 +91,86 @@ void QmlBindingSyntaxGuardTest::bindingBlocks_mustNotContainStandaloneStringLite
         qPrintable(QStringLiteral(
                 "Invalid standalone string literal found inside Binding block(s):\n%1")
             .arg(violations.join(QLatin1Char('\n')))));
+}
+
+void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+
+    const QString contentViewPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ContentViewLayout.qml"));
+    QFile contentViewFile(contentViewPath);
+    QVERIFY2(contentViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewPath));
+    const QString contentViewText = QString::fromUtf8(contentViewFile.readAll());
+
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property int gutterWidth: 74")),
+        "ContentViewLayout.qml must keep the 74px line-number gutter width from the Figma frame.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property int frameHorizontalInset: 2")),
+        "ContentViewLayout.qml must preserve the Figma 2px horizontal frame inset around the gutter/editor stack.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property var noteListModel: null")),
+        "ContentViewLayout.qml must accept the active note list model for body-text projection.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function visibleLineNumbers()")),
+        "ContentViewLayout.qml must derive visible line numbers for the gutter viewport.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property color lineNumberColor: \"#4E5157\"")),
+        "ContentViewLayout.qml must keep the gutter caption token color from Figma.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property color activeLineNumberColor: \"#9DA0A8\"")),
+        "ContentViewLayout.qml must keep the focused line-number tint from Figma.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property color decorativeMarkerYellow: \"#FFF567\"")),
+        "ContentViewLayout.qml must keep the yellow gutter marker color from Figma.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property color decorativeMarkerGreen: \"#0AFF60\"")),
+        "ContentViewLayout.qml must keep the green gutter marker color from Figma.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("x: contentsView.lineNumberColumnLeft")),
+        "ContentViewLayout.qml must place the line-number text column at the Figma x=14 gutter offset.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("LV.TextEditor {")),
+        "ContentViewLayout.qml must compose LV.TextEditor for the contents editing surface.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("showRenderedOutput: false")),
+        "ContentViewLayout.qml must disable TextEditor preview output inside the contents display surface.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("enforceModeDefaults: false")),
+        "ContentViewLayout.qml must opt out of TextEditor forced defaults so gutter-safe no-wrap mode can be set.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("wrapMode: TextEdit.NoWrap")),
+        "ContentViewLayout.qml must keep logical lines aligned with gutter numbers by disabling wrapping.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("fontFamily: LV.Theme.fontBody")),
+        "ContentViewLayout.qml must bind TextEditor typography to the LVRS body font family.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("fontLetterSpacing: 0")),
+        "ContentViewLayout.qml must keep the Figma body token's zero letter spacing.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property: \"y\"")),
+        "ContentViewLayout.qml must override the internal TextEditor y-position for top-left body alignment.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("value: contentsView.editorVerticalInset")),
+        "ContentViewLayout.qml must anchor body text to the 16px top inset.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("text: contentsView.editorText")),
+        "ContentViewLayout.qml must bind the editor and gutter to the same document text source.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property string selectedNoteBodyText: noteListModel && noteListModel.currentBodyText !== undefined ? String(noteListModel.currentBodyText) : \"\"")),
+        "ContentViewLayout.qml must source editor text from noteListModel.currentBodyText.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("onSelectedNoteBodyTextChanged: {")),
+        "ContentViewLayout.qml must resync editor text when the selected note body changes.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("contentsView.editorTextEdited(text);")),
+        "ContentViewLayout.qml must emit editorTextEdited(text) from TextEditor edits.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorVerticalInset")),
+        "ContentViewLayout.qml placeholder label must also align to the top inset.");
 }
 
 void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarTarget()
@@ -166,11 +247,20 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter")),
         "SidebarHierarchyView.qml keyboard rename handler must gate Return/Enter keys.");
     QVERIFY2(
-        !sidebarViewText.contains(QStringLiteral("onDoubleClicked")),
-        "SidebarHierarchyView.qml must not use double-click rename trigger.");
+        sidebarViewText.contains(QStringLiteral("onDoubleTapped:")),
+        "SidebarHierarchyView.qml must expose double-tap rename trigger on hierarchy rows.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function activateSelectedHierarchyItem(focusView)")),
         "SidebarHierarchyView.qml must expose activateSelectedHierarchyItem(focusView) for programmatic focus sync.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function canMoveFolder(index)")),
+        "SidebarHierarchyView.qml must expose canMoveFolder(index) wrapper for folder drag gating.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function canMoveFolderToRoot(sourceIndex)")),
+        "SidebarHierarchyView.qml must expose canMoveFolderToRoot(sourceIndex) wrapper for root extraction gating.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function canAcceptFolderDrop(sourceIndex, targetIndex, asChild)")),
+        "SidebarHierarchyView.qml must expose canAcceptFolderDrop(...) wrapper for folder drop gating.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
             "sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;")),
@@ -207,6 +297,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listItemsPlaceholderText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListItemsPlaceholder.qml note delegates must advertise whatson.library.note drag keys.");
+    QVERIFY2(
+        listItemsPlaceholderText.contains(QStringLiteral("listItemsPlaceholder.noteModel.currentIndex = index;")),
+        "ListItemsPlaceholder.qml must push tapped note selection into noteModel.currentIndex.");
+    QVERIFY2(
+        listItemsPlaceholderText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
+        "ListItemsPlaceholder.qml must pull currentIndex from the note model back into ListView state.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);

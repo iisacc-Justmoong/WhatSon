@@ -206,6 +206,7 @@ Item {
                 drawerHeight: hStack.drawerHeight
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight
+                noteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeNoteListModel : null
                 panelColor: hStack.contentPanelColor
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness
