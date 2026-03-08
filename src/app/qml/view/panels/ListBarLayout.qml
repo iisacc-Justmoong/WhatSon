@@ -15,6 +15,17 @@ Rectangle {
 
     signal viewHookRequested
 
+    function applySearchTextToModel() {
+        if (!listBarLayout.noteListMode || !listBarLayout.noteListModel)
+            return;
+
+        if (listBarLayout.noteListModel.searchText !== undefined) {
+            listBarLayout.noteListModel.searchText = listBarLayout.searchText;
+            return;
+        }
+        if (listBarLayout.noteListModel.setSearchText !== undefined)
+            listBarLayout.noteListModel.setSearchText(listBarLayout.searchText);
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -23,6 +34,10 @@ Rectangle {
     }
 
     color: panelColor
+
+    onNoteListModeChanged: applySearchTextToModel()
+    onNoteListModelChanged: applySearchTextToModel()
+    onSearchTextChanged: applySearchTextToModel()
 
     Item {
         anchors.fill: parent
@@ -43,9 +58,11 @@ Rectangle {
 
                     onSearchSubmitted: function (text) {
                         listBarLayout.searchText = text;
+                        listBarLayout.applySearchTextToModel();
                     }
                     onSearchTextEdited: function (text) {
                         listBarLayout.searchText = text;
+                        listBarLayout.applySearchTextToModel();
                     }
                 }
             }

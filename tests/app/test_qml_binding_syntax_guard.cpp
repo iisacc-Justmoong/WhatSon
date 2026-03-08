@@ -263,6 +263,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("ListBarHeader {")),
         "ListBarLayout.qml must compose the dedicated ListBarHeader Figma frame.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function applySearchTextToModel()")),
+        "ListBarLayout.qml must centralize note-list search propagation through applySearchTextToModel().");
+    QVERIFY2(
+        listBarLayoutText.
+        contains(QStringLiteral("listBarLayout.noteListModel.searchText = listBarLayout.searchText;")),
+        "ListBarLayout.qml must push the active search text into the bound note list model.");
 
     const QString listBarHeaderPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/ListBarHeader.qml"));

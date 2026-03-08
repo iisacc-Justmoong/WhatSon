@@ -247,7 +247,9 @@ Domain-isolated support:
               header
               properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
               `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
-              assets `cwmPermissionView` and `sortByType` without extra color-token overrides.
+              assets `cwmPermissionView` and `sortByType` without extra color-token overrides. The active query is
+              pushed into `LibraryNoteListModel.searchText`, so visible note cards filter against runtime-parsed note
+              body text without reparsing `.wsnote` content on each edit.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -275,6 +277,9 @@ Library-specific modeling:
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
 - Note primary text is derived from the top slice of `bodyPlainText`; when body text is empty it falls back to
   `noteId -> note directory stem`.
+- `LibraryNoteListModel.searchText` filters the current visible note set against preassembled searchable body text
+  sourced from `LibraryNoteRecord.bodyPlainText` plus note metadata, so note-list search remains in-memory and
+  selection-aware (`All Library` / `Draft` / `Today` / folder / bookmark color).
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
     - `id` (string)
     - `primaryText` (string)
@@ -306,6 +311,8 @@ Primary root:
 - `Main.qml` owns the application menu bar and exposes empty `File`, `Edit`, `View`, `Window`, and `Help` menus
   through a macOS-native `Qt.labs.platform.MenuBar`; each native menu keeps a disabled placeholder item so macOS does
   not collapse otherwise-empty top-level entries.
+- `Main.qml` owns the root focus-dismiss policy: when LVRS global hit-test metadata reports a left-click on a blank
+  background/container surface, the active focus chain is cleared.
 - App bootstrap (`main.cpp`) enables `WHATSON_DEBUG_MODE=1` by default when the variable is not explicitly set,
   so `WhatSon::Debug::trace/traceSelf`-based logs are available in development sessions without extra launch flags.
 - Render quality policy is enforced at app root for resize stability:

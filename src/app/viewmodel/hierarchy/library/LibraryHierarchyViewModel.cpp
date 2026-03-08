@@ -76,6 +76,49 @@ namespace
         return noteLabelText(note);
     }
 
+    QString noteSearchableText(const LibraryNoteRecord& note)
+    {
+        QStringList parts;
+
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            parts.push_back(noteId);
+        }
+
+        const QString firstLine = note.bodyFirstLine.trimmed();
+        if (!firstLine.isEmpty())
+        {
+            parts.push_back(firstLine);
+        }
+
+        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        if (!bodyPlainText.isEmpty())
+        {
+            parts.push_back(bodyPlainText);
+        }
+
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        return parts.join(QLatin1Char('\n'));
+    }
+
     QStringList noteListFolders(const LibraryNoteRecord& note)
     {
         QStringList folders;
@@ -1683,6 +1726,7 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = notePrimaryText(note);
+        item.searchableText = noteSearchableText(note);
         item.displayDate = noteListDisplayDate(note);
         item.folders = noteListFolders(note);
         item.tags = noteListTags(note);

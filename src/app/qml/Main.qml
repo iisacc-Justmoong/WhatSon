@@ -30,6 +30,7 @@ LV.ApplicationWindow {
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property var editorViewModeVm: editorViewModeViewModel
     readonly property var eventHierarchyVm: eventHierarchyViewModel
+    readonly property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
     readonly property int hierarchyHorizontalInset: 2
@@ -101,6 +102,17 @@ LV.ApplicationWindow {
         var maxDrawerHeight = Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness);
         preferredDrawerHeight = Math.max(minDrawerHeight, Math.min(maxDrawerHeight, preferredDrawerHeight));
     }
+    function clearActiveFocus(reason) {
+        let current = applicationWindow.activeFocusItem;
+        let depthGuard = 0;
+
+        while (current && depthGuard < 32) {
+            if (current.focus !== undefined)
+                current.focus = false;
+            current = current.parent;
+            depthGuard += 1;
+        }
+    }
     function cycleNavigationModeFromShortcut() {
         if (applicationWindow.hasFocusedTextInput())
             return;
@@ -157,6 +169,29 @@ LV.ApplicationWindow {
     function reportLayoutBranch(source) {
         console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " isDesktopPlatform=" + isDesktopPlatform + " isMobilePlatform=" + isMobilePlatform + " selectedLayout=" + activeMainLayout);
     }
+    function shouldRetainFocusForUiHit(uiData) {
+        if (!uiData || uiData.insideWindow === false)
+            return true;
+
+        const className = uiData.className === undefined || uiData.className === null ? "" : String(uiData.className).toLowerCase();
+        const objectName = uiData.objectName === undefined || uiData.objectName === null ? "" : String(uiData.objectName).toLowerCase();
+        const path = uiData.path === undefined || uiData.path === null ? "" : String(uiData.path).toLowerCase();
+        const text = uiData.text === undefined || uiData.text === null ? "" : String(uiData.text).trim();
+        const label = uiData.label === undefined || uiData.label === null ? "" : String(uiData.label).trim();
+        const title = uiData.title === undefined || uiData.title === null ? "" : String(uiData.title).trim();
+        const searchable = className + " " + objectName + " " + path;
+
+        for (let i = 0; i < applicationWindow.focusRetainedUiTokens.length; ++i) {
+            const token = String(applicationWindow.focusRetainedUiTokens[i]).toLowerCase();
+            if (token.length > 0 && searchable.indexOf(token) >= 0)
+                return true;
+        }
+
+        if (text.length > 0 || label.length > 0 || title.length > 0)
+            return true;
+
+        return !(className.indexOf("rectangle") >= 0 || (className.indexOf("item") >= 0 && objectName === "unnamed"));
+    }
 
     autoAttachRuntimeEvents: true
     globalEventListenersEnabled: true
@@ -198,6 +233,21 @@ LV.ApplicationWindow {
         sequence: "Tab"
 
         onActivated: applicationWindow.cycleNavigationModeFromShortcut()
+    }
+    LV.EventListener {
+        action: function (eventData) {
+            if (!applicationWindow.activeFocusItem)
+                return;
+            if (!eventData || (eventData.buttons & Qt.LeftButton) !== Qt.LeftButton)
+                return;
+            if (applicationWindow.shouldRetainFocusForUiHit(eventData.ui))
+                return;
+            applicationWindow.clearActiveFocus("blankGlobalPress");
+        }
+        enabled: applicationWindow.globalEventListenersEnabled
+        includeInputState: false
+        includeUiHit: true
+        trigger: "globalPressed"
     }
     Loader {
         active: applicationWindow.platform === "osx"

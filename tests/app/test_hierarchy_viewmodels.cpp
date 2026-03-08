@@ -191,6 +191,7 @@ private
     void projectsViewModel_reactsToModelMutation();
     void bookmarksViewModel_supportsCrudContract();
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
+    void bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent();
     void resourcesViewModel_supportsCrudContract();
     void progressViewModel_supportsCrudContract();
     void eventViewModel_supportsCrudContract();
@@ -201,6 +202,7 @@ private
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
     void noteListModel_correctsColorAndTextFields();
+    void noteListModel_searchText_filtersAgainstSearchableBodyContent();
     void noteListModel_limitsPrimaryTextToFiveLines();
 };
 
@@ -359,6 +361,35 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::TagsRole).toStringList(),
         QStringList({QStringLiteral("release")}));
+}
+
+void HierarchyViewModelsTest::bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent()
+{
+    QString hubPath;
+    QVERIFY(prepareBookmarksHub(&hubPath));
+
+    BookmarksHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.noteListModel()->setSearchText(QStringLiteral("pink summary"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::IdRole).toString(),
+        QStringLiteral("note-pink"));
+
+    viewModel.setSelectedIndex(6); // blue
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
+
+    viewModel.noteListModel()->setSearchText(QStringLiteral("blue summary"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::IdRole).toString(),
+        QStringLiteral("note-blue"));
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
@@ -581,6 +612,35 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
              QStringList({QStringLiteral("tag-a")}));
     QCOMPARE(model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(), QString());
     QVERIFY(model.correctionCount() >= 1);
+}
+
+void HierarchyViewModelsTest::noteListModel_searchText_filtersAgainstSearchableBodyContent()
+{
+    LibraryNoteListModel model;
+
+    LibraryNoteListItem alpha;
+    alpha.id = QStringLiteral("note-alpha");
+    alpha.primaryText = QStringLiteral("Alpha preview");
+    alpha.searchableText = QStringLiteral("Alpha preview\nBody keyword moonshot launch plan");
+
+    LibraryNoteListItem beta;
+    beta.id = QStringLiteral("note-beta");
+    beta.primaryText = QStringLiteral("Beta preview");
+    beta.searchableText = QStringLiteral("Beta preview\nBody keyword release checklist");
+
+    model.setItems({alpha, beta});
+    QCOMPARE(model.rowCount(), 2);
+
+    model.setSearchText(QStringLiteral("moonshot launch"));
+    QCOMPARE(model.rowCount(), 1);
+    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::IdRole).toString(), QStringLiteral("note-alpha"));
+
+    model.setSearchText(QStringLiteral("release"));
+    QCOMPARE(model.rowCount(), 1);
+    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::IdRole).toString(), QStringLiteral("note-beta"));
+
+    model.setSearchText(QStringLiteral("   "));
+    QCOMPARE(model.rowCount(), 2);
 }
 
 void HierarchyViewModelsTest::noteListModel_limitsPrimaryTextToFiveLines()

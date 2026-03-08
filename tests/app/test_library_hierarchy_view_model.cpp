@@ -31,6 +31,7 @@ private
     void loadFromWshub_buildsAllDraftTodayBuckets();
     void loadFromWshub_protectsAllDraftTodaySystemFolders();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
+    void loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview();
     void loadFromWshub_usesBodyFirstLineForPrimaryText();
     void loadFromWshub_usesFoldersFileForSidebarItems();
     void loadFromWshub_filtersNoteListBySelectedFolder_whenFoldersHierarchyLoaded();
@@ -547,6 +548,54 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
                  ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::PrimaryTextRole)
                  .toString(),
         QStringLiteral("Beta body summary."));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+
+    const QString alphaBodyPath = QDir(hubDir.filePath(contentsDirs.first())).filePath(
+        QStringLiteral("Library.wslibrary/Alpha.wsnote/Alpha.wsnbody"));
+    QVERIFY(writeUtf8File(
+        alphaBodyPath,
+        makeWsnBodyText(
+            QStringLiteral(
+                "    <paragraph>line1</paragraph>\n"
+                "    <paragraph>line2</paragraph>\n"
+                "    <paragraph>line3</paragraph>\n"
+                "    <paragraph>line4</paragraph>\n"
+                "    <paragraph>line5</paragraph>\n"
+                "    <paragraph>moonshot discovery</paragraph>\n"))));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    const QString alphaPrimaryText = viewModel.noteListModel()
+                                              ->data(
+                                                  viewModel.noteListModel()->index(0, 0),
+                                                  LibraryNoteListModel::PrimaryTextRole)
+                                              .toString();
+    QVERIFY(!alphaPrimaryText.contains(QStringLiteral("moonshot discovery")));
+
+    viewModel.noteListModel()->setSearchText(QStringLiteral("moonshot discovery"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-a"));
+
+    viewModel.noteListModel()->setSearchText(QStringLiteral("   "));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_usesBodyFirstLineForPrimaryText()

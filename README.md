@@ -20,6 +20,9 @@ WhatSon is an LVRS-based Qt Quick application.
 
 - Status bar search uses `LV.InputField` in `searchMode` and exposes editable state via QML properties/signals.
 - Sidebar hierarchy search uses `LV.InputField` in `searchMode` and filters visible hierarchy rows in real time.
+- Note-list search uses `LV.InputField` in `searchMode` and forwards the active query into the bound
+  `LibraryNoteListModel.searchText`; filtering is performed against the runtime-parsed note body text assembled from
+  `.wsnbody` `<body>` content instead of reparsing `.wsnote` files on every keystroke.
 
 ## Theme Token Usage
 
@@ -212,6 +215,8 @@ for hub/note hierarchy payloads.
   control mode until mode-specific tools are added.
 - `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
   text editor currently owns focus.
+- `Main.qml` also listens to LVRS global press hit-tests and clears the current focus chain when a left-click lands on
+  an empty background/container surface instead of an interactive control.
 - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` use `LV.ComboBox` as the trigger surface and open
   `LV.ContextMenu` enumerations on click instead of cycling state directly.
 - All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair

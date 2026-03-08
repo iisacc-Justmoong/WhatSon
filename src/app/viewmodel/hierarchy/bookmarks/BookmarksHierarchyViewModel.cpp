@@ -74,6 +74,49 @@ namespace
         return bookmarkLabelText(note);
     }
 
+    QString bookmarkSearchableText(const LibraryNoteRecord& note)
+    {
+        QStringList parts;
+
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            parts.push_back(noteId);
+        }
+
+        const QString firstLine = note.bodyFirstLine.trimmed();
+        if (!firstLine.isEmpty())
+        {
+            parts.push_back(firstLine);
+        }
+
+        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        if (!bodyPlainText.isEmpty())
+        {
+            parts.push_back(bodyPlainText);
+        }
+
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        return parts.join(QLatin1Char('\n'));
+    }
+
     QStringList bookmarkListFolders(const LibraryNoteRecord& note)
     {
         QStringList folders;
@@ -434,6 +477,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = bookmarkPrimaryText(note);
+        item.searchableText = bookmarkSearchableText(note);
         item.displayDate = bookmarkDisplayDate(note);
         item.folders = bookmarkListFolders(note);
         item.tags = bookmarkListTags(note);
@@ -480,6 +524,7 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = bookmarkPrimaryText(note);
+        item.searchableText = bookmarkSearchableText(note);
         item.displayDate = bookmarkDisplayDate(note);
         item.folders = bookmarkListFolders(note);
         item.tags = bookmarkListTags(note);

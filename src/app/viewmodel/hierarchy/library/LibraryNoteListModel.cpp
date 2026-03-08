@@ -10,6 +10,7 @@
 namespace
 {
     constexpr int kMaxNoteListPrimaryTextLines = 5;
+    const QRegularExpression kSearchWhitespacePattern(QStringLiteral("\\s+"));
 
     struct ValidationIssue final
     {
@@ -52,6 +53,76 @@ namespace
         value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
         value = truncateToMaxLines(value, kMaxNoteListPrimaryTextLines);
         return value.trimmed();
+    }
+
+    QString normalizeSearchableText(QString value)
+    {
+        value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        value = value.trimmed().toCaseFolded();
+        value.replace(kSearchWhitespacePattern, QStringLiteral(" "));
+        return value.trimmed();
+    }
+
+    QString buildFallbackSearchableText(const LibraryNoteListItem& item)
+    {
+        QStringList parts;
+        if (!item.id.trimmed().isEmpty())
+        {
+            parts.push_back(item.id.trimmed());
+        }
+        if (!item.primaryText.trimmed().isEmpty())
+        {
+            parts.push_back(item.primaryText.trimmed());
+        }
+        for (const QString& folder : item.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+        for (const QString& tag : item.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+        return parts.join(QLatin1Char('\n'));
+    }
+
+    QStringList searchTerms(const QString& searchText)
+    {
+        const QString normalized = normalizeSearchableText(searchText);
+        if (normalized.isEmpty())
+        {
+            return {};
+        }
+        return normalized.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    }
+
+    bool itemMatchesSearch(const LibraryNoteListItem& item, const QStringList& terms)
+    {
+        if (terms.isEmpty())
+        {
+            return true;
+        }
+
+        const QString searchableText = item.searchableText.isEmpty()
+                                           ? normalizeSearchableText(buildFallbackSearchableText(item))
+                                           : item.searchableText;
+        for (const QString& term : terms)
+        {
+            if (!searchableText.contains(term))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     QStringList sanitizeMetadataList(QStringList values)
@@ -134,6 +205,23 @@ int LibraryNoteListModel::itemCount() const noexcept
     return m_items.size();
 }
 
+QString LibraryNoteListModel::searchText() const
+{
+    return m_searchText;
+}
+
+void LibraryNoteListModel::setSearchText(const QString& text)
+{
+    if (m_searchText == text)
+    {
+        return;
+    }
+
+    m_searchText = text;
+    applySearchFilter();
+    emit searchTextChanged();
+}
+
 bool LibraryNoteListModel::strictValidation() const noexcept
 {
     return m_strictValidation;
@@ -166,7 +254,6 @@ QString LibraryNoteListModel::lastValidationMessage() const
 
 void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
 {
-    const int previousCount = m_items.size();
     QVector<LibraryNoteListItem> sanitized;
     sanitized.reserve(items.size());
 
@@ -184,10 +271,15 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
 
         item.id = item.id.trimmed();
         item.primaryText = normalizePrimaryText(std::move(item.primaryText));
+        item.searchableText = normalizeSearchableText(std::move(item.searchableText));
         item.displayDate = item.displayDate.trimmed();
         item.bookmarkColor = item.bookmarkColor.trimmed();
         item.folders = sanitizeMetadataList(std::move(item.folders));
         item.tags = sanitizeMetadataList(std::move(item.tags));
+        if (item.searchableText.isEmpty())
+        {
+            item.searchableText = normalizeSearchableText(buildFallbackSearchableText(item));
+        }
 
         if (item.primaryText.isEmpty())
         {
@@ -281,14 +373,8 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
                               QStringLiteral("library.notelist.model"),
                               QStringLiteral("setItems"),
                               QStringLiteral("count=%1").arg(sanitized.size()));
-    beginResetModel();
-    m_items = std::move(sanitized);
-    endResetModel();
-    const int nextCount = m_items.size();
-    if (nextCount != previousCount)
-    {
-        emit itemCountChanged(nextCount);
-    }
+    m_sourceItems = std::move(sanitized);
+    applySearchFilter();
     if (!issues.isEmpty())
     {
         m_correctionCount += issues.size();
@@ -307,6 +393,40 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
 const QVector<LibraryNoteListItem>& LibraryNoteListModel::items() const noexcept
 {
     return m_items;
+}
+
+void LibraryNoteListModel::applySearchFilter()
+{
+    const int previousCount = m_items.size();
+    const QStringList terms = searchTerms(m_searchText);
+
+    QVector<LibraryNoteListItem> filtered;
+    if (terms.isEmpty())
+    {
+        filtered = m_sourceItems;
+    }
+    else
+    {
+        filtered.reserve(m_sourceItems.size());
+        for (const LibraryNoteListItem& item : std::as_const(m_sourceItems))
+        {
+            if (itemMatchesSearch(item, terms))
+            {
+                filtered.push_back(item);
+            }
+        }
+    }
+
+    beginResetModel();
+    m_items = std::move(filtered);
+    endResetModel();
+
+    const int nextCount = m_items.size();
+    if (nextCount != previousCount)
+    {
+        emit itemCountChanged(nextCount);
+    }
+    emit itemsChanged();
 }
 
 void LibraryNoteListModel::setValidationState(QString code, QString message)

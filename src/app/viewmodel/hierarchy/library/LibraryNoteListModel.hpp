@@ -10,6 +10,7 @@ struct LibraryNoteListItem
 {
     QString id;
     QString primaryText;
+    QString searchableText;
     QString displayDate;
     QStringList folders;
     QStringList tags;
@@ -21,6 +22,7 @@ class LibraryNoteListModel final : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
+    Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(bool strictValidation READ strictValidation WRITE setStrictValidation NOTIFY strictValidationChanged)
     Q_PROPERTY(int correctionCount READ correctionCount NOTIFY correctionCountChanged)
     Q_PROPERTY(QString lastValidationCode READ lastValidationCode NOTIFY validationStateChanged)
@@ -46,6 +48,8 @@ public:
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
     int itemCount() const noexcept;
+    QString searchText() const;
+    void setSearchText(const QString& text);
     bool strictValidation() const noexcept;
     void setStrictValidation(bool enabled);
     int correctionCount() const noexcept;
@@ -72,6 +76,7 @@ public
 
     void itemCountChanged(int itemCount);
     void itemsChanged();
+    void searchTextChanged();
     void strictValidationChanged();
     void correctionCountChanged();
     void validationStateChanged();
@@ -80,9 +85,12 @@ public
     void modelHookRequested();
 
 private:
+    void applySearchFilter();
     void setValidationState(QString code, QString message);
 
+    QVector<LibraryNoteListItem> m_sourceItems;
     QVector<LibraryNoteListItem> m_items;
+    QString m_searchText;
     bool m_strictValidation = false;
     int m_correctionCount = 0;
     QString m_lastValidationCode;
