@@ -12,6 +12,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/Main.qml` classifies runtime platform via `Qt.platform.os`, resolves an explicit
   `desktop/mobile` main-layout branch, and selects `MobileNormalLayout` on iOS/Android with media-query fallback for
   desktop mobile breakpoints.
+- `src/app/qml/Main.qml` also declares the application menu bar at the root window level with empty `File`, `Edit`,
+  `View`, `Window`, and `Help` menus; macOS uses `Qt.labs.platform.MenuBar`, and each otherwise-empty native menu
+  keeps a disabled placeholder row so the top-level titles remain visible in the global menu bar.
 
 ## Search Input Behavior
 

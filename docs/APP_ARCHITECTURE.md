@@ -303,6 +303,9 @@ Library-specific modeling:
 Primary root:
 
 - `Main.qml` (`LV.ApplicationWindow`)
+- `Main.qml` owns the application menu bar and exposes empty `File`, `Edit`, `View`, `Window`, and `Help` menus
+  through a macOS-native `Qt.labs.platform.MenuBar`; each native menu keeps a disabled placeholder item so macOS does
+  not collapse otherwise-empty top-level entries.
 - App bootstrap (`main.cpp`) enables `WHATSON_DEBUG_MODE=1` by default when the variable is not explicitly set,
   so `WhatSon::Debug::trace/traceSelf`-based logs are available in development sessions without extra launch flags.
 - Render quality policy is enforced at app root for resize stability:

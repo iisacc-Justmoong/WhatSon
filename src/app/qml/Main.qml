@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQml
 import QtQuick.Window
+import Qt.labs.platform as Platform
 import LVRS 1.0 as LV
 import "view/panels" as BodyPanelView
 
@@ -150,6 +151,9 @@ LV.ApplicationWindow {
         }
         return false;
     }
+    function nativeMenuPlaceholderText() {
+        return " ";
+    }
     function reportLayoutBranch(source) {
         console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " isDesktopPlatform=" + isDesktopPlatform + " isMobilePlatform=" + isMobilePlatform + " selectedLayout=" + activeMainLayout);
     }
@@ -196,12 +200,64 @@ LV.ApplicationWindow {
         onActivated: applicationWindow.cycleNavigationModeFromShortcut()
     }
     Loader {
+        active: applicationWindow.platform === "osx"
+        sourceComponent: nativeMenuBarComponent
+    }
+    Loader {
         id: mainLayoutLoader
 
         anchors.fill: parent
         sourceComponent: applicationWindow.activeMainLayout === "mobile" ? mobileMainLayoutComponent : desktopMainLayoutComponent
 
         onSourceComponentChanged: applicationWindow.reportLayoutBranch("loaderSourceChanged")
+    }
+    Component {
+        id: nativeMenuBarComponent
+
+        Platform.MenuBar {
+            window: applicationWindow
+
+            Platform.Menu {
+                title: qsTr("File")
+
+                Platform.MenuItem {
+                    enabled: false
+                    text: applicationWindow.nativeMenuPlaceholderText()
+                }
+            }
+            Platform.Menu {
+                title: qsTr("Edit")
+
+                Platform.MenuItem {
+                    enabled: false
+                    text: applicationWindow.nativeMenuPlaceholderText()
+                }
+            }
+            Platform.Menu {
+                title: qsTr("View")
+
+                Platform.MenuItem {
+                    enabled: false
+                    text: applicationWindow.nativeMenuPlaceholderText()
+                }
+            }
+            Platform.Menu {
+                title: qsTr("Window")
+
+                Platform.MenuItem {
+                    enabled: false
+                    text: applicationWindow.nativeMenuPlaceholderText()
+                }
+            }
+            Platform.Menu {
+                title: qsTr("Help")
+
+                Platform.MenuItem {
+                    enabled: false
+                    text: applicationWindow.nativeMenuPlaceholderText()
+                }
+            }
+        }
     }
     Component {
         id: desktopMainLayoutComponent
