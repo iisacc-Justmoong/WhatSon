@@ -374,7 +374,7 @@ Item {
         if (normalizedType === "conflict")
             return contentsView.gutterMarkerConflictColor;
         if (normalizedType === "changed")
-            return contentsView.gutterMarkerChangedColor;
+
 
     }
     function markerHeight(markerSpec) {
