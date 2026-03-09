@@ -19,6 +19,7 @@ LV.IconButton {
     }
 
     iconName: buttonSpec && buttonSpec.iconName !== undefined ? buttonSpec.iconName : ""
+    iconSize: 16
     tone: selected ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
 
     onClicked: {

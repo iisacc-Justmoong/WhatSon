@@ -78,6 +78,9 @@ Item {
     readonly property int minimapRowGap: 1
     readonly property int minimapTrackInset: 8
     readonly property int minimapTrackWidth: 36
+    readonly property real minimapTrackRuntimeHeight: minimapLayer ? minimapLayer.trackHeight : 0
+    readonly property real minimapTrackRuntimeWidth: minimapLayer ? minimapLayer.trackWidth : contentsView.minimapTrackWidth
+    readonly property int minimapTrackWidth: 36
     readonly property color minimapViewportFillColor: "#149DA0A8"
     readonly property int minimapViewportMinHeight: 28
     readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
@@ -202,7 +205,8 @@ Item {
     }
     function commitGutterRefresh() {
         contentsView.gutterRefreshRevision += 1;
-        minimapCanvas.requestPaint();
+        if (minimapLayer)
+            minimapLayer.requestRepaint();
     }
     function currentCursorVisualLineHeight() {
         const rect = contentsView.currentCursorVisualRowRect();
@@ -374,7 +378,7 @@ Item {
         if (normalizedType === "conflict")
             return contentsView.gutterMarkerConflictColor;
         if (normalizedType === "changed")
-
+            return contentsView.gutterMarkerChangedColor;
 
     }
     function markerHeight(markerSpec) {
@@ -396,7 +400,7 @@ Item {
     }
     function minimapBarWidth(characterCount) {
         const safeCount = Math.max(0, Number(characterCount) || 0);
-        const maxWidth = Math.max(6, minimapTrack.width - 1);
+        const maxWidth = Math.max(6, contentsView.minimapTrackRuntimeWidth - 1);
         if (safeCount <= 0)
             return Math.max(2, maxWidth * 0.08);
         const widthRatio = contentsView.clampUnit(0.08 + Math.log(safeCount + 1) / Math.log(160));
@@ -454,25 +458,25 @@ Item {
         const contentHeight = contentsView.minimapContentHeight();
         if (contentHeight <= 0)
             return 0;
-        return Math.max(1, (safeSegmentHeight / contentHeight) * minimapTrack.height);
+        return Math.max(1, (safeSegmentHeight / contentHeight) * contentsView.minimapTrackRuntimeHeight);
     }
     function minimapTrackYForContentY(contentY) {
         const contentHeight = contentsView.minimapContentHeight();
         if (contentHeight <= 0)
             return 0;
         const safeContentY = Math.max(0, Math.min(contentHeight, Number(contentY) || 0));
-        return (safeContentY / contentHeight) * minimapTrack.height;
+        return (safeContentY / contentHeight) * contentsView.minimapTrackRuntimeHeight;
     }
     function minimapViewportHeight() {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
-            return minimapTrack.height;
+            return contentsView.minimapTrackRuntimeHeight;
         const contentHeight = Math.max(1, contentsView.minimapContentHeight());
         const viewportHeight = Math.max(0, Number(flickable.height) || 0);
         if (contentHeight <= viewportHeight)
-            return minimapTrack.height;
+            return contentsView.minimapTrackRuntimeHeight;
         const proportionalHeight = contentsView.minimapTrackHeightForContentHeight(viewportHeight);
-        return Math.min(minimapTrack.height, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
+        return Math.min(contentsView.minimapTrackRuntimeHeight, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
     }
     function minimapViewportY() {
         const flickable = contentsView.editorFlickable;
@@ -484,7 +488,7 @@ Item {
         if (maxContentY <= 0)
             return 0;
         const contentY = Math.max(0, Math.min(maxContentY, Number(flickable.contentY) || 0));
-        const maxTrackY = Math.max(0, minimapTrack.height - contentsView.minimapViewportHeight());
+        const maxTrackY = Math.max(0, contentsView.minimapTrackRuntimeHeight - contentsView.minimapViewportHeight());
         return maxTrackY * (contentY / maxContentY);
     }
     function minimapVisualRowPaintHeight(rowSpec) {
@@ -575,7 +579,7 @@ Item {
             flickable.contentY = 0;
             return;
         }
-        const trackRatio = contentsView.clampUnit((Number(localY) || 0) / Math.max(1, minimapTrack.height));
+        const trackRatio = contentsView.clampUnit((Number(localY) || 0) / Math.max(1, contentsView.minimapTrackRuntimeHeight));
         const documentY = contentHeight * trackRatio;
         const nextContentY = Math.max(0, Math.min(maxContentY, documentY - viewportHeight / 2));
         flickable.contentY = nextContentY;
@@ -598,7 +602,7 @@ Item {
         const firstVisibleLine = contentsView.firstVisibleLogicalLine();
         for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
             const lineY = contentsView.lineY(lineNumber);
-            if (lineY > lineNumberViewport.height)
+            if (lineY > contentsView.gutterViewportHeight)
                 break;
             if (lineY + contentsView.editorLineHeight < 0)
                 continue;
@@ -617,7 +621,10 @@ Item {
     }
     Component.onDestruction: contentsView.flushPendingEditorText()
     onEditorFlickableChanged: contentsView.scheduleGutterRefresh(2)
-    onEditorTextChanged: minimapCanvas.requestPaint()
+    onEditorTextChanged: {
+        if (minimapLayer)
+            minimapLayer.requestRepaint();
+    }
     onHeightChanged: contentsView.scheduleGutterRefresh(2)
     onSelectedNoteBodyTextChanged: {
         contentsView.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
@@ -719,65 +726,33 @@ Item {
                 spacing: 0
                 visible: !contentsView.showEmptyFolderPlaceholder
 
-                Rectangle {
-                    id: lineNumberGutter
+                ContentsGutterLayer {
+                    id: gutterLayer
 
                     Layout.fillHeight: true
                     Layout.preferredWidth: contentsView.gutterWidth
-                    color: contentsView.gutterColor
-
-                    Item {
-                        id: lineNumberViewport
-
-                        anchors.fill: parent
-                        clip: true
-
-                        Item {
-                            height: parent.height
-                            width: contentsView.gutterIconRailWidth
-                            x: contentsView.gutterIconRailLeft
-                        }
-                        Repeater {
-                            model: contentsView.effectiveGutterMarkers
-
-                            delegate: Rectangle {
-                                readonly property var markerSpec: modelData || ({
-                                        "color": contentsView.gutterMarkerCurrentColor,
-                                        "lineSpan": 1,
-                                        "startLine": 1
-                                    })
-                                required property var modelData
-
-                                markerSpec.color
-                                contentsView.markerHeight(markerSpec)
-                                width / 2
-                                4
-                                contentsView.gutterCommentRailLeft + contentsView.gutterCommentMarkerOffset
-                                contentsView.markerY(markerSpec)
-                            }
-                        }
-                        Repeater {
-                            model: contentsView.visibleLineNumbers()
-
-                            delegate: LV.Label {
-                                required property int modelData
-
-                                color: modelData === contentsView.currentCursorLineNumber ? contentsView.activeLineNumberColor : contentsView.lineNumberColor
-                                font.family: LV.Theme.fontBody
-                                font.letterSpacing: 0
-                                font.pixelSize: 11
-                                font.weight: modelData === contentsView.currentCursorLineNumber ? Font.Medium : Font.Normal
-                                height: contentsView.editorLineHeight
-                                horizontalAlignment: Text.AlignRight
-                                style: caption
-                                text: String(modelData)
-                                verticalAlignment: Text.AlignVCenter
-                                width: contentsView.lineNumberColumnTextWidth
-                                x: contentsView.lineNumberColumnLeft
-                                y: contentsView.lineY(modelData)
-                            }
-                        }
+                    activeLineNumberColor: contentsView.activeLineNumberColor
+                    currentCursorLineNumber: contentsView.currentCursorLineNumber
+                    editorLineHeight: contentsView.editorLineHeight
+                    effectiveGutterMarkers: contentsView.effectiveGutterMarkers
+                    gutterColor: contentsView.gutterColor
+                    gutterCommentMarkerOffset: contentsView.gutterCommentMarkerOffset
+                    gutterCommentRailLeft: contentsView.gutterCommentRailLeft
+                    gutterIconRailLeft: contentsView.gutterIconRailLeft
+                    gutterIconRailWidth: contentsView.gutterIconRailWidth
+                    lineNumberColor: contentsView.lineNumberColor
+                    lineNumberColumnLeft: contentsView.lineNumberColumnLeft
+                    lineNumberColumnTextWidth: contentsView.lineNumberColumnTextWidth
+                    lineYResolver: function (lineNumber) {
+                        return contentsView.lineY(lineNumber);
                     }
+                    markerHeightResolver: function (markerSpec) {
+                        return contentsView.markerHeight(markerSpec);
+                    }
+                    markerYResolver: function (markerSpec) {
+                        return contentsView.markerY(markerSpec);
+                    }
+                    visibleLineNumbersModel: contentsView.visibleLineNumbers()
                 }
                 Item {
                     id: editorViewport
@@ -848,129 +823,68 @@ Item {
                         visible: contentEditor.empty && !contentsView.showEmptyFolderPlaceholder
                     }
                 }
-                Item {
-                    id: minimapRail
+                ContentsMinimapLayer {
+                    id: minimapLayer
 
                     Layout.fillHeight: true
                     Layout.preferredWidth: contentsView.minimapOuterWidth
-
-                    Item {
-                        id: minimapTrack
-
-                        anchors.right: parent.right
-                        anchors.rightMargin: contentsView.minimapTrackInset
-                        anchors.top: parent.top
-                        anchors.topMargin: 8
-                        height: Math.min(Math.max(1, parent.height - 16), contentsView.minimapSilhouetteHeight())
-                        width: contentsView.minimapTrackWidth
-
-                        Canvas {
-                            id: minimapCanvas
-
-                            anchors.fill: parent
-                            renderTarget: Canvas.Image
-
-                            onHeightChanged: requestPaint()
-                            onPaint: {
-                                const context = getContext("2d");
-                                context.clearRect(0, 0, width, height);
-
-                                const rows = Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : [];
-                                for (let rowIndex = 0; rowIndex < rows.length; ++rowIndex) {
-                                    const row = rows[rowIndex];
-                                    const characterCount = Number(row.charCount) || 0;
-                                    const barY = contentsView.minimapVisualRowPaintY(row);
-                                    const barHeight = contentsView.minimapVisualRowPaintHeight(row);
-                                    if (barY > height || barY + barHeight < 0)
-                                        continue;
-                                    context.fillStyle = contentsView.minimapLineColor;
-                                    context.globalAlpha = characterCount > 0 ? 0.48 : 0.12;
-                                    context.fillRect(0, barY, contentsView.minimapBarWidth(characterCount), barHeight);
-                                }
-                                context.globalAlpha = 1;
-                            }
-                            onWidthChanged: requestPaint()
-                        }
-                        Rectangle {
-                            readonly property bool scrollable: contentsView.editorFlickable && contentsView.minimapContentHeight() > (Number(contentsView.editorFlickable.height) || 0)
-
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            border.width: 0
-                            color: contentsView.minimapViewportFillColor
-                            height: contentsView.minimapViewportHeight()
-                            radius: 3
-                            visible: scrollable
-                            y: contentsView.minimapViewportY()
-                        }
-                        Rectangle {
-                            color: contentsView.minimapCurrentLineColor
-                            height: Math.max(1, contentsView.minimapCurrentLineHeight())
-                            opacity: 0.8
-                            radius: 1
-                            width: contentsView.minimapCurrentLineWidth()
-                            x: 0
-                            y: contentsView.minimapCurrentLineY()
-                        }
-                        MouseArea {
-                            acceptedButtons: Qt.LeftButton
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-
-                            onPositionChanged: function (mouse) {
-                                if (!(pressedButtons & Qt.LeftButton))
-                                    return;
-                                contentsView.scrollEditorViewportToMinimapPosition(mouse.y);
-                            }
-                            onPressed: function (mouse) {
-                                contentsView.scrollEditorViewportToMinimapPosition(mouse.y);
-                            }
-                        }
-                        LV.WheelScrollGuard {
-                            anchors.fill: parent
-                            consumeInside: true
-                            targetFlickable: contentsView.editorFlickable
-                        }
+                    editorFlickable: contentsView.editorFlickable
+                    minimapBarWidthResolver: function (characterCount) {
+                        return contentsView.minimapBarWidth(characterCount);
+                    }
+                    minimapContentHeightResolver: function () {
+                        return contentsView.minimapContentHeight();
+                    }
+                    minimapCurrentLineColor: contentsView.minimapCurrentLineColor
+                    minimapCurrentLineHeightResolver: function () {
+                        return contentsView.minimapCurrentLineHeight();
+                    }
+                    minimapCurrentLineWidthResolver: function () {
+                        return contentsView.minimapCurrentLineWidth();
+                    }
+                    minimapCurrentLineYResolver: function () {
+                        return contentsView.minimapCurrentLineY();
+                    }
+                    minimapLineColor: contentsView.minimapLineColor
+                    minimapSilhouetteHeightResolver: function () {
+                        return contentsView.minimapSilhouetteHeight();
+                    }
+                    minimapTrackInset: contentsView.minimapTrackInset
+                    minimapTrackWidth: contentsView.minimapTrackWidth
+                    minimapViewportFillColor: contentsView.minimapViewportFillColor
+                    minimapViewportHeightResolver: function () {
+                        return contentsView.minimapViewportHeight();
+                    }
+                    minimapViewportYResolver: function () {
+                        return contentsView.minimapViewportY();
+                    }
+                    minimapVisualRowPaintHeightResolver: function (row) {
+                        return contentsView.minimapVisualRowPaintHeight(row);
+                    }
+                    minimapVisualRowPaintYResolver: function (row) {
+                        return contentsView.minimapVisualRowPaintY(row);
+                    }
+                    minimapVisualRows: contentsView.minimapVisualRows
+                    scrollToMinimapPositionHandler: function (localY) {
+                        contentsView.scrollEditorViewportToMinimapPosition(localY);
                     }
                 }
             }
         }
-        Rectangle {
+        ContentsDrawerSplitter {
             id: drawerSplitter
 
             Layout.fillWidth: true
             Layout.preferredHeight: contentsView.splitterThickness
-            color: contentsView.splitterColor
+            clampDrawerHeightResolver: function (value) {
+                return contentsView.clampDrawerHeight(value);
+            }
+            drawerHeight: contentsView.drawerHeight
+            splitterColor: contentsView.splitterColor
+            splitterHandleThickness: contentsView.splitterHandleThickness
 
-            MouseArea {
-                id: drawerSplitterMouse
-
-                property int dragStartDrawerHeight: contentsView.drawerHeight
-                property real dragStartGlobalY: 0
-
-                acceptedButtons: Qt.LeftButton
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                cursorShape: Qt.SizeVerCursor
-                height: contentsView.splitterHandleThickness
-                preventStealing: true
-
-                onPositionChanged: function (mouse) {
-                    if (!(pressedButtons & Qt.LeftButton))
-                        return;
-                    var movePoint = drawerSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    var deltaY = movePoint.y - dragStartGlobalY;
-                    var nextDrawerHeight = contentsView.clampDrawerHeight(dragStartDrawerHeight - deltaY);
-                    if (nextDrawerHeight !== contentsView.drawerHeight)
-                        contentsView.drawerHeightDragRequested(nextDrawerHeight);
-                }
-                onPressed: function (mouse) {
-                    var pressPoint = drawerSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                    dragStartGlobalY = pressPoint.y;
-                    dragStartDrawerHeight = contentsView.drawerHeight;
-                }
+            onDrawerHeightDragRequested: function (value) {
+                contentsView.drawerHeightDragRequested(value);
             }
         }
         Rectangle {

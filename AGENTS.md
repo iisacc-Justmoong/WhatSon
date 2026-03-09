@@ -156,6 +156,9 @@ An exception is allowed only when all conditions are satisfied.
                 - `src/app/qml/view/body/HierarchySidebarLayout.qml`
                     - `src/app/qml/view/panels/ContentViewLayout.qml`
                     - `src/app/qml/view/content/editor/ContentsDisplayView.qml`
+                    - `src/app/qml/view/content/editor/ContentsGutterLayer.qml`
+                    - `src/app/qml/view/content/editor/ContentsMinimapLayer.qml`
+                    - `src/app/qml/view/content/editor/ContentsDrawerSplitter.qml`
                 - `src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewLibrary.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewProjects.qml`
@@ -203,6 +206,14 @@ An exception is allowed only when all conditions are satisfied.
   and one slot/hook entrypoint.
 - Keep hierarchy wiring type-safe: each hierarchy category must remain bound to its dedicated ViewModel in
   `src/app/viewmodel/hierarchy`.
+- Enforce SRP for QML: when one QML file starts combining layout shell, rendering delegates, and interaction logic,
+  split it into dedicated sibling modules under the same domain directory and compose them from the parent screen.
+- Prefer minimum reusable modules for complex editor surfaces (for example: gutter layer, minimap layer, splitter
+  interaction layer) instead of embedding every delegate in one root file.
+- Keep quality gates aligned with decomposition work:
+    - Run `cmake --build build --target whatson_qmllint -j` after QML refactors.
+    - Run `cmake --build build --target whatson_clang_tidy -j` after C++ refactors when `clang-tidy` is installed; if
+      unavailable, report the missing tool explicitly in the completion notes.
 
 ## Troubleshooting Baseline
 

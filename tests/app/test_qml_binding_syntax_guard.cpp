@@ -190,9 +190,27 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function markerHeight(markerSpec)")),
         "ContentViewLayout.qml must route gutter marker height through a dedicated helper so current-line and range markers can use different height rules.");
+    const QString gutterLayerPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsGutterLayer.qml"));
+    QFile gutterLayerFile(gutterLayerPath);
+    QVERIFY2(gutterLayerFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(gutterLayerPath));
+    const QString gutterLayerText = QString::fromUtf8(gutterLayerFile.readAll());
+    const QString minimapLayerPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsMinimapLayer.qml"));
+    QFile minimapLayerFile(minimapLayerPath);
+    QVERIFY2(minimapLayerFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(minimapLayerPath));
+    const QString minimapLayerText = QString::fromUtf8(minimapLayerFile.readAll());
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("height: contentsView.markerHeight(markerSpec)")),
-        "ContentViewLayout.qml gutter marker delegate must use markerHeight(markerSpec) rather than stretching every marker from logical-line span alone.");
+        contentViewText.contains(QStringLiteral("ContentsGutterLayer {")),
+        "ContentViewLayout.qml must compose the dedicated ContentsGutterLayer module for SRP-aligned gutter rendering.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("ContentsMinimapLayer {")),
+        "ContentViewLayout.qml must compose the dedicated ContentsMinimapLayer module for SRP-aligned minimap rendering.");
+    QVERIFY2(
+        gutterLayerText.contains(
+            QStringLiteral(
+                "height: gutterLayer.markerHeightResolver ? Number(gutterLayer.markerHeightResolver(markerSpec)) || 0 : 0")),
+        "ContentsGutterLayer.qml gutter marker delegate must resolve marker height via the injected markerHeight resolver.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color lineNumberColor: \"#4E5157\"")),
         "ContentViewLayout.qml must keep the gutter caption token color from Figma.");
@@ -226,11 +244,12 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             "readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset")),
         "ContentViewLayout.qml must widen the gutter text column up to the mirrored editor inset.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("x: contentsView.lineNumberColumnLeft")),
-        "ContentViewLayout.qml must keep the gutter number column anchored from the left rail origin.");
+        gutterLayerText.contains(QStringLiteral("x: gutterLayer.lineNumberColumnLeft")),
+        "ContentsGutterLayer.qml must keep the gutter number column anchored from the left rail origin.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("model: contentsView.effectiveGutterMarkers")),
-        "ContentViewLayout.qml must render the effective gutter marker model instead of decorative placeholders.");
+        contentViewText.contains(QStringLiteral("model: contentsView.effectiveGutterMarkers")) ||
+        gutterLayerText.contains(QStringLiteral("model: gutterLayer.effectiveGutterMarkers")),
+        "ContentsDisplayView.qml or ContentsGutterLayer.qml must render the effective gutter marker model instead of decorative placeholders.");
     QVERIFY2(
         contentViewText.contains(
             QStringLiteral("markerType !== \"changed\" && markerType !== \"conflict\" && markerType !== \"current\"")),
@@ -288,8 +307,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("function scrollEditorViewportToMinimapPosition(localY)")),
         "ContentViewLayout.qml must expose a minimap scroll helper that repositions the editor viewport.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("id: minimapCanvas")),
-        "ContentViewLayout.qml must render a right-side minimap canvas for the editor document overview.");
+        contentViewText.contains(QStringLiteral("id: minimapCanvas")) ||
+        minimapLayerText.contains(QStringLiteral("id: minimapCanvas")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml must render a right-side minimap canvas for the editor document overview.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function minimapContentYForLine(lineNumber)")),
         "ContentViewLayout.qml minimap must project each bar from the editor text start offset rather than gutter state.");
@@ -321,23 +341,30 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("Layout.preferredWidth: contentsView.minimapOuterWidth")),
         "ContentViewLayout.qml minimap rail must reserve its own right-side layout width.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("anchors.rightMargin: contentsView.minimapTrackInset")),
-        "ContentViewLayout.qml minimap track must sit inline against the right edge instead of using a framed centered rail.");
+        contentViewText.contains(QStringLiteral("anchors.rightMargin: contentsView.minimapTrackInset")) ||
+        minimapLayerText.contains(QStringLiteral("anchors.rightMargin: minimapLayer.minimapTrackInset")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml minimap track must sit inline against the right edge instead of using a framed centered rail.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("border.width: 0")),
-        "ContentViewLayout.qml minimap viewport must remain borderless.");
+        contentViewText.contains(QStringLiteral("border.width: 0")) ||
+        minimapLayerText.contains(QStringLiteral("border.width: 0")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml minimap viewport must remain borderless.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("color: contentsView.minimapViewportFillColor")),
-        "ContentViewLayout.qml minimap viewport must use a subtle inline fill instead of a framed outline.");
+        contentViewText.contains(QStringLiteral("color: contentsView.minimapViewportFillColor")) ||
+        minimapLayerText.contains(QStringLiteral("color: minimapLayer.minimapViewportFillColor")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml minimap viewport must use a subtle inline fill instead of a framed outline.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("width: contentsView.minimapCurrentLineWidth()")),
-        "ContentViewLayout.qml current-line minimap indicator must follow the active visual-row silhouette width instead of spanning the whole rail.");
+        contentViewText.contains(QStringLiteral("width: contentsView.minimapCurrentLineWidth()")) ||
+        minimapLayerText.contains(QStringLiteral(
+            "width: minimapLayer.minimapCurrentLineWidthResolver ? Number(minimapLayer.minimapCurrentLineWidthResolver()) || 0 : 0")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml current-line minimap indicator must follow the active visual-row silhouette width instead of spanning the whole rail.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("LV.WheelScrollGuard {")),
-        "ContentViewLayout.qml minimap must route wheel scroll into the editor flickable.");
+        contentViewText.contains(QStringLiteral("LV.WheelScrollGuard {")) ||
+        minimapLayerText.contains(QStringLiteral("LV.WheelScrollGuard {")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml minimap must route wheel scroll into the editor flickable.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("targetFlickable: contentsView.editorFlickable")),
-        "ContentViewLayout.qml minimap wheel routing must target the resolved editor flickable.");
+        contentViewText.contains(QStringLiteral("targetFlickable: contentsView.editorFlickable")) ||
+        minimapLayerText.contains(QStringLiteral("targetFlickable: minimapLayer.editorFlickable")),
+        "ContentsDisplayView.qml or ContentsMinimapLayer.qml minimap wheel routing must target the resolved editor flickable.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("fontFamily: LV.Theme.fontBody")),
         "ContentViewLayout.qml must bind TextEditor typography to the LVRS body font family.");

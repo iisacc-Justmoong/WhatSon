@@ -262,7 +262,12 @@ Domain-isolated support:
               been crossed or canceled.
             - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
               `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
-              surface with `LV.TextEditor` plus a dedicated `74px` left gutter. The gutter computes visible line
+              surface by composing dedicated SRP modules:
+              `view/content/editor/ContentsGutterLayer.qml`,
+              `view/content/editor/ContentsMinimapLayer.qml`, and
+              `view/content/editor/ContentsDrawerSplitter.qml`. The editor keeps `LV.TextEditor` in the parent surface
+              and exposes shared calculations for those child modules through explicit resolver bindings. The gutter
+              computes visible line
               numbers from the same `editorText` source, cursor line, and editor render metrics. `wrapMode:
               TextEdit.Wrap` is enabled, but gutter numbering still stays on logical document lines by mapping each
               logical line start through `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not
