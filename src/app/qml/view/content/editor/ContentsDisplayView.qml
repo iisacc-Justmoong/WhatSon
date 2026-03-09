@@ -57,6 +57,7 @@ Item {
     property var gutterMarkers: []
     property int gutterRefreshPassesRemaining: 0
     property int gutterRefreshRevision: 0
+    readonly property real gutterViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
     readonly property int gutterWidth: 74
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     readonly property color lineNumberColor: "#4E5157"
@@ -80,7 +81,6 @@ Item {
     readonly property int minimapTrackWidth: 36
     readonly property real minimapTrackRuntimeHeight: minimapLayer ? minimapLayer.trackHeight : 0
     readonly property real minimapTrackRuntimeWidth: minimapLayer ? minimapLayer.trackWidth : contentsView.minimapTrackWidth
-    readonly property int minimapTrackWidth: 36
     readonly property color minimapViewportFillColor: "#149DA0A8"
     readonly property int minimapViewportMinHeight: 28
     readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
@@ -134,6 +134,7 @@ Item {
                 "visualIndex": 0
             });
         }
+
 
     }
     function buildLogicalLineStartOffsets(text) {
@@ -379,7 +380,9 @@ Item {
         if (normalizedType === "conflict")
             return contentsView.gutterMarkerConflictColor;
         if (normalizedType === "changed")
-
+            return contentsView.gutterMarkerChangedColor;
+        if (normalizedType === "current")
+            return contentsView.gutterMarkerCurrentColor;
 
     }
     function markerHeight(markerSpec) {
@@ -530,6 +533,7 @@ Item {
         if (normalized[0] !== 0)
             normalized.unshift(0);
 
+
     }
     function persistEditorTextForNote(noteId, text) {
         if (!contentViewModel)
@@ -557,6 +561,7 @@ Item {
         const candidate = contentEditor.editorItem.parent.parent;
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
+
 
     }
     function scheduleEditorPersistence() {
@@ -611,6 +616,7 @@ Item {
         }
         if (visibleLines.length === 0)
             visibleLines.push(firstVisibleLine);
+
 
     }
 
