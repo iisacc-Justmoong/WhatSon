@@ -748,12 +748,12 @@ Item {
                                     })
                                 required property var modelData
 
-                                color: markerSpec.color
-                                height: contentsView.markerHeight(markerSpec)
-                                radius: width / 2
-                                width: 4
-                                x: contentsView.gutterCommentRailLeft + contentsView.gutterCommentMarkerOffset
-                                y: contentsView.markerY(markerSpec)
+                                markerSpec.color
+                                contentsView.markerHeight(markerSpec)
+                                width / 2
+                                4
+                                contentsView.gutterCommentRailLeft + contentsView.gutterCommentMarkerOffset
+                                contentsView.markerY(markerSpec)
                             }
                         }
                         Repeater {
