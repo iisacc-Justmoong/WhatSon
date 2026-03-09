@@ -180,6 +180,13 @@ qt_add_qml_module(WhatSon
         ${WHATSON_APP_QML_FILES}
 )
 
+if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    # The clean iOS Xcode export tree does not have Qt-generated .qrc files yet during
+    # target finalization, so configure-time qmlimportscanner fails before project generation.
+    set_target_properties(WhatSon PROPERTIES
+            QT_QML_MODULE_NO_IMPORT_SCAN TRUE)
+endif ()
+
 target_link_libraries(WhatSon
         PRIVATE
         Qt6::Quick

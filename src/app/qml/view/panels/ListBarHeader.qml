@@ -63,12 +63,12 @@ Item {
         Binding {
             "height"
             target: searchField.inputItem
-            value: searchField.resolvedInputTextHeight
+            value: listBarHeader.resolvedInputTextHeight
         }
         Binding {
             "y"
             target: searchField.inputItem
-            value: Math.max(0, Math.floor((searchField.height - searchField.resolvedInputTextHeight) / 2))
+            value: Math.max(0, Math.floor((searchField.height - listBarHeader.resolvedInputTextHeight) / 2))
         }
         LV.IconButton {
             Layout.preferredHeight: 20
