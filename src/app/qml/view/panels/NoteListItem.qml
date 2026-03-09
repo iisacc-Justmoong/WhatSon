@@ -8,6 +8,7 @@ Item {
     readonly property bool activeState: pressed
     property color bookmarkColor: LV.Theme.accentYellow
     property bool bookmarked: false
+    readonly property var calendarStore: typeof systemCalendarStore !== "undefined" ? systemCalendarStore : null
     readonly property color captionColor: LV.Theme.captionColor
     readonly property color cardColor: LV.Theme.accentBlueMuted
     property string displayDate: ""

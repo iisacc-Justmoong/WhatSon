@@ -144,6 +144,7 @@ Item {
                 offsets.push(index + 1);
         }
 
+
     }
     function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
         const _editorWidth = Number(editorWidth) || 0;
@@ -378,7 +379,7 @@ Item {
         if (normalizedType === "conflict")
             return contentsView.gutterMarkerConflictColor;
         if (normalizedType === "changed")
-            return contentsView.gutterMarkerChangedColor;
+
 
     }
     function markerHeight(markerSpec) {

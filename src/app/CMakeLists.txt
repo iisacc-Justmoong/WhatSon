@@ -89,20 +89,11 @@ if (EXISTS "${WHATSON_APP_ICON_PNG}")
     )
 endif ()
 
-if (APPLE)
-    set(_whatson_icon_png_location "Resources")
-    if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-        set(_whatson_icon_png_location ".")
-    endif ()
+if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
     if (EXISTS "${WHATSON_APP_ICON_PNG}")
-        get_filename_component(_whatson_icon_png_name "${WHATSON_APP_ICON_PNG}" NAME)
         set_source_files_properties("${WHATSON_APP_ICON_PNG}" PROPERTIES
-                MACOSX_PACKAGE_LOCATION "${_whatson_icon_png_location}")
+                MACOSX_PACKAGE_LOCATION ".")
         target_sources(WhatSon PRIVATE "${WHATSON_APP_ICON_PNG}")
-        if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-            set_target_properties(WhatSon PROPERTIES
-                    MACOSX_BUNDLE_ICON_FILE "${_whatson_icon_png_name}")
-        endif ()
     endif ()
 endif ()
 
