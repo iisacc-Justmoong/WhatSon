@@ -92,6 +92,179 @@ namespace
         WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&items);
         return items;
     }
+
+    enum class FolderDropPlacement
+    {
+        Before,
+        After,
+        Child,
+        RootTop
+    };
+
+    struct FolderMoveOperation final
+    {
+        int sourceEndIndex = -1;
+        int sourceCount = 0;
+        int normalizedInsertIndex = -1;
+        int newBaseDepth = 0;
+    };
+
+    bool isProtectedRootItem(const ProjectsHierarchyItem& item)
+    {
+        return item.accent && item.depth == 0;
+    }
+
+    int firstEditableInsertIndex(const QVector<ProjectsHierarchyItem>& items)
+    {
+        int index = 0;
+        while (index < items.size() && isProtectedRootItem(items.at(index)))
+        {
+            ++index;
+        }
+        return index;
+    }
+
+    bool isEditableFolderItem(const QVector<ProjectsHierarchyItem>& items, int index)
+    {
+        return index >= 0 && index < items.size() && !isProtectedRootItem(items.at(index));
+    }
+
+    int subtreeEndIndexExclusive(const QVector<ProjectsHierarchyItem>& items, int startIndex)
+    {
+        if (startIndex < 0 || startIndex >= items.size())
+        {
+            return startIndex;
+        }
+
+        const int baseDepth = items.at(startIndex).depth;
+        int endIndex = startIndex + 1;
+        while (endIndex < items.size() && items.at(endIndex).depth > baseDepth)
+        {
+            ++endIndex;
+        }
+        return endIndex;
+    }
+
+    bool indexInsideSubtree(int index, int subtreeStart, int subtreeEndExclusive)
+    {
+        return index >= subtreeStart && index < subtreeEndExclusive;
+    }
+
+    bool resolveFolderMoveOperation(
+        const QVector<ProjectsHierarchyItem>& items,
+        int sourceIndex,
+        int targetIndex,
+        FolderDropPlacement placement,
+        FolderMoveOperation* outOperation = nullptr)
+    {
+        if (!isEditableFolderItem(items, sourceIndex))
+        {
+            return false;
+        }
+
+        const int sourceEndIndex = subtreeEndIndexExclusive(items, sourceIndex);
+        const int sourceCount = sourceEndIndex - sourceIndex;
+        if (sourceCount <= 0)
+        {
+            return false;
+        }
+
+        int rawInsertIndex = firstEditableInsertIndex(items);
+        int newBaseDepth = 0;
+
+        switch (placement)
+        {
+        case FolderDropPlacement::RootTop:
+            rawInsertIndex = firstEditableInsertIndex(items);
+            newBaseDepth = 0;
+            break;
+        case FolderDropPlacement::Before:
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = targetIndex;
+            newBaseDepth = items.at(targetIndex).depth;
+            break;
+        case FolderDropPlacement::After:
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = subtreeEndIndexExclusive(items, targetIndex);
+            newBaseDepth = items.at(targetIndex).depth;
+            break;
+        case FolderDropPlacement::Child:
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = subtreeEndIndexExclusive(items, targetIndex);
+            newBaseDepth = items.at(targetIndex).depth + 1;
+            break;
+        }
+
+        int normalizedInsertIndex = rawInsertIndex;
+        if (normalizedInsertIndex > sourceIndex)
+        {
+            normalizedInsertIndex -= sourceCount;
+        }
+        const int maxInsertIndex = std::max(0, static_cast<int>(items.size()) - sourceCount);
+        normalizedInsertIndex = std::clamp(normalizedInsertIndex, 0, maxInsertIndex);
+
+        if (normalizedInsertIndex == sourceIndex && newBaseDepth == items.at(sourceIndex).depth)
+        {
+            return false;
+        }
+
+        if (outOperation != nullptr)
+        {
+            outOperation->sourceEndIndex = sourceEndIndex;
+            outOperation->sourceCount = sourceCount;
+            outOperation->normalizedInsertIndex = normalizedInsertIndex;
+            outOperation->newBaseDepth = newBaseDepth;
+        }
+        return true;
+    }
+
+    QVector<ProjectsHierarchyItem> stageFolderMoveItems(
+        const QVector<ProjectsHierarchyItem>& items,
+        int sourceIndex,
+        const FolderMoveOperation& operation)
+    {
+        const int depthDelta = operation.newBaseDepth - items.at(sourceIndex).depth;
+
+        QVector<ProjectsHierarchyItem> movedItems;
+        movedItems.reserve(operation.sourceCount);
+        for (int index = sourceIndex; index < operation.sourceEndIndex; ++index)
+        {
+            ProjectsHierarchyItem item = items.at(index);
+            item.depth = std::max(0, item.depth + depthDelta);
+            movedItems.push_back(std::move(item));
+        }
+
+        QVector<ProjectsHierarchyItem> stagedItems = items;
+        stagedItems.remove(sourceIndex, operation.sourceCount);
+        for (int offset = 0; offset < movedItems.size(); ++offset)
+        {
+            stagedItems.insert(operation.normalizedInsertIndex + offset, std::move(movedItems[offset]));
+        }
+
+        WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&stagedItems);
+        return stagedItems;
+    }
 }
 
 ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
@@ -266,8 +439,9 @@ void ProjectsHierarchyViewModel::createFolder()
         return;
     }
 
+    QVector<ProjectsHierarchyItem> stagedItems = m_items;
     const int insertIndex = WhatSon::Hierarchy::ProjectsSupport::createHierarchyFolder(
-        &m_items, m_selectedIndex, &m_createdFolderSequence);
+        &stagedItems, m_selectedIndex, &m_createdFolderSequence);
     if (insertIndex < 0)
     {
         WhatSon::Debug::traceSelf(this,
@@ -277,9 +451,10 @@ void ProjectsHierarchyViewModel::createFolder()
         return;
     }
 
-    syncDomainStoreFromItems();
-    syncModel();
-    setSelectedIndex(insertIndex);
+    if (!commitHierarchyUpdate(std::move(stagedItems), insertIndex))
+    {
+        return;
+    }
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("createFolder.success"),
@@ -302,16 +477,136 @@ void ProjectsHierarchyViewModel::deleteSelectedFolder()
         return;
     }
 
+    QVector<ProjectsHierarchyItem> stagedItems = m_items;
     const int nextSelectedIndex =
-        WhatSon::Hierarchy::ProjectsSupport::deleteHierarchySubtree(&m_items, m_selectedIndex);
-    syncDomainStoreFromItems();
-    syncModel();
-    setSelectedIndex(nextSelectedIndex);
+        WhatSon::Hierarchy::ProjectsSupport::deleteHierarchySubtree(&stagedItems, m_selectedIndex);
+    if (!commitHierarchyUpdate(std::move(stagedItems), nextSelectedIndex))
+    {
+        return;
+    }
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("deleteSelectedFolder.success"),
                               QStringLiteral("startIndex=%1 nextIndex=%2 itemCount=%3").arg(startIndex).arg(
                                   nextSelectedIndex).arg(m_items.size()));
+}
+
+bool ProjectsHierarchyViewModel::canMoveFolder(int index) const
+{
+    return isEditableFolderItem(m_items, index);
+}
+
+bool ProjectsHierarchyViewModel::canAcceptFolderDropBefore(int sourceIndex, int targetIndex) const
+{
+    return resolveFolderMoveOperation(
+        m_items,
+        sourceIndex,
+        targetIndex,
+        FolderDropPlacement::Before,
+        nullptr);
+}
+
+bool ProjectsHierarchyViewModel::moveFolderBefore(int sourceIndex, int targetIndex)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("moveFolderBefore.begin"),
+                              QStringLiteral("sourceIndex=%1 targetIndex=%2").arg(sourceIndex).arg(targetIndex));
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperation(
+        m_items,
+        sourceIndex,
+        targetIndex,
+        FolderDropPlacement::Before,
+        &operation))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("moveFolderBefore.rejected"),
+                                  QStringLiteral("sourceIndex=%1 targetIndex=%2").arg(sourceIndex).arg(targetIndex));
+        return false;
+    }
+
+    return commitHierarchyUpdate(
+        stageFolderMoveItems(m_items, sourceIndex, operation),
+        operation.normalizedInsertIndex);
+}
+
+bool ProjectsHierarchyViewModel::canAcceptFolderDrop(int sourceIndex, int targetIndex, bool asChild) const
+{
+    return resolveFolderMoveOperation(
+        m_items,
+        sourceIndex,
+        targetIndex,
+        asChild ? FolderDropPlacement::Child : FolderDropPlacement::After,
+        nullptr);
+}
+
+bool ProjectsHierarchyViewModel::moveFolder(int sourceIndex, int targetIndex, bool asChild)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("moveFolder.begin"),
+                              QStringLiteral("sourceIndex=%1 targetIndex=%2 asChild=%3")
+                              .arg(sourceIndex)
+                              .arg(targetIndex)
+                              .arg(asChild ? QStringLiteral("1") : QStringLiteral("0")));
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperation(
+        m_items,
+        sourceIndex,
+        targetIndex,
+        asChild ? FolderDropPlacement::Child : FolderDropPlacement::After,
+        &operation))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("moveFolder.rejected"),
+                                  QStringLiteral("sourceIndex=%1 targetIndex=%2 asChild=%3")
+                                  .arg(sourceIndex)
+                                  .arg(targetIndex)
+                                  .arg(asChild ? QStringLiteral("1") : QStringLiteral("0")));
+        return false;
+    }
+
+    return commitHierarchyUpdate(
+        stageFolderMoveItems(m_items, sourceIndex, operation),
+        operation.normalizedInsertIndex);
+}
+
+bool ProjectsHierarchyViewModel::canMoveFolderToRoot(int sourceIndex) const
+{
+    return resolveFolderMoveOperation(
+        m_items,
+        sourceIndex,
+        -1,
+        FolderDropPlacement::RootTop,
+        nullptr);
+}
+
+bool ProjectsHierarchyViewModel::moveFolderToRoot(int sourceIndex)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QString::fromLatin1(kScope),
+                              QStringLiteral("moveFolderToRoot.begin"),
+                              QStringLiteral("sourceIndex=%1").arg(sourceIndex));
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperation(
+        m_items,
+        sourceIndex,
+        -1,
+        FolderDropPlacement::RootTop,
+        &operation))
+    {
+        return false;
+    }
+
+    return commitHierarchyUpdate(
+        stageFolderMoveItems(m_items, sourceIndex, operation),
+        operation.normalizedInsertIndex);
 }
 
 void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)
@@ -544,6 +839,33 @@ void ProjectsHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+}
+
+bool ProjectsHierarchyViewModel::commitHierarchyUpdate(QVector<ProjectsHierarchyItem> stagedItems, int selectedIndex)
+{
+    WhatSonProjectsHierarchyStore stagedStore = m_store;
+    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+
+    if (!m_foldersFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        {
+            WhatSon::Debug::traceSelf(this,
+                                      QString::fromLatin1(kScope),
+                                      QStringLiteral("commitHierarchyUpdate.writeFailed"),
+                                      QStringLiteral("path=%1 reason=%2").arg(m_foldersFilePath, writeError));
+            return false;
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_store = std::move(stagedStore);
+    m_projectNames = m_store.projectNames();
+    m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
+    syncModel();
+    setSelectedIndex(selectedIndex);
+    return true;
 }
 
 void ProjectsHierarchyViewModel::syncDomainStoreFromItems()

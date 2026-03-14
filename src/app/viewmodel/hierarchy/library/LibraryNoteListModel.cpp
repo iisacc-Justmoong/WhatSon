@@ -3,7 +3,10 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 
+#include <QDir>
+#include <QFileInfo>
 #include <QRegularExpression>
+#include <QUrl>
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
@@ -69,6 +72,32 @@ namespace
     {
         value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return value;
+    }
+
+    QString normalizeImageSource(QString value)
+    {
+        value = value.trimmed();
+        if (value.isEmpty())
+        {
+            return {};
+        }
+
+        if (QFileInfo(value).isAbsolute())
+        {
+            return QUrl::fromLocalFile(QDir::cleanPath(value)).toString();
+        }
+
+        const QUrl url(value);
+        if (url.isValid() && !url.scheme().isEmpty())
+        {
+            if (url.isLocalFile())
+            {
+                return QUrl::fromLocalFile(QDir::cleanPath(url.toLocalFile())).toString();
+            }
+            return url.toString();
+        }
+
         return value;
     }
 
@@ -223,6 +252,10 @@ QVariant LibraryNoteListModel::data(const QModelIndex& index, int role) const
         return item.primaryText;
     case BodyTextRole:
         return item.bodyText;
+    case ImageRole:
+        return item.image;
+    case ImageSourceRole:
+        return item.imageSource;
     case DisplayDateRole:
         return item.displayDate;
     case FoldersRole:
@@ -244,6 +277,8 @@ QHash<int, QByteArray> LibraryNoteListModel::roleNames() const
         {IdRole, "id"},
         {PrimaryTextRole, "primaryText"},
         {BodyTextRole, "bodyText"},
+        {ImageRole, "image"},
+        {ImageSourceRole, "imageSource"},
         {DisplayDateRole, "displayDate"},
         {FoldersRole, "folders"},
         {TagsRole, "tags"},
@@ -358,7 +393,7 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
     sanitized.reserve(items.size());
 
     QVector<ValidationIssue> issues;
-    issues.reserve(items.size() * 5);
+    issues.reserve(items.size() * 7);
 
     for (int index = 0; index < items.size(); ++index)
     {
@@ -368,11 +403,13 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
         const QStringList originalFolders = item.folders;
         const QStringList originalTags = item.tags;
         const QString originalColor = item.bookmarkColor;
+        const QString originalImageSource = item.imageSource;
 
         item.id = item.id.trimmed();
         item.primaryText = normalizePrimaryText(std::move(item.primaryText));
         item.searchableText = normalizeSearchableText(std::move(item.searchableText));
         item.bodyText = normalizeBodyText(std::move(item.bodyText));
+        item.imageSource = normalizeImageSource(std::move(item.imageSource));
         item.displayDate = item.displayDate.trimmed();
         item.bookmarkColor = item.bookmarkColor.trimmed();
         item.folders = sanitizeMetadataList(std::move(item.folders));
@@ -428,6 +465,33 @@ void LibraryNoteListModel::setItems(QVector<LibraryNoteListItem> items)
                 {QStringLiteral("originalDisplayDate"), originalDisplayDate},
                 {QStringLiteral("correctedDisplayDate"), item.displayDate}
             };
+            issues.push_back(std::move(issue));
+        }
+
+        if (item.image && item.imageSource != originalImageSource.trimmed())
+        {
+            ValidationIssue issue;
+            issue.code = QStringLiteral("notelist.imageSource.normalized");
+            issue.message = QStringLiteral("Image source was normalized.");
+            issue.context = QVariantMap{
+                {QStringLiteral("index"), index},
+                {QStringLiteral("originalImageSource"), originalImageSource},
+                {QStringLiteral("normalizedImageSource"), item.imageSource}
+            };
+            issues.push_back(std::move(issue));
+        }
+
+        if (!item.image && !item.imageSource.isEmpty())
+        {
+            ValidationIssue issue;
+            issue.code = QStringLiteral("notelist.imageSource.cleared");
+            issue.message = QStringLiteral("Image source was cleared because image=false.");
+            issue.context = QVariantMap{
+                {QStringLiteral("index"), index},
+                {QStringLiteral("originalImageSource"), originalImageSource},
+                {QStringLiteral("correctedImageSource"), QString()}
+            };
+            item.imageSource.clear();
             issues.push_back(std::move(issue));
         }
 

@@ -47,10 +47,10 @@ if (APPLE)
             set(QT_ROOT_PATH "${LATEST_QT}/macos" CACHE PATH "Path to Qt installation")
         endif ()
     endif ()
+endif ()
 
-    if (QT_ROOT_PATH)
-        list(APPEND CMAKE_PREFIX_PATH "${QT_ROOT_PATH}")
-    endif ()
+if (QT_ROOT_PATH)
+    list(APPEND CMAKE_PREFIX_PATH "${QT_ROOT_PATH}")
 endif ()
 
 option(WHATSON_BUILD_APP "Build the Qt Quick desktop app" ON)
@@ -482,8 +482,19 @@ if (TARGET export_WhatSon_wasm_site)
 endif ()
 
 set(WHATSON_DIST_DIR "${CMAKE_BINARY_DIR}/dist")
+set(_whatson_native_desktop_install_tree FALSE)
+if (NOT CMAKE_CROSSCOMPILING)
+    if (WIN32)
+        set(_whatson_native_desktop_install_tree TRUE)
+    elseif (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        set(_whatson_native_desktop_install_tree TRUE)
+    elseif (UNIX AND NOT APPLE)
+        set(_whatson_native_desktop_install_tree TRUE)
+    endif ()
+endif ()
+
 if (WHATSON_BUILD_TARGETS)
-    if (UNIX AND NOT APPLE)
+    if (_whatson_native_desktop_install_tree)
         set(_whatson_install_dist_command
                 "${CMAKE_COMMAND}"
                 --install "${CMAKE_BINARY_DIR}"
@@ -590,8 +601,7 @@ if (TARGET WhatSon AND UNIX AND NOT APPLE)
 endif ()
 
 if (TARGET WhatSon
-        AND UNIX AND NOT APPLE
-        AND NOT CMAKE_CROSSCOMPILING
+        AND _whatson_native_desktop_install_tree
         AND COMMAND qt_generate_deploy_qml_app_script)
     qt_generate_deploy_qml_app_script(
             TARGET WhatSon
@@ -601,16 +611,30 @@ if (TARGET WhatSon
     install(SCRIPT "${WHATSON_QT_DEPLOY_APP_SCRIPT}")
 endif ()
 
+set(_whatson_native_desktop_runtime_deploy FALSE)
+if (NOT CMAKE_CROSSCOMPILING)
+    if (WIN32)
+        set(_whatson_native_desktop_runtime_deploy TRUE)
+    elseif (UNIX AND NOT APPLE)
+        set(_whatson_native_desktop_runtime_deploy TRUE)
+    endif ()
+endif ()
+
 if (TARGET WhatSon_daemon
-        AND UNIX AND NOT APPLE
-        AND NOT CMAKE_CROSSCOMPILING
+        AND _whatson_native_desktop_runtime_deploy
         AND COMMAND qt_generate_deploy_script)
+    set(_whatson_daemon_qt_conf_arg "")
+    if (WIN32)
+        set(_whatson_daemon_qt_conf_arg "    GENERATE_QT_CONF\n")
+    endif ()
+
     qt_generate_deploy_script(
             TARGET WhatSon_daemon
             OUTPUT_SCRIPT WHATSON_QT_DEPLOY_DAEMON_SCRIPT
             CONTENT "
 qt_deploy_runtime_dependencies(
     EXECUTABLE \$<TARGET_FILE:WhatSon_daemon>
+${_whatson_daemon_qt_conf_arg}\
     NO_TRANSLATIONS
 )
 ")

@@ -514,6 +514,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("function canAcceptFolderDrop(sourceIndex, targetIndex, asChild)")),
         "SidebarHierarchyView.qml must expose canAcceptFolderDrop(...) wrapper for folder drop gating.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function canAcceptFolderDropBefore(sourceIndex, targetIndex)")),
+        "SidebarHierarchyView.qml must expose canAcceptFolderDropBefore(...) wrapper for before-insert folder drops.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
             "sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;")),
         "SidebarHierarchyView.qml must derive note-drop highlight state from hierarchyViewModel.canAcceptNoteDrop.");
@@ -530,9 +533,16 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop")),
         "SidebarHierarchyView.qml must query hierarchyViewModel.canAcceptFolderDrop for folder reparenting.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDropBefore")),
+        "SidebarHierarchyView.qml must query hierarchyViewModel.canAcceptFolderDropBefore for before-insert drops.");
+    QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.moveFolder(sourceIndex, targetIndex, asChild)")),
         "SidebarHierarchyView.qml must route folder reparent drops through hierarchyViewModel.moveFolder(...).");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.moveFolderBefore(sourceIndex, targetIndex)")),
+        "SidebarHierarchyView.qml must route before-insert drops through hierarchyViewModel.moveFolderBefore(...).");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.moveFolderToRoot(sourceIndex)")),
@@ -541,6 +551,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder(index, noteId)")),
         "SidebarHierarchyView.qml must route accepted note drops through hierarchyViewModel.assignNoteToFolder(index, noteId).");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property int noteDropTargetIndex: -1")),
+        "SidebarHierarchyView.qml must declare noteDropTargetIndex explicitly instead of relying on implicit dynamic properties.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("folderDropBefore = true")),
+        "SidebarHierarchyView.qml must track before-insert drag state separately from child/after drops.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("requestViewHook(\"move-folder-before\")")),
+        "SidebarHierarchyView.qml must emit a dedicated hook reason for before-insert folder drops.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);
@@ -583,6 +602,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("font.pixelSize: noteListItem.metadataTextSize")),
         "NoteListItem.qml metadata text must use the dedicated 11px Figma size property.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("property bool image: false")),
+        "NoteListItem.qml must expose the image flag from the note-list model.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("property url imageSource: \"\"")),
+        "NoteListItem.qml must expose the first resource thumbnail source as a url property.");
+    QVERIFY2(
+        noteListItemText.contains(
+            QStringLiteral("Layout.preferredWidth: noteListItem.image ? noteListItem.imagePreviewSize : 0")),
+        "NoteListItem.qml imageBox width must only reserve the 24px Figma slot when image=true.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("visible: noteListItem.image")),
+        "NoteListItem.qml must only show the imageBox when the image flag is true.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("source: noteListItem.imageSource")),
+        "NoteListItem.qml imageBox preview must bind through source: noteListItem.imageSource.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("source: noteListItem.folderIconSource")),
         "NoteListItem.qml folder icon must bind through source: noteListItem.folderIconSource.");
@@ -637,6 +672,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.supportedActions: Qt.CopyAction")),
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "image: useRuntimeModel && roleModel && roleModel.image !== undefined ? Boolean(roleModel.image) : false")),
+        "ListBarLayout.qml must forward the image role into NoteListItem.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "imageSource: useRuntimeModel && roleModel && roleModel.imageSource !== undefined ? roleModel.imageSource : \"\"")),
+        "ListBarLayout.qml must forward the imageSource role into NoteListItem.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
         "ListBarLayout.qml note drag handler must be able to take pointer ownership away from tap selection and list scrolling.");

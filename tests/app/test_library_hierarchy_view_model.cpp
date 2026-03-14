@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
+#include <QUrl>
 #include <QtTest>
 
 class LibraryHierarchyViewModelTest final : public QObject
@@ -32,6 +33,7 @@ private
     void loadFromWshub_protectsAllDraftTodaySystemFolders();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
     void loadFromWshub_noteListModel_exposesCurrentBodyTextFromWsnbody();
+    void loadFromWshub_noteListModel_exposesImagePreviewFromWsnbodyResource();
     void saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines();
     void loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview();
     void loadFromWshub_usesBodyFirstLineForPrimaryText();
@@ -45,6 +47,7 @@ private
     void setDepthItems_emptyInput_preservesIndexedBuckets();
     void applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection();
+    void loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments();
     void moveFolder_reparentsSubtreeAndAllowsRootExtraction();
 };
 
@@ -581,6 +584,43 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesCurrentBo
     viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Beta body summary."));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePreviewFromWsnbodyResource()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QString resourceDirectoryName = QStringLiteral("LibraryHub_Library.wslibrary.wsresources");
+    const QString resourceDirectoryPath = QDir(hubPath).filePath(resourceDirectoryName);
+    QVERIFY(QDir().mkpath(resourceDirectoryPath));
+    const QString resourceFilePath = QDir(resourceDirectoryPath).filePath(QStringLiteral("beta-preview.png"));
+    QVERIFY(writeUtf8File(resourceFilePath, QStringLiteral("png")));
+
+    const QString bodyPath = QDir(hubPath).filePath(
+        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Beta.wsnote/Beta.wsnbody"));
+    QVERIFY(writeUtf8File(
+        bodyPath,
+        makeWsnBodyText(
+            QStringLiteral(
+                "    <resource format=\".png\" resourcePath=\"LibraryHub_Library.wslibrary.wsresources/beta-preview.png\" />\n"
+                "    <paragraph>Beta body summary.</paragraph>\n"))));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::ImageRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::ImageSourceRole)
+                 .toString(),
+        QUrl::fromLocalFile(resourceFilePath).toString());
 }
 
 void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines()
@@ -1515,6 +1555,132 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
         QStringLiteral("note-a"));
 }
 
+void LibraryHierarchyViewModelTest::loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"children\": [\n"
+        "        {\n"
+        "          \"id\": \"Research/Competitor\",\n"
+        "          \"label\": \"Competitor\"\n"
+        "        }\n"
+        "      ]\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-a"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {QStringLiteral("Research"), QStringLiteral("/Competitor")})));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole).
+                          toString()
+                == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int researchIndex = findIndexByLabel(QStringLiteral("Research"));
+    const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
+    const int brandIndex = findIndexByLabel(QStringLiteral("Brand"));
+    QVERIFY(researchIndex >= 0);
+    QVERIFY(competitorIndex >= 0);
+    QVERIFY(brandIndex >= 0);
+
+    QVERIFY(viewModel.canAcceptFolderDropBefore(competitorIndex, brandIndex));
+    QVERIFY(viewModel.moveFolderBefore(competitorIndex, brandIndex));
+
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(researchIndex, 0), LibraryHierarchyModel::LabelRole)
+                 .toString(),
+        QStringLiteral("Research"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(researchIndex + 1, 0),
+                                    LibraryHierarchyModel::LabelRole)
+                 .toString(),
+        QStringLiteral("Competitor"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(researchIndex + 1, 0),
+                                    LibraryHierarchyModel::DepthRole)
+                 .toInt(),
+        0);
+
+    const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
+    QVERIFY(foldersDocument.isObject());
+    const QJsonArray folderArray = foldersDocument.object().value(QStringLiteral("folders")).toArray();
+    QCOMPARE(folderArray.size(), 3);
+    QCOMPARE(folderArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
+    QVERIFY(folderArray.at(0).toObject().value(QStringLiteral("children")).toArray().isEmpty());
+    QCOMPARE(folderArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Competitor"));
+    QCOMPARE(folderArray.at(2).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Brand"));
+
+    QFile alphaHeaderFile(QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")));
+    QVERIFY(alphaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(QString::fromUtf8(alphaHeaderFile.readAll()), &headerStore, &parseError),
+             qPrintable(parseError));
+    QVERIFY2(
+        headerStore.folders() == QStringList({QStringLiteral("Competitor")}),
+        qPrintable(headerStore.folders().join(QStringLiteral("|"))));
+    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+
+    viewModel.setSelectedIndex(researchIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
+
+    const int movedCompetitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
+    QVERIFY(movedCompetitorIndex >= 0);
+    viewModel.setSelectedIndex(movedCompetitorIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::IdRole).
+                  toString(),
+        QStringLiteral("note-a"));
+}
+
 void LibraryHierarchyViewModelTest::moveFolder_reparentsSubtreeAndAllowsRootExtraction()
 {
     LibraryHierarchyViewModel viewModel;
@@ -1564,6 +1730,21 @@ void LibraryHierarchyViewModelTest::moveFolder_reparentsSubtreeAndAllowsRootExtr
     QCOMPARE(movedToRoot.at(2).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("RootB"));
     QCOMPARE(movedToRoot.at(2).toMap().value(QStringLiteral("depth")).toInt(), 1);
     QCOMPARE(movedToRoot.at(2).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("RootA/RootB"));
+
+    QVERIFY(viewModel.canAcceptFolderDropBefore(2, 1));
+    QVERIFY(viewModel.moveFolderBefore(2, 1));
+
+    const QVariantList movedBefore = viewModel.depthItems();
+    QCOMPARE(movedBefore.size(), 3);
+    QCOMPARE(viewModel.selectedIndex(), 1);
+    QCOMPARE(movedBefore.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("ChildA"));
+    QCOMPARE(movedBefore.at(0).toMap().value(QStringLiteral("depth")).toInt(), 0);
+    QCOMPARE(movedBefore.at(1).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("RootB"));
+    QCOMPARE(movedBefore.at(1).toMap().value(QStringLiteral("depth")).toInt(), 0);
+    QCOMPARE(movedBefore.at(1).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("RootB"));
+    QCOMPARE(movedBefore.at(2).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("RootA"));
+    QCOMPARE(movedBefore.at(2).toMap().value(QStringLiteral("depth")).toInt(), 0);
+    QCOMPARE(movedBefore.at(2).toMap().value(QStringLiteral("id")).toString(), QStringLiteral("RootA"));
 }
 
 QTEST_APPLESS_MAIN(LibraryHierarchyViewModelTest)

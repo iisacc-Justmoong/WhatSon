@@ -42,8 +42,13 @@ WhatSon is an LVRS-based Qt Quick application.
 
 - `SidebarHierarchyView.qml` opens inline folder rename from both `Enter/Return` and mouse double-tap on the folder row.
 - Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
-  reparent them by drag-and-drop instead of only through model-side helpers. LVRS does not block this path; WhatSon's
-  custom delegates must explicitly let `DragHandler` take pointer ownership away from row clicks and sidebar scrolling.
+  reparent them by drag-and-drop instead of only through model-side helpers. The sidebar now distinguishes `before`,
+  `after`, `child`, and root-top extraction drop zones so users can control both insertion index and hierarchy depth
+  directly from the tree UI. LVRS does not block this path; WhatSon's custom delegates must explicitly let
+  `DragHandler` take pointer ownership away from row clicks and sidebar scrolling.
+- Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
+  affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
+  assignments behind on stale folder IDs.
 - Note-card selection now uses `TapHandler.DragThreshold`, so note-to-folder drags are allowed to cross the system drag
   threshold before the tap path commits the current note selection.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
@@ -83,6 +88,9 @@ WhatSon is an LVRS-based Qt Quick application.
   note-list dates are formatted through that shared store instead of a hardcoded `yyyy-MM-dd` contract, and
   `NoteListItem.qml` falls back to the store's short-date placeholder text when a card has no display date, with a
   generic `Date` label only as the last-resort UI fallback when that store is unavailable.
+- `NoteListItem.qml` now also accepts `image` + `imageSource` roles. When a `.wsnbody` `<resource ...>` entry exists,
+  the note card keeps the Figma `24px` `imageBox` at the left edge of the top row and uses the first resource's
+  resolved thumbnail URL as the preview source.
 - `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
   `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
   model changes must resync the visible current row immediately when the active hierarchy domain changes.
@@ -168,6 +176,12 @@ cmake -S . -B build
 cmake --build build -j
 ```
 
+If Qt is not auto-discovered on a native desktop build, pass the kit prefix explicitly:
+
+```bash
+cmake -S . -B build -DQT_ROOT_PATH=/absolute/path/to/Qt/kit
+```
+
 ## Developer Tooling
 
 - Root CMake now exposes developer quality targets:
@@ -196,13 +210,18 @@ cmake --build build --target whatson_export_binaries
 cmake --build build --target whatson_package
 ```
 
-On Linux host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
-via `cmake --install`, including deployed Qt/LVRS runtime libraries, QML imports, the desktop entry, and the app icon.
-The same deployment path is used by:
+On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
+via `cmake --install`. The same deployment path is used by:
 
 ```bash
 cmake --install build --prefix /absolute/output/prefix
 ```
+
+Desktop install/export layout:
+
+- macOS: `build/dist/WhatSon.app` at the install prefix root, with deployed Qt/LVRS runtime content inside the bundle
+- Windows: `build/dist/bin/WhatSon.exe` plus deployed Qt/LVRS runtime DLLs, `qml/`, `plugins/`, and `qt.conf`
+- Linux: deployed Qt/LVRS runtime libraries, QML imports, the desktop entry, and the app icon metadata
 
 Platform icon packaging is resolved from `resources/` during configure time:
 
@@ -409,6 +428,8 @@ Library runtime classification behavior:
 - `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, created/modified
   timestamps, and related fields)
 - `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses it as note-list summary text
+- `All`: detects the first non-text `<resource ...>` entry in `.wsnbody`, resolves its thumbnail path against the note
+  directory / hub root, and exposes that preview to the note-list card
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
 - `Draft`: filters notes where `<folders>` resolves to an empty list
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date

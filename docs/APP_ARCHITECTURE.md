@@ -1,6 +1,6 @@
 # WhatSon Application Architecture Analysis
 
-Last Updated: 2026-03-03  
+Last Updated: 2026-03-14  
 Repository: `WhatSon`  
 Scope: Full application architecture (build, runtime, data, UI, eventing, and test contracts)
 
@@ -53,6 +53,8 @@ Dependency discovery baseline:
 - Qt 6.5 (`Core` at root, `Quick`/`QuickControls2` in app target)
 - LVRS via `find_package(LVRS CONFIG REQUIRED)`
 - LVRS default prefix fallback: `~/.local/LVRS` (if `LVRS_PREFIX` is not set)
+- `QT_ROOT_PATH` is appended to `CMAKE_PREFIX_PATH` on native desktop hosts so direct macOS/Windows/Linux configure
+  can point at a specific Qt kit prefix
 
 ## 2.2 App Target (`src/app/CMakeLists.txt`)
 
@@ -68,9 +70,13 @@ Key behaviors:
     - Android package staging overlays density-specific launcher icons from `resources/<density>/AppIcon.png`
     - Windows executable embeds `AppIcon.ico`
 - Host/iOS LVRS module fallback/overlay logic for runtime QML import stability
-- Linux install/export path now stages a self-contained deploy tree:
-    - `cmake --install ...` and `whatson_export_binaries` deploy Qt/LVRS runtime libraries and QML imports
-    - Linux package install also includes a `.desktop` launcher and app icon metadata
+- Native desktop install/export path now stages a self-contained deploy tree:
+    - macOS: `cmake --install ...` and `whatson_export_binaries` emit `WhatSon.app` at the install prefix root and
+      deploy Qt/LVRS runtime content into the bundle
+    - Windows: `cmake --install ...` and `whatson_export_binaries` emit `bin/WhatSon.exe` with deployed Qt/LVRS
+      runtime DLLs, QML imports, plugins, and `qt.conf`
+    - Linux: `cmake --install ...` and `whatson_export_binaries` deploy Qt/LVRS runtime libraries and QML imports,
+      plus the desktop launcher metadata and app icon install paths
 
 This confirms LVRS is not a style add-on; it is a first-class runtime dependency in build and QML module configuration.
 
@@ -78,6 +84,7 @@ This confirms LVRS is not a style add-on; it is a first-class runtime dependency
 
 - Single executable target with Qt Core linkage
 - Healthcheck mode prints `status=ok`
+- Native Windows install/export now deploys daemon Qt runtime dependencies into the standard install tree
 - Linux install/export path keeps daemon runtime lookup aligned with the app deploy tree through install-time RPATH
 - No scheduled background jobs yet (skeleton state)
 
@@ -348,6 +355,9 @@ Library-specific modeling:
   duplicate leaf labels do not alias each other. When note headers persist nested folder membership as split ancestor /
   leaf `<folder>` entries or leaf-only values such as `/Competitor`, the view-model rebuilds candidate full paths from
   the active hierarchy before applying note-list filters.
+- Library folder drag moves that change a folder path now rewrite affected note-header `<folders>` values to the new
+  canonical leaf path before committing the reordered `Folders.wsfolders` tree, so subtree extraction/reparenting does
+  not orphan note assignments on stale folder IDs.
 - Selection reapplication is identity-aware rather than raw-index-only for the library sidebar. If a structural edit
   keeps the same numeric row focused but swaps in a different visible folder (for example after deleting the focused
   folder and collapsing to its neighbor), `LibraryHierarchyViewModel` re-emits selection state and rebuilds the note
@@ -360,6 +370,9 @@ Library-specific modeling:
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
+- The same `.wsnbody` parser now also detects the first `<resource ...>` entry, resolves its preview path against the
+  note directory / enclosing `.wshub`, and exposes `bodyHasResource` plus `bodyFirstResourceThumbnailUrl` on
+  `LibraryNoteRecord`.
 - Note primary text is derived from the top slice of `bodyPlainText`; when body text is empty it falls back to
   `noteId -> note directory stem`.
 - `LibraryNoteListModel.searchText` filters the current visible note set against preassembled searchable body text
@@ -371,6 +384,8 @@ Library-specific modeling:
     - `id` (string)
     - `primaryText` (string)
     - `bodyText` (full parsed plain-text body from `.wsnbody` `<body>`)
+        - `image` (bool; true when `.wsnbody` contains a non-text resource)
+        - `imageSource` (URL string for the first resource thumbnail preview)
         - `displayDate` (formatted localized short-date string from the shared system calendar store)
         - `folders` (`QStringList`)
         - `tags` (`QStringList`)
@@ -389,6 +404,8 @@ Library-specific modeling:
       padding,
       and an inner `86px` top/middle/bottom content stack separated by `8px` vertical gaps
     - primary text: 2-line `12px` semibold block with fixed `12px` line height
+        - optional image mode: top row inserts the Figma `24px` `imageBox` before the text block and paints the first
+          resource thumbnail over a neutral placeholder fill
         - fixed date row: always reserves the Figma middle slot and falls back to
           `systemCalendarStore.shortDatePlaceholderText` when `displayDate` is empty, or a generic `Date` label if
           the app-level calendar store is unavailable
@@ -461,18 +478,22 @@ Hierarchy rendering pipeline:
           opening the overlay. Global `renameEnabled` is treated as a fallback only.
         - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row before
           opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
-        - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route child,
-          sibling, and root extraction drops through `canAcceptFolderDrop(...)`, `moveFolder(...)`, and
-          `moveFolderToRoot(...)` on the active hierarchy view-model.
-        - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops through
-          `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
-        - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
-          accepted drops through `LibraryHierarchyViewModel::moveFolder(...)` for child/sibling reparenting and
-          `moveFolderToRoot(...)` for root extraction.
-            - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
-              domain
-              store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
-              `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+        - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route `before`,
+          `after`, `child`, and root-top extraction drops through `canAcceptFolderDropBefore(...)`,
+          `moveFolderBefore(...)`, `canAcceptFolderDrop(...)`, `moveFolder(...)`, and `moveFolderToRoot(...)` on the
+          active hierarchy view-model.
+            - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops
+              through
+              `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
+            - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
+              accepted drops through `LibraryHierarchyViewModel::moveFolderBefore(...)` for before-insert moves,
+              `moveFolder(...)` for after/child reparenting, and `moveFolderToRoot(...)` for root extraction.
+        - Projects folder drag policy: `ProjectsHierarchyViewModel` now exposes the same move API surface and persists
+          reordered `Folders.wsfolders` content on drag-driven before/after/child/root-top edits.
+          - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
+          domain
+          store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+          `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.

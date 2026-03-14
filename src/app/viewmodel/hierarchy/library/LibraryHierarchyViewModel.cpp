@@ -740,6 +740,249 @@ namespace
     {
         return index >= subtreeStart && index < subtreeEndExclusive;
     }
+
+    enum class FolderDropPlacement
+    {
+        Before,
+        After,
+        Child,
+        RootTop
+    };
+
+    struct FolderMoveOperation final
+    {
+        int sourceEndIndex = -1;
+        int sourceCount = 0;
+        int normalizedInsertIndex = -1;
+        int newBaseDepth = 0;
+    };
+
+    bool isEditableFolderItem(const QVector<LibraryHierarchyItem>& items, int index)
+    {
+        return index >= 0 && index < items.size() && !isProtectedRootItem(items.at(index));
+    }
+
+    bool resolveFolderMoveOperation(
+        const QVector<LibraryHierarchyItem>& items,
+        int firstEditableInsertIndex,
+        int sourceIndex,
+        int targetIndex,
+        FolderDropPlacement placement,
+        FolderMoveOperation* outOperation = nullptr)
+    {
+        if (!isEditableFolderItem(items, sourceIndex))
+        {
+            return false;
+        }
+
+        const int sourceEndIndex = subtreeEndIndexExclusive(items, sourceIndex);
+        const int sourceCount = sourceEndIndex - sourceIndex;
+        if (sourceCount <= 0)
+        {
+            return false;
+        }
+
+        int rawInsertIndex = firstEditableInsertIndex;
+        int newBaseDepth = 0;
+
+        switch (placement)
+        {
+        case FolderDropPlacement::RootTop:
+            rawInsertIndex = firstEditableInsertIndex;
+            newBaseDepth = 0;
+            break;
+        case FolderDropPlacement::Before:
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = targetIndex;
+            newBaseDepth = items.at(targetIndex).depth;
+            break;
+        case FolderDropPlacement::After:
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = subtreeEndIndexExclusive(items, targetIndex);
+            newBaseDepth = items.at(targetIndex).depth;
+            break;
+        case FolderDropPlacement::Child:
+            if (!isEditableFolderItem(items, targetIndex) || sourceIndex == targetIndex)
+            {
+                return false;
+            }
+            if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
+            {
+                return false;
+            }
+            rawInsertIndex = subtreeEndIndexExclusive(items, targetIndex);
+            newBaseDepth = items.at(targetIndex).depth + 1;
+            break;
+        }
+
+        int normalizedInsertIndex = rawInsertIndex;
+        if (normalizedInsertIndex > sourceIndex)
+        {
+            normalizedInsertIndex -= sourceCount;
+        }
+        const int maxInsertIndex = std::max(0, static_cast<int>(items.size()) - sourceCount);
+        normalizedInsertIndex = std::clamp(normalizedInsertIndex, 0, maxInsertIndex);
+
+        if (normalizedInsertIndex == sourceIndex && newBaseDepth == items.at(sourceIndex).depth)
+        {
+            return false;
+        }
+
+        if (outOperation != nullptr)
+        {
+            outOperation->sourceEndIndex = sourceEndIndex;
+            outOperation->sourceCount = sourceCount;
+            outOperation->normalizedInsertIndex = normalizedInsertIndex;
+            outOperation->newBaseDepth = newBaseDepth;
+        }
+        return true;
+    }
+
+    QVector<LibraryHierarchyItem> stageFolderMoveItems(
+        const QVector<LibraryHierarchyItem>& items,
+        int sourceIndex,
+        const FolderMoveOperation& operation)
+    {
+        const int depthDelta = operation.newBaseDepth - items.at(sourceIndex).depth;
+
+        QVector<LibraryHierarchyItem> movedItems;
+        movedItems.reserve(operation.sourceCount);
+        for (int index = sourceIndex; index < operation.sourceEndIndex; ++index)
+        {
+            LibraryHierarchyItem item = items.at(index);
+            item.depth = std::max(0, item.depth + depthDelta);
+            movedItems.push_back(std::move(item));
+        }
+
+        QVector<LibraryHierarchyItem> stagedItems = items;
+        stagedItems.remove(sourceIndex, operation.sourceCount);
+
+        for (int offset = 0; offset < movedItems.size(); ++offset)
+        {
+            stagedItems.insert(operation.normalizedInsertIndex + offset, std::move(movedItems[offset]));
+        }
+
+        finalizeFolderItems(&stagedItems, false);
+        return stagedItems;
+    }
+
+    QHash<QString, QString> movedFolderPathMapForOperation(
+        const QVector<LibraryHierarchyItem>& originalItems,
+        int sourceIndex,
+        const FolderMoveOperation& operation,
+        const QVector<LibraryHierarchyItem>& stagedItems)
+    {
+        QHash<QString, QString> movedPathMap;
+        for (int offset = 0; offset < operation.sourceCount; ++offset)
+        {
+            const QString sourcePath = normalizeFolderPath(originalItems.at(sourceIndex + offset).folderPath);
+            const QString targetPath = normalizeFolderPath(
+                stagedItems.at(operation.normalizedInsertIndex + offset).folderPath);
+            if (sourcePath.isEmpty() || targetPath.isEmpty() || sourcePath == targetPath)
+            {
+                continue;
+            }
+            movedPathMap.insert(normalizeFolderLookupKey(sourcePath), targetPath);
+        }
+        return movedPathMap;
+    }
+
+    QString remapFolderPathForMove(const QString& folderPath, const QHash<QString, QString>& movedFolderPathMap)
+    {
+        const QString normalizedPath = normalizeFolderPath(folderPath);
+        if (normalizedPath.isEmpty() || movedFolderPathMap.isEmpty())
+        {
+            return normalizedPath;
+        }
+
+        const QString normalizedPathKey = normalizeFolderLookupKey(normalizedPath);
+        QString bestMatch;
+        QString replacement;
+        for (auto it = movedFolderPathMap.constBegin(); it != movedFolderPathMap.constEnd(); ++it)
+        {
+            const QString sourcePathKey = normalizeFolderLookupKey(it.key());
+            if (sourcePathKey.isEmpty())
+            {
+                continue;
+            }
+            if (normalizedPathKey != sourcePathKey
+                && !normalizedPathKey.startsWith(sourcePathKey + QLatin1Char('/')))
+            {
+                continue;
+            }
+            if (sourcePathKey.size() > bestMatch.size())
+            {
+                bestMatch = sourcePathKey;
+                replacement = normalizeFolderPath(it.value());
+            }
+        }
+
+        if (bestMatch.isEmpty())
+        {
+            return normalizedPath;
+        }
+
+        QString suffix = normalizedPath.mid(bestMatch.size());
+        while (suffix.startsWith(QLatin1Char('/')))
+        {
+            suffix.remove(0, 1);
+        }
+
+        return suffix.isEmpty()
+                   ? replacement
+                   : buildFolderPath(replacement, suffix);
+    }
+
+    QStringList canonicalLeafFolderPaths(const QStringList& folderPaths)
+    {
+        QStringList canonicalPaths;
+        canonicalPaths.reserve(folderPaths.size());
+
+        for (const QString& rawPath : folderPaths)
+        {
+            const QString normalizedPath = normalizeFolderPath(rawPath);
+            if (normalizedPath.isEmpty())
+            {
+                continue;
+            }
+
+            bool hasDescendant = false;
+            for (const QString& comparePath : folderPaths)
+            {
+                const QString normalizedComparePath = normalizeFolderPath(comparePath);
+                if (normalizedComparePath.isEmpty() || normalizedComparePath == normalizedPath)
+                {
+                    continue;
+                }
+                if (normalizedComparePath.startsWith(normalizedPath + QLatin1Char('/')))
+                {
+                    hasDescendant = true;
+                    break;
+                }
+            }
+
+            if (!hasDescendant && !canonicalPaths.contains(normalizedPath))
+            {
+                canonicalPaths.push_back(normalizedPath);
+            }
+        }
+
+        return canonicalPaths;
+    }
 } // namespace
 
 LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
@@ -1433,47 +1676,69 @@ bool LibraryHierarchyViewModel::canMoveFolder(int index) const
     return !isProtectedRootItem(m_items.at(index));
 }
 
+bool LibraryHierarchyViewModel::canAcceptFolderDropBefore(int sourceIndex, int targetIndex) const
+{
+    return resolveFolderMoveOperation(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        targetIndex,
+        FolderDropPlacement::Before,
+        nullptr);
+}
+
+bool LibraryHierarchyViewModel::moveFolderBefore(int sourceIndex, int targetIndex)
+{
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("moveFolderBefore.begin"),
+                              QStringLiteral("sourceIndex=%1 targetIndex=%2").arg(sourceIndex).arg(targetIndex));
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperation(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        targetIndex,
+        FolderDropPlacement::Before,
+        &operation))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("moveFolderBefore.rejected"),
+                                  QStringLiteral("sourceIndex=%1 targetIndex=%2").arg(sourceIndex).arg(targetIndex));
+        return false;
+    }
+
+    QVector<LibraryHierarchyItem> stagedItems = stageFolderMoveItems(m_items, sourceIndex, operation);
+    const QHash<QString, QString> movedPathMap = movedFolderPathMapForOperation(
+        m_items,
+        sourceIndex,
+        operation,
+        stagedItems);
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), operation.normalizedInsertIndex, movedPathMap))
+    {
+        return false;
+    }
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("moveFolderBefore.success"),
+                              QStringLiteral("selectedIndex=%1 itemCount=%2")
+                              .arg(operation.normalizedInsertIndex)
+                              .arg(m_items.size()));
+    return true;
+}
+
 bool LibraryHierarchyViewModel::canAcceptFolderDrop(int sourceIndex, int targetIndex, bool asChild) const
 {
-    if (!canMoveFolder(sourceIndex))
-    {
-        return false;
-    }
-
-    if (targetIndex < 0 || targetIndex >= m_items.size())
-    {
-        return false;
-    }
-
-    if (sourceIndex == targetIndex)
-    {
-        return false;
-    }
-
-    const bool targetIsRootInsertion = !asChild && isProtectedRootItem(m_items.at(targetIndex));
-    if (!targetIsRootInsertion && !canMoveFolder(targetIndex))
-    {
-        return false;
-    }
-
-    const int sourceEndIndex = subtreeEndIndexExclusive(m_items, sourceIndex);
-    if (indexInsideSubtree(targetIndex, sourceIndex, sourceEndIndex))
-    {
-        return false;
-    }
-
-    const int sourceDepth = m_items.at(sourceIndex).depth;
-    const int targetDepth = targetIsRootInsertion ? 0 : m_items.at(targetIndex).depth;
-    const int targetInsertIndex = targetIsRootInsertion
-                                      ? firstEditableInsertIndex()
-                                      : subtreeEndIndexExclusive(m_items, targetIndex);
-    const int sourceCount = sourceEndIndex - sourceIndex;
-    const int normalizedInsertIndex = targetInsertIndex > sourceIndex
-                                          ? targetInsertIndex - sourceCount
-                                          : targetInsertIndex;
-    const int newBaseDepth = asChild ? targetDepth + 1 : targetDepth;
-
-    return normalizedInsertIndex != sourceIndex || newBaseDepth != sourceDepth;
+    return resolveFolderMoveOperation(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        targetIndex,
+        asChild ? FolderDropPlacement::Child : FolderDropPlacement::After,
+        nullptr);
 }
 
 bool LibraryHierarchyViewModel::moveFolder(int sourceIndex, int targetIndex, bool asChild)
@@ -1485,7 +1750,15 @@ bool LibraryHierarchyViewModel::moveFolder(int sourceIndex, int targetIndex, boo
                               .arg(sourceIndex)
                               .arg(targetIndex)
                               .arg(asChild ? QStringLiteral("1") : QStringLiteral("0")));
-    if (!canAcceptFolderDrop(sourceIndex, targetIndex, asChild))
+
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperation(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        targetIndex,
+        asChild ? FolderDropPlacement::Child : FolderDropPlacement::After,
+        &operation))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
@@ -1497,74 +1770,35 @@ bool LibraryHierarchyViewModel::moveFolder(int sourceIndex, int targetIndex, boo
         return false;
     }
 
-    const int sourceEndIndex = subtreeEndIndexExclusive(m_items, sourceIndex);
-    const int sourceCount = sourceEndIndex - sourceIndex;
-    const bool targetIsRootInsertion = !asChild && isProtectedRootItem(m_items.at(targetIndex));
-    const int newBaseDepth = asChild
-                                 ? m_items.at(targetIndex).depth + 1
-                                 : (targetIsRootInsertion ? 0 : m_items.at(targetIndex).depth);
-    const int depthDelta = newBaseDepth - m_items.at(sourceIndex).depth;
-    QVector<LibraryHierarchyItem> movedItems;
-    movedItems.reserve(sourceCount);
-    for (int index = sourceIndex; index < sourceEndIndex; ++index)
+    QVector<LibraryHierarchyItem> stagedItems = stageFolderMoveItems(m_items, sourceIndex, operation);
+    const QHash<QString, QString> movedPathMap = movedFolderPathMapForOperation(
+        m_items,
+        sourceIndex,
+        operation,
+        stagedItems);
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), operation.normalizedInsertIndex, movedPathMap))
     {
-        LibraryHierarchyItem item = m_items.at(index);
-        item.depth = std::max(0, item.depth + depthDelta);
-        movedItems.push_back(std::move(item));
+        return false;
     }
 
-    QVector<LibraryHierarchyItem> stagedItems = m_items;
-    stagedItems.remove(sourceIndex, sourceCount);
-
-    int insertIndex = targetIsRootInsertion
-                          ? firstEditableInsertIndex()
-                          : subtreeEndIndexExclusive(m_items, targetIndex);
-    if (insertIndex > sourceIndex)
-    {
-        insertIndex -= sourceCount;
-    }
-    insertIndex = std::clamp(insertIndex, 0, static_cast<int>(stagedItems.size()));
-
-    for (int offset = 0; offset < movedItems.size(); ++offset)
-    {
-        stagedItems.insert(insertIndex + offset, std::move(movedItems[offset]));
-    }
-
-    finalizeFolderItems(&stagedItems, false);
-
-    WhatSonProjectsHierarchyStore stagedStore;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
-    if (!m_foldersFilePath.trimmed().isEmpty())
-    {
-        QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("moveFolder.writeFailed"),
-                                      QStringLiteral("sourceIndex=%1 targetIndex=%2 path=%3 reason=%4")
-                                      .arg(sourceIndex)
-                                      .arg(targetIndex)
-                                      .arg(m_foldersFilePath, writeError));
-            return false;
-        }
-    }
-
-    m_items = std::move(stagedItems);
-    m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
-    rebuildBucketRanges();
-    syncModel();
-    applySelectedIndex(insertIndex, true);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("moveFolder.success"),
-                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(insertIndex).arg(m_items.size()));
+                              QStringLiteral("selectedIndex=%1 itemCount=%2")
+                              .arg(operation.normalizedInsertIndex)
+                              .arg(m_items.size()));
     return true;
 }
 
 bool LibraryHierarchyViewModel::canMoveFolderToRoot(int sourceIndex) const
 {
-    return canMoveFolder(sourceIndex);
+    return resolveFolderMoveOperation(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        -1,
+        FolderDropPlacement::RootTop,
+        nullptr);
 }
 
 bool LibraryHierarchyViewModel::moveFolderToRoot(int sourceIndex)
@@ -1573,70 +1807,35 @@ bool LibraryHierarchyViewModel::moveFolderToRoot(int sourceIndex)
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("moveFolderToRoot.begin"),
                               QStringLiteral("sourceIndex=%1").arg(sourceIndex));
-    if (!canMoveFolderToRoot(sourceIndex))
+    FolderMoveOperation operation;
+    if (!resolveFolderMoveOperation(
+        m_items,
+        firstEditableInsertIndex(),
+        sourceIndex,
+        -1,
+        FolderDropPlacement::RootTop,
+        &operation))
     {
         return false;
     }
 
-    const int sourceEndIndex = subtreeEndIndexExclusive(m_items, sourceIndex);
-    const int sourceCount = sourceEndIndex - sourceIndex;
-    const int newBaseDepth = 0;
-    const int depthDelta = newBaseDepth - m_items.at(sourceIndex).depth;
-    QVector<LibraryHierarchyItem> movedItems;
-    movedItems.reserve(sourceCount);
-    for (int index = sourceIndex; index < sourceEndIndex; ++index)
-    {
-        LibraryHierarchyItem item = m_items.at(index);
-        item.depth = std::max(0, item.depth + depthDelta);
-        movedItems.push_back(std::move(item));
-    }
-
-    QVector<LibraryHierarchyItem> stagedItems = m_items;
-    stagedItems.remove(sourceIndex, sourceCount);
-
-    int insertIndex = firstEditableInsertIndex();
-    if (insertIndex > sourceIndex)
-    {
-        insertIndex -= sourceCount;
-    }
-    insertIndex = std::clamp(insertIndex, 0, static_cast<int>(stagedItems.size()));
-    if (insertIndex == sourceIndex && depthDelta == 0)
+    QVector<LibraryHierarchyItem> stagedItems = stageFolderMoveItems(m_items, sourceIndex, operation);
+    const QHash<QString, QString> movedPathMap = movedFolderPathMapForOperation(
+        m_items,
+        sourceIndex,
+        operation,
+        stagedItems);
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), operation.normalizedInsertIndex, movedPathMap))
     {
         return false;
     }
 
-    for (int offset = 0; offset < movedItems.size(); ++offset)
-    {
-        stagedItems.insert(insertIndex + offset, std::move(movedItems[offset]));
-    }
-
-    finalizeFolderItems(&stagedItems, false);
-
-    WhatSonProjectsHierarchyStore stagedStore;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
-    if (!m_foldersFilePath.trimmed().isEmpty())
-    {
-        QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("moveFolderToRoot.writeFailed"),
-                                      QStringLiteral("sourceIndex=%1 path=%2 reason=%3").arg(sourceIndex).arg(
-                                          m_foldersFilePath, writeError));
-            return false;
-        }
-    }
-
-    m_items = std::move(stagedItems);
-    m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
-    rebuildBucketRanges();
-    syncModel();
-    applySelectedIndex(insertIndex, true);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("moveFolderToRoot.success"),
-                              QStringLiteral("selectedIndex=%1 itemCount=%2").arg(insertIndex).arg(m_items.size()));
+                              QStringLiteral("selectedIndex=%1 itemCount=%2")
+                              .arg(operation.normalizedInsertIndex)
+                              .arg(m_items.size()));
     return true;
 }
 
@@ -1964,6 +2163,8 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         item.primaryText = notePrimaryText(note);
         item.searchableText = noteSearchableText(note);
         item.bodyText = note.bodyPlainText;
+        item.image = note.bodyHasResource;
+        item.imageSource = note.bodyFirstResourceThumbnailUrl;
         item.displayDate = m_systemCalendarStore
                                ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
                                : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
@@ -2055,6 +2256,189 @@ QString LibraryHierarchyViewModel::folderPathForIndex(int index) const
         return {};
     }
     return normalizeFolderPath(m_items.at(index).folderPath);
+}
+
+bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
+    QVector<LibraryHierarchyItem> stagedItems,
+    int selectedIndex,
+    const QHash<QString, QString>& movedFolderPathMap)
+{
+    WhatSonProjectsHierarchyStore stagedStore;
+    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+
+    struct PendingNoteFolderRewrite final
+    {
+        int noteIndex = -1;
+        QString headerPath;
+        QString previousText;
+        QString nextText;
+        QStringList nextFolders;
+        QString nextLastModifiedAt;
+    };
+
+    QVector<PendingNoteFolderRewrite> pendingNoteWrites;
+    QVector<LibraryNoteRecord> stagedAllNotes = m_libraryAll.notes();
+
+    if (m_runtimeIndexLoaded && !movedFolderPathMap.isEmpty())
+    {
+        const FolderHierarchyLookup originalLookup = buildFolderHierarchyLookup(m_items);
+        const QString rewriteTimestamp = currentNoteTimestamp();
+
+        for (int noteIndex = 0; noteIndex < stagedAllNotes.size(); ++noteIndex)
+        {
+            const LibraryNoteRecord& note = stagedAllNotes.at(noteIndex);
+            const QStringList resolvedFolders = canonicalLeafFolderPaths(
+                resolvedNoteFolderPathKeys(note, originalLookup));
+            if (resolvedFolders.isEmpty())
+            {
+                continue;
+            }
+
+            QStringList remappedFolders;
+            remappedFolders.reserve(resolvedFolders.size());
+            QSet<QString> seenFolderKeys;
+            bool noteChanged = false;
+
+            for (const QString& resolvedFolder : resolvedFolders)
+            {
+                const QString remappedFolder = remapFolderPathForMove(resolvedFolder, movedFolderPathMap);
+                const QString remappedKey = normalizeFolderLookupKey(remappedFolder);
+                if (remappedKey.isEmpty() || seenFolderKeys.contains(remappedKey))
+                {
+                    continue;
+                }
+                seenFolderKeys.insert(remappedKey);
+                remappedFolders.push_back(remappedFolder);
+                if (normalizeFolderPath(resolvedFolder) != remappedFolder)
+                {
+                    noteChanged = true;
+                }
+            }
+
+            if (!noteChanged)
+            {
+                continue;
+            }
+
+            const QString headerPath = resolveNoteHeaderPath(note);
+            if (headerPath.isEmpty())
+            {
+                WhatSon::Debug::traceSelf(this,
+                                          QStringLiteral("library.viewmodel"),
+                                          QStringLiteral("commitFolderHierarchyUpdate.failed"),
+                                          QStringLiteral("reason=missingHeader noteId=%1").arg(note.noteId));
+                return false;
+            }
+
+            QString rawHeaderText;
+            QString readError;
+            if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(headerPath, &rawHeaderText, &readError))
+            {
+                WhatSon::Debug::traceSelf(this,
+                                          QStringLiteral("library.viewmodel"),
+                                          QStringLiteral("commitFolderHierarchyUpdate.failed"),
+                                          QStringLiteral("reason=readHeader path=%1 error=%2").arg(
+                                              headerPath, readError));
+                return false;
+            }
+
+            WhatSonNoteHeaderStore headerStore;
+            WhatSonNoteHeaderParser headerParser;
+            QString parseError;
+            if (!headerParser.parse(rawHeaderText, &headerStore, &parseError))
+            {
+                WhatSon::Debug::traceSelf(this,
+                                          QStringLiteral("library.viewmodel"),
+                                          QStringLiteral("commitFolderHierarchyUpdate.failed"),
+                                          QStringLiteral("reason=parseHeader path=%1 error=%2").arg(
+                                              headerPath, parseError));
+                return false;
+            }
+
+            headerStore.setFolders(remappedFolders);
+            headerStore.setLastModifiedAt(rewriteTimestamp);
+
+            WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());
+
+            PendingNoteFolderRewrite rewrite;
+            rewrite.noteIndex = noteIndex;
+            rewrite.headerPath = headerPath;
+            rewrite.previousText = rawHeaderText;
+            rewrite.nextText = headerCreator.createHeaderText(headerStore);
+            rewrite.nextFolders = headerStore.folders();
+            rewrite.nextLastModifiedAt = headerStore.lastModifiedAt();
+            pendingNoteWrites.push_back(std::move(rewrite));
+        }
+    }
+
+    auto rollbackNoteWrites = [](const QVector<PendingNoteFolderRewrite>& writes)
+    {
+        for (int index = writes.size() - 1; index >= 0; --index)
+        {
+            const PendingNoteFolderRewrite& rewrite = writes.at(index);
+            writeUtf8File(rewrite.headerPath, rewrite.previousText, nullptr);
+        }
+    };
+
+    QVector<PendingNoteFolderRewrite> appliedNoteWrites;
+    appliedNoteWrites.reserve(pendingNoteWrites.size());
+    for (const PendingNoteFolderRewrite& rewrite : pendingNoteWrites)
+    {
+        QString writeError;
+        if (!writeUtf8File(rewrite.headerPath, rewrite.nextText, &writeError))
+        {
+            rollbackNoteWrites(appliedNoteWrites);
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("commitFolderHierarchyUpdate.failed"),
+                                      QStringLiteral("reason=writeHeader path=%1 error=%2").arg(
+                                          rewrite.headerPath, writeError));
+            return false;
+        }
+        appliedNoteWrites.push_back(rewrite);
+    }
+
+    if (!m_foldersFilePath.trimmed().isEmpty())
+    {
+        QString writeError;
+        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        {
+            rollbackNoteWrites(appliedNoteWrites);
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("commitFolderHierarchyUpdate.failed"),
+                                      QStringLiteral("reason=writeFolders path=%1 error=%2").arg(
+                                          m_foldersFilePath, writeError));
+            return false;
+        }
+    }
+
+    for (const PendingNoteFolderRewrite& rewrite : pendingNoteWrites)
+    {
+        LibraryNoteRecord& note = stagedAllNotes[rewrite.noteIndex];
+        note.folders = rewrite.nextFolders;
+        note.lastModifiedAt = rewrite.nextLastModifiedAt;
+        note.noteHeaderPath = rewrite.headerPath;
+        if (note.noteDirectoryPath.isEmpty())
+        {
+            note.noteDirectoryPath = QFileInfo(rewrite.headerPath).absolutePath();
+        }
+    }
+
+    m_items = std::move(stagedItems);
+    m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
+
+    if (m_runtimeIndexLoaded)
+    {
+        m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(stagedAllNotes));
+        m_libraryDraft.rebuild(m_libraryAll.notes());
+        m_libraryToday.rebuild(m_libraryAll.notes());
+    }
+
+    rebuildBucketRanges();
+    syncModel();
+    applySelectedIndex(selectedIndex, true);
+    return true;
 }
 
 int LibraryHierarchyViewModel::firstEditableInsertIndex() const noexcept

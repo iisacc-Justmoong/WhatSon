@@ -610,6 +610,8 @@ BookmarksNoteListItem BookmarksHierarchyViewModel::buildBookmarksListItem(const 
     item.primaryText = bookmarkPrimaryText(note);
     item.searchableText = bookmarkSearchableText(note);
     item.bodyText = note.bodyPlainText;
+    item.image = note.bodyHasResource;
+    item.imageSource = note.bodyFirstResourceThumbnailUrl;
     item.displayDate = m_systemCalendarStore
                            ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
                            : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);

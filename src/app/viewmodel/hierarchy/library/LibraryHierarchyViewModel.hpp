@@ -67,6 +67,8 @@ public:
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
     Q_INVOKABLE bool canMoveFolder(int index) const;
+    Q_INVOKABLE bool canAcceptFolderDropBefore(int sourceIndex, int targetIndex) const;
+    Q_INVOKABLE bool moveFolderBefore(int sourceIndex, int targetIndex);
     Q_INVOKABLE bool canAcceptFolderDrop(int sourceIndex, int targetIndex, bool asChild) const;
     Q_INVOKABLE bool moveFolder(int sourceIndex, int targetIndex, bool asChild);
     Q_INVOKABLE bool canMoveFolderToRoot(int sourceIndex) const;
@@ -132,6 +134,10 @@ private:
     FolderSelectionScope selectedFolderScope() const;
     static QString normalizeFolderKey(const QString& value);
     QString folderPathForIndex(int index) const;
+    bool commitFolderHierarchyUpdate(
+        QVector<LibraryHierarchyItem> stagedItems,
+        int selectedIndex,
+        const QHash<QString, QString>& movedFolderPathMap = {});
     void applySelectedIndex(int index, bool forceReapply = false);
     int firstEditableInsertIndex() const noexcept;
     void rebuildBucketRanges();

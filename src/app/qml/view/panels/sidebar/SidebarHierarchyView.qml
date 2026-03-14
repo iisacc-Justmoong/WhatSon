@@ -14,6 +14,7 @@ Item {
     property int editingIndex: -1
     property string editingText: ""
     property bool folderDropAsChild: true
+    property bool folderDropBefore: false
     property int folderDropTargetIndex: -1
     // SOURCE-OF-TRUTH GUARD:
     // Hierarchy list must always come from per-domain ViewModel.itemModel (store-backed path).
@@ -27,6 +28,7 @@ Item {
     readonly property int hierarchyItemBaseLeftPadding: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property var hierarchyViewModel: null
     property int horizontalInset: 2
+    property int noteDropTargetIndex: -1
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false
@@ -107,6 +109,13 @@ Item {
             return false;
         return sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop(sourceIndex, targetIndex, asChild);
     }
+    function canAcceptFolderDropBefore(sourceIndex, targetIndex) {
+        if (sourceIndex < 0 || targetIndex < 0 || !sidebarHierarchyView.hierarchyViewModel)
+            return false;
+        if (sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDropBefore === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDropBefore(sourceIndex, targetIndex);
+    }
     function canAcceptNoteDrop(index, noteId) {
         if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
             return false;
@@ -174,6 +183,11 @@ Item {
             return false;
         return sidebarHierarchyView.hierarchyViewModel.moveFolder(sourceIndex, targetIndex, asChild);
     }
+    function moveFolderBefore(sourceIndex, targetIndex) {
+        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.moveFolderBefore === undefined)
+            return false;
+        return sidebarHierarchyView.hierarchyViewModel.moveFolderBefore(sourceIndex, targetIndex);
+    }
     function moveFolderToRoot(sourceIndex) {
         if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.moveFolderToRoot === undefined)
             return false;
@@ -189,6 +203,7 @@ Item {
         sidebarHierarchyView.noteDropTargetIndex = -1;
         sidebarHierarchyView.folderDropTargetIndex = -1;
         sidebarHierarchyView.folderDropAsChild = true;
+        sidebarHierarchyView.folderDropBefore = false;
         sidebarHierarchyView.rootDropHighlighted = false;
     }
     function toggleViewOptionsMenu() {
@@ -342,6 +357,7 @@ Item {
                                 sidebarHierarchyView.noteDropTargetIndex = -1;
                                 sidebarHierarchyView.folderDropTargetIndex = -1;
                                 sidebarHierarchyView.folderDropAsChild = false;
+                                sidebarHierarchyView.folderDropBefore = false;
                                 sidebarHierarchyView.rootDropHighlighted = sidebarHierarchyView.canMoveFolderToRoot(sourceIndex);
                             }
                             onExited: {
@@ -357,8 +373,9 @@ Item {
                         delegate: LV.HierarchyItem {
                             id: hierarchyDelegate
 
-                            readonly property bool folderChildDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropAsChild
-                            readonly property bool folderSiblingDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && !sidebarHierarchyView.folderDropAsChild
+                            readonly property bool folderBeforeDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropBefore
+                            readonly property bool folderChildDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropAsChild && !sidebarHierarchyView.folderDropBefore
+                            readonly property bool folderSiblingDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && !sidebarHierarchyView.folderDropAsChild && !sidebarHierarchyView.folderDropBefore
                             required property int index
                             readonly property bool itemExpanded: model.expanded === undefined ? false : !!model.expanded
                             readonly property int itemIndentLevel: {
@@ -404,6 +421,16 @@ Item {
                                 opacity: hierarchyDelegate.noteDropHighlighted ? 0.55 : 0.38
                                 visible: hierarchyDelegate.noteDropHighlighted || hierarchyDelegate.folderChildDropHighlighted
                                 z: 1
+                            }
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                color: LV.Theme.accentBlue
+                                height: 2
+                                opacity: 0.85
+                                visible: hierarchyDelegate.folderBeforeDropHighlighted
+                                z: 2
                             }
                             Rectangle {
                                 anchors.bottom: parent.bottom
@@ -462,6 +489,34 @@ Item {
                                 }
                             }
                             DropArea {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                height: 6
+                                keys: ["whatson.hierarchy.folder"]
+
+                                onDropped: function (drop) {
+                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drop);
+                                    const accepted = sidebarHierarchyView.moveFolderBefore(sourceIndex, index);
+                                    sidebarHierarchyView.resetDropTargets();
+                                    if (!accepted)
+                                        return;
+                                    sidebarHierarchyView.requestViewHook("move-folder-before");
+                                }
+                                onEntered: function (drag) {
+                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
+                                    sidebarHierarchyView.noteDropTargetIndex = -1;
+                                    sidebarHierarchyView.rootDropHighlighted = false;
+                                    sidebarHierarchyView.folderDropTargetIndex = sidebarHierarchyView.canAcceptFolderDropBefore(sourceIndex, index) ? index : -1;
+                                    sidebarHierarchyView.folderDropAsChild = false;
+                                    sidebarHierarchyView.folderDropBefore = true;
+                                }
+                                onExited: {
+                                    if (sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropBefore)
+                                        sidebarHierarchyView.folderDropTargetIndex = -1;
+                                }
+                            }
+                            DropArea {
                                 anchors.fill: parent
                                 keys: ["whatson.library.note"]
 
@@ -476,6 +531,7 @@ Item {
                                 onEntered: function (drag) {
                                     const noteId = sidebarHierarchyView.draggedNoteId(drag);
                                     sidebarHierarchyView.folderDropTargetIndex = -1;
+                                    sidebarHierarchyView.folderDropBefore = false;
                                     sidebarHierarchyView.rootDropHighlighted = false;
                                     sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;
                                 }
@@ -490,6 +546,7 @@ Item {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.top: parent.top
+                                anchors.topMargin: 4
                                 keys: ["whatson.hierarchy.folder"]
 
                                 onDropped: function (drop) {
@@ -506,6 +563,7 @@ Item {
                                     sidebarHierarchyView.rootDropHighlighted = false;
                                     sidebarHierarchyView.folderDropTargetIndex = sidebarHierarchyView.canAcceptFolderDrop(sourceIndex, index, true) ? index : -1;
                                     sidebarHierarchyView.folderDropAsChild = true;
+                                    sidebarHierarchyView.folderDropBefore = false;
                                 }
                                 onExited: {
                                     if (sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropAsChild)
@@ -533,9 +591,10 @@ Item {
                                     sidebarHierarchyView.rootDropHighlighted = false;
                                     sidebarHierarchyView.folderDropTargetIndex = sidebarHierarchyView.canAcceptFolderDrop(sourceIndex, index, false) ? index : -1;
                                     sidebarHierarchyView.folderDropAsChild = false;
+                                    sidebarHierarchyView.folderDropBefore = false;
                                 }
                                 onExited: {
-                                    if (sidebarHierarchyView.folderDropTargetIndex === index && !sidebarHierarchyView.folderDropAsChild)
+                                    if (sidebarHierarchyView.folderDropTargetIndex === index && !sidebarHierarchyView.folderDropAsChild && !sidebarHierarchyView.folderDropBefore)
                                         sidebarHierarchyView.folderDropTargetIndex = -1;
                                 }
                             }

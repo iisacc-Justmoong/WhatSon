@@ -15,7 +15,11 @@
 
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTemporaryDir>
+#include <QUrl>
 #include <QtTest>
 #include <stdexcept>
 
@@ -93,6 +97,23 @@ namespace
             .arg(summaryText);
     }
 
+    QString makeWsnBodyTextFromInnerXml(const QString& bodyInnerXml)
+    {
+        QString text;
+        text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
+        text += QStringLiteral("<contents id=\"test-note\">\n");
+        text += QStringLiteral("  <body>\n");
+        text += bodyInnerXml;
+        if (!bodyInnerXml.endsWith(QLatin1Char('\n')))
+        {
+            text += QLatin1Char('\n');
+        }
+        text += QStringLiteral("  </body>\n");
+        text += QStringLiteral("</contents>\n");
+        return text;
+    }
+
     bool prepareBookmarksHub(QString* outHubPath)
     {
         if (outHubPath == nullptr)
@@ -111,10 +132,19 @@ namespace
 
         const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("BookmarksVmHub.wscontents"));
         const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+        const QString resourcesPath = QDir(hubPath).filePath(QStringLiteral("BookmarksVmHub.wsresources"));
         const QString noteAPath = QDir(libraryPath).filePath(QStringLiteral("Blue.wsnote"));
         const QString noteBPath = QDir(libraryPath).filePath(QStringLiteral("Hidden.wsnote"));
         const QString noteCPath = QDir(libraryPath).filePath(QStringLiteral("Pink.wsnote"));
-        if (!QDir().mkpath(noteAPath) || !QDir().mkpath(noteBPath) || !QDir().mkpath(noteCPath))
+        if (!QDir().mkpath(noteAPath)
+            || !QDir().mkpath(noteBPath)
+            || !QDir().mkpath(noteCPath)
+            || !QDir().mkpath(resourcesPath))
+        {
+            return false;
+        }
+        const QString bluePreviewPath = QDir(resourcesPath).filePath(QStringLiteral("blue-preview.png"));
+        if (!writeUtf8File(bluePreviewPath, QStringLiteral("png")))
         {
             return false;
         }
@@ -146,7 +176,10 @@ namespace
         }
         if (!writeUtf8File(
             QDir(noteAPath).filePath(QStringLiteral("Blue.wsnbody")),
-            makeWsnBodyText(QStringLiteral("Blue summary"))))
+            makeWsnBodyTextFromInnerXml(
+                QStringLiteral(
+                    "    <resource format=\".png\" resourcePath=\"BookmarksVmHub.wsresources/blue-preview.png\" />\n"
+                    "    <paragraph>Blue summary</paragraph>\n"))))
         {
             return false;
         }
@@ -201,6 +234,7 @@ private
     void libraryViewModel_supportsCrudContract();
     void projectsViewModel_supportsCrudContract();
     void projectsViewModel_reactsToModelMutation();
+    void projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth();
     void bookmarksViewModel_supportsCrudContract();
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
     void bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent();
@@ -219,6 +253,7 @@ private
     void noteListModel_currentSelection_exposesBodyText();
     void noteListModel_searchText_filtersAgainstSearchableBodyContent();
     void noteListModel_limitsPrimaryTextToFiveLines();
+    void noteListModel_exposesImageRoles();
     void libraryViewModel_formatsDisplayDateWithSystemCalendarStore();
 };
 
@@ -293,6 +328,53 @@ void HierarchyViewModelsTest::projectsViewModel_reactsToModelMutation()
     QVERIFY(itemCountSpy.count() > 0);
 }
 
+void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString foldersFilePath = tempDir.filePath(QStringLiteral("Folders.wsfolders"));
+
+    ProjectsHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("Research"), QStringLiteral("Research"), 0},
+            {QStringLiteral("Research/Competitor"), QStringLiteral("Competitor"), 1},
+            {QStringLiteral("Brand"), QStringLiteral("Brand"), 0}
+        },
+        foldersFilePath,
+        true);
+
+    QVERIFY(viewModel.canAcceptFolderDropBefore(2, 0));
+    QVERIFY(viewModel.moveFolderBefore(2, 0));
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Brand"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Research"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::DepthRole).toInt(),
+        1);
+
+    QVERIFY(viewModel.canAcceptFolderDrop(0, 1, true));
+    QVERIFY(viewModel.moveFolder(0, 1, true));
+
+    const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
+    QVERIFY(foldersDocument.isObject());
+    const QJsonArray folderArray = foldersDocument.object().value(QStringLiteral("folders")).toArray();
+    QCOMPARE(folderArray.size(), 1);
+
+    const QJsonObject researchObject = folderArray.at(0).toObject();
+    QCOMPARE(researchObject.value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
+    const QJsonArray childArray = researchObject.value(QStringLiteral("children")).toArray();
+    QCOMPARE(childArray.size(), 2);
+    QCOMPARE(childArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Competitor"));
+    QCOMPARE(childArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Brand"));
+}
+
 void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
 {
     BookmarksHierarchyViewModel viewModel;
@@ -362,6 +444,17 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             BookmarksNoteListModel::DisplayDateRole).toString(),
         QStringLiteral("2026-03-01"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            BookmarksNoteListModel::ImageRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            BookmarksNoteListModel::ImageSourceRole).toString(),
+        QUrl::fromLocalFile(
+            QDir(hubPath).filePath(QStringLiteral("BookmarksVmHub.wsresources/blue-preview.png"))).toString());
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
@@ -770,6 +863,27 @@ void HierarchyViewModelsTest::noteListModel_limitsPrimaryTextToFiveLines()
     QCOMPARE(
         model.data(index, LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("line1\nline2\nline3\nline4\nline5"));
+}
+
+void HierarchyViewModelsTest::noteListModel_exposesImageRoles()
+{
+    LibraryNoteListModel model;
+    const QString previewPath = QDir::temp().filePath(QStringLiteral("whatson-preview.png"));
+
+    LibraryNoteListItem item;
+    item.id = QStringLiteral("note-image");
+    item.primaryText = QStringLiteral("Image preview");
+    item.image = true;
+    item.imageSource = previewPath;
+
+    model.setItems({item});
+
+    QCOMPARE(model.rowCount(), 1);
+    const QModelIndex index = model.index(0, 0);
+    QCOMPARE(model.data(index, LibraryNoteListModel::ImageRole).toBool(), true);
+    QCOMPARE(
+        model.data(index, LibraryNoteListModel::ImageSourceRole).toString(),
+        QUrl::fromLocalFile(previewPath).toString());
 }
 
 void HierarchyViewModelsTest::libraryViewModel_formatsDisplayDateWithSystemCalendarStore()

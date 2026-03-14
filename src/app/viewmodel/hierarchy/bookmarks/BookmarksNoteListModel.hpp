@@ -12,6 +12,8 @@ struct BookmarksNoteListItem
     QString primaryText;
     QString searchableText;
     QString bodyText;
+    bool image = false;
+    QString imageSource;
     QString displayDate;
     QStringList folders;
     QStringList tags;
@@ -38,6 +40,8 @@ public:
         IdRole = Qt::UserRole + 1,
         PrimaryTextRole,
         BodyTextRole,
+        ImageRole,
+        ImageSourceRole,
         DisplayDateRole,
         FoldersRole,
         TagsRole,
@@ -80,6 +84,7 @@ public
     }
 
     signals  :
+
 
 
     void itemCountChanged(int itemCount);

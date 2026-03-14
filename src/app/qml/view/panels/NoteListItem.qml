@@ -19,6 +19,10 @@ Item {
     readonly property int horizontalPadding: 12
     readonly property color hoverCardColor: LV.Theme.panelBackground06
     readonly property bool hovered: noteHoverHandler.hovered
+    property bool image: false
+    readonly property color imageBoxPlaceholderColor: "#D9D9D9"
+    readonly property int imagePreviewSize: 24
+    property url imageSource: ""
     readonly property int metadataIconFrameSize: 16
     readonly property int metadataIconSize: 14
     readonly property int metadataTextLineHeight: 11
@@ -97,6 +101,24 @@ Item {
                 spacing: 10
                 width: parent.width
 
+                Rectangle {
+                    Layout.alignment: Qt.AlignTop
+                    Layout.preferredHeight: noteListItem.image ? noteListItem.imagePreviewSize : 0
+                    Layout.preferredWidth: noteListItem.image ? noteListItem.imagePreviewSize : 0
+                    clip: true
+                    color: noteListItem.imageBoxPlaceholderColor
+                    visible: noteListItem.image
+
+                    Image {
+                        anchors.fill: parent
+                        asynchronous: true
+                        fillMode: Image.PreserveAspectCrop
+                        noteListItem.imageSource
+                        sourceSize.height: noteListItem.imagePreviewSize
+                        sourceSize.width: noteListItem.imagePreviewSize
+                        visible: noteListItem.imageSource.toString().length > 0
+                    }
+                }
                 LV.Label {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 24
@@ -187,7 +209,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconSize
-                                        source: noteListItem.folderIconSource
+                                        noteListItem.folderIconSource
                                         sourceSize.height: noteListItem.metadataIconSize
                                         sourceSize.width: noteListItem.metadataIconSize
                                         width: noteListItem.metadataIconSize
@@ -234,7 +256,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconFrameSize
-                                        source: noteListItem.tagIconSource
+                                        noteListItem.tagIconSource
                                         sourceSize.height: noteListItem.metadataIconFrameSize
                                         sourceSize.width: noteListItem.metadataIconFrameSize
                                         width: noteListItem.metadataIconFrameSize

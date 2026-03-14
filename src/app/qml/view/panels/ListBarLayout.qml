@@ -159,6 +159,8 @@ Rectangle {
                         bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : false
                         displayDate: useRuntimeModel && roleModel && roleModel.displayDate !== undefined ? String(roleModel.displayDate) : ""
                         folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listBarLayout.normalizeEntries(roleModel.folders) : []
+                        image: useRuntimeModel && roleModel && roleModel.image !== undefined ? Boolean(roleModel.image) : false
+                        imageSource: useRuntimeModel && roleModel && roleModel.imageSource !== undefined ? roleModel.imageSource : ""
                         noteId: useRuntimeModel && roleModel && roleModel.id !== undefined ? String(roleModel.id) : ""
                         opacity: noteDragHandler.active ? 0.72 : 1
                         pressed: ListView.isCurrentItem

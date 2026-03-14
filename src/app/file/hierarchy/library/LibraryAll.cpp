@@ -17,6 +17,7 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 #include <QRegularExpression>
+#include <QUrl>
 
 #include <utility>
 
@@ -26,6 +27,8 @@ namespace
     {
         QString plainText;
         QString firstLine;
+        bool hasResource = false;
+        QString firstResourceThumbnailUrl;
     };
 
     QString normalizePath(const QString& input)
@@ -350,7 +353,185 @@ namespace
         return text.trimmed();
     }
 
-    BodyContentExtract extractBodyContentFromWsnbody(const QString& wsnbodyText)
+    QString findAncestorDirectoryWithSuffix(const QString& startPath, const QString& suffix)
+    {
+        if (startPath.trimmed().isEmpty())
+        {
+            return {};
+        }
+
+        const QFileInfo startInfo(startPath);
+        QDir currentDirectory = startInfo.isDir() ? QDir(startInfo.absoluteFilePath()) : startInfo.absoluteDir();
+        while (currentDirectory.exists())
+        {
+            if (currentDirectory.dirName().endsWith(suffix, Qt::CaseInsensitive))
+            {
+                return QDir::cleanPath(currentDirectory.absolutePath());
+            }
+            if (!currentDirectory.cdUp())
+            {
+                break;
+            }
+        }
+        return {};
+    }
+
+    QString extractXmlAttributeValue(const QString& tagText, const QStringList& attributeNames)
+    {
+        for (const QString& attributeName : attributeNames)
+        {
+            const QRegularExpression attributePattern(
+                QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s/>]+)))ATTR")
+                .arg(QRegularExpression::escape(attributeName)),
+                QRegularExpression::CaseInsensitiveOption);
+            const QRegularExpressionMatch match = attributePattern.match(tagText);
+            if (!match.hasMatch())
+            {
+                continue;
+            }
+
+            for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
+            {
+                const QString value = decodeXmlEntities(match.captured(captureIndex)).trimmed();
+                if (!value.isEmpty())
+                {
+                    return value;
+                }
+            }
+        }
+
+        return {};
+    }
+
+    QString resolveResourceLocation(const QString& rawResourcePath, const LibraryNoteRecord& record)
+    {
+        const QString normalizedPath = decodeXmlEntities(rawResourcePath).trimmed();
+        if (normalizedPath.isEmpty())
+        {
+            return {};
+        }
+
+        if (QFileInfo(normalizedPath).isAbsolute())
+        {
+            const QString absolutePath = QDir::cleanPath(normalizedPath);
+            return QFileInfo(absolutePath).isFile() ? absolutePath : QString();
+        }
+
+        const QUrl resourceUrl(normalizedPath);
+        if (resourceUrl.isValid() && !resourceUrl.scheme().isEmpty())
+        {
+            if (!resourceUrl.isLocalFile())
+            {
+                return resourceUrl.toString();
+            }
+
+            const QString localFilePath = QDir::cleanPath(resourceUrl.toLocalFile());
+            if (QFileInfo(localFilePath).isFile())
+            {
+                return localFilePath;
+            }
+            return {};
+        }
+
+        QStringList candidates;
+        if (!record.noteDirectoryPath.trimmed().isEmpty())
+        {
+            candidates.push_back(QDir(record.noteDirectoryPath).absoluteFilePath(normalizedPath));
+        }
+        if (!record.noteHeaderPath.trimmed().isEmpty())
+        {
+            candidates.push_back(
+                QDir(QFileInfo(record.noteHeaderPath).absolutePath()).absoluteFilePath(normalizedPath));
+        }
+
+        const QString hubRootPath = findAncestorDirectoryWithSuffix(
+            !record.noteDirectoryPath.trimmed().isEmpty() ? record.noteDirectoryPath : record.noteHeaderPath,
+            QStringLiteral(".wshub"));
+        if (!hubRootPath.isEmpty())
+        {
+            candidates.push_back(QDir(hubRootPath).absoluteFilePath(normalizedPath));
+            candidates.push_back(QDir(QFileInfo(hubRootPath).absolutePath()).absoluteFilePath(normalizedPath));
+        }
+
+        candidates.removeDuplicates();
+        for (const QString& candidate : std::as_const(candidates))
+        {
+            const QString cleanedCandidate = QDir::cleanPath(candidate);
+            if (QFileInfo(cleanedCandidate).isFile())
+            {
+                return cleanedCandidate;
+            }
+        }
+
+        return {};
+    }
+
+    bool isPreviewableImageResource(const QString& resolvedResourceLocation, const QString& resourceFormat)
+    {
+        QString suffix;
+        if (QFileInfo(resolvedResourceLocation).isAbsolute())
+        {
+            suffix = QFileInfo(resolvedResourceLocation).suffix().toCaseFolded();
+        }
+        else
+        {
+            const QUrl resourceUrl(resolvedResourceLocation);
+            if (resourceUrl.isValid() && !resourceUrl.scheme().isEmpty())
+            {
+                suffix = QFileInfo(resourceUrl.path()).suffix().toCaseFolded();
+            }
+            else
+            {
+                suffix = QFileInfo(resolvedResourceLocation).suffix().toCaseFolded();
+            }
+        }
+
+        if (suffix.isEmpty())
+        {
+            suffix = resourceFormat.trimmed().toCaseFolded();
+            if (suffix.startsWith(QLatin1Char('.')))
+            {
+                suffix.remove(0, 1);
+            }
+        }
+
+        static const QStringList kPreviewableImageExtensions = {
+            QStringLiteral("png"),
+            QStringLiteral("jpg"),
+            QStringLiteral("jpeg"),
+            QStringLiteral("webp"),
+            QStringLiteral("bmp"),
+            QStringLiteral("gif"),
+            QStringLiteral("svg")
+        };
+        return !suffix.isEmpty() && kPreviewableImageExtensions.contains(suffix);
+    }
+
+    QString normalizeThumbnailSource(const QString& resolvedResourceLocation)
+    {
+        if (resolvedResourceLocation.isEmpty())
+        {
+            return {};
+        }
+
+        if (QFileInfo(resolvedResourceLocation).isAbsolute())
+        {
+            return QUrl::fromLocalFile(QDir::cleanPath(resolvedResourceLocation)).toString();
+        }
+
+        const QUrl resourceUrl(resolvedResourceLocation);
+        if (resourceUrl.isValid() && !resourceUrl.scheme().isEmpty())
+        {
+            if (!resourceUrl.isLocalFile())
+            {
+                return resourceUrl.toString();
+            }
+            return QUrl::fromLocalFile(QDir::cleanPath(resourceUrl.toLocalFile())).toString();
+        }
+        return {};
+    }
+
+    BodyContentExtract extractBodyContentFromWsnbody(const QString& wsnbodyText, const LibraryNoteRecord& record)
     {
         BodyContentExtract content;
         static const QRegularExpression bodyPattern(
@@ -364,6 +545,35 @@ namespace
 
         QString innerText = bodyMatch.captured(1);
         innerText.remove(QRegularExpression(QStringLiteral(R"(<!--[\s\S]*?-->)")));
+
+        static const QRegularExpression resourcePattern(
+            QStringLiteral(R"(<resource\b[^>]*?/?>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch resourceMatch = resourcePattern.match(innerText);
+        if (resourceMatch.hasMatch())
+        {
+            content.hasResource = true;
+
+            const QString resourceTag = resourceMatch.captured(0);
+            const QString resourcePath = extractXmlAttributeValue(
+                resourceTag,
+                {
+                    QStringLiteral("resourcePath"),
+                    QStringLiteral("path"),
+                    QStringLiteral("src"),
+                    QStringLiteral("href"),
+                    QStringLiteral("url")
+                });
+            const QString resourceFormat = extractXmlAttributeValue(
+                resourceTag,
+                {QStringLiteral("format"), QStringLiteral("type"), QStringLiteral("mime"), QStringLiteral("kind")});
+            const QString resolvedResourceLocation = resolveResourceLocation(resourcePath, record);
+            if (isPreviewableImageResource(resolvedResourceLocation, resourceFormat))
+            {
+                content.firstResourceThumbnailUrl = normalizeThumbnailSource(resolvedResourceLocation);
+            }
+        }
+
         innerText.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         innerText.replace(QLatin1Char('\r'), QLatin1Char('\n'));
         innerText.replace(
@@ -428,7 +638,7 @@ namespace
             return content;
         }
 
-        return extractBodyContentFromWsnbody(bodyText);
+        return extractBodyContentFromWsnbody(bodyText, record);
     }
 
     LibraryNoteRecord parseIndexRecord(const QJsonObject& object)
@@ -692,6 +902,11 @@ namespace
         overwriteIfNonEmpty(&base->project, overlay.project);
         overwriteIfNonEmpty(&base->bodyPlainText, overlay.bodyPlainText);
         overwriteIfNonEmpty(&base->bodyFirstLine, overlay.bodyFirstLine);
+        if (overlay.bodyHasResource)
+        {
+            base->bodyHasResource = true;
+        }
+        overwriteIfNonEmpty(&base->bodyFirstResourceThumbnailUrl, overlay.bodyFirstResourceThumbnailUrl);
         overwriteListIfNonEmpty(&base->folders, overlay.folders);
         overwriteListIfNonEmpty(&base->bookmarkColors, overlay.bookmarkColors);
         overwriteListIfNonEmpty(&base->tags, overlay.tags);
@@ -739,6 +954,7 @@ namespace
         record->noteId = record->noteId.trimmed();
         record->bodyPlainText = record->bodyPlainText.trimmed();
         record->bodyFirstLine = record->bodyFirstLine.trimmed();
+        record->bodyFirstResourceThumbnailUrl = record->bodyFirstResourceThumbnailUrl.trimmed();
 
         if (record->bodyFirstLine.isEmpty() && !record->bodyPlainText.isEmpty())
         {
@@ -1005,6 +1221,11 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
         const BodyContentExtract bodyContent = readBodyContent(record);
         overwriteIfNonEmpty(&record.bodyPlainText, bodyContent.plainText);
         overwriteIfNonEmpty(&record.bodyFirstLine, bodyContent.firstLine);
+        if (bodyContent.hasResource)
+        {
+            record.bodyHasResource = true;
+        }
+        overwriteIfNonEmpty(&record.bodyFirstResourceThumbnailUrl, bodyContent.firstResourceThumbnailUrl);
         finalizeRecordContentFields(&record);
     }
 

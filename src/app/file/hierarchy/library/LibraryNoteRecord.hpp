@@ -9,6 +9,8 @@ struct LibraryNoteRecord
     QString storageKind;
     QString bodyPlainText;
     QString bodyFirstLine;
+    bool bodyHasResource = false;
+    QString bodyFirstResourceThumbnailUrl;
     QString createdAt;
     QString lastModifiedAt;
     QString author;
