@@ -135,7 +135,6 @@ Item {
             });
         }
 
-
     }
     function buildLogicalLineStartOffsets(text) {
         const value = text === undefined || text === null ? "" : String(text);
@@ -144,7 +143,6 @@ Item {
             if (value.charAt(index) === "\n")
                 offsets.push(index + 1);
         }
-
 
     }
     function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
@@ -382,7 +380,7 @@ Item {
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
-
+            return contentsView.gutterMarkerCurrentColor;
 
     }
     function markerHeight(markerSpec) {
@@ -533,7 +531,6 @@ Item {
         if (normalized[0] !== 0)
             normalized.unshift(0);
 
-
     }
     function persistEditorTextForNote(noteId, text) {
         if (!contentViewModel)
@@ -616,7 +613,6 @@ Item {
         }
         if (visibleLines.length === 0)
             visibleLines.push(firstVisibleLine);
-
 
     }
 
