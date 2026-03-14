@@ -204,6 +204,36 @@ class BuildParallelismTests(unittest.TestCase):
         self.assertNotIn("-j", build_commands[0])
         self.assertEqual(result.status, "success")
 
+    def test_linux_headless_host_build_disables_desktop_app(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = _make_args(Path(temp_dir), jobs=4)
+            args.no_host_run = False
+            build_runner = RecordingBuildAll(args)
+            build_runner.system_name = "Linux"
+
+            with patch.dict("os.environ", {}, clear=True):
+                result = build_runner.task_host()
+
+        configure_commands = [cmd for cmd in build_runner.commands if cmd[:3] == ["cmake", "-S", str(build_runner.root)]]
+        self.assertTrue(configure_commands)
+        self.assertIn("-DWHATSON_BUILD_APP=OFF", configure_commands[0])
+        self.assertEqual(result.status, "success")
+        self.assertIn("headless Linux session", result.detail)
+
+    def test_linux_host_with_display_keeps_desktop_app_enabled(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = _make_args(Path(temp_dir), jobs=4)
+            build_runner = RecordingBuildAll(args)
+            build_runner.system_name = "Linux"
+
+            with patch.dict("os.environ", {"DISPLAY": ":0"}, clear=True):
+                result = build_runner.task_host()
+
+        configure_commands = [cmd for cmd in build_runner.commands if cmd[:3] == ["cmake", "-S", str(build_runner.root)]]
+        self.assertTrue(configure_commands)
+        self.assertNotIn("-DWHATSON_BUILD_APP=OFF", configure_commands[0])
+        self.assertEqual(result.status, "success")
+
     def test_android_generic_build_uses_explicit_parallel_budget(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             args = _make_args(Path(temp_dir), jobs=4)
@@ -296,6 +326,7 @@ class BuildParallelismTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             args = _make_smoke_args(Path(temp_dir), jobs=5)
             smoke_runner = RecordingRuntimeSmokeMatrix(args)
+            smoke_runner.system_name = "darwin"
             project = Path(args.root) / "build" / "ios-xcode-artifact" / "WhatSon.xcodeproj"
             project.mkdir(parents=True, exist_ok=True)
 

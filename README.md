@@ -453,6 +453,8 @@ Behavior by OS:
 
 - macOS: runs host + Android + iOS flows.
 - Linux/Windows: iOS task is skipped automatically; host and Android flows still run.
+- Headless Linux host sessions without `DISPLAY` and `WAYLAND_DISPLAY` automatically configure
+  `-DWHATSON_BUILD_APP=OFF`, then stop after daemon healthcheck instead of launching the desktop app.
 
 Logs are written to `build/automation-logs/*.log` by default.
 Default artifacts are generated at:
