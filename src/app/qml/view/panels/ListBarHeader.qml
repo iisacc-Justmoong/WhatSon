@@ -63,12 +63,12 @@ Item {
             }
         }
         Binding {
-            "height"
+            property: "height"
             target: searchField.inputItem
             value: searchField.resolvedInputTextHeight
         }
         Binding {
-            "y"
+            property: "y"
             target: searchField.inputItem
             value: Math.max(0, Math.floor((searchField.height - searchField.resolvedInputTextHeight) / 2))
         }

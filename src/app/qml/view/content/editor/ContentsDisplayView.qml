@@ -815,7 +815,7 @@ Item {
                         }
                     }
                     Binding {
-                        "y"
+                        property: "y"
                         target: contentEditor.editorItem
                         value: contentsView.editorTopInset
                     }
