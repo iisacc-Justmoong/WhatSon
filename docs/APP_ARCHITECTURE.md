@@ -310,8 +310,9 @@ Domain-isolated support:
               array stops being returned, the editor can still paint body text while the line-number column goes empty.
               Cursor-line lookup and visible-line enumeration must use that offset table plus viewport-derived search
               instead of reparsing the entire body or rescanning line `1..N` for every edit.
-              The first visible gutter row must be chosen from viewport-space rendered line positions so the initial
-              line number shown after opening a note matches the actual topmost visible text row.
+              The first visible gutter row is derived by mapping the current viewport `contentY` through
+              `logicalLineNumberForDocumentY(...)`, which keeps the lookup simpler while still matching the actual top
+              visible logical text row.
               Because `LV.TextEditor` can settle its internal layout after note rebinding and surface re-entry, the
               gutter must also expose an explicit refresh revision with a short multi-pass timer; note switches,
               resurfacing, viewport changes, and late `contentHeight` updates should all request another sampling pass
@@ -476,24 +477,34 @@ Hierarchy rendering pipeline:
           double-tap on the folder row.
         - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
           opening the overlay. Global `renameEnabled` is treated as a fallback only.
-        - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row before
-          opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
-        - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route `before`,
-          `after`, `child`, and root-top extraction drops through `canAcceptFolderDropBefore(...)`,
-          `moveFolderBefore(...)`, `canAcceptFolderDrop(...)`, `moveFolder(...)`, and `moveFolderToRoot(...)` on the
-          active hierarchy view-model.
-            - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops
-              through
-              `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
-            - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
-              accepted drops through `LibraryHierarchyViewModel::moveFolderBefore(...)` for before-insert moves,
-              `moveFolder(...)` for after/child reparenting, and `moveFolderToRoot(...)` for root extraction.
-        - Projects folder drag policy: `ProjectsHierarchyViewModel` now exposes the same move API surface and persists
-          reordered `Folders.wsfolders` content on drag-driven before/after/child/root-top edits.
-          - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it to
-          domain
-          store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
-          `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+        - Row-activation policy: drag-capable hierarchy rows use drag-first / click-select-later input. LVRS
+          `HierarchyItem` no longer activates on raw press, and WhatSon mirrors active-row changes from
+          `HierarchyList.activeChanged` into the bound hierarchy view-model after the click/release path settles.
+        - Blank-area deselect policy: when the visible hierarchy is shorter than the sidebar viewport, the blank area
+          below the last row clears both the active LVRS hierarchy item and the bound view-model selection. The host
+          tree also disables LVRS first-item auto-selection so that cleared state stays visually empty.
+            - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row
+              before
+              opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
+            - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route `before`,
+              `after`, `child`, and root-top extraction drops through `canAcceptFolderDropBefore(...)`,
+              `moveFolderBefore(...)`, `canAcceptFolderDrop(...)`, `moveFolder(...)`, and `moveFolderToRoot(...)` on the
+              active hierarchy view-model.
+                - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops
+                  through
+                  `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
+                - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
+                  accepted drops through `LibraryHierarchyViewModel::moveFolderBefore(...)` for before-insert moves,
+                  `moveFolder(...)` for after/child reparenting, and `moveFolderToRoot(...)` for root extraction.
+            - Projects folder drag policy: `ProjectsHierarchyViewModel` now exposes the same move API surface and
+              persists
+              reordered `Folders.wsfolders` content on drag-driven before/after/child/root-top edits.
+                - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it
+                  to
+                  domain
+                  store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`,
+                  `*.wsevent`,
+                  `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.

@@ -3,28 +3,82 @@
         {
             "children": [
                 {
-                    "id": "Folder2/Folder3",
-                    "label": "Folder3"
-                },
+                    "children": [
+                        {
+                            "children": [
+                                {
+                                    "children": [
+                                        {
+                                            "children": [
+                                                {
+                                                    "children": [
+                                                        {
+                                                            "id": "Folder1/Untitled/Untitled/Untitled/Untitled/Untitled/Untitled",
+                                                            "label": "Untitled"
+                                                        }
+                                                    ],
+                                                    "id": "Folder1/Untitled/Untitled/Untitled/Untitled/Untitled",
+                                                    "label": "Untitled"
+                                                }
+                                            ],
+                                            "id": "Folder1/Untitled/Untitled/Untitled/Untitled",
+                                            "label": "Untitled"
+                                        }
+                                    ],
+                                    "id": "Folder1/Untitled/Untitled/Untitled",
+                                    "label": "Untitled"
+                                }
+                            ],
+                            "id": "Folder1/Untitled/Untitled",
+                            "label": "Untitled"
+                        }
+                    ],
+                    "id": "Folder1/Untitled",
+                    "label": "Untitled"
+                }
+            ],
+            "id": "Folder1",
+            "label": "Folder1"
+        },
+        {
+            "children": [
                 {
                     "children": [
                         {
                             "children": [
                                 {
-                                    "id": "Folder2/Untitled/Untitled/Untitled",
+                                    "children": [
+                                        {
+                                            "id": "Untitled/Untitled/Untitled/Untitled/Untitled",
+                                            "label": "Untitled"
+                                        }
+                                    ],
+                                    "id": "Untitled/Untitled/Untitled/Untitled",
                                     "label": "Untitled"
                                 }
                             ],
-                            "id": "Folder2/Untitled/Untitled",
+                            "id": "Untitled/Untitled/Untitled",
                             "label": "Untitled"
                         }
                     ],
-                    "id": "Folder2/Untitled",
+                    "id": "Untitled/Untitled",
                     "label": "Untitled"
                 }
             ],
-            "id": "Folder2",
-            "label": "Folder2"
+            "id": "Untitled",
+            "label": "Untitled"
+        },
+        {
+            "id": "Untitled",
+            "label": "Untitled"
+        },
+        {
+            "id": "Untitled",
+            "label": "Untitled"
+        },
+        {
+            "id": "Untitled",
+            "label": "Untitled"
         }
     ],
     "schema": "whatson.folders.tree",

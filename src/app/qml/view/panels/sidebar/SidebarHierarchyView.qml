@@ -150,6 +150,13 @@ Item {
         sidebarHierarchyView.editingIndex = -1;
         sidebarHierarchyView.editingText = "";
     }
+    function clearHierarchySelection() {
+        if (sidebarHierarchyView.editingIndex >= 0)
+            sidebarHierarchyView.commitRename();
+        sidebarHierarchyView.resetDropTargets();
+        if (hierarchyList && hierarchyList.clearActiveItem !== undefined)
+            hierarchyList.clearActiveItem();
+    }
     function commitRename() {
         if (sidebarHierarchyView.editingIndex < 0)
             return;
@@ -315,15 +322,21 @@ Item {
                 Layout.fillWidth: true
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
-                contentHeight: hierarchyList.implicitHeight
+                contentHeight: Math.max(height, hierarchyList.implicitHeight)
                 contentWidth: width
                 interactive: contentHeight > height
 
                 LV.HierarchyList {
                     id: hierarchyList
 
+                    autoSelectFirstItem: false
                     keyboardNavigationEnabled: false
                     width: hierarchyViewport.width
+
+                    onActiveChanged: function (item, itemId, index) {
+                        if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.setSelectedIndex !== undefined)
+                            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
+                    }
 
                     Item {
                         id: rootFolderDropZone
@@ -393,7 +406,6 @@ Item {
                             readonly property bool noteDropHighlighted: sidebarHierarchyView.noteDropTargetIndex === index
                             readonly property int renameLeftInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding + itemIndentLevel * sidebarHierarchyView.hierarchyIndentStep + sidebarHierarchyView.hierarchyChevronSlotWidth
                             readonly property int renameRightInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding
-                            readonly property int selectionAreaRightMargin: itemShowChevron ? sidebarHierarchyView.hierarchyChevronSlotWidth + sidebarHierarchyView.hierarchyItemBaseLeftPadding : 0
                             property int sourceIndex: index
                             readonly property bool visibleInView: matchesSearch && rowVisible
 
@@ -442,35 +454,12 @@ Item {
                                 visible: hierarchyDelegate.folderSiblingDropHighlighted
                                 z: 2
                             }
-                            Item {
-                                anchors.bottom: parent.bottom
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.rightMargin: selectionAreaRightMargin
-                                anchors.top: parent.top
+                            TapHandler {
+                                acceptedButtons: Qt.LeftButton
 
-                                TapHandler {
-                                    acceptedButtons: Qt.LeftButton
-
-                                    onDoubleTapped: {
-                                        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
-                                            sidebarHierarchyView.commitRename();
-                                        sidebarHierarchyView.forceActiveFocus();
-                                        if (hierarchyList && hierarchyList.requestActivate !== undefined)
-                                            hierarchyList.requestActivate(hierarchyDelegate);
-                                        if (sidebarHierarchyView.hierarchyViewModel)
-                                            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
-                                        sidebarHierarchyView.beginRename(index, hierarchyDelegate.itemLabel);
-                                    }
-                                    onTapped: {
-                                        if (sidebarHierarchyView.editingIndex >= 0)
-                                            sidebarHierarchyView.commitRename();
-                                        sidebarHierarchyView.forceActiveFocus();
-                                        if (hierarchyList && hierarchyList.requestActivate !== undefined)
-                                            hierarchyList.requestActivate(hierarchyDelegate);
-                                        if (sidebarHierarchyView.hierarchyViewModel)
-                                            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
-                                    }
+                                onDoubleTapped: {
+                                    sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);
+                                    sidebarHierarchyView.beginRename(index, hierarchyDelegate.itemLabel);
                                 }
                             }
                             DragHandler {
@@ -661,6 +650,21 @@ Item {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+                Item {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: hierarchyList.bottom
+                    height: Math.max(0, hierarchyViewport.height - hierarchyList.implicitHeight)
+                    visible: height > 0
+
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+
+                        onTapped: {
+                            sidebarHierarchyView.clearHierarchySelection();
                         }
                     }
                 }

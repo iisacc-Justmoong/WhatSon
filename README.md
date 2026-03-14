@@ -44,8 +44,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
   reparent them by drag-and-drop instead of only through model-side helpers. The sidebar now distinguishes `before`,
   `after`, `child`, and root-top extraction drop zones so users can control both insertion index and hierarchy depth
-  directly from the tree UI. LVRS does not block this path; WhatSon's custom delegates must explicitly let
-  `DragHandler` take pointer ownership away from row clicks and sidebar scrolling.
+  directly from the tree UI. The row-activation path is now drag-first / click-select-later: LVRS `HierarchyItem`
+  activation no longer fires on raw press, and WhatSon mirrors selection from `HierarchyList.activeChanged` after the
+  click/release path settles. Only the double-tap rename gesture remains on a separate handler.
+- Clicking the blank viewport area below the last hierarchy row now clears both the active `LV.HierarchyItem` and the
+  bound hierarchy view-model selection, so row focus does not remain stuck when the tree is shorter than the sidebar.
+- `SidebarHierarchyView.qml` also disables LVRS first-item auto-activation for that tree, otherwise a blank-area
+  deselect would immediately re-highlight the first enabled row and appear visually unchanged.
 - Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
   affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
   assignments behind on stale folder IDs.
@@ -103,9 +108,10 @@ WhatSon is an LVRS-based Qt Quick application.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
   lines survive editor round-trips into `.wsnbody`.
 - Gutter cursor-line lookup now comes from the prebuilt logical-line offset table and visible-range lookup starts from
-  the current viewport instead of rescanning every logical line from the top on each paint.
-- The first visible gutter line is chosen from rendered viewport-space line positions, so opening a note starts with
-  the same line number that is actually visible at the top of the editor surface.
+  the current editor viewport offset instead of rescanning every logical line from the top on each paint.
+- The first visible gutter line is derived by mapping the current viewport `contentY` back through
+  `logicalLineNumberForDocumentY(...)`, which keeps the line-number model simpler while still matching the top visible
+  logical document line.
 - The gutter also keeps an explicit refresh-revision pulse with a short multi-pass timer, so when a user re-enters the
   editor surface, opens a different note, or the `TextEditor` finishes a delayed relayout, the visible line numbers
   and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a

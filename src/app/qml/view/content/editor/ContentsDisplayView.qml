@@ -264,20 +264,13 @@ Item {
         return editorY + documentY + contentsView.editorContentOffsetY;
     }
     function firstVisibleLogicalLine() {
-        let low = 1;
-        let high = contentsView.logicalLineCount;
-        let best = 1;
-        while (low <= high) {
-            const middle = Math.floor((low + high) / 2);
-            const middleBottomY = contentsView.lineY(middle) + contentsView.lineVisualHeight(middle, 1);
-            if (middleBottomY >= 0) {
-                best = middle;
-                high = middle - 1;
-            } else {
-                low = middle + 1;
-            }
-        }
-
+        const refreshRevision = contentsView.gutterRefreshRevision;
+        const flickable = contentsView.editorFlickable;
+        if (!flickable)
+            return 1;
+        const contentY = Math.max(0, Number(flickable.contentY) || 0);
+        const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorTopInset);
+        return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
     function flushPendingEditorText() {
         if (!contentsView.pendingBodySave)
@@ -559,7 +552,6 @@ Item {
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
 
-
     }
     function scheduleEditorPersistence() {
         contentsView.pendingBodySave = true;
@@ -607,7 +599,7 @@ Item {
             const lineY = contentsView.lineY(lineNumber);
             if (lineY > contentsView.gutterViewportHeight)
                 break;
-            if (lineY + contentsView.editorLineHeight < 0)
+            if (lineY + contentsView.lineVisualHeight(lineNumber, 1) < 0)
                 continue;
             visibleLines.push(lineNumber);
         }

@@ -170,6 +170,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("return offsets;")),
         "ContentViewLayout.qml must return the computed logical-line offsets so gutter numbers remain visible.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("return visibleLines;")),
+        "ContentViewLayout.qml must return the visible gutter line model instead of leaving the gutter empty.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("function logicalLineNumberForOffset(offset)")),
         "ContentViewLayout.qml must resolve cursor line numbers from the logical-line offset table instead of reparsing the whole document every keypress.");
     QVERIFY2(
@@ -303,6 +306,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function resolveEditorFlickable()")),
         "ContentViewLayout.qml must expose a helper that resolves the internal editor flickable.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("return candidate;")),
+        "ContentViewLayout.qml must return the resolved internal editor flickable so viewport-derived gutter lookups stay live.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function scrollEditorViewportToMinimapPosition(localY)")),
         "ContentViewLayout.qml must expose a minimap scroll helper that repositions the editor viewport.");
@@ -490,6 +496,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             "readonly property var folderModel: hierarchyViewModel ? hierarchyViewModel.itemModel : null")),
         "SidebarHierarchyView.qml must source folder model directly from hierarchyViewModel.itemModel.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("autoSelectFirstItem: false")),
+        "SidebarHierarchyView.qml must disable LVRS first-item auto-activation so blank-area deselect remains visually cleared.");
+    QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.activeToolbarIndex = index;")),
         "SidebarHierarchyView.qml must not overwrite activeToolbarIndex locally.");
     QVERIFY2(
@@ -504,6 +513,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function activateSelectedHierarchyItem(focusView)")),
         "SidebarHierarchyView.qml must expose activateSelectedHierarchyItem(focusView) for programmatic focus sync.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function activateHierarchyDelegate(delegate, index)")),
+        "SidebarHierarchyView.qml must centralize hierarchy-row activation so drag and selection do not compete through duplicated tap handlers.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function clearHierarchySelection()")),
+        "SidebarHierarchyView.qml must expose a dedicated blank-area deselect path instead of leaving hierarchy row activation sticky.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("onActiveChanged: function (item, itemId, index)")),
+        "SidebarHierarchyView.qml must sync hierarchy selection from LVRS activeChanged so activation happens after click/release instead of raw press.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function canMoveFolder(index)")),
         "SidebarHierarchyView.qml must expose canMoveFolder(index) wrapper for folder drag gating.");
@@ -523,6 +541,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("Drag.keys: [\"whatson.hierarchy.folder\"]")),
         "SidebarHierarchyView.qml hierarchy delegates must advertise whatson.hierarchy.folder drag keys.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("hierarchyList.clearActiveItem()")),
+        "SidebarHierarchyView.qml blank-area deselect must clear the active LVRS hierarchy item explicitly.");
+    QVERIFY2(
+        !sidebarViewText.contains(QStringLiteral(
+            "onPressed: {\n                                sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);")),
+        "SidebarHierarchyView.qml must not force hierarchy selection on raw press for drag-capable rows.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("hierarchyViewModel.setSelectedIndex(index)")),
+        "SidebarHierarchyView.qml must mirror LVRS active item changes into the bound hierarchy view-model.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("contentHeight: Math.max(height, hierarchyList.implicitHeight)")),
+        "SidebarHierarchyView.qml must reserve a clickable blank viewport area below short hierarchies.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("anchors.top: hierarchyList.bottom")),
+        "SidebarHierarchyView.qml blank-area deselect zone must start immediately below the last hierarchy row.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
         "SidebarHierarchyView.qml folder drag handler must be able to take pointer ownership away from row click handlers and Flickable scrolling.");
