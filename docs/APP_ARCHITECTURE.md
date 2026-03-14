@@ -62,6 +62,11 @@ Key behaviors:
 - `qt_add_qml_module` for all QML under `src/app/qml/**`
 - `lvrs_configure_project_defaults(...)` + `lvrs_configure_qml_app(WhatSon)`
 - Apple-specific framework linkage (EventKit, Photos, ApplicationServices on macOS host)
+- Platform icon wiring from `resources/`:
+    - macOS bundle embeds `AppIcon.icns`
+    - iOS generates an Xcode app icon catalog from the shipped PNG variants, with PNG bundle fallback when needed
+    - Android package staging overlays density-specific launcher icons from `resources/<density>/AppIcon.png`
+    - Windows executable embeds `AppIcon.ico`
 - Host/iOS LVRS module fallback/overlay logic for runtime QML import stability
 - Linux install/export path now stages a self-contained deploy tree:
     - `cmake --install ...` and `whatson_export_binaries` deploy Qt/LVRS runtime libraries and QML imports

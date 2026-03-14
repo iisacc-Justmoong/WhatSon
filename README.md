@@ -204,6 +204,14 @@ The same deployment path is used by:
 cmake --install build --prefix /absolute/output/prefix
 ```
 
+Platform icon packaging is resolved from `resources/` during configure time:
+
+- macOS bundle icon: `resources/AppIcon.icns`
+- iOS app icon set: generated Xcode asset catalog from the iPhone/iPad PNG variants under `resources/`
+- Android launcher icon: density-specific `resources/<density>/AppIcon.png` files overlaid into the Android package
+- Windows executable icon: `resources/AppIcon.ico`
+- Linux desktop/package icon: `resources/AppIcon.png`
+
 Mobile launch targets from root:
 
 ```bash
@@ -255,7 +263,8 @@ Platform-only runs:
 ```
 
 `host` resolves to the current desktop platform (`macos` or `linux`).
-On Linux hosts, `all` builds the Linux bootstrap target first and then attempts Android only when the Android NDK is installed.
+On Linux hosts, `all` builds the Linux bootstrap target first and then attempts Android only when the Android NDK is
+installed.
 
 Optional temporary fallback:
 

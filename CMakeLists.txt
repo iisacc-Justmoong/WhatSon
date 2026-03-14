@@ -583,6 +583,9 @@ if (TARGET WhatSon AND UNIX AND NOT APPLE)
         install(FILES "${WHATSON_APP_ICON_PNG}"
                 DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps"
                 RENAME "whatson.png")
+        install(FILES "${WHATSON_APP_ICON_PNG}"
+                DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps"
+                RENAME "whatson.png")
     endif ()
 endif ()
 
