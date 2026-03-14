@@ -184,6 +184,11 @@ target_link_libraries(WhatSon
         Qt6::QuickControls2
 )
 
+if (UNIX AND NOT APPLE)
+    set_target_properties(WhatSon PROPERTIES
+            INSTALL_RPATH "$ORIGIN/../lib")
+endif ()
+
 if (APPLE)
     find_library(WHATSON_EVENTKIT_FRAMEWORK EventKit)
     if (WHATSON_EVENTKIT_FRAMEWORK)
@@ -395,7 +400,12 @@ endif ()
 lvrs_configure_qml_app(WhatSon)
 
 set_target_properties(WhatSon PROPERTIES
-        MACOSX_BUNDLE ON
         OUTPUT_NAME "WhatSon"
-        MACOSX_BUNDLE_BUNDLE_NAME "WhatSon"
 )
+
+if (APPLE)
+    set_target_properties(WhatSon PROPERTIES
+            MACOSX_BUNDLE ON
+            MACOSX_BUNDLE_BUNDLE_NAME "WhatSon"
+    )
+endif ()

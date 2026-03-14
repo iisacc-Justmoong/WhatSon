@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=WhatSon
+GenericName=Creative text hub editor
+Comment=Business-grade creative, branding, information, and knowledge text hub editor
+Exec=WhatSon
+TryExec=WhatSon
+Icon=whatson
+Terminal=false
+Categories=Office;Utility;Qt;
+StartupNotify=true

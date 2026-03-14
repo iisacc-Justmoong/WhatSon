@@ -75,7 +75,7 @@ cmake -S . -B build
 cmake --build build --target WhatSon -j
 cmake --build build --target WhatSon_daemon -j
 ./build/src/daemon/WhatSon_daemon --healthcheck
-./build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon
+cmake --build build --target whatson_run_app
 ```
 
 ## Single Source of Truth for LVRS Integration

@@ -546,7 +546,7 @@ class BuildAll:
         wayland_display = _normalize_env_value(os.environ.get("WAYLAND_DISPLAY"))
         return display is None and wayland_display is None
 
-    def _host_desktop_app_enabled(self) -> bool:
+    def _host_desktop_app_launch_enabled(self) -> bool:
         if self._linux_headless_session():
             return False
         return True
@@ -1637,7 +1637,7 @@ class BuildAll:
     def task_host(self) -> TaskResult:
         task = TASK_HOST
         log_path = self.logs_dir / f"{task}.log"
-        host_desktop_app_enabled = self._host_desktop_app_enabled()
+        host_desktop_app_launch_enabled = self._host_desktop_app_launch_enabled()
         self._emit_state(
             "task_prepare",
             task=task,
@@ -1646,7 +1646,7 @@ class BuildAll:
             root=_path_state(self.root),
             logs_dir=_path_state(self.logs_dir),
             no_host_run=self.no_host_run,
-            host_desktop_app_enabled=host_desktop_app_enabled,
+            host_desktop_app_launch_enabled=host_desktop_app_launch_enabled,
             qt_host_prefix=_path_state(self.qt_host_prefix),
             lvrs_prefix=_path_state(self.lvrs_prefix),
         )
@@ -1665,8 +1665,6 @@ class BuildAll:
             if prefix_paths:
                 cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}")
             cmake_cmd.append("-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF")
-            if not host_desktop_app_enabled:
-                cmake_cmd.append("-DWHATSON_BUILD_APP=OFF")
             lvrs_dir = self.lvrs_dir or self._lvrs_cmake_dir(
                 self._lvrs_platform_prefix(self._host_platform_name())
             )
@@ -1691,8 +1689,8 @@ class BuildAll:
             if daemon:
                 self._run(task=task, cmd=[str(daemon), "--healthcheck"], log_path=log_path)
 
-            if not host_desktop_app_enabled:
-                detail = "Build completed (headless Linux session skipped desktop app build and launch)."
+            if not host_desktop_app_launch_enabled:
+                detail = "Build completed (headless Linux session skipped desktop app launch)."
                 self._emit_state("task_finish", task=task, status="success", detail=detail)
                 return TaskResult(task, "success", detail, log_path)
 

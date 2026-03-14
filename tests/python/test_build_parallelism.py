@@ -204,7 +204,7 @@ class BuildParallelismTests(unittest.TestCase):
         self.assertNotIn("-j", build_commands[0])
         self.assertEqual(result.status, "success")
 
-    def test_linux_headless_host_build_disables_desktop_app(self) -> None:
+    def test_linux_headless_host_build_keeps_desktop_app_build_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             args = _make_args(Path(temp_dir), jobs=4)
             args.no_host_run = False
@@ -216,9 +216,9 @@ class BuildParallelismTests(unittest.TestCase):
 
         configure_commands = [cmd for cmd in build_runner.commands if cmd[:3] == ["cmake", "-S", str(build_runner.root)]]
         self.assertTrue(configure_commands)
-        self.assertIn("-DWHATSON_BUILD_APP=OFF", configure_commands[0])
+        self.assertNotIn("-DWHATSON_BUILD_APP=OFF", configure_commands[0])
         self.assertEqual(result.status, "success")
-        self.assertIn("headless Linux session", result.detail)
+        self.assertIn("skipped desktop app launch", result.detail)
 
     def test_linux_host_with_display_keeps_desktop_app_enabled(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

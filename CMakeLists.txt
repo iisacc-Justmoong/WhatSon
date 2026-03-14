@@ -63,9 +63,11 @@ option(WHATSON_ENABLE_DEV_TOOLING "Enable developer lint/format convenience targ
 set(WHATSON_PLATFORM_DIR "${CMAKE_SOURCE_DIR}/platform")
 set(WHATSON_APPLE_DIR "${WHATSON_PLATFORM_DIR}/Apple")
 set(WHATSON_ANDROID_DIR "${WHATSON_PLATFORM_DIR}/Android")
+set(WHATSON_LINUX_DIR "${WHATSON_PLATFORM_DIR}/Linux")
 set(WHATSON_IOS_INFO_PLIST "${WHATSON_APPLE_DIR}/iOS/Info.plist")
 set(WHATSON_DEFAULT_INFO_PLIST "${WHATSON_APPLE_DIR}/Info.plist")
 set(WHATSON_ENTITLEMENTS "${WHATSON_APPLE_DIR}/WhatSon.entitlements")
+set(WHATSON_APP_ICON_PNG "${CMAKE_SOURCE_DIR}/resources/AppIcon.png")
 set(WHATSON_APPLE_BUNDLE_ID "com.iisacc.app.whatson" CACHE STRING "Apple bundle id for WhatSon app")
 set(WHATSON_ANDROID_PACKAGE_ID "com.iisacc.app.whatson" CACHE STRING "Android package id for WhatSon app")
 set(WHATSON_IOS_XCODEPROJ_DIR "${CMAKE_BINARY_DIR}/ios-xcode-artifact" CACHE PATH
@@ -481,48 +483,71 @@ endif ()
 
 set(WHATSON_DIST_DIR "${CMAKE_BINARY_DIR}/dist")
 if (WHATSON_BUILD_TARGETS)
-    add_custom_target(whatson_export_binaries
-            COMMAND "${CMAKE_COMMAND}" -E rm -rf "${WHATSON_DIST_DIR}"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_DIST_DIR}"
-            COMMENT "Export host binaries to ${WHATSON_DIST_DIR}"
-    )
+    if (UNIX AND NOT APPLE)
+        set(_whatson_install_dist_command
+                "${CMAKE_COMMAND}"
+                --install "${CMAKE_BINARY_DIR}"
+                --prefix "${WHATSON_DIST_DIR}")
+        if (CMAKE_CONFIGURATION_TYPES)
+            list(APPEND _whatson_install_dist_command --config "$<CONFIG>")
+        endif ()
 
-    if (TARGET WhatSon)
-        if (APPLE)
-            add_custom_command(TARGET whatson_export_binaries POST_BUILD
-                    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-                    "$<TARGET_BUNDLE_DIR:WhatSon>"
-                    "${WHATSON_DIST_DIR}/WhatSon.app"
-            )
-        else ()
+        add_custom_target(whatson_export_binaries
+                COMMAND "${CMAKE_COMMAND}" -E rm -rf "${WHATSON_DIST_DIR}"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_DIST_DIR}"
+                COMMAND ${_whatson_install_dist_command}
+                COMMENT "Export self-contained host install tree to ${WHATSON_DIST_DIR}"
+        )
+    else ()
+        add_custom_target(whatson_export_binaries
+                COMMAND "${CMAKE_COMMAND}" -E rm -rf "${WHATSON_DIST_DIR}"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_DIST_DIR}"
+                COMMENT "Export host binaries to ${WHATSON_DIST_DIR}"
+        )
+
+        if (TARGET WhatSon)
+            if (APPLE)
+                add_custom_command(TARGET whatson_export_binaries POST_BUILD
+                        COMMAND "${CMAKE_COMMAND}" -E copy_directory
+                        "$<TARGET_BUNDLE_DIR:WhatSon>"
+                        "${WHATSON_DIST_DIR}/WhatSon.app"
+                )
+            else ()
+                add_custom_command(TARGET whatson_export_binaries POST_BUILD
+                        COMMAND "${CMAKE_COMMAND}" -E copy
+                        "$<TARGET_FILE:WhatSon>"
+                        "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:WhatSon>"
+                )
+            endif ()
+        endif ()
+
+        if (TARGET WhatSon_daemon)
             add_custom_command(TARGET whatson_export_binaries POST_BUILD
                     COMMAND "${CMAKE_COMMAND}" -E copy
-                    "$<TARGET_FILE:WhatSon>"
-                    "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:WhatSon>"
+                    "$<TARGET_FILE:WhatSon_daemon>"
+                    "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:WhatSon_daemon>"
             )
         endif ()
-    endif ()
 
-    if (TARGET WhatSon_daemon)
-        add_custom_command(TARGET whatson_export_binaries POST_BUILD
-                COMMAND "${CMAKE_COMMAND}" -E copy
-                "$<TARGET_FILE:WhatSon_daemon>"
-                "${WHATSON_DIST_DIR}/$<TARGET_FILE_NAME:WhatSon_daemon>"
-        )
-    endif ()
-
-    if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
-        add_custom_command(TARGET whatson_export_binaries POST_BUILD
-                COMMAND "${CMAKE_COMMAND}" -E copy
-                "${WHATSON_CLI_BINARY_PATH}"
-                "${WHATSON_DIST_DIR}/whatson${CMAKE_EXECUTABLE_SUFFIX}"
-        )
+        if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
+            add_custom_command(TARGET whatson_export_binaries POST_BUILD
+                    COMMAND "${CMAKE_COMMAND}" -E copy
+                    "${WHATSON_CLI_BINARY_PATH}"
+                    "${WHATSON_DIST_DIR}/whatson${CMAKE_EXECUTABLE_SUFFIX}"
+            )
+        endif ()
     endif ()
 
     add_dependencies(whatson_export_binaries whatson_build_all)
 endif ()
 
 include(GNUInstallDirs)
+set(WHATSON_LINUX_DESKTOP_FILE "")
+if (UNIX AND NOT APPLE AND EXISTS "${WHATSON_LINUX_DIR}/WhatSon.desktop.in")
+    set(WHATSON_LINUX_DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/WhatSon.desktop")
+    configure_file("${WHATSON_LINUX_DIR}/WhatSon.desktop.in" "${WHATSON_LINUX_DESKTOP_FILE}" @ONLY)
+endif ()
+
 if (TARGET WhatSon)
     install(TARGETS WhatSon
             BUNDLE DESTINATION .
@@ -547,6 +572,46 @@ endif ()
 
 if (TARGET whatson_cli AND DEFINED WHATSON_CLI_BINARY_PATH AND NOT WHATSON_CLI_BINARY_PATH STREQUAL "")
     install(PROGRAMS "${WHATSON_CLI_BINARY_PATH}" DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif ()
+
+if (TARGET WhatSon AND UNIX AND NOT APPLE)
+    if (NOT WHATSON_LINUX_DESKTOP_FILE STREQUAL "")
+        install(FILES "${WHATSON_LINUX_DESKTOP_FILE}" DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
+    endif ()
+
+    if (EXISTS "${WHATSON_APP_ICON_PNG}")
+        install(FILES "${WHATSON_APP_ICON_PNG}"
+                DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps"
+                RENAME "whatson.png")
+    endif ()
+endif ()
+
+if (TARGET WhatSon
+        AND UNIX AND NOT APPLE
+        AND NOT CMAKE_CROSSCOMPILING
+        AND COMMAND qt_generate_deploy_qml_app_script)
+    qt_generate_deploy_qml_app_script(
+            TARGET WhatSon
+            OUTPUT_SCRIPT WHATSON_QT_DEPLOY_APP_SCRIPT
+            NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+    install(SCRIPT "${WHATSON_QT_DEPLOY_APP_SCRIPT}")
+endif ()
+
+if (TARGET WhatSon_daemon
+        AND UNIX AND NOT APPLE
+        AND NOT CMAKE_CROSSCOMPILING
+        AND COMMAND qt_generate_deploy_script)
+    qt_generate_deploy_script(
+            TARGET WhatSon_daemon
+            OUTPUT_SCRIPT WHATSON_QT_DEPLOY_DAEMON_SCRIPT
+            CONTENT "
+qt_deploy_runtime_dependencies(
+    EXECUTABLE \$<TARGET_FILE:WhatSon_daemon>
+    NO_TRANSLATIONS
+)
+")
+    install(SCRIPT "${WHATSON_QT_DEPLOY_DAEMON_SCRIPT}")
 endif ()
 
 set(CPACK_PACKAGE_NAME "WhatSon")

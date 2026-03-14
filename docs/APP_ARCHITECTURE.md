@@ -44,6 +44,8 @@ Defined in `CMakeLists.txt`:
     - `whatson_test`
     - `whatson_run_app`
     - `whatson_run_daemon`
+    - `whatson_export_binaries`
+    - `whatson_package`
     - mobile/export helpers for iOS/Android
 
 Dependency discovery baseline:
@@ -61,6 +63,9 @@ Key behaviors:
 - `lvrs_configure_project_defaults(...)` + `lvrs_configure_qml_app(WhatSon)`
 - Apple-specific framework linkage (EventKit, Photos, ApplicationServices on macOS host)
 - Host/iOS LVRS module fallback/overlay logic for runtime QML import stability
+- Linux install/export path now stages a self-contained deploy tree:
+    - `cmake --install ...` and `whatson_export_binaries` deploy Qt/LVRS runtime libraries and QML imports
+    - Linux package install also includes a `.desktop` launcher and app icon metadata
 
 This confirms LVRS is not a style add-on; it is a first-class runtime dependency in build and QML module configuration.
 
@@ -68,6 +73,7 @@ This confirms LVRS is not a style add-on; it is a first-class runtime dependency
 
 - Single executable target with Qt Core linkage
 - Healthcheck mode prints `status=ok`
+- Linux install/export path keeps daemon runtime lookup aligned with the app deploy tree through install-time RPATH
 - No scheduled background jobs yet (skeleton state)
 
 ---

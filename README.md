@@ -156,6 +156,7 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
 LVRS platform-layout reference:
 
 - macOS: `~/.local/LVRS/platforms/macos`
+- Linux: `~/.local/LVRS/platforms/linux`
 - iOS: `~/.local/LVRS/platforms/ios`
 - Android: `~/.local/LVRS/platforms/android`
 - WASM: `~/.local/LVRS/platforms/wasm` (if installed)
@@ -193,6 +194,14 @@ cmake --build build --target whatson_run_app
 cmake --build build --target whatson_healthcheck_daemon
 cmake --build build --target whatson_export_binaries
 cmake --build build --target whatson_package
+```
+
+On Linux host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
+via `cmake --install`, including deployed Qt/LVRS runtime libraries, QML imports, the desktop entry, and the app icon.
+The same deployment path is used by:
+
+```bash
+cmake --install build --prefix /absolute/output/prefix
 ```
 
 Mobile launch targets from root:
@@ -238,10 +247,15 @@ The script below applies local environment fixes before LVRS bootstrap.
 Platform-only runs:
 
 ```bash
+./scripts/bootstrap_whatson.sh host
 ./scripts/bootstrap_whatson.sh macos
+./scripts/bootstrap_whatson.sh linux
 ./scripts/bootstrap_whatson.sh ios
 ./scripts/bootstrap_whatson.sh android
 ```
+
+`host` resolves to the current desktop platform (`macos` or `linux`).
+On Linux hosts, `all` builds the Linux bootstrap target first and then attempts Android only when the Android NDK is installed.
 
 Optional temporary fallback:
 
@@ -293,6 +307,8 @@ WHATSON_DEBUG_MODE=1 cmake --build build --target whatson_run_app
 Filter only debug lines during a run:
 
 ```bash
+./build/src/app/bin/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
+# macOS bundle path equivalent:
 ./build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
 ```
 
@@ -454,13 +470,14 @@ Behavior by OS:
 - macOS: runs host + Android + iOS flows.
 - Linux/Windows: iOS task is skipped automatically; host and Android flows still run.
 - Headless Linux host sessions without `DISPLAY` and `WAYLAND_DISPLAY` automatically configure
-  `-DWHATSON_BUILD_APP=OFF`, then stop after daemon healthcheck instead of launching the desktop app.
+  the full desktop app build, run daemon healthcheck, and then skip only the desktop app launch.
 
 Logs are written to `build/automation-logs/*.log` by default.
 Default artifacts are generated at:
 
 - iOS Xcode project: `build/ios-xcode-artifact/WhatSon.xcodeproj`
 - Android Studio project: `build/android-studio-artifact`
+- Linux staged install tree: `build/dist`
 
 The generated iOS configure path disables optional `Qt6GrpcQuick` / `Qt6ProtobufQuick`
 package discovery because WhatSon does not use those modules and cross-compiling may
