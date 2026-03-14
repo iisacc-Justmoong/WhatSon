@@ -84,13 +84,15 @@ Item {
     readonly property color minimapViewportFillColor: "#149DA0A8"
     readonly property int minimapViewportMinHeight: 28
     readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
+    readonly property bool noteCountContractAvailable: noteListModel && noteListModel.itemCount !== undefined
     property var noteListModel: null
+    readonly property bool noteSelectionContractAvailable: noteListModel && noteListModel.currentBodyText !== undefined && noteListModel.currentNoteId !== undefined
     property color panelColor: LV.Theme.panelBackground07
     property var panelViewModel: null
     property bool pendingBodySave: false
     readonly property int saveDebounceMs: 300
-    readonly property string selectedNoteBodyText: noteListModel && noteListModel.currentBodyText !== undefined ? String(noteListModel.currentBodyText) : ""
-    readonly property string selectedNoteId: noteListModel && noteListModel.currentNoteId !== undefined ? String(noteListModel.currentNoteId) : ""
+    readonly property string selectedNoteBodyText: contentsView.noteSelectionContractAvailable ? String(noteListModel.currentBodyText) : ""
+    readonly property string selectedNoteId: contentsView.noteSelectionContractAvailable ? String(noteListModel.currentNoteId) : ""
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
     readonly property bool showEmptyFolderPlaceholder: contentsView.visibleNoteCount === 0
     property color splitterColor: "transparent"
@@ -102,7 +104,7 @@ Item {
             return contentsView.editorTopInset;
         return (Number(contentEditor.editorItem.y) || contentsView.editorTopInset) + contentsView.editorContentOffsetY;
     }
-    readonly property int visibleNoteCount: noteListModel && noteListModel.itemCount !== undefined ? Math.max(0, Number(noteListModel.itemCount) || 0) : 0
+    readonly property int visibleNoteCount: contentsView.noteCountContractAvailable ? Math.max(0, Number(noteListModel.itemCount) || 0) : 0
 
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
@@ -285,10 +287,11 @@ Item {
         if (saved) {
             contentsView.pendingBodySave = false;
             bodySaveTimer.stop();
+            return true;
         } else {
             bodySaveTimer.restart();
         }
-
+        return false;
     }
     function lineDocumentY(lineNumber) {
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
@@ -526,7 +529,7 @@ Item {
 
     }
     function persistEditorTextForNote(noteId, text) {
-        if (!contentViewModel)
+        if (!contentsView.contentPersistenceContractAvailable)
             return false;
         if (contentViewModel.saveBodyTextForNote !== undefined)
             return Boolean(contentViewModel.saveBodyTextForNote(noteId, text));

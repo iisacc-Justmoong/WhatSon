@@ -25,7 +25,6 @@ Item {
     property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: LV.Theme.panelBackground04
-    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property var sidebarHierarchyViewModel: null
     property int sidebarHorizontalInset: 2
     property int sidebarWidth: LV.Theme.gap24 * 9
@@ -46,27 +45,21 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
-
-    function clampListViewWidth(value) {
-        // CRITICAL: Drag-resize clamps must always use finite occupied width.
-        // If occupied width becomes undefined/NaN, splitter dragging appears "blocked".
-        if (!hStack.listVisible)
+    function resolveActiveHierarchyIndex() {
+        if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeHierarchyIndex === undefined)
             return 0;
-        var occupiedWidth = hStack.sidebarWidth + (hStack.rightVisible ? hStack.rightPanelWidth : 0) + hStack.totalSplitterWidth();
-        var maxListWidth = Math.max(hStack.minListViewWidth, hStack.width - hStack.minContentWidth - occupiedWidth);
-        return Math.max(hStack.minListViewWidth, Math.min(maxListWidth, value));
-    }
-    function clampRightPanelWidth(value) {
-        if (!hStack.rightVisible)
+        const numericIndex = Number(hStack.sidebarHierarchyViewModel.activeHierarchyIndex);
+        if (!isFinite(numericIndex))
             return 0;
-        var occupiedWidth = hStack.sidebarWidth + (hStack.listVisible ? hStack.listViewWidth : 0) + hStack.totalSplitterWidth();
-        var maxRightWidth = Math.max(hStack.minRightPanelWidth, hStack.width - hStack.minContentWidth - occupiedWidth);
-        return Math.max(hStack.minRightPanelWidth, Math.min(maxRightWidth, value));
+        return Math.max(0, Math.floor(numericIndex));
     }
-    function clampSidebarWidth(value) {
-        var occupiedWidth = (hStack.listVisible ? hStack.listViewWidth : 0) + (hStack.rightVisible ? hStack.rightPanelWidth : 0) + hStack.totalSplitterWidth();
-        var maxSidebarWidth = Math.max(hStack.effectiveMinSidebarWidth, hStack.width - hStack.minContentWidth - occupiedWidth);
-        return Math.max(hStack.effectiveMinSidebarWidth, Math.min(maxSidebarWidth, value));
+    function resolveActiveHierarchyViewModel() {
+        if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeHierarchyViewModel === undefined)
+            return null;
+    }
+    function resolveActiveNoteListModel() {
+        if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeNoteListModel === undefined)
+            return null;
     }
     function totalSplitterWidth() {
         // CRITICAL REGRESSION GUARD:
@@ -98,7 +91,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.effectiveMinSidebarWidth
                 Layout.preferredWidth: hStack.sidebarWidth
-                activeToolbarIndex: hStack.sidebarHierarchyViewModel && hStack.sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? hStack.sidebarHierarchyViewModel.activeHierarchyIndex : 0
+                activeToolbarIndex: hStack.activeHierarchyIndex
                 horizontalInset: hStack.sidebarHorizontalInset
                 panelColor: hStack.sidebarColor
                 sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
@@ -151,9 +144,9 @@ Item {
                 visible: hStack.listVisible
 
                 ListBarLayout {
-                    activeToolbarIndex: hStack.sidebarHierarchyViewModel && hStack.sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? hStack.sidebarHierarchyViewModel.activeHierarchyIndex : 0
+                    activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
-                    noteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeNoteListModel : null
+                    noteListModel: hStack.activeNoteListModel
                     panelColor: hStack.sidebarColor
                 }
             }
@@ -201,13 +194,13 @@ Item {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
                 Layout.minimumWidth: hStack.minContentWidth
-                contentViewModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeHierarchyViewModel : null
+                contentViewModel: hStack.activeHierarchyViewModel
                 displayColor: hStack.contentsDisplayColor
                 drawerColor: hStack.drawerColor
                 drawerHeight: hStack.drawerHeight
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight
-                noteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.activeNoteListModel : null
+                noteListModel: hStack.activeNoteListModel
                 panelColor: hStack.contentPanelColor
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness

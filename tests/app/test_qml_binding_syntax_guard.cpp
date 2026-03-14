@@ -12,6 +12,33 @@ namespace
     {
         return static_cast<int>(std::count(line.begin(), line.end(), value));
     }
+
+    QString extractFunctionBody(const QString& text, const QString& signature)
+    {
+        const qsizetype signatureIndex = text.indexOf(signature);
+        if (signatureIndex < 0)
+            return {};
+
+        const qsizetype braceStart = text.indexOf(QLatin1Char('{'), signatureIndex);
+        if (braceStart < 0)
+            return {};
+
+        int braceDepth = 0;
+        for (qsizetype index = braceStart; index < text.size(); ++index)
+        {
+            const QChar ch = text.at(index);
+            if (ch == QLatin1Char('{'))
+                ++braceDepth;
+            else if (ch == QLatin1Char('}'))
+            {
+                --braceDepth;
+                if (braceDepth == 0)
+                    return text.mid(braceStart + 1, index - braceStart - 1);
+            }
+        }
+
+        return {};
+    }
 } // namespace
 
 class QmlBindingSyntaxGuardTest final : public QObject
@@ -24,6 +51,8 @@ private
 
 
     void bindingBlocks_mustNotContainStandaloneStringLiteral();
+    void qmlFiles_mustNotContainStandaloneDottedExpression();
+    void criticalViewHelpers_mustReturnExplicitValues();
     void contentView_mustComposeTextEditorGutter();
     void hierarchySidebarWiring_mustBindLoaderAndToolbarTarget();
 };
@@ -93,6 +122,106 @@ void QmlBindingSyntaxGuardTest::bindingBlocks_mustNotContainStandaloneStringLite
             .arg(violations.join(QLatin1Char('\n')))));
 }
 
+void QmlBindingSyntaxGuardTest::qmlFiles_mustNotContainStandaloneDottedExpression()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+
+    QDirIterator iterator(
+        qmlRoot,
+        QStringList{QStringLiteral("*.qml")},
+        QDir::Files,
+        QDirIterator::Subdirectories);
+
+    const QRegularExpression standaloneExpressionPattern(
+        QStringLiteral("^\\s*[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+\\s*$"));
+
+    QStringList violations;
+    while (iterator.hasNext())
+    {
+        const QString qmlPath = iterator.next();
+        QFile file(qmlPath);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(qmlPath));
+
+        const QStringList lines = QString::fromUtf8(file.readAll()).split(QLatin1Char('\n'));
+        for (qsizetype i = 0; i < lines.size(); ++i)
+        {
+            const QString trimmed = lines.at(i).trimmed();
+            if (trimmed.startsWith(QStringLiteral("//")))
+                continue;
+            if (!standaloneExpressionPattern.match(trimmed).hasMatch())
+                continue;
+            violations.push_back(
+                QStringLiteral("%1:%2 -> %3").arg(qmlPath, QString::number(i + 1), trimmed));
+        }
+    }
+
+    QVERIFY2(
+        violations.isEmpty(),
+        qPrintable(QStringLiteral(
+                "Invalid standalone dotted-expression line(s) found in QML:\n%1")
+            .arg(violations.join(QLatin1Char('\n')))));
+}
+
+void QmlBindingSyntaxGuardTest::criticalViewHelpers_mustReturnExplicitValues()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+    const QString contentViewPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsDisplayView.qml"));
+    QFile contentViewFile(contentViewPath);
+    QVERIFY2(contentViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewPath));
+    const QString contentViewText = QString::fromUtf8(contentViewFile.readAll());
+
+    const QString fallbackRowsBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function buildFallbackMinimapVisualRows(textStartY)"));
+    QVERIFY2(
+        !fallbackRowsBody.isEmpty() && fallbackRowsBody.contains(QStringLiteral("return rows;")),
+        "ContentsDisplayView.qml buildFallbackMinimapVisualRows() must return the assembled fallback rows.");
+
+    const QString logicalOffsetsBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function buildLogicalLineStartOffsets(text)"));
+    QVERIFY2(
+        !logicalOffsetsBody.isEmpty() && logicalOffsetsBody.contains(QStringLiteral("return offsets;")),
+        "ContentsDisplayView.qml buildLogicalLineStartOffsets() must return the computed logical-line offsets.");
+
+    const QString flushPendingBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function flushPendingEditorText()"));
+    QVERIFY2(
+        !flushPendingBody.isEmpty() &&
+        flushPendingBody.contains(QStringLiteral("return true;")) &&
+        flushPendingBody.contains(QStringLiteral("return false;")),
+        "ContentsDisplayView.qml flushPendingEditorText() must return an explicit success/failure value on every path.");
+
+    const QString markerColorBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function markerColorForType(markerType)"));
+    QVERIFY2(
+        !markerColorBody.isEmpty() &&
+        markerColorBody.contains(QStringLiteral("return contentsView.gutterMarkerCurrentColor;")),
+        "ContentsDisplayView.qml markerColorForType() must keep an explicit fallback color instead of leaking undefined.");
+
+    const QString normalizeOffsetsBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function normalizeLogicalLineOffsets(offsets)"));
+    QVERIFY2(
+        !normalizeOffsetsBody.isEmpty() &&
+        normalizeOffsetsBody.contains(QStringLiteral("return normalized;")),
+        "ContentsDisplayView.qml normalizeLogicalLineOffsets() must return the normalized offset model.");
+
+    const QString resolveFlickableBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function resolveEditorFlickable()"));
+    QVERIFY2(
+        !resolveFlickableBody.isEmpty() &&
+        resolveFlickableBody.contains(QStringLiteral("return candidate;")),
+        "ContentsDisplayView.qml resolveEditorFlickable() must return the resolved editor flickable on the success path.");
+
+    const QString visibleLinesBody = extractFunctionBody(
+        contentViewText, QStringLiteral("function visibleLineNumbers()"));
+    QVERIFY2(
+        !visibleLinesBody.isEmpty() &&
+        visibleLinesBody.contains(QStringLiteral("return visibleLines;")),
+        "ContentsDisplayView.qml visibleLineNumbers() must return the visible logical-line model for the gutter.");
+}
+
 void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
 {
     const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
@@ -128,8 +257,22 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("property var noteListModel: null")),
         "ContentViewLayout.qml must accept the active note list model for body-text projection.");
     QVERIFY2(
+        contentViewLayoutText.contains(
+            QStringLiteral("readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel")),
+        "ContentViewLayout.qml must normalize the incoming content view-model through a resolved contract property.");
+    QVERIFY2(
+        contentViewLayoutText.contains(
+            QStringLiteral("readonly property var resolvedNoteListModel: contentViewLayout.noteListModel")),
+        "ContentViewLayout.qml must normalize the incoming note-list model through a resolved contract property.");
+    QVERIFY2(
+        contentViewLayoutText.contains(QStringLiteral("contentViewModel: contentViewLayout.resolvedContentViewModel")),
+        "ContentViewLayout.qml must pass the resolved content view-model into ContentsDisplayView.");
+    QVERIFY2(
+        contentViewLayoutText.contains(QStringLiteral("noteListModel: contentViewLayout.resolvedNoteListModel")),
+        "ContentViewLayout.qml must pass the resolved note-list model into ContentsDisplayView.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral(
-            "readonly property int visibleNoteCount: noteListModel && noteListModel.itemCount !== undefined ? Math.max(0, Number(noteListModel.itemCount) || 0) : 0")),
+            "readonly property int visibleNoteCount: contentsView.noteCountContractAvailable ? Math.max(0, Number(noteListModel.itemCount) || 0) : 0")),
         "ContentViewLayout.qml must derive the visible note count from the active domain note-list model.");
     QVERIFY2(
         contentViewText.contains(
@@ -138,6 +281,18 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("property var contentViewModel: null")),
         "ContentViewLayout.qml must accept the active hierarchy view-model for body persistence.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property bool noteSelectionContractAvailable: noteListModel && noteListModel.currentBodyText !== undefined && noteListModel.currentNoteId !== undefined")),
+        "ContentsDisplayView.qml must expose an explicit note-selection contract for note-list driven editor binding.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property bool noteCountContractAvailable: noteListModel && noteListModel.itemCount !== undefined")),
+        "ContentsDisplayView.qml must expose an explicit note-count contract for empty-folder and gutter state.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
+            "readonly property bool contentPersistenceContractAvailable: contentViewModel && (contentViewModel.saveBodyTextForNote !== undefined || contentViewModel.saveCurrentBodyText !== undefined)")),
+        "ContentsDisplayView.qml must expose an explicit persistence contract before attempting body writes.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("property bool pendingBodySave: false")),
         "ContentViewLayout.qml must track debounced body persistence state.");
@@ -407,7 +562,7 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentViewLayout.qml must save editor text through contentViewModel.saveBodyTextForNote(noteId, text).");
     QVERIFY2(
         contentViewText.contains(QStringLiteral(
-            "readonly property string selectedNoteBodyText: noteListModel && noteListModel.currentBodyText !== undefined ? String(noteListModel.currentBodyText) : \"\"")),
+            "readonly property string selectedNoteBodyText: contentsView.noteSelectionContractAvailable ? String(noteListModel.currentBodyText) : \"\"")),
         "ContentViewLayout.qml must source editor text from noteListModel.currentBodyText.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("onSelectedNoteBodyTextChanged: {")),
@@ -447,9 +602,26 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "HierarchySidebarLayout.qml must declare sidebarHierarchyViewModel.");
     QVERIFY2(
         sidebarLayoutText.contains(
+            QStringLiteral("readonly property int resolvedActiveHierarchyIndex: resolveActiveHierarchyIndex()")),
+        "HierarchySidebarLayout.qml must normalize the active hierarchy index through an explicit resolved contract property.");
+    QVERIFY2(
+        sidebarLayoutText.contains(
             QStringLiteral(
-                "readonly property int currentHierarchy: normalizeHierarchyIndex(sidebarHierarchyViewModel && sidebarHierarchyViewModel.activeHierarchyIndex !== undefined ? sidebarHierarchyViewModel.activeHierarchyIndex : activeToolbarIndex)")),
-        "HierarchySidebarLayout.qml must normalize currentHierarchy from sidebarHierarchyViewModel first.");
+                "readonly property int currentHierarchy: normalizeHierarchyIndex(hierarchyView.resolvedActiveHierarchyIndex)")),
+        "HierarchySidebarLayout.qml must derive currentHierarchy from the resolved active hierarchy index.");
+    QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral(
+            "readonly property var resolvedHierarchyViewModel: resolveHierarchyViewModel(hierarchyView.currentHierarchy)")),
+        "HierarchySidebarLayout.qml must resolve the per-domain hierarchy view-model through one explicit contract property.");
+    QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral("function resolveActiveHierarchyIndex()")),
+        "HierarchySidebarLayout.qml must expose a helper that resolves activeHierarchyIndex from the bound sidebar hierarchy VM.");
+    QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral("function resolveHierarchyViewModel(index)")),
+        "HierarchySidebarLayout.qml must expose a helper that resolves the per-domain hierarchy view-model.");
+    QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral("function setActiveHierarchyIndex(index)")),
+        "HierarchySidebarLayout.qml must centralize toolbar-driven hierarchy activation through one setter helper.");
     QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("return normalizedIndex;")),
         "HierarchySidebarLayout.qml normalizeHierarchyIndex must explicitly return normalized valid index.");
@@ -457,14 +629,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarLayoutText.contains(QStringLiteral("activeToolbarIndex: hierarchyView.currentHierarchy")),
         "HierarchySidebarLayout.qml must bind sidebar activeToolbarIndex from currentHierarchy.");
     QVERIFY2(
-        sidebarLayoutText.contains(
-            QStringLiteral(
-                "hierarchyViewModel: hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel !== undefined ? hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel : hierarchyView.modelForHierarchy(hierarchyView.currentHierarchy)")),
-        "HierarchySidebarLayout.qml must resolve hierarchyViewModel from sidebarHierarchyViewModel contract.");
+        sidebarLayoutText.contains(QStringLiteral("hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel")),
+        "HierarchySidebarLayout.qml must pass only the resolved hierarchy view-model into SidebarHierarchyView.");
     QVERIFY2(
-        sidebarLayoutText.contains(
-            QStringLiteral("hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(nextIndex);")),
-        "HierarchySidebarLayout.qml must route toolbar index updates through sidebarHierarchyViewModel interface.");
+        sidebarLayoutText.contains(QStringLiteral("hierarchyView.setActiveHierarchyIndex(index);")),
+        "HierarchySidebarLayout.qml must route toolbar index updates through the normalized setter helper.");
 
     const QString mainQmlPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("Main.qml"));
     QFile mainQmlFile(mainQmlPath);
@@ -472,15 +641,30 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     const QString mainQmlText = QString::fromUtf8(mainQmlFile.readAll());
 
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("readonly property string activeMainLayout")),
-        "Main.qml must declare activeMainLayout for platform layout branching.");
+        mainQmlText.contains(QStringLiteral("readonly property string workspaceRoutePath: \"/\"")),
+        "Main.qml must declare an explicit workspace route path for the LVRS page stack.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("useInternalPageStack: true")),
+        "Main.qml must enable the LVRS internal page stack instead of bypassing ApplicationWindow routing.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("internalRouterRegisterAsGlobalNavigator: true")),
+        "Main.qml must register its internal LVRS router as the active global navigator.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("pageInitialPath: workspaceRoutePath")),
+        "Main.qml must drive initial shell state through pageInitialPath.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("pageRoutes: [workspaceShellRoute]")),
+        "Main.qml must expose the workspace shell through pageRoutes.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral(
-            "sourceComponent: applicationWindow.activeMainLayout === \"mobile\" ? mobileMainLayoutComponent : desktopMainLayoutComponent")),
-        "Main.qml must select desktop/mobile root layout from activeMainLayout.");
+            "sourceComponent: applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent")),
+        "Main.qml must choose the routed workspace layout from LVRS adaptiveMobileLayout instead of a root Loader-only branch.");
     QVERIFY2(
-        !mainQmlText.contains(QStringLiteral("useMobileMainLayout")),
-        "Main.qml must not depend on legacy useMobileMainLayout helper.");
+        !mainQmlText.contains(QStringLiteral("readonly property string activeMainLayout")),
+        "Main.qml must not keep the legacy activeMainLayout branch contract once LVRS page-stack routing is enabled.");
+    QVERIFY2(
+        !mainQmlText.contains(QStringLiteral("id: mainLayoutLoader")),
+        "Main.qml must not bypass the routed shell through a root-level mainLayoutLoader.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm")),
         "Main.qml must forward sidebarHierarchyViewModel to BodyLayout.");
@@ -680,6 +864,25 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("function applySearchTextToModel()")),
         "ListBarLayout.qml must centralize note-list search propagation through applySearchTextToModel().");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined")),
+        "ListBarLayout.qml must expose an explicit note-list model presence contract.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)")),
+        "ListBarLayout.qml must expose a dedicated search-contract capability flag instead of scattering dynamic checks.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)")),
+        "ListBarLayout.qml must expose a dedicated selection-contract capability flag instead of scattering dynamic checks.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null")),
+        "ListBarLayout.qml must normalize the active note-list model through a resolved contract property.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function roleValue(roleModel, roleName, fallbackValue)")),
+        "ListBarLayout.qml must centralize role extraction through a dedicated helper.");
+    QVERIFY2(
         listBarLayoutText.
         contains(QStringLiteral("listBarLayout.noteListModel.searchText = listBarLayout.searchText;")),
         "ListBarLayout.qml must push the active search text into the bound note list model.");
@@ -697,9 +900,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             QStringLiteral("interactive: contentHeight > height && !listBarLayout.noteDragActive")),
         "ListBarLayout.qml must disable ListView scrolling while a note drag is active.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral(
-            "model: listBarLayout.noteListMode && listBarLayout.noteListModel ? listBarLayout.noteListModel : null")),
-        "ListBarLayout.qml must null the note-list model outside note-list mode once the old placeholder adapter is removed.");
+        listBarLayoutText.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")),
+        "ListBarLayout.qml must bind ListView only to the resolved note-list model.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
@@ -708,12 +910,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "image: useRuntimeModel && roleModel && roleModel.image !== undefined ? Boolean(roleModel.image) : false")),
-        "ListBarLayout.qml must forward the image role into NoteListItem.");
+            "image: useRuntimeModel ? Boolean(listBarLayout.roleValue(roleModel, \"image\", false)) : false")),
+        "ListBarLayout.qml must forward the image role through the centralized roleValue helper.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "imageSource: useRuntimeModel && roleModel && roleModel.imageSource !== undefined ? roleModel.imageSource : \"\"")),
-        "ListBarLayout.qml must forward the imageSource role into NoteListItem.");
+            "imageSource: useRuntimeModel ? listBarLayout.roleValue(roleModel, \"imageSource\", \"\") : \"\"")),
+        "ListBarLayout.qml must forward the imageSource role through the centralized roleValue helper.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
         "ListBarLayout.qml note drag handler must be able to take pointer ownership away from tap selection and list scrolling.");
@@ -798,6 +1000,36 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("return isFinite(width) ? width : 0;")),
         "BodyLayout.qml totalSplitterWidth must sanitize non-finite width values.");
+    QVERIFY2(
+        bodyLayoutText.contains(
+            QStringLiteral("readonly property int activeHierarchyIndex: hStack.resolveActiveHierarchyIndex()")),
+        "BodyLayout.qml must expose the resolved active hierarchy index at the assembly layer.");
+    QVERIFY2(
+        bodyLayoutText.contains(
+            QStringLiteral("readonly property var activeHierarchyViewModel: hStack.resolveActiveHierarchyViewModel()")),
+        "BodyLayout.qml must expose the resolved active hierarchy view-model at the assembly layer.");
+    QVERIFY2(
+        bodyLayoutText.contains(
+            QStringLiteral("readonly property var activeNoteListModel: hStack.resolveActiveNoteListModel()")),
+        "BodyLayout.qml must expose the resolved active note-list model at the assembly layer.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("function resolveActiveHierarchyIndex()")),
+        "BodyLayout.qml must centralize activeHierarchyIndex normalization.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("function resolveActiveHierarchyViewModel()")),
+        "BodyLayout.qml must centralize active hierarchy view-model resolution.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("function resolveActiveNoteListModel()")),
+        "BodyLayout.qml must centralize active note-list model resolution.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("activeToolbarIndex: hStack.activeHierarchyIndex")),
+        "BodyLayout.qml must feed child hierarchy/list views from the resolved active hierarchy index.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("noteListModel: hStack.activeNoteListModel")),
+        "BodyLayout.qml must pass the resolved active note-list model into child views.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("contentViewModel: hStack.activeHierarchyViewModel")),
+        "BodyLayout.qml must pass the resolved active hierarchy view-model into the content surface.");
 
     const QString detailPanelPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailPanel.qml"));
@@ -808,18 +1040,38 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailPanelText.contains(QStringLiteral("readonly property var detailPanelVm: detailPanelViewModel")),
         "DetailPanel.qml must bind detailPanelVm from detailPanelViewModel context.");
     QVERIFY2(
-        detailPanelText.contains(
-            QStringLiteral(
-                "readonly property var activeDetailContentVm: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.activeContentViewModel : null")),
-        "DetailPanel.qml must map active state to dedicated content view-model instance.");
+        detailPanelText.contains(QStringLiteral(
+            "readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()")),
+        "DetailPanel.qml must resolve the active content view-model through an explicit contract property.");
     QVERIFY2(
         detailPanelText.contains(
-            QStringLiteral(
-                "toolbarButtonSpecs: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.toolbarItems : []")),
-        "DetailPanel.qml must source toolbar specs from C++ detailPanelViewModel.");
+            QStringLiteral("readonly property string resolvedActiveStateName: detailPanel.resolveActiveStateName()")),
+        "DetailPanel.qml must resolve the active state name through an explicit contract property.");
+    QVERIFY2(
+        detailPanelText.contains(
+            QStringLiteral("readonly property var resolvedToolbarItems: detailPanel.resolveToolbarItems()")),
+        "DetailPanel.qml must resolve toolbar specs through an explicit contract property.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("function resolveActiveContentViewModel()")),
+        "DetailPanel.qml must expose a helper that resolves the active content view-model from C++ state.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("function resolveActiveStateName()")),
+        "DetailPanel.qml must expose a helper that resolves the active detail state name from C++ state.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("function resolveToolbarItems()")),
+        "DetailPanel.qml must expose a helper that resolves toolbar specs from C++ state.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("toolbarButtonSpecs: detailPanel.resolvedToolbarItems")),
+        "DetailPanel.qml must source toolbar specs from the resolved detail-panel contract.");
     QVERIFY2(
         detailPanelText.contains(QStringLiteral("detailPanel.detailPanelVm.requestStateChange(stateValue);")),
         "DetailPanel.qml must forward toolbar state changes to C++ detailPanelViewModel.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("activeContentViewModel: detailPanel.resolvedActiveContentViewModel")),
+        "DetailPanel.qml must forward the resolved content view-model into DetailContents.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("activeStateName: detailPanel.resolvedActiveStateName")),
+        "DetailPanel.qml must forward the resolved state name into DetailContents.");
 
     const QString detailToolbarPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailPanelHeaderToolbar.qml"));
@@ -829,6 +1081,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral("signal detailStateChangeRequested(int stateValue)")),
         "DetailPanelHeaderToolbar.qml must expose detailStateChangeRequested(int stateValue).");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral(
+            "readonly property var resolvedToolbarButtonSpecs: detailPanelHeaderToolbar.normalizeToolbarButtonSpecs(detailPanelHeaderToolbar.toolbarButtonSpecs)")),
+        "DetailPanelHeaderToolbar.qml must normalize incoming toolbar specs through an explicit contract property.");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("function normalizeToolbarButtonSpecs(value)")),
+        "DetailPanelHeaderToolbar.qml must expose a helper that normalizes toolbar specs into an array.");
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral("implicitHeight: 20")),
         "DetailPanelHeaderToolbar.qml must keep the Figma 20px frame height.");
@@ -841,6 +1100,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral("DetailPanelHeaderToolbarButton")),
         "DetailPanelHeaderToolbar.qml must compose DetailPanelHeaderToolbarButton delegates.");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("model: detailPanelHeaderToolbar.resolvedToolbarButtonSpecs.length")),
+        "DetailPanelHeaderToolbar.qml must drive its repeater from resolved toolbar specs.");
+    QVERIFY2(
+        detailToolbarText.contains(
+            QStringLiteral("buttonSpec: detailPanelHeaderToolbar.resolvedToolbarButtonSpecs[index]")),
+        "DetailPanelHeaderToolbar.qml must pass resolved toolbar specs into each delegate.");
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral(
             "detailPanelHeaderToolbar.detailStateChangeRequested(stateValue);")),
@@ -880,8 +1146,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailContentsText.contains(QStringLiteral("property string activeStateName: \"fileInfo\"")),
         "DetailContents.qml must expose activeStateName default.");
     QVERIFY2(
-        detailContentsText.contains(QStringLiteral("state: detailContents.activeStateName")),
-        "DetailContents.qml must bind QML state to activeStateName.");
+        detailContentsText.contains(QStringLiteral(
+            "readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)")),
+        "DetailContents.qml must normalize incoming state names through an explicit contract property.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("function normalizeStateName(value)")),
+        "DetailContents.qml must expose a helper that clamps incoming state names to known values.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("state: detailContents.resolvedActiveStateName")),
+        "DetailContents.qml must bind QML state to the resolved active state name.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)

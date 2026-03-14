@@ -9,9 +9,12 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Adaptive Layout
 
-- `src/app/qml/Main.qml` classifies runtime platform via `Qt.platform.os`, resolves an explicit
-  `desktop/mobile` main-layout branch, and selects `MobileNormalLayout` on iOS/Android with media-query fallback for
-  desktop mobile breakpoints.
+- `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs:
+  `useInternalPageStack: true`, `pageInitialPath: "/"`, and an explicit routed workspace entry in `pageRoutes`.
+- The routed workspace page still composes WhatSon's custom desktop/mobile shells, but layout selection now hangs off
+  LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
+- `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow
+  through LVRS `Navigator` / `PageRouter` semantics instead of bespoke root state.
 - `src/app/qml/Main.qml` also declares the application menu bar at the root window level with empty `File`, `Edit`,
   `View`, `Window`, and `Help` menus; macOS uses `Qt.labs.platform.MenuBar`, and each otherwise-empty native menu
   keeps a disabled placeholder row so the top-level titles remain visible in the global menu bar.
@@ -40,6 +43,10 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Hierarchy Interaction
 
+- MVVM input normalization for internal-data views now happens at the assembly layer first. `BodyLayout.qml`,
+  `HierarchySidebarLayout.qml`, `ContentViewLayout.qml`, `ListBarLayout.qml`, and the detail-panel views expose
+  `resolved*` or capability-contract properties before child views consume hierarchy indices, active view-models,
+  toolbar specs, or note-list models.
 - `SidebarHierarchyView.qml` opens inline folder rename from both `Enter/Return` and mouse double-tap on the folder row.
 - Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
   reparent them by drag-and-drop instead of only through model-side helpers. The sidebar now distinguishes `before`,
@@ -70,6 +77,11 @@ WhatSon is an LVRS-based Qt Quick application.
   the same logical document and current cursor line.
 - That gutter depends on a concrete logical-line offset array returned from `buildLogicalLineStartOffsets(...)`; when
   the offset model is broken, the editor text can still render while every visible gutter number disappears.
+- The editor-view helper contract is intentionally strict now: helper functions that feed gutter/minimap/layout state
+  must behave like total functions with an explicit return value on every success path and every fallback path. QML
+  silently propagates `undefined`, and that can blank the gutter while leaving the rest of the editor visible.
+- The same rule now applies to MVVM-fed bindings: views should not scatter direct `viewModel.foo !== undefined` checks
+  across delegates. Normalize the incoming model/view-model once, then bind children only to the resolved contract.
 - The gutter now follows the Figma `ContentsDisplayView` token contract directly: `panelBackground04` background,
   `#4E5157` inactive caption line numbers and `#9DA0A8` active line number.
 - The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
@@ -134,6 +146,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts
   external gutter marker ranges via `gutterMarkers` using `{ type: "changed" | "conflict", startLine, lineSpan }` or
   `{ type, startLine, endLine }`.
+- The QML safety guard now scans for two recurring corruption patterns as part of the test suite: standalone string
+  literals inside `Binding {}` blocks and standalone dotted expressions such as `noteListItem.imageSource` that should
+  have been property assignments. Critical `ContentsDisplayView.qml` helper bodies are also asserted to keep their
+  explicit `return` statements.
+- The same guard suite now also checks MVVM contract normalization for the data-driven views: hierarchy assembly,
+  note-list projection, content editor projection, and detail-panel projection must each keep their explicit
+  `resolved*` contract properties and helper functions.
 
 ## Theme Token Usage
 

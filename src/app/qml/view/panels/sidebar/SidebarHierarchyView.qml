@@ -64,6 +64,15 @@ Item {
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
 
+    function activateHierarchyDelegate(delegate, index) {
+        if (!delegate || index < 0)
+            return;
+        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
+            sidebarHierarchyView.commitRename();
+        if (hierarchyList && hierarchyList.requestActivate !== undefined)
+            hierarchyList.requestActivate(delegate);
+        sidebarHierarchyView.forceActiveFocus();
+    }
     function activateSelectedHierarchyItem(focusView) {
         if (sidebarHierarchyView.selectedFolderIndex < 0)
             return;

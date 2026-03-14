@@ -8,18 +8,22 @@ Rectangle {
     id: listBarLayout
 
     property int activeToolbarIndex: 0
+    readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property color hintColor: LV.Theme.descriptionColor
     property bool noteDragActive: false
+    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
+    readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
+    readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
     property string searchText: ""
 
     signal viewHookRequested
 
     function applySearchTextToModel() {
-        if (!listBarLayout.noteListMode || !listBarLayout.noteListModel)
+        if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)
             return;
 
         if (listBarLayout.noteListModel.searchText !== undefined) {
@@ -30,7 +34,7 @@ Rectangle {
             listBarLayout.noteListModel.setSearchText(listBarLayout.searchText);
     }
     function currentIndexFromModel() {
-        if (!listBarLayout.noteListModel)
+        if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return -1;
         if (listBarLayout.noteListModel.currentIndex !== undefined)
             return Number(listBarLayout.noteListModel.currentIndex);
@@ -60,7 +64,7 @@ Rectangle {
         return [];
     }
     function pushCurrentIndexToModel(index) {
-        if (!listBarLayout.noteListModel)
+        if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return;
         const normalizedIndex = Number(index);
         if (listBarLayout.noteListModel.currentIndex !== undefined) {
@@ -137,7 +141,7 @@ Rectangle {
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
                     interactive: contentHeight > height && !listBarLayout.noteDragActive
-                    model: listBarLayout.noteListMode && listBarLayout.noteListModel ? listBarLayout.noteListModel : null
+                    model: listBarLayout.resolvedNoteListModel
                     spacing: 2
                     visible: listBarLayout.noteListMode
 
@@ -147,7 +151,7 @@ Rectangle {
                         required property int index
                         required property var model
                         readonly property var roleModel: typeof noteItemDelegate.model === "object" ? noteItemDelegate.model : null
-                        readonly property bool useRuntimeModel: listBarLayout.noteListModel !== null
+                        readonly property bool useRuntimeModel: listBarLayout.resolvedNoteListModel !== null
 
                         Drag.active: noteDragHandler.active
                         Drag.hotSpot.x: width * 0.5
@@ -155,17 +159,17 @@ Rectangle {
                         Drag.keys: ["whatson.library.note"]
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
-                        bookmarkColor: useRuntimeModel && roleModel && roleModel.bookmarkColor !== undefined ? String(roleModel.bookmarkColor) : ""
-                        bookmarked: useRuntimeModel && roleModel && roleModel.bookmarked !== undefined ? Boolean(roleModel.bookmarked) : false
-                        displayDate: useRuntimeModel && roleModel && roleModel.displayDate !== undefined ? String(roleModel.displayDate) : ""
-                        folders: useRuntimeModel && roleModel && roleModel.folders !== undefined ? listBarLayout.normalizeEntries(roleModel.folders) : []
-                        image: useRuntimeModel && roleModel && roleModel.image !== undefined ? Boolean(roleModel.image) : false
-                        imageSource: useRuntimeModel && roleModel && roleModel.imageSource !== undefined ? roleModel.imageSource : ""
-                        noteId: useRuntimeModel && roleModel && roleModel.id !== undefined ? String(roleModel.id) : ""
+                        bookmarkColor: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "bookmarkColor", "")) : ""
+                        bookmarked: useRuntimeModel ? Boolean(listBarLayout.roleValue(roleModel, "bookmarked", false)) : false
+                        displayDate: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "displayDate", "")) : ""
+                        folders: useRuntimeModel ? listBarLayout.normalizeEntries(listBarLayout.roleValue(roleModel, "folders", [])) : []
+                        image: useRuntimeModel ? Boolean(listBarLayout.roleValue(roleModel, "image", false)) : false
+                        imageSource: useRuntimeModel ? listBarLayout.roleValue(roleModel, "imageSource", "") : ""
+                        noteId: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "id", "")) : ""
                         opacity: noteDragHandler.active ? 0.72 : 1
                         pressed: ListView.isCurrentItem
-                        primaryText: useRuntimeModel && roleModel && roleModel.primaryText !== undefined ? String(roleModel.primaryText) : ""
-                        tags: useRuntimeModel && roleModel && roleModel.tags !== undefined ? listBarLayout.normalizeEntries(roleModel.tags) : []
+                        primaryText: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "primaryText", "")) : ""
+                        tags: useRuntimeModel ? listBarLayout.normalizeEntries(listBarLayout.roleValue(roleModel, "tags", [])) : []
                         width: ListView.view ? ListView.view.width : listBarLayout.width
 
                         DragHandler {
@@ -214,6 +218,6 @@ Rectangle {
             listBarLayout.syncCurrentIndexFromModel();
         }
 
-        target: listBarLayout.noteListModel
+        target: listBarLayout.resolvedNoteListModel
     }
 }

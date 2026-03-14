@@ -3,7 +3,6 @@ import QtQuick
 Item {
     id: detailPanel
 
-    readonly property var activeDetailContentVm: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.activeContentViewModel : null
     readonly property int detailContentsHeight: Math.max(0, detailPanel.height - detailPanel.headerToolbarHeight - detailPanel.panelSpacing)
     readonly property int detailContentsWidth: detailPanel.width
     readonly property var detailPanelVm: detailPanelViewModel
@@ -20,6 +19,22 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function resolveActiveContentViewModel() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeContentViewModel === undefined)
+            return null;
+
+    }
+    function resolveActiveStateName() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeStateName === undefined)
+            return "fileInfo";
+        const stateName = String(detailPanel.detailPanelVm.activeStateName).trim();
+        return stateName.length > 0 ? stateName : "fileInfo";
+    }
+    function resolveToolbarItems() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.toolbarItems === undefined || detailPanel.detailPanelVm.toolbarItems === null)
+            return [];
+
+    }
 
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
@@ -28,7 +43,7 @@ Item {
 
         DetailPanelHeaderToolbar {
             height: detailPanel.headerToolbarHeight
-            toolbarButtonSpecs: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.toolbarItems : []
+            toolbarButtonSpecs: detailPanel.resolvedToolbarItems
             width: detailPanel.headerToolbarWidth
 
             onDetailStateChangeRequested: function (stateValue) {
@@ -38,8 +53,8 @@ Item {
             }
         }
         DetailContents {
-            activeContentViewModel: detailPanel.activeDetailContentVm
-            activeStateName: detailPanel.detailPanelVm ? detailPanel.detailPanelVm.activeStateName : "fileInfo"
+            activeContentViewModel: detailPanel.resolvedActiveContentViewModel
+            activeStateName: detailPanel.resolvedActiveStateName
             height: detailPanel.detailContentsHeight
             width: detailPanel.detailContentsWidth
         }

@@ -16,6 +16,8 @@ Item {
     property var noteListModel: null
     property color panelColor: LV.Theme.panelBackground07
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
+    readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
+    readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
@@ -29,13 +31,13 @@ Item {
 
     ContentsDisplayView {
         anchors.fill: parent
-        contentViewModel: contentViewLayout.contentViewModel
+        contentViewModel: contentViewLayout.resolvedContentViewModel
         displayColor: contentViewLayout.displayColor
         drawerColor: contentViewLayout.drawerColor
         drawerHeight: contentViewLayout.drawerHeight
         minDisplayHeight: contentViewLayout.minDisplayHeight
         minDrawerHeight: contentViewLayout.minDrawerHeight
-        noteListModel: contentViewLayout.noteListModel
+        noteListModel: contentViewLayout.resolvedNoteListModel
         panelColor: contentViewLayout.panelColor
         panelViewModel: contentViewLayout.panelViewModel
         splitterColor: contentViewLayout.splitterColor

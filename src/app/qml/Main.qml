@@ -11,9 +11,7 @@ import "view/panels" as BodyPanelView
 LV.ApplicationWindow {
     id: applicationWindow
 
-    // Platform branch is OS-driven (LVRS runtime platform info), not size/adaptive mode.
-    readonly property string activeMainLayout: isMobilePlatform ? "mobile" : "desktop"
-    readonly property int adaptiveStatusBarHeight: activeMainLayout === "mobile" ? 0 : statusBarHeight
+    readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
     readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: 194
@@ -167,7 +165,8 @@ LV.ApplicationWindow {
         return " ";
     }
     function reportLayoutBranch(source) {
-        console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " isDesktopPlatform=" + isDesktopPlatform + " isMobilePlatform=" + isMobilePlatform + " selectedLayout=" + activeMainLayout);
+        const currentPath = activePageRouter && activePageRouter.currentPath !== undefined ? String(activePageRouter.currentPath) : "<none>";
+        console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " adaptiveLayoutProfile=" + adaptiveLayoutProfile + " adaptiveNavigationMode=" + adaptiveNavigationMode + " adaptiveMobileLayout=" + adaptiveMobileLayout + " adaptiveDesktopLayout=" + adaptiveDesktopLayout + " currentPath=" + currentPath);
     }
     function shouldRetainFocusForUiHit(uiData) {
         if (!uiData || uiData.insideWindow === false)
@@ -197,9 +196,12 @@ LV.ApplicationWindow {
     globalEventListenersEnabled: true
     height: windowDefaultHeight
     minimumHeight: windowMinHeight
-    minimumWidth: activeMainLayout === "mobile" ? windowMobileMinWidth : desktopMinimumBodyWidth
+    minimumWidth: adaptiveMobileLayout ? windowMobileMinWidth : desktopMinimumBodyWidth
     navItems: []
     navigationEnabled: false
+    pageInitialPath: workspaceRoutePath
+    pageRoutes: [workspaceShellRoute]
+    useInternalPageStack: true
     visible: true
     width: windowDefaultWidth
     windowColor: canvasColor
@@ -214,8 +216,15 @@ LV.ApplicationWindow {
         if (applicationWindow.onboardingVisible)
             onboardingSubWindow.show();
     }
+    onAdaptiveLayoutStateChanged: reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
     onHeightChanged: handleResizeForRenderQuality("heightChanged")
+    onPageStackNavigated: function (path, params) {
+        applicationWindow.reportLayoutBranch("pageStackNavigated");
+    }
+    onPageStackNavigationFailed: function (path) {
+        console.warn("[whatson:debug][main.route][navigationFailed] path=" + path);
+    }
     onWidthChanged: handleResizeForRenderQuality("widthChanged")
 
     Timer {
@@ -252,14 +261,6 @@ LV.ApplicationWindow {
     Loader {
         active: applicationWindow.platform === "osx"
         sourceComponent: nativeMenuBarComponent
-    }
-    Loader {
-        id: mainLayoutLoader
-
-        anchors.fill: parent
-        sourceComponent: applicationWindow.activeMainLayout === "mobile" ? mobileMainLayoutComponent : desktopMainLayoutComponent
-
-        onSourceComponentChanged: applicationWindow.reportLayoutBranch("loaderSourceChanged")
     }
     Component {
         id: nativeMenuBarComponent
@@ -310,6 +311,23 @@ LV.ApplicationWindow {
         }
     }
     Component {
+        id: workspacePageComponent
+
+        Item {
+            anchors.fill: parent
+            clip: true
+
+            Loader {
+                id: workspaceLayoutLoader
+
+                anchors.fill: parent
+                sourceComponent: applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent
+
+                onSourceComponentChanged: applicationWindow.reportLayoutBranch("workspaceSourceChanged")
+            }
+        }
+    }
+    Component {
         id: desktopMainLayoutComponent
 
         Item {
@@ -329,11 +347,10 @@ LV.ApplicationWindow {
                 BodyPanelView.StatusBarLayout {
                     id: statusBar
 
-                    Layout.preferredHeight: visible ? panelHeight : 0
+                    Layout.preferredHeight: panelHeight
                     compactMode: false
                     panelColor: applicationWindow.statusBarColor
                     panelHeight: applicationWindow.statusBarHeight
-                    visible: applicationWindow.activeMainLayout !== "mobile"
 
                     onWindowMoveRequested: {
                         applicationWindow.requestWindowMove();
@@ -342,7 +359,7 @@ LV.ApplicationWindow {
                 BodyPanelView.NavigationBarLayout {
                     id: navigationBar
 
-                    compactMode: applicationWindow.activeMainLayout === "mobile"
+                    compactMode: false
                     editorViewModeViewModel: applicationWindow.editorViewModeVm
                     navigationModeViewModel: applicationWindow.navigationModeVm
                     panelColor: applicationWindow.navigationBarColor
@@ -354,7 +371,7 @@ LV.ApplicationWindow {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     compactCanvasColor: applicationWindow.canvasColor
-                    compactMode: applicationWindow.activeMainLayout === "mobile"
+                    compactMode: false
                     contentPanelColor: applicationWindow.contentPanelColor
                     contentsDisplayColor: applicationWindow.contentsDisplayColor
                     drawerColor: applicationWindow.drawerColor
@@ -392,15 +409,6 @@ LV.ApplicationWindow {
                         if (value !== applicationWindow.preferredSidebarWidth)
                             applicationWindow.preferredSidebarWidth = value;
                     }
-                }
-                BodyPanelView.StatusBarLayout {
-                    id: mobileStatusBar
-
-                    Layout.preferredHeight: visible ? effectivePanelHeight : 0
-                    compactMode: true
-                    panelColor: applicationWindow.statusBarColor
-                    panelHeight: applicationWindow.statusBarHeight
-                    visible: applicationWindow.activeMainLayout === "mobile"
                 }
             }
         }

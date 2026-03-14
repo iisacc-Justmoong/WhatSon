@@ -308,6 +308,14 @@ Domain-isolated support:
               placeholder rendered with title typography and `LV.Theme.disabledColor`.
               The gutter keeps its own logical-line offset array through `buildLogicalLineStartOffsets(...)`; if that
               array stops being returned, the editor can still paint body text while the line-number column goes empty.
+              The same rule now applies to every helper that feeds child view state into the gutter/minimap/editor
+              shell: those helpers are treated as total functions and must return an explicit fallback value instead of
+              leaking `undefined`.
+              The MVVM side of the editor follows the same pattern: `ContentViewLayout.qml` resolves the incoming
+              content view-model and note-list model first, then `ContentsDisplayView.qml` exposes explicit capability
+              flags (`noteSelectionContractAvailable`, `noteCountContractAvailable`,
+              `contentPersistenceContractAvailable`) before reading note-selection or persistence state from those
+              objects.
               Cursor-line lookup and visible-line enumeration must use that offset table plus viewport-derived search
               instead of reparsing the entire body or rescanning line `1..N` for every edit.
               The first visible gutter row is derived by mapping the current viewport `contentY` through
@@ -337,6 +345,12 @@ Domain-isolated support:
               (LV.Theme.primary)`, externally supplied `changed -> #FFF567`, and externally supplied `conflict ->
               LV.Theme.danger`. Sync and conflict producers are not wired yet, but the QML contract already accepts
               `gutterMarkers` entries with `type`, `startLine`, and `lineSpan` or `endLine`.
+              The syntax-guard test suite also treats malformed standalone expressions as a contract violation:
+              standalone string literals inside `Binding` blocks and bare dotted expressions such as
+              `noteListItem.imageSource` are rejected so view corruption is caught before runtime.
+              The same guard suite also asserts that data-driven views keep their explicit MVVM normalization layer:
+              assembly views use `resolved*` contract properties and editor/detail views keep explicit capability or
+              normalization helpers before consuming model/view-model state.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -421,6 +435,10 @@ Library-specific modeling:
 Primary root:
 
 - `Main.qml` (`LV.ApplicationWindow`)
+- `Main.qml` now uses LVRS internal page-stack routing for the shell (`useInternalPageStack`, `pageInitialPath`,
+  `pageRoutes`, `activePageRouter`) instead of a root-level ad-hoc loader deciding which top-level surface to mount.
+- The current shell route is a single workspace page; that page decides between desktop and mobile shell composition
+  from LVRS adaptive layout state (`adaptiveMobileLayout`), not from an independent root routing flag.
 - `Main.qml` owns the application menu bar and exposes empty `File`, `Edit`, `View`, `Window`, and `Help` menus
   through a macOS-native `Qt.labs.platform.MenuBar`; each native menu keeps a disabled placeholder item so macOS does
   not collapse otherwise-empty top-level entries.
@@ -470,41 +488,51 @@ Hierarchy rendering pipeline:
 - `SidebarHierarchyView` handles search, selection, inline rename, create/delete folder, and toolbar event propagation
     - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
       UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
-    - Chevron fold/unfold is handled by LVRS `HierarchyItem` (`expanded` state +
-      `HierarchyList.notifyExpansionChanged`),
-      and delegate row visibility/height reflects `HierarchyItem.rowVisible`.
-        - Rename trigger policy: open text input overlay from the selected item with `Enter/Return` or mouse
-          double-tap on the folder row.
-        - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model before
-          opening the overlay. Global `renameEnabled` is treated as a fallback only.
-        - Row-activation policy: drag-capable hierarchy rows use drag-first / click-select-later input. LVRS
-          `HierarchyItem` no longer activates on raw press, and WhatSon mirrors active-row changes from
-          `HierarchyList.activeChanged` into the bound hierarchy view-model after the click/release path settles.
-        - Blank-area deselect policy: when the visible hierarchy is shorter than the sidebar viewport, the blank area
-          below the last row clears both the active LVRS hierarchy item and the bound view-model selection. The host
-          tree also disables LVRS first-item auto-selection so that cleared state stays visually empty.
-            - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row
+    - MVVM input normalization starts above the delegate layer: `BodyLayout.qml` resolves the active hierarchy index,
+      hierarchy view-model, and note-list model first; `HierarchySidebarLayout.qml` then resolves the current
+      per-domain hierarchy view-model before `SidebarHierarchyView.qml` renders any rows.
+        - Chevron fold/unfold is handled by LVRS `HierarchyItem` (`expanded` state +
+          `HierarchyList.notifyExpansionChanged`),
+          and delegate row visibility/height reflects `HierarchyItem.rowVisible`.
+            - Rename trigger policy: open text input overlay from the selected item with `Enter/Return` or mouse
+              double-tap on the folder row.
+            - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model
               before
-              opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
-            - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route `before`,
-              `after`, `child`, and root-top extraction drops through `canAcceptFolderDropBefore(...)`,
-              `moveFolderBefore(...)`, `canAcceptFolderDrop(...)`, `moveFolder(...)`, and `moveFolderToRoot(...)` on the
-              active hierarchy view-model.
-                - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted drops
-                  through
-                  `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
-                - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and route
-                  accepted drops through `LibraryHierarchyViewModel::moveFolderBefore(...)` for before-insert moves,
-                  `moveFolder(...)` for after/child reparenting, and `moveFolderToRoot(...)` for root extraction.
-            - Projects folder drag policy: `ProjectsHierarchyViewModel` now exposes the same move API surface and
-              persists
-              reordered `Folders.wsfolders` content on drag-driven before/after/child/root-top edits.
-                - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies it
-                  to
-                  domain
-                  store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`,
-                  `*.wsevent`,
-                  `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+              opening the overlay. Global `renameEnabled` is treated as a fallback only.
+            - Row-activation policy: drag-capable hierarchy rows use drag-first / click-select-later input. LVRS
+              `HierarchyItem` no longer activates on raw press, and WhatSon mirrors active-row changes from
+              `HierarchyList.activeChanged` into the bound hierarchy view-model after the click/release path settles.
+            - Blank-area deselect policy: when the visible hierarchy is shorter than the sidebar viewport, the blank
+              area
+              below the last row clears both the active LVRS hierarchy item and the bound view-model selection. The host
+              tree also disables LVRS first-item auto-selection so that cleared state stays visually empty.
+                - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row
+                  before
+                  opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
+                - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route
+                  `before`,
+                  `after`, `child`, and root-top extraction drops through `canAcceptFolderDropBefore(...)`,
+                  `moveFolderBefore(...)`, `canAcceptFolderDrop(...)`, `moveFolder(...)`, and `moveFolderToRoot(...)` on
+                  the
+                  active hierarchy view-model.
+                    - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted
+                      drops
+                      through
+                      `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
+                    - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and
+                      route
+                      accepted drops through `LibraryHierarchyViewModel::moveFolderBefore(...)` for before-insert moves,
+                      `moveFolder(...)` for after/child reparenting, and `moveFolderToRoot(...)` for root extraction.
+                - Projects folder drag policy: `ProjectsHierarchyViewModel` now exposes the same move API surface and
+                  persists
+                  reordered `Folders.wsfolders` content on drag-driven before/after/child/root-top edits.
+                    - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies
+                      it
+                      to
+                      domain
+                      store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`,
+                      `*.wsevent`,
+                      `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
@@ -702,11 +730,14 @@ From `tests/app/**`, architecture is guarded by explicit tests:
 
 Status update (2026-03-01):
 
-- The prior `Main.qml` contract drift around mobile/desktop branching has been resolved.
+- The prior `Main.qml` contract drift around shell routing has been resolved.
 - `Main.qml` now uses:
-    - `readonly property string activeMainLayout`
-    - loader source routing based on `activeMainLayout`
-- This removes dependence on legacy helper symbols and keeps desktop/mobile branching in one binding axis.
+    - `useInternalPageStack: true`
+    - `pageInitialPath: workspaceRoutePath`
+    - `pageRoutes: [workspaceShellRoute]`
+    - routed workspace layout selection from `adaptiveMobileLayout`
+- This removes dependence on a root-level ad-hoc loader path and keeps shell state aligned with LVRS
+  `ApplicationWindow` / `PageRouter` contracts.
 - `HierarchySidebarLayout.qml` now returns a normalized valid index explicitly in `normalizeHierarchyIndex(...)`.
 - This prevents toolbar routing fallback to a single default hierarchy view-model.
 - Hierarchy model `ShowChevronRole` is now derived dynamically from depth adjacency at data-read time.
