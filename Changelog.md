@@ -1,5 +1,42 @@
 # Standup Changelog
 
+## 2026-03-09 (KST)
+
+### Snapshot
+
+- Commits: 6 (`e92e21c` .. `7e82210`)
+- Files touched: 16 unique paths (25 file-change entries)
+- Diff volume: +496 / -234 lines
+- PR references in commit subjects: none
+
+### Team-Ready Summary (Anchored)
+
+- Added the standup changelog baseline file.
+    - Commit: `e92e21c`
+    - Files: `Changelog.md`, `src/app/CMakeLists.txt`, `src/app/qml/view/content/editor/ContentsDisplayView.qml`
+- Fixed repeated QML binding and property-source regressions in editor/list panel views.
+    - Commits: `9da8ec1`, `beb81ef`, `3a6a72d`, `7e82210`
+    - Files: `src/app/qml/view/content/editor/ContentsDisplayView.qml`,
+      `src/app/qml/view/panels/NoteListItem.qml`, `src/app/qml/view/panels/ListBarHeader.qml`
+- Split editor surface responsibilities into dedicated layer components and aligned related guard/test docs.
+    - Commit: `f98cf69`
+    - Files: `src/app/qml/view/content/editor/ContentsGutterLayer.qml`,
+      `src/app/qml/view/content/editor/ContentsMinimapLayer.qml`,
+      `src/app/qml/view/content/editor/ContentsDrawerSplitter.qml`,
+      `tests/app/test_qml_binding_syntax_guard.cpp`, `docs/APP_ARCHITECTURE.md`, `AGENTS.md`
+- Updated Apple platform packaging metadata alongside QML integration refactors.
+    - Commit: `3a6a72d`
+    - Files: `platform/Apple/Info.plist`, `src/app/CMakeLists.txt`
+
+### Full Commit List (Chronological)
+
+- `e92e21c` Add `Changelog.md` with team-ready summaries and totals
+- `9da8ec1` Fix bindings in QML components and correct property usage
+- `beb81ef` Fix QML property bindings and correct `source` usage
+- `f98cf69` Modularize editor components with dedicated layers for gutter, minimap, and drawer splitter
+- `3a6a72d` Refactor QML integrations and conditional configurations
+- `7e82210` Refactor QML integrations and conditional configurations
+
 ## 2026-03-08 (KST)
 
 ### Snapshot
