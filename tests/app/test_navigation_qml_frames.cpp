@@ -204,8 +204,8 @@ void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset(
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.leftMargin: sidebarHierarchyView.horizontalInset")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.rightMargin: sidebarHierarchyView.horizontalInset")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.ListFooter {")));
-    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarDistributeSpacing: false")));
-    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarSpacing: sidebarHierarchyView.toolbarButtonSpacing")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarItems: []")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("spacing: sidebarHierarchyView.toolbarButtonSpacing")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("width: 78")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset")));
     QVERIFY(sidebarHierarchyView.contains(

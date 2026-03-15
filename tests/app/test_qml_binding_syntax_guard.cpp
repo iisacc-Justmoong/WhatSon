@@ -725,11 +725,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("model: sidebarHierarchyView.standardHierarchyModel")),
         "SidebarHierarchyView.qml must feed LVRS Hierarchy from the active hierarchy view-model's standard model property.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("activeToolbarIndex: sidebarHierarchyView.activeToolbarIndex")),
-        "SidebarHierarchyView.qml must keep toolbar state sourced from the shared sidebar selection model.");
+        sidebarViewText.contains(
+            QStringLiteral("readonly property bool activeToolbar: index === sidebarHierarchyView.activeToolbarIndex")),
+        "SidebarHierarchyView.qml custom toolbar row must keep active state sourced from the shared sidebar selection model.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("onToolbarActivated: function (button, buttonId, index)")),
-        "SidebarHierarchyView.qml must switch hierarchy domains from the LVRS toolbar activation callback.");
+        sidebarViewText.contains(QStringLiteral("onClicked: {")),
+        "SidebarHierarchyView.qml must switch hierarchy domains from the fixed toolbar row button callback.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.toolbarIndexChangeRequested(index);")),
         "SidebarHierarchyView.qml toolbar activation must flow back through the shared domain-switch signal.");
@@ -778,11 +779,24 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable")),
         "SidebarHierarchyView.qml must source LVRS editable drag behavior from the resolved hierarchy drag/drop contract.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("toolbarDistributeSpacing: false")),
-        "SidebarHierarchyView.qml hierarchy toolbar must disable LVRS distributed spacing so icons stay left-anchored.");
+        sidebarViewText.contains(QStringLiteral("toolbarItems: []")),
+        "SidebarHierarchyView.qml must disable the built-in LVRS toolbar items when mounting the fixed Figma toolbar row.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("toolbarSpacing: sidebarHierarchyView.toolbarButtonSpacing")),
-        "SidebarHierarchyView.qml hierarchy toolbar must feed the fixed Figma spacing back into LVRS.");
+        sidebarViewText.contains(QStringLiteral("Row {")),
+        "SidebarHierarchyView.qml must compose a dedicated fixed toolbar row for the Figma header icons.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("spacing: sidebarHierarchyView.toolbarButtonSpacing")),
+        "SidebarHierarchyView.qml custom hierarchy toolbar must keep the fixed left-anchored Figma spacing.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("width: sidebarHierarchyView.toolbarFrameWidth")),
+        "SidebarHierarchyView.qml custom hierarchy toolbar must keep the Figma 200px track width.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("tone: activeToolbar ? LV.AbstractButton.Default : LV.AbstractButton.Borderless")),
+        "SidebarHierarchyView.qml custom hierarchy toolbar must preserve LVRS active/default button tones.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.toolbarIndexChangeRequested(index);")),
+        "SidebarHierarchyView.qml custom hierarchy toolbar must emit toolbar index changes directly from the fixed icon row.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(

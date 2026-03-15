@@ -141,7 +141,6 @@ Rectangle {
     LV.Hierarchy {
         id: hierarchyTree
 
-        activeToolbarIndex: sidebarHierarchyView.activeToolbarIndex
         anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight
         anchors.fill: parent
         anchors.leftMargin: sidebarHierarchyView.horizontalInset
@@ -151,9 +150,7 @@ Rectangle {
         keyboardListNavigationEnabled: false
         model: sidebarHierarchyView.standardHierarchyModel
         panelColor: sidebarHierarchyView.panelColor
-        toolbarDistributeSpacing: false
-        toolbarItems: sidebarHierarchyView.toolbarItems
-        toolbarSpacing: sidebarHierarchyView.toolbarButtonSpacing
+        toolbarItems: []
 
         onListItemActivated: function (item, itemId, index) {
             if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.setSelectedIndex === undefined)
@@ -167,10 +164,44 @@ Rectangle {
                 return;
             sidebarHierarchyView.requestViewHook("hierarchy.reorder");
         }
-        onToolbarActivated: function (button, buttonId, index) {
-            if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
-                return;
-            sidebarHierarchyView.toolbarIndexChangeRequested(index);
+    }
+    Row {
+        id: hierarchyToolbar
+
+        anchors.left: parent.left
+        anchors.leftMargin: sidebarHierarchyView.horizontalInset
+        anchors.top: parent.top
+        anchors.topMargin: sidebarHierarchyView.verticalInset
+        height: sidebarHierarchyView.toolbarButtonSize
+        spacing: sidebarHierarchyView.toolbarButtonSpacing
+        width: sidebarHierarchyView.toolbarFrameWidth
+        z: 2
+
+        Repeater {
+            model: sidebarHierarchyView.toolbarItems
+
+            delegate: LV.IconButton {
+                readonly property bool activeToolbar: index === sidebarHierarchyView.activeToolbarIndex
+                required property int index
+                readonly property var toolbarItem: sidebarHierarchyView.toolbarItems[index]
+
+                backgroundColorHover: activeToolbar ? LV.Theme.panelBackground12 : "transparent"
+                backgroundColorPressed: activeToolbar ? LV.Theme.panelBackground12 : "transparent"
+                enabled: toolbarItem && toolbarItem.enabled !== undefined ? Boolean(toolbarItem.enabled) : true
+                height: sidebarHierarchyView.toolbarButtonSize
+                horizontalPadding: 2
+                iconName: toolbarItem && toolbarItem.iconName !== undefined ? String(toolbarItem.iconName) : ""
+                tone: activeToolbar ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
+                verticalPadding: 2
+                visible: toolbarItem && toolbarItem.visible !== undefined ? Boolean(toolbarItem.visible) : true
+                width: sidebarHierarchyView.toolbarButtonSize
+
+                onClicked: {
+                    if (index < 0 || index === sidebarHierarchyView.activeToolbarIndex)
+                        return;
+                    sidebarHierarchyView.toolbarIndexChangeRequested(index);
+                }
+            }
         }
     }
     LV.ListFooter {

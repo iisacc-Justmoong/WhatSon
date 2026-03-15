@@ -570,9 +570,9 @@ Hierarchy rendering pipeline:
   direct `LV.ListFooter` instance anchored bottom-left, with fixed `78x24` geometry, transparent button backgrounds,
   and explicit `generaladd` / `generaldelete` / `generalsettings` icon names. The hierarchy list reserves that footer
   height explicitly instead of routing footer actions through a local wrapper.
-- Toolbar spacing policy: `SidebarHierarchyView.qml` keeps the higher-level LVRS `Hierarchy` toolbar API, but disables
-  LVRS distributed spacing and feeds a fixed `40 / 7` inter-icon gap so the eight `20px` toolbar icons remain
-  left-anchored on the Figma `200px` `HierarchyHeaderToolbar` track.
+- Toolbar spacing policy: `SidebarHierarchyView.qml` keeps the higher-level LVRS `Hierarchy` for the list surface, but
+  mounts a dedicated LVRS icon-button `Row` over the header strip with a fixed `40 / 7` inter-icon gap so the eight
+  `20px` toolbar icons remain left-anchored on the Figma `200px` `HierarchyHeaderToolbar` track.
 - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row, and newly
   inserted folders use the placeholder label `Untitled`.
 - Drag-reorder policy: `SidebarHierarchyView.qml` now enables LVRS `Hierarchy.editable` only when the active domain

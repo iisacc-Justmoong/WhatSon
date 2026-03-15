@@ -453,9 +453,9 @@ for hub/note hierarchy payloads.
   matching the Figma `HierarchyFooter` node (`134:3178`), with explicit `78x24` sizing, transparent button
   backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalsettings`) instead of relying on a
   local custom footer wrapper.
-- The hierarchy toolbar keeps LVRS `Hierarchy` as the rendering surface, but `SidebarHierarchyView.qml` disables
-  distributed spacing and feeds a fixed `40 / 7` gap back into LVRS so the eight `20px` icons stay left-anchored on
-  the Figma `200px` track.
+- The hierarchy toolbar keeps LVRS `Hierarchy` for the list surface, but `SidebarHierarchyView.qml` mounts a dedicated
+  fixed `Row` of LVRS icon buttons over the header strip so the eight `20px` icons stay left-anchored on the Figma
+  `200px` track with a stable `40 / 7` gap.
 - Hierarchy/list models (`FlatHierarchyModel`, `LibraryHierarchyModel`, `TagsHierarchyModel`,
   `LibraryNoteListModel`, `BookmarksNoteListModel`) now expose validation hooks for backend/UI interception:
   `strictValidation`, `correctionCount`, `lastValidationCode`, `lastValidationMessage`,
