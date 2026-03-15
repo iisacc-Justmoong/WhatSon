@@ -12,6 +12,7 @@
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -348,6 +349,8 @@ int main(int argc, char* argv[])
         "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
     qmlRegisterType<ContentsGutterMarkerBridge>(
         "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
+    qmlRegisterType<FocusedNoteDeletionBridge>(
+        "WhatSon.App.Internal", 1, 0, "FocusedNoteDeletionBridge");
 #if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif

@@ -240,6 +240,9 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/event/EventHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
 )
 set_target_properties(whatson_hierarchy_viewmodels_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_hierarchy_viewmodels_tests
@@ -265,6 +268,9 @@ add_executable(whatson_hub_note_deletion_service_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
 )
 set_target_properties(whatson_hub_note_deletion_service_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_hub_note_deletion_service_tests
@@ -308,6 +314,9 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
 )
 set_target_properties(whatson_library_hierarchy_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_library_hierarchy_tests
@@ -324,6 +333,30 @@ target_link_libraries(whatson_library_hierarchy_tests
 )
 add_test(NAME whatson_library_hierarchy_tests COMMAND whatson_library_hierarchy_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
+
+add_executable(whatson_file_validator_tests
+        app/test_file_validators.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
+)
+set_target_properties(whatson_file_validator_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_file_validator_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator
+)
+target_link_libraries(whatson_file_validator_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_file_validator_tests COMMAND whatson_file_validator_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_file_validator_tests)
 
 add_executable(whatson_tags_hierarchy_tests
         app/test_tags_hierarchy_view_model.cpp
@@ -514,6 +547,23 @@ target_link_libraries(whatson_contents_editor_bridge_tests
 )
 add_test(NAME whatson_contents_editor_bridge_tests COMMAND whatson_contents_editor_bridge_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_contents_editor_bridge_tests)
+
+add_executable(whatson_note_deletion_bridge_tests
+        app/test_focused_note_deletion_bridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/FocusedNoteDeletionBridge.cpp
+)
+set_target_properties(whatson_note_deletion_bridge_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_note_deletion_bridge_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_note_deletion_bridge_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_note_deletion_bridge_tests COMMAND whatson_note_deletion_bridge_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_note_deletion_bridge_tests)
 
 add_executable(whatson_solid_architecture_contract_tests
         app/test_solid_architecture_contracts.cpp

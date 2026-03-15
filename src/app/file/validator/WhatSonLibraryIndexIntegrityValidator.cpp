@@ -1,0 +1,178 @@
+#include "WhatSonLibraryIndexIntegrityValidator.hpp"
+
+#include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
+#include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+
+#include <utility>
+
+namespace
+{
+    bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = file.errorString();
+            }
+            return false;
+        }
+
+        if (file.write(text.toUtf8()) < 0)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = file.errorString();
+            }
+            return false;
+        }
+
+        return true;
+    }
+}
+
+WhatSonLibraryIndexIntegrityValidator::WhatSonLibraryIndexIntegrityValidator() = default;
+
+WhatSonLibraryIndexIntegrityValidator::~WhatSonLibraryIndexIntegrityValidator() = default;
+
+QString WhatSonLibraryIndexIntegrityValidator::normalizePath(const QString& path) const
+{
+    const QString trimmed = path.trimmed();
+    if (trimmed.isEmpty())
+    {
+        return {};
+    }
+
+    return QDir::cleanPath(trimmed);
+}
+
+bool WhatSonLibraryIndexIntegrityValidator::pathIsWithinRoot(const QString& path, const QString& rootPath) const
+{
+    const QString normalizedPath = normalizePath(path);
+    const QString normalizedRootPath = normalizePath(rootPath);
+    if (normalizedPath.isEmpty() || normalizedRootPath.isEmpty())
+    {
+        return false;
+    }
+    if (normalizedPath == normalizedRootPath)
+    {
+        return true;
+    }
+
+    return normalizedPath.startsWith(normalizedRootPath + QLatin1Char('/'), Qt::CaseInsensitive);
+}
+
+bool WhatSonLibraryIndexIntegrityValidator::recordBelongsToLibraryRoot(
+    const LibraryNoteRecord& record,
+    const QString& libraryRoot) const
+{
+    const QString directoryPath = m_noteStorageValidator.resolveExistingNoteDirectoryPath(record);
+    if (pathIsWithinRoot(directoryPath, libraryRoot))
+    {
+        return true;
+    }
+
+    const QString headerPath = m_noteStorageValidator.resolveExistingNoteHeaderPath(record);
+    return pathIsWithinRoot(headerPath, libraryRoot);
+}
+
+QStringList WhatSonLibraryIndexIntegrityValidator::noteIdsForLibraryRoot(
+    const QVector<LibraryNoteRecord>& records,
+    const QString& libraryRoot) const
+{
+    QStringList noteIds;
+    noteIds.reserve(records.size());
+
+    for (const LibraryNoteRecord& record : records)
+    {
+        if (!recordBelongsToLibraryRoot(record, libraryRoot))
+        {
+            continue;
+        }
+
+        const QString noteId = record.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            noteIds.push_back(noteId);
+        }
+    }
+
+    noteIds.removeDuplicates();
+    return noteIds;
+}
+
+WhatSonLibraryIndexIntegrityValidator::PruneResult
+WhatSonLibraryIndexIntegrityValidator::pruneOrphanRecords(const QVector<LibraryNoteRecord>& records) const
+{
+    PruneResult result;
+    result.materializedRecords.reserve(records.size());
+
+    for (LibraryNoteRecord record : records)
+    {
+        if (!m_noteStorageValidator.hasMaterializedStorage(record))
+        {
+            const QString orphanNoteId = record.noteId.trimmed();
+            if (!orphanNoteId.isEmpty())
+            {
+                result.prunedOrphanNoteIds.push_back(orphanNoteId);
+            }
+
+            WhatSon::Debug::trace(
+                QStringLiteral("library.validator"),
+                QStringLiteral("index.pruneOrphanRecord"),
+                QStringLiteral("noteId=%1 head=%2 dir=%3")
+                .arg(record.noteId, record.noteHeaderPath, record.noteDirectoryPath));
+            continue;
+        }
+
+        result.materializedRecords.push_back(std::move(record));
+    }
+
+    return result;
+}
+
+bool WhatSonLibraryIndexIntegrityValidator::rewriteIndexesFromRecords(
+    const QString& sourceWshubPath,
+    const QStringList& libraryRoots,
+    const QVector<LibraryNoteRecord>& records,
+    QString* errorMessage) const
+{
+    for (const QString& libraryRoot : libraryRoots)
+    {
+        const QString indexPath = QDir(libraryRoot).filePath(QStringLiteral("index.wsnindex"));
+
+        WhatSonLibraryHierarchyStore libraryStore;
+        libraryStore.setHubPath(sourceWshubPath);
+        libraryStore.setNoteIds(noteIdsForLibraryRoot(records, libraryRoot));
+
+        WhatSonLibraryHierarchyCreator libraryCreator;
+        QString writeError;
+        if (!writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &writeError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("library.validator"),
+                QStringLiteral("index.rewriteFailed"),
+                QStringLiteral("path=%1 reason=%2").arg(indexPath, writeError));
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+
+        WhatSon::Debug::trace(
+            QStringLiteral("library.validator"),
+            QStringLiteral("index.rewrite"),
+            QStringLiteral("path=%1 noteCount=%2")
+            .arg(indexPath)
+            .arg(libraryStore.noteIds().size()));
+    }
+
+    return true;
+}

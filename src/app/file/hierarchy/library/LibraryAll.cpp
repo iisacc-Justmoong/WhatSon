@@ -51,55 +51,6 @@ namespace
         return QStringLiteral("wsnote");
     }
 
-    QStringList resolveContentsDirectories(const QString& wshubPath)
-    {
-        const QDir hubDir(wshubPath);
-        QStringList directories;
-
-        const QString fixedPath = hubDir.filePath(QStringLiteral(".wscontents"));
-        if (QFileInfo(fixedPath).isDir())
-        {
-            directories.push_back(QDir::cleanPath(fixedPath));
-        }
-
-        const QStringList dynamicContents = hubDir.entryList(
-            QStringList{QStringLiteral("*.wscontents")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
-        for (const QString& dirName : dynamicContents)
-        {
-            directories.push_back(QDir::cleanPath(hubDir.filePath(dirName)));
-        }
-
-        directories.removeDuplicates();
-        return directories;
-    }
-
-    QStringList resolveLibraryRoots(const QStringList& contentsDirectories)
-    {
-        QStringList roots;
-        for (const QString& contentsDirectory : contentsDirectories)
-        {
-            const QDir contentsDir(contentsDirectory);
-            const QString libraryPath = contentsDir.filePath(QStringLiteral("Library.wslibrary"));
-            if (QFileInfo(libraryPath).isDir())
-            {
-                roots.push_back(QDir::cleanPath(libraryPath));
-            }
-
-            const QStringList dynamicLibraries = contentsDir.entryList(
-                QStringList{QStringLiteral("*.wslibrary")},
-                QDir::Dirs | QDir::NoDotAndDotDot,
-                QDir::Name);
-            for (const QString& libraryDirName : dynamicLibraries)
-            {
-                roots.push_back(QDir::cleanPath(contentsDir.filePath(libraryDirName)));
-            }
-        }
-        roots.removeDuplicates();
-        return roots;
-    }
-
     QString readUtf8File(const QString& filePath, QString* errorMessage)
     {
         QFile file(filePath);
@@ -1072,8 +1023,7 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
                               QStringLiteral("index.begin"),
                               QStringLiteral("path=%1").arg(normalizedHubPath));
 
-    const QStringList contentsDirectories = resolveContentsDirectories(normalizedHubPath);
-    const QStringList libraryRoots = resolveLibraryRoots(contentsDirectories);
+    const QStringList libraryRoots = m_hubStructureValidator.resolveLibraryRoots(normalizedHubPath);
     if (libraryRoots.isEmpty())
     {
         m_sourceWshubPath = normalizedHubPath;
@@ -1218,6 +1168,21 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
     for (LibraryNoteRecord& record : mergedRecords)
     {
         normalizeRecordFallbacks(&record);
+    }
+
+    const WhatSonLibraryIndexIntegrityValidator::PruneResult pruneResult =
+        m_libraryIndexIntegrityValidator.pruneOrphanRecords(mergedRecords);
+    QVector<LibraryNoteRecord> materializedRecords = pruneResult.materializedRecords;
+
+    if (!pruneResult.prunedOrphanNoteIds.isEmpty())
+    {
+        m_libraryIndexIntegrityValidator.
+            rewriteIndexesFromRecords(normalizedHubPath, libraryRoots, materializedRecords);
+    }
+
+    for (LibraryNoteRecord& record : materializedRecords)
+    {
+        normalizeRecordFallbacks(&record);
         const BodyContentExtract bodyContent = readBodyContent(record);
         overwriteIfNonEmpty(&record.bodyPlainText, bodyContent.plainText);
         overwriteIfNonEmpty(&record.bodyFirstLine, bodyContent.firstLine);
@@ -1230,7 +1195,7 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
     }
 
     m_sourceWshubPath = normalizedHubPath;
-    m_notes = std::move(mergedRecords);
+    m_notes = std::move(materializedRecords);
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.all"),

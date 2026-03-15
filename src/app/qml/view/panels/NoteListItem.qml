@@ -113,7 +113,7 @@ Item {
                         anchors.fill: parent
                         asynchronous: true
                         fillMode: Image.PreserveAspectCrop
-                        noteListItem.imageSource
+                        source: noteListItem.imageSource
                         sourceSize.height: noteListItem.imagePreviewSize
                         sourceSize.width: noteListItem.imagePreviewSize
                         visible: noteListItem.imageSource.toString().length > 0
@@ -209,7 +209,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconSize
-                                        noteListItem.folderIconSource
+                                        source: noteListItem.folderIconSource
                                         sourceSize.height: noteListItem.metadataIconSize
                                         sourceSize.width: noteListItem.metadataIconSize
                                         width: noteListItem.metadataIconSize
@@ -256,7 +256,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconFrameSize
-                                        noteListItem.tagIconSource
+                                        source: noteListItem.tagIconSource
                                         sourceSize.height: noteListItem.metadataIconFrameSize
                                         sourceSize.width: noteListItem.metadataIconFrameSize
                                         width: noteListItem.metadataIconFrameSize

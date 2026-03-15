@@ -176,6 +176,19 @@ Item {
         sidebarHierarchyView.activateSelectedHierarchyItem(true);
     }
 
+    SidebarHierarchyInteractionController {
+        id: sidebarController
+
+        folderRepeater: folderRepeater
+        hierarchyList: hierarchyList
+        hierarchyViewModel: sidebarHierarchyView.hierarchyViewModel
+        hierarchyViewport: hierarchyViewport
+        requestViewHook: function (reason) {
+            sidebarHierarchyView.requestViewHook(reason);
+        }
+        selectedFolderIndex: sidebarHierarchyView.selectedFolderIndex
+        viewRoot: sidebarHierarchyView
+    }
     Rectangle {
         anchors.fill: parent
         color: sidebarHierarchyView.panelColor
@@ -377,6 +390,7 @@ Item {
                             }
                             TapHandler {
                                 acceptedButtons: Qt.LeftButton
+                                gesturePolicy: TapHandler.DragThreshold
 
                                 onDoubleTapped: {
                                     sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);

@@ -2653,8 +2653,10 @@ bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("deleteNoteById.success"),
                               QStringLiteral("noteId=%1 remaining=%2").arg(
-                                  result.noteId.isEmpty() ? normalizedNoteId : result.noteId,
-                                  m_libraryAll.notes().size()));
+                                                                          result.noteId.isEmpty()
+                                                                              ? normalizedNoteId
+                                                                              : result.noteId)
+                                                                      .arg(m_libraryAll.notes().size()));
     return true;
 }
 

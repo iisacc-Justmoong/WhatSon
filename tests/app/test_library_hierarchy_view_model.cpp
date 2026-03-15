@@ -45,6 +45,7 @@ private
     void loadFromWshub_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void deleteSelectedFolder_reappliesSelectionToVisibleNeighborForNoteList();
     void deleteNoteById_removesScaffoldUpdatesIndexAndSelectsNeighbor();
+    void loadFromWshub_prunesOrphanIndexEntriesAndRewritesIndex();
     void loadFromWshub_treatsUserFolderNamedAllAsRegularFolder();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
@@ -1852,6 +1853,50 @@ void LibraryHierarchyViewModelTest::deleteNoteById_removesScaffoldUpdatesIndexAn
     const QJsonObject updatedStatRoot = readJsonObjectFile(statFilePath);
     QCOMPARE(updatedStatRoot.value(QStringLiteral("noteCount")).toInt(), 2);
     QVERIFY(!updatedStatRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_prunesOrphanIndexEntriesAndRewritesIndex()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString indexFilePath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+
+    QJsonObject indexRoot = readJsonObjectFile(indexFilePath);
+    QJsonArray notesArray = indexRoot.value(QStringLiteral("notes")).toArray();
+    notesArray.append(QJsonObject{
+        {QStringLiteral("id"), QStringLiteral("note-orphan")},
+        {QStringLiteral("lastModified"), QStringLiteral("2024-02-02-00-00-00")}
+    });
+    indexRoot.insert(QStringLiteral("notes"), notesArray);
+    QVERIFY(writeUtf8File(indexFilePath, QString::fromUtf8(QJsonDocument(indexRoot).toJson(QJsonDocument::Indented))));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    const QStringList visibleNoteIds = {
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole).
+                  toString(),
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::IdRole).
+                  toString(),
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(2, 0), LibraryNoteListModel::IdRole).toString()
+    };
+    QVERIFY(!visibleNoteIds.contains(QStringLiteral("note-orphan")));
+
+    const QJsonObject healedIndexRoot = readJsonObjectFile(indexFilePath);
+    QCOMPARE(
+        noteIdsFromIndexArray(healedIndexRoot.value(QStringLiteral("notes")).toArray()),
+        QStringList({QStringLiteral("note-a"), QStringLiteral("note-b"), QStringLiteral("note-c")}));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments()

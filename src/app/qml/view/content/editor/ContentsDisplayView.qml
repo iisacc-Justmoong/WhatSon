@@ -139,7 +139,7 @@ Item {
                 "visualIndex": 0
             });
         }
-
+        return rows;
     }
     function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
         const _editorWidth = Number(editorWidth) || 0;
@@ -316,7 +316,7 @@ Item {
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
             return contentsView.gutterMarkerCurrentColor;
-
+        return contentsView.gutterMarkerCurrentColor;
     }
     function markerHeight(markerSpec) {
         const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
@@ -447,7 +447,7 @@ Item {
         const candidate = contentEditor.editorItem.parent.parent;
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
-
+        return candidate;
     }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
@@ -485,7 +485,7 @@ Item {
         }
         if (visibleLines.length === 0)
             visibleLines.push(firstVisibleLine);
-
+        return visibleLines;
     }
 
     clip: true
@@ -684,7 +684,7 @@ Item {
                         }
                     }
                     Binding {
-                        "y"
+                        property: "y"
                         target: contentEditor.editorItem
                         value: contentsView.editorTopInset
                     }

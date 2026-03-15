@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Rectangle {
@@ -10,7 +11,7 @@ Rectangle {
     property int activeToolbarIndex: 0
     readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property color hintColor: LV.Theme.descriptionColor
-    readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined
+    readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable
     property var noteDeletionViewModel: null
     property bool noteDragActive: false
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
@@ -25,13 +26,15 @@ Rectangle {
 
     signal viewHookRequested
 
-    function activateNoteIndex(index) {
+    function activateNoteIndex(index, noteId) {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return;
         const normalizedIndex = Number(index);
         if (!isFinite(normalizedIndex))
             return;
         const targetIndex = Math.max(-1, Math.floor(normalizedIndex));
+        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
+        noteDeletionBridge.focusedNoteId = normalizedNoteId;
         listBarLayout.pendingSelectionIndex = targetIndex;
         listBarLayout.selectionRequestRevision += 1;
         const requestRevision = listBarLayout.selectionRequestRevision;
@@ -48,6 +51,8 @@ Rectangle {
                 noteListView.currentIndex = targetIndex;
             if (listBarLayout.currentIndexFromModel() !== targetIndex)
                 listBarLayout.pushCurrentIndexToModel(targetIndex);
+            if (normalizedNoteId.length > 0)
+                noteDeletionBridge.focusedNoteId = normalizedNoteId;
             listBarLayout.pendingSelectionIndex = -1;
         });
     }
@@ -69,25 +74,13 @@ Rectangle {
             return Number(listBarLayout.noteListModel.currentIndex);
         return -1;
     }
-    function currentNoteIdFromModel() {
-        if (!listBarLayout.hasNoteListModel)
-            return "";
-        if (listBarLayout.noteListModel.currentNoteId !== undefined)
-            return String(listBarLayout.noteListModel.currentNoteId).trim();
-        if (noteListView.currentItem && noteListView.currentItem.noteId !== undefined)
-            return String(noteListView.currentItem.noteId).trim();
-        return "";
-    }
     function deleteCurrentNote() {
         if (!listBarLayout.noteDeletionContractAvailable)
             return false;
-        const noteId = listBarLayout.currentNoteIdFromModel();
-        if (!noteId.length)
-            return false;
-        const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));
+        const deleted = noteDeletionBridge.deleteFocusedNote();
         if (deleted)
             noteListView.forceActiveFocus();
-
+        return deleted;
     }
     function normalizeEntries(value) {
         if (value === undefined || value === null)
@@ -131,17 +124,19 @@ Rectangle {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
-    function syncCurrentIndexFromModel() {
-        const nextIndex = listBarLayout.currentIndexFromModel();
-        if (noteListView.currentIndex === nextIndex)
+    function syncFocusedNoteDeletionState() {
+        if (noteListView.currentItem && noteListView.currentItem.noteId !== undefined) {
+            noteDeletionBridge.focusedNoteId = String(noteListView.currentItem.noteId).trim();
             return;
-        noteListView.currentIndex = nextIndex;
+        }
+        noteDeletionBridge.focusedNoteId = "";
     }
 
     color: panelColor
 
     Component.onCompleted: {
         listBarLayout.syncCurrentIndexFromModel();
+        listBarLayout.syncFocusedNoteDeletionState();
     }
     onNoteListModeChanged: applySearchTextToModel()
     onNoteListModelChanged: {
@@ -150,9 +145,16 @@ Rectangle {
         listBarLayout.selectionRequestRevision += 1;
         listBarLayout.applySearchTextToModel();
         listBarLayout.syncCurrentIndexFromModel();
+        listBarLayout.syncFocusedNoteDeletionState();
     }
     onSearchTextChanged: applySearchTextToModel()
 
+    FocusedNoteDeletionBridge {
+        id: noteDeletionBridge
+
+        deletionTarget: listBarLayout.noteDeletionViewModel
+        noteListModel: listBarLayout.resolvedNoteListModel
+    }
     Item {
         anchors.fill: parent
 
@@ -249,13 +251,16 @@ Rectangle {
                             onPressedChanged: {
                                 if (!pressed)
                                     return;
-                                listBarLayout.activateNoteIndex(noteItemDelegate.index);
+                                listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);
                             }
                         }
                     }
 
                     onCurrentIndexChanged: {
                         listBarLayout.pushCurrentIndexToModel(noteListView.currentIndex);
+                        Qt.callLater(function () {
+                            listBarLayout.syncFocusedNoteDeletionState();
+                        });
                     }
                 }
                 Item {

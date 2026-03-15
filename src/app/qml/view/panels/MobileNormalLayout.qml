@@ -124,7 +124,7 @@ Item {
                             fillMode: Image.PreserveAspectFit
                             height: LV.Theme.iconSm
                             smooth: true
-                            LV.Theme.iconPath("generalcloseSmall")
+                            source: LV.Theme.iconPath("generalcloseSmall")
                             sourceSize.height: height
                             sourceSize.width: width
                             width: LV.Theme.iconSm

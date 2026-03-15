@@ -1,12 +1,9 @@
 #include "WhatSonHubNoteDeletionService.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
-#include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 
 #include <QDateTime>
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -27,217 +24,6 @@ namespace
         return QDir::cleanPath(path);
     }
 
-    bool resolveContentsDirectories(
-        const QString& wshubPath,
-        QStringList* outContentsDirectories,
-        QString* errorMessage = nullptr)
-    {
-        if (outContentsDirectories == nullptr)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("outContentsDirectories must not be null.");
-            }
-            return false;
-        }
-
-        outContentsDirectories->clear();
-
-        const QString hubRootPath = normalizePath(wshubPath);
-        if (hubRootPath.isEmpty())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("wshubPath must not be empty.");
-            }
-            return false;
-        }
-
-        const QFileInfo hubInfo(hubRootPath);
-        if (!hubInfo.exists())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("wshubPath does not exist: %1").arg(hubRootPath);
-            }
-            return false;
-        }
-
-        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub")) || !hubInfo.isDir())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("wshubPath must be an unpacked .wshub directory: %1").arg(hubRootPath);
-            }
-            return false;
-        }
-
-        const QDir hubDir(hubRootPath);
-        const QString fixedInternalPath = hubDir.filePath(QStringLiteral(".wscontents"));
-        if (QFileInfo(fixedInternalPath).isDir())
-        {
-            outContentsDirectories->push_back(QDir::cleanPath(fixedInternalPath));
-        }
-
-        const QStringList dynamicContentsDirectories = hubDir.entryList(
-            QStringList{QStringLiteral("*.wscontents")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
-        for (const QString& directoryName : dynamicContentsDirectories)
-        {
-            outContentsDirectories->push_back(QDir::cleanPath(hubDir.filePath(directoryName)));
-        }
-
-        outContentsDirectories->removeDuplicates();
-        if (!outContentsDirectories->isEmpty())
-        {
-            return true;
-        }
-
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("No *.wscontents directory was found inside .wshub: %1").arg(hubRootPath);
-        }
-        return false;
-    }
-
-    QString resolvePrimaryLibraryPathFromWshub(
-        const QString& wshubPath,
-        QString* errorMessage = nullptr)
-    {
-        QStringList contentsDirectories;
-        if (!resolveContentsDirectories(wshubPath, &contentsDirectories, errorMessage))
-        {
-            return {};
-        }
-
-        for (const QString& contentsDirectory : std::as_const(contentsDirectories))
-        {
-            const QString fixedLibraryPath = QDir(contentsDirectory).filePath(QStringLiteral("Library.wslibrary"));
-            if (QFileInfo(fixedLibraryPath).isDir())
-            {
-                return QDir::cleanPath(fixedLibraryPath);
-            }
-
-            const QDir contentsDir(contentsDirectory);
-            const QStringList dynamicLibraries = contentsDir.entryList(
-                QStringList{QStringLiteral("*.wslibrary")},
-                QDir::Dirs | QDir::NoDotAndDotDot,
-                QDir::Name);
-            if (!dynamicLibraries.isEmpty())
-            {
-                return QDir::cleanPath(contentsDir.filePath(dynamicLibraries.first()));
-            }
-        }
-
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("No Library.wslibrary directory found inside: %1").arg(wshubPath);
-        }
-        return {};
-    }
-
-    QString resolveHubStatPathFromWshub(const QString& wshubPath)
-    {
-        const QString normalizedWshubPath = normalizePath(wshubPath);
-        if (normalizedWshubPath.isEmpty())
-        {
-            return {};
-        }
-
-        const QDir hubDir(normalizedWshubPath);
-        const QStringList statFiles = hubDir.entryList(
-            QStringList{QStringLiteral("*.wsstat")},
-            QDir::Files | QDir::NoDotAndDotDot,
-            QDir::Name);
-        if (statFiles.isEmpty())
-        {
-            return {};
-        }
-
-        return QDir::cleanPath(hubDir.filePath(statFiles.first()));
-    }
-
-    QString resolveNoteHeaderPath(const LibraryNoteRecord& note)
-    {
-        const QString directPath = normalizePath(note.noteHeaderPath);
-        if (!directPath.isEmpty() && QFileInfo(directPath).isFile())
-        {
-            return directPath;
-        }
-
-        const QString noteDirectoryPath = normalizePath(note.noteDirectoryPath);
-        if (noteDirectoryPath.isEmpty())
-        {
-            return {};
-        }
-
-        const QDir noteDir(noteDirectoryPath);
-        if (!noteDir.exists())
-        {
-            return {};
-        }
-
-        const QString noteStem = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
-        if (!noteStem.isEmpty())
-        {
-            const QString stemHeaderPath = noteDir.filePath(noteStem + QStringLiteral(".wsnhead"));
-            if (QFileInfo(stemHeaderPath).isFile())
-            {
-                return QDir::cleanPath(stemHeaderPath);
-            }
-        }
-
-        const QString canonicalHeaderPath = noteDir.filePath(QStringLiteral("note.wsnhead"));
-        if (QFileInfo(canonicalHeaderPath).isFile())
-        {
-            return QDir::cleanPath(canonicalHeaderPath);
-        }
-
-        const QFileInfoList headerCandidates = noteDir.entryInfoList(
-            QStringList{QStringLiteral("*.wsnhead")},
-            QDir::Files,
-            QDir::Name);
-        QString draftHeaderPath;
-        for (const QFileInfo& fileInfo : headerCandidates)
-        {
-            const QString loweredName = fileInfo.fileName().toCaseFolded();
-            if (loweredName.contains(QStringLiteral(".draft.")))
-            {
-                if (draftHeaderPath.isEmpty())
-                {
-                    draftHeaderPath = fileInfo.absoluteFilePath();
-                }
-                continue;
-            }
-            return QDir::cleanPath(fileInfo.absoluteFilePath());
-        }
-
-        if (!draftHeaderPath.isEmpty())
-        {
-            return QDir::cleanPath(draftHeaderPath);
-        }
-
-        return {};
-    }
-
-    QString resolveNoteDirectoryPath(const LibraryNoteRecord& note)
-    {
-        const QString directPath = normalizePath(note.noteDirectoryPath);
-        if (!directPath.isEmpty() && QFileInfo(directPath).isDir())
-        {
-            return directPath;
-        }
-
-        const QString headerPath = resolveNoteHeaderPath(note);
-        if (!headerPath.isEmpty())
-        {
-            return QFileInfo(headerPath).absolutePath();
-        }
-
-        return {};
-    }
-
     int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
     {
         const QString normalizedNoteId = noteId.trimmed();
@@ -255,23 +41,6 @@ namespace
         }
 
         return -1;
-    }
-
-    QStringList noteIdsFromRecords(const QVector<LibraryNoteRecord>& notes)
-    {
-        QStringList noteIds;
-        noteIds.reserve(notes.size());
-
-        for (const LibraryNoteRecord& note : notes)
-        {
-            const QString noteId = note.noteId.trimmed();
-            if (!noteId.isEmpty())
-            {
-                noteIds.push_back(noteId);
-            }
-        }
-
-        return noteIds;
     }
 
     QString createStagedRemovalDirectoryName(const QDir& parentDir, QString baseName)
@@ -322,7 +91,7 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     QString resolveError;
     if (normalizedLibraryPath.isEmpty() || !QFileInfo(normalizedLibraryPath).isDir())
     {
-        normalizedLibraryPath = resolvePrimaryLibraryPathFromWshub(normalizedWshubPath, &resolveError);
+        normalizedLibraryPath = m_hubStructureValidator.resolvePrimaryLibraryPath(normalizedWshubPath, &resolveError);
     }
     if (normalizedLibraryPath.isEmpty())
     {
@@ -336,32 +105,42 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     }
 
     const LibraryNoteRecord removedNote = request.notes.at(noteIndex);
-    const QString noteDirectoryPath = resolveNoteDirectoryPath(removedNote);
-    if (noteDirectoryPath.isEmpty() || !QFileInfo(noteDirectoryPath).isDir())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Failed to resolve note directory for noteId=%1.").arg(normalizedNoteId);
-        }
-        return false;
-    }
-
-    const QFileInfo noteDirectoryInfo(noteDirectoryPath);
+    const QString noteDirectoryPath = m_noteStorageValidator.resolveExistingNoteDirectoryPath(removedNote);
+    const bool missingMaterializedDirectory = noteDirectoryPath.isEmpty() || !QFileInfo(noteDirectoryPath).isDir();
+    QFileInfo noteDirectoryInfo(noteDirectoryPath);
     QDir noteParentDir(noteDirectoryInfo.absolutePath());
     const QString originalDirectoryName = noteDirectoryInfo.fileName();
-    const QString stagedDirectoryName = createStagedRemovalDirectoryName(noteParentDir, originalDirectoryName);
-    const QString stagedNoteDirectoryPath = noteParentDir.filePath(stagedDirectoryName);
-    if (!noteParentDir.rename(originalDirectoryName, stagedDirectoryName))
+    QString stagedDirectoryName;
+    QString stagedNoteDirectoryPath;
+    if (!missingMaterializedDirectory)
     {
-        if (errorMessage != nullptr)
+        stagedDirectoryName = createStagedRemovalDirectoryName(noteParentDir, originalDirectoryName);
+        stagedNoteDirectoryPath = noteParentDir.filePath(stagedDirectoryName);
+        if (!noteParentDir.rename(originalDirectoryName, stagedDirectoryName))
         {
-            *errorMessage = QStringLiteral("Failed to stage note directory for deletion: %1").arg(noteDirectoryPath);
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to stage note directory for deletion: %1").
+                    arg(noteDirectoryPath);
+            }
+            return false;
         }
-        return false;
+    }
+    else
+    {
+        WhatSon::Debug::trace(
+            QStringLiteral("note.delete.service"),
+            QStringLiteral("deleteNote.orphanIndexEntry"),
+            QStringLiteral("noteId=%1 action=indexOnlyPrune").arg(normalizedNoteId));
     }
 
-    auto restoreStagedDirectory = [&noteParentDir, &originalDirectoryName, &stagedDirectoryName]()
+    auto restoreStagedDirectory = [&noteParentDir, &originalDirectoryName, &stagedDirectoryName,
+            missingMaterializedDirectory]()
     {
+        if (missingMaterializedDirectory)
+        {
+            return true;
+        }
         if (!noteParentDir.exists(stagedDirectoryName) || noteParentDir.exists(originalDirectoryName))
         {
             return true;
@@ -385,12 +164,11 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
         return false;
     }
 
-    WhatSonLibraryHierarchyStore libraryStore;
-    libraryStore.setHubPath(normalizedWshubPath);
-    libraryStore.setNoteIds(noteIdsFromRecords(request.notes));
-
-    WhatSonLibraryHierarchyCreator libraryCreator;
-    if (!m_ioGateway.writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &ioError))
+    if (!m_libraryIndexIntegrityValidator.rewriteIndexesFromRecords(
+        normalizedWshubPath,
+        QStringList{normalizedLibraryPath},
+        request.notes,
+        &ioError))
     {
         restoreStagedDirectory();
         if (errorMessage != nullptr)
@@ -413,7 +191,7 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     QString normalizedStatPath = normalizePath(request.statPath);
     if (normalizedStatPath.isEmpty())
     {
-        normalizedStatPath = resolveHubStatPathFromWshub(normalizedWshubPath);
+        normalizedStatPath = m_hubStructureValidator.resolveHubStatPath(normalizedWshubPath);
     }
 
     const QString nowUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
@@ -526,7 +304,7 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     }
 
     QString removeError;
-    if (!m_ioGateway.removeDirectoryRecursively(stagedNoteDirectoryPath, &removeError))
+    if (!missingMaterializedDirectory && !m_ioGateway.removeDirectoryRecursively(stagedNoteDirectoryPath, &removeError))
     {
         restoreStatFile();
         restoreIndexFile();
@@ -562,17 +340,19 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
         WhatSon::Debug::trace(
             QStringLiteral("note.delete.service"),
             QStringLiteral("deleteNote.success"),
-            QStringLiteral("noteId=%1 library=%2 remaining=%3")
+            QStringLiteral("noteId=%1 library=%2 remaining=%3 materialized=%4")
             .arg(normalizedNoteId, normalizedLibraryPath)
-            .arg(remainingCount));
+            .arg(remainingCount)
+            .arg(missingMaterializedDirectory ? QStringLiteral("false") : QStringLiteral("true")));
         return true;
     }
 
     WhatSon::Debug::trace(
         QStringLiteral("note.delete.service"),
         QStringLiteral("deleteNote.success"),
-        QStringLiteral("noteId=%1 library=%2 remaining=%3")
+        QStringLiteral("noteId=%1 library=%2 remaining=%3 materialized=%4")
         .arg(normalizedNoteId, normalizedLibraryPath)
-        .arg(request.notes.size()));
+        .arg(request.notes.size())
+        .arg(missingMaterializedDirectory ? QStringLiteral("false") : QStringLiteral("true")));
     return true;
 }

@@ -3,6 +3,7 @@ import QtQuick
 QtObject {
     id: interactionController
 
+    property int activationRequestRevision: 0
     property int editingIndex: -1
     property string editingText: ""
     property bool folderDropAsChild: true
@@ -13,6 +14,7 @@ QtObject {
     property var hierarchyViewModel: null
     property var hierarchyViewport: null
     property int noteDropTargetIndex: -1
+    property int pendingActivationIndex: -1
     property var requestViewHook: null
     property bool rootDropHighlighted: false
     property int selectedFolderIndex: -1
@@ -23,10 +25,32 @@ QtObject {
             return;
         if (interactionController.editingIndex >= 0 && interactionController.editingIndex !== index)
             interactionController.commitRename();
+        interactionController.pendingActivationIndex = index;
+        interactionController.activationRequestRevision += 1;
+        const requestRevision = interactionController.activationRequestRevision;
         if (interactionController.hierarchyList && interactionController.hierarchyList.requestActivate !== undefined)
             interactionController.hierarchyList.requestActivate(delegate);
         if (interactionController.viewRoot && interactionController.viewRoot.forceActiveFocus !== undefined)
             interactionController.viewRoot.forceActiveFocus();
+        Qt.callLater(function () {
+            if (interactionController.activationRequestRevision !== requestRevision)
+                return;
+            if (interactionController.pendingActivationIndex !== index)
+                return;
+            if (interactionController.hierarchyViewModel && interactionController.hierarchyViewModel.setSelectedIndex !== undefined && interactionController.selectedFolderIndex !== index)
+                interactionController.hierarchyViewModel.setSelectedIndex(index);
+            var replayDelegate = delegate;
+            if (interactionController.folderRepeater && interactionController.folderRepeater.itemAt !== undefined) {
+                const candidate = interactionController.folderRepeater.itemAt(index);
+                if (candidate)
+                    replayDelegate = candidate;
+            }
+            if (replayDelegate && replayDelegate.visible !== false && replayDelegate.height > 0 && interactionController.hierarchyList && interactionController.hierarchyList.requestActivate !== undefined)
+                interactionController.hierarchyList.requestActivate(replayDelegate);
+            if (interactionController.viewRoot && interactionController.viewRoot.forceActiveFocus !== undefined)
+                interactionController.viewRoot.forceActiveFocus();
+            interactionController.pendingActivationIndex = -1;
+        });
     }
     function activateSelectedHierarchyItem(focusView) {
         if (interactionController.selectedFolderIndex < 0 || !interactionController.folderRepeater)
@@ -119,6 +143,8 @@ QtObject {
     function clearHierarchySelection() {
         if (interactionController.editingIndex >= 0)
             interactionController.commitRename();
+        interactionController.pendingActivationIndex = -1;
+        interactionController.activationRequestRevision += 1;
         interactionController.resetDropTargets();
         if (interactionController.hierarchyList && interactionController.hierarchyList.clearActiveItem !== undefined)
             interactionController.hierarchyList.clearActiveItem();

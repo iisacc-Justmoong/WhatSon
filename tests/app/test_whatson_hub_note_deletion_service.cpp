@@ -147,7 +147,9 @@ private
     slots  :
 
 
+
     void deleteNote_removesFocusedWsnoteAndUpdatesIndexAndStat();
+    void deleteNote_prunesIndexOnlyEntryWithoutWsnoteDirectory();
 };
 
 void WhatSonHubNoteDeletionServiceTest::deleteNote_removesFocusedWsnoteAndUpdatesIndexAndStat()
@@ -209,6 +211,81 @@ void WhatSonHubNoteDeletionServiceTest::deleteNote_removesFocusedWsnoteAndUpdate
 
     const QJsonObject statRoot = readJsonObjectFile(statPath);
     QCOMPARE(statRoot.value(QStringLiteral("noteCount")).toInt(), 2);
+    QVERIFY(!statRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
+}
+
+void WhatSonHubNoteDeletionServiceTest::deleteNote_prunesIndexOnlyEntryWithoutWsnoteDirectory()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QString libraryPath = QDir(hubPath).filePath(
+        QStringLiteral("NoteDeletionServiceHub.wscontents/Library.wslibrary"));
+    const QString statPath = QDir(hubPath).filePath(QStringLiteral("NoteDeletionServiceHub.wsstat"));
+    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+
+    QJsonObject indexRoot = readJsonObjectFile(indexPath);
+    QJsonArray notesArray = indexRoot.value(QStringLiteral("notes")).toArray();
+    notesArray.append(QJsonObject{
+        {QStringLiteral("id"), QStringLiteral("note-orphan")}
+    });
+    indexRoot.insert(QStringLiteral("notes"), notesArray);
+    QVERIFY(writeUtf8File(indexPath, QString::fromUtf8(QJsonDocument(indexRoot).toJson(QJsonDocument::Indented))));
+
+    WhatSonHubStat hubStat;
+    hubStat.setNoteCount(4);
+    hubStat.setResourceCount(0);
+    hubStat.setCharacterCount(0);
+    hubStat.setCreatedAtUtc(QStringLiteral("2026-03-01T00:00:00Z"));
+    hubStat.setLastModifiedAtUtc(QStringLiteral("2026-03-01T00:00:00Z"));
+    hubStat.setParticipants(QStringList{QStringLiteral("ProfileName")});
+
+    QVector<LibraryNoteRecord> notes;
+    LibraryNoteRecord alpha;
+    alpha.noteId = QStringLiteral("note-a");
+    alpha.noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"));
+    notes.push_back(alpha);
+
+    LibraryNoteRecord beta;
+    beta.noteId = QStringLiteral("note-b");
+    beta.noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"));
+    notes.push_back(beta);
+
+    LibraryNoteRecord gamma;
+    gamma.noteId = QStringLiteral("note-c");
+    gamma.noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote"));
+    notes.push_back(gamma);
+
+    LibraryNoteRecord orphan;
+    orphan.noteId = QStringLiteral("note-orphan");
+    notes.push_back(orphan);
+
+    WhatSonHubNoteDeletionService service;
+    WhatSonHubNoteDeletionService::Request request;
+    request.wshubPath = hubPath;
+    request.hubName = QStringLiteral("NoteDeletionServiceHub");
+    request.hubStat = hubStat;
+    request.notes = notes;
+    request.noteId = QStringLiteral("note-orphan");
+
+    WhatSonHubNoteDeletionService::Result result;
+    QString errorMessage;
+    QVERIFY2(service.deleteNote(std::move(request), &result, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(result.noteId, QStringLiteral("note-orphan"));
+    QCOMPARE(result.remainingNotes.size(), 3);
+    QCOMPARE(result.hubStat.noteCount(), 3);
+    QVERIFY(QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"))).isDir());
+    QVERIFY(QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"))).isDir());
+    QVERIFY(QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote"))).isDir());
+
+    const QJsonObject healedIndexRoot = readJsonObjectFile(indexPath);
+    QCOMPARE(
+        noteIdsFromIndexArray(healedIndexRoot.value(QStringLiteral("notes")).toArray()),
+        QStringList({QStringLiteral("note-a"), QStringLiteral("note-b"), QStringLiteral("note-c")}));
+
+    const QJsonObject statRoot = readJsonObjectFile(statPath);
+    QCOMPARE(statRoot.value(QStringLiteral("noteCount")).toInt(), 3);
     QVERIFY(!statRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
 }
 

@@ -117,14 +117,26 @@ WhatSon is an LVRS-based Qt Quick application.
   model changes must resync the visible current row immediately when the active hierarchy domain changes.
 - `ListBarLayout.qml` also keeps a short-lived pending note-selection intent and replays it once via `Qt.callLater`,
   so rapid note changes still win even if the previously focused editor is flushing a debounced body save.
-- The same `ListBarLayout.qml` also routes `Backspace` and `Delete` from the focused note list into the injected
-  `LibraryHierarchyViewModel::deleteNoteById(...)` contract, but that view-model now only forwards the focused
-  `.wsnote` deletion request into `WhatSonHubNoteDeletionService`. File-system removal plus `index.wsnindex` / hub
-  stat rewrites live in the file layer, while `BookmarksHierarchyViewModel` only mirrors the deletion into its
-  bookmarked subset.
+- The same `ListBarLayout.qml` now composes a narrow `FocusedNoteDeletionBridge`, so `Backspace` / `Delete` resolve
+  the visually focused note id directly from the list view before falling back to the active note-list model. The
+  bridge still forwards deletion into the injected `LibraryHierarchyViewModel::deleteNoteById(...)` contract, and that
+  view-model remains a thin wrapper around `WhatSonHubNoteDeletionService`. File-system integrity repair now lives
+  under `src/app/file/validator/`: `WhatSonHubStructureValidator` resolves hub/library/stat paths,
+  `WhatSonNoteStorageValidator` resolves materialized `.wsnote` / `.wsnhead` storage, and
+  `WhatSonLibraryIndexIntegrityValidator` owns orphan pruning plus `index.wsnindex` rewrites. When a stale
+  `index.wsnindex` entry no longer has a materialized `.wsnote`, load-time indexing now prunes the orphan from both
+  the visible note set and the rewritten index, and the delete service also treats such entries as index-only cleanup
+  instead of failing for a missing directory.
+  `BookmarksHierarchyViewModel` only mirrors the deletion into its bookmarked subset.
 - The note-card delegate reads `model.<role>` directly from the runtime role object instead of passing every field
   through a dynamic role-extraction helper, which keeps note preview bindings simpler and avoids silent blank-card
   regressions when a helper is removed.
+- `SidebarHierarchyView.qml` composes `SidebarHierarchyInteractionController.qml` as the single drag/drop interaction
+  owner for hierarchy rows. Folder reparenting and note-to-folder drops both route through that controller into
+  `LibraryHierarchyViewModel`, so dragging a note card onto a library folder appends that folder assignment in the
+  note header and refreshes the visible note lists immediately. The same controller also keeps a short-lived pending
+  hierarchy-activation replay, so two rapid folder clicks still leave the last tapped folder selected even if the
+  first selection triggered focus/refresh work in between.
 - `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
   `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
   `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,

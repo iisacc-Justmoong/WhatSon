@@ -39,6 +39,7 @@ Item {
             if (child && child.__isHierarchyItem === true)
                 items.push(child);
         }
+        return items;
     }
     function normalizedIndentLevel(item) {
         if (!item || item.indentLevel === undefined || item.indentLevel === null)

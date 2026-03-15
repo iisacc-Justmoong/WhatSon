@@ -3,6 +3,9 @@
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "file/hub/WhatSonHubStat.hpp"
+#include "file/validator/WhatSonHubStructureValidator.hpp"
+#include "file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
+#include "file/validator/WhatSonNoteStorageValidator.hpp"
 
 #include <QString>
 #include <QVector>
@@ -38,4 +41,7 @@ public:
 
 private:
     WhatSonSystemIoGateway m_ioGateway;
+    WhatSonHubStructureValidator m_hubStructureValidator;
+    WhatSonLibraryIndexIntegrityValidator m_libraryIndexIntegrityValidator;
+    WhatSonNoteStorageValidator m_noteStorageValidator;
 };

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "LibraryNoteRecord.hpp"
+#include "validator/WhatSonHubStructureValidator.hpp"
+#include "validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include <QString>
 #include <QVector>
@@ -21,4 +23,6 @@ public:
 private:
     QString m_sourceWshubPath;
     QVector<LibraryNoteRecord> m_notes;
+    WhatSonHubStructureValidator m_hubStructureValidator;
+    WhatSonLibraryIndexIntegrityValidator m_libraryIndexIntegrityValidator;
 };

@@ -275,9 +275,10 @@ Domain-isolated support:
               fixed vertical positions. `ListBarLayout.qml` now owns the note-list `ListView` directly, including the
               bidirectional selection bridge between the visible `ListView` and the active domain note-list model, so
               note taps and runtime selection changes stay aligned even when the active hierarchy domain swaps the
-              underlying note-list model instance. The same layout also routes focused-list `Backspace`/`Delete`
-              keystrokes into an injected `deleteNoteById(...)` command source, which keeps destructive note deletion
-              delegated through `LibraryHierarchyViewModel` but executed in the file layer by
+              underlying note-list model instance. The same layout also composes `FocusedNoteDeletionBridge`, which
+              captures the visually focused note id on press and uses it for focused-list `Backspace`/`Delete`
+              keystrokes before falling back to the bound note-list model. Destructive note deletion still stays
+              delegated through `LibraryHierarchyViewModel` and executed in the file layer by
               `WhatSonHubNoteDeletionService`, while bookmark-specific state only mirrors the result. Note-card
               delegates bind `roleModel.<role>` directly from the runtime
               role object instead of routing every field through a dynamic extractor helper, which keeps the card data
@@ -287,7 +288,12 @@ Domain-isolated support:
               advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
               note-card tap handler stays on `TapHandler.DragThreshold`, but selection is committed on press and
               reasserted once through a short-lived pending-selection replay so editor save/refresh work cannot drop
-              the latest user pick while drag startup still shares the same surface.
+              the latest user pick while drag startup still shares the same surface. `SidebarHierarchyView.qml`
+              composes `SidebarHierarchyInteractionController.qml` as the single drag/drop owner for hierarchy rows,
+              so note-card drops on library folders route through `assignNoteToFolder(index, noteId)` and immediately
+              update note-header folder membership plus the visible draft/folder note lists. The same controller also
+              tracks one pending hierarchy activation request and replays it once through `Qt.callLater`, so rapid
+              folder clicks still converge on the latest tapped row after focus and selection refresh work settles.
             - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
               `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
               surface by composing dedicated SRP modules:
@@ -401,12 +407,20 @@ Library-specific modeling:
   focusing the new note in the current folder scope.
 - `WhatSonHubNoteDeletionService` is the file-layer authority for destructive note removal. It deletes the focused
   `.wsnote`, rewrites `index.wsnindex`, updates hub stat metadata, and returns the remaining indexed notes plus updated
-  stat state to the caller.
+  stat state to the caller. Integrity-sensitive path resolution and repair now live under `src/app/file/validator/`:
+  `WhatSonHubStructureValidator` resolves `.wshub` structure, `WhatSonNoteStorageValidator` resolves materialized note
+  storage, and `WhatSonLibraryIndexIntegrityValidator` owns orphan pruning plus index rewrite. If a stale index entry
+  has no materialized `.wsnote` directory anymore, the same service now treats it as index-only cleanup and still
+  removes the orphan id from the rewritten index/stat state.
 - `LibraryHierarchyViewModel::deleteNoteById()` is now a thin orchestration wrapper around
   `WhatSonHubNoteDeletionService`: it forwards the active note request into the file layer, rebuilds the `All Library`
   / `Draft` / `Today` buckets from the returned note set, restores visible neighbor selection, and emits
   `noteDeleted(noteId)` so bookmark-only projections can drop the same note without owning file-system deletion
   themselves.
+- `LibraryAll::indexFromWshub()` no longer keeps index-only ghost notes alive when `index.wsnindex` mentions ids whose
+  `.wsnote` storage has disappeared. It now delegates that repair to `WhatSonLibraryIndexIntegrityValidator`, so
+  orphan entries are pruned from the runtime note set and the library index is rewritten from the remaining
+  materialized note directories, keeping note-list counts aligned with the actual filesystem.
 - Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
   resolved folder path to the note header `<folders>` list, updates `lastModified`, and rebuilds the `All Library` /
   `Draft` / `Today` bucket snapshots.

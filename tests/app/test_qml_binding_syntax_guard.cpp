@@ -743,6 +743,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("onActiveChanged: function (item, itemId, index)")),
         "SidebarHierarchyView.qml must sync hierarchy selection from LVRS activeChanged so activation happens after click/release instead of raw press.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
+        "SidebarHierarchyView.qml row tap handling must keep drag-threshold gesture gating so click activation and folder drag can coexist.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral(
+            "onTapped: {\n                                    sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);")),
+        "SidebarHierarchyView.qml must explicitly activate hierarchy rows on tap release so rapid clicks are not lost behind LVRS refresh timing.");
+    QVERIFY2(
         hierarchyListCompatText.contains(QStringLiteral("return items;")),
         "HierarchyListCompat.qml must return its managed LVRS hierarchy items so activeItem remains single-sourced.");
     QVERIFY2(
@@ -770,6 +777,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarControllerText.contains(QStringLiteral("interactionController.hierarchyList.clearActiveItem()")),
         "SidebarHierarchyInteractionController.qml blank-area deselect must clear the active LVRS hierarchy item explicitly.");
+    QVERIFY2(
+        sidebarControllerText.contains(QStringLiteral("property int pendingActivationIndex: -1")),
+        "SidebarHierarchyInteractionController.qml must track one pending hierarchy activation so the latest user click can survive intermediate refreshes.");
+    QVERIFY2(
+        sidebarControllerText.contains(QStringLiteral("property int activationRequestRevision: 0")),
+        "SidebarHierarchyInteractionController.qml must version hierarchy activation requests so stale replay work is discarded.");
+    QVERIFY2(
+        sidebarControllerText.contains(QStringLiteral("Qt.callLater(function () {")),
+        "SidebarHierarchyInteractionController.qml must replay the latest hierarchy activation after refresh-triggering work settles.");
+    QVERIFY2(
+        sidebarControllerText.contains(
+            QStringLiteral("interactionController.hierarchyViewModel.setSelectedIndex(index)")),
+        "SidebarHierarchyInteractionController.qml pending activation replay must be able to realign the hierarchy view-model selection to the latest user tap.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral(
             "onPressed: {\n                                sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);")),
@@ -921,8 +941,17 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml must expose a dedicated selection-contract capability flag instead of scattering dynamic checks.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined")),
-        "ListBarLayout.qml must expose an explicit delete-note capability contract instead of probing the destructive command inline.");
+            "readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable")),
+        "ListBarLayout.qml must expose an explicit delete-note capability contract through FocusedNoteDeletionBridge instead of probing the destructive command inline.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("FocusedNoteDeletionBridge {")),
+        "ListBarLayout.qml must compose FocusedNoteDeletionBridge so delete-key handling tracks the visually focused note directly.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("deletionTarget: listBarLayout.noteDeletionViewModel")),
+        "ListBarLayout.qml delete bridge must bind to the injected delete-note command source.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("noteListModel: listBarLayout.resolvedNoteListModel")),
+        "ListBarLayout.qml delete bridge must retain the resolved note-list model as a fallback focus source.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null")),
@@ -936,9 +965,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         deleteCurrentNoteBody.contains(QStringLiteral("return deleted;")),
         "ListBarLayout.qml deleteCurrentNote() must return the delete result so keyboard handlers can stop only on successful deletion.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral(
-            "const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));")),
-        "ListBarLayout.qml must route destructive note deletion through the injected delete-note view-model.");
+        listBarLayoutText.contains(QStringLiteral("const deleted = noteDeletionBridge.deleteFocusedNote();")),
+        "ListBarLayout.qml must route destructive note deletion through FocusedNoteDeletionBridge.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),
         "ListBarLayout.qml must handle both Backspace and Delete when the note list owns keyboard focus.");
@@ -957,16 +985,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("function pushCurrentIndexToModel(index)")),
         "ListBarLayout.qml must expose an explicit helper that pushes ListView selection into the note model.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("function activateNoteIndex(index)")),
-        "ListBarLayout.qml must centralize immediate note activation through an explicit helper.");
+        listBarLayoutText.contains(QStringLiteral("function activateNoteIndex(index, noteId)")),
+        "ListBarLayout.qml must centralize immediate note activation through an explicit helper that also captures the visually focused note id.");
     const QString activateNoteIndexBody = extractFunctionBody(
-        listBarLayoutText, QStringLiteral("function activateNoteIndex(index)"));
+        listBarLayoutText, QStringLiteral("function activateNoteIndex(index, noteId)"));
     QVERIFY2(
         activateNoteIndexBody.contains(QStringLiteral("Qt.callLater(function () {")),
         "ListBarLayout.qml must reapply the latest note selection after the current event turn so editor save/refresh work cannot drop the user's last click.");
     QVERIFY2(
         activateNoteIndexBody.contains(QStringLiteral("listBarLayout.pushCurrentIndexToModel(targetIndex);")),
         "ListBarLayout.qml immediate note activation helper must push the selected row into the bound note-list model.");
+    QVERIFY2(
+        activateNoteIndexBody.contains(QStringLiteral("noteDeletionBridge.focusedNoteId = normalizedNoteId;")),
+        "ListBarLayout.qml immediate note activation helper must capture the tapped note id for low-latency keyboard deletion.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
         "ListBarLayout.qml must pull currentIndex from the note model back into ListView state.");
@@ -1010,8 +1041,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("onPressedChanged: {")),
         "ListBarLayout.qml note tap handling must react on press so rapid successive note picks are not lost behind editor save latency.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index);")),
+        listBarLayoutText.contains(
+            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")),
         "ListBarLayout.qml note-card press handler must route immediate activation through activateNoteIndex().");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function syncFocusedNoteDeletionState()")),
+        "ListBarLayout.qml must expose a helper that resyncs focused note deletion state from the visible current card.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("listBarLayout.noteListModel.currentIndex = index;")),
         "ListBarLayout.qml must push tapped note selection into noteModel.currentIndex.");
@@ -1282,15 +1317,21 @@ void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized
     const QString listBarLayoutText = QString::fromUtf8(listBarLayoutFile.readAll());
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined")),
-        "ListBarLayout.qml must expose an explicit delete-note capability contract instead of probing the destructive command inline.");
+            "readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable")),
+        "ListBarLayout.qml must expose an explicit delete-note capability contract through FocusedNoteDeletionBridge instead of probing the destructive command inline.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function deleteCurrentNote()")),
         "ListBarLayout.qml must centralize current-note deletion through an explicit helper.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral(
-            "const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));")),
-        "ListBarLayout.qml must route destructive note deletion through the injected delete-note view-model.");
+        listBarLayoutText.contains(QStringLiteral("FocusedNoteDeletionBridge {")),
+        "ListBarLayout.qml must compose FocusedNoteDeletionBridge so delete-key handling tracks the visually focused note directly.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("const deleted = noteDeletionBridge.deleteFocusedNote();")),
+        "ListBarLayout.qml must route destructive note deletion through FocusedNoteDeletionBridge.");
+    QVERIFY2(
+        listBarLayoutText.contains(
+            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")),
+        "ListBarLayout.qml must capture the tapped note id immediately so keyboard deletion follows the visual note focus without latency.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),
         "ListBarLayout.qml must handle both Backspace and Delete when the note list owns keyboard focus.");
