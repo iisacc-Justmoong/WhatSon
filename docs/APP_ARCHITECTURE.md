@@ -292,9 +292,10 @@ Domain-isolated support:
               `ListView` also yields drag-scrolling while a note row is pressed, so the delegate `DragHandler` can
               start the `whatson.library.note` drag before the viewport steals the pointer. `SidebarHierarchyView.qml`
               now binds the higher-level LVRS `Hierarchy` surface directly to each domain view-model's standard
-              `hierarchyModel` property, and the standard-contract pass leaves note drops plus folder reordering out of
-              the mounted sidebar surface until those behaviors are reintroduced on top of the same direct model
-              contract.
+              `hierarchyModel` property, normalizes that C++ `QVariantList` into a JS array before it reaches LVRS
+              editable drag logic, and the mounted sidebar now reintroduces folder reordering through a dedicated
+              `HierarchyDragDropBridge` on top of the same direct LVRS model contract. The same mounted sidebar also
+              accepts `whatson.library.note` drops directly over hierarchy rows through `assignNoteToFolder(...)`.
             - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
               `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
               surface by composing dedicated SRP modules:
@@ -537,13 +538,16 @@ Hierarchy rendering pipeline:
 - `SidebarHierarchyView` now mounts the LVRS `Hierarchy` surface directly instead of composing a custom list/adapter
   stack around `HierarchyList`.
 - Each domain hierarchy view-model exposes a direct `hierarchyModel` `QVariantList` property with LVRS-default roles
-  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`) and rebuilds nested `children` arrays from the
-  persisted depth ordering, so the QML sidebar binds a standard LVRS tree model with native expand/collapse semantics
-  and without an intermediate WhatSon bridge object.
+  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`, `draggable`) and preserves the persisted flat depth
+  ordering, matching the current LVRS `HierarchyList` contract where child presence, expand/collapse, and row-level
+  drag affordance are inferred from row order plus explicit depth/drag roles without an intermediate WhatSon adapter.
 - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
   backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into
   `SidebarHierarchyView.qml` without re-normalizing indices or re-resolving per-domain view-models in QML.
+- `HierarchySidebarLayout.qml` now composes `HierarchyDragDropBridge`, which introspects the resolved hierarchy
+  view-model for `applyHierarchyNodes(...)` / note-drop contracts and feeds LVRS `Hierarchy.editable` plus reorder
+  persistence back into the active domain object.
 - `BodyLayout.qml` keeps width clamp math plus panel arrangement, while `PanelEdgeSplitter.qml` owns the shared
   edge-drag interaction used by sidebar/list/right-panel splitters.
 - `Main.qml` keeps shell routing/window composition, while `MainWindowInteractionController.qml` owns focus
@@ -553,21 +557,26 @@ Hierarchy rendering pipeline:
 - Row-activation policy: LVRS `Hierarchy.listItemActivated(...)` is authoritative. WhatSon mirrors the resulting
   `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays selection with
   `activateListItemById(...)` when the underlying model changes.
-- The current standard-contract pass intentionally leaves custom sidebar search, note-drop handling, and editable
-  hierarchy persistence out of the mounted QML surface. Those behaviors are deferred until they can be reintroduced on
-  top of the direct LVRS model contract instead of replacing it.
+- The current sidebar contract keeps hierarchy search out of the mounted QML surface, but folder drag-reorder and
+  note-to-folder drops are restored through `HierarchyDragDropBridge` on top of the direct LVRS model contract instead
+  of replacing it.
 - Blank-area deselect is no longer a WhatSon-owned hierarchy contract. The direct LVRS list keeps one active keyed row
   while selection is present.
 - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row, and newly
   inserted folders use the placeholder label `Untitled`.
-- Drag-reorder policy: the standard-contract sidebar pass does not mount editable hierarchy mutation in QML. Legacy
-  `applyHierarchyNodes(...)` entrypoints remain in the domain view-models for later custom-domain reintegration.
-- Library note-drop policy: the standard-contract sidebar pass does not mount note-drop overlays in QML. Legacy
-  `LibraryHierarchyViewModel::assignNoteToFolder(...)` remains available for later reintegration.
+- Drag-reorder policy: `SidebarHierarchyView.qml` now enables LVRS `Hierarchy.editable` only when the active domain
+  exposes `applyHierarchyNodes(...)` through `HierarchyDragDropBridge`, and successful LVRS `listItemMoved(...)`
+  events are persisted immediately back into the domain view-model. The bound hierarchy payload is first normalized
+  into a JS array because LVRS editable drag support rejects raw C++ `QVariantList` payloads.
+- Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,
+  resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
+  `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
+  `HierarchyDragDropBridge::assignNoteToFolder(...)`.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
-  `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when custom hierarchy mutation is restored.
+  `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
+  ordering.
 - Projects folder move persistence: `ProjectsHierarchyViewModel::applyHierarchyNodes(...)` still owns
-  `Folders.wsfolders` rewrites when custom hierarchy mutation is restored.
+  `Folders.wsfolders` rewrites when LVRS drag-reorder commits a new depth ordering.
 - Rename commit policy for hub-loaded hierarchies: the view-model updates staged in-memory data, applies it to the
   domain store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
   `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.

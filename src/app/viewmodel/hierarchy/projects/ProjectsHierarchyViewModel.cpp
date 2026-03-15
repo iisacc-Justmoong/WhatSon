@@ -3,7 +3,6 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
-#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -383,7 +382,7 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList ProjectsHierarchyViewModel::hierarchyModel() const
 {
-    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
+    return depthItems();
 }
 
 QVariantList ProjectsHierarchyViewModel::depthItems() const
@@ -392,6 +391,7 @@ QVariantList ProjectsHierarchyViewModel::depthItems() const
     for (int index = 0; index < serialized.size() && index < m_items.size(); ++index)
     {
         QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("draggable"), canMoveFolder(index));
         entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), projectsHierarchyItemKey(m_items, index));
         serialized[index] = entry;

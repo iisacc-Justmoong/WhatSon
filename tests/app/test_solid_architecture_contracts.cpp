@@ -214,17 +214,21 @@ void SolidArchitectureContractsTest::qmlAssembly_mustKeepDedicatedResponsibility
 {
     const QString mainQml = readQml(QStringLiteral("Main.qml"));
     const QString bodyLayout = readQml(QStringLiteral("view/panels/BodyLayout.qml"));
+    const QString hierarchySidebarLayout = readQml(QStringLiteral("view/panels/HierarchySidebarLayout.qml"));
     const QString sidebarHierarchyView = readQml(QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));
     const QString contentsDisplayView = readQml(QStringLiteral("view/content/editor/ContentsDisplayView.qml"));
 
     QVERIFY(!mainQml.isEmpty());
     QVERIFY(!bodyLayout.isEmpty());
+    QVERIFY(!hierarchySidebarLayout.isEmpty());
     QVERIFY(!sidebarHierarchyView.isEmpty());
     QVERIFY(!contentsDisplayView.isEmpty());
 
     QVERIFY(mainQml.contains(QStringLiteral("MainWindowInteractionController {")));
     QVERIFY(bodyLayout.contains(QStringLiteral("PanelEdgeSplitter {")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("HierarchyDragDropBridge {")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.Hierarchy {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("onListItemMoved: function")));
     QVERIFY(!sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyLvrsAdapter {")));
     QVERIFY(!sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyInteractionController {")));
     QVERIFY(contentsDisplayView.contains(QStringLiteral("ContentsEditorSelectionBridge {")));

@@ -1,4 +1,5 @@
 import QtQuick
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Item {
@@ -76,6 +77,11 @@ Item {
         readonly property int resources: 4
         readonly property int tags: 3
     }
+    HierarchyDragDropBridge {
+        id: hierarchyDragDropBridge
+
+        hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
+    }
     SidebarHierarchyView {
         id: sidebarView
 
@@ -84,6 +90,8 @@ Item {
         defaultToolbarIndex: hierarchyEnum.library
         frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
         frameNodeId: hierarchyView.frameNodeIdForHierarchy(hierarchyView.currentHierarchy)
+        hierarchyDragDropBridge: hierarchyDragDropBridge
+        hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable
         hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
         horizontalInset: hierarchyView.horizontalInset
         panelColor: hierarchyView.panelColor

@@ -222,12 +222,19 @@ Rectangle {
                         event.accepted = true;
                     }
 
-                    delegate: NoteListItem {
+                    delegate: Item {
                         id: noteItemDelegate
 
+                        required property string bookmarkColor
+                        required property bool bookmarked
+                        required property string displayDate
+                        required property var folders
+                        required property bool image
+                        required property var imageSource
                         required property int index
-                        required property var model
-                        readonly property var roleModel: noteItemDelegate.model && typeof noteItemDelegate.model === "object" ? noteItemDelegate.model : ({})
+                        required property string noteId
+                        required property string primaryText
+                        required property var tags
 
                         Drag.active: noteDragHandler.active
                         Drag.hotSpot.x: width * 0.5
@@ -235,19 +242,24 @@ Rectangle {
                         Drag.keys: ["whatson.library.note"]
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
-                        bookmarkColor: roleModel.bookmarkColor === undefined || roleModel.bookmarkColor === null ? "" : String(roleModel.bookmarkColor)
-                        bookmarked: roleModel.bookmarked === undefined ? false : Boolean(roleModel.bookmarked)
-                        displayDate: roleModel.displayDate === undefined || roleModel.displayDate === null ? "" : String(roleModel.displayDate)
-                        folders: listBarLayout.normalizeEntries(roleModel.folders)
-                        image: roleModel.image === undefined ? false : Boolean(roleModel.image)
-                        imageSource: roleModel.imageSource === undefined || roleModel.imageSource === null ? "" : roleModel.imageSource
-                        noteId: roleModel.id === undefined || roleModel.id === null ? "" : String(roleModel.id)
-                        opacity: noteDragHandler.active ? 0.72 : 1
-                        pressed: ListView.isCurrentItem || listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
-                        primaryText: roleModel.primaryText === undefined || roleModel.primaryText === null ? "" : String(roleModel.primaryText)
-                        tags: listBarLayout.normalizeEntries(roleModel.tags)
-                        width: ListView.view ? ListView.view.width : listBarLayout.width
 
+                        NoteListItem {
+                            id: noteCard
+
+                            anchors.fill: parent
+                            bookmarkColor: noteItemDelegate.bookmarkColor === undefined || noteItemDelegate.bookmarkColor === null ? "" : String(noteItemDelegate.bookmarkColor)
+                            bookmarked: noteItemDelegate.bookmarked === undefined ? false : Boolean(noteItemDelegate.bookmarked)
+                            displayDate: noteItemDelegate.displayDate === undefined || noteItemDelegate.displayDate === null ? "" : String(noteItemDelegate.displayDate)
+                            folders: listBarLayout.normalizeEntries(noteItemDelegate.folders)
+                            image: noteItemDelegate.image === undefined ? false : Boolean(noteItemDelegate.image)
+                            imageSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? "" : noteItemDelegate.imageSource
+                            noteId: noteItemDelegate.noteId === undefined || noteItemDelegate.noteId === null ? "" : String(noteItemDelegate.noteId)
+                            opacity: noteDragHandler.active ? 0.72 : 1
+                            pressed: ListView.isCurrentItem || listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
+                            primaryText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? "" : String(noteItemDelegate.primaryText)
+                            tags: listBarLayout.normalizeEntries(noteItemDelegate.tags)
+                            width: noteItemDelegate.width
+                        }
                         DragHandler {
                             id: noteDragHandler
 
@@ -279,12 +291,12 @@ Rectangle {
                                 }
                                 listBarLayout.notePointerPressed = true;
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
-                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
+                                noteDeletionBridge.focusedNoteId = noteCard.noteId;
                             }
                             onTapped: {
                                 listBarLayout.notePointerPressed = false;
                                 listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);
+                                listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);
                             }
                         }
                     }

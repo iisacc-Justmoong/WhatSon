@@ -892,19 +892,29 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
         false);
 
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
-    QCOMPARE(hierarchyModel.size(), 5);
+    QCOMPARE(hierarchyModel.size(), 6);
+
+    const QVariantMap allBucketNode = hierarchyModel.at(0).toMap();
+    QCOMPARE(allBucketNode.value(QStringLiteral("key")).toString(), QStringLiteral("bucket:all"));
+    QCOMPARE(allBucketNode.value(QStringLiteral("draggable")).toBool(), false);
 
     const QVariantMap researchNode = hierarchyModel.at(3).toMap();
     QCOMPARE(researchNode.value(QStringLiteral("itemId")).toInt(), 3);
     QCOMPARE(researchNode.value(QStringLiteral("key")).toString(), QStringLiteral("Research"));
+    QCOMPARE(researchNode.value(QStringLiteral("depth")).toInt(), 0);
+    QCOMPARE(researchNode.value(QStringLiteral("draggable")).toBool(), true);
+    QCOMPARE(researchNode.value(QStringLiteral("showChevron")).toBool(), true);
+    QVERIFY(!researchNode.contains(QStringLiteral("children")));
 
-    const QVariantList researchChildren = researchNode.value(QStringLiteral("children")).toList();
-    QCOMPARE(researchChildren.size(), 1);
-    QCOMPARE(researchChildren.at(0).toMap().value(QStringLiteral("key")).toString(),
+    const QVariantMap competitorNode = hierarchyModel.at(4).toMap();
+    QCOMPARE(competitorNode.value(QStringLiteral("itemId")).toInt(), 4);
+    QCOMPARE(competitorNode.value(QStringLiteral("key")).toString(),
              QStringLiteral("Research/Competitor"));
-    QCOMPARE(researchChildren.at(0).toMap().value(QStringLiteral("depth")).toInt(), 1);
+    QCOMPARE(competitorNode.value(QStringLiteral("depth")).toInt(), 1);
+    QCOMPARE(competitorNode.value(QStringLiteral("showChevron")).toBool(), false);
+    QVERIFY(!competitorNode.contains(QStringLiteral("children")));
 
-    const QVariantMap brandNode = hierarchyModel.at(4).toMap();
+    const QVariantMap brandNode = hierarchyModel.at(5).toMap();
     QCOMPARE(brandNode.value(QStringLiteral("key")).toString(), QStringLiteral("Brand"));
     QVERIFY(!brandNode.contains(QStringLiteral("children")));
 

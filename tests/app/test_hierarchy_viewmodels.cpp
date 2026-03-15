@@ -876,6 +876,8 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
     QCOMPARE(model.data(index, LibraryNoteListModel::TagsRole).toStringList(),
              QStringList({QStringLiteral("tag-a")}));
     QCOMPARE(model.data(index, LibraryNoteListModel::BookmarkColorRole).toString(), QString());
+    QCOMPARE(model.roleNames().value(LibraryNoteListModel::NoteIdRole), QByteArray("noteId"));
+    QCOMPARE(model.data(index, LibraryNoteListModel::NoteIdRole).toString(), QStringLiteral("note-1"));
     QVERIFY(model.correctionCount() >= 1);
 }
 

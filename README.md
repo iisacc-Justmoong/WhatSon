@@ -40,15 +40,20 @@ WhatSon is an LVRS-based Qt Quick application.
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that shared
   backend object before passing child bindings down into the sidebar, note list, and editor.
 - Sidebar rendering now mounts LVRS `Hierarchy` directly. Each domain hierarchy view-model exposes a standard
-  `hierarchyModel` property with LVRS-default roles (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`),
-  plus nested `children` arrays rebuilt from the stored depth order so LVRS expand/collapse works from the native tree
-  contract. `SidebarHierarchyView.qml` binds that model without an intermediate adapter.
+  `hierarchyModel` property with LVRS-default roles
+  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`, `draggable`), and keeps that payload as a flat
+  depth-array because current LVRS `Hierarchy` / `HierarchyList` infer child presence, visibility, expand/collapse,
+  and row-level drag gating from row order plus explicit `depth` / `draggable`. `SidebarHierarchyView.qml` binds that
+  model without an intermediate adapter and now normalizes the incoming C++ `QVariantList` into a real JS array before
+  it reaches LVRS editable drag logic.
 - Row activation now follows the LVRS `Hierarchy.listItemActivated(...)` contract directly. WhatSon mirrors the
   resulting `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays the
   selection with `activateListItemById(...)` when the domain model changes.
-- The standard-contract pass intentionally removes sidebar-specific hierarchy search, note-drop overlays, and editable
-  reorder persistence from the mounted QML surface. Those custom domain behaviors can be reintroduced later on top of
-  the LVRS-standard model contract instead of replacing it.
+- Sidebar drag-reorder is now reintroduced through a dedicated system-level `HierarchyDragDropBridge` wired into
+  LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
+  instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
+  `whatson.library.note` drops directly over hierarchy rows and routes accepted note-to-folder assignments back through
+  the bridge.
 - Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but press now only marks a transient
   visual candidate row; the authoritative note selection is committed on tap release and reasserted once on the next
   event turn so drag startup is not canceled by note-model refresh.
@@ -115,9 +120,10 @@ WhatSon is an LVRS-based Qt Quick application.
   the visible note set and the rewritten index, and the delete service also treats such entries as index-only cleanup
   instead of failing for a missing directory.
   `BookmarksHierarchyViewModel` only mirrors the deletion into its bookmarked subset.
-- The note-card delegate reads `model.<role>` directly from the runtime role object instead of passing every field
-  through a dynamic role-extraction helper, which keeps note preview bindings simpler and avoids silent blank-card
-  regressions when a helper is removed.
+- The note-card delegate now uses explicit required note roles (`noteId`, `primaryText`, `image`, `imageSource`,
+  `displayDate`, `folders`, `tags`, `bookmarked`, `bookmarkColor`) instead of depending on a nullable runtime
+  `model` object, which removes delegate startup `TypeError` churn during note-list refresh and keeps note drags
+  stable while the bound list model changes.
 - `SidebarHierarchyView.qml` no longer composes a local hierarchy interaction engine or an LVRS adapter bridge. It
   mounts `LV.Hierarchy` directly and consumes the active view-model's standard `hierarchyModel` property.
 - `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:

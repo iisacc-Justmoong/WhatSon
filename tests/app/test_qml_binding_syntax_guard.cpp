@@ -693,6 +693,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QFile sidebarViewFile(sidebarViewPath);
     QVERIFY2(sidebarViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(sidebarViewPath));
     const QString sidebarViewText = QString::fromUtf8(sidebarViewFile.readAll());
+    const QString hierarchySidebarLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/HierarchySidebarLayout.qml"));
+    QFile hierarchySidebarLayoutFile(hierarchySidebarLayoutPath);
+    QVERIFY2(
+        hierarchySidebarLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(hierarchySidebarLayoutPath));
+    const QString hierarchySidebarLayoutText = QString::fromUtf8(hierarchySidebarLayoutFile.readAll());
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")),
         "SidebarHierarchyView.qml must no longer depend on an internal hierarchy adapter module.");
@@ -727,9 +734,43 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(itemId);")),
         "SidebarHierarchyView.qml must mirror LVRS item activation into the bound hierarchy view-model by stable itemId.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function normalizeHierarchyModel(modelValue)")),
+        "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
-            "readonly property var standardHierarchyModel: hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : []")),
-        "SidebarHierarchyView.qml must consume the direct standard hierarchy model exposed by each domain view-model.");
+            "readonly property var standardHierarchyModel: sidebarHierarchyView.normalizeHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])")),
+        "SidebarHierarchyView.qml must consume the direct standard hierarchy model exposed by each domain view-model through a JS-array normalization helper.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property var hierarchyDragDropBridge: null")),
+        "SidebarHierarchyView.qml must accept a dedicated hierarchy drag/drop bridge instead of embedding local reorder state.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property bool hierarchyEditable: false")),
+        "SidebarHierarchyView.qml must expose an explicit editability contract for the LVRS hierarchy surface.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable")),
+        "SidebarHierarchyView.qml must source LVRS editable drag behavior from the resolved hierarchy drag/drop contract.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)")),
+        "SidebarHierarchyView.qml must listen to LVRS listItemMoved so drag reorder events can be persisted.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral(
+            "sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey)")),
+        "SidebarHierarchyView.qml must persist LVRS drag reorder results through the dedicated hierarchy drag/drop bridge.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("DropArea {")),
+        "SidebarHierarchyView.qml must expose a note-drop target surface over the LVRS hierarchy.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("keys: [\"whatson.library.note\"]")),
+        "SidebarHierarchyView.qml note-drop surface must listen only to note drag payloads.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, noteId)")),
+        "SidebarHierarchyView.qml must validate note drops through the shared hierarchy drag/drop bridge.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(targetIndex, noteId)")),
+        "SidebarHierarchyView.qml must persist accepted note drops through the shared hierarchy drag/drop bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function onHierarchyModelChanged()")),
         "SidebarHierarchyView.qml must resync LVRS activation when the active domain view-model publishes a new hierarchy model.");
@@ -752,11 +793,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !sidebarViewText.contains(QStringLiteral("property string searchQuery: \"\"")),
         "SidebarHierarchyView.qml standard-contract pass must not keep a local hierarchy search filter bridge.");
     QVERIFY2(
-        !sidebarViewText.contains(QStringLiteral("onItemMoved: function")),
-        "SidebarHierarchyView.qml standard-contract pass must not persist custom editable reorder logic.");
-    QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("property string noteDropTargetKey: \"\"")),
         "SidebarHierarchyView.qml standard-contract pass must not keep custom note-drop overlay state.");
+    QVERIFY2(
+        hierarchySidebarLayoutText.contains(QStringLiteral("HierarchyDragDropBridge {")),
+        "HierarchySidebarLayout.qml must compose the dedicated system-level hierarchy drag/drop bridge.");
+    QVERIFY2(
+        hierarchySidebarLayoutText.contains(
+            QStringLiteral("hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel")),
+        "HierarchySidebarLayout.qml drag/drop bridge must bind to the resolved active hierarchy view-model.");
+    QVERIFY2(
+        hierarchySidebarLayoutText.contains(
+            QStringLiteral("hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable")),
+        "HierarchySidebarLayout.qml must forward editability into SidebarHierarchyView through the bridge capability contract.");
+    QVERIFY2(
+        hierarchySidebarLayoutText.contains(QStringLiteral("hierarchyDragDropBridge: hierarchyDragDropBridge")),
+        "HierarchySidebarLayout.qml must forward the dedicated hierarchy drag/drop bridge into SidebarHierarchyView.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);
@@ -889,9 +941,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("noteListView.forceActiveFocus();")),
         "ListBarLayout.qml must return keyboard focus to the note list after tap or delete actions so repeated keyboard deletion keeps working.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral(
-            "readonly property var roleModel: noteItemDelegate.model && typeof noteItemDelegate.model === \"object\" ? noteItemDelegate.model : ({})")),
-        "ListBarLayout.qml note delegates must normalize the runtime role object once and bind fields directly.");
+        listBarLayoutText.contains(QStringLiteral("required property string noteId")),
+        "ListBarLayout.qml note delegates must declare the note id as an explicit required role contract.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("required property string primaryText")),
+        "ListBarLayout.qml note delegates must declare the visible preview text as an explicit required role contract.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("NoteListItem {")),
+        "ListBarLayout.qml note delegates must wrap the visual card in a dedicated NoteListItem composition surface.");
     QVERIFY2(
         listBarLayoutText.
         contains(QStringLiteral("listBarLayout.noteListModel.searchText = listBarLayout.searchText;")),
@@ -944,12 +1001,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "image: roleModel.image === undefined ? false : Boolean(roleModel.image)")),
-        "ListBarLayout.qml must bind the image flag directly from the normalized role object.");
+            "image: noteItemDelegate.image === undefined ? false : Boolean(noteItemDelegate.image)")),
+        "ListBarLayout.qml must bind the image flag directly from the required note delegate role contract.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "imageSource: roleModel.imageSource === undefined || roleModel.imageSource === null ? \"\" : roleModel.imageSource")),
-        "ListBarLayout.qml must bind imageSource directly from the normalized role object.");
+            "imageSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? \"\" : noteItemDelegate.imageSource")),
+        "ListBarLayout.qml must bind imageSource directly from the required note delegate role contract.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
         "ListBarLayout.qml note drag handler must be able to take pointer ownership away from tap selection and list scrolling.");
@@ -970,7 +1027,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note-card selection must be committed on tap release so note drags can begin from the same surface.");
     QVERIFY2(
         listBarLayoutText.contains(
-            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")),
+            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
         "ListBarLayout.qml note-card tap handler must route authoritative activation through activateNoteIndex().");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncFocusedNoteDeletionState()")),
@@ -1258,7 +1315,7 @@ void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized
         "ListBarLayout.qml must route destructive note deletion through FocusedNoteDeletionBridge.");
     QVERIFY2(
         listBarLayoutText.contains(
-            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")),
+            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
         "ListBarLayout.qml must capture the tapped note id immediately so keyboard deletion follows the visual note focus without latency.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),

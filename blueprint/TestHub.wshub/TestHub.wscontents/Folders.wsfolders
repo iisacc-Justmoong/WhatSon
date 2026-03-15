@@ -1,30 +1,30 @@
 {
     "folders": [
         {
-            "id": "Folder1",
-            "label": "Folder1"
-        },
-        {
             "children": [
                 {
                     "children": [
                         {
                             "children": [
                                 {
-                                    "children": [
-                                        {
-                                            "id": "Untitled/Untitled/Untitled/Untitled/Untitled",
-                                            "label": "Untitled"
-                                        }
-                                    ],
-                                    "id": "Untitled/Untitled/Untitled/Untitled",
+                                    "id": "Folder1/Untitled/Untitled/Untitled",
                                     "label": "Untitled"
                                 }
                             ],
-                            "id": "Untitled/Untitled/Untitled",
+                            "id": "Folder1/Untitled/Untitled",
                             "label": "Untitled"
                         }
                     ],
+                    "id": "Folder1/Untitled",
+                    "label": "Untitled"
+                }
+            ],
+            "id": "Folder1",
+            "label": "Folder1"
+        },
+        {
+            "children": [
+                {
                     "id": "Untitled/Untitled",
                     "label": "Untitled"
                 }
@@ -33,14 +33,18 @@
             "label": "Untitled"
         },
         {
-            "id": "Untitled",
-            "label": "Untitled"
-        },
-        {
-            "id": "Untitled",
-            "label": "Untitled"
-        },
-        {
+            "children": [
+                {
+                    "children": [
+                        {
+                            "id": "Untitled/Untitled/Untitled",
+                            "label": "Untitled"
+                        }
+                    ],
+                    "id": "Untitled/Untitled",
+                    "label": "Untitled"
+                }
+            ],
             "id": "Untitled",
             "label": "Untitled"
         }

@@ -3,7 +3,6 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
-#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -93,7 +92,7 @@ void ResourcesHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList ResourcesHierarchyViewModel::hierarchyModel() const
 {
-    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
+    return depthItems();
 }
 
 QVariantList ResourcesHierarchyViewModel::depthItems() const

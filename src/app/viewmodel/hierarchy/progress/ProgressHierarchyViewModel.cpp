@@ -3,7 +3,6 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
-#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -103,7 +102,7 @@ void ProgressHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList ProgressHierarchyViewModel::hierarchyModel() const
 {
-    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
+    return depthItems();
 }
 
 QVariantList ProgressHierarchyViewModel::depthItems() const
