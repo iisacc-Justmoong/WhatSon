@@ -487,6 +487,29 @@ target_link_libraries(whatson_contents_editor_bridge_tests
 add_test(NAME whatson_contents_editor_bridge_tests COMMAND whatson_contents_editor_bridge_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_contents_editor_bridge_tests)
 
+add_executable(whatson_solid_architecture_contract_tests
+        app/test_solid_architecture_contracts.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsLogicalTextBridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsGutterMarkerBridge.cpp
+)
+set_target_properties(whatson_solid_architecture_contract_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_solid_architecture_contract_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_solid_architecture_contract_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_solid_architecture_contract_tests COMMAND whatson_solid_architecture_contract_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_solid_architecture_contract_tests)
+
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailContentSectionViewModel.cpp

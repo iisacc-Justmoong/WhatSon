@@ -25,7 +25,6 @@ Item {
     function resolveActiveContentViewModel() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeContentViewModel === undefined)
             return null;
-
     }
     function resolveActiveStateName() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeStateName === undefined)
@@ -36,7 +35,6 @@ Item {
     function resolveToolbarItems() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.toolbarItems === undefined || detailPanel.detailPanelVm.toolbarItems === null)
             return [];
-
     }
 
     Column {

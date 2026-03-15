@@ -754,6 +754,14 @@ From `tests/app/**`, architecture is guarded by explicit tests:
     - mandatory text patterns for sidebar and `Main.qml` wiring
     - splitter clamp invariant in `BodyLayout.qml` (`totalSplitterWidth` must sanitize non-finite width)
         - binding syntax guard against invalid standalone literals in `Binding` blocks
+- `test_solid_architecture_contracts.cpp`:
+    - SRP guard for shell/sidebar/editor decomposition (`MainWindowInteractionController`, `PanelEdgeSplitter`,
+      `SidebarHierarchyInteractionController`, `ContentsEditorSelectionBridge`, `ContentsLogicalTextBridge`,
+      `ContentsGutterMarkerBridge`, `ContentsEditorSession.qml`)
+    - DIP/LSP guard for sidebar state: `SidebarHierarchyViewModel` must continue to work through
+      `ISidebarSelectionStore` and `IHierarchyViewModelProvider` substitutions
+    - ISP guard for editor helpers: selection, logical-text, and gutter-marker adapters must keep distinct
+      meta-object contracts and the removed `ContentsEditorBridge.*` must stay absent
 
 Status update (2026-03-01):
 

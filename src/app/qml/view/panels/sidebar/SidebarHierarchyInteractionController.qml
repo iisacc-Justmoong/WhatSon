@@ -122,6 +122,8 @@ QtObject {
         interactionController.resetDropTargets();
         if (interactionController.hierarchyList && interactionController.hierarchyList.clearActiveItem !== undefined)
             interactionController.hierarchyList.clearActiveItem();
+        if (interactionController.hierarchyViewModel && interactionController.hierarchyViewModel.setSelectedIndex !== undefined)
+            interactionController.hierarchyViewModel.setSelectedIndex(-1);
     }
     function commitRename() {
         if (interactionController.editingIndex < 0)

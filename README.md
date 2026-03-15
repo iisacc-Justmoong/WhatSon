@@ -164,6 +164,10 @@ WhatSon is an LVRS-based Qt Quick application.
   hierarchy state must stay anchored in `SidebarHierarchyViewModel`, sidebar rename/drag-drop state must stay routed
   through `SidebarHierarchyInteractionController.qml`, and editor-side selection/persistence/text/gutter contracts
   must stay split across the dedicated editor adapters instead of collapsing back into one bridge.
+- `tests/app/test_solid_architecture_contracts.cpp` now locks those shell/sidebar/editor boundaries as SOLID-facing
+  contracts: sidebar state must stay single-sourced behind the interface-driven `SidebarHierarchyViewModel`, editor
+  adapters must stay role-segregated, and the QML assembly must keep dedicated interaction/session/helper objects
+  instead of collapsing back into multi-responsibility controllers.
 
 ## Theme Token Usage
 
