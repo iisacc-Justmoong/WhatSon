@@ -183,6 +183,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
 add_executable(whatson_hierarchy_viewmodels_tests
         app/test_hierarchy_viewmodels.cpp
         ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp
@@ -207,6 +208,7 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyParser.cpp
@@ -256,9 +258,34 @@ target_link_libraries(whatson_hierarchy_viewmodels_tests
 add_test(NAME whatson_hierarchy_viewmodels_tests COMMAND whatson_hierarchy_viewmodels_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hierarchy_viewmodels_tests)
 
+add_executable(whatson_hub_note_deletion_service_tests
+        app/test_whatson_hub_note_deletion_service.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
+)
+set_target_properties(whatson_hub_note_deletion_service_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_note_deletion_service_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library
+        ${CMAKE_SOURCE_DIR}/src/app/file/note
+)
+target_link_libraries(whatson_hub_note_deletion_service_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_note_deletion_service_tests COMMAND whatson_hub_note_deletion_service_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_note_deletion_service_tests)
+
 add_executable(whatson_library_hierarchy_tests
         app/test_library_hierarchy_view_model.cpp
         ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
@@ -279,6 +306,7 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
 )
 set_target_properties(whatson_library_hierarchy_tests PROPERTIES AUTOMOC ON)

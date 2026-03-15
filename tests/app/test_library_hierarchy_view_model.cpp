@@ -43,6 +43,7 @@ private
     void loadFromWshub_filtersNoteListByExactFolderPath_whenLeafLabelsRepeat();
     void loadFromWshub_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void deleteSelectedFolder_reappliesSelectionToVisibleNeighborForNoteList();
+    void deleteNoteById_removesScaffoldUpdatesIndexAndSelectsNeighbor();
     void loadFromWshub_treatsUserFolderNamedAllAsRegularFolder();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
@@ -84,6 +85,25 @@ namespace
             return {};
         }
         return document.object();
+    }
+
+    QStringList noteIdsFromIndexArray(const QJsonArray& notesArray)
+    {
+        QStringList noteIds;
+        noteIds.reserve(notesArray.size());
+        for (const QJsonValue& value : notesArray)
+        {
+            if (value.isString())
+            {
+                noteIds.push_back(value.toString());
+                continue;
+            }
+            if (value.isObject())
+            {
+                noteIds.push_back(value.toObject().value(QStringLiteral("id")).toString());
+            }
+        }
+        return noteIds;
     }
 
     QString makeWsnHeadText(
@@ -1717,6 +1737,62 @@ void LibraryHierarchyViewModelTest::createEmptyNote_whenFolderSelected_createsSc
     QCOMPARE(updatedStatRoot.value(QStringLiteral("noteCount")).toInt(), 4);
     QCOMPARE(updatedStatRoot.value(QStringLiteral("resourceCount")).toInt(), 0);
     QCOMPARE(updatedStatRoot.value(QStringLiteral("characterCount")).toInt(), 0);
+    QVERIFY(!updatedStatRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
+}
+
+void LibraryHierarchyViewModelTest::deleteNoteById_removesScaffoldUpdatesIndexAndSelectsNeighbor()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString statFilePath = QDir(hubPath).filePath(QStringLiteral("LibraryHubStat.wsstat"));
+
+    QJsonObject statRoot;
+    statRoot.insert(QStringLiteral("version"), 1);
+    statRoot.insert(QStringLiteral("schema"), QStringLiteral("whatson.hub.stat"));
+    statRoot.insert(QStringLiteral("hub"), QStringLiteral("LibraryHub"));
+    statRoot.insert(QStringLiteral("noteCount"), 3);
+    statRoot.insert(QStringLiteral("resourceCount"), 0);
+    statRoot.insert(QStringLiteral("characterCount"), 0);
+    statRoot.insert(QStringLiteral("createdAtUtc"), QStringLiteral("2026-03-01T00:00:00Z"));
+    statRoot.insert(QStringLiteral("lastModifiedAtUtc"), QStringLiteral("2026-03-01T00:00:00Z"));
+    statRoot.insert(QStringLiteral("participants"), QJsonArray{QStringLiteral("ProfileName")});
+    statRoot.insert(QStringLiteral("profileLastModifiedAtUtc"), QJsonObject{});
+    QVERIFY(writeUtf8File(
+        statFilePath,
+        QString::fromUtf8(QJsonDocument(statRoot).toJson(QJsonDocument::Indented))));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.noteListModel()->setCurrentIndex(1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
+
+    QSignalSpy noteDeletedSpy(&viewModel, &LibraryHierarchyViewModel::noteDeleted);
+    QVERIFY(viewModel.deleteNoteById(QStringLiteral("note-b")));
+
+    QCOMPARE(noteDeletedSpy.count(), 1);
+    QCOMPARE(noteDeletedSpy.takeFirst().at(0).toString(), QStringLiteral("note-b"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+    QCOMPARE(viewModel.noteListModel()->currentIndex(), 1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-c"));
+    QVERIFY(!QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"))).exists());
+
+    const QJsonObject indexRoot = readJsonObjectFile(QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")));
+    const QStringList noteIds = noteIdsFromIndexArray(indexRoot.value(QStringLiteral("notes")).toArray());
+    QCOMPARE(noteIds, QStringList({QStringLiteral("note-a"), QStringLiteral("note-c")}));
+
+    const QJsonObject updatedStatRoot = readJsonObjectFile(statFilePath);
+    QCOMPARE(updatedStatRoot.value(QStringLiteral("noteCount")).toInt(), 2);
     QVERIFY(!updatedStatRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
 }
 

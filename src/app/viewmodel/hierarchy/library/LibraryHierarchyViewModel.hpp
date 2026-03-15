@@ -76,6 +76,7 @@ public:
     Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
     Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);
     Q_INVOKABLE bool createEmptyNote();
+    Q_INVOKABLE bool deleteNoteById(const QString& noteId);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 
@@ -103,6 +104,7 @@ public
     void itemCountChanged();
     void noteItemCountChanged();
     void loadStateChanged();
+    void noteDeleted(const QString& noteId);
     void viewModelHookRequested();
 
 private:

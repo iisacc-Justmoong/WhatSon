@@ -48,6 +48,7 @@ public:
     Q_INVOKABLE bool renameItem(int index, const QString& displayName);
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
+    bool removeNoteById(const QString& noteId);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 

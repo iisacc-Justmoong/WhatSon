@@ -239,6 +239,7 @@ private
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
     void bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent();
     void bookmarksViewModel_saveCurrentBodyText_rewritesWsnbody();
+    void bookmarksViewModel_removeNoteById_reselectsVisibleNeighbor();
     void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
     void resourcesViewModel_supportsCrudContract();
     void progressViewModel_supportsCrudContract();
@@ -527,6 +528,26 @@ void HierarchyViewModelsTest::bookmarksViewModel_saveCurrentBodyText_rewritesWsn
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph></paragraph>")));
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Blue edited first line</paragraph>")));
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Blue edited second line</paragraph>")));
+}
+
+void HierarchyViewModelsTest::bookmarksViewModel_removeNoteById_reselectsVisibleNeighbor()
+{
+    QString hubPath;
+    QVERIFY(prepareBookmarksHub(&hubPath));
+
+    BookmarksHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+    viewModel.noteListModel()->setCurrentIndex(0);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-blue"));
+
+    QVERIFY(viewModel.removeNoteById(QStringLiteral("note-blue")));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(viewModel.noteListModel()->currentIndex(), 0);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-pink"));
 }
 
 void HierarchyViewModelsTest::bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore()

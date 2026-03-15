@@ -133,6 +133,7 @@ Item {
                 ListBarLayout {
                     activeToolbarIndex: hStack.activeHierarchyIndex
                     anchors.fill: parent
+                    noteDeletionViewModel: hStack.noteDeletionViewModel
                     noteListModel: hStack.activeNoteListModel
                     panelColor: hStack.sidebarColor
                 }

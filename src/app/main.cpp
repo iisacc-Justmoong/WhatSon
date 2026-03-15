@@ -422,6 +422,14 @@ int main(int argc, char* argv[])
 
     libraryHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
     bookmarksHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
+    QObject::connect(
+        &libraryHierarchyViewModel,
+        &LibraryHierarchyViewModel::noteDeleted,
+        &bookmarksHierarchyViewModel,
+        [&bookmarksHierarchyViewModel](const QString& noteId)
+        {
+            bookmarksHierarchyViewModel.removeNoteById(noteId);
+        });
 
     QObject::connect(
         &app,

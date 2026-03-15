@@ -10,6 +10,8 @@ Rectangle {
     property int activeToolbarIndex: 0
     readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property color hintColor: LV.Theme.descriptionColor
+    readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined
+    property var noteDeletionViewModel: null
     property bool noteDragActive: false
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
@@ -39,6 +41,26 @@ Rectangle {
         if (listBarLayout.noteListModel.currentIndex !== undefined)
             return Number(listBarLayout.noteListModel.currentIndex);
         return -1;
+    }
+    function currentNoteIdFromModel() {
+        if (!listBarLayout.hasNoteListModel)
+            return "";
+        if (listBarLayout.noteListModel.currentNoteId !== undefined)
+            return String(listBarLayout.noteListModel.currentNoteId).trim();
+        if (noteListView.currentItem && noteListView.currentItem.noteId !== undefined)
+            return String(noteListView.currentItem.noteId).trim();
+        return "";
+    }
+    function deleteCurrentNote() {
+        if (!listBarLayout.noteDeletionContractAvailable)
+            return false;
+        const noteId = listBarLayout.currentNoteIdFromModel();
+        if (!noteId.length)
+            return false;
+        const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));
+        if (deleted)
+            noteListView.forceActiveFocus();
+
     }
     function normalizeEntries(value) {
         if (value === undefined || value === null)
@@ -190,6 +212,7 @@ Rectangle {
                             onTapped: {
                                 if (noteListView.currentIndex !== noteItemDelegate.index)
                                     noteListView.currentIndex = noteItemDelegate.index;
+                                noteListView.forceActiveFocus();
                             }
                         }
                     }

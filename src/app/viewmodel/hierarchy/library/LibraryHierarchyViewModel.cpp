@@ -7,6 +7,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonHubNoteDeletionService.hpp"
 #include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteBodyCreator.hpp"
@@ -2594,6 +2595,79 @@ bool LibraryHierarchyViewModel::createEmptyNote()
                               .arg(assignedFolders.size())
                               .arg(m_libraryAll.notes().size())
                               .arg(noteDirectoryPath));
+    return true;
+}
+
+bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const bool removedCurrentVisibleNote = m_noteListModel.currentNoteId().trimmed() == normalizedNoteId;
+    const int removedCurrentVisibleIndex = removedCurrentVisibleNote ? m_noteListModel.currentIndex() : -1;
+    WhatSonHubNoteDeletionService deletionService;
+    WhatSonHubNoteDeletionService::Request request;
+    request.wshubPath = !m_libraryAll.sourceWshubPath().trimmed().isEmpty()
+                            ? m_libraryAll.sourceWshubPath().trimmed()
+                            : m_hubStore.hubPath().trimmed();
+    request.libraryPath = m_hubStore.libraryPath();
+    request.statPath = m_hubStore.statPath();
+    request.hubName = m_hubStore.hubName();
+    request.hubStat = m_hubStore.stat();
+    request.notes = m_libraryAll.notes();
+    request.noteId = normalizedNoteId;
+
+    WhatSonHubNoteDeletionService::Result result;
+    QString deleteError;
+    if (!deletionService.deleteNote(std::move(request), &result, &deleteError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("deleteNoteById.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, deleteError));
+        return false;
+    }
+
+    m_libraryAll.setIndexedNotes(result.wshubPath, std::move(result.remainingNotes));
+    m_libraryDraft.rebuild(m_libraryAll.notes());
+    m_libraryToday.rebuild(m_libraryAll.notes());
+
+    if (!result.wshubPath.isEmpty())
+    {
+        m_hubStore.setHubPath(result.wshubPath);
+    }
+    if (!result.libraryPath.isEmpty())
+    {
+        m_hubStore.setLibraryPath(result.libraryPath);
+    }
+    if (!result.statPath.isEmpty())
+    {
+        m_hubStore.setStatPath(result.statPath);
+    }
+    m_hubStore.setStat(result.hubStat);
+
+    refreshNoteListForSelection();
+    if (removedCurrentVisibleNote)
+    {
+        const int nextIndex = m_noteListModel.items().isEmpty()
+                                  ? -1
+                                  : std::min(
+                                      removedCurrentVisibleIndex,
+                                      static_cast<int>(m_noteListModel.items().size()) - 1);
+        m_noteListModel.setCurrentIndex(nextIndex);
+    }
+
+    emit noteDeleted(result.noteId.isEmpty() ? normalizedNoteId : result.noteId);
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("deleteNoteById.success"),
+                              QStringLiteral("noteId=%1 remaining=%2").arg(
+                                  result.noteId.isEmpty() ? normalizedNoteId : result.noteId,
+                                  m_libraryAll.notes().size()));
     return true;
 }
 

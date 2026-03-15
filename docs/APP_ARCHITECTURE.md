@@ -275,7 +275,11 @@ Domain-isolated support:
               fixed vertical positions. `ListBarLayout.qml` now owns the note-list `ListView` directly, including the
               bidirectional selection bridge between the visible `ListView` and the active domain note-list model, so
               note taps and runtime selection changes stay aligned even when the active hierarchy domain swaps the
-              underlying note-list model instance. Note-card delegates bind `roleModel.<role>` directly from the runtime
+              underlying note-list model instance. The same layout also routes focused-list `Backspace`/`Delete`
+              keystrokes into an injected `deleteNoteById(...)` command source, which keeps destructive note deletion
+              delegated through `LibraryHierarchyViewModel` but executed in the file layer by
+              `WhatSonHubNoteDeletionService`, while bookmark-specific state only mirrors the result. Note-card
+              delegates bind `roleModel.<role>` directly from the runtime
               role object instead of routing every field through a dynamic extractor helper, which keeps the card data
               path
               simple and avoids silent blank bindings when helper functions disappear. Note drags are also app-wired
@@ -395,6 +399,14 @@ Library-specific modeling:
   mixed-case alphanumeric `16-16` note ID, persists `.wsnhead`, `.wsnbody`, link/backlink manifests, and attachment
   metadata through the existing note creator stack, then rewrites `index.wsnindex` plus hub stat metadata before
   focusing the new note in the current folder scope.
+- `WhatSonHubNoteDeletionService` is the file-layer authority for destructive note removal. It deletes the focused
+  `.wsnote`, rewrites `index.wsnindex`, updates hub stat metadata, and returns the remaining indexed notes plus updated
+  stat state to the caller.
+- `LibraryHierarchyViewModel::deleteNoteById()` is now a thin orchestration wrapper around
+  `WhatSonHubNoteDeletionService`: it forwards the active note request into the file layer, rebuilds the `All Library`
+  / `Draft` / `Today` buckets from the returned note set, restores visible neighbor selection, and emits
+  `noteDeleted(noteId)` so bookmark-only projections can drop the same note without owning file-system deletion
+  themselves.
 - Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
   resolved folder path to the note header `<folders>` list, updates `lastModified`, and rebuilds the `All Library` /
   `Draft` / `Today` bucket snapshots.
@@ -411,6 +423,9 @@ Library-specific modeling:
   selection-aware (`All Library` / `Draft` / `Today` / folder / bookmark color).
 - `BookmarksHierarchyViewModel` uses its own `BookmarksNoteListModel`; Bookmarks must not reuse
   `LibraryNoteListModel` because note-list contracts remain domain-owned even when role shapes are similar.
+- `BookmarksHierarchyViewModel` may remove a bookmarked note from its own projection state after receiving
+  `LibraryHierarchyViewModel::noteDeleted(noteId)`, but it must not delete note files or rewrite the shared library
+  index itself.
 - `LibraryNoteListModel` now exposes note-card roles as a stable view contract:
     - `id` (string)
     - `primaryText` (string)

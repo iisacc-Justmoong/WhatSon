@@ -418,6 +418,38 @@ void BookmarksHierarchyViewModel::deleteSelectedFolder()
                               QStringLiteral("reason=bookmarks hierarchy is read-only"));
 }
 
+bool BookmarksHierarchyViewModel::removeNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
+    if (noteIndex < 0)
+    {
+        return false;
+    }
+
+    const bool removedCurrentVisibleNote = m_noteListModel.currentNoteId().trimmed() == normalizedNoteId;
+    const int removedCurrentVisibleIndex = removedCurrentVisibleNote ? m_noteListModel.currentIndex() : -1;
+
+    m_bookmarkedNotes.removeAt(noteIndex);
+    refreshNoteListForSelection();
+    if (removedCurrentVisibleNote)
+    {
+        const int nextIndex = m_noteListModel.items().isEmpty()
+                                  ? -1
+                                  : std::min(
+                                      removedCurrentVisibleIndex,
+                                      static_cast<int>(m_noteListModel.items().size()) - 1);
+        m_noteListModel.setCurrentIndex(nextIndex);
+    }
+
+    return true;
+}
+
 bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const QString& text)
 {
     const QString normalizedNoteId = noteId.trimmed();

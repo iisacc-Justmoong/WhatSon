@@ -114,6 +114,11 @@ WhatSon is an LVRS-based Qt Quick application.
 - `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
   `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
   model changes must resync the visible current row immediately when the active hierarchy domain changes.
+- The same `ListBarLayout.qml` also routes `Backspace` and `Delete` from the focused note list into the injected
+  `LibraryHierarchyViewModel::deleteNoteById(...)` contract, but that view-model now only forwards the focused
+  `.wsnote` deletion request into `WhatSonHubNoteDeletionService`. File-system removal plus `index.wsnindex` / hub
+  stat rewrites live in the file layer, while `BookmarksHierarchyViewModel` only mirrors the deletion into its
+  bookmarked subset.
 - The note-card delegate reads `model.<role>` directly from the runtime role object instead of passing every field
   through a dynamic role-extraction helper, which keeps note preview bindings simpler and avoids silent blank-card
   regressions when a helper is removed.

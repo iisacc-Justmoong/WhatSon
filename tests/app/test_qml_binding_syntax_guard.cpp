@@ -55,6 +55,7 @@ private
     void criticalViewHelpers_mustReturnExplicitValues();
     void contentView_mustComposeTextEditorGutter();
     void hierarchySidebarWiring_mustBindLoaderAndToolbarTarget();
+    void noteListDeleteShortcutWiring_mustStayCentralized();
 };
 
 void QmlBindingSyntaxGuardTest::bindingBlocks_mustNotContainStandaloneStringLiteral()
@@ -676,6 +677,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         mainQmlText.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm")),
         "Main.qml must forward sidebarHierarchyViewModel to BodyLayout.");
     QVERIFY2(
+        mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.libraryHierarchyVm")),
+        "Main.qml must inject the centralized library delete-note command source into BodyLayout.");
+    QVERIFY2(
         mainQmlText.contains(QStringLiteral("MainWindowInteractionController {")),
         "Main.qml must delegate root interaction policy to a dedicated MainWindowInteractionController.");
 
@@ -897,8 +901,25 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml must expose a dedicated selection-contract capability flag instead of scattering dynamic checks.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined")),
+        "ListBarLayout.qml must expose an explicit delete-note capability contract instead of probing the destructive command inline.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
             "readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null")),
         "ListBarLayout.qml must normalize the active note-list model through a resolved contract property.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function deleteCurrentNote()")),
+        "ListBarLayout.qml must centralize current-note deletion through an explicit helper.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));")),
+        "ListBarLayout.qml must route destructive note deletion through the injected delete-note view-model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),
+        "ListBarLayout.qml must handle both Backspace and Delete when the note list owns keyboard focus.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("noteListView.forceActiveFocus();")),
+        "ListBarLayout.qml must return keyboard focus to the note list after tap or delete actions so repeated keyboard deletion keeps working.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "readonly property var roleModel: noteItemDelegate.model && typeof noteItemDelegate.model === \"object\" ? noteItemDelegate.model : ({})")),
@@ -1040,11 +1061,17 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
                 "readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel.resolvedNoteListModel")),
         "BodyLayout.qml must source the active note-list model directly from SidebarHierarchyViewModel.");
     QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("property var noteDeletionViewModel: null")),
+        "BodyLayout.qml must accept a dedicated delete-note command source instead of hardwiring note deletion inside ListBarLayout.");
+    QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("activeToolbarIndex: hStack.activeHierarchyIndex")),
         "BodyLayout.qml must feed child hierarchy/list views from the resolved active hierarchy index.");
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("noteListModel: hStack.activeNoteListModel")),
         "BodyLayout.qml must pass the resolved active note-list model into child views.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("noteDeletionViewModel: hStack.noteDeletionViewModel")),
+        "BodyLayout.qml must forward the centralized delete-note command source into ListBarLayout.");
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("contentViewModel: hStack.activeHierarchyViewModel")),
         "BodyLayout.qml must pass the resolved active hierarchy view-model into the content surface.");
@@ -1176,6 +1203,55 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("state: detailContents.resolvedActiveStateName")),
         "DetailContents.qml must bind QML state to the resolved active state name.");
+}
+
+void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+
+    const QString mainQmlPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("Main.qml"));
+    QFile mainQmlFile(mainQmlPath);
+    QVERIFY2(mainQmlFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mainQmlPath));
+    const QString mainQmlText = QString::fromUtf8(mainQmlFile.readAll());
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.libraryHierarchyVm")),
+        "Main.qml must inject the centralized library delete-note command source into BodyLayout.");
+
+    const QString bodyLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/BodyLayout.qml"));
+    QFile bodyLayoutFile(bodyLayoutPath);
+    QVERIFY2(bodyLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(bodyLayoutPath));
+    const QString bodyLayoutText = QString::fromUtf8(bodyLayoutFile.readAll());
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("property var noteDeletionViewModel: null")),
+        "BodyLayout.qml must accept a dedicated delete-note command source instead of hardwiring note deletion inside ListBarLayout.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("noteDeletionViewModel: hStack.noteDeletionViewModel")),
+        "BodyLayout.qml must forward the centralized delete-note command source into ListBarLayout.");
+
+    const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ListBarLayout.qml"));
+    QFile listBarLayoutFile(listBarLayoutPath);
+    QVERIFY2(listBarLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(listBarLayoutPath));
+    const QString listBarLayoutText = QString::fromUtf8(listBarLayoutFile.readAll());
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined")),
+        "ListBarLayout.qml must expose an explicit delete-note capability contract instead of probing the destructive command inline.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function deleteCurrentNote()")),
+        "ListBarLayout.qml must centralize current-note deletion through an explicit helper.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));")),
+        "ListBarLayout.qml must route destructive note deletion through the injected delete-note view-model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),
+        "ListBarLayout.qml must handle both Backspace and Delete when the note list owns keyboard focus.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("noteListView.forceActiveFocus();")),
+        "ListBarLayout.qml must return keyboard focus to the note list after tap or delete actions so repeated keyboard deletion keeps working.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)
