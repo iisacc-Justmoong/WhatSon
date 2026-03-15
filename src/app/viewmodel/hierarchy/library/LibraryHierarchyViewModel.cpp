@@ -43,6 +43,8 @@ namespace
     constexpr auto kLibraryAllLabel = "All Library";
     constexpr auto kLibraryTodayLabel = "Today";
 
+    QStringList noteListFolders(const LibraryNoteRecord& note);
+
     QString truncateToMaxLines(const QString& value, int maxLines)
     {
         if (maxLines <= 0)
@@ -65,20 +67,6 @@ namespace
         return truncated.join(QLatin1Char('\n'));
     }
 
-    QString noteLabelText(const LibraryNoteRecord& note)
-    {
-        QString primary = note.bodyFirstLine.trimmed();
-        if (primary.isEmpty())
-        {
-            primary = note.noteId.trimmed();
-        }
-        if (primary.isEmpty() && !note.noteDirectoryPath.isEmpty())
-        {
-            primary = QFileInfo(note.noteDirectoryPath).completeBaseName().trimmed();
-        }
-        return primary;
-    }
-
     QString notePrimaryText(const LibraryNoteRecord& note)
     {
         const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
@@ -86,18 +74,12 @@ namespace
         {
             return bodyPlainText;
         }
-        return noteLabelText(note);
+        return {};
     }
 
     QString noteSearchableText(const LibraryNoteRecord& note)
     {
         QStringList parts;
-
-        const QString noteId = note.noteId.trimmed();
-        if (!noteId.isEmpty())
-        {
-            parts.push_back(noteId);
-        }
 
         const QString firstLine = note.bodyFirstLine.trimmed();
         if (!firstLine.isEmpty())
@@ -111,7 +93,8 @@ namespace
             parts.push_back(bodyPlainText);
         }
 
-        for (const QString& folder : note.folders)
+        const QStringList folderLabels = noteListFolders(note);
+        for (const QString& folder : folderLabels)
         {
             const QString trimmed = folder.trimmed();
             if (!trimmed.isEmpty())
@@ -145,6 +128,10 @@ namespace
             }
         }
         folders.removeDuplicates();
+        if (folders.isEmpty())
+        {
+            folders.push_back(QString::fromLatin1(kLibraryDraftLabel));
+        }
         return folders;
     }
 

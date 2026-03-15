@@ -253,6 +253,7 @@ private
     void noteListModel_correctsColorAndTextFields();
     void noteListModel_currentSelection_exposesBodyText();
     void noteListModel_searchText_filtersAgainstSearchableBodyContent();
+    void noteListModel_searchText_mustIgnoreInternalIdFallback();
     void noteListModel_limitsPrimaryTextToFiveLines();
     void noteListModel_exposesImageRoles();
     void libraryViewModel_formatsDisplayDateWithSystemCalendarStore();
@@ -461,6 +462,11 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             BookmarksNoteListModel::TagsRole).toStringList(),
         QStringList({QStringLiteral("brand"), QStringLiteral("campaign")}));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            BookmarksNoteListModel::FoldersRole).toStringList(),
+        QStringList({QStringLiteral("Draft")}));
 
     viewModel.setSelectedIndex(8); // pink
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
@@ -474,6 +480,11 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             BookmarksNoteListModel::TagsRole).toStringList(),
         QStringList({QStringLiteral("release")}));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            BookmarksNoteListModel::FoldersRole).toStringList(),
+        QStringList({QStringLiteral("Draft")}));
 }
 
 void HierarchyViewModelsTest::bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent()
@@ -867,6 +878,33 @@ void HierarchyViewModelsTest::noteListModel_searchText_filtersAgainstSearchableB
 
     model.setSearchText(QStringLiteral("   "));
     QCOMPARE(model.rowCount(), 2);
+}
+
+void HierarchyViewModelsTest::noteListModel_searchText_mustIgnoreInternalIdFallback()
+{
+    LibraryNoteListModel model;
+
+    LibraryNoteListItem blank;
+    blank.id = QStringLiteral("internal-note-id");
+    blank.primaryText = QString();
+    blank.bodyText = QString();
+    blank.searchableText = QString();
+
+    LibraryNoteListItem visible;
+    visible.id = QStringLiteral("visible-note-id");
+    visible.primaryText = QStringLiteral("Visible preview");
+    visible.bodyText = QStringLiteral("Visible body text");
+    visible.searchableText = QString();
+
+    model.setItems({blank, visible});
+    QCOMPARE(model.rowCount(), 2);
+
+    model.setSearchText(QStringLiteral("internal-note-id"));
+    QCOMPARE(model.rowCount(), 0);
+
+    model.setSearchText(QStringLiteral("Visible preview"));
+    QCOMPARE(model.rowCount(), 1);
+    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::IdRole).toString(), QStringLiteral("visible-note-id"));
 }
 
 void HierarchyViewModelsTest::noteListModel_limitsPrimaryTextToFiveLines()

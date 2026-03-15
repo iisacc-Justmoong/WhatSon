@@ -15,7 +15,10 @@
 namespace
 {
     constexpr auto kScope = "bookmarks.viewmodel";
+    constexpr auto kDraftFolderLabel = "Draft";
     constexpr int kMaxNoteListSummaryLines = 5;
+
+    QStringList bookmarkListFolders(const LibraryNoteRecord& note);
 
     QString truncateToMaxLines(const QString& value, int maxLines)
     {
@@ -97,7 +100,8 @@ namespace
             parts.push_back(bodyPlainText);
         }
 
-        for (const QString& folder : note.folders)
+        const QStringList folderLabels = bookmarkListFolders(note);
+        for (const QString& folder : folderLabels)
         {
             const QString trimmed = folder.trimmed();
             if (!trimmed.isEmpty())
@@ -131,6 +135,10 @@ namespace
             }
         }
         folders.removeDuplicates();
+        if (folders.isEmpty())
+        {
+            folders.push_back(QString::fromLatin1(kDraftFolderLabel));
+        }
         return folders;
     }
 

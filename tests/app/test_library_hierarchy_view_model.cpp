@@ -35,6 +35,7 @@ private
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
     void loadFromWshub_noteListModel_exposesCurrentBodyTextFromWsnbody();
     void loadFromWshub_noteListModel_exposesImagePreviewFromWsnbodyResource();
+    void applyRuntimeSnapshot_blankBody_keepsPreviewEmptyAndSearchIgnoresInternalId();
     void saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines();
     void loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview();
     void loadFromWshub_usesBodyFirstLineForPrimaryText();
@@ -566,6 +567,11 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
         QStringLiteral("Alpha body summary."));
     QCOMPARE(
         viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
+                 .toStringList(),
+        QStringList({QStringLiteral("Draft")}));
+    QCOMPARE(
+        viewModel.noteListModel()
                  ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkedRole)
                  .toBool(),
         true);
@@ -587,6 +593,15 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
 
     viewModel.setSelectedIndex(1);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+    for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
+    {
+        QCOMPARE(
+            viewModel.noteListModel()->data(
+                         viewModel.noteListModel()->index(row, 0),
+                         LibraryNoteListModel::FoldersRole)
+                     .toStringList(),
+            QStringList({QStringLiteral("Draft")}));
+    }
 
     viewModel.setSelectedIndex(2);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
@@ -655,6 +670,44 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePrev
         QUrl::fromLocalFile(resourceFilePath).toString());
 }
 
+void LibraryHierarchyViewModelTest::applyRuntimeSnapshot_blankBody_keepsPreviewEmptyAndSearchIgnoresInternalId()
+{
+    LibraryHierarchyViewModel viewModel;
+
+    LibraryNoteRecord blankNote;
+    blankNote.noteId = QStringLiteral("internal-note-id");
+    blankNote.bodyPlainText = QString();
+    blankNote.bodyFirstLine = QString();
+    blankNote.createdAt = QStringLiteral("2026-03-01-00-00-00");
+    blankNote.lastModifiedAt = QStringLiteral("2026-03-01-00-00-00");
+
+    viewModel.applyRuntimeSnapshot(
+        QStringLiteral("/tmp/TestHub.wshub"),
+        {blankNote},
+        {},
+        {},
+        {},
+        QString(),
+        true);
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::PrimaryTextRole)
+                 .toString(),
+        QString());
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
+                 .toStringList(),
+        QStringList({QStringLiteral("Draft")}));
+
+    viewModel.noteListModel()->setSearchText(QStringLiteral("internal-note-id"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
+    viewModel.noteListModel()->setSearchText(QStringLiteral("Draft"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+}
+
 void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines()
 {
     QString hubPath;
@@ -669,6 +722,11 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
     const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");
     QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-a"), editedBody));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::PrimaryTextRole)
+                 .toString(),
+        QStringLiteral("Edited first line\nEdited second line"));
 
     const QString bodyPath = QDir(hubPath).filePath(
         QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnbody"));
@@ -1694,7 +1752,7 @@ void LibraryHierarchyViewModelTest::createEmptyNote_whenFolderSelected_createsSc
                       viewModel.noteListModel()->index(viewModel.noteListModel()->currentIndex(), 0),
                       LibraryNoteListModel::PrimaryTextRole).
                   toString(),
-        createdNoteId);
+        QString());
 
     const QString noteDirectoryPath = QDir(libraryPath).filePath(createdNoteId + QStringLiteral(".wsnote"));
     const QString noteHeaderPath = QDir(noteDirectoryPath).filePath(createdNoteId + QStringLiteral(".wsnhead"));

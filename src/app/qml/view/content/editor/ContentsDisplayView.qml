@@ -92,6 +92,7 @@ Item {
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
     property color panelColor: LV.Theme.panelBackground07
     property var panelViewModel: null
+    property alias pendingBodySave: editorSession.pendingBodySave
     readonly property int saveDebounceMs: 300
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
@@ -507,6 +508,7 @@ Item {
     onSelectedNoteIdChanged: {
         if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
             editorSession.flushPendingEditorText();
+        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
         contentsView.scheduleGutterRefresh(4);
     }
     onVisibleChanged: {

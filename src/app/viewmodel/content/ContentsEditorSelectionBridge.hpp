@@ -5,7 +5,7 @@
 #include <QPointer>
 #include <QString>
 
-class ContentsEditorSelectionBridge final : public QObject
+class ContentsEditorSelectionBridge : public QObject
 {
     Q_OBJECT
 
@@ -16,10 +16,12 @@ class ContentsEditorSelectionBridge final : public QObject
             noteSelectionContractAvailable READ noteSelectionContractAvailable NOTIFY noteSelectionContractAvailableChanged)
 
 
+
     Q_PROPERTY(bool noteCountContractAvailable READ noteCountContractAvailable NOTIFY noteCountContractAvailableChanged)
     Q_PROPERTY(
         bool
             contentPersistenceContractAvailable READ contentPersistenceContractAvailable NOTIFY contentPersistenceContractAvailableChanged)
+
 
 
     Q_PROPERTY(QString selectedNoteId READ selectedNoteId NOTIFY selectedNoteIdChanged)
@@ -48,6 +50,7 @@ public:
     signals  :
 
 
+
     void noteListModelChanged();
     void contentViewModelChanged();
     void noteSelectionContractAvailableChanged();
@@ -59,6 +62,7 @@ public:
 
 private
     slots  :
+
 
 
     void handleNoteListSelectionChanged();

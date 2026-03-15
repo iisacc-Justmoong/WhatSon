@@ -589,6 +589,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
                 "editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);")),
         "ContentViewLayout.qml must sync incoming note bodies through the guarded editor session.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("onSelectedNoteIdChanged: {")),
+        "ContentViewLayout.qml must react explicitly when the selected note id changes.");
+    const QString selectedNoteIdChangedBody = extractFunctionBody(
+        contentViewText, QStringLiteral("onSelectedNoteIdChanged:"));
+    QVERIFY2(
+        selectedNoteIdChangedBody.contains(QStringLiteral(
+            "editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);")),
+        "ContentViewLayout.qml must resync editor text on note-id changes so switching between empty notes does not keep stale editor content.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("if (contentsView.syncingEditorTextFromModel)")),
         "ContentViewLayout.qml must skip file persistence while replaying model-driven editor text.");
     QVERIFY2(
@@ -693,6 +702,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QFile sidebarControllerFile(sidebarControllerPath);
     QVERIFY2(sidebarControllerFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(sidebarControllerPath));
     const QString sidebarControllerText = QString::fromUtf8(sidebarControllerFile.readAll());
+    const QString hierarchyListCompatPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/sidebar/HierarchyListCompat.qml"));
+    QFile hierarchyListCompatFile(hierarchyListCompatPath);
+    QVERIFY2(hierarchyListCompatFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(hierarchyListCompatPath));
+    const QString hierarchyListCompatText = QString::fromUtf8(hierarchyListCompatFile.readAll());
 
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
@@ -728,6 +742,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("onActiveChanged: function (item, itemId, index)")),
         "SidebarHierarchyView.qml must sync hierarchy selection from LVRS activeChanged so activation happens after click/release instead of raw press.");
+    QVERIFY2(
+        hierarchyListCompatText.contains(QStringLiteral("return items;")),
+        "HierarchyListCompat.qml must return its managed LVRS hierarchy items so activeItem remains single-sourced.");
+    QVERIFY2(
+        hierarchyListCompatText.contains(QStringLiteral("control.activeItem = item;")),
+        "HierarchyListCompat.qml must keep a single activeItem instead of leaving selection state distributed across delegates.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function canMoveFolder(index)")),
         "SidebarHierarchyView.qml must expose canMoveFolder(index) wrapper for folder drag gating.");
@@ -910,6 +930,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function deleteCurrentNote()")),
         "ListBarLayout.qml must centralize current-note deletion through an explicit helper.");
+    const QString deleteCurrentNoteBody = extractFunctionBody(
+        listBarLayoutText, QStringLiteral("function deleteCurrentNote()"));
+    QVERIFY2(
+        deleteCurrentNoteBody.contains(QStringLiteral("return deleted;")),
+        "ListBarLayout.qml deleteCurrentNote() must return the delete result so keyboard handlers can stop only on successful deletion.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "const deleted = Boolean(listBarLayout.noteDeletionViewModel.deleteNoteById(noteId));")),
@@ -931,6 +956,17 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function pushCurrentIndexToModel(index)")),
         "ListBarLayout.qml must expose an explicit helper that pushes ListView selection into the note model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function activateNoteIndex(index)")),
+        "ListBarLayout.qml must centralize immediate note activation through an explicit helper.");
+    const QString activateNoteIndexBody = extractFunctionBody(
+        listBarLayoutText, QStringLiteral("function activateNoteIndex(index)"));
+    QVERIFY2(
+        activateNoteIndexBody.contains(QStringLiteral("Qt.callLater(function () {")),
+        "ListBarLayout.qml must reapply the latest note selection after the current event turn so editor save/refresh work cannot drop the user's last click.");
+    QVERIFY2(
+        activateNoteIndexBody.contains(QStringLiteral("listBarLayout.pushCurrentIndexToModel(targetIndex);")),
+        "ListBarLayout.qml immediate note activation helper must push the selected row into the bound note-list model.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
         "ListBarLayout.qml must pull currentIndex from the note model back into ListView state.");
@@ -971,8 +1007,17 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !listBarLayoutText.contains(QStringLiteral("TapHandler.ReleaseWithinBounds")),
         "ListBarLayout.qml note tap handler must not take an exclusive press grab that blocks drag startup.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onPressedChanged: {")),
+        "ListBarLayout.qml note tap handling must react on press so rapid successive note picks are not lost behind editor save latency.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index);")),
+        "ListBarLayout.qml note-card press handler must route immediate activation through activateNoteIndex().");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("listBarLayout.noteListModel.currentIndex = index;")),
         "ListBarLayout.qml must push tapped note selection into noteModel.currentIndex.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property int pendingSelectionIndex: -1")),
+        "ListBarLayout.qml must track a pending user note-selection intent while editor save/refresh work settles.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("onNoteListModelChanged: {")),
         "ListBarLayout.qml must resync the visible note selection whenever the active note model changes.");

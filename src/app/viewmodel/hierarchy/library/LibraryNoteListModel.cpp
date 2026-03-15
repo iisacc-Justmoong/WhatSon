@@ -104,10 +104,6 @@ namespace
     QString buildFallbackSearchableText(const LibraryNoteListItem& item)
     {
         QStringList parts;
-        if (!item.id.trimmed().isEmpty())
-        {
-            parts.push_back(item.id.trimmed());
-        }
         if (!item.primaryText.trimmed().isEmpty())
         {
             parts.push_back(item.primaryText.trimmed());

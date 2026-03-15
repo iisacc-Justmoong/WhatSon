@@ -285,9 +285,9 @@ Domain-isolated support:
               simple and avoids silent blank bindings when helper functions disappear. Note drags are also app-wired
               rather than LVRS-blocked: delegates
               advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
-              note-card tap handler stays on
-              `TapHandler.DragThreshold` so selection remains a passive click path until the drag threshold has either
-              been crossed or canceled.
+              note-card tap handler stays on `TapHandler.DragThreshold`, but selection is committed on press and
+              reasserted once through a short-lived pending-selection replay so editor save/refresh work cannot drop
+              the latest user pick while drag startup still shares the same surface.
             - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
               `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
               surface by composing dedicated SRP modules:
@@ -416,11 +416,14 @@ Library-specific modeling:
 - The same `.wsnbody` parser now also detects the first `<resource ...>` entry, resolves its preview path against the
   note directory / enclosing `.wshub`, and exposes `bodyHasResource` plus `bodyFirstResourceThumbnailUrl` on
   `LibraryNoteRecord`.
-- Note primary text is derived from the top slice of `bodyPlainText`; when body text is empty it falls back to
-  `noteId -> note directory stem`.
-- `LibraryNoteListModel.searchText` filters the current visible note set against preassembled searchable body text
-  sourced from `LibraryNoteRecord.bodyPlainText` plus note metadata, so note-list search remains in-memory and
-  selection-aware (`All Library` / `Draft` / `Today` / folder / bookmark color).
+- Note primary text is derived only from the top slice of `bodyPlainText`; when body text is empty the preview remains
+  blank, so internal identifiers and filesystem stems never leak into the note card.
+- `LibraryNoteListModel.searchText` filters the current visible note set against preassembled searchable user-facing
+  text sourced from `LibraryNoteRecord.bodyPlainText`, the visible preview slice, and folder/tag labels, excluding
+  internal note IDs and filesystem-derived metadata.
+- Empty folder metadata is promoted to the user-facing `Draft` label before note-list roles are built, so cards with no
+  real folder assignment still render a visible folder row and the immutable `Draft` hierarchy bucket uses the same
+  classification rule as the note-card metadata.
 - `BookmarksHierarchyViewModel` uses its own `BookmarksNoteListModel`; Bookmarks must not reuse
   `LibraryNoteListModel` because note-list contracts remain domain-owned even when role shapes are similar.
 - `BookmarksHierarchyViewModel` may remove a bookmarked note from its own projection state after receiving
@@ -522,7 +525,8 @@ Hierarchy rendering pipeline:
       accepted move/drop execution, and hook dispatch for the hierarchy surface.
     - `HierarchyListCompat.qml` is the local adapter between `SidebarHierarchyView.qml` and LVRS `HierarchyItem`.
       It preserves WhatSon's explicit `autoSelectFirstItem: false` blank-area deselect behavior while still updating
-      manual row visibility from indent/expanded state.
+      manual row visibility from indent/expanded state and keeping hierarchy activation single-sourced behind one
+      `activeItem`.
     - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
       UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
     - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes

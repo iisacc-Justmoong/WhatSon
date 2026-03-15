@@ -308,6 +308,7 @@ LV.ApplicationWindow {
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
+                    noteDeletionViewModel: applicationWindow.libraryHierarchyVm
                     rightPanelColor: applicationWindow.rightPanelColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.sidebarColor

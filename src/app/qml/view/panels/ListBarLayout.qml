@@ -21,9 +21,36 @@ Rectangle {
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
     property string searchText: ""
+    property int selectionRequestRevision: 0
 
     signal viewHookRequested
 
+    function activateNoteIndex(index) {
+        if (!listBarLayout.noteListCurrentIndexContractAvailable)
+            return;
+        const normalizedIndex = Number(index);
+        if (!isFinite(normalizedIndex))
+            return;
+        const targetIndex = Math.max(-1, Math.floor(normalizedIndex));
+        listBarLayout.pendingSelectionIndex = targetIndex;
+        listBarLayout.selectionRequestRevision += 1;
+        const requestRevision = listBarLayout.selectionRequestRevision;
+        if (noteListView.currentIndex !== targetIndex)
+            noteListView.currentIndex = targetIndex;
+        listBarLayout.pushCurrentIndexToModel(targetIndex);
+        noteListView.forceActiveFocus();
+        Qt.callLater(function () {
+            if (listBarLayout.selectionRequestRevision !== requestRevision)
+                return;
+            if (listBarLayout.pendingSelectionIndex !== targetIndex)
+                return;
+            if (noteListView.currentIndex !== targetIndex)
+                noteListView.currentIndex = targetIndex;
+            if (listBarLayout.currentIndexFromModel() !== targetIndex)
+                listBarLayout.pushCurrentIndexToModel(targetIndex);
+            listBarLayout.pendingSelectionIndex = -1;
+        });
+    }
     function applySearchTextToModel() {
         if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)
             return;
@@ -119,6 +146,8 @@ Rectangle {
     onNoteListModeChanged: applySearchTextToModel()
     onNoteListModelChanged: {
         listBarLayout.noteDragActive = false;
+        listBarLayout.pendingSelectionIndex = -1;
+        listBarLayout.selectionRequestRevision += 1;
         listBarLayout.applySearchTextToModel();
         listBarLayout.syncCurrentIndexFromModel();
     }
@@ -167,6 +196,14 @@ Rectangle {
                     spacing: 2
                     visible: listBarLayout.noteListMode
 
+                    Keys.onPressed: function (event) {
+                        if (event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete)
+                            return;
+                        if (!listBarLayout.deleteCurrentNote())
+                            return;
+                        event.accepted = true;
+                    }
+
                     delegate: NoteListItem {
                         id: noteItemDelegate
 
@@ -209,10 +246,10 @@ Rectangle {
                             acceptedButtons: Qt.LeftButton
                             gesturePolicy: TapHandler.DragThreshold
 
-                            onTapped: {
-                                if (noteListView.currentIndex !== noteItemDelegate.index)
-                                    noteListView.currentIndex = noteItemDelegate.index;
-                                noteListView.forceActiveFocus();
+                            onPressedChanged: {
+                                if (!pressed)
+                                    return;
+                                listBarLayout.activateNoteIndex(noteItemDelegate.index);
                             }
                         }
                     }

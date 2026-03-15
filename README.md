@@ -60,12 +60,13 @@ WhatSon is an LVRS-based Qt Quick application.
   deselect would immediately re-highlight the first enabled row and appear visually unchanged.
 - `SidebarHierarchyView.qml` now hosts those rows through a local `HierarchyListCompat.qml` adapter because the current
   LVRS `HierarchyList` no longer exposes the old `autoSelectFirstItem` contract directly. The adapter keeps manual-row
-  visibility refresh, explicit blank-area deselect, and `activeChanged` mirroring stable across LVRS updates.
+  visibility refresh, explicit blank-area deselect, `activeChanged` mirroring, and single-active-item selection stable
+  across LVRS updates.
 - Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
   affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
   assignments behind on stale folder IDs.
-- Note-card selection now uses `TapHandler.DragThreshold`, so note-to-folder drags are allowed to cross the system drag
-  threshold before the tap path commits the current note selection.
+- Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but the active note is now committed
+  on press and reasserted once on the next event turn so editor save/refresh work cannot swallow a rapid second click.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
   `Folder1`.
 
@@ -114,6 +115,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
   `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
   model changes must resync the visible current row immediately when the active hierarchy domain changes.
+- `ListBarLayout.qml` also keeps a short-lived pending note-selection intent and replays it once via `Qt.callLater`,
+  so rapid note changes still win even if the previously focused editor is flushing a debounced body save.
 - The same `ListBarLayout.qml` also routes `Backspace` and `Delete` from the focused note list into the injected
   `LibraryHierarchyViewModel::deleteNoteById(...)` contract, but that view-model now only forwards the focused
   `.wsnote` deletion request into `WhatSonHubNoteDeletionService`. File-system removal plus `index.wsnindex` / hub
@@ -475,7 +478,11 @@ Library runtime classification behavior:
 
 - `All`: indexes `.wsnindex` entries and enriches them with `.wsnhead` metadata (`id`, created/modified
   timestamps, and related fields)
-- `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses it as note-list summary text
+- `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses only that body text as
+  note-list summary text; blank bodies stay visually blank instead of falling back to internal IDs or filesystem stems
+- Notes whose header resolves to no folder labels are treated as `Draft` for user-facing note-list metadata, so the
+  note card renders the folder row as `Draft` and the immutable `Draft` hierarchy bucket stays visually consistent with
+  the same classification rule.
 - `All`: detects the first non-text `<resource ...>` entry in `.wsnbody`, resolves its thumbnail path against the note
   directory / hub root, and exposes that preview to the note-list card
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`

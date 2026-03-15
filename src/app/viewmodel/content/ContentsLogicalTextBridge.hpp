@@ -4,7 +4,7 @@
 #include <QString>
 #include <QVariantList>
 
-class ContentsLogicalTextBridge final : public QObject
+class ContentsLogicalTextBridge : public QObject
 {
     Q_OBJECT
 
@@ -27,6 +27,7 @@ public:
     Q_INVOKABLE int logicalLineCharacterCountAt(int index) const noexcept;
 
     signals  :
+
 
 
     void textChanged();

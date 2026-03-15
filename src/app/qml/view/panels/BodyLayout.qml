@@ -24,6 +24,7 @@ Item {
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     property int minRightPanelWidth: 145
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
+    property var noteDeletionViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property color rightPanelColor: LV.Theme.panelBackground06
     property int rightPanelWidth: 194

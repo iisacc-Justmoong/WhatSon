@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QVariantList>
 
-class ContentsGutterMarkerBridge final : public QObject
+class ContentsGutterMarkerBridge : public QObject
 {
     Q_OBJECT
 
@@ -23,6 +23,7 @@ public:
     QVariantList normalizedExternalGutterMarkers() const;
 
     signals  :
+
 
 
     void gutterMarkersChanged();
