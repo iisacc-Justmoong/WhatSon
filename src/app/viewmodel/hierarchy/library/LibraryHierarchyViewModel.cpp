@@ -2,13 +2,18 @@
 
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
+#include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteBodyCreator.hpp"
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 #include "file/note/WhatSonNoteHeaderStore.hpp"
+#include "file/note/WhatSonNoteLinkManagerCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDateTime>
@@ -16,6 +21,11 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QSet>
 #include <QVariantMap>
@@ -409,6 +419,209 @@ namespace
         return QDateTime::currentDateTime().toString(QString::fromLatin1(kNoteTimestampFormat));
     }
 
+    QStringList noteIdsFromRecords(const QVector<LibraryNoteRecord>& notes)
+    {
+        QStringList noteIds;
+        noteIds.reserve(notes.size());
+
+        for (const LibraryNoteRecord& note : notes)
+        {
+            const QString noteId = note.noteId.trimmed();
+            if (!noteId.isEmpty())
+            {
+                noteIds.push_back(noteId);
+            }
+        }
+
+        return noteIds;
+    }
+
+    QString randomAlphaNumericSegment(int length)
+    {
+        static const QString upperAlphabet = QStringLiteral("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        static const QString lowerAlphabet = QStringLiteral("abcdefghijklmnopqrstuvwxyz");
+        static const QString digits = QStringLiteral("0123456789");
+        static const QString alphaNumericAlphabet = upperAlphabet + lowerAlphabet + digits;
+
+        if (length <= 0)
+        {
+            return {};
+        }
+
+        QString segment;
+        segment.reserve(length);
+        segment.push_back(upperAlphabet.at(QRandomGenerator::global()->bounded(upperAlphabet.size())));
+        if (length > 1)
+        {
+            segment.push_back(lowerAlphabet.at(QRandomGenerator::global()->bounded(lowerAlphabet.size())));
+        }
+        if (length > 2)
+        {
+            segment.push_back(digits.at(QRandomGenerator::global()->bounded(digits.size())));
+        }
+        for (int index = segment.size(); index < length; ++index)
+        {
+            segment.push_back(
+                alphaNumericAlphabet.at(QRandomGenerator::global()->bounded(alphaNumericAlphabet.size())));
+        }
+
+        for (int index = segment.size() - 1; index > 0; --index)
+        {
+            const int swapIndex = QRandomGenerator::global()->bounded(index + 1);
+            if (swapIndex != index)
+            {
+                const QChar currentValue = segment.at(index);
+                segment[index] = segment.at(swapIndex);
+                segment[swapIndex] = currentValue;
+            }
+        }
+
+        return segment;
+    }
+
+    QString createUniqueNoteId(
+        const QString& libraryPath,
+        const QVector<LibraryNoteRecord>& existingNotes)
+    {
+        QSet<QString> existingKeys;
+        existingKeys.reserve(existingNotes.size());
+        for (const LibraryNoteRecord& note : existingNotes)
+        {
+            const QString noteIdKey = note.noteId.trimmed().toCaseFolded();
+            if (!noteIdKey.isEmpty())
+            {
+                existingKeys.insert(noteIdKey);
+            }
+        }
+
+        const QDir libraryDir(libraryPath);
+        for (int attempt = 0; attempt < 4096; ++attempt)
+        {
+            const QString candidate = randomAlphaNumericSegment(16) + QLatin1Char('-')
+                + randomAlphaNumericSegment(16);
+            const QString candidateKey = candidate.toCaseFolded();
+            if (existingKeys.contains(candidateKey))
+            {
+                continue;
+            }
+
+            if (libraryDir.exists(candidate + QStringLiteral(".wsnote")))
+            {
+                continue;
+            }
+
+            return candidate;
+        }
+
+        return {};
+    }
+
+    QString resolvePrimaryLibraryPathFromWshub(
+        const QString& wshubPath,
+        QString* errorMessage = nullptr)
+    {
+        QStringList contentsDirectories;
+        if (!WhatSon::Hierarchy::LibrarySupport::resolveContentsDirectories(
+            wshubPath,
+            &contentsDirectories,
+            errorMessage))
+        {
+            return {};
+        }
+
+        for (const QString& contentsDirectory : std::as_const(contentsDirectories))
+        {
+            const QString fixedLibraryPath = QDir(contentsDirectory).filePath(QStringLiteral("Library.wslibrary"));
+            if (QFileInfo(fixedLibraryPath).isDir())
+            {
+                return QDir::cleanPath(fixedLibraryPath);
+            }
+
+            const QDir contentsDir(contentsDirectory);
+            const QStringList dynamicLibraries = contentsDir.entryList(
+                QStringList{QStringLiteral("*.wslibrary")},
+                QDir::Dirs | QDir::NoDotAndDotDot,
+                QDir::Name);
+            if (!dynamicLibraries.isEmpty())
+            {
+                return QDir::cleanPath(contentsDir.filePath(dynamicLibraries.first()));
+            }
+        }
+
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("No Library.wslibrary directory found inside: %1").arg(wshubPath);
+        }
+        return {};
+    }
+
+    QString resolveHubStatPathFromWshub(const QString& wshubPath)
+    {
+        const QString normalizedWshubPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(wshubPath);
+        if (normalizedWshubPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QDir hubDir(normalizedWshubPath);
+        const QStringList statFiles = hubDir.entryList(
+            QStringList{QStringLiteral("*.wsstat")},
+            QDir::Files | QDir::NoDotAndDotDot,
+            QDir::Name);
+        if (statFiles.isEmpty())
+        {
+            return {};
+        }
+
+        return QDir::cleanPath(hubDir.filePath(statFiles.first()));
+    }
+
+    bool ensureDirectoryPath(const QString& directoryPath, QString* errorMessage = nullptr)
+    {
+        if (directoryPath.trimmed().isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Directory path must not be empty.");
+            }
+            return false;
+        }
+
+        QDir directory;
+        if (directory.mkpath(directoryPath))
+        {
+            return true;
+        }
+
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to create directory: %1").arg(directoryPath);
+        }
+        return false;
+    }
+
+    QString createAttachmentManifestText(const QString& noteId)
+    {
+        return QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTEPAINT>\n"
+                "<contents id=\"%1\">\n"
+                "  <body>\n"
+                "  </body>\n"
+                "</contents>\n")
+            .arg(noteId);
+    }
+
+    QString createLinkManifestText(const QString& noteId, const QString& schema)
+    {
+        QJsonObject root;
+        root.insert(QStringLiteral("version"), 1);
+        root.insert(QStringLiteral("schema"), schema);
+        root.insert(QStringLiteral("noteId"), noteId);
+        root.insert(QStringLiteral("links"), QJsonArray{});
+        return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
+
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
         QFile file(filePath);
@@ -560,7 +773,8 @@ namespace
 
     bool isProtectedRootItem(const LibraryHierarchyItem& item)
     {
-        return item.systemBucket != LibraryHierarchyItem::SystemBucket::None;
+        return item.systemBucket != LibraryHierarchyItem::SystemBucket::None
+            || (item.accent && item.depth == 0);
     }
 
     bool isSystemBucketItem(const LibraryHierarchyItem& item)
@@ -1981,6 +2195,405 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                               QStringLiteral("index=%1 noteId=%2 folder=%3")
                               .arg(index)
                               .arg(noteId, targetFolderPath));
+    return true;
+}
+
+bool LibraryHierarchyViewModel::createEmptyNote()
+{
+    const QString sourceWshubPath = !m_libraryAll.sourceWshubPath().trimmed().isEmpty()
+                                        ? m_libraryAll.sourceWshubPath().trimmed()
+                                        : m_hubStore.hubPath().trimmed();
+    QString libraryPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(m_hubStore.libraryPath());
+    QString resolveError;
+    if (libraryPath.isEmpty() || !QFileInfo(libraryPath).isDir())
+    {
+        libraryPath = resolvePrimaryLibraryPathFromWshub(sourceWshubPath, &resolveError);
+    }
+
+    if (libraryPath.isEmpty())
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=resolveLibrary path=%1 error=%2").arg(
+                                      sourceWshubPath, resolveError));
+        return false;
+    }
+
+    const QString noteId = createUniqueNoteId(libraryPath, m_libraryAll.notes());
+    if (noteId.isEmpty())
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=generateId library=%1").arg(libraryPath));
+        return false;
+    }
+
+    const QString profileName = m_hubStore.stat().participants().isEmpty()
+                                    ? QString()
+                                    : m_hubStore.stat().participants().constFirst().trimmed();
+    QStringList assignedFolders;
+    if (m_foldersHierarchyLoaded
+        && m_selectedIndex >= 0
+        && m_selectedIndex < m_items.size()
+        && !isProtectedRootItem(m_items.at(m_selectedIndex)))
+    {
+        const QString selectedFolderPath = normalizeFolderPath(folderPathForIndex(m_selectedIndex));
+        if (!selectedFolderPath.isEmpty())
+        {
+            assignedFolders.push_back(selectedFolderPath);
+        }
+    }
+
+    WhatSonNoteHeaderCreator headerCreator(libraryPath, QString());
+    WhatSonNoteBodyCreator bodyCreator(libraryPath, QString());
+    WhatSonNoteAttachManagerCreator attachCreator(libraryPath, QString());
+    WhatSonNoteLinkManagerCreator linkCreator(libraryPath, QString());
+
+    const QString headerPath = headerCreator.targetPathForNote(noteId);
+    const QString bodyPath = bodyCreator.targetPathForNote(noteId);
+    const QString attachmentManifestPath = attachCreator.targetPathForNote(noteId);
+    const QString linksPath = linkCreator.targetPathForNote(noteId);
+    const QString noteDirectoryPath = QFileInfo(headerPath).absolutePath();
+    const QString backlinksPath = QDir(noteDirectoryPath).filePath(linkCreator.backlinksFileName());
+
+    if (QFileInfo(noteDirectoryPath).exists())
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=noteDirectoryExists path=%1").arg(noteDirectoryPath));
+        return false;
+    }
+
+    QString createError;
+    if (!ensureDirectoryPath(noteDirectoryPath, &createError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=createNoteDirectory path=%1 error=%2").arg(
+                                      noteDirectoryPath, createError));
+        return false;
+    }
+
+    auto rollbackNoteDirectory = [&noteDirectoryPath]()
+    {
+        if (QFileInfo(noteDirectoryPath).exists())
+        {
+            QDir(noteDirectoryPath).removeRecursively();
+        }
+    };
+
+    for (const QString& relativePath : headerCreator.requiredRelativePaths())
+    {
+        if (!ensureDirectoryPath(QDir(noteDirectoryPath).filePath(relativePath), &createError))
+        {
+            rollbackNoteDirectory();
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("createEmptyNote.failed"),
+                                      QStringLiteral("reason=createHeaderSupportDirectory path=%1 error=%2").arg(
+                                          relativePath, createError));
+            return false;
+        }
+    }
+    for (const QString& relativePath : attachCreator.requiredRelativePaths())
+    {
+        if (!ensureDirectoryPath(QDir(noteDirectoryPath).filePath(relativePath), &createError))
+        {
+            rollbackNoteDirectory();
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("createEmptyNote.failed"),
+                                      QStringLiteral("reason=createAttachmentDirectory path=%1 error=%2").arg(
+                                          relativePath, createError));
+            return false;
+        }
+    }
+
+    const QString createdTimestamp = currentNoteTimestamp();
+    WhatSonNoteHeaderStore headerStore;
+    headerStore.setNoteId(noteId);
+    headerStore.setCreatedAt(createdTimestamp);
+    headerStore.setAuthor(profileName);
+    headerStore.setLastModifiedAt(createdTimestamp);
+    headerStore.setModifiedBy(profileName);
+    headerStore.setFolders(assignedFolders);
+    headerStore.setProject(QString());
+    headerStore.setBookmarked(false);
+    headerStore.setBookmarkColors({});
+    headerStore.setTags({});
+    headerStore.setProgress(0);
+    headerStore.setPreset(false);
+
+    if (!writeUtf8File(headerPath, headerCreator.createHeaderText(headerStore), &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=writeHeader path=%1 error=%2").arg(
+                                      headerPath, createError));
+        return false;
+    }
+
+    if (!writeUtf8File(attachmentManifestPath, createAttachmentManifestText(noteId), &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=writeAttachmentManifest path=%1 error=%2").arg(
+                                      attachmentManifestPath, createError));
+        return false;
+    }
+    if (!writeUtf8File(
+        linksPath,
+        createLinkManifestText(noteId, QStringLiteral("whatson.note.links")),
+        &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=writeLinks path=%1 error=%2").arg(
+                                      linksPath, createError));
+        return false;
+    }
+    if (!writeUtf8File(
+        backlinksPath,
+        createLinkManifestText(noteId, QStringLiteral("whatson.note.backlinks")),
+        &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=writeBacklinks path=%1 error=%2").arg(
+                                      backlinksPath, createError));
+        return false;
+    }
+
+    QString normalizedBodyText;
+    QString lastModifiedAt;
+    if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
+        noteId,
+        noteDirectoryPath,
+        headerPath,
+        QString(),
+        &normalizedBodyText,
+        &lastModifiedAt,
+        &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=writeBody path=%1 error=%2").arg(bodyPath, createError));
+        return false;
+    }
+
+    QVector<LibraryNoteRecord> nextAllNotes = m_libraryAll.notes();
+    LibraryNoteRecord newNote;
+    newNote.noteId = noteId;
+    newNote.storageKind = QStringLiteral("wsnote");
+    newNote.createdAt = createdTimestamp;
+    newNote.lastModifiedAt = lastModifiedAt.isEmpty() ? createdTimestamp : lastModifiedAt;
+    newNote.author = profileName;
+    newNote.modifiedBy = profileName;
+    newNote.folders = assignedFolders;
+    newNote.progress = 0;
+    newNote.bookmarked = false;
+    newNote.preset = false;
+    newNote.bodyPlainText = normalizedBodyText;
+    newNote.noteDirectoryPath = noteDirectoryPath;
+    newNote.noteHeaderPath = headerPath;
+    nextAllNotes.push_back(newNote);
+
+    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+    QString previousIndexText;
+    const bool hadIndexFile = QFileInfo(indexPath).isFile();
+    if (hadIndexFile
+        && !WhatSon::Hierarchy::LibrarySupport::readUtf8File(indexPath, &previousIndexText, &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=readIndex path=%1 error=%2").arg(indexPath, createError));
+        return false;
+    }
+
+    WhatSonLibraryHierarchyStore libraryStore;
+    libraryStore.setHubPath(sourceWshubPath);
+    libraryStore.setNoteIds(noteIdsFromRecords(nextAllNotes));
+
+    WhatSonLibraryHierarchyCreator libraryCreator;
+    if (!writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &createError))
+    {
+        rollbackNoteDirectory();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("createEmptyNote.failed"),
+                                  QStringLiteral("reason=writeIndex path=%1 error=%2").arg(indexPath, createError));
+        return false;
+    }
+
+    const QString statPath = !m_hubStore.statPath().trimmed().isEmpty()
+                                 ? WhatSon::Hierarchy::LibrarySupport::normalizePath(m_hubStore.statPath())
+                                 : resolveHubStatPathFromWshub(sourceWshubPath);
+    const QString nowUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    QString statCreatedAtUtc = m_hubStore.stat().createdAtUtc().trimmed();
+    if (!statPath.isEmpty())
+    {
+        QJsonObject statRoot;
+        if (QFileInfo(statPath).isFile())
+        {
+            QString rawStatText;
+            if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(statPath, &rawStatText, &createError))
+            {
+                if (hadIndexFile)
+                {
+                    writeUtf8File(indexPath, previousIndexText, nullptr);
+                }
+                else
+                {
+                    QFile::remove(indexPath);
+                }
+                rollbackNoteDirectory();
+                WhatSon::Debug::traceSelf(this,
+                                          QStringLiteral("library.viewmodel"),
+                                          QStringLiteral("createEmptyNote.failed"),
+                                          QStringLiteral("reason=readStat path=%1 error=%2").arg(
+                                              statPath, createError));
+                return false;
+            }
+
+            QJsonParseError statParseError;
+            const QJsonDocument statDocument = QJsonDocument::fromJson(rawStatText.toUtf8(), &statParseError);
+            if (statParseError.error == QJsonParseError::NoError && statDocument.isObject())
+            {
+                statRoot = statDocument.object();
+            }
+        }
+
+        if (statCreatedAtUtc.isEmpty())
+        {
+            statCreatedAtUtc = statRoot.value(QStringLiteral("createdAtUtc")).toString().trimmed();
+        }
+        if (statCreatedAtUtc.isEmpty())
+        {
+            statCreatedAtUtc = nowUtc;
+        }
+
+        if (!statRoot.contains(QStringLiteral("version")))
+        {
+            statRoot.insert(QStringLiteral("version"), 1);
+        }
+        if (!statRoot.contains(QStringLiteral("schema")))
+        {
+            statRoot.insert(QStringLiteral("schema"), QStringLiteral("whatson.hub.stat"));
+        }
+        if (!statRoot.contains(QStringLiteral("hub")) && !m_hubStore.hubName().trimmed().isEmpty())
+        {
+            statRoot.insert(QStringLiteral("hub"), m_hubStore.hubName().trimmed());
+        }
+        if (!statRoot.contains(QStringLiteral("participants")))
+        {
+            QJsonArray participants;
+            for (const QString& participant : m_hubStore.stat().participants())
+            {
+                participants.push_back(participant);
+            }
+            statRoot.insert(QStringLiteral("participants"), participants);
+        }
+        if (!statRoot.contains(QStringLiteral("profileLastModifiedAtUtc")))
+        {
+            statRoot.insert(
+                QStringLiteral("profileLastModifiedAtUtc"),
+                QJsonObject::fromVariantMap(m_hubStore.stat().profileLastModifiedAtUtc()));
+        }
+
+        statRoot.insert(QStringLiteral("noteCount"), nextAllNotes.size());
+        statRoot.insert(QStringLiteral("resourceCount"), m_hubStore.stat().resourceCount());
+        statRoot.insert(QStringLiteral("characterCount"), m_hubStore.stat().characterCount());
+        statRoot.insert(QStringLiteral("createdAtUtc"), statCreatedAtUtc);
+        statRoot.insert(QStringLiteral("lastModifiedAtUtc"), nowUtc);
+
+        if (!writeUtf8File(
+            statPath,
+            QString::fromUtf8(QJsonDocument(statRoot).toJson(QJsonDocument::Indented)),
+            &createError))
+        {
+            if (hadIndexFile)
+            {
+                writeUtf8File(indexPath, previousIndexText, nullptr);
+            }
+            else
+            {
+                QFile::remove(indexPath);
+            }
+            rollbackNoteDirectory();
+            WhatSon::Debug::traceSelf(this,
+                                      QStringLiteral("library.viewmodel"),
+                                      QStringLiteral("createEmptyNote.failed"),
+                                      QStringLiteral("reason=writeStat path=%1 error=%2").arg(
+                                          statPath, createError));
+            return false;
+        }
+    }
+
+    m_libraryAll.setIndexedNotes(sourceWshubPath, std::move(nextAllNotes));
+    m_libraryDraft.rebuild(m_libraryAll.notes());
+    m_libraryToday.rebuild(m_libraryAll.notes());
+
+    m_hubStore.setHubPath(sourceWshubPath);
+    m_hubStore.setLibraryPath(libraryPath);
+    if (!statPath.isEmpty())
+    {
+        m_hubStore.setStatPath(statPath);
+    }
+    if (!m_hubStore.hubPath().isEmpty())
+    {
+        WhatSonHubStat updatedStat = m_hubStore.stat();
+        updatedStat.setNoteCount(m_libraryAll.notes().size());
+        updatedStat.setResourceCount(updatedStat.resourceCount());
+        updatedStat.setCharacterCount(updatedStat.characterCount());
+        if (updatedStat.createdAtUtc().trimmed().isEmpty())
+        {
+            updatedStat.setCreatedAtUtc(statCreatedAtUtc.isEmpty() ? nowUtc : statCreatedAtUtc);
+        }
+        updatedStat.setLastModifiedAtUtc(nowUtc);
+        m_hubStore.setStat(std::move(updatedStat));
+    }
+
+    refreshNoteListForSelection();
+
+    int createdNoteIndex = -1;
+    const QVector<LibraryNoteListItem>& noteItems = m_noteListModel.items();
+    for (int index = 0; index < noteItems.size(); ++index)
+    {
+        if (noteItems.at(index).id.trimmed() == noteId)
+        {
+            createdNoteIndex = index;
+            break;
+        }
+    }
+    if (createdNoteIndex >= 0)
+    {
+        m_noteListModel.setCurrentIndex(createdNoteIndex);
+    }
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("createEmptyNote.success"),
+                              QStringLiteral("id=%1 folderCount=%2 noteCount=%3 path=%4")
+                              .arg(noteId)
+                              .arg(assignedFolders.size())
+                              .arg(m_libraryAll.notes().size())
+                              .arg(noteDirectoryPath));
     return true;
 }
 

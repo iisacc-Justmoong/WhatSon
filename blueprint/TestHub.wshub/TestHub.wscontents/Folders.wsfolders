@@ -1,42 +1,6 @@
 {
     "folders": [
         {
-            "children": [
-                {
-                    "children": [
-                        {
-                            "children": [
-                                {
-                                    "children": [
-                                        {
-                                            "children": [
-                                                {
-                                                    "children": [
-                                                        {
-                                                            "id": "Folder1/Untitled/Untitled/Untitled/Untitled/Untitled/Untitled",
-                                                            "label": "Untitled"
-                                                        }
-                                                    ],
-                                                    "id": "Folder1/Untitled/Untitled/Untitled/Untitled/Untitled",
-                                                    "label": "Untitled"
-                                                }
-                                            ],
-                                            "id": "Folder1/Untitled/Untitled/Untitled/Untitled",
-                                            "label": "Untitled"
-                                        }
-                                    ],
-                                    "id": "Folder1/Untitled/Untitled/Untitled",
-                                    "label": "Untitled"
-                                }
-                            ],
-                            "id": "Folder1/Untitled/Untitled",
-                            "label": "Untitled"
-                        }
-                    ],
-                    "id": "Folder1/Untitled",
-                    "label": "Untitled"
-                }
-            ],
             "id": "Folder1",
             "label": "Folder1"
         },

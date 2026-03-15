@@ -335,7 +335,7 @@ Item {
                 contentWidth: width
                 interactive: contentHeight > height
 
-                LV.HierarchyList {
+                HierarchyListCompat {
                     id: hierarchyList
 
                     autoSelectFirstItem: false

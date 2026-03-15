@@ -5,6 +5,9 @@ import LVRS 1.0 as LV
 Item {
     id: hStack
 
+    readonly property int activeHierarchyIndex: hStack.resolveActiveHierarchyIndex()
+    readonly property var activeHierarchyViewModel: hStack.resolveActiveHierarchyViewModel()
+    readonly property var activeNoteListModel: hStack.resolveActiveNoteListModel()
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentPanelColor: LV.Theme.panelBackground07
@@ -21,6 +24,7 @@ Item {
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     property int minRightPanelWidth: 145
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property color rightPanelColor: LV.Theme.panelBackground06
     property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
@@ -39,6 +43,27 @@ Item {
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
 
+    function clampListViewWidth(value) {
+        const numericValue = Number(value);
+        const resolvedValue = isFinite(numericValue) ? numericValue : hStack.listViewWidth;
+        const occupiedWidth = hStack.totalSplitterWidth() + hStack.sidebarWidth + hStack.minContentWidth + (hStack.rightVisible ? hStack.minRightPanelWidth : 0);
+        const maxWidth = Math.max(hStack.minListViewWidth, hStack.width - occupiedWidth);
+        return Math.max(hStack.minListViewWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
+    }
+    function clampRightPanelWidth(value) {
+        const numericValue = Number(value);
+        const resolvedValue = isFinite(numericValue) ? numericValue : hStack.rightPanelWidth;
+        const occupiedWidth = hStack.totalSplitterWidth() + hStack.sidebarWidth + hStack.minContentWidth + (hStack.listVisible ? hStack.minListViewWidth : 0);
+        const maxWidth = Math.max(hStack.minRightPanelWidth, hStack.width - occupiedWidth);
+        return Math.max(hStack.minRightPanelWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
+    }
+    function clampSidebarWidth(value) {
+        const numericValue = Number(value);
+        const resolvedValue = isFinite(numericValue) ? numericValue : hStack.sidebarWidth;
+        const occupiedWidth = hStack.totalSplitterWidth() + hStack.minContentWidth + (hStack.listVisible ? hStack.minListViewWidth : 0) + (hStack.rightVisible ? hStack.minRightPanelWidth : 0);
+        const maxWidth = Math.max(hStack.effectiveMinSidebarWidth, hStack.width - occupiedWidth);
+        return Math.max(hStack.effectiveMinSidebarWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -56,10 +81,12 @@ Item {
     function resolveActiveHierarchyViewModel() {
         if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeHierarchyViewModel === undefined)
             return null;
+
     }
     function resolveActiveNoteListModel() {
         if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeNoteListModel === undefined)
             return null;
+
     }
     function totalSplitterWidth() {
         // CRITICAL REGRESSION GUARD:

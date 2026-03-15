@@ -58,6 +58,9 @@ WhatSon is an LVRS-based Qt Quick application.
   bound hierarchy view-model selection, so row focus does not remain stuck when the tree is shorter than the sidebar.
 - `SidebarHierarchyView.qml` also disables LVRS first-item auto-activation for that tree, otherwise a blank-area
   deselect would immediately re-highlight the first enabled row and appear visually unchanged.
+- `SidebarHierarchyView.qml` now hosts those rows through a local `HierarchyListCompat.qml` adapter because the current
+  LVRS `HierarchyList` no longer exposes the old `autoSelectFirstItem` contract directly. The adapter keeps manual-row
+  visibility refresh, explicit blank-area deselect, and `activeChanged` mirroring stable across LVRS updates.
 - Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
   affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
   assignments behind on stale folder IDs.
@@ -380,6 +383,9 @@ for hub/note hierarchy payloads.
 - Panel-level MVVM is now explicit for every QML panel under `src/app/qml/view/panels/**`:
   `main.cpp` injects `panelViewModelRegistry`, and each panel binds its own key
   (`panelViewModelRegistry.panelViewModel("<panel-key>")`) to a dedicated `PanelViewModel` instance.
+- The navigation add surfaces share one `create-note` hook path:
+  `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileNormalLayout.qml`
+  all route into `LibraryHierarchyViewModel::createEmptyNote()`.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
   `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.
@@ -456,6 +462,9 @@ Library runtime classification behavior:
 - `All`: detects the first non-text `<resource ...>` entry in `.wsnbody`, resolves its thumbnail path against the note
   directory / hub root, and exposes that preview to the note-list card
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
+- `All`: `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note directly under the active `.wslibrary`
+  with a mixed-case alphanumeric `16-16` ID, persists the header/body/link/attachment scaffold through the existing
+  note creators, updates `index.wsnindex` plus hub stat metadata, and keeps the new note selected in the current scope
 - `Draft`: filters notes where `<folders>` resolves to an empty list
 - `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
 

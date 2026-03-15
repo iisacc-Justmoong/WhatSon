@@ -10,6 +10,7 @@
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
+#include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 #include "calendar/SystemCalendarStore.hpp"
@@ -371,6 +372,43 @@ int main(int argc, char* argv[])
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     WhatSonHubRuntimeStore hubRuntimeStore;
+
+    const auto requestNewLibraryNote = [&libraryHierarchyViewModel, &sidebarHierarchyViewModel]()
+    {
+        sidebarHierarchyViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
+        if (!libraryHierarchyViewModel.createEmptyNote())
+        {
+            qWarning().noquote() << QStringLiteral("Failed to create a new library note from navigation Add action.");
+        }
+    };
+
+    if (auto* addNewPanelViewModel = qobject_cast<PanelViewModel*>(
+        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationAddNewBar"))))
+    {
+        QObject::connect(
+            addNewPanelViewModel,
+            &PanelViewModel::viewModelHookRequested,
+            &app,
+            requestNewLibraryNote);
+    }
+    if (auto* applicationControlPanelViewModel = qobject_cast<PanelViewModel*>(
+        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationControlBar"))))
+    {
+        QObject::connect(
+            applicationControlPanelViewModel,
+            &PanelViewModel::viewModelHookRequested,
+            &app,
+            requestNewLibraryNote);
+    }
+    if (auto* mobilePanelViewModel = qobject_cast<PanelViewModel*>(
+        panelViewModelRegistry.panelViewModel(QStringLiteral("MobileNormalLayout"))))
+    {
+        QObject::connect(
+            mobilePanelViewModel,
+            &PanelViewModel::viewModelHookRequested,
+            &app,
+            requestNewLibraryNote);
+    }
 
     libraryHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
     bookmarksHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);

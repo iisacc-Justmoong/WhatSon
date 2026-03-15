@@ -193,6 +193,8 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
@@ -201,6 +203,9 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
@@ -257,6 +262,8 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/projects/WhatSonProjectsHierarchyStore.cpp
@@ -268,6 +275,9 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
 )

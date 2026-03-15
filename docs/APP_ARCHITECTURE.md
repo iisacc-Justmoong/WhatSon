@@ -252,105 +252,107 @@ Domain-isolated support:
             - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a
               text
               input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
-            - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design
-              case
-              through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
-              `LV.ContextMenu`, not direct next-state cycling.
-            - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
-              use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
-              text-color literals.
-            - `ListBarLayout.qml` now composes the dedicated `ListBarHeader.qml` frame (Figma node `134:3180`), where
-              the
-              search field keeps LVRS defaults and only applies the minimum inline-variant overrides through local
-              header
-              properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
-              `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
-              assets `cwmPermissionView` and `sortByType` without extra color-token overrides. The active query is
-              pushed into the active domain note-list model (`LibraryNoteListModel` or `BookmarksNoteListModel`), so
-              visible note cards filter against runtime-parsed note body text without reparsing `.wsnote` content on
-              each edit. The inline search header also recenters the underlying `LV.InputField.inputItem` from its live
-              `contentHeight`, which prevents `Space`/`Backspace` transitions from snapping the text/caret between two
-              fixed vertical positions. `ListBarLayout.qml` now owns the note-list `ListView` directly, including the
-              bidirectional selection bridge between the visible `ListView` and the active domain note-list model, so
-              note taps and runtime selection changes stay aligned even when the active hierarchy domain swaps the
-              underlying note-list model instance. Note drags are also app-wired rather than LVRS-blocked: delegates
-              advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
-              note-card tap handler stays on
-              `TapHandler.DragThreshold` so selection remains a passive click path until the drag threshold has either
-              been crossed or canceled.
-            - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
-              `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
-              surface by composing dedicated SRP modules:
-              `view/content/editor/ContentsGutterLayer.qml`,
-              `view/content/editor/ContentsMinimapLayer.qml`, and
-              `view/content/editor/ContentsDrawerSplitter.qml`. The editor keeps `LV.TextEditor` in the parent surface
-              and exposes shared calculations for those child modules through explicit resolver bindings. The gutter
-              computes visible line
-              numbers from the same `editorText` source, cursor line, and editor render metrics. `wrapMode:
+        - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design
+          case
+          through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
+          `LV.ContextMenu`, not direct next-state cycling.
+        - `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileNormalLayout.qml` all forward
+          the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
+        - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
+          use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
+          text-color literals.
+          - `ListBarLayout.qml` now composes the dedicated `ListBarHeader.qml` frame (Figma node `134:3180`), where
+          the
+          search field keeps LVRS defaults and only applies the minimum inline-variant overrides through local
+          header
+          properties (`transparent` background, `18px` height, `7px/3px` insets, `12px` text line box) while using
+          `LV.InputField.searchMode` to keep the built-in leading search icon. The trailing buttons use LVRS icon
+          assets `cwmPermissionView` and `sortByType` without extra color-token overrides. The active query is
+          pushed into the active domain note-list model (`LibraryNoteListModel` or `BookmarksNoteListModel`), so
+          visible note cards filter against runtime-parsed note body text without reparsing `.wsnote` content on
+          each edit. The inline search header also recenters the underlying `LV.InputField.inputItem` from its live
+          `contentHeight`, which prevents `Space`/`Backspace` transitions from snapping the text/caret between two
+          fixed vertical positions. `ListBarLayout.qml` now owns the note-list `ListView` directly, including the
+          bidirectional selection bridge between the visible `ListView` and the active domain note-list model, so
+          note taps and runtime selection changes stay aligned even when the active hierarchy domain swaps the
+          underlying note-list model instance. Note drags are also app-wired rather than LVRS-blocked: delegates
+          advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
+          note-card tap handler stays on
+          `TapHandler.DragThreshold` so selection remains a passive click path until the drag threshold has either
+          been crossed or canceled.
+          - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
+          `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
+          surface by composing dedicated SRP modules:
+          `view/content/editor/ContentsGutterLayer.qml`,
+          `view/content/editor/ContentsMinimapLayer.qml`, and
+          `view/content/editor/ContentsDrawerSplitter.qml`. The editor keeps `LV.TextEditor` in the parent surface
+          and exposes shared calculations for those child modules through explicit resolver bindings. The gutter
+          computes visible line
+          numbers from the same `editorText` source, cursor line, and editor render metrics. `wrapMode:
               TextEdit.Wrap` is enabled, but gutter numbering still stays on logical document lines by mapping each
-              logical line start through `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not
-              change the line-number sequence. The editor surface itself keeps Fill height even when the current body
-              is empty, and the editable body block is top-left aligned with `48px` top inset plus `16px` horizontal /
-              bottom inset, overriding the LVRS internal centered multi-line placement. Figma node `155:5345` is
-              treated as the source of truth for
-              the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
-              active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned number
-              text mirrored against the editor's `16px` left inset, and the fixed `18px` icon-rail anchor at `x=40`.
-              Figma node `155:5352` is treated as the source of truth for body typography (`LV.Theme.fontBody`, `12px`,
-              medium, zero letter spacing) while the text selection highlight intentionally reuses the standard LVRS
-              input accent (`LV.Theme.accent`) instead of a panel-local darker blue. `editorText` is projected from the
-              selected note's `.wsnbody` `<body>`
-              plain-text payload through the active note-list model's `currentBodyText`, and persisted back through the
-              active hierarchy view-model's `saveBodyTextForNote(...)` after a short debounce so typing does not force
-              a full `.wsnbody` rewrite and note-list refresh on every keystroke.
-              If the active folder resolves to zero visible notes, the editor surface must not fabricate a fresh
-              unsaved line-1 draft. Instead, the whole center surface switches to a centered `No files in this folder`
-              placeholder rendered with title typography and `LV.Theme.disabledColor`.
-              The gutter keeps its own logical-line offset array through `buildLogicalLineStartOffsets(...)`; if that
-              array stops being returned, the editor can still paint body text while the line-number column goes empty.
-              The same rule now applies to every helper that feeds child view state into the gutter/minimap/editor
-              shell: those helpers are treated as total functions and must return an explicit fallback value instead of
-              leaking `undefined`.
-              The MVVM side of the editor follows the same pattern: `ContentViewLayout.qml` resolves the incoming
-              content view-model and note-list model first, then `ContentsDisplayView.qml` exposes explicit capability
-              flags (`noteSelectionContractAvailable`, `noteCountContractAvailable`,
-              `contentPersistenceContractAvailable`) before reading note-selection or persistence state from those
-              objects.
-              Cursor-line lookup and visible-line enumeration must use that offset table plus viewport-derived search
-              instead of reparsing the entire body or rescanning line `1..N` for every edit.
-              The first visible gutter row is derived by mapping the current viewport `contentY` through
-              `logicalLineNumberForDocumentY(...)`, which keeps the lookup simpler while still matching the actual top
-              visible logical text row.
-              Because `LV.TextEditor` can settle its internal layout after note rebinding and surface re-entry, the
-              gutter must also expose an explicit refresh revision with a short multi-pass timer; note switches,
-              resurfacing, viewport changes, and late `contentHeight` updates should all request another sampling pass
-              so the gutter rebinds to the editor's final geometry instead of staying stretched from an older note.
-              The current-line gutter marker must follow the cursor's active visual row and occupied text height rather
-              than the whole trailing fill area of the editor, otherwise the blue marker can incorrectly extend from
-              the last logical line to the bottom of the panel.
-              A right-side Xcode-style minimap is also attached to the same editor document. It resolves the internal
-              `TextEditor` flickable, draws a compressed body-text silhouette on `Canvas`, and maps each bar through the
-              editor's actual content height plus text-start offset instead of distributing rows evenly across the rail.
-              That keeps short notes top-aligned and visually tied to the text body rather than the gutter marker lane.
-              The minimap paint path now rebuilds actual wrapped visual-row segments from
-              `TextEditor.positionToRectangle(...)`
-              instead of stretching one logical-line rectangle across the whole wrapped block; each row is painted as a
-              thinner centered stroke so the silhouette reads like text rather than a carved slab. Those rows are now
-              packed with a fixed `1px` gap between bars so the minimap remains visually denser than the main text
-              column instead of spreading rows apart across the whole rail.
-              The minimap stays borderless and inline: the visible viewport is only a translucent fill without an
-              outline, the current cursor line is reduced to the active text-line silhouette width, and click/drag plus
-              `LV.WheelScrollGuard`-routed scrolling remain available.
-              The left rounded marker rail is state-driven: implicit current-line marker `current -> blue
+          logical line start through `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not
+          change the line-number sequence. The editor surface itself keeps Fill height even when the current body
+          is empty, and the editable body block is top-left aligned with `48px` top inset plus `16px` horizontal /
+          bottom inset, overriding the LVRS internal centered multi-line placement. Figma node `155:5345` is
+          treated as the source of truth for
+          the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
+          active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned number
+          text mirrored against the editor's `16px` left inset, and the fixed `18px` icon-rail anchor at `x=40`.
+          Figma node `155:5352` is treated as the source of truth for body typography (`LV.Theme.fontBody`, `12px`,
+          medium, zero letter spacing) while the text selection highlight intentionally reuses the standard LVRS
+          input accent (`LV.Theme.accent`) instead of a panel-local darker blue. `editorText` is projected from the
+          selected note's `.wsnbody` `<body>`
+          plain-text payload through the active note-list model's `currentBodyText`, and persisted back through the
+          active hierarchy view-model's `saveBodyTextForNote(...)` after a short debounce so typing does not force
+          a full `.wsnbody` rewrite and note-list refresh on every keystroke.
+          If the active folder resolves to zero visible notes, the editor surface must not fabricate a fresh
+          unsaved line-1 draft. Instead, the whole center surface switches to a centered `No files in this folder`
+          placeholder rendered with title typography and `LV.Theme.disabledColor`.
+          The gutter keeps its own logical-line offset array through `buildLogicalLineStartOffsets(...)`; if that
+          array stops being returned, the editor can still paint body text while the line-number column goes empty.
+          The same rule now applies to every helper that feeds child view state into the gutter/minimap/editor
+          shell: those helpers are treated as total functions and must return an explicit fallback value instead of
+          leaking `undefined`.
+          The MVVM side of the editor follows the same pattern: `ContentViewLayout.qml` resolves the incoming
+          content view-model and note-list model first, then `ContentsDisplayView.qml` exposes explicit capability
+          flags (`noteSelectionContractAvailable`, `noteCountContractAvailable`,
+          `contentPersistenceContractAvailable`) before reading note-selection or persistence state from those
+          objects.
+          Cursor-line lookup and visible-line enumeration must use that offset table plus viewport-derived search
+          instead of reparsing the entire body or rescanning line `1..N` for every edit.
+          The first visible gutter row is derived by mapping the current viewport `contentY` through
+          `logicalLineNumberForDocumentY(...)`, which keeps the lookup simpler while still matching the actual top
+          visible logical text row.
+          Because `LV.TextEditor` can settle its internal layout after note rebinding and surface re-entry, the
+          gutter must also expose an explicit refresh revision with a short multi-pass timer; note switches,
+          resurfacing, viewport changes, and late `contentHeight` updates should all request another sampling pass
+          so the gutter rebinds to the editor's final geometry instead of staying stretched from an older note.
+          The current-line gutter marker must follow the cursor's active visual row and occupied text height rather
+          than the whole trailing fill area of the editor, otherwise the blue marker can incorrectly extend from
+          the last logical line to the bottom of the panel.
+          A right-side Xcode-style minimap is also attached to the same editor document. It resolves the internal
+          `TextEditor` flickable, draws a compressed body-text silhouette on `Canvas`, and maps each bar through the
+          editor's actual content height plus text-start offset instead of distributing rows evenly across the rail.
+          That keeps short notes top-aligned and visually tied to the text body rather than the gutter marker lane.
+          The minimap paint path now rebuilds actual wrapped visual-row segments from
+          `TextEditor.positionToRectangle(...)`
+          instead of stretching one logical-line rectangle across the whole wrapped block; each row is painted as a
+          thinner centered stroke so the silhouette reads like text rather than a carved slab. Those rows are now
+          packed with a fixed `1px` gap between bars so the minimap remains visually denser than the main text
+          column instead of spreading rows apart across the whole rail.
+          The minimap stays borderless and inline: the visible viewport is only a translucent fill without an
+          outline, the current cursor line is reduced to the active text-line silhouette width, and click/drag plus
+          `LV.WheelScrollGuard`-routed scrolling remain available.
+          The left rounded marker rail is state-driven: implicit current-line marker `current -> blue
               (LV.Theme.primary)`, externally supplied `changed -> #FFF567`, and externally supplied `conflict ->
               LV.Theme.danger`. Sync and conflict producers are not wired yet, but the QML contract already accepts
-              `gutterMarkers` entries with `type`, `startLine`, and `lineSpan` or `endLine`.
-              The syntax-guard test suite also treats malformed standalone expressions as a contract violation:
-              standalone string literals inside `Binding` blocks and bare dotted expressions such as
-              `noteListItem.imageSource` are rejected so view corruption is caught before runtime.
-              The same guard suite also asserts that data-driven views keep their explicit MVVM normalization layer:
-              assembly views use `resolved*` contract properties and editor/detail views keep explicit capability or
-              normalization helpers before consuming model/view-model state.
+          `gutterMarkers` entries with `type`, `startLine`, and `lineSpan` or `endLine`.
+          The syntax-guard test suite also treats malformed standalone expressions as a contract violation:
+          standalone string literals inside `Binding` blocks and bare dotted expressions such as
+          `noteListItem.imageSource` are rejected so view corruption is caught before runtime.
+          The same guard suite also asserts that data-driven views keep their explicit MVVM normalization layer:
+          assembly views use `resolved*` contract properties and editor/detail views keep explicit capability or
+          normalization helpers before consuming model/view-model state.
 - Async timer/scheduler support is centralized in `src/app/runtime/scheduler/`:
     - `WhatSonCronExpression` parses/matches cron-like 5-field expressions (`minute hour day month weekday`).
     - `WhatSonUnixTimeAnalyzer` maps unix epoch seconds to stable local/UTC analysis fields.
@@ -379,6 +381,12 @@ Library-specific modeling:
   list for the newly focused folder.
 - System-bucket behavior is identity-based rather than label-based; user folders named `All`, `Draft`, or similar are
   still treated as normal folders unless they are one of the runtime-injected system buckets.
+- Accent depth-0 library headers are treated as protected structural roots for rename/delete/move targets even when
+  they are not runtime-injected system buckets.
+- `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note scaffold inside the active `.wslibrary` using a
+  mixed-case alphanumeric `16-16` note ID, persists `.wsnhead`, `.wsnbody`, link/backlink manifests, and attachment
+  metadata through the existing note creator stack, then rewrites `index.wsnindex` plus hub stat metadata before
+  focusing the new note in the current folder scope.
 - Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
   resolved folder path to the note header `<folders>` list, updates `lastModified`, and rebuilds the `All Library` /
   `Draft` / `Today` bucket snapshots.
@@ -486,6 +494,9 @@ Hierarchy rendering pipeline:
 
 - `HierarchySidebarLayout` maps toolbar index to domain view-model
 - `SidebarHierarchyView` handles search, selection, inline rename, create/delete folder, and toolbar event propagation
+    - `HierarchyListCompat.qml` is the local adapter between `SidebarHierarchyView.qml` and LVRS `HierarchyItem`.
+      It preserves WhatSon's explicit `autoSelectFirstItem: false` blank-area deselect behavior while still updating
+      manual row visibility from indent/expanded state.
     - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
       UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
     - MVVM input normalization starts above the delegate layer: `BodyLayout.qml` resolves the active hierarchy index,

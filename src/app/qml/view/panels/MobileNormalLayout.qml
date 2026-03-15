@@ -124,7 +124,7 @@ Item {
                             fillMode: Image.PreserveAspectFit
                             height: LV.Theme.iconSm
                             smooth: true
-                            source: LV.Theme.iconPath("generalcloseSmall")
+                            LV.Theme.iconPath("generalcloseSmall")
                             sourceSize.height: height
                             sourceSize.width: width
                             width: LV.Theme.iconSm
@@ -142,6 +142,8 @@ Item {
                     LV.IconButton {
                         anchors.centerIn: parent
                         iconName: "addFile"
+
+                        onClicked: mobileNormalLayout.requestViewHook("create-note")
                     }
                 }
             }

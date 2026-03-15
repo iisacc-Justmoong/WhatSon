@@ -83,6 +83,11 @@ LV.ApplicationWindow {
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
     readonly property int windowMobileMinWidth: LV.Theme.controlHeightMd * 10
+    readonly property string workspaceRoutePath: "/"
+    readonly property var workspaceShellRoute: ({
+            path: applicationWindow.workspaceRoutePath,
+            component: workspacePageComponent
+        })
 
     signal viewHookRequested
 

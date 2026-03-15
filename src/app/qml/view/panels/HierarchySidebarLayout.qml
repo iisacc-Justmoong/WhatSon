@@ -67,11 +67,39 @@ Item {
     function normalizeHierarchyIndex(index) {
         var numericIndex = Number(index);
         if (!isFinite(numericIndex))
-            return -1;
+            return hierarchyEnum.library;
         var normalizedIndex = Math.floor(numericIndex);
         if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
-            return -1;
 
+
+    }
+    function resolveActiveHierarchyIndex() {
+        if (!hierarchyView.sidebarHierarchyViewModel || hierarchyView.sidebarHierarchyViewModel.activeHierarchyIndex === undefined)
+            return hierarchyView.activeToolbarIndex;
+        var numericIndex = Number(hierarchyView.sidebarHierarchyViewModel.activeHierarchyIndex);
+        if (!isFinite(numericIndex))
+            return hierarchyView.activeToolbarIndex;
+        return Math.floor(numericIndex);
+    }
+    function resolveHierarchyViewModel(index) {
+        var normalizedIndex = hierarchyView.normalizeHierarchyIndex(index);
+        if (!hierarchyView.sidebarHierarchyViewModel)
+            return null;
+        if (hierarchyView.sidebarHierarchyViewModel.hierarchyViewModelForIndex !== undefined)
+            return hierarchyView.sidebarHierarchyViewModel.hierarchyViewModelForIndex(normalizedIndex);
+        if (normalizedIndex === hierarchyView.normalizeHierarchyIndex(hierarchyView.resolveActiveHierarchyIndex()) && hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel !== undefined) {
+            return hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel;
+        }
+        return null;
+    }
+    function setActiveHierarchyIndex(index) {
+        var normalizedIndex = hierarchyView.normalizeHierarchyIndex(index);
+        if (hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined) {
+            hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(normalizedIndex);
+        } else if (hierarchyView.activeToolbarIndex !== normalizedIndex) {
+            hierarchyView.activeToolbarIndex = normalizedIndex;
+        }
+        hierarchyView.activeToolbarIndexChangeRequested(normalizedIndex);
     }
 
     QtObject {
@@ -89,7 +117,7 @@ Item {
     SidebarHierarchyView {
         id: sidebarView
 
-        activeToolbarIndex: hierarchyView.currentHierarchy >= 0 ? hierarchyView.currentHierarchy : hierarchyEnum.library
+        activeToolbarIndex: hierarchyView.currentHierarchy
         anchors.fill: parent
         defaultToolbarIndex: hierarchyEnum.library
         frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)

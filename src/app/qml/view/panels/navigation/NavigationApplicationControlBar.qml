@@ -51,6 +51,9 @@ Item {
         {
             "label": "Add File",
             "iconName": "addFile",
+            "onTriggered": function () {
+                applicationControlBar.requestViewHook("create-note");
+            },
             "showChevron": false
         },
         {
