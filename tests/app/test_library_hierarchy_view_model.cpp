@@ -53,6 +53,7 @@ private
     void assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection();
     void createEmptyNote_whenFolderSelected_createsScaffoldUpdatesIndexAndSelectsNote();
     void loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments();
+    void loadFromWshub_applyHierarchyNodes_persistsLvrsEditableMove();
     void moveFolder_reparentsSubtreeAndAllowsRootExtraction();
 };
 
@@ -2031,6 +2032,145 @@ void LibraryHierarchyViewModelTest::loadFromWshub_moveFolderBefore_rewritesFolde
                       viewModel.noteListModel()->index(0, 0),
                       LibraryNoteListModel::IdRole).
                   toString(),
+        QStringLiteral("note-a"));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_applyHierarchyNodes_persistsLvrsEditableMove()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"children\": [\n"
+        "        {\n"
+        "          \"id\": \"Research/Competitor\",\n"
+        "          \"label\": \"Competitor\"\n"
+        "        }\n"
+        "      ]\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-a"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {QStringLiteral("Research"), QStringLiteral("/Competitor")})));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QVariantList hierarchyNodes = viewModel.depthItems();
+    QVERIFY(hierarchyNodes.size() >= 6);
+    for (int index = 0; index < hierarchyNodes.size(); ++index)
+    {
+        QVariantMap entry = hierarchyNodes.at(index).toMap();
+        entry.insert(QStringLiteral("sourceIndex"), index);
+        hierarchyNodes[index] = entry;
+    }
+
+    const auto takeNodeByKey = [&hierarchyNodes](const QString& itemKey) -> QVariantMap
+    {
+        for (int index = 0; index < hierarchyNodes.size(); ++index)
+        {
+            const QVariantMap entry = hierarchyNodes.at(index).toMap();
+            if (entry.value(QStringLiteral("key")).toString() == itemKey)
+            {
+                hierarchyNodes.removeAt(index);
+                return entry;
+            }
+        }
+        return {};
+    };
+
+    QVariantList reorderedNodes;
+    reorderedNodes.push_back(takeNodeByKey(QStringLiteral("bucket:all")));
+    reorderedNodes.push_back(takeNodeByKey(QStringLiteral("bucket:draft")));
+    reorderedNodes.push_back(takeNodeByKey(QStringLiteral("bucket:today")));
+    reorderedNodes.push_back(takeNodeByKey(QStringLiteral("Research")));
+
+    QVariantMap competitorNode = takeNodeByKey(QStringLiteral("Research/Competitor"));
+    QVERIFY(!competitorNode.isEmpty());
+    competitorNode.insert(QStringLiteral("depth"), 0);
+    reorderedNodes.push_back(competitorNode);
+
+    reorderedNodes.push_back(takeNodeByKey(QStringLiteral("Brand")));
+    QVERIFY(hierarchyNodes.isEmpty());
+
+    QVERIFY(viewModel.applyHierarchyNodes(reorderedNodes, QStringLiteral("Research/Competitor")));
+
+    const auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole).
+                          toString()
+                == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int movedCompetitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
+    QVERIFY(movedCompetitorIndex >= 0);
+    QCOMPARE(viewModel.selectedIndex(), movedCompetitorIndex);
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(movedCompetitorIndex, 0),
+            LibraryHierarchyModel::DepthRole).toInt(),
+        0);
+
+    const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
+    QVERIFY(foldersDocument.isObject());
+    const QJsonArray folderArray = foldersDocument.object().value(QStringLiteral("folders")).toArray();
+    QCOMPARE(folderArray.size(), 3);
+    QCOMPARE(folderArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
+    QVERIFY(folderArray.at(0).toObject().value(QStringLiteral("children")).toArray().isEmpty());
+    QCOMPARE(folderArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Competitor"));
+    QCOMPARE(folderArray.at(2).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Brand"));
+
+    QFile alphaHeaderFile(QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")));
+    QVERIFY(alphaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(QString::fromUtf8(alphaHeaderFile.readAll()), &headerStore, &parseError),
+             qPrintable(parseError));
+    QCOMPARE(headerStore.folders(), QStringList({QStringLiteral("Competitor")}));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::IdRole).toString(),
         QStringLiteral("note-a"));
 }
 

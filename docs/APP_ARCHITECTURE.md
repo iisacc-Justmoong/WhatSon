@@ -289,11 +289,10 @@ Domain-isolated support:
               note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
               candidate row and selection is committed on tap release, then reasserted once through a short-lived
               pending-selection replay so drag startup is not canceled by note-model refresh. `SidebarHierarchyView.qml`
-              composes `SidebarHierarchyInteractionController.qml` as the single drag/drop owner for hierarchy rows,
-              so note-card drops on library folders route through `assignNoteToFolder(index, noteId)` and immediately
-              update note-header folder membership plus the visible draft/folder note lists. The same controller also
-              tracks one pending hierarchy activation request and replays it once through `Qt.callLater`, so rapid
-              folder clicks still converge on the latest tapped row after focus and selection refresh work settles.
+              now binds LVRS `HierarchyList` directly and feeds it from `SidebarHierarchyLvrsAdapter`, so note-card
+              drops on library folders route through `assignNoteToFolder(index, noteId)` without a local hierarchy
+              interaction controller. Folder reorder/reparent persistence now comes from LVRS `itemMoved(...)`, which
+              hands the mutated node array back to the active hierarchy view-model through `applyHierarchyNodes(...)`.
             - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
               `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
               surface by composing dedicated SRP modules:
@@ -534,68 +533,49 @@ Hierarchy rendering pipeline:
 - `HierarchySidebarLayout` forwards toolbar activation into `SidebarHierarchyViewModel` and consumes the resolved
   hierarchy state it exposes
 - `SidebarHierarchyView` now owns layout composition, search input, and toolbar/footer rendering only
-    - `SidebarHierarchyInteractionController.qml` owns inline rename state, blank-area deselect, drag-drop gating,
-      accepted move/drop execution, and hook dispatch for the hierarchy surface.
-    - `HierarchyListCompat.qml` is the local adapter between `SidebarHierarchyView.qml` and LVRS `HierarchyItem`.
-      It preserves WhatSon's explicit `autoSelectFirstItem: false` blank-area deselect behavior while still updating
-      manual row visibility from indent/expanded state, exposing `activateByKey(...)` for keyed activation, and keeping
-      hierarchy activation single-sourced behind one `activeItem`.
-    - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
-      UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
-    - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
-      `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
-      backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into
-      `SidebarHierarchyView.qml` without re-normalizing indices or re-resolving per-domain view-models in QML.
-        - `BodyLayout.qml` keeps width clamp math plus panel arrangement, while `PanelEdgeSplitter.qml` owns the shared
-          edge-drag interaction used by sidebar/list/right-panel splitters.
-        - `Main.qml` keeps shell routing/window composition, while `MainWindowInteractionController.qml` owns focus
-          dismissal, resize render-quality policy, and global navigation shortcut policy.
-        - Chevron fold/unfold is handled by LVRS `HierarchyItem` (`expanded` state +
-          `HierarchyList.notifyExpansionChanged`),
-          and delegate row visibility/height reflects `HierarchyItem.rowVisible`.
-            - Rename trigger policy: open text input overlay from the selected item with `Enter/Return` or mouse
-              double-tap on the folder row.
-            - Rename gating policy: QML checks per-item `canRenameItem(index)` from the active hierarchy view-model
-              before
-              opening the overlay. Global `renameEnabled` is treated as a fallback only.
-            - Row-activation policy: drag-capable hierarchy rows use drag-first / click-select-later input. LVRS
-              `HierarchyItem` no longer activates on raw press, and WhatSon mirrors active-row changes from
-              `HierarchyList.activeChanged` into the bound hierarchy view-model after the click/release path settles.
-              While a folder drag is active, the viewport disables scrolling and the dragged row forwards LVRS
-              `dragPreviewActive` so the grab state is visually explicit. Delegates also forward a stable `itemKey`
-              from the backing hierarchy model so LVRS activation and drag state do not rely solely on mutable row
-              indexes.
-            - Blank-area deselect policy: when the visible hierarchy is shorter than the sidebar viewport, the blank
-              area
-              below the last row clears both the active LVRS hierarchy item and the bound view-model selection. The host
-              tree also disables LVRS first-item auto-selection so that cleared state stays visually empty.
-                - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row
-                  before
-                  opening inline rename, and newly inserted folders use the placeholder label `Untitled`.
-                - Drag-reorder policy: folder delegates expose `whatson.hierarchy.folder` drag metadata and route
-                  `before`,
-                  `after`, `child`, and root-top extraction drops through `canAcceptFolderDropBefore(...)`,
-                  `moveFolderBefore(...)`, `canAcceptFolderDrop(...)`, `moveFolder(...)`, and `moveFolderToRoot(...)` on
-                  the
-                  active hierarchy view-model.
-                    - Library drop policy: hierarchy delegates accept `whatson.library.note` drags and route accepted
-                      drops
-                      through
-                      `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
-                    - Library folder drag policy: hierarchy delegates advertise `whatson.hierarchy.folder` drags and
-                      route
-                      accepted drops through `LibraryHierarchyViewModel::moveFolderBefore(...)` for before-insert moves,
-                      `moveFolder(...)` for after/child reparenting, and `moveFolderToRoot(...)` for root extraction.
-                - Projects folder drag policy: `ProjectsHierarchyViewModel` now exposes the same move API surface and
-                  persists
-                  reordered `Folders.wsfolders` content on drag-driven before/after/child/root-top edits.
-                    - Rename commit policy for hub-loaded hierarchies: view-model updates staged in-memory data, applies
-                      it
-                      to
-                      domain
-                      store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`,
-                      `*.wsevent`,
-                      `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
+- `SidebarHierarchyView` renders folders through LVRS `HierarchyList` directly.
+- `SidebarHierarchyLvrsAdapter.*` is the only local bridge in that render path. It converts
+  `activeDomainViewModel.depthItems()` into LVRS node arrays, mirrors `selectedIndex` through `activateByKey(...)`,
+  exposes protected-row `dragLocked` state, and forwards rename, note drop, and editable move commits back into the
+  active hierarchy view-model.
+- Hierarchy list data source is therefore `SidebarHierarchyLvrsAdapter.nodes`, not a hand-managed repeater tree.
+  Search is also applied inside the adapter, and editable LVRS moves are disabled while a filtered node subset is
+  visible so partial tree snapshots cannot be committed.
+- `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
+  `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
+  backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into
+  `SidebarHierarchyView.qml` without re-normalizing indices or re-resolving per-domain view-models in QML.
+- `BodyLayout.qml` keeps width clamp math plus panel arrangement, while `PanelEdgeSplitter.qml` owns the shared
+  edge-drag interaction used by sidebar/list/right-panel splitters.
+- `Main.qml` keeps shell routing/window composition, while `MainWindowInteractionController.qml` owns focus
+  dismissal, resize render-quality policy, and global navigation shortcut policy.
+- Chevron fold/unfold is handled directly by LVRS `HierarchyList` and `HierarchyItem` through the serialized
+  `expanded`/`showChevron` roles emitted by each hierarchy view-model.
+- Rename trigger policy: open the text input overlay from the selected item with `Enter/Return` or mouse double-tap
+  on the folder row.
+- Rename gating policy: QML checks per-item `canRenameItem(index)` through `SidebarHierarchyLvrsAdapter` before
+  opening the overlay.
+- Row-activation policy: LVRS `HierarchyList.activeChanged` is authoritative. WhatSon mirrors the resulting `itemKey`
+  back into the active hierarchy view-model through `SidebarHierarchyLvrsAdapter` instead of keeping a second custom
+  active-row engine.
+- Protected-row drag policy: immutable buckets still appear in the same LVRS list, but an overlay swallows drag
+  attempts on nodes marked `dragLocked` by the adapter so LVRS reordering cannot move those rows.
+- Blank-area deselect is no longer a WhatSon-owned hierarchy contract. The direct LVRS list keeps one active keyed row
+  while selection is present.
+- Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row before opening
+  inline rename, and newly inserted folders use the placeholder label `Untitled`.
+- Drag-reorder policy: LVRS emits `itemMoved(...)`, and the adapter commits the mutated node array through
+  `applyHierarchyNodes(...)` on the active hierarchy view-model.
+- Library note-drop policy: hierarchy overlays accept `whatson.library.note` drags and route accepted drops through
+  `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
+- Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` rewrites
+  `Folders.wsfolders`, re-normalizes canonical folder paths, and updates note-header `<folders>` entries when a folder
+  subtree moves.
+- Projects folder move persistence: `ProjectsHierarchyViewModel::applyHierarchyNodes(...)` rewrites
+  `Folders.wsfolders` from the LVRS-mutated node array and preserves the active selection by stable item key.
+- Rename commit policy for hub-loaded hierarchies: the view-model updates staged in-memory data, applies it to the
+  domain store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
+  `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
     - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
@@ -792,7 +772,7 @@ From `tests/app/**`, architecture is guarded by explicit tests:
         - binding syntax guard against invalid standalone literals in `Binding` blocks
 - `test_solid_architecture_contracts.cpp`:
     - SRP guard for shell/sidebar/editor decomposition (`MainWindowInteractionController`, `PanelEdgeSplitter`,
-      `SidebarHierarchyInteractionController`, `ContentsEditorSelectionBridge`, `ContentsLogicalTextBridge`,
+      `SidebarHierarchyLvrsAdapter`, `ContentsEditorSelectionBridge`, `ContentsLogicalTextBridge`,
       `ContentsGutterMarkerBridge`, `ContentsEditorSession.qml`)
     - DIP/LSP guard for sidebar state: `SidebarHierarchyViewModel` must continue to work through
       `ISidebarSelectionStore` and `IHierarchyViewModelProvider` substitutions

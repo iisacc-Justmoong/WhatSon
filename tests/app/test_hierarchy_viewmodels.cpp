@@ -235,6 +235,7 @@ private
     void projectsViewModel_supportsCrudContract();
     void projectsViewModel_reactsToModelMutation();
     void projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth();
+    void projectsViewModel_applyHierarchyNodes_persistsLvrsEditableMove();
     void bookmarksViewModel_supportsCrudContract();
     void bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor();
     void bookmarksViewModel_searchText_filtersVisibleNotesByBodyContent();
@@ -363,6 +364,66 @@ void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFolders
 
     QVERIFY(viewModel.canAcceptFolderDrop(0, 1, true));
     QVERIFY(viewModel.moveFolder(0, 1, true));
+
+    const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
+    QVERIFY(foldersDocument.isObject());
+    const QJsonArray folderArray = foldersDocument.object().value(QStringLiteral("folders")).toArray();
+    QCOMPARE(folderArray.size(), 1);
+
+    const QJsonObject researchObject = folderArray.at(0).toObject();
+    QCOMPARE(researchObject.value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
+    const QJsonArray childArray = researchObject.value(QStringLiteral("children")).toArray();
+    QCOMPARE(childArray.size(), 2);
+    QCOMPARE(childArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Competitor"));
+    QCOMPARE(childArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Brand"));
+}
+
+void HierarchyViewModelsTest::projectsViewModel_applyHierarchyNodes_persistsLvrsEditableMove()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString foldersFilePath = tempDir.filePath(QStringLiteral("Folders.wsfolders"));
+
+    ProjectsHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("Research"), QStringLiteral("Research"), 0},
+            {QStringLiteral("Research/Competitor"), QStringLiteral("Competitor"), 1},
+            {QStringLiteral("Brand"), QStringLiteral("Brand"), 0}
+        },
+        foldersFilePath,
+        true);
+
+    QVariantList hierarchyNodes = viewModel.depthItems();
+    QCOMPARE(hierarchyNodes.size(), 3);
+    for (int index = 0; index < hierarchyNodes.size(); ++index)
+    {
+        QVariantMap entry = hierarchyNodes.at(index).toMap();
+        entry.insert(QStringLiteral("sourceIndex"), index);
+        hierarchyNodes[index] = entry;
+    }
+
+    QVariantMap researchNode = hierarchyNodes.at(0).toMap();
+    QVariantMap competitorNode = hierarchyNodes.at(1).toMap();
+    QVariantMap brandNode = hierarchyNodes.at(2).toMap();
+    brandNode.insert(QStringLiteral("depth"), 1);
+
+    QVariantList reorderedNodes;
+    reorderedNodes << researchNode << competitorNode << brandNode;
+
+    const QString activeItemKey = brandNode.value(QStringLiteral("key")).toString();
+    QVERIFY(!activeItemKey.isEmpty());
+    QVERIFY(viewModel.applyHierarchyNodes(reorderedNodes, activeItemKey));
+
+    QCOMPARE(viewModel.selectedIndex(), 2);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Brand"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::DepthRole).toInt(),
+        1);
 
     const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
     QVERIFY(foldersDocument.isObject());

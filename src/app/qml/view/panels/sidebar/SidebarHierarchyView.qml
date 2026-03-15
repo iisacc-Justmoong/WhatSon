@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
+import WhatSon.App.Internal 1.0
 
 Item {
     id: sidebarHierarchyView
@@ -11,33 +12,19 @@ Item {
     readonly property bool createFolderEnabled: hierarchyViewModel && hierarchyViewModel.createFolderEnabled !== undefined ? hierarchyViewModel.createFolderEnabled : false
     property int defaultToolbarIndex: 0
     readonly property bool deleteFolderEnabled: hierarchyViewModel && hierarchyViewModel.deleteFolderEnabled !== undefined ? hierarchyViewModel.deleteFolderEnabled : false
-    property alias editingIndex: sidebarController.editingIndex
-    property alias editingText: sidebarController.editingText
-    property bool folderDragActive: false
-    property alias folderDropAsChild: sidebarController.folderDropAsChild
-    property alias folderDropBefore: sidebarController.folderDropBefore
-    property alias folderDropTargetIndex: sidebarController.folderDropTargetIndex
-    // SOURCE-OF-TRUTH GUARD:
-    // Hierarchy list must always come from per-domain ViewModel.itemModel (store-backed path).
-    // Do not add any UI-side sample/fallback/depth injection model here.
-    readonly property var folderModel: hierarchyViewModel ? hierarchyViewModel.itemModel : null
+    property string editingItemKey: ""
+    property string editingText: ""
     readonly property int footerHeight: 24
     property string frameName: ""
     property string frameNodeId: ""
-    readonly property int hierarchyChevronSlotWidth: ((typeof LV.Theme.iconSm === "number" && isFinite(LV.Theme.iconSm)) ? LV.Theme.iconSm : 16) + ((typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2)
-    readonly property int hierarchyIndentStep: 8
-    readonly property int hierarchyItemBaseLeftPadding: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property var hierarchyViewModel: null
     property int horizontalInset: 2
-    property alias noteDropTargetIndex: sidebarController.noteDropTargetIndex
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
-    readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false
-    property alias rootDropHighlighted: sidebarController.rootDropHighlighted
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     property string searchQuery: ""
-    readonly property int searchRadius: 5
     readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
+    readonly property string selectedItemKey: hierarchyAdapter.selectedItemKey
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property var toolbarItems: {
         if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.toolbarItems !== undefined)
@@ -65,66 +52,36 @@ Item {
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
 
-    function activateHierarchyDelegate(delegate, index) {
-        sidebarController.activateHierarchyDelegate(delegate, index);
-    }
     function activateSelectedHierarchyItem(focusView) {
-        sidebarController.activateSelectedHierarchyItem(focusView);
+        if (selectedItemKey.length === 0)
+            return;
+        hierarchyList.activateByKey(selectedItemKey);
+        if (focusView)
+            sidebarHierarchyView.forceActiveFocus();
     }
-    function assignNoteToFolder(index, noteId) {
-        return sidebarController.assignNoteToFolder(index, noteId);
-    }
-    function beginRename(index, currentLabel) {
-        sidebarController.beginRename(index, currentLabel);
-    }
-    function canAcceptFolderDrop(sourceIndex, targetIndex, asChild) {
-        return sidebarController.canAcceptFolderDrop(sourceIndex, targetIndex, asChild);
-    }
-    function canAcceptFolderDropBefore(sourceIndex, targetIndex) {
-        return sidebarController.canAcceptFolderDropBefore(sourceIndex, targetIndex);
-    }
-    function canAcceptNoteDrop(index, noteId) {
-        return sidebarController.canAcceptNoteDrop(index, noteId);
-    }
-    function canMoveFolder(index) {
-        return sidebarController.canMoveFolder(index);
-    }
-    function canMoveFolderToRoot(sourceIndex) {
-        return sidebarController.canMoveFolderToRoot(sourceIndex);
-    }
-    function canRenameAtIndex(index) {
-        return sidebarController.canRenameAtIndex(index);
+    function beginRenameKey(itemKey, currentLabel) {
+        const normalizedKey = itemKey === undefined || itemKey === null ? "" : String(itemKey).trim();
+        if (normalizedKey.length === 0 || !hierarchyAdapter.canRenameKey(normalizedKey))
+            return;
+        hierarchyAdapter.activateKey(normalizedKey);
+        editingItemKey = normalizedKey;
+        editingText = currentLabel === undefined || currentLabel === null ? hierarchyAdapter.labelForKey(normalizedKey) : String(currentLabel);
     }
     function cancelRename() {
-        sidebarController.cancelRename();
-    }
-    function clearHierarchySelection() {
-        sidebarController.clearHierarchySelection();
+        editingItemKey = "";
+        editingText = "";
     }
     function commitRename() {
-        sidebarController.commitRename();
-    }
-    function draggedFolderIndex(event) {
-        return sidebarController.draggedFolderIndex(event);
+        if (editingItemKey.length === 0)
+            return;
+        if (hierarchyAdapter.renameKey(editingItemKey, editingText))
+            requestViewHook("rename-folder");
+        cancelRename();
     }
     function draggedNoteId(event) {
-        return sidebarController.draggedNoteId(event);
-    }
-    function matchesSearchText(label) {
-        var query = sidebarHierarchyView.searchQuery.trim().toLowerCase();
-        if (query.length === 0)
-            return true;
-        var target = (label === undefined || label === null) ? "" : String(label).toLowerCase();
-        return target.indexOf(query) >= 0;
-    }
-    function moveFolder(sourceIndex, targetIndex, asChild) {
-        return sidebarController.moveFolder(sourceIndex, targetIndex, asChild);
-    }
-    function moveFolderBefore(sourceIndex, targetIndex) {
-        return sidebarController.moveFolderBefore(sourceIndex, targetIndex);
-    }
-    function moveFolderToRoot(sourceIndex) {
-        return sidebarController.moveFolderToRoot(sourceIndex);
+        if (!event || !event.source || event.source.noteId === undefined || event.source.noteId === null)
+            return "";
+        return String(event.source.noteId).trim();
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -132,8 +89,11 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
-    function resetDropTargets() {
-        sidebarController.resetDropTargets();
+    function targetItemForKey(itemKey) {
+        const normalizedKey = itemKey === undefined || itemKey === null ? "" : String(itemKey).trim();
+        if (normalizedKey.length === 0)
+            return null;
+        return hierarchyList.resolveByKey(normalizedKey);
     }
     function toggleViewOptionsMenu() {
         if (viewOptionsContextMenu.opened) {
@@ -150,46 +110,38 @@ Item {
         if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)
             return;
 
-        if (sidebarHierarchyView.editingIndex >= 0) {
-            sidebarHierarchyView.commitRename();
+        if (editingItemKey.length > 0) {
+            commitRename();
             event.accepted = true;
             return;
         }
 
-        if (sidebarHierarchyView.selectedFolderIndex < 0)
+        if (selectedItemKey.length === 0 || !hierarchyAdapter.canRenameKey(selectedItemKey))
             return;
 
-        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.itemLabel === undefined || !sidebarHierarchyView.canRenameAtIndex(sidebarHierarchyView.selectedFolderIndex))
-            return;
-
-        sidebarHierarchyView.beginRename(sidebarHierarchyView.selectedFolderIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(sidebarHierarchyView.selectedFolderIndex));
+        beginRenameKey(selectedItemKey, hierarchyAdapter.labelForKey(selectedItemKey));
         event.accepted = true;
     }
     onHierarchyViewModelChanged: {
-        sidebarHierarchyView.cancelRename();
-        sidebarHierarchyView.folderDragActive = false;
-        sidebarHierarchyView.resetDropTargets();
+        cancelRename();
+        noteDropTargetKey = "";
     }
     onSelectedFolderIndexChanged: {
-        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== sidebarHierarchyView.selectedFolderIndex)
-            sidebarHierarchyView.commitRename();
-        if (sidebarHierarchyView.selectedFolderIndex < 0)
-            return;
-        sidebarHierarchyView.activateSelectedHierarchyItem(true);
+        if (editingItemKey.length > 0 && editingItemKey !== selectedItemKey)
+            commitRename();
+        activateSelectedHierarchyItem(true);
     }
 
-    SidebarHierarchyInteractionController {
-        id: sidebarController
+    SidebarHierarchyLvrsAdapter {
+        id: hierarchyAdapter
 
-        folderRepeater: folderRepeater
-        hierarchyList: hierarchyList
         hierarchyViewModel: sidebarHierarchyView.hierarchyViewModel
-        hierarchyViewport: hierarchyViewport
-        requestViewHook: function (reason) {
-            sidebarHierarchyView.requestViewHook(reason);
+        searchQuery: sidebarHierarchyView.searchQuery
+
+        onSelectedItemKeyChanged: {
+            if (selectedItemKey.length > 0)
+                hierarchyList.activateByKey(selectedItemKey);
         }
-        selectedFolderIndex: sidebarHierarchyView.selectedFolderIndex
-        viewRoot: sidebarHierarchyView
     }
     Rectangle {
         anchors.fill: parent
@@ -246,7 +198,7 @@ Item {
                     sidebarHierarchyView.searchQuery = text;
                 }
                 onTextEdited: function (text) {
-                    if (sidebarHierarchyView.editingIndex >= 0)
+                    if (sidebarHierarchyView.editingItemKey.length > 0)
                         sidebarHierarchyView.commitRename();
                     sidebarHierarchyView.searchQuery = text;
                 }
@@ -258,364 +210,190 @@ Item {
                 Layout.fillWidth: true
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
-                contentHeight: Math.max(height, hierarchyList.implicitHeight)
+                contentHeight: hierarchyCanvas.height
                 contentWidth: width
-                interactive: contentHeight > height && !sidebarHierarchyView.folderDragActive
+                interactive: contentHeight > height
 
-                HierarchyListCompat {
-                    id: hierarchyList
+                Item {
+                    id: hierarchyCanvas
 
-                    autoSelectFirstItem: false
-                    keyboardNavigationEnabled: false
-                    manualActivationOnly: true
+                    height: Math.max(hierarchyViewport.height, hierarchyList.implicitHeight)
                     width: hierarchyViewport.width
 
-                    onActiveChanged: function (item, itemId, index) {
-                        if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.setSelectedIndex !== undefined)
-                            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
-                    }
+                    LV.HierarchyList {
+                        id: hierarchyList
 
-                    Item {
-                        id: rootFolderDropZone
-
-                        height: 6
+                        autoExpandAncestorsOnActivate: true
+                        editable: hierarchyAdapter.editable
+                        enabledRole: "enabled"
+                        expandedRole: "expanded"
+                        generatedIndentStep: 8
+                        generatedItemWidth: hierarchyViewport.width
+                        generatedRowHeight: 20
+                        itemIdRole: "itemId"
+                        itemKeyRole: "key"
+                        keyboardNavigationEnabled: false
+                        labelRole: "label"
+                        model: hierarchyAdapter.nodes
+                        showChevronRole: "showChevron"
                         width: hierarchyViewport.width
 
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: LV.Theme.accentBlue
-                            height: 2
-                            opacity: 0.85
-                            visible: sidebarHierarchyView.rootDropHighlighted
+                        onActiveChanged: function (item, itemId, index) {
+                            if (!item || item.itemKey === undefined || item.itemKey === null)
+                                return;
+                            hierarchyAdapter.activateKey(item.itemKey);
                         }
-                        DropArea {
-                            anchors.fill: parent
-                            keys: ["whatson.hierarchy.folder"]
-
-                            onDropped: function (drop) {
-                                const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drop);
-                                const accepted = sidebarHierarchyView.moveFolderToRoot(sourceIndex);
-                                sidebarHierarchyView.resetDropTargets();
-                                if (!accepted)
-                                    return;
-                                sidebarController.notifyAcceptedInteraction("move-folder-to-root");
-                            }
-                            onEntered: function (drag) {
-                                const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
-                                sidebarHierarchyView.noteDropTargetIndex = -1;
-                                sidebarHierarchyView.folderDropTargetIndex = -1;
-                                sidebarHierarchyView.folderDropAsChild = false;
-                                sidebarHierarchyView.folderDropBefore = false;
-                                sidebarHierarchyView.rootDropHighlighted = sidebarHierarchyView.canMoveFolderToRoot(sourceIndex);
-                            }
-                            onExited: {
-                                sidebarHierarchyView.rootDropHighlighted = false;
-                            }
+                        onEnsureVisibleRequested: function (y, itemHeight) {
+                            if (y < hierarchyViewport.contentY)
+                                hierarchyViewport.contentY = y;
+                            else if (y + itemHeight > hierarchyViewport.contentY + hierarchyViewport.height)
+                                hierarchyViewport.contentY = y + itemHeight - hierarchyViewport.height;
+                        }
+                        onItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
+                            if (!hierarchyAdapter.commitEditableNodes(hierarchyList.model, hierarchyList.activeItemKey))
+                                return;
+                            sidebarHierarchyView.requestViewHook("move-folder-lvrs");
                         }
                     }
-                    Repeater {
-                        id: folderRepeater
+                    Item {
+                        id: overlayLayer
 
-                        model: sidebarHierarchyView.folderModel
+                        anchors.fill: parent
+                        z: 10
 
-                        delegate: LV.HierarchyItem {
-                            id: hierarchyDelegate
+                        Repeater {
+                            model: hierarchyAdapter.flatNodes
 
-                            readonly property bool folderBeforeDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropBefore
-                            readonly property bool folderChildDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropAsChild && !sidebarHierarchyView.folderDropBefore
-                            readonly property bool folderSiblingDropHighlighted: sidebarHierarchyView.folderDropTargetIndex === index && !sidebarHierarchyView.folderDropAsChild && !sidebarHierarchyView.folderDropBefore
-                            required property int index
-                            readonly property bool itemExpanded: model.expanded === undefined ? false : !!model.expanded
-                            readonly property int itemIndentLevel: {
-                                if (model.indentLevel === undefined || model.indentLevel === null)
-                                    return 0;
-                                var parsed = Number(model.indentLevel);
-                                if (!isFinite(parsed))
-                                    return 0;
-                                return Math.max(0, Math.floor(parsed));
-                            }
-                            readonly property string itemKeyValue: {
-                                if (model.itemKey === undefined || model.itemKey === null)
-                                    return String(index);
-                                var rawItemKey = String(model.itemKey).trim();
-                                return rawItemKey.length > 0 ? rawItemKey : String(index);
-                            }
-                            readonly property string itemLabel: model.label === undefined || model.label === null ? "" : String(model.label)
-                            readonly property bool itemShowChevron: model.showChevron === undefined ? false : !!model.showChevron
-                            readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(itemLabel)
-                            required property var model
-                            readonly property bool noteDropHighlighted: sidebarHierarchyView.noteDropTargetIndex === index
-                            readonly property int renameLeftInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding + itemIndentLevel * sidebarHierarchyView.hierarchyIndentStep + sidebarHierarchyView.hierarchyChevronSlotWidth
-                            readonly property int renameRightInset: sidebarHierarchyView.hierarchyItemBaseLeftPadding
-                            property int sourceIndex: index
-                            readonly property bool visibleInView: matchesSearch && rowVisible
+                            delegate: Item {
+                                id: overlayDelegate
 
-                            Drag.active: folderDragHandler.active
-                            Drag.hotSpot.x: width * 0.5
-                            Drag.hotSpot.y: height * 0.5
-                            Drag.keys: ["whatson.hierarchy.folder"]
-                            Drag.source: hierarchyDelegate
-                            Drag.supportedActions: Qt.MoveAction
-                            baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
-                            dragPreviewActive: folderDragHandler.active
-                            expanded: hierarchyDelegate.itemExpanded
-                            height: visibleInView ? implicitHeight : 0
-                            indentLevel: hierarchyDelegate.itemIndentLevel
-                            indentStep: sidebarHierarchyView.hierarchyIndentStep
-                            itemId: index
-                            itemKey: hierarchyDelegate.itemKeyValue
-                            label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
-                            opacity: folderDragHandler.active ? 0.72 : 1
-                            showChevron: hierarchyDelegate.itemShowChevron
-                            visible: visibleInView
-                            width: hierarchyViewport.width
-                            z: folderDragHandler.active ? 20 : 0
+                                readonly property bool dragLocked: !!modelData.dragLocked
+                                readonly property string itemKey: modelData.key === undefined || modelData.key === null ? "" : String(modelData.key)
+                                required property var modelData
+                                readonly property bool noteDropHighlighted: sidebarHierarchyView.noteDropTargetKey === itemKey
+                                readonly property var targetItem: sidebarHierarchyView.targetItemForKey(itemKey)
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: LV.Theme.accentBlueMuted
-                                opacity: hierarchyDelegate.noteDropHighlighted ? 0.55 : 0.38
-                                visible: hierarchyDelegate.noteDropHighlighted || hierarchyDelegate.folderChildDropHighlighted
-                                z: 1
-                            }
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                color: LV.Theme.accentBlue
-                                height: 2
-                                opacity: 0.85
-                                visible: hierarchyDelegate.folderBeforeDropHighlighted
-                                z: 2
-                            }
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                color: LV.Theme.accentBlue
-                                height: 2
-                                opacity: 0.85
-                                visible: hierarchyDelegate.folderSiblingDropHighlighted
-                                z: 2
-                            }
-                            TapHandler {
-                                acceptedButtons: Qt.LeftButton
-                                gesturePolicy: TapHandler.DragThreshold
-
-                                onDoubleTapped: {
-                                    sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);
-                                    sidebarHierarchyView.beginRename(index, hierarchyDelegate.itemLabel);
-                                }
-                            }
-                            DragHandler {
-                                id: folderDragHandler
-
-                                acceptedButtons: Qt.LeftButton
-                                dragThreshold: 4
-                                enabled: sidebarHierarchyView.canMoveFolder(index) && sidebarHierarchyView.editingIndex !== index
-                                grabPermissions: PointerHandler.CanTakeOverFromAnything
-                                target: null
-
-                                onActiveChanged: {
-                                    sidebarHierarchyView.folderDragActive = active;
-                                    if (active && sidebarHierarchyView.editingIndex >= 0)
-                                        sidebarHierarchyView.commitRename();
-                                    if (active)
-                                        sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);
-                                    if (!active)
-                                        sidebarHierarchyView.resetDropTargets();
-                                }
-                            }
-                            DropArea {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                height: 6
-                                keys: ["whatson.hierarchy.folder"]
-
-                                onDropped: function (drop) {
-                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drop);
-                                    const accepted = sidebarHierarchyView.moveFolderBefore(sourceIndex, index);
-                                    sidebarHierarchyView.resetDropTargets();
-                                    if (!accepted)
-                                        return;
-                                    sidebarController.notifyAcceptedInteraction("move-folder-before");
-                                }
-                                onEntered: function (drag) {
-                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
-                                    sidebarHierarchyView.noteDropTargetIndex = -1;
-                                    sidebarHierarchyView.rootDropHighlighted = false;
-                                    sidebarHierarchyView.folderDropTargetIndex = sidebarHierarchyView.canAcceptFolderDropBefore(sourceIndex, index) ? index : -1;
-                                    sidebarHierarchyView.folderDropAsChild = false;
-                                    sidebarHierarchyView.folderDropBefore = true;
-                                }
-                                onExited: {
-                                    if (sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropBefore)
-                                        sidebarHierarchyView.folderDropTargetIndex = -1;
-                                }
-                            }
-                            DropArea {
-                                anchors.fill: parent
-                                keys: ["whatson.library.note"]
-
-                                onDropped: function (drop) {
-                                    const noteId = sidebarHierarchyView.draggedNoteId(drop);
-                                    const accepted = sidebarHierarchyView.assignNoteToFolder(index, noteId);
-                                    sidebarHierarchyView.resetDropTargets();
-                                    if (!accepted)
-                                        return;
-                                    sidebarController.notifyAcceptedInteraction("drop-note-to-folder");
-                                }
-                                onEntered: function (drag) {
-                                    const noteId = sidebarHierarchyView.draggedNoteId(drag);
-                                    sidebarHierarchyView.folderDropTargetIndex = -1;
-                                    sidebarHierarchyView.folderDropBefore = false;
-                                    sidebarHierarchyView.rootDropHighlighted = false;
-                                    sidebarHierarchyView.noteDropTargetIndex = sidebarHierarchyView.canAcceptNoteDrop(index, noteId) ? index : -1;
-                                }
-                                onExited: {
-                                    if (sidebarHierarchyView.noteDropTargetIndex === index)
-                                        sidebarHierarchyView.noteDropTargetIndex = -1;
-                                }
-                            }
-                            DropArea {
-                                anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 4
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.topMargin: 4
-                                keys: ["whatson.hierarchy.folder"]
-
-                                onDropped: function (drop) {
-                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drop);
-                                    const accepted = sidebarHierarchyView.moveFolder(sourceIndex, index, true);
-                                    sidebarHierarchyView.resetDropTargets();
-                                    if (!accepted)
-                                        return;
-                                    sidebarController.notifyAcceptedInteraction("move-folder-child");
-                                }
-                                onEntered: function (drag) {
-                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
-                                    sidebarHierarchyView.noteDropTargetIndex = -1;
-                                    sidebarHierarchyView.rootDropHighlighted = false;
-                                    sidebarHierarchyView.folderDropTargetIndex = sidebarHierarchyView.canAcceptFolderDrop(sourceIndex, index, true) ? index : -1;
-                                    sidebarHierarchyView.folderDropAsChild = true;
-                                    sidebarHierarchyView.folderDropBefore = false;
-                                }
-                                onExited: {
-                                    if (sidebarHierarchyView.folderDropTargetIndex === index && sidebarHierarchyView.folderDropAsChild)
-                                        sidebarHierarchyView.folderDropTargetIndex = -1;
-                                }
-                            }
-                            DropArea {
-                                anchors.bottom: parent.bottom
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                height: 6
-                                keys: ["whatson.hierarchy.folder"]
-
-                                onDropped: function (drop) {
-                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drop);
-                                    const accepted = sidebarHierarchyView.moveFolder(sourceIndex, index, false);
-                                    sidebarHierarchyView.resetDropTargets();
-                                    if (!accepted)
-                                        return;
-                                    sidebarController.notifyAcceptedInteraction("move-folder-sibling");
-                                }
-                                onEntered: function (drag) {
-                                    const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
-                                    sidebarHierarchyView.noteDropTargetIndex = -1;
-                                    sidebarHierarchyView.rootDropHighlighted = false;
-                                    sidebarHierarchyView.folderDropTargetIndex = sidebarHierarchyView.canAcceptFolderDrop(sourceIndex, index, false) ? index : -1;
-                                    sidebarHierarchyView.folderDropAsChild = false;
-                                    sidebarHierarchyView.folderDropBefore = false;
-                                }
-                                onExited: {
-                                    if (sidebarHierarchyView.folderDropTargetIndex === index && !sidebarHierarchyView.folderDropAsChild && !sidebarHierarchyView.folderDropBefore)
-                                        sidebarHierarchyView.folderDropTargetIndex = -1;
-                                }
-                            }
-                            Item {
-                                id: renameOverlay
-
-                                anchors.fill: parent
-                                visible: index === sidebarHierarchyView.editingIndex
-                                z: 2
-
-                                onVisibleChanged: {
-                                    if (visible)
-                                        Qt.callLater(function () {
-                                            renameTextInput.forceActiveFocus();
-                                            renameTextInput.selectAll();
-                                        });
-                                }
+                                height: targetItem ? targetItem.height : 0
+                                visible: targetItem !== null && targetItem.visible !== false && height > 0
+                                width: targetItem ? targetItem.width : hierarchyViewport.width
+                                x: targetItem ? targetItem.x : 0
+                                y: targetItem ? targetItem.y : 0
 
                                 Rectangle {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: renameLeftInset
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: renameRightInset
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: LV.Theme.panelBackground10
-                                    height: 20
-                                    radius: 4
+                                    anchors.fill: parent
+                                    color: LV.Theme.accentBlueMuted
+                                    opacity: 0.4
+                                    visible: overlayDelegate.noteDropHighlighted
                                 }
-                                TextInput {
-                                    id: renameTextInput
+                                MouseArea {
+                                    acceptedButtons: Qt.LeftButton
+                                    anchors.fill: parent
+                                    enabled: overlayDelegate.dragLocked
 
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: renameLeftInset + LV.Theme.gap3
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: renameRightInset + LV.Theme.gap3
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    clip: true
-                                    color: LV.Theme.titleHeaderColor
-                                    font.pixelSize: LV.Theme.textBody
-                                    font.weight: LV.Theme.textBodyWeight
-                                    height: 20
-                                    renderType: Text.NativeRendering
-                                    selectByMouse: true
-                                    selectionColor: LV.Theme.accentBlue
-                                    text: sidebarHierarchyView.editingText
-                                    verticalAlignment: TextInput.AlignVCenter
+                                    onClicked: {
+                                        hierarchyAdapter.activateKey(overlayDelegate.itemKey);
+                                    }
+                                }
+                                TapHandler {
+                                    acceptedButtons: Qt.LeftButton
+                                    enabled: !overlayDelegate.dragLocked && hierarchyAdapter.canRenameKey(overlayDelegate.itemKey)
+                                    gesturePolicy: TapHandler.DragThreshold
 
-                                    Keys.onEscapePressed: function (event) {
-                                        sidebarHierarchyView.cancelRename();
-                                        event.accepted = true;
+                                    onDoubleTapped: {
+                                        sidebarHierarchyView.beginRenameKey(overlayDelegate.itemKey, hierarchyAdapter.labelForKey(overlayDelegate.itemKey));
                                     }
-                                    Keys.onReturnPressed: function (event) {
-                                        sidebarHierarchyView.commitRename();
-                                        event.accepted = true;
+                                }
+                                DropArea {
+                                    anchors.fill: parent
+                                    enabled: hierarchyAdapter.noteDropEnabled
+                                    keys: ["whatson.library.note"]
+
+                                    onDropped: function (drop) {
+                                        const noteId = sidebarHierarchyView.draggedNoteId(drop);
+                                        const accepted = hierarchyAdapter.assignNoteToKey(overlayDelegate.itemKey, noteId);
+                                        sidebarHierarchyView.noteDropTargetKey = "";
+                                        if (!accepted)
+                                            return;
+                                        sidebarHierarchyView.requestViewHook("drop-note-to-folder");
                                     }
-                                    onAccepted: sidebarHierarchyView.commitRename()
-                                    onActiveFocusChanged: {
-                                        if (!activeFocus && index === sidebarHierarchyView.editingIndex)
-                                            sidebarHierarchyView.commitRename();
+                                    onEntered: function (drag) {
+                                        const noteId = sidebarHierarchyView.draggedNoteId(drag);
+                                        sidebarHierarchyView.noteDropTargetKey = hierarchyAdapter.canAcceptNoteDrop(overlayDelegate.itemKey, noteId) ? overlayDelegate.itemKey : "";
                                     }
-                                    onTextChanged: {
-                                        if (index === sidebarHierarchyView.editingIndex && sidebarHierarchyView.editingText !== text)
-                                            sidebarHierarchyView.editingText = text;
+                                    onExited: {
+                                        if (sidebarHierarchyView.noteDropTargetKey === overlayDelegate.itemKey)
+                                            sidebarHierarchyView.noteDropTargetKey = "";
                                     }
                                 }
                             }
                         }
-                    }
-                }
-                Item {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: hierarchyList.bottom
-                    height: Math.max(0, hierarchyViewport.height - hierarchyList.implicitHeight)
-                    visible: height > 0
+                        Item {
+                            id: renameOverlay
 
-                    TapHandler {
-                        acceptedButtons: Qt.LeftButton
+                            readonly property var targetItem: sidebarHierarchyView.targetItemForKey(sidebarHierarchyView.editingItemKey)
 
-                        onTapped: {
-                            sidebarHierarchyView.clearHierarchySelection();
+                            height: targetItem ? targetItem.height : 0
+                            visible: sidebarHierarchyView.editingItemKey.length > 0 && targetItem !== null
+                            width: targetItem ? targetItem.width : hierarchyViewport.width
+                            x: targetItem ? targetItem.x : 0
+                            y: targetItem ? targetItem.y : 0
+                            z: 20
+
+                            onVisibleChanged: {
+                                if (visible)
+                                    Qt.callLater(function () {
+                                        renameTextInput.forceActiveFocus();
+                                        renameTextInput.selectAll();
+                                    });
+                            }
+
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.leftMargin: LV.Theme.gap8 + (renameOverlay.targetItem && renameOverlay.targetItem.indentLevel !== undefined ? renameOverlay.targetItem.indentLevel * 8 : 0) + ((typeof LV.Theme.iconSm === "number" && isFinite(LV.Theme.iconSm)) ? LV.Theme.iconSm : 16) + ((typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2)
+                                anchors.right: parent.right
+                                anchors.rightMargin: LV.Theme.gap8
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: LV.Theme.panelBackground10
+                                height: 20
+                                radius: 4
+                            }
+                            TextInput {
+                                id: renameTextInput
+
+                                anchors.left: parent.left
+                                anchors.leftMargin: LV.Theme.gap8 + (renameOverlay.targetItem && renameOverlay.targetItem.indentLevel !== undefined ? renameOverlay.targetItem.indentLevel * 8 : 0) + ((typeof LV.Theme.iconSm === "number" && isFinite(LV.Theme.iconSm)) ? LV.Theme.iconSm : 16) + ((typeof LV.Theme.gap2 === "number" && isFinite(LV.Theme.gap2)) ? LV.Theme.gap2 : 2) + LV.Theme.gap3
+                                anchors.right: parent.right
+                                anchors.rightMargin: LV.Theme.gap8 + LV.Theme.gap3
+                                anchors.verticalCenter: parent.verticalCenter
+                                clip: true
+                                color: LV.Theme.titleHeaderColor
+                                font.pixelSize: LV.Theme.textBody
+                                font.weight: LV.Theme.textBodyWeight
+                                height: 20
+                                renderType: Text.NativeRendering
+                                selectByMouse: true
+                                selectionColor: LV.Theme.accentBlue
+                                text: sidebarHierarchyView.editingText
+                                verticalAlignment: TextInput.AlignVCenter
+
+                                Keys.onEscapePressed: function (event) {
+                                    sidebarHierarchyView.cancelRename();
+                                    event.accepted = true;
+                                }
+                                Keys.onReturnPressed: function (event) {
+                                    sidebarHierarchyView.commitRename();
+                                    event.accepted = true;
+                                }
+                                onAccepted: sidebarHierarchyView.commitRename()
+                                onActiveFocusChanged: {
+                                    if (!activeFocus && sidebarHierarchyView.editingItemKey.length > 0)
+                                        sidebarHierarchyView.commitRename();
+                                }
+                                onTextChanged: {
+                                    if (sidebarHierarchyView.editingText !== text)
+                                        sidebarHierarchyView.editingText = text;
+                                }
+                            }
                         }
                     }
                 }
@@ -637,16 +415,12 @@ Item {
                     if (!sidebarHierarchyView.createFolderEnabled)
                         return;
                     sidebarHierarchyView.commitRename();
-                    if (sidebarHierarchyView.hierarchyViewModel)
+                    if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.createFolder)
                         sidebarHierarchyView.hierarchyViewModel.createFolder();
-                    if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.selectedIndex >= 0) {
-                        var createdIndex = sidebarHierarchyView.hierarchyViewModel.selectedIndex;
-                        sidebarHierarchyView.activateSelectedHierarchyItem(true);
-                        if (sidebarHierarchyView.canRenameAtIndex(createdIndex))
-                            Qt.callLater(function () {
-                                sidebarHierarchyView.beginRename(createdIndex, sidebarHierarchyView.hierarchyViewModel.itemLabel(createdIndex));
-                            });
-                    }
+                    Qt.callLater(function () {
+                        if (sidebarHierarchyView.selectedItemKey.length > 0 && hierarchyAdapter.canRenameKey(sidebarHierarchyView.selectedItemKey))
+                            sidebarHierarchyView.beginRenameKey(sidebarHierarchyView.selectedItemKey, hierarchyAdapter.labelForKey(sidebarHierarchyView.selectedItemKey));
+                    });
                 }
             })
         button2: ({
@@ -657,7 +431,7 @@ Item {
                     if (!sidebarHierarchyView.deleteFolderEnabled)
                         return;
                     sidebarHierarchyView.cancelRename();
-                    if (sidebarHierarchyView.hierarchyViewModel)
+                    if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.deleteSelectedFolder)
                         sidebarHierarchyView.hierarchyViewModel.deleteSelectedFolder();
                 }
             })

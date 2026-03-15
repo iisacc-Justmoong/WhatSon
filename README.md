@@ -48,23 +48,17 @@ WhatSon is an LVRS-based Qt Quick application.
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that shared
   backend object before passing child bindings down into the sidebar, note list, and editor.
 - `SidebarHierarchyView.qml` opens inline folder rename from both `Enter/Return` and mouse double-tap on the folder row.
-- Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
-  reparent them by drag-and-drop instead of only through model-side helpers. The sidebar now distinguishes `before`,
-  `after`, `child`, and root-top extraction drop zones so users can control both insertion index and hierarchy depth
-  directly from the tree UI. The row-activation path is now drag-first / click-select-later: LVRS `HierarchyItem`
-  activation no longer fires on raw press, and WhatSon mirrors selection from `HierarchyList.activeChanged` after the
-  click/release path settles. While a folder drag is active, the hierarchy viewport also stops treating the gesture as
-  scroll input and forwards LVRS `dragPreviewActive` so the grabbed row has visible feedback. Only the double-tap
-  rename gesture remains on a separate handler.
-- Clicking the blank viewport area below the last hierarchy row now clears both the active `LV.HierarchyItem` and the
-  bound hierarchy view-model selection, so row focus does not remain stuck when the tree is shorter than the sidebar.
-- `SidebarHierarchyView.qml` also disables LVRS first-item auto-activation for that tree, otherwise a blank-area
-  deselect would immediately re-highlight the first enabled row and appear visually unchanged.
-- `SidebarHierarchyView.qml` now hosts those rows through a local `HierarchyListCompat.qml` adapter because the current
-  LVRS `HierarchyList` no longer exposes the old `autoSelectFirstItem` contract directly. The adapter keeps manual-row
-  visibility refresh, explicit blank-area deselect, `activeChanged` mirroring, `activateByKey(...)` lookup, and
-  single-active-item selection stable across LVRS updates. Hierarchy rows now also forward a stable `itemKey` from the
-  backing hierarchy model instead of relying only on transient row indexes.
+- Folder rows are now rendered through LVRS `HierarchyList` directly instead of a local list engine.
+  `SidebarHierarchyView.qml`
+  binds `model: hierarchyAdapter.nodes`, `itemKeyRole: "key"`, and `editable: hierarchyAdapter.editable`, then persists
+  reorders and reparents from `HierarchyList.itemMoved(...)` through `applyHierarchyNodes(...)` on the active
+  hierarchy view-model.
+- `SidebarHierarchyLvrsAdapter` is now the only WhatSon-specific bridge in that path. It converts each domain
+  hierarchy view-model's `depthItems()` output into LVRS node arrays, mirrors `selectedIndex` back into
+  `HierarchyList.activateByKey(...)`, exposes protected-row `dragLocked` state, forwards inline rename to
+  `renameItem(...)`, and routes note drops to `assignNoteToFolder(...)`.
+- Search now filters the LVRS node array inside `SidebarHierarchyLvrsAdapter`. While a hierarchy search is active,
+  editable LVRS moves are disabled so partial search results cannot be committed back as a truncated hierarchy tree.
 - Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
   affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
   assignments behind on stale folder IDs.
@@ -135,12 +129,10 @@ WhatSon is an LVRS-based Qt Quick application.
 - The note-card delegate reads `model.<role>` directly from the runtime role object instead of passing every field
   through a dynamic role-extraction helper, which keeps note preview bindings simpler and avoids silent blank-card
   regressions when a helper is removed.
-- `SidebarHierarchyView.qml` composes `SidebarHierarchyInteractionController.qml` as the single drag/drop interaction
-  owner for hierarchy rows. Folder reparenting and note-to-folder drops both route through that controller into
-  `LibraryHierarchyViewModel`, so dragging a note card onto a library folder appends that folder assignment in the
-  note header and refreshes the visible note lists immediately. The same controller also keeps a short-lived pending
-  hierarchy-activation replay, so two rapid folder clicks still leave the last tapped folder selected even if the
-  first selection triggered focus/refresh work in between.
+- `SidebarHierarchyView.qml` no longer composes a local hierarchy interaction engine. Folder reparenting and note
+  drops stay centered on the LVRS list plus `SidebarHierarchyLvrsAdapter`: LVRS owns row activation, lookup, and drag
+  editing, while the adapter commits the mutated node array into `LibraryHierarchyViewModel` or
+  `ProjectsHierarchyViewModel` and keeps note-to-folder drops routed through `assignNoteToFolder(...)`.
 - `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
   `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
   `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,
@@ -184,9 +176,10 @@ WhatSon is an LVRS-based Qt Quick application.
   have been property assignments. Critical `ContentsDisplayView.qml` helper bodies are also asserted to keep their
   explicit `return` statements.
 - The same guard suite now also checks the centralized MVVM contract boundaries for the data-driven views: sidebar
-  hierarchy state must stay anchored in `SidebarHierarchyViewModel`, sidebar rename/drag-drop state must stay routed
-  through `SidebarHierarchyInteractionController.qml`, and editor-side selection/persistence/text/gutter contracts
-  must stay split across the dedicated editor adapters instead of collapsing back into one bridge.
+  hierarchy state must stay anchored in `SidebarHierarchyViewModel`, hierarchy rendering must keep using LVRS
+  `HierarchyList` plus `SidebarHierarchyLvrsAdapter` instead of falling back to local compatibility wrappers, and
+  editor-side selection/persistence/text/gutter contracts must stay split across the dedicated editor adapters instead
+  of collapsing back into one bridge.
 - `tests/app/test_solid_architecture_contracts.cpp` now locks those shell/sidebar/editor boundaries as SOLID-facing
   contracts: sidebar state must stay single-sourced behind the interface-driven `SidebarHierarchyViewModel`, editor
   adapters must stay role-segregated, and the QML assembly must keep dedicated interaction/session/helper objects

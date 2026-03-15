@@ -4,6 +4,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
+#include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
 #include <QDebug>
 #include <QDir>
@@ -91,6 +92,42 @@ namespace
 
         WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&items);
         return items;
+    }
+
+    QString normalizedProjectKeySegment(const QString& label, int index)
+    {
+        const QString normalizedLabel = label.trimmed();
+        if (!normalizedLabel.isEmpty())
+        {
+            return normalizedLabel;
+        }
+        return QStringLiteral("item:%1").arg(index);
+    }
+
+    QString projectsHierarchyItemKey(const QVector<ProjectsHierarchyItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+
+        QStringList pathSegments;
+        pathSegments.reserve(std::max(1, items.at(index).depth + 1));
+        pathSegments.push_front(normalizedProjectKeySegment(items.at(index).label, index));
+
+        int expectedDepth = items.at(index).depth;
+        for (int cursor = index - 1; cursor >= 0 && expectedDepth > 0; --cursor)
+        {
+            const ProjectsHierarchyItem& candidate = items.at(cursor);
+            if (candidate.depth != expectedDepth - 1)
+            {
+                continue;
+            }
+            pathSegments.push_front(normalizedProjectKeySegment(candidate.label, cursor));
+            expectedDepth = candidate.depth;
+        }
+
+        return pathSegments.join(QLatin1Char('/'));
     }
 
     enum class FolderDropPlacement
@@ -345,7 +382,14 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList ProjectsHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::ProjectsSupport::serializeDepthItems(m_items);
+    QVariantList serialized = WhatSon::Hierarchy::ProjectsSupport::serializeDepthItems(m_items);
+    for (int index = 0; index < serialized.size() && index < m_items.size(); ++index)
+    {
+        QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("key"), projectsHierarchyItemKey(m_items, index));
+        serialized[index] = entry;
+    }
+    return serialized;
 }
 
 QString ProjectsHierarchyViewModel::itemLabel(int index) const
@@ -607,6 +651,41 @@ bool ProjectsHierarchyViewModel::moveFolderToRoot(int sourceIndex)
     return commitHierarchyUpdate(
         stageFolderMoveItems(m_items, sourceIndex, operation),
         operation.normalizedInsertIndex);
+}
+
+bool ProjectsHierarchyViewModel::applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey)
+{
+    const QVector<WhatSon::Sidebar::Lvrs::FlatNode> flattened =
+        WhatSon::Sidebar::Lvrs::flattenHierarchyNodes(hierarchyNodes);
+    if (flattened.isEmpty())
+    {
+        return false;
+    }
+
+    QVector<ProjectsHierarchyItem> stagedItems;
+    stagedItems.reserve(flattened.size());
+
+    int selectedIndex = -1;
+    const QString normalizedActiveKey = activeItemKey.trimmed();
+    for (int flatIndex = 0; flatIndex < flattened.size(); ++flatIndex)
+    {
+        const WhatSon::Sidebar::Lvrs::FlatNode& node = flattened.at(flatIndex);
+        if (node.key == normalizedActiveKey)
+        {
+            selectedIndex = flatIndex;
+        }
+
+        ProjectsHierarchyItem item;
+        item.depth = std::max(0, node.depth);
+        item.label = node.label.trimmed();
+        item.accent = node.accent;
+        item.expanded = node.expanded;
+        item.showChevron = node.showChevron;
+        stagedItems.push_back(std::move(item));
+    }
+
+    WhatSon::Hierarchy::ProjectsSupport::applyChevronByDepth(&stagedItems);
+    return commitHierarchyUpdate(std::move(stagedItems), selectedIndex);
 }
 
 void ProjectsHierarchyViewModel::setProjectNames(QStringList projectNames)

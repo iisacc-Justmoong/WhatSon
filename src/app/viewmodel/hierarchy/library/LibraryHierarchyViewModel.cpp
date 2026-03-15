@@ -16,6 +16,7 @@
 #include "file/note/WhatSonNoteHeaderStore.hpp"
 #include "file/note/WhatSonNoteLinkManagerCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
+#include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -1588,11 +1589,31 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
 {
     QVariantList serializedItems;
     serializedItems.reserve(m_items.size());
-    for (const LibraryHierarchyItem& item : m_items)
+    for (int index = 0; index < m_items.size(); ++index)
     {
+        const LibraryHierarchyItem& item = m_items.at(index);
+        QString itemKey = normalizeFolderPath(item.folderPath);
+        if (item.systemBucket == LibraryHierarchyItem::SystemBucket::All)
+        {
+            itemKey = QStringLiteral("bucket:all");
+        }
+        else if (item.systemBucket == LibraryHierarchyItem::SystemBucket::Draft)
+        {
+            itemKey = QStringLiteral("bucket:draft");
+        }
+        else if (item.systemBucket == LibraryHierarchyItem::SystemBucket::Today)
+        {
+            itemKey = QStringLiteral("bucket:today");
+        }
+        else if (itemKey.isEmpty())
+        {
+            itemKey = QStringLiteral("item:%1").arg(index);
+        }
+
         serializedItems.push_back(QVariantMap{
             {"label", item.label},
             {"id", item.folderPath},
+            {"key", itemKey},
             {"depth", item.depth},
             {"accent", item.accent},
             {"expanded", item.expanded},
@@ -2184,6 +2205,99 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                               .arg(index)
                               .arg(noteId, targetFolderPath));
     return true;
+}
+
+bool LibraryHierarchyViewModel::applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey)
+{
+    const QVector<WhatSon::Sidebar::Lvrs::FlatNode> flattened =
+        WhatSon::Sidebar::Lvrs::flattenHierarchyNodes(hierarchyNodes);
+    if (flattened.isEmpty())
+    {
+        return false;
+    }
+
+    QVector<LibraryHierarchyItem> stagedItems;
+    stagedItems.reserve(flattened.size());
+
+    int selectedIndex = -1;
+    const QString normalizedActiveKey = activeItemKey.trimmed();
+    for (int flatIndex = 0; flatIndex < flattened.size(); ++flatIndex)
+    {
+        const WhatSon::Sidebar::Lvrs::FlatNode& node = flattened.at(flatIndex);
+        if (node.key == normalizedActiveKey)
+        {
+            selectedIndex = flatIndex;
+        }
+
+        LibraryHierarchyItem item;
+        const bool validSourceIndex = node.sourceIndex >= 0 && node.sourceIndex < m_items.size();
+        if (validSourceIndex && m_items.at(node.sourceIndex).systemBucket != LibraryHierarchyItem::SystemBucket::None)
+        {
+            item = m_items.at(node.sourceIndex);
+            item.depth = 0;
+            item.accent = true;
+            item.expanded = false;
+            item.showChevron = false;
+            item.folderPath.clear();
+        }
+        else
+        {
+            item.depth = std::max(0, node.depth);
+            item.label = node.label.trimmed();
+            item.accent = false;
+            item.expanded = node.expanded;
+            item.showChevron = node.showChevron;
+            if (validSourceIndex)
+            {
+                item.folderPath = normalizeFolderPath(m_items.at(node.sourceIndex).folderPath);
+            }
+            else if (!node.id.isEmpty())
+            {
+                item.folderPath = normalizeFolderPath(node.id);
+            }
+            else
+            {
+                item.folderPath = normalizeFolderPath(node.key);
+            }
+        }
+
+        stagedItems.push_back(std::move(item));
+    }
+
+    finalizeFolderItems(&stagedItems, false);
+
+    QHash<QString, QString> movedFolderPathMap;
+    for (int flatIndex = 0; flatIndex < flattened.size() && flatIndex < stagedItems.size(); ++flatIndex)
+    {
+        const WhatSon::Sidebar::Lvrs::FlatNode& node = flattened.at(flatIndex);
+        const LibraryHierarchyItem& stagedItem = stagedItems.at(flatIndex);
+        if (stagedItem.systemBucket != LibraryHierarchyItem::SystemBucket::None)
+        {
+            continue;
+        }
+
+        QString previousFolderPath;
+        if (node.sourceIndex >= 0 && node.sourceIndex < m_items.size())
+        {
+            previousFolderPath = normalizeFolderPath(m_items.at(node.sourceIndex).folderPath);
+        }
+        else if (!node.id.isEmpty())
+        {
+            previousFolderPath = normalizeFolderPath(node.id);
+        }
+        else
+        {
+            previousFolderPath = normalizeFolderPath(node.key);
+        }
+
+        const QString nextFolderPath = normalizeFolderPath(stagedItem.folderPath);
+        if (!previousFolderPath.isEmpty() && previousFolderPath != nextFolderPath)
+        {
+            movedFolderPathMap.insert(previousFolderPath, nextFolderPath);
+        }
+    }
+
+    return commitFolderHierarchyUpdate(std::move(stagedItems), selectedIndex, movedFolderPathMap);
 }
 
 bool LibraryHierarchyViewModel::createEmptyNote()

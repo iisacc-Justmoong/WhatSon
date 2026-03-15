@@ -47,6 +47,7 @@ public:
     Q_INVOKABLE bool moveFolder(int sourceIndex, int targetIndex, bool asChild);
     Q_INVOKABLE bool canMoveFolderToRoot(int sourceIndex) const;
     Q_INVOKABLE bool moveFolderToRoot(int sourceIndex);
+    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey = QString());
 
     void setProjectNames(QStringList projectNames);
     QStringList projectNames() const;
