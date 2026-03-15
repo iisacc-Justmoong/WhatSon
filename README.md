@@ -62,8 +62,9 @@ WhatSon is an LVRS-based Qt Quick application.
   deselect would immediately re-highlight the first enabled row and appear visually unchanged.
 - `SidebarHierarchyView.qml` now hosts those rows through a local `HierarchyListCompat.qml` adapter because the current
   LVRS `HierarchyList` no longer exposes the old `autoSelectFirstItem` contract directly. The adapter keeps manual-row
-  visibility refresh, explicit blank-area deselect, `activeChanged` mirroring, and single-active-item selection stable
-  across LVRS updates.
+  visibility refresh, explicit blank-area deselect, `activeChanged` mirroring, `activateByKey(...)` lookup, and
+  single-active-item selection stable across LVRS updates. Hierarchy rows now also forward a stable `itemKey` from the
+  backing hierarchy model instead of relying only on transient row indexes.
 - Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
   affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
   assignments behind on stale folder IDs.

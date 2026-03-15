@@ -31,7 +31,8 @@ public:
         IndentLevelRole,
         AccentRole,
         ExpandedRole,
-        ShowChevronRole
+        ShowChevronRole,
+        ItemKeyRole
     };
 
     Q_ENUM(Role)

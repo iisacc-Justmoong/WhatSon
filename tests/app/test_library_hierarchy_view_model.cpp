@@ -863,10 +863,19 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
         viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("Research"));
     QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::ItemKeyRole).toString(),
+        QStringLiteral("Research"));
+    QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::DepthRole).toInt(),
         1);
     QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::ItemKeyRole).toString(),
+        QStringLiteral("Research/Competitor"));
+    QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(5, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Brand"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(5, 0), LibraryHierarchyModel::ItemKeyRole).toString(),
         QStringLiteral("Brand"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ShowChevronRole)

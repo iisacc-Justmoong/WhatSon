@@ -752,15 +752,24 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("manualActivationOnly: true")),
         "SidebarHierarchyView.qml must suppress LVRS raw-press activation and leave authoritative row selection to the tap-release path.");
     QVERIFY2(
+        hierarchyListCompatText.contains(QStringLiteral("property bool manualActivationOnly: false")),
+        "HierarchyListCompat.qml must expose manualActivationOnly so SidebarHierarchyView can explicitly suppress raw LVRS press activation without crashing at load time.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
             "onTapped: {\n                                    sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);")),
         "SidebarHierarchyView.qml must explicitly activate hierarchy rows on tap release so rapid clicks are not lost behind LVRS refresh timing.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("itemKey: hierarchyDelegate.itemKeyValue")),
+        "SidebarHierarchyView.qml must forward a stable itemKey into LVRS HierarchyItem instead of relying on transient row indexes.");
     QVERIFY2(
         hierarchyListCompatText.contains(QStringLiteral("return items;")),
         "HierarchyListCompat.qml must return its managed LVRS hierarchy items so activeItem remains single-sourced.");
     QVERIFY2(
         hierarchyListCompatText.contains(QStringLiteral("control.activeItem = item;")),
         "HierarchyListCompat.qml must keep a single activeItem instead of leaving selection state distributed across delegates.");
+    QVERIFY2(
+        hierarchyListCompatText.contains(QStringLiteral("function activateByKey(itemKey)")),
+        "HierarchyListCompat.qml must preserve the LVRS activateByKey lookup path so hierarchy activation can stay keyed to stable identities.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function canMoveFolder(index)")),
         "SidebarHierarchyView.qml must expose canMoveFolder(index) wrapper for folder drag gating.");

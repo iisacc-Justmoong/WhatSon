@@ -7,11 +7,30 @@ Item {
     property int activeItemId: -1
     property string activeItemKey: ""
     property bool autoSelectFirstItem: true
+    property int itemCount: 0
     default property alias items: itemsColumn.data
     property bool keyboardNavigationEnabled: true
+    property bool manualActivationOnly: false
+    property int visibleItemCount: 0
 
     signal activeChanged(var item, int itemId, int index)
+    signal ensureVisibleRequested(real y, real height)
+    signal expansionChanged(var item, bool expanded, int index)
 
+    function activateById(itemId) {
+        const item = resolveById(itemId);
+        if (!item)
+            return false;
+        requestActivate(item, true);
+        return true;
+    }
+    function activateByKey(itemKey) {
+        const item = resolveByKey(itemKey);
+        if (!item)
+            return false;
+        requestActivate(item, true);
+        return true;
+    }
     function activateFirstManagedItem() {
         const items = managedItems();
         for (let index = 0; index < items.length; ++index) {
@@ -30,6 +49,22 @@ Item {
         control.activeItemId = -1;
         control.activeItemKey = "";
         control.activeChanged(null, -1, -1);
+    }
+    function indexOfItem(item) {
+        return managedItems().indexOf(item);
+    }
+    function isItemVisible(itemOrIndex) {
+        if (typeof itemOrIndex === "number") {
+            const index = Math.floor(Number(itemOrIndex));
+            const items = managedItems();
+            if (index < 0 || index >= items.length)
+                return false;
+            const indexedItem = items[index];
+            return !!indexedItem && indexedItem.enabled !== false && indexedItem.rowVisible !== false;
+        }
+
+        const item = itemOrIndex;
+        return !!item && item.enabled !== false && item.rowVisible !== false;
     }
     function managedItems() {
         const items = [];
@@ -64,6 +99,11 @@ Item {
         return rawItemKey.length > 0 ? rawItemKey : String(Math.max(0, Math.floor(index)));
     }
     function notifyExpansionChanged(item) {
+        const items = managedItems();
+        const index = items.indexOf(item);
+        control.refreshManagedItemCounts(items);
+        if (index >= 0)
+            control.expansionChanged(item, item ? !!item.expanded : false, index);
         control.scheduleRefreshState();
         if (control.activeItem && control.activeItem !== item && control.activeItem.rowVisible === false)
             control.requestActivate(item, true);
@@ -124,6 +164,7 @@ Item {
 
         if (changed)
             control.activeChanged(item, nextItemId, index);
+        control.ensureVisibleRequested(item.y, item.height);
         if (control.keyboardNavigationEnabled && !control.activeFocus)
             control.forceActiveFocus();
     }
@@ -148,6 +189,7 @@ Item {
         }
 
         control.refreshVisibility(items);
+        control.refreshManagedItemCounts(items);
         control.scheduleNormalizeActiveItem();
     }
     function syncManagedItems() {

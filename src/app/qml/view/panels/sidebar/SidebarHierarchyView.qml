@@ -336,6 +336,12 @@ Item {
                                     return 0;
                                 return Math.max(0, Math.floor(parsed));
                             }
+                            readonly property string itemKeyValue: {
+                                if (model.itemKey === undefined || model.itemKey === null)
+                                    return String(index);
+                                var rawItemKey = String(model.itemKey).trim();
+                                return rawItemKey.length > 0 ? rawItemKey : String(index);
+                            }
                             readonly property string itemLabel: model.label === undefined || model.label === null ? "" : String(model.label)
                             readonly property bool itemShowChevron: model.showChevron === undefined ? false : !!model.showChevron
                             readonly property bool matchesSearch: sidebarHierarchyView.matchesSearchText(itemLabel)
@@ -359,6 +365,7 @@ Item {
                             indentLevel: hierarchyDelegate.itemIndentLevel
                             indentStep: sidebarHierarchyView.hierarchyIndentStep
                             itemId: index
+                            itemKey: hierarchyDelegate.itemKeyValue
                             label: index === sidebarHierarchyView.editingIndex ? "" : hierarchyDelegate.itemLabel
                             opacity: folderDragHandler.active ? 0.72 : 1
                             showChevron: hierarchyDelegate.itemShowChevron

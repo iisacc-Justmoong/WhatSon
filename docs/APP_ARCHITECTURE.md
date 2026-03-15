@@ -538,8 +538,8 @@ Hierarchy rendering pipeline:
       accepted move/drop execution, and hook dispatch for the hierarchy surface.
     - `HierarchyListCompat.qml` is the local adapter between `SidebarHierarchyView.qml` and LVRS `HierarchyItem`.
       It preserves WhatSon's explicit `autoSelectFirstItem: false` blank-area deselect behavior while still updating
-      manual row visibility from indent/expanded state and keeping hierarchy activation single-sourced behind one
-      `activeItem`.
+      manual row visibility from indent/expanded state, exposing `activateByKey(...)` for keyed activation, and keeping
+      hierarchy activation single-sourced behind one `activeItem`.
     - Hierarchy list data source is strictly `activeDomainViewModel.itemModel` (store-backed model path only).
       UI-side external depth/model injection is intentionally disabled to prevent arbitrary model substitution.
     - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
@@ -562,7 +562,9 @@ Hierarchy rendering pipeline:
               `HierarchyItem` no longer activates on raw press, and WhatSon mirrors active-row changes from
               `HierarchyList.activeChanged` into the bound hierarchy view-model after the click/release path settles.
               While a folder drag is active, the viewport disables scrolling and the dragged row forwards LVRS
-              `dragPreviewActive` so the grab state is visually explicit.
+              `dragPreviewActive` so the grab state is visually explicit. Delegates also forward a stable `itemKey`
+              from the backing hierarchy model so LVRS activation and drag state do not rely solely on mutable row
+              indexes.
             - Blank-area deselect policy: when the visible hierarchy is shorter than the sidebar viewport, the blank
               area
               below the last row clears both the active LVRS hierarchy item and the bound view-model selection. The host

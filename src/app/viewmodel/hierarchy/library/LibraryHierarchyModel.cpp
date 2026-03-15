@@ -13,6 +13,35 @@ namespace
         QString message;
         QVariantMap context;
     };
+
+    QString libraryHierarchyItemKey(const LibraryHierarchyItem& item, int index)
+    {
+        switch (item.systemBucket)
+        {
+        case LibraryHierarchyItem::SystemBucket::All:
+            return QStringLiteral("bucket:all");
+        case LibraryHierarchyItem::SystemBucket::Draft:
+            return QStringLiteral("bucket:draft");
+        case LibraryHierarchyItem::SystemBucket::Today:
+            return QStringLiteral("bucket:today");
+        case LibraryHierarchyItem::SystemBucket::None:
+            break;
+        }
+
+        const QString folderPath = item.folderPath.trimmed();
+        if (!folderPath.isEmpty())
+        {
+            return folderPath;
+        }
+
+        const QString label = item.label.trimmed();
+        if (!label.isEmpty())
+        {
+            return QStringLiteral("label:%1").arg(label);
+        }
+
+        return QStringLiteral("item:%1").arg(index);
+    }
 }
 
 LibraryHierarchyModel::LibraryHierarchyModel(QObject* parent)
@@ -57,6 +86,8 @@ QVariant LibraryHierarchyModel::data(const QModelIndex& index, int role) const
                 && m_items.at(nextIndex).depth > item.depth;
             return hasChild;
         }
+    case ItemKeyRole:
+        return libraryHierarchyItemKey(item, index.row());
     default:
         return {};
     }
@@ -70,7 +101,8 @@ QHash<int, QByteArray> LibraryHierarchyModel::roleNames() const
         {IndentLevelRole, "indentLevel"},
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
-        {ShowChevronRole, "showChevron"}
+        {ShowChevronRole, "showChevron"},
+        {ItemKeyRole, "itemKey"}
     };
 }
 

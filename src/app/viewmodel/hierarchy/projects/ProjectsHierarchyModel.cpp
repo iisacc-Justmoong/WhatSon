@@ -13,6 +13,44 @@ namespace
         QString message;
         QVariantMap context;
     };
+
+    QString normalizedProjectsKeySegment(const QString& label, int index)
+    {
+        const QString normalizedLabel = label.trimmed();
+        if (!normalizedLabel.isEmpty())
+        {
+            return normalizedLabel;
+        }
+
+        return QStringLiteral("item:%1").arg(index);
+    }
+
+    QString projectsHierarchyItemKey(const QVector<ProjectsHierarchyItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+
+        QStringList pathSegments;
+        pathSegments.reserve(std::max(1, items.at(index).depth + 1));
+        pathSegments.push_front(normalizedProjectsKeySegment(items.at(index).label, index));
+
+        int expectedDepth = items.at(index).depth;
+        for (int cursor = index - 1; cursor >= 0 && expectedDepth > 0; --cursor)
+        {
+            const ProjectsHierarchyItem& candidate = items.at(cursor);
+            if (candidate.depth != expectedDepth - 1)
+            {
+                continue;
+            }
+
+            pathSegments.push_front(normalizedProjectsKeySegment(candidate.label, cursor));
+            expectedDepth = candidate.depth;
+        }
+
+        return pathSegments.join(QLatin1Char('/'));
+    }
 }
 
 ProjectsHierarchyModel::ProjectsHierarchyModel(QObject* parent)
@@ -57,6 +95,8 @@ QVariant ProjectsHierarchyModel::data(const QModelIndex& index, int role) const
                 && m_items.at(nextIndex).depth > item.depth;
             return hasChild;
         }
+    case ItemKeyRole:
+        return projectsHierarchyItemKey(m_items, index.row());
     default:
         return {};
     }
@@ -70,7 +110,8 @@ QHash<int, QByteArray> ProjectsHierarchyModel::roleNames() const
         {IndentLevelRole, "indentLevel"},
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
-        {ShowChevronRole, "showChevron"}
+        {ShowChevronRole, "showChevron"},
+        {ItemKeyRole, "itemKey"}
     };
 }
 

@@ -67,6 +67,7 @@ moc_*.cpp
 ui_*.h
 qrc_*.cpp
 Thumbs.db
+.venv
 *.res
 *.rc
 /.qmake.cache

@@ -755,6 +755,11 @@ void HierarchyViewModelsTest::projectsModel_recomputesChevronByDepth()
     model.setItems(std::move(items));
 
     QCOMPARE(model.rowCount(), 3);
+    QCOMPARE(model.data(model.index(0, 0), ProjectsHierarchyModel::ItemKeyRole).toString(), QStringLiteral("Parent"));
+    QCOMPARE(
+        model.data(model.index(1, 0), ProjectsHierarchyModel::ItemKeyRole).toString(),
+        QStringLiteral("Parent/Child"));
+    QCOMPARE(model.data(model.index(2, 0), ProjectsHierarchyModel::ItemKeyRole).toString(), QStringLiteral("Leaf"));
     QCOMPARE(model.data(model.index(0, 0), ProjectsHierarchyModel::ShowChevronRole).toBool(), true);
     QCOMPARE(model.data(model.index(1, 0), ProjectsHierarchyModel::ShowChevronRole).toBool(), false);
     QCOMPARE(model.data(model.index(2, 0), ProjectsHierarchyModel::ShowChevronRole).toBool(), false);
