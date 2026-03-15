@@ -97,7 +97,6 @@ Item {
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
-    readonly property bool showEmptyFolderPlaceholder: contentsView.visibleNoteCount === 0
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
@@ -519,6 +518,28 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
 
+    ContentsEditorSelectionBridge {
+        id: selectionBridge
+
+        contentViewModel: contentsView.contentViewModel
+        noteListModel: contentsView.noteListModel
+    }
+    ContentsLogicalTextBridge {
+        id: textMetricsBridge
+
+        text: contentsView.editorText
+    }
+    ContentsGutterMarkerBridge {
+        id: gutterMarkerBridge
+
+        gutterMarkers: contentsView.gutterMarkers
+    }
+    ContentsEditorSession {
+        id: editorSession
+
+        saveDebounceMs: contentsView.saveDebounceMs
+        selectionBridge: selectionBridge
+    }
     Timer {
         id: gutterRefreshTimer
 
@@ -582,25 +603,12 @@ Item {
             Layout.fillWidth: true
             color: contentsView.displayColor
 
-            Item {
-                anchors.fill: parent
-                visible: contentsView.showEmptyFolderPlaceholder
-
-                LV.Label {
-                    anchors.centerIn: parent
-                    color: LV.Theme.disabledColor
-                    horizontalAlignment: Text.AlignHCenter
-                    style: title
-                    text: "No files in this folder"
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: contentsView.frameHorizontalInset
                 anchors.rightMargin: contentsView.frameHorizontalInset
                 spacing: 0
-                visible: !contentsView.showEmptyFolderPlaceholder
+                visible: contentsView.hasSelectedNote
 
                 ContentsGutterLayer {
                     id: gutterLayer
@@ -695,8 +703,8 @@ Item {
                         anchors.topMargin: contentsView.editorTopInset
                         color: LV.Theme.textTertiary
                         style: body
-                        text: contentsView.hasSelectedNote ? "Start typing here" : "Select a note to view its body text"
-                        visible: contentEditor.empty && !contentsView.showEmptyFolderPlaceholder
+                        text: "Start typing here"
+                        visible: contentEditor.empty && contentsView.hasSelectedNote
                     }
                 }
                 ContentsMinimapLayer {

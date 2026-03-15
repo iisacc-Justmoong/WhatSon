@@ -13,6 +13,7 @@ Item {
     readonly property bool deleteFolderEnabled: hierarchyViewModel && hierarchyViewModel.deleteFolderEnabled !== undefined ? hierarchyViewModel.deleteFolderEnabled : false
     property alias editingIndex: sidebarController.editingIndex
     property alias editingText: sidebarController.editingText
+    property bool folderDragActive: false
     property alias folderDropAsChild: sidebarController.folderDropAsChild
     property alias folderDropBefore: sidebarController.folderDropBefore
     property alias folderDropTargetIndex: sidebarController.folderDropTargetIndex
@@ -166,6 +167,7 @@ Item {
     }
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelRename();
+        sidebarHierarchyView.folderDragActive = false;
         sidebarHierarchyView.resetDropTargets();
     }
     onSelectedFolderIndexChanged: {
@@ -258,13 +260,14 @@ Item {
                 clip: true
                 contentHeight: Math.max(height, hierarchyList.implicitHeight)
                 contentWidth: width
-                interactive: contentHeight > height
+                interactive: contentHeight > height && !sidebarHierarchyView.folderDragActive
 
                 HierarchyListCompat {
                     id: hierarchyList
 
                     autoSelectFirstItem: false
                     keyboardNavigationEnabled: false
+                    manualActivationOnly: true
                     width: hierarchyViewport.width
 
                     onActiveChanged: function (item, itemId, index) {
@@ -350,6 +353,7 @@ Item {
                             Drag.source: hierarchyDelegate
                             Drag.supportedActions: Qt.MoveAction
                             baseLeftPadding: sidebarHierarchyView.hierarchyItemBaseLeftPadding
+                            dragPreviewActive: folderDragHandler.active
                             expanded: hierarchyDelegate.itemExpanded
                             height: visibleInView ? implicitHeight : 0
                             indentLevel: hierarchyDelegate.itemIndentLevel
@@ -360,6 +364,7 @@ Item {
                             showChevron: hierarchyDelegate.itemShowChevron
                             visible: visibleInView
                             width: hierarchyViewport.width
+                            z: folderDragHandler.active ? 20 : 0
 
                             Rectangle {
                                 anchors.fill: parent
@@ -401,13 +406,17 @@ Item {
                                 id: folderDragHandler
 
                                 acceptedButtons: Qt.LeftButton
+                                dragThreshold: 4
                                 enabled: sidebarHierarchyView.canMoveFolder(index) && sidebarHierarchyView.editingIndex !== index
                                 grabPermissions: PointerHandler.CanTakeOverFromAnything
                                 target: null
 
                                 onActiveChanged: {
+                                    sidebarHierarchyView.folderDragActive = active;
                                     if (active && sidebarHierarchyView.editingIndex >= 0)
                                         sidebarHierarchyView.commitRename();
+                                    if (active)
+                                        sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);
                                     if (!active)
                                         sidebarHierarchyView.resetDropTargets();
                                 }

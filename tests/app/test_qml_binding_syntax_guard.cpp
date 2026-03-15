@@ -299,9 +299,8 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             QStringLiteral("readonly property int visibleNoteCount: selectionBridge.visibleNoteCount")),
         "ContentsDisplayView.qml must derive the visible note count from the selection adapter instead of probing the note-list model inline.");
     QVERIFY2(
-        contentViewText.contains(
-            QStringLiteral("readonly property bool showEmptyFolderPlaceholder: contentsView.visibleNoteCount === 0")),
-        "ContentViewLayout.qml must expose an explicit empty-folder state instead of treating an empty folder as a new unsaved note.");
+        contentViewText.contains(QStringLiteral("visible: contentsView.hasSelectedNote")),
+        "ContentsDisplayView.qml must only expose the editor stack when a real note is selected.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("property var contentViewModel: null")),
         "ContentViewLayout.qml must accept the active hierarchy view-model for body persistence.");
@@ -431,14 +430,11 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("LV.TextEditor {")),
         "ContentViewLayout.qml must compose LV.TextEditor for the contents editing surface.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("text: \"No files in this folder\"")),
-        "ContentViewLayout.qml must replace the editor surface with a centered empty-folder placeholder when the active folder has no notes.");
+        !contentViewText.contains(QStringLiteral("text: \"No files in this folder\"")),
+        "ContentsDisplayView.qml must not fabricate an empty-folder message when nothing is selected; the center surface should stay blank.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("style: title")),
-        "ContentViewLayout.qml empty-folder placeholder must use title typography.");
-    QVERIFY2(
-        contentViewText.contains(QStringLiteral("color: LV.Theme.disabledColor")),
-        "ContentViewLayout.qml empty-folder placeholder must use the LVRS disabled text color.");
+        !contentViewText.contains(QStringLiteral("text: \"Select a note to view its body text\"")),
+        "ContentsDisplayView.qml must not keep a synthetic no-selection editor prompt; no selected note must leave the editor surface empty.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("showRenderedOutput: false")),
         "ContentViewLayout.qml must disable TextEditor preview output inside the contents display surface.");
@@ -746,6 +742,16 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
         "SidebarHierarchyView.qml row tap handling must keep drag-threshold gesture gating so click activation and folder drag can coexist.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property bool folderDragActive: false")),
+        "SidebarHierarchyView.qml must track whether a hierarchy-folder drag is active so the viewport can stop treating the gesture as scrolling.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("interactive: contentHeight > height && !sidebarHierarchyView.folderDragActive")),
+        "SidebarHierarchyView.qml must disable Flickable scrolling while a folder drag is active.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("manualActivationOnly: true")),
+        "SidebarHierarchyView.qml must suppress LVRS raw-press activation and leave authoritative row selection to the tap-release path.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
             "onTapped: {\n                                    sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);")),
         "SidebarHierarchyView.qml must explicitly activate hierarchy rows on tap release so rapid clicks are not lost behind LVRS refresh timing.");
@@ -791,6 +797,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             QStringLiteral("interactionController.hierarchyViewModel.setSelectedIndex(index)")),
         "SidebarHierarchyInteractionController.qml pending activation replay must be able to realign the hierarchy view-model selection to the latest user tap.");
     QVERIFY2(
+        sidebarControllerText.contains(
+            QStringLiteral("interactionController.hierarchyList.requestActivate(delegate, true)")),
+        "SidebarHierarchyInteractionController.qml must bypass manual-activation suppression when it performs the authoritative hierarchy activation.");
+    QVERIFY2(
         !sidebarViewText.contains(QStringLiteral(
             "onPressed: {\n                                sidebarHierarchyView.activateHierarchyDelegate(hierarchyDelegate, index);")),
         "SidebarHierarchyView.qml must not force hierarchy selection on raw press for drag-capable rows.");
@@ -806,6 +816,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
         "SidebarHierarchyView.qml folder drag handler must be able to take pointer ownership away from row click handlers and Flickable scrolling.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("dragThreshold: 4")),
+        "SidebarHierarchyView.qml folder drag handler should lower the drag threshold so folder drags start before viewport scrolling wins.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("dragPreviewActive: folderDragHandler.active")),
+        "SidebarHierarchyView.qml must drive LVRS HierarchyItem dragPreviewActive during folder drags so users see a visible grabbed state.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("Drag.supportedActions: Qt.MoveAction")),
         "SidebarHierarchyView.qml folder drag contract must advertise move semantics.");
@@ -1005,6 +1021,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("property bool noteDragActive: false")),
         "ListBarLayout.qml must track whether a note-card drag is active so the parent ListView can stop treating the gesture as scrolling.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property int pressedNoteIndex: -1")),
+        "ListBarLayout.qml must track a transient pressed note row separately from the committed currentIndex so drag startup does not mutate selection too early.");
+    QVERIFY2(
         listBarLayoutText.contains(
             QStringLiteral("interactive: contentHeight > height && !listBarLayout.noteDragActive")),
         "ListBarLayout.qml must disable ListView scrolling while a note drag is active.");
@@ -1039,11 +1058,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note tap handler must not take an exclusive press grab that blocks drag startup.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("onPressedChanged: {")),
-        "ListBarLayout.qml note tap handling must react on press so rapid successive note picks are not lost behind editor save latency.");
+        "ListBarLayout.qml note tap handling must preserve a transient press preview before the drag threshold resolves.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onTapped: {")),
+        "ListBarLayout.qml note-card selection must be committed on tap release so note drags can begin from the same surface.");
     QVERIFY2(
         listBarLayoutText.contains(
             QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")),
-        "ListBarLayout.qml note-card press handler must route immediate activation through activateNoteIndex().");
+        "ListBarLayout.qml note-card tap handler must route authoritative activation through activateNoteIndex().");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncFocusedNoteDeletionState()")),
         "ListBarLayout.qml must expose a helper that resyncs focused note deletion state from the visible current card.");

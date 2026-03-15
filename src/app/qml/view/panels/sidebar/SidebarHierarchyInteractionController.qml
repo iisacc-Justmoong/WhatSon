@@ -29,7 +29,7 @@ QtObject {
         interactionController.activationRequestRevision += 1;
         const requestRevision = interactionController.activationRequestRevision;
         if (interactionController.hierarchyList && interactionController.hierarchyList.requestActivate !== undefined)
-            interactionController.hierarchyList.requestActivate(delegate);
+            interactionController.hierarchyList.requestActivate(delegate, true);
         if (interactionController.viewRoot && interactionController.viewRoot.forceActiveFocus !== undefined)
             interactionController.viewRoot.forceActiveFocus();
         Qt.callLater(function () {
@@ -46,7 +46,7 @@ QtObject {
                     replayDelegate = candidate;
             }
             if (replayDelegate && replayDelegate.visible !== false && replayDelegate.height > 0 && interactionController.hierarchyList && interactionController.hierarchyList.requestActivate !== undefined)
-                interactionController.hierarchyList.requestActivate(replayDelegate);
+                interactionController.hierarchyList.requestActivate(replayDelegate, true);
             if (interactionController.viewRoot && interactionController.viewRoot.forceActiveFocus !== undefined)
                 interactionController.viewRoot.forceActiveFocus();
             interactionController.pendingActivationIndex = -1;
@@ -59,7 +59,7 @@ QtObject {
         if (!delegate || delegate.visible === false || delegate.height <= 0)
             return;
         if (interactionController.hierarchyList && interactionController.hierarchyList.requestActivate !== undefined)
-            interactionController.hierarchyList.requestActivate(delegate);
+            interactionController.hierarchyList.requestActivate(delegate, true);
         if (focusView && interactionController.viewRoot && interactionController.viewRoot.forceActiveFocus !== undefined)
             interactionController.viewRoot.forceActiveFocus();
         if (!interactionController.hierarchyViewport)

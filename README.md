@@ -53,7 +53,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `after`, `child`, and root-top extraction drop zones so users can control both insertion index and hierarchy depth
   directly from the tree UI. The row-activation path is now drag-first / click-select-later: LVRS `HierarchyItem`
   activation no longer fires on raw press, and WhatSon mirrors selection from `HierarchyList.activeChanged` after the
-  click/release path settles. Only the double-tap rename gesture remains on a separate handler.
+  click/release path settles. While a folder drag is active, the hierarchy viewport also stops treating the gesture as
+  scroll input and forwards LVRS `dragPreviewActive` so the grabbed row has visible feedback. Only the double-tap
+  rename gesture remains on a separate handler.
 - Clicking the blank viewport area below the last hierarchy row now clears both the active `LV.HierarchyItem` and the
   bound hierarchy view-model selection, so row focus does not remain stuck when the tree is shorter than the sidebar.
 - `SidebarHierarchyView.qml` also disables LVRS first-item auto-activation for that tree, otherwise a blank-area
@@ -65,8 +67,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Library and Projects hierarchy moves now persist `Folders.wsfolders` immediately. Library subtree moves also rewrite
   affected note-header `<folders>` entries to the new canonical path so drag-and-drop restructuring does not leave note
   assignments behind on stale folder IDs.
-- Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but the active note is now committed
-  on press and reasserted once on the next event turn so editor save/refresh work cannot swallow a rapid second click.
+- Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but press now only marks a transient
+  visual candidate row; the authoritative note selection is committed on tap release and reasserted once on the next
+  event turn so drag startup is not canceled by note-model refresh.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
   `Folder1`.
 
@@ -144,9 +147,8 @@ WhatSon is an LVRS-based Qt Quick application.
   only editor-geometry sampling and render placement.
 - Body persistence still flows through the active hierarchy view-model's `saveBodyTextForNote(...)` contract with a
   short idle debounce, so `.wsnbody` rewrites and note-list refreshes no longer happen on every keystroke.
-- When the active folder resolves to zero visible notes, `ContentsDisplayView.qml` no longer pretends that an unsaved
-  line-1 draft exists. The entire editor surface is replaced with a centered `No files in this folder` placeholder
-  using title typography plus `LV.Theme.disabledColor`.
+- When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
+  return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank
   lines survive editor round-trips into `.wsnbody`.
 - Gutter cursor-line lookup now comes from the prebuilt logical-line offset table and visible-range lookup starts from

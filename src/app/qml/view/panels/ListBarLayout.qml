@@ -20,6 +20,8 @@ Rectangle {
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
+    property int pendingSelectionIndex: -1
+    property int pressedNoteIndex: -1
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
     property string searchText: ""
     property int selectionRequestRevision: 0
@@ -142,6 +144,7 @@ Rectangle {
     onNoteListModelChanged: {
         listBarLayout.noteDragActive = false;
         listBarLayout.pendingSelectionIndex = -1;
+        listBarLayout.pressedNoteIndex = -1;
         listBarLayout.selectionRequestRevision += 1;
         listBarLayout.applySearchTextToModel();
         listBarLayout.syncCurrentIndexFromModel();
@@ -227,7 +230,7 @@ Rectangle {
                         imageSource: roleModel.imageSource === undefined || roleModel.imageSource === null ? "" : roleModel.imageSource
                         noteId: roleModel.id === undefined || roleModel.id === null ? "" : String(roleModel.id)
                         opacity: noteDragHandler.active ? 0.72 : 1
-                        pressed: ListView.isCurrentItem
+                        pressed: ListView.isCurrentItem || listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
                         primaryText: roleModel.primaryText === undefined || roleModel.primaryText === null ? "" : String(roleModel.primaryText)
                         tags: listBarLayout.normalizeEntries(roleModel.tags)
                         width: ListView.view ? ListView.view.width : listBarLayout.width
@@ -242,6 +245,8 @@ Rectangle {
 
                             onActiveChanged: {
                                 listBarLayout.noteDragActive = active;
+                                if (active && listBarLayout.pressedNoteIndex === noteItemDelegate.index)
+                                    listBarLayout.pressedNoteIndex = -1;
                             }
                         }
                         TapHandler {
@@ -249,14 +254,23 @@ Rectangle {
                             gesturePolicy: TapHandler.DragThreshold
 
                             onPressedChanged: {
-                                if (!pressed)
+                                if (!pressed) {
+                                    if (listBarLayout.pressedNoteIndex === noteItemDelegate.index && !noteDragHandler.active)
+                                        listBarLayout.pressedNoteIndex = -1;
                                     return;
+                                }
+                                listBarLayout.pressedNoteIndex = noteItemDelegate.index;
+                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
+                            }
+                            onTapped: {
+                                listBarLayout.pressedNoteIndex = -1;
                                 listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);
                             }
                         }
                     }
 
                     onCurrentIndexChanged: {
+                        listBarLayout.pressedNoteIndex = -1;
                         listBarLayout.pushCurrentIndexToModel(noteListView.currentIndex);
                         Qt.callLater(function () {
                             listBarLayout.syncFocusedNoteDeletionState();

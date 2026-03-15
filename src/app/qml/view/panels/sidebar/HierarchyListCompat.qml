@@ -18,7 +18,7 @@ Item {
             const item = items[index];
             if (!item || item.enabled === false || item.rowVisible === false)
                 continue;
-            requestActivate(item);
+            requestActivate(item, true);
             return true;
         }
         return false;
@@ -66,7 +66,7 @@ Item {
     function notifyExpansionChanged(item) {
         control.scheduleRefreshState();
         if (control.activeItem && control.activeItem !== item && control.activeItem.rowVisible === false)
-            control.requestActivate(item);
+            control.requestActivate(item, true);
     }
     function refreshVisibility(currentItems) {
         const items = currentItems === undefined ? managedItems() : currentItems;
@@ -96,8 +96,11 @@ Item {
             item.hierarchyList = control;
         control.scheduleRefreshState();
     }
-    function requestActivate(item) {
+    function requestActivate(item, force) {
         if (!item || item.enabled === false)
+            return;
+        const activationForced = force === true;
+        if (control.manualActivationOnly && !activationForced)
             return;
 
         const items = managedItems();

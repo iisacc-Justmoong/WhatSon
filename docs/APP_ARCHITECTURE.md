@@ -286,9 +286,9 @@ Domain-isolated support:
               simple and avoids silent blank bindings when helper functions disappear. Note drags are also app-wired
               rather than LVRS-blocked: delegates
               advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
-              note-card tap handler stays on `TapHandler.DragThreshold`, but selection is committed on press and
-              reasserted once through a short-lived pending-selection replay so editor save/refresh work cannot drop
-              the latest user pick while drag startup still shares the same surface. `SidebarHierarchyView.qml`
+              note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
+              candidate row and selection is committed on tap release, then reasserted once through a short-lived
+              pending-selection replay so drag startup is not canceled by note-model refresh. `SidebarHierarchyView.qml`
               composes `SidebarHierarchyInteractionController.qml` as the single drag/drop owner for hierarchy rows,
               so note-card drops on library folders route through `assignNoteToFolder(index, noteId)` and immediately
               update note-header folder membership plus the visible draft/folder note lists. The same controller also
@@ -319,9 +319,8 @@ Domain-isolated support:
               plain-text payload through the active note-list model's `currentBodyText`, and persisted back through the
               active hierarchy view-model's `saveBodyTextForNote(...)` after a short debounce so typing does not force
               a full `.wsnbody` rewrite and note-list refresh on every keystroke.
-              If the active folder resolves to zero visible notes, the editor surface must not fabricate a fresh
-              unsaved line-1 draft. Instead, the whole center surface switches to a centered `No files in this folder`
-              placeholder rendered with title typography and `LV.Theme.disabledColor`.
+              If no concrete note is selected, the editor surface must not fabricate a fresh unsaved draft or a helper
+              prompt. Instead, the whole center surface stays blank until selection resolves to a real note.
               The gutter depends on the logical-line offset array maintained by `ContentsLogicalTextBridge`; if that
               backend
               offset model breaks, the editor can still paint body text while the line-number column goes empty.
@@ -562,6 +561,8 @@ Hierarchy rendering pipeline:
             - Row-activation policy: drag-capable hierarchy rows use drag-first / click-select-later input. LVRS
               `HierarchyItem` no longer activates on raw press, and WhatSon mirrors active-row changes from
               `HierarchyList.activeChanged` into the bound hierarchy view-model after the click/release path settles.
+              While a folder drag is active, the viewport disables scrolling and the dragged row forwards LVRS
+              `dragPreviewActive` so the grab state is visually explicit.
             - Blank-area deselect policy: when the visible hierarchy is shorter than the sidebar viewport, the blank
               area
               below the last row clears both the active LVRS hierarchy item and the bound view-model selection. The host
