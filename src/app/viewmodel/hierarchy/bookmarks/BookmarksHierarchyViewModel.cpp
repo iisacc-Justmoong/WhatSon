@@ -364,14 +364,22 @@ void BookmarksHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
                                   m_noteListModel.rowCount()));
 }
 
+QVariantList BookmarksHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList BookmarksHierarchyViewModel::depthItems() const
 {
     QVariantList serialized;
     serialized.reserve(m_items.size());
 
-    for (const BookmarksHierarchyItem& item : m_items)
+    for (int index = 0; index < m_items.size(); ++index)
     {
+        const BookmarksHierarchyItem& item = m_items.at(index);
         serialized.push_back(QVariantMap{
+            {QStringLiteral("itemId"), index},
+            {QStringLiteral("key"), QStringLiteral("bookmarks:%1").arg(index)},
             {QStringLiteral("label"), item.label},
             {QStringLiteral("depth"), item.depth},
             {QStringLiteral("accent"), item.accent},
@@ -708,4 +716,5 @@ void BookmarksHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }

@@ -380,12 +380,18 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
+QVariantList ProjectsHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList ProjectsHierarchyViewModel::depthItems() const
 {
     QVariantList serialized = WhatSon::Hierarchy::ProjectsSupport::serializeDepthItems(m_items);
     for (int index = 0; index < serialized.size() && index < m_items.size(); ++index)
     {
         QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), projectsHierarchyItemKey(m_items, index));
         serialized[index] = entry;
     }
@@ -918,6 +924,7 @@ void ProjectsHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }
 
 bool ProjectsHierarchyViewModel::commitHierarchyUpdate(QVector<ProjectsHierarchyItem> stagedItems, int selectedIndex)

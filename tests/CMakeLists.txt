@@ -514,7 +514,6 @@ add_executable(whatson_sidebar_hierarchy_module_tests
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyViewModelProvider.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyLvrsAdapter.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp
 )
 set_target_properties(whatson_sidebar_hierarchy_module_tests PROPERTIES AUTOMOC ON)

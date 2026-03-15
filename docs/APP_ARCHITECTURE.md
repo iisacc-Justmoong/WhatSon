@@ -288,11 +288,13 @@ Domain-isolated support:
               advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
               note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
               candidate row and selection is committed on tap release, then reasserted once through a short-lived
-              pending-selection replay so drag startup is not canceled by note-model refresh. `SidebarHierarchyView.qml`
-              now binds LVRS `HierarchyList` directly and feeds it from `SidebarHierarchyLvrsAdapter`, so note-card
-              drops on library folders route through `assignNoteToFolder(index, noteId)` without a local hierarchy
-              interaction controller. Folder reorder/reparent persistence now comes from LVRS `itemMoved(...)`, which
-              hands the mutated node array back to the active hierarchy view-model through `applyHierarchyNodes(...)`.
+              pending-selection replay so drag startup is not canceled by note-model refresh. The surrounding
+              `ListView` also yields drag-scrolling while a note row is pressed, so the delegate `DragHandler` can
+              start the `whatson.library.note` drag before the viewport steals the pointer. `SidebarHierarchyView.qml`
+              now binds the higher-level LVRS `Hierarchy` surface directly to each domain view-model's standard
+              `hierarchyModel` property, and the standard-contract pass leaves note drops plus folder reordering out of
+              the mounted sidebar surface until those behaviors are reintroduced on top of the same direct model
+              contract.
             - `ContentViewLayout.qml` is now only the panel wrapper for the center editor slot, while
               `view/content/editor/ContentsDisplayView.qml` implements the actual Figma `ContentsDisplayView` editing
               surface by composing dedicated SRP modules:
@@ -532,15 +534,11 @@ Hierarchy rendering pipeline:
 
 - `HierarchySidebarLayout` forwards toolbar activation into `SidebarHierarchyViewModel` and consumes the resolved
   hierarchy state it exposes
-- `SidebarHierarchyView` now owns layout composition, search input, and toolbar/footer rendering only
-- `SidebarHierarchyView` renders folders through LVRS `HierarchyList` directly.
-- `SidebarHierarchyLvrsAdapter.*` is the only local bridge in that render path. It converts
-  `activeDomainViewModel.depthItems()` into LVRS node arrays, mirrors `selectedIndex` through `activateByKey(...)`,
-  exposes protected-row `dragLocked` state, and forwards rename, note drop, and editable move commits back into the
-  active hierarchy view-model.
-- Hierarchy list data source is therefore `SidebarHierarchyLvrsAdapter.nodes`, not a hand-managed repeater tree.
-  Search is also applied inside the adapter, and editable LVRS moves are disabled while a filtered node subset is
-  visible so partial tree snapshots cannot be committed.
+- `SidebarHierarchyView` now mounts the LVRS `Hierarchy` surface directly instead of composing a custom list/adapter
+  stack around `HierarchyList`.
+- Each domain hierarchy view-model exposes a direct `hierarchyModel` `QVariantList` property with LVRS-default roles
+  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`), so the QML sidebar binds a standard LVRS tree model
+  without an intermediate WhatSon bridge object.
 - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
   backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into
@@ -549,30 +547,26 @@ Hierarchy rendering pipeline:
   edge-drag interaction used by sidebar/list/right-panel splitters.
 - `Main.qml` keeps shell routing/window composition, while `MainWindowInteractionController.qml` owns focus
   dismissal, resize render-quality policy, and global navigation shortcut policy.
-- Chevron fold/unfold is handled directly by LVRS `HierarchyList` and `HierarchyItem` through the serialized
+- Chevron fold/unfold is handled directly by LVRS `Hierarchy`/`HierarchyList` through the serialized
   `expanded`/`showChevron` roles emitted by each hierarchy view-model.
-- Rename trigger policy: open the text input overlay from the selected item with `Enter/Return` or mouse double-tap
-  on the folder row.
-- Rename gating policy: QML checks per-item `canRenameItem(index)` through `SidebarHierarchyLvrsAdapter` before
-  opening the overlay.
-- Row-activation policy: LVRS `HierarchyList.activeChanged` is authoritative. WhatSon mirrors the resulting `itemKey`
-  back into the active hierarchy view-model through `SidebarHierarchyLvrsAdapter` instead of keeping a second custom
-  active-row engine.
-- Protected-row drag policy: immutable buckets still appear in the same LVRS list, but an overlay swallows drag
-  attempts on nodes marked `dragLocked` by the adapter so LVRS reordering cannot move those rows.
+- Row-activation policy: LVRS `Hierarchy.listItemActivated(...)` is authoritative. WhatSon mirrors the resulting
+  `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays selection with
+  `activateListItemById(...)` when the underlying model changes.
+- The current standard-contract pass intentionally leaves custom sidebar search, note-drop handling, and editable
+  hierarchy persistence out of the mounted QML surface. Those behaviors are deferred until they can be reintroduced on
+  top of the direct LVRS model contract instead of replacing it.
 - Blank-area deselect is no longer a WhatSon-owned hierarchy contract. The direct LVRS list keeps one active keyed row
   while selection is present.
-- Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row before opening
-  inline rename, and newly inserted folders use the placeholder label `Untitled`.
-- Drag-reorder policy: LVRS emits `itemMoved(...)`, and the adapter commits the mutated node array through
-  `applyHierarchyNodes(...)` on the active hierarchy view-model.
-- Library note-drop policy: hierarchy overlays accept `whatson.library.note` drags and route accepted drops through
-  `LibraryHierarchyViewModel::assignNoteToFolder(...)`.
-- Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` rewrites
-  `Folders.wsfolders`, re-normalizes canonical folder paths, and updates note-header `<folders>` entries when a folder
-  subtree moves.
-- Projects folder move persistence: `ProjectsHierarchyViewModel::applyHierarchyNodes(...)` rewrites
-  `Folders.wsfolders` from the LVRS-mutated node array and preserves the active selection by stable item key.
+- Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row, and newly
+  inserted folders use the placeholder label `Untitled`.
+- Drag-reorder policy: the standard-contract sidebar pass does not mount editable hierarchy mutation in QML. Legacy
+  `applyHierarchyNodes(...)` entrypoints remain in the domain view-models for later custom-domain reintegration.
+- Library note-drop policy: the standard-contract sidebar pass does not mount note-drop overlays in QML. Legacy
+  `LibraryHierarchyViewModel::assignNoteToFolder(...)` remains available for later reintegration.
+- Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
+  `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when custom hierarchy mutation is restored.
+- Projects folder move persistence: `ProjectsHierarchyViewModel::applyHierarchyNodes(...)` still owns
+  `Folders.wsfolders` rewrites when custom hierarchy mutation is restored.
 - Rename commit policy for hub-loaded hierarchies: the view-model updates staged in-memory data, applies it to the
   domain store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
   `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
@@ -772,7 +766,7 @@ From `tests/app/**`, architecture is guarded by explicit tests:
         - binding syntax guard against invalid standalone literals in `Binding` blocks
 - `test_solid_architecture_contracts.cpp`:
     - SRP guard for shell/sidebar/editor decomposition (`MainWindowInteractionController`, `PanelEdgeSplitter`,
-      `SidebarHierarchyLvrsAdapter`, `ContentsEditorSelectionBridge`, `ContentsLogicalTextBridge`,
+      `LV.Hierarchy`, `ContentsEditorSelectionBridge`, `ContentsLogicalTextBridge`,
       `ContentsGutterMarkerBridge`, `ContentsEditorSession.qml`)
     - DIP/LSP guard for sidebar state: `SidebarHierarchyViewModel` must continue to work through
       `ISidebarSelectionStore` and `IHierarchyViewModelProvider` substitutions

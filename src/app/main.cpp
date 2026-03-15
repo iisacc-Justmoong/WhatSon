@@ -15,7 +15,6 @@
 #include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "viewmodel/sidebar/SidebarHierarchyLvrsAdapter.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 #include "calendar/SystemCalendarStore.hpp"
@@ -352,8 +351,6 @@ int main(int argc, char* argv[])
         "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
     qmlRegisterType<FocusedNoteDeletionBridge>(
         "WhatSon.App.Internal", 1, 0, "FocusedNoteDeletionBridge");
-    qmlRegisterType<SidebarHierarchyLvrsAdapter>(
-        "WhatSon.App.Internal", 1, 0, "SidebarHierarchyLvrsAdapter");
 #if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif

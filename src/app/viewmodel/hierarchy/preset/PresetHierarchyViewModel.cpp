@@ -90,9 +90,22 @@ void PresetHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
+QVariantList PresetHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList PresetHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::PresetSupport::serializeDepthItems(m_items);
+    QVariantList serialized = WhatSon::Hierarchy::PresetSupport::serializeDepthItems(m_items);
+    for (int index = 0; index < serialized.size(); ++index)
+    {
+        QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("itemId"), index);
+        entry.insert(QStringLiteral("key"), QStringLiteral("preset:%1").arg(index));
+        serialized[index] = entry;
+    }
+    return serialized;
 }
 
 QString PresetHierarchyViewModel::itemLabel(int index) const
@@ -419,6 +432,7 @@ void PresetHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }
 
 void PresetHierarchyViewModel::syncDomainStoreFromItems()

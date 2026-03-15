@@ -13,6 +13,7 @@ class ProgressHierarchyViewModel final : public QObject
     Q_OBJECT
 
     Q_PROPERTY(ProgressHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
     Q_PROPERTY(bool loadSucceeded READ loadSucceeded NOTIFY loadStateChanged)
@@ -34,6 +35,7 @@ public:
     QString lastLoadError() const;
 
     Q_INVOKABLE void setDepthItems(const QVariantList& depthItems);
+    QVariantList hierarchyModel() const;
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const;
     Q_INVOKABLE bool canRenameItem(int index) const;
@@ -72,6 +74,7 @@ public
 
 
     void selectedIndexChanged();
+    void hierarchyModelChanged();
     void itemCountChanged();
     void loadStateChanged();
     void viewModelHookRequested();

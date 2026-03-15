@@ -124,6 +124,7 @@ private
     slots  :
 
 
+
     void sidebarState_mustStaySingleSourcedAndInterfaceDriven();
     void editorAdapters_mustStayResponsibilitySeparated();
     void qmlAssembly_mustKeepDedicatedResponsibilityObjects();
@@ -223,7 +224,9 @@ void SolidArchitectureContractsTest::qmlAssembly_mustKeepDedicatedResponsibility
 
     QVERIFY(mainQml.contains(QStringLiteral("MainWindowInteractionController {")));
     QVERIFY(bodyLayout.contains(QStringLiteral("PanelEdgeSplitter {")));
-    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyInteractionController {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.Hierarchy {")));
+    QVERIFY(!sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyLvrsAdapter {")));
+    QVERIFY(!sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyInteractionController {")));
     QVERIFY(contentsDisplayView.contains(QStringLiteral("ContentsEditorSelectionBridge {")));
     QVERIFY(contentsDisplayView.contains(QStringLiteral("ContentsLogicalTextBridge {")));
     QVERIFY(contentsDisplayView.contains(QStringLiteral("ContentsGutterMarkerBridge {")));

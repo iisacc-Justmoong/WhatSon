@@ -100,9 +100,22 @@ void ProgressHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     Q_UNUSED(depthItems);
 }
 
+QVariantList ProgressHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList ProgressHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::ProgressSupport::serializeDepthItems(m_items);
+    QVariantList serialized = WhatSon::Hierarchy::ProgressSupport::serializeDepthItems(m_items);
+    for (int index = 0; index < serialized.size(); ++index)
+    {
+        QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("itemId"), index);
+        entry.insert(QStringLiteral("key"), QStringLiteral("progress:%1").arg(index));
+        serialized[index] = entry;
+    }
+    return serialized;
 }
 
 QString ProgressHierarchyViewModel::itemLabel(int index) const
@@ -403,4 +416,5 @@ void ProgressHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }

@@ -1,35 +1,43 @@
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
-#include "viewmodel/sidebar/SidebarHierarchyLvrsAdapter.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 
 #include <QObject>
+#include <QSignalSpy>
 #include <QVariant>
 #include <QtTest/QtTest>
 
-class StubLvrsHierarchyViewModel final : public QObject
+class StubStandardHierarchyViewModel final : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
 
 public:
-    explicit StubLvrsHierarchyViewModel(QObject* parent = nullptr)
+    explicit StubStandardHierarchyViewModel(QObject* parent = nullptr)
         : QObject(parent)
     {
-        m_depthItems = QVariantList{
+        m_hierarchyModel = QVariantList{
             QVariantMap{
-                {QStringLiteral("label"), QStringLiteral("All Library")},
+                {QStringLiteral("itemId"), 0},
                 {QStringLiteral("key"), QStringLiteral("bucket:all")},
+                {QStringLiteral("label"), QStringLiteral("All Library")},
                 {QStringLiteral("depth"), 0}
             },
             QVariantMap{
+                {QStringLiteral("itemId"), 1},
+                {QStringLiteral("key"), QStringLiteral("library:brand")},
                 {QStringLiteral("label"), QStringLiteral("Brand")},
-                {QStringLiteral("key"), QStringLiteral("Brand")},
                 {QStringLiteral("depth"), 0}
             }
         };
+    }
+
+    QVariantList hierarchyModel() const
+    {
+        return m_hierarchyModel;
     }
 
     int selectedIndex() const noexcept
@@ -39,22 +47,19 @@ public:
 
     int itemCount() const noexcept
     {
-        return m_depthItems.size();
+        return m_hierarchyModel.size();
     }
 
-    QVariantList lastCommittedNodes() const
+    void setHierarchyModel(QVariantList hierarchyModel)
     {
-        return m_lastCommittedNodes;
-    }
+        if (m_hierarchyModel == hierarchyModel)
+        {
+            return;
+        }
 
-    QString lastCommittedActiveKey() const
-    {
-        return m_lastCommittedActiveKey;
-    }
-
-    Q_INVOKABLE QVariantList depthItems() const
-    {
-        return m_depthItems;
+        m_hierarchyModel = hierarchyModel;
+        emit hierarchyModelChanged();
+        emit itemCountChanged();
     }
 
     Q_INVOKABLE void setSelectedIndex(int index)
@@ -63,71 +68,20 @@ public:
         {
             return;
         }
+
         m_selectedIndex = index;
         emit selectedIndexChanged();
-    }
-
-    Q_INVOKABLE bool canMoveFolder(int index) const
-    {
-        return index > 0;
-    }
-
-    Q_INVOKABLE bool canRenameItem(int index) const
-    {
-        return index > 0;
-    }
-
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName)
-    {
-        if (!canRenameItem(index))
-        {
-            return false;
-        }
-
-        QVariantMap entry = m_depthItems.at(index).toMap();
-        entry.insert(QStringLiteral("label"), displayName.trimmed());
-        m_depthItems[index] = entry;
-        emit itemCountChanged();
-        return true;
-    }
-
-    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& nodes, const QString& activeItemKey)
-    {
-        m_lastCommittedNodes = nodes;
-        m_lastCommittedActiveKey = activeItemKey.trimmed();
-        return true;
-    }
-
-    Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const
-    {
-        return index > 0 && !noteId.trimmed().isEmpty();
-    }
-
-    Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId)
-    {
-        Q_UNUSED(index)
-        m_lastDroppedNoteId = noteId.trimmed();
-        return !m_lastDroppedNoteId.isEmpty();
-    }
-
-    QString lastDroppedNoteId() const
-    {
-        return m_lastDroppedNoteId;
     }
 
     signals  :
 
 
+    void hierarchyModelChanged();
     void selectedIndexChanged();
     void itemCountChanged();
-    void loadStateChanged();
-    void noteItemCountChanged();
 
 private:
-    QVariantList m_depthItems;
-    QVariantList m_lastCommittedNodes;
-    QString m_lastCommittedActiveKey;
-    QString m_lastDroppedNoteId;
+    QVariantList m_hierarchyModel;
     int m_selectedIndex = 0;
 };
 
@@ -139,10 +93,9 @@ private
     slots  :
 
 
-
     void activeHierarchyIndex_mustRoundTripThroughSelectionStore();
     void activeHierarchyBindings_mustResolveThroughProviderInterface();
-    void lvrsAdapter_mustBridgeDepthItemsAndDisableEditableSearchMoves();
+    void hierarchyViewModel_mustExposeStandardHierarchyModelProperty();
 };
 
 void SidebarHierarchyModuleTest::activeHierarchyIndex_mustRoundTripThroughSelectionStore()
@@ -165,9 +118,9 @@ void SidebarHierarchyModuleTest::activeHierarchyIndex_mustRoundTripThroughSelect
 
 void SidebarHierarchyModuleTest::activeHierarchyBindings_mustResolveThroughProviderInterface()
 {
-    QObject libraryViewModel;
+    StubStandardHierarchyViewModel libraryViewModel;
     QObject projectsViewModel;
-    QObject bookmarksViewModel;
+    StubStandardHierarchyViewModel bookmarksViewModel;
     QObject libraryNoteListModel;
     QObject bookmarksNoteListModel;
 
@@ -210,45 +163,46 @@ void SidebarHierarchyModuleTest::activeHierarchyBindings_mustResolveThroughProvi
     QCOMPARE(sidebarViewModel.property("resolvedNoteListModel").value<QObject*>(), &bookmarksNoteListModel);
 }
 
-void SidebarHierarchyModuleTest::lvrsAdapter_mustBridgeDepthItemsAndDisableEditableSearchMoves()
+void SidebarHierarchyModuleTest::hierarchyViewModel_mustExposeStandardHierarchyModelProperty()
 {
-    StubLvrsHierarchyViewModel hierarchyViewModel;
-    SidebarHierarchyLvrsAdapter adapter;
-    adapter.setHierarchyViewModel(&hierarchyViewModel);
+    StubStandardHierarchyViewModel libraryViewModel;
+    HierarchyViewModelProvider provider;
+    HierarchyViewModelProvider::Targets targets;
+    targets.libraryViewModel = &libraryViewModel;
+    provider.setTargets(targets);
 
-    QCOMPARE(adapter.nodes().size(), 2);
-    QCOMPARE(adapter.flatNodes().size(), 2);
-    QCOMPARE(adapter.selectedItemKey(), QStringLiteral("bucket:all"));
-    QVERIFY(adapter.editable());
-    QVERIFY(adapter.noteDropEnabled());
+    SidebarSelectionStore selectionStore;
+    SidebarHierarchyViewModel sidebarViewModel;
+    sidebarViewModel.setSelectionStore(&selectionStore);
+    sidebarViewModel.setViewModelProvider(&provider);
 
-    const QVariantMap firstNode = adapter.flatNodes().at(0).toMap();
-    const QVariantMap secondNode = adapter.flatNodes().at(1).toMap();
+    sidebarViewModel.setActiveHierarchyIndex(0);
+
+    QObject* activeViewModel = sidebarViewModel.activeHierarchyViewModel();
+    QVERIFY(activeViewModel != nullptr);
+
+    const QVariantList hierarchyModel = activeViewModel->property("hierarchyModel").toList();
+    QCOMPARE(hierarchyModel.size(), 2);
+
+    const QVariantMap firstNode = hierarchyModel.at(0).toMap();
+    QCOMPARE(firstNode.value(QStringLiteral("itemId")).toInt(), 0);
     QCOMPARE(firstNode.value(QStringLiteral("key")).toString(), QStringLiteral("bucket:all"));
-    QCOMPARE(firstNode.value(QStringLiteral("dragLocked")).toBool(), true);
-    QCOMPARE(secondNode.value(QStringLiteral("key")).toString(), QStringLiteral("Brand"));
-    QCOMPARE(secondNode.value(QStringLiteral("dragLocked")).toBool(), false);
+    QCOMPARE(firstNode.value(QStringLiteral("label")).toString(), QStringLiteral("All Library"));
 
-    adapter.activateKey(QStringLiteral("Brand"));
-    QCOMPARE(hierarchyViewModel.selectedIndex(), 1);
-    QCOMPARE(adapter.selectedItemKey(), QStringLiteral("Brand"));
+    QSignalSpy modelSpy(&libraryViewModel, &StubStandardHierarchyViewModel::hierarchyModelChanged);
+    libraryViewModel.setHierarchyModel(QVariantList{
+        QVariantMap{
+            {QStringLiteral("itemId"), 0},
+            {QStringLiteral("key"), QStringLiteral("library:reordered")},
+            {QStringLiteral("label"), QStringLiteral("Reordered")},
+            {QStringLiteral("depth"), 0}
+        }
+    });
+    QCOMPARE(modelSpy.count(), 1);
 
-    QVERIFY(adapter.renameKey(QStringLiteral("Brand"), QStringLiteral("Branding")));
-    QCOMPARE(adapter.labelForKey(QStringLiteral("Brand")), QStringLiteral("Branding"));
-
-    QVERIFY(adapter.canAcceptNoteDrop(QStringLiteral("Brand"), QStringLiteral("note-a")));
-    QVERIFY(adapter.assignNoteToKey(QStringLiteral("Brand"), QStringLiteral("note-a")));
-    QCOMPARE(hierarchyViewModel.lastDroppedNoteId(), QStringLiteral("note-a"));
-
-    const QVariantList currentNodes = adapter.nodes();
-    QVERIFY(adapter.commitEditableNodes(currentNodes, QStringLiteral("Brand")));
-    QCOMPARE(hierarchyViewModel.lastCommittedNodes(), currentNodes);
-    QCOMPARE(hierarchyViewModel.lastCommittedActiveKey(), QStringLiteral("Brand"));
-
-    adapter.setSearchQuery(QStringLiteral("brand"));
-    QCOMPARE(adapter.nodes().size(), 1);
-    QVERIFY(!adapter.editable());
-    QVERIFY(!adapter.commitEditableNodes(adapter.nodes(), QStringLiteral("Brand")));
+    const QVariantList updatedModel = activeViewModel->property("hierarchyModel").toList();
+    QCOMPARE(updatedModel.size(), 1);
+    QCOMPARE(updatedModel.at(0).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("library:reordered"));
 }
 
 QTEST_MAIN(SidebarHierarchyModuleTest)

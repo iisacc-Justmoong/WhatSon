@@ -82,7 +82,7 @@ Rectangle {
         const deleted = noteDeletionBridge.deleteFocusedNote();
         if (deleted)
             noteListView.forceActiveFocus();
-        return deleted;
+
     }
     function normalizeEntries(value) {
         if (value === undefined || value === null)
@@ -126,6 +126,18 @@ Rectangle {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function syncCurrentIndexFromModel() {
+        const modelIndex = listBarLayout.currentIndexFromModel();
+        if (!isFinite(modelIndex)) {
+            if (noteListView.currentIndex !== -1)
+                noteListView.currentIndex = -1;
+            return;
+        }
+
+        const normalizedIndex = Math.max(-1, Math.floor(modelIndex));
+        if (noteListView.currentIndex !== normalizedIndex)
+            noteListView.currentIndex = normalizedIndex;
+    }
     function syncFocusedNoteDeletionState() {
         if (noteListView.currentItem && noteListView.currentItem.noteId !== undefined) {
             noteDeletionBridge.focusedNoteId = String(noteListView.currentItem.noteId).trim();
@@ -143,6 +155,7 @@ Rectangle {
     onNoteListModeChanged: applySearchTextToModel()
     onNoteListModelChanged: {
         listBarLayout.noteDragActive = false;
+        listBarLayout.notePointerPressed = false;
         listBarLayout.pendingSelectionIndex = -1;
         listBarLayout.pressedNoteIndex = -1;
         listBarLayout.selectionRequestRevision += 1;
@@ -196,7 +209,7 @@ Rectangle {
                     anchors.margins: 2
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
-                    interactive: contentHeight > height && !listBarLayout.noteDragActive
+                    interactive: contentHeight > height && !listBarLayout.noteDragActive && !listBarLayout.notePointerPressed
                     model: listBarLayout.resolvedNoteListModel
                     spacing: 2
                     visible: listBarLayout.noteListMode
@@ -245,6 +258,8 @@ Rectangle {
 
                             onActiveChanged: {
                                 listBarLayout.noteDragActive = active;
+                                if (active)
+                                    listBarLayout.notePointerPressed = false;
                                 if (active && listBarLayout.pressedNoteIndex === noteItemDelegate.index)
                                     listBarLayout.pressedNoteIndex = -1;
                             }
@@ -255,14 +270,18 @@ Rectangle {
 
                             onPressedChanged: {
                                 if (!pressed) {
+                                    if (listBarLayout.notePointerPressed)
+                                        listBarLayout.notePointerPressed = false;
                                     if (listBarLayout.pressedNoteIndex === noteItemDelegate.index && !noteDragHandler.active)
                                         listBarLayout.pressedNoteIndex = -1;
                                     return;
                                 }
+                                listBarLayout.notePointerPressed = true;
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
                                 noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
                             }
                             onTapped: {
+                                listBarLayout.notePointerPressed = false;
                                 listBarLayout.pressedNoteIndex = -1;
                                 listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);
                             }

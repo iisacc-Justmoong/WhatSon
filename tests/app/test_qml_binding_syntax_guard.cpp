@@ -694,99 +694,48 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(sidebarViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(sidebarViewPath));
     const QString sidebarViewText = QString::fromUtf8(sidebarViewFile.readAll());
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")),
-        "SidebarHierarchyView.qml must import the internal adapter module that feeds LVRS HierarchyList.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("SidebarHierarchyLvrsAdapter {")),
-        "SidebarHierarchyView.qml must compose SidebarHierarchyLvrsAdapter as the hierarchy-model bridge.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("hierarchyViewModel: sidebarHierarchyView.hierarchyViewModel")),
-        "SidebarHierarchyView.qml must bind the active domain hierarchy view-model into the LVRS adapter.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("searchQuery: sidebarHierarchyView.searchQuery")),
-        "SidebarHierarchyView.qml must push the live search query into the LVRS adapter.");
+        !sidebarViewText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")),
+        "SidebarHierarchyView.qml must no longer depend on an internal hierarchy adapter module.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.activeToolbarIndex = index;")),
         "SidebarHierarchyView.qml must not overwrite activeToolbarIndex locally.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("Keys.onPressed: function (event)")),
-        "SidebarHierarchyView.qml must handle Enter/Return rename trigger from keyboard.");
+        sidebarViewText.contains(QStringLiteral("function syncSelectedHierarchyItem(focusView)")),
+        "SidebarHierarchyView.qml must expose syncSelectedHierarchyItem(focusView) for programmatic focus sync.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter")),
-        "SidebarHierarchyView.qml keyboard rename handler must gate Return/Enter keys.");
+        sidebarViewText.contains(QStringLiteral("hierarchyTree.activateListItemById(selectedFolderIndex);")),
+        "SidebarHierarchyView.qml must drive programmatic hierarchy activation through LVRS activateListItemById(...).");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("onDoubleTapped:")),
-        "SidebarHierarchyView.qml must expose double-tap rename trigger on hierarchy rows.");
+        sidebarViewText.contains(QStringLiteral("LV.Hierarchy {")),
+        "SidebarHierarchyView.qml must render folders through the LVRS Hierarchy surface.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("function activateSelectedHierarchyItem(focusView)")),
-        "SidebarHierarchyView.qml must expose activateSelectedHierarchyItem(focusView) for programmatic focus sync.");
+        sidebarViewText.contains(QStringLiteral("model: sidebarHierarchyView.standardHierarchyModel")),
+        "SidebarHierarchyView.qml must feed LVRS Hierarchy from the active hierarchy view-model's standard model property.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("hierarchyList.activateByKey(selectedItemKey);")),
-        "SidebarHierarchyView.qml must drive programmatic hierarchy activation through LVRS activateByKey(...).");
+        sidebarViewText.contains(QStringLiteral("activeToolbarIndex: sidebarHierarchyView.activeToolbarIndex")),
+        "SidebarHierarchyView.qml must keep toolbar state sourced from the shared sidebar selection model.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("onActiveChanged: function (item, itemId, index)")),
-        "SidebarHierarchyView.qml must sync hierarchy selection from LVRS activeChanged so activation happens after click/release instead of raw press.");
+        sidebarViewText.contains(QStringLiteral("onToolbarActivated: function (button, buttonId, index)")),
+        "SidebarHierarchyView.qml must switch hierarchy domains from the LVRS toolbar activation callback.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("LV.HierarchyList {")),
-        "SidebarHierarchyView.qml must render folders through LVRS HierarchyList directly.");
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.toolbarIndexChangeRequested(index);")),
+        "SidebarHierarchyView.qml toolbar activation must flow back through the shared domain-switch signal.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("model: hierarchyAdapter.nodes")),
-        "SidebarHierarchyView.qml must feed LVRS HierarchyList from the adapter-provided node array.");
+        sidebarViewText.contains(QStringLiteral("onListItemActivated: function (item, itemId, index)")),
+        "SidebarHierarchyView.qml must sync hierarchy selection from the LVRS listItemActivated callback.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("editable: hierarchyAdapter.editable")),
-        "SidebarHierarchyView.qml must let the adapter decide when LVRS editable moves are safe.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("itemKeyRole: \"key\"")),
-        "SidebarHierarchyView.qml must keep LVRS activation and drag identities keyed to stable hierarchy keys.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("itemIdRole: \"itemId\"")),
-        "SidebarHierarchyView.qml must forward a stable itemId role into LVRS HierarchyList.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("hierarchyAdapter.activateKey(item.itemKey);")),
-        "SidebarHierarchyView.qml activeChanged handler must mirror LVRS selection into the bound hierarchy view-model through the adapter.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("function targetItemForKey(itemKey)")),
-        "SidebarHierarchyView.qml must resolve rendered rows by stable key for rename and overlay targeting.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("return hierarchyList.resolveByKey(normalizedKey);")),
-        "SidebarHierarchyView.qml must use LVRS resolveByKey(...) rather than local row bookkeeping.");
-    QVERIFY2(
-        sidebarViewText.contains(
-            QStringLiteral("onItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)")),
-        "SidebarHierarchyView.qml must persist folder reorders from the LVRS itemMoved signal.");
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(itemId);")),
+        "SidebarHierarchyView.qml must mirror LVRS item activation into the bound hierarchy view-model by stable itemId.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
-            "hierarchyAdapter.commitEditableNodes(hierarchyList.model, hierarchyList.activeItemKey)")),
-        "SidebarHierarchyView.qml must commit the LVRS-mutated hierarchy model through the adapter.");
+            "readonly property var standardHierarchyModel: hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : []")),
+        "SidebarHierarchyView.qml must consume the direct standard hierarchy model exposed by each domain view-model.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestViewHook(\"move-folder-lvrs\")")),
-        "SidebarHierarchyView.qml must emit a dedicated hook reason for LVRS-driven folder moves.");
+        sidebarViewText.contains(QStringLiteral("function onHierarchyModelChanged()")),
+        "SidebarHierarchyView.qml must resync LVRS activation when the active domain view-model publishes a new hierarchy model.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("model: hierarchyAdapter.flatNodes")),
-        "SidebarHierarchyView.qml overlay policies must derive from the same flattened node source as the LVRS list.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("readonly property bool dragLocked: !!modelData.dragLocked")),
-        "SidebarHierarchyView.qml must surface protected-row drag locks from the adapter instead of inventing local move rules.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("enabled: overlayDelegate.dragLocked")),
-        "SidebarHierarchyView.qml must swallow pointer drags on protected rows instead of letting LVRS reorder immutable buckets.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
-        "SidebarHierarchyView.qml rename double-tap handler must keep LVRS click and drag gestures coexistable.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("keys: [\"whatson.library.note\"]")),
-        "SidebarHierarchyView.qml note drop overlay must still advertise the note drag key.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("hierarchyAdapter.assignNoteToKey(overlayDelegate.itemKey, noteId)")),
-        "SidebarHierarchyView.qml note drops must route through the adapter into the active hierarchy view-model.");
-    QVERIFY2(
-        sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.noteDropTargetKey = hierarchyAdapter.canAcceptNoteDrop")),
-        "SidebarHierarchyView.qml note-drop highlight state must come from adapter-backed acceptance checks.");
-    QVERIFY2(
-        sidebarViewText.contains(QStringLiteral(
-            "readonly property var targetItem: sidebarHierarchyView.targetItemForKey(sidebarHierarchyView.editingItemKey)")),
-        "SidebarHierarchyView.qml rename overlay must anchor itself from keyed LVRS row lookup.");
+        sidebarViewText.contains(QStringLiteral("ignoreUnknownSignals: true")),
+        "SidebarHierarchyView.qml must tolerate domains that do not expose extra legacy hierarchy signals.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("SidebarHierarchyInteractionController {")),
         "SidebarHierarchyView.qml must no longer rely on a local interaction-controller hierarchy engine.");
@@ -794,14 +743,20 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !sidebarViewText.contains(QStringLiteral("HierarchyListCompat")),
         "SidebarHierarchyView.qml must no longer route hierarchy rendering through the local compat list wrapper.");
     QVERIFY2(
-        !sidebarViewText.contains(QStringLiteral("function clearHierarchySelection()")),
-        "SidebarHierarchyView.qml must not preserve the old blank-area deselect custom contract after the LVRS redesign.");
+        !sidebarViewText.contains(QStringLiteral("SidebarHierarchyLvrsAdapter {")),
+        "SidebarHierarchyView.qml must not reintroduce an app-specific LVRS adapter bridge.");
     QVERIFY2(
-        !sidebarViewText.contains(QStringLiteral("property bool folderDragActive: false")),
-        "SidebarHierarchyView.qml must not keep the old local drag-engine state once LVRS owns folder reordering.");
+        !sidebarViewText.contains(QStringLiteral("LV.HierarchyList {")),
+        "SidebarHierarchyView.qml must not bypass the higher-level LVRS Hierarchy surface.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("interactive: contentHeight > height")),
-        "SidebarHierarchyView.qml viewport scrolling must now follow the direct LVRS list height instead of the removed local drag state.");
+        !sidebarViewText.contains(QStringLiteral("property string searchQuery: \"\"")),
+        "SidebarHierarchyView.qml standard-contract pass must not keep a local hierarchy search filter bridge.");
+    QVERIFY2(
+        !sidebarViewText.contains(QStringLiteral("onItemMoved: function")),
+        "SidebarHierarchyView.qml standard-contract pass must not persist custom editable reorder logic.");
+    QVERIFY2(
+        !sidebarViewText.contains(QStringLiteral("property string noteDropTargetKey: \"\"")),
+        "SidebarHierarchyView.qml standard-contract pass must not keep custom note-drop overlay state.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);
@@ -965,12 +920,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("property bool noteDragActive: false")),
         "ListBarLayout.qml must track whether a note-card drag is active so the parent ListView can stop treating the gesture as scrolling.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property bool notePointerPressed: false")),
+        "ListBarLayout.qml must track row-press ownership so ListView flicking cannot swallow note drags before the delegate DragHandler activates.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("property int pressedNoteIndex: -1")),
         "ListBarLayout.qml must track a transient pressed note row separately from the committed currentIndex so drag startup does not mutate selection too early.");
     QVERIFY2(
         listBarLayoutText.contains(
-            QStringLiteral("interactive: contentHeight > height && !listBarLayout.noteDragActive")),
-        "ListBarLayout.qml must disable ListView scrolling while a note drag is active.");
+            QStringLiteral(
+                "interactive: contentHeight > height && !listBarLayout.noteDragActive && !listBarLayout.notePointerPressed")),
+        "ListBarLayout.qml must disable ListView scrolling while a note row press is deciding between click and drag.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.ApprovesTakeOverByAnything")),
+        "ListBarLayout.qml tap handlers must approve drag takeover so note-card drags can start from the same pointer press as row selection.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")),
         "ListBarLayout.qml must bind ListView only to the resolved note-list model.");

@@ -1613,6 +1613,7 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
         serializedItems.push_back(QVariantMap{
             {"label", item.label},
             {"id", item.folderPath},
+            {"itemId", index},
             {"key", itemKey},
             {"depth", item.depth},
             {"accent", item.accent},
@@ -1621,6 +1622,11 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
         });
     }
     return serializedItems;
+}
+
+QVariantList LibraryHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
 }
 
 QString LibraryHierarchyViewModel::itemLabel(int index) const
@@ -3341,6 +3347,7 @@ void LibraryHierarchyViewModel::syncModel()
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }
 
 void LibraryHierarchyViewModel::updateItemCount()

@@ -90,9 +90,22 @@ void EventHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
+QVariantList EventHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList EventHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::EventSupport::serializeDepthItems(m_items);
+    QVariantList serialized = WhatSon::Hierarchy::EventSupport::serializeDepthItems(m_items);
+    for (int index = 0; index < serialized.size(); ++index)
+    {
+        QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("itemId"), index);
+        entry.insert(QStringLiteral("key"), QStringLiteral("event:%1").arg(index));
+        serialized[index] = entry;
+    }
+    return serialized;
 }
 
 QString EventHierarchyViewModel::itemLabel(int index) const
@@ -419,6 +432,7 @@ void EventHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }
 
 void EventHierarchyViewModel::syncDomainStoreFromItems()

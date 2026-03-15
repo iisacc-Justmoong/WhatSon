@@ -90,9 +90,22 @@ void ResourcesHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
 }
 
+QVariantList ResourcesHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList ResourcesHierarchyViewModel::depthItems() const
 {
-    return WhatSon::Hierarchy::ResourcesSupport::serializeDepthItems(m_items);
+    QVariantList serialized = WhatSon::Hierarchy::ResourcesSupport::serializeDepthItems(m_items);
+    for (int index = 0; index < serialized.size(); ++index)
+    {
+        QVariantMap entry = serialized.at(index).toMap();
+        entry.insert(QStringLiteral("itemId"), index);
+        entry.insert(QStringLiteral("key"), QStringLiteral("resources:%1").arg(index));
+        serialized[index] = entry;
+    }
+    return serialized;
 }
 
 QString ResourcesHierarchyViewModel::itemLabel(int index) const
@@ -422,6 +435,7 @@ void ResourcesHierarchyViewModel::syncModel()
 {
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }
 
 void ResourcesHierarchyViewModel::syncDomainStoreFromItems()

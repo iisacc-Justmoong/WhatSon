@@ -128,17 +128,34 @@ void TagsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     setTagDepthEntries(std::move(parsedEntries));
 }
 
+QVariantList TagsHierarchyViewModel::hierarchyModel() const
+{
+    return depthItems();
+}
+
 QVariantList TagsHierarchyViewModel::depthItems() const
 {
     QVariantList serialized;
-    serialized.reserve(m_entries.size());
+    serialized.reserve(m_items.size());
 
-    for (const WhatSonTagDepthEntry& entry : m_entries)
+    for (int index = 0; index < m_items.size() && index < m_entries.size(); ++index)
     {
+        const WhatSonTagDepthEntry& entry = m_entries.at(index);
+        const TagsHierarchyItem& item = m_items.at(index);
+        QString itemKey = entry.id.trimmed();
+        if (itemKey.isEmpty())
+        {
+            itemKey = QStringLiteral("tag:%1").arg(index);
+        }
         serialized.push_back(QVariantMap{
+            {QStringLiteral("itemId"), index},
+            {QStringLiteral("key"), itemKey},
             {QStringLiteral("id"), entry.id},
-            {QStringLiteral("label"), entry.label},
-            {QStringLiteral("depth"), entry.depth}
+            {QStringLiteral("label"), item.label},
+            {QStringLiteral("depth"), item.depth},
+            {QStringLiteral("accent"), item.accent},
+            {QStringLiteral("expanded"), item.expanded},
+            {QStringLiteral("showChevron"), item.showChevron}
         });
     }
 
@@ -597,4 +614,5 @@ void TagsHierarchyViewModel::syncModel()
                               QStringLiteral("itemCount=%1").arg(m_items.size()));
     m_itemModel.setItems(m_items);
     updateItemCount();
+    emit hierarchyModelChanged();
 }
