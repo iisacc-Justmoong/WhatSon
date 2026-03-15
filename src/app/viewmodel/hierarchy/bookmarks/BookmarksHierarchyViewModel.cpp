@@ -5,6 +5,7 @@
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 
 #include <QFileInfo>
 #include <QVariantMap>
@@ -366,7 +367,7 @@ void BookmarksHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList BookmarksHierarchyViewModel::hierarchyModel() const
 {
-    return depthItems();
+    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
 }
 
 QVariantList BookmarksHierarchyViewModel::depthItems() const

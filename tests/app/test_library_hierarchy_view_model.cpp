@@ -890,6 +890,24 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
         viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::ShowChevronRole)
                  .toBool(),
         false);
+
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    QCOMPARE(hierarchyModel.size(), 5);
+
+    const QVariantMap researchNode = hierarchyModel.at(3).toMap();
+    QCOMPARE(researchNode.value(QStringLiteral("itemId")).toInt(), 3);
+    QCOMPARE(researchNode.value(QStringLiteral("key")).toString(), QStringLiteral("Research"));
+
+    const QVariantList researchChildren = researchNode.value(QStringLiteral("children")).toList();
+    QCOMPARE(researchChildren.size(), 1);
+    QCOMPARE(researchChildren.at(0).toMap().value(QStringLiteral("key")).toString(),
+             QStringLiteral("Research/Competitor"));
+    QCOMPARE(researchChildren.at(0).toMap().value(QStringLiteral("depth")).toInt(), 1);
+
+    const QVariantMap brandNode = hierarchyModel.at(4).toMap();
+    QCOMPARE(brandNode.value(QStringLiteral("key")).toString(), QStringLiteral("Brand"));
+    QVERIFY(!brandNode.contains(QStringLiteral("children")));
+
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 }
 

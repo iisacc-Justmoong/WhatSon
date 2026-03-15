@@ -3,6 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -382,7 +383,7 @@ void ProjectsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList ProjectsHierarchyViewModel::hierarchyModel() const
 {
-    return depthItems();
+    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
 }
 
 QVariantList ProjectsHierarchyViewModel::depthItems() const

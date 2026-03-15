@@ -15,6 +15,7 @@
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 #include "file/note/WhatSonNoteHeaderStore.hpp"
 #include "file/note/WhatSonNoteLinkManagerCreator.hpp"
+#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -1626,7 +1627,7 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
 
 QVariantList LibraryHierarchyViewModel::hierarchyModel() const
 {
-    return depthItems();
+    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
 }
 
 QString LibraryHierarchyViewModel::itemLabel(int index) const

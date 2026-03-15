@@ -3,6 +3,7 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -92,7 +93,7 @@ void EventHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList EventHierarchyViewModel::hierarchyModel() const
 {
-    return depthItems();
+    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
 }
 
 QVariantList EventHierarchyViewModel::depthItems() const

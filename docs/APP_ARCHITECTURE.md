@@ -537,8 +537,9 @@ Hierarchy rendering pipeline:
 - `SidebarHierarchyView` now mounts the LVRS `Hierarchy` surface directly instead of composing a custom list/adapter
   stack around `HierarchyList`.
 - Each domain hierarchy view-model exposes a direct `hierarchyModel` `QVariantList` property with LVRS-default roles
-  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`), so the QML sidebar binds a standard LVRS tree model
-  without an intermediate WhatSon bridge object.
+  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`) and rebuilds nested `children` arrays from the
+  persisted depth ordering, so the QML sidebar binds a standard LVRS tree model with native expand/collapse semantics
+  and without an intermediate WhatSon bridge object.
 - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
   backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into

@@ -267,6 +267,7 @@ Rectangle {
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
                             gesturePolicy: TapHandler.DragThreshold
+                            grabPermissions: PointerHandler.ApprovesTakeOverByAnything
 
                             onPressedChanged: {
                                 if (!pressed) {

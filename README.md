@@ -41,7 +41,8 @@ WhatSon is an LVRS-based Qt Quick application.
   backend object before passing child bindings down into the sidebar, note list, and editor.
 - Sidebar rendering now mounts LVRS `Hierarchy` directly. Each domain hierarchy view-model exposes a standard
   `hierarchyModel` property with LVRS-default roles (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`),
-  and `SidebarHierarchyView.qml` binds that model without an intermediate adapter.
+  plus nested `children` arrays rebuilt from the stored depth order so LVRS expand/collapse works from the native tree
+  contract. `SidebarHierarchyView.qml` binds that model without an intermediate adapter.
 - Row activation now follows the LVRS `Hierarchy.listItemActivated(...)` contract directly. WhatSon mirrors the
   resulting `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays the
   selection with `activateListItemById(...)` when the domain model changes.

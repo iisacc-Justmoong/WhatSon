@@ -2,6 +2,7 @@
 
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
+#include "viewmodel/hierarchy/HierarchyStandardModelSupport.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -130,7 +131,7 @@ void TagsHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
 QVariantList TagsHierarchyViewModel::hierarchyModel() const
 {
-    return depthItems();
+    return WhatSon::Hierarchy::buildStandardTreeModel(depthItems());
 }
 
 QVariantList TagsHierarchyViewModel::depthItems() const
