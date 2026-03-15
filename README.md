@@ -53,12 +53,14 @@ WhatSon is an LVRS-based Qt Quick application.
   LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
   instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
   `whatson.library.note` drops directly over hierarchy rows and routes accepted note-to-folder assignments back through
-  the bridge.
+  the bridge, rewriting the dropped note's `.wsnote` header `<folders>` value to the target hierarchy path.
 - Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but press now only marks a transient
   visual candidate row; the authoritative note selection is committed on tap release and reasserted once on the next
   event turn so drag startup is not canceled by note-model refresh.
 - The note list now follows the same rule for pointer ownership: while a note row is pressed, `ListView` temporarily
   stops drag-scrolling so the delegate `DragHandler` can win first and begin the `whatson.library.note` drag cleanly.
+- The same note delegates now use `Drag.Automatic` and publish `application/x-whatson-note-id` mime data, so the Qt
+  drag session follows the pointer even though the fixed LVRS note row does not translate across the list viewport.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
   `Folder1`.
 
@@ -148,6 +150,8 @@ WhatSon is an LVRS-based Qt Quick application.
   previous note/session.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
   through the whole remaining editor height when the cursor sits on the last logical line.
+- `ContentsDisplayView.qml` keeps both the surrounding editor panel and the embedded `LV.TextEditor` fill on
+  `LV.Theme.panelBackground06`; only the lower drawer stays on `LV.Theme.panelBackground08`.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
   offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
@@ -414,7 +418,8 @@ for hub/note hierarchy payloads.
 - Editor view mode state is centralized in `src/app/viewmodel/navigationbar/EditorViewModeViewModel.*`:
   `main.cpp` injects `editorViewModeViewModel`, and the navigation bar editor-view combo binds to the dedicated
   enum-backed `Plain/Page/Print/Web/Presentation` state plus its per-view QObject viewmodels.
-- The sidebar initial width now follows the effective rendered width of the hierarchy toolbar.
+- The sidebar initial width now follows the effective rendered width of the hierarchy toolbar: Figma's `200px`
+  toolbar track plus `2px` side insets resolves to a `204px` default sidebar width.
 - Figma navigation frames are split into dedicated QML files under `src/app/qml/view/panels/navigation/`:
   `NavigationPropertiesBar.qml`, `NavigationInformationBar.qml`, `NavigationModeBar.qml`,
   and `NavigationEditorViewBar.qml`.
@@ -444,6 +449,13 @@ for hub/note hierarchy payloads.
   is provided, preventing accidental overwrite of runtime-loaded models.
 - Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
   `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
+- `SidebarHierarchyView.qml` maps that CRUD/view-options surface into a direct bottom `LV.ListFooter` instance
+  matching the Figma `HierarchyFooter` node (`134:3178`), with explicit `78x24` sizing, transparent button
+  backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalsettings`) instead of relying on a
+  local custom footer wrapper.
+- The hierarchy toolbar keeps LVRS `Hierarchy` as the rendering surface, but `SidebarHierarchyView.qml` disables
+  distributed spacing and feeds a fixed `40 / 7` gap back into LVRS so the eight `20px` icons stay left-anchored on
+  the Figma `200px` track.
 - Hierarchy/list models (`FlatHierarchyModel`, `LibraryHierarchyModel`, `TagsHierarchyModel`,
   `LibraryNoteListModel`, `BookmarksNoteListModel`) now expose validation hooks for backend/UI interception:
   `strictValidation`, `correctionCount`, `lastValidationCode`, `lastValidationMessage`,

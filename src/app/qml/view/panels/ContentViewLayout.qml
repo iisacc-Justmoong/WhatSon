@@ -8,8 +8,8 @@ Item {
     id: contentViewLayout
 
     property var contentViewModel: null
-    property color displayColor: LV.Theme.panelBackground09
-    property color drawerColor: LV.Theme.panelBackground11
+    property color displayColor: LV.Theme.panelBackground06
+    property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6

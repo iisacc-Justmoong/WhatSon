@@ -716,32 +716,15 @@ namespace
         return -1;
     }
 
-    QStringList appendFolderAssignment(QStringList folders, const QString& folderPath)
+    QStringList folderAssignmentForDrop(const QString& folderPath)
     {
-        QStringList merged;
-        merged.reserve(folders.size() + 1);
-        QSet<QString> seenKeys;
-
-        auto appendUnique = [&merged, &seenKeys](QString rawValue)
+        const QString normalizedFolderPath = normalizeFolderPath(folderPath);
+        if (normalizedFolderPath.isEmpty())
         {
-            rawValue = normalizeFolderPath(std::move(rawValue));
-            const QString key = normalizeFolderLookupKey(rawValue);
-            if (rawValue.isEmpty() || key.isEmpty() || seenKeys.contains(key))
-            {
-                return;
-            }
-
-            seenKeys.insert(key);
-            merged.push_back(std::move(rawValue));
-        };
-
-        for (QString& folder : folders)
-        {
-            appendUnique(std::move(folder));
+            return {};
         }
-        appendUnique(folderPath);
 
-        return merged;
+        return {normalizedFolderPath};
     }
 
     void applyChevronByDepth(QVector<LibraryHierarchyItem>* items)
@@ -2176,7 +2159,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    headerStore.setFolders(appendFolderAssignment(headerStore.folders(), targetFolderPath));
+    headerStore.setFolders(folderAssignmentForDrop(targetFolderPath));
     headerStore.setLastModifiedAt(currentNoteTimestamp());
 
     WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());

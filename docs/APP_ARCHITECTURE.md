@@ -249,6 +249,7 @@ Domain-isolated support:
         - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`, matching
           the default preference controls shown in the control-mode layout.
         - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.
+            - Current Figma contract: `200px` toolbar track + `2px` left/right insets => `204px` sidebar base width.
             - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is not a
               text
               input/editor (`text`, `cursorPosition`, `selectedText` focus contract).
@@ -285,7 +286,8 @@ Domain-isolated support:
               path
               simple and avoids silent blank bindings when helper functions disappear. Note drags are also app-wired
               rather than LVRS-blocked: delegates
-              advertise `whatson.library.note` plus copy semantics and force `DragHandler` pointer takeover, while the
+              advertise `whatson.library.note` plus copy semantics, `Drag.Automatic`, and explicit note-id mime data
+              while forcing `DragHandler` pointer takeover, while the
               note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
               candidate row and selection is committed on tap release, then reasserted once through a short-lived
               pending-selection replay so drag startup is not canceled by note-model refresh. The surrounding
@@ -321,6 +323,8 @@ Domain-isolated support:
               plain-text payload through the active note-list model's `currentBodyText`, and persisted back through the
               active hierarchy view-model's `saveBodyTextForNote(...)` after a short debounce so typing does not force
               a full `.wsnbody` rewrite and note-list refresh on every keystroke.
+              The surrounding editor panel and the embedded `LV.TextEditor` fill both use
+              `LV.Theme.panelBackground06`, while the lower drawer keeps `LV.Theme.panelBackground08`.
               If no concrete note is selected, the editor surface must not fabricate a fresh unsaved draft or a helper
               prompt. Instead, the whole center surface stays blank until selection resolves to a real note.
               The gutter depends on the logical-line offset array maintained by `ContentsLogicalTextBridge`; if that
@@ -562,6 +566,13 @@ Hierarchy rendering pipeline:
   of replacing it.
 - Blank-area deselect is no longer a WhatSon-owned hierarchy contract. The direct LVRS list keeps one active keyed row
   while selection is present.
+- Footer composition policy: `SidebarHierarchyView.qml` mounts the Figma `HierarchyFooter` node (`134:3178`) as a
+  direct `LV.ListFooter` instance anchored bottom-left, with fixed `78x24` geometry, transparent button backgrounds,
+  and explicit `generaladd` / `generaldelete` / `generalsettings` icon names. The hierarchy list reserves that footer
+  height explicitly instead of routing footer actions through a local wrapper.
+- Toolbar spacing policy: `SidebarHierarchyView.qml` keeps the higher-level LVRS `Hierarchy` toolbar API, but disables
+  LVRS distributed spacing and feeds a fixed `40 / 7` inter-icon gap so the eight `20px` toolbar icons remain
+  left-anchored on the Figma `200px` `HierarchyHeaderToolbar` track.
 - Create-folder focus policy: footer-triggered folder creation re-activates the inserted hierarchy row, and newly
   inserted folders use the placeholder label `Untitled`.
 - Drag-reorder policy: `SidebarHierarchyView.qml` now enables LVRS `Hierarchy.editable` only when the active domain
@@ -571,7 +582,8 @@ Hierarchy rendering pipeline:
 - Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
-  `HierarchyDragDropBridge::assignNoteToFolder(...)`.
+  `HierarchyDragDropBridge::assignNoteToFolder(...)`, which rewrites the note header `<folders>` payload to the dropped
+  hierarchy path.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

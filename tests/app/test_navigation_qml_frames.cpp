@@ -51,6 +51,8 @@ void NavigationQmlFramesTest::mainQml_mustBindSidebarInitWidthToHierarchyToolbar
     QVERIFY(!mainQml.isEmpty());
     QVERIFY(mainQml.contains(QStringLiteral("readonly property int baseSidebarWidth: hierarchyToolbarWidth")));
     QVERIFY(mainQml.contains(QStringLiteral("property int preferredSidebarWidth: baseSidebarWidth")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? 40 / (hierarchyToolbarCount - 1) : 0")));
     QVERIFY(mainQml.contains(QStringLiteral("sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property int sidebarHorizontalInset: 2")));
     QVERIFY(bodyLayout.contains(QStringLiteral("horizontalInset: hStack.sidebarHorizontalInset")));
@@ -201,6 +203,13 @@ void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset(
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("horizontalInset: hierarchyView.horizontalInset")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.leftMargin: sidebarHierarchyView.horizontalInset")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.rightMargin: sidebarHierarchyView.horizontalInset")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.ListFooter {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarDistributeSpacing: false")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarSpacing: sidebarHierarchyView.toolbarButtonSpacing")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("width: 78")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset")));
+    QVERIFY(sidebarHierarchyView.contains(
+        QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight")));
 }
 
 QTEST_APPLESS_MAIN(NavigationQmlFramesTest)

@@ -34,8 +34,8 @@ LV.ApplicationWindow {
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
     readonly property var hierarchyToolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
-    readonly property int hierarchyToolbarSpacing: LV.Theme.gap2
-    readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing : hierarchyToolbarButtonSize
+    readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? 40 / (hierarchyToolbarCount - 1) : 0
+    readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
     // Fail-fast binding contract: these context properties must exist from main.cpp.
     readonly property var libraryHierarchyVm: libraryHierarchyViewModel

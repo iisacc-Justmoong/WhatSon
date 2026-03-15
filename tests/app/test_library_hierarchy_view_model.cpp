@@ -51,6 +51,7 @@ private
     void setDepthItems_emptyInput_preservesIndexedBuckets();
     void applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection();
+    void assignNoteToFolder_replacesExistingFolderValueWithDroppedTarget();
     void createEmptyNote_whenFolderSelected_createsScaffoldUpdatesIndexAndSelectsNote();
     void loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments();
     void loadFromWshub_applyHierarchyNodes_persistsLvrsEditableMove();
@@ -1682,6 +1683,85 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
                       LibraryNoteListModel::IdRole).
                   toString(),
         QStringLiteral("note-a"));
+}
+
+void LibraryHierarchyViewModelTest::assignNoteToFolder_replacesExistingFolderValueWithDroppedTarget()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"children\": [\n"
+        "        {\n"
+        "          \"id\": \"Research/Competitor\",\n"
+        "          \"label\": \"Competitor\"\n"
+        "        }\n"
+        "      ]\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole).
+                          toString()
+                == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
+    QVERIFY(competitorIndex >= 0);
+    QVERIFY(viewModel.canAcceptNoteDrop(competitorIndex, QStringLiteral("note-b")));
+
+    QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-b")));
+    QVERIFY(!viewModel.canAcceptNoteDrop(competitorIndex, QStringLiteral("note-b")));
+
+    QFile betaHeaderFile(QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/Beta.wsnote/Beta.wsnhead")));
+    QVERIFY(betaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(QString::fromUtf8(betaHeaderFile.readAll()), &headerStore, &parseError),
+             qPrintable(parseError));
+    QCOMPARE(headerStore.folders(), QStringList({QStringLiteral("Research/Competitor")}));
+    QVERIFY(!headerStore.folders().contains(QStringLiteral("Workspace")));
+
+    viewModel.setSelectedIndex(competitorIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::IdRole).
+                  toString(),
+        QStringLiteral("note-b"));
 }
 
 void LibraryHierarchyViewModelTest::createEmptyNote_whenFolderSelected_createsScaffoldUpdatesIndexAndSelectsNote()

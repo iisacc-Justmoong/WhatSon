@@ -1,11 +1,15 @@
 import QtQuick
 import LVRS 1.0 as LV
 
-Item {
+Rectangle {
     id: sidebarHierarchyView
 
     property int activeToolbarIndex: defaultToolbarIndex
+    readonly property bool createFolderContractAvailable: hierarchyViewModel && hierarchyViewModel.createFolder !== undefined
+    readonly property bool createFolderEnabled: sidebarHierarchyView.createFolderContractAvailable && (hierarchyViewModel.createFolderEnabled === undefined || Boolean(hierarchyViewModel.createFolderEnabled))
     property int defaultToolbarIndex: 0
+    readonly property bool deleteFolderContractAvailable: hierarchyViewModel && hierarchyViewModel.deleteSelectedFolder !== undefined
+    readonly property bool deleteFolderEnabled: sidebarHierarchyView.deleteFolderContractAvailable && hierarchyViewModel.deleteFolderEnabled !== undefined && Boolean(hierarchyViewModel.deleteFolderEnabled)
     property string frameName: ""
     property string frameNodeId: ""
     property var hierarchyDragDropBridge: null
@@ -16,6 +20,9 @@ Item {
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
     readonly property var standardHierarchyModel: sidebarHierarchyView.normalizeHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])
+    readonly property int toolbarButtonSize: 20
+    readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
+    readonly property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property var toolbarItems: {
         if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.toolbarItems !== undefined)
@@ -31,6 +38,7 @@ Item {
         return items;
     }
     readonly property int verticalInset: 2
+    readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? Boolean(hierarchyViewModel.viewOptionsEnabled) : true
 
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
@@ -77,11 +85,31 @@ Item {
             return "";
         return String(source.noteId).trim();
     }
+    function requestCreateFolder() {
+        if (!sidebarHierarchyView.createFolderEnabled || !sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.createFolder === undefined)
+            return;
+        sidebarHierarchyView.hierarchyViewModel.createFolder();
+        sidebarHierarchyView.requestViewHook("hierarchy.footer.create");
+        Qt.callLater(function () {
+            sidebarHierarchyView.syncSelectedHierarchyItem(true);
+        });
+    }
+    function requestDeleteFolder() {
+        if (!sidebarHierarchyView.deleteFolderEnabled || !sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.deleteSelectedFolder === undefined)
+            return;
+        sidebarHierarchyView.hierarchyViewModel.deleteSelectedFolder();
+        sidebarHierarchyView.requestViewHook("hierarchy.footer.delete");
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
+    }
+    function requestViewOptions() {
+        if (!sidebarHierarchyView.viewOptionsEnabled)
+            return;
+        sidebarHierarchyView.requestViewHook("hierarchy.footer.options");
     }
     function syncSelectedHierarchyItem(focusView) {
         if (selectedFolderIndex < 0)
@@ -92,6 +120,7 @@ Item {
     }
 
     clip: true
+    color: panelColor
     focus: true
 
     onHierarchyViewModelChanged: Qt.callLater(function () {
@@ -113,7 +142,7 @@ Item {
         id: hierarchyTree
 
         activeToolbarIndex: sidebarHierarchyView.activeToolbarIndex
-        anchors.bottomMargin: sidebarHierarchyView.verticalInset
+        anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight
         anchors.fill: parent
         anchors.leftMargin: sidebarHierarchyView.horizontalInset
         anchors.rightMargin: sidebarHierarchyView.horizontalInset
@@ -122,7 +151,9 @@ Item {
         keyboardListNavigationEnabled: false
         model: sidebarHierarchyView.standardHierarchyModel
         panelColor: sidebarHierarchyView.panelColor
+        toolbarDistributeSpacing: false
         toolbarItems: sidebarHierarchyView.toolbarItems
+        toolbarSpacing: sidebarHierarchyView.toolbarButtonSpacing
 
         onListItemActivated: function (item, itemId, index) {
             if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.setSelectedIndex === undefined)
@@ -141,6 +172,65 @@ Item {
                 return;
             sidebarHierarchyView.toolbarIndexChangeRequested(index);
         }
+    }
+    LV.ListFooter {
+        id: hierarchyFooter
+
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: sidebarHierarchyView.verticalInset
+        anchors.left: parent.left
+        anchors.leftMargin: sidebarHierarchyView.horizontalInset
+        button1: ({
+                type: "icon",
+                iconName: "generaladd",
+                backgroundColor: "transparent",
+                backgroundColorDisabled: "transparent",
+                backgroundColorHover: "transparent",
+                backgroundColorPressed: "transparent",
+                enabled: sidebarHierarchyView.createFolderEnabled,
+                horizontalPadding: 2,
+                onClicked: function () {
+                    sidebarHierarchyView.requestCreateFolder();
+                },
+                verticalPadding: 2
+            })
+        button2: ({
+                type: "icon",
+                iconName: "generaldelete",
+                backgroundColor: "transparent",
+                backgroundColorDisabled: "transparent",
+                backgroundColorHover: "transparent",
+                backgroundColorPressed: "transparent",
+                enabled: sidebarHierarchyView.deleteFolderEnabled,
+                horizontalPadding: 2,
+                onClicked: function () {
+                    sidebarHierarchyView.requestDeleteFolder();
+                },
+                verticalPadding: 2
+            })
+        button3: ({
+                type: "menu",
+                iconName: "generalsettings",
+                backgroundColor: "transparent",
+                backgroundColorDisabled: "transparent",
+                backgroundColorHover: "transparent",
+                backgroundColorPressed: "transparent",
+                enabled: sidebarHierarchyView.viewOptionsEnabled,
+                leftPadding: 2,
+                onClicked: function () {
+                    sidebarHierarchyView.requestViewOptions();
+                },
+                rightPadding: 4,
+                spacing: -4,
+                topPadding: 2,
+                bottomPadding: 2
+            })
+        height: 24
+        horizontalPadding: 2
+        spacing: 0
+        verticalPadding: 2
+        width: 78
+        z: 2
     }
     DropArea {
         function updateAcceptance(drag) {

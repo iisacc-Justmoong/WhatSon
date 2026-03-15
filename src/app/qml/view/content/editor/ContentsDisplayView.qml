@@ -8,11 +8,12 @@ Item {
     id: contentsView
 
     readonly property color activeLineNumberColor: "#9DA0A8"
+    readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable
     property var contentViewModel: null
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
-    property color displayColor: LV.Theme.panelBackground09
-    property color drawerColor: LV.Theme.panelBackground11
+    property color displayColor: LV.Theme.panelBackground06
+    property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
@@ -90,7 +91,7 @@ Item {
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
-    property color panelColor: LV.Theme.panelBackground07
+    property color panelColor: LV.Theme.panelBackground06
     property var panelViewModel: null
     property alias pendingBodySave: editorSession.pendingBodySave
     readonly property int saveDebounceMs: 300
@@ -138,7 +139,7 @@ Item {
                 "visualIndex": 0
             });
         }
-        return rows;
+
     }
     function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
         const _editorWidth = Number(editorWidth) || 0;
@@ -315,7 +316,7 @@ Item {
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
             return contentsView.gutterMarkerCurrentColor;
-        return contentsView.gutterMarkerCurrentColor;
+
     }
     function markerHeight(markerSpec) {
         const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
@@ -446,7 +447,7 @@ Item {
         const candidate = contentEditor.editorItem.parent.parent;
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
-        return candidate;
+
     }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
@@ -484,7 +485,7 @@ Item {
         }
         if (visibleLines.length === 0)
             visibleLines.push(firstVisibleLine);
-        return visibleLines;
+
     }
 
     clip: true
@@ -692,7 +693,7 @@ Item {
                         }
                     }
                     Binding {
-                        property: "y"
+                        "y"
                         target: contentEditor.editorItem
                         value: contentsView.editorTopInset
                     }

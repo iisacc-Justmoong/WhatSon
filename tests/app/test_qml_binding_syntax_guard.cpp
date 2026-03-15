@@ -245,6 +245,12 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     const QString contentViewSessionText = QString::fromUtf8(contentViewSessionFile.readAll());
 
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("property color displayColor: LV.Theme.panelBackground06")),
+        "ContentsDisplayView.qml must keep the editor surface on the LVRS panelBackground06 token.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property color panelColor: LV.Theme.panelBackground06")),
+        "ContentsDisplayView.qml must keep the overall editor panel background on the LVRS panelBackground06 token.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int gutterWidth: 74")),
         "ContentViewLayout.qml must keep the 74px line-number gutter width from the Figma frame.");
     QVERIFY2(
@@ -747,8 +753,89 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("property bool hierarchyEditable: false")),
         "SidebarHierarchyView.qml must expose an explicit editability contract for the LVRS hierarchy surface.");
     QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral(
+                "readonly property bool createFolderContractAvailable: hierarchyViewModel && hierarchyViewModel.createFolder !== undefined")),
+        "SidebarHierarchyView.qml must detect create-folder support from the bound hierarchy view-model.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral(
+                "readonly property bool deleteFolderContractAvailable: hierarchyViewModel && hierarchyViewModel.deleteSelectedFolder !== undefined")),
+        "SidebarHierarchyView.qml must detect delete-folder support from the bound hierarchy view-model.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral(
+                "readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? Boolean(hierarchyViewModel.viewOptionsEnabled) : true")),
+        "SidebarHierarchyView.qml must expose a view-options capability contract for the footer menu button.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("readonly property int toolbarFrameWidth: 200")),
+        "SidebarHierarchyView.qml hierarchy toolbar must keep the 200px Figma track width.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral(
+            "readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0")),
+        "SidebarHierarchyView.qml hierarchy toolbar must derive a fixed left-anchored spacing from the 200px Figma track.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("editable: sidebarHierarchyView.hierarchyEditable")),
         "SidebarHierarchyView.qml must source LVRS editable drag behavior from the resolved hierarchy drag/drop contract.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("toolbarDistributeSpacing: false")),
+        "SidebarHierarchyView.qml hierarchy toolbar must disable LVRS distributed spacing so icons stay left-anchored.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("toolbarSpacing: sidebarHierarchyView.toolbarButtonSpacing")),
+        "SidebarHierarchyView.qml hierarchy toolbar must feed the fixed Figma spacing back into LVRS.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral(
+                "anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight")),
+        "SidebarHierarchyView.qml must reserve explicit space above the bottom footer instance.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("LV.ListFooter {")),
+        "SidebarHierarchyView.qml must mount the Figma footer as a direct LVRS ListFooter instance.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("id: hierarchyFooter")),
+        "SidebarHierarchyView.qml must keep a stable footer instance for bottom inset coordination.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("anchors.leftMargin: sidebarHierarchyView.horizontalInset")),
+        "SidebarHierarchyView.qml footer must align to the shared sidebar inset.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset")),
+        "SidebarHierarchyView.qml footer must keep the Figma 2px bottom inset.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("width: 78")),
+        "SidebarHierarchyView.qml footer must keep the Figma 78px footer width.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("height: 24")),
+        "SidebarHierarchyView.qml footer must keep the Figma 24px footer height.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("iconName: \"generaladd\"")),
+        "SidebarHierarchyView.qml footer must restore the add button defined by the Figma footer node.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("iconName: \"generaldelete\"")),
+        "SidebarHierarchyView.qml footer must restore the delete button defined by the Figma footer node.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("iconName: \"generalsettings\"")),
+        "SidebarHierarchyView.qml footer must restore the settings menu button defined by the Figma footer node.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("type: \"menu\"")),
+        "SidebarHierarchyView.qml footer must keep the third button as a menu-style action.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("backgroundColor: \"transparent\"")),
+        "SidebarHierarchyView.qml footer buttons must not introduce non-Figma background fills.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("leftPadding: 2")),
+        "SidebarHierarchyView.qml footer menu button must keep the Figma 2px left padding.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("rightPadding: 4")),
+        "SidebarHierarchyView.qml footer menu button must keep the Figma 4px right padding.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("spacing: -4")),
+        "SidebarHierarchyView.qml footer menu button must tighten icon-chevron spacing to the Figma footer width.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestCreateFolder();")),
+        "SidebarHierarchyView.qml footer add button must route into the shared create-folder helper.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")),
+        "SidebarHierarchyView.qml footer delete button must route into the shared delete-folder helper.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)")),
@@ -789,6 +876,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("LV.HierarchyList {")),
         "SidebarHierarchyView.qml must not bypass the higher-level LVRS Hierarchy surface.");
+    QVERIFY2(
+        !sidebarViewText.contains(QStringLiteral("footerVisible: true")),
+        "SidebarHierarchyView.qml footer must stay implemented through direct LVRS ListFooter wiring rather than the Hierarchy footer alias.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("property string searchQuery: \"\"")),
         "SidebarHierarchyView.qml standard-contract pass must not keep a local hierarchy search filter bridge.");
@@ -947,6 +1037,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("required property string primaryText")),
         "ListBarLayout.qml note delegates must declare the visible preview text as an explicit required role contract.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("height: noteCard.implicitHeight")),
+        "ListBarLayout.qml note delegates must expose the card implicit height on the delegate root so rows stay visible.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("width: ListView.view ? ListView.view.width : listBarLayout.width")),
+        "ListBarLayout.qml note delegates must stretch to the active ListView width so the bound NoteListItem can render.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("NoteListItem {")),
         "ListBarLayout.qml note delegates must wrap the visual card in a dedicated NoteListItem composition surface.");
     QVERIFY2(
@@ -994,8 +1090,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")),
         "ListBarLayout.qml must bind ListView only to the resolved note-list model.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("Drag.dragType: Drag.Automatic")),
+        "ListBarLayout.qml note delegates must use automatic Qt drag dispatch so note drags follow the pointer even when the row itself stays fixed.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("\"application/x-whatson-note-id\": noteItemDelegate.noteId")),
+        "ListBarLayout.qml note delegates must publish noteId through drag mime data so the Qt drag operation has a concrete payload.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.supportedActions: Qt.CopyAction")),
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");

@@ -237,9 +237,14 @@ Rectangle {
                         required property var tags
 
                         Drag.active: noteDragHandler.active
+                        Drag.dragType: Drag.Automatic
                         Drag.hotSpot.x: width * 0.5
                         Drag.hotSpot.y: height * 0.5
                         Drag.keys: ["whatson.library.note"]
+                        Drag.mimeData: ({
+                                "application/x-whatson-note-id": noteItemDelegate.noteId,
+                                "text/plain": noteItemDelegate.noteId
+                            })
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
 
