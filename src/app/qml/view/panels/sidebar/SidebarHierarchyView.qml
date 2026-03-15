@@ -11,11 +11,11 @@ Item {
     readonly property bool createFolderEnabled: hierarchyViewModel && hierarchyViewModel.createFolderEnabled !== undefined ? hierarchyViewModel.createFolderEnabled : false
     property int defaultToolbarIndex: 0
     readonly property bool deleteFolderEnabled: hierarchyViewModel && hierarchyViewModel.deleteFolderEnabled !== undefined ? hierarchyViewModel.deleteFolderEnabled : false
-    property int editingIndex: -1
-    property string editingText: ""
-    property bool folderDropAsChild: true
-    property bool folderDropBefore: false
-    property int folderDropTargetIndex: -1
+    property alias editingIndex: sidebarController.editingIndex
+    property alias editingText: sidebarController.editingText
+    property alias folderDropAsChild: sidebarController.folderDropAsChild
+    property alias folderDropBefore: sidebarController.folderDropBefore
+    property alias folderDropTargetIndex: sidebarController.folderDropTargetIndex
     // SOURCE-OF-TRUTH GUARD:
     // Hierarchy list must always come from per-domain ViewModel.itemModel (store-backed path).
     // Do not add any UI-side sample/fallback/depth injection model here.
@@ -28,11 +28,11 @@ Item {
     readonly property int hierarchyItemBaseLeftPadding: (typeof LV.Theme.gap8 === "number" && isFinite(LV.Theme.gap8)) ? LV.Theme.gap8 : 8
     property var hierarchyViewModel: null
     property int horizontalInset: 2
-    property int noteDropTargetIndex: -1
+    property alias noteDropTargetIndex: sidebarController.noteDropTargetIndex
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameEnabled: hierarchyViewModel && hierarchyViewModel.renameEnabled !== undefined ? hierarchyViewModel.renameEnabled : false
-    property bool rootDropHighlighted: false
+    property alias rootDropHighlighted: sidebarController.rootDropHighlighted
     readonly property int searchHeight: (typeof LV.Theme.gap18 === "number" && isFinite(LV.Theme.gap18)) ? LV.Theme.gap18 : 18
     property string searchQuery: ""
     readonly property int searchRadius: 5
@@ -65,127 +65,49 @@ Item {
     signal viewHookRequested
 
     function activateHierarchyDelegate(delegate, index) {
-        if (!delegate || index < 0)
-            return;
-        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
-            sidebarHierarchyView.commitRename();
-        if (hierarchyList && hierarchyList.requestActivate !== undefined)
-            hierarchyList.requestActivate(delegate);
-        sidebarHierarchyView.forceActiveFocus();
+        sidebarController.activateHierarchyDelegate(delegate, index);
     }
     function activateSelectedHierarchyItem(focusView) {
-        if (sidebarHierarchyView.selectedFolderIndex < 0)
-            return;
-        var delegate = folderRepeater.itemAt(sidebarHierarchyView.selectedFolderIndex);
-        if (!delegate || delegate.visible === false || delegate.height <= 0)
-            return;
-        if (hierarchyList && hierarchyList.requestActivate !== undefined)
-            hierarchyList.requestActivate(delegate);
-        if (focusView)
-            sidebarHierarchyView.forceActiveFocus();
-        var itemTop = delegate.y;
-        var itemBottom = itemTop + delegate.height;
-        if (itemTop < hierarchyViewport.contentY)
-            hierarchyViewport.contentY = itemTop;
-        else if (itemBottom > hierarchyViewport.contentY + hierarchyViewport.height)
-            hierarchyViewport.contentY = itemBottom - hierarchyViewport.height;
+        sidebarController.activateSelectedHierarchyItem(focusView);
     }
     function assignNoteToFolder(index, noteId) {
-        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (noteId === undefined || noteId === null || String(noteId).trim().length === 0)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.assignNoteToFolder(index, noteId);
+        return sidebarController.assignNoteToFolder(index, noteId);
     }
     function beginRename(index, currentLabel) {
-        if (index < 0)
-            return;
-        if (!sidebarHierarchyView.canRenameAtIndex(index))
-            return;
-        if (sidebarHierarchyView.editingIndex >= 0 && sidebarHierarchyView.editingIndex !== index)
-            sidebarHierarchyView.commitRename();
-        if (sidebarHierarchyView.hierarchyViewModel)
-            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(index);
-        sidebarHierarchyView.editingIndex = index;
-        sidebarHierarchyView.editingText = currentLabel;
+        sidebarController.beginRename(index, currentLabel);
     }
     function canAcceptFolderDrop(sourceIndex, targetIndex, asChild) {
-        if (sourceIndex < 0 || targetIndex < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDrop(sourceIndex, targetIndex, asChild);
+        return sidebarController.canAcceptFolderDrop(sourceIndex, targetIndex, asChild);
     }
     function canAcceptFolderDropBefore(sourceIndex, targetIndex) {
-        if (sourceIndex < 0 || targetIndex < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDropBefore === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.canAcceptFolderDropBefore(sourceIndex, targetIndex);
+        return sidebarController.canAcceptFolderDropBefore(sourceIndex, targetIndex);
     }
     function canAcceptNoteDrop(index, noteId) {
-        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (noteId === undefined || noteId === null || String(noteId).trim().length === 0)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.canAcceptNoteDrop === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.canAcceptNoteDrop(index, noteId);
+        return sidebarController.canAcceptNoteDrop(index, noteId);
     }
     function canMoveFolder(index) {
-        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.canMoveFolder === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.canMoveFolder(index);
+        return sidebarController.canMoveFolder(index);
     }
     function canMoveFolderToRoot(sourceIndex) {
-        if (sourceIndex < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.canMoveFolderToRoot === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.canMoveFolderToRoot(sourceIndex);
+        return sidebarController.canMoveFolderToRoot(sourceIndex);
     }
     function canRenameAtIndex(index) {
-        if (index < 0 || !sidebarHierarchyView.hierarchyViewModel)
-            return false;
-        if (sidebarHierarchyView.hierarchyViewModel.canRenameItem !== undefined)
-            return sidebarHierarchyView.hierarchyViewModel.canRenameItem(index);
-        return false;
+        return sidebarController.canRenameAtIndex(index);
     }
     function cancelRename() {
-        sidebarHierarchyView.editingIndex = -1;
-        sidebarHierarchyView.editingText = "";
+        sidebarController.cancelRename();
     }
     function clearHierarchySelection() {
-        if (sidebarHierarchyView.editingIndex >= 0)
-            sidebarHierarchyView.commitRename();
-        sidebarHierarchyView.resetDropTargets();
-        if (hierarchyList && hierarchyList.clearActiveItem !== undefined)
-            hierarchyList.clearActiveItem();
+        sidebarController.clearHierarchySelection();
     }
     function commitRename() {
-        if (sidebarHierarchyView.editingIndex < 0)
-            return;
-        if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.canRenameAtIndex(sidebarHierarchyView.editingIndex))
-            sidebarHierarchyView.hierarchyViewModel.renameItem(sidebarHierarchyView.editingIndex, sidebarHierarchyView.editingText);
-        sidebarHierarchyView.editingIndex = -1;
-        sidebarHierarchyView.editingText = "";
+        sidebarController.commitRename();
     }
     function draggedFolderIndex(event) {
-        if (!event || !event.source || event.source.sourceIndex === undefined || event.source.sourceIndex === null)
-            return -1;
-        var parsed = Number(event.source.sourceIndex);
-        if (!isFinite(parsed))
-            return -1;
-        return Math.floor(parsed);
+        return sidebarController.draggedFolderIndex(event);
     }
     function draggedNoteId(event) {
-        if (!event || !event.source || event.source.noteId === undefined || event.source.noteId === null)
-            return "";
-        return String(event.source.noteId).trim();
+        return sidebarController.draggedNoteId(event);
     }
     function matchesSearchText(label) {
         var query = sidebarHierarchyView.searchQuery.trim().toLowerCase();
@@ -195,19 +117,13 @@ Item {
         return target.indexOf(query) >= 0;
     }
     function moveFolder(sourceIndex, targetIndex, asChild) {
-        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.moveFolder === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.moveFolder(sourceIndex, targetIndex, asChild);
+        return sidebarController.moveFolder(sourceIndex, targetIndex, asChild);
     }
     function moveFolderBefore(sourceIndex, targetIndex) {
-        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.moveFolderBefore === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.moveFolderBefore(sourceIndex, targetIndex);
+        return sidebarController.moveFolderBefore(sourceIndex, targetIndex);
     }
     function moveFolderToRoot(sourceIndex) {
-        if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.moveFolderToRoot === undefined)
-            return false;
-        return sidebarHierarchyView.hierarchyViewModel.moveFolderToRoot(sourceIndex);
+        return sidebarController.moveFolderToRoot(sourceIndex);
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -216,11 +132,7 @@ Item {
         viewHookRequested();
     }
     function resetDropTargets() {
-        sidebarHierarchyView.noteDropTargetIndex = -1;
-        sidebarHierarchyView.folderDropTargetIndex = -1;
-        sidebarHierarchyView.folderDropAsChild = true;
-        sidebarHierarchyView.folderDropBefore = false;
-        sidebarHierarchyView.rootDropHighlighted = false;
+        sidebarController.resetDropTargets();
     }
     function toggleViewOptionsMenu() {
         if (viewOptionsContextMenu.opened) {
@@ -372,7 +284,7 @@ Item {
                                 sidebarHierarchyView.resetDropTargets();
                                 if (!accepted)
                                     return;
-                                sidebarHierarchyView.requestViewHook("move-folder-to-root");
+                                sidebarController.notifyAcceptedInteraction("move-folder-to-root");
                             }
                             onEntered: function (drag) {
                                 const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
@@ -499,7 +411,7 @@ Item {
                                     sidebarHierarchyView.resetDropTargets();
                                     if (!accepted)
                                         return;
-                                    sidebarHierarchyView.requestViewHook("move-folder-before");
+                                    sidebarController.notifyAcceptedInteraction("move-folder-before");
                                 }
                                 onEntered: function (drag) {
                                     const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
@@ -524,7 +436,7 @@ Item {
                                     sidebarHierarchyView.resetDropTargets();
                                     if (!accepted)
                                         return;
-                                    sidebarHierarchyView.requestViewHook("drop-note-to-folder");
+                                    sidebarController.notifyAcceptedInteraction("drop-note-to-folder");
                                 }
                                 onEntered: function (drag) {
                                     const noteId = sidebarHierarchyView.draggedNoteId(drag);
@@ -553,7 +465,7 @@ Item {
                                     sidebarHierarchyView.resetDropTargets();
                                     if (!accepted)
                                         return;
-                                    sidebarHierarchyView.requestViewHook("move-folder-child");
+                                    sidebarController.notifyAcceptedInteraction("move-folder-child");
                                 }
                                 onEntered: function (drag) {
                                     const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);
@@ -581,7 +493,7 @@ Item {
                                     sidebarHierarchyView.resetDropTargets();
                                     if (!accepted)
                                         return;
-                                    sidebarHierarchyView.requestViewHook("move-folder-sibling");
+                                    sidebarController.notifyAcceptedInteraction("move-folder-sibling");
                                 }
                                 onEntered: function (drag) {
                                     const sourceIndex = sidebarHierarchyView.draggedFolderIndex(drag);

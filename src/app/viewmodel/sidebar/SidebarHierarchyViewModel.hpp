@@ -14,8 +14,11 @@ class SidebarHierarchyViewModel final : public QObject
     Q_PROPERTY(
         int
  activeHierarchyIndex READ activeHierarchyIndex WRITE setActiveHierarchyIndex NOTIFY activeHierarchyIndexChanged)
+    Q_PROPERTY(int resolvedActiveHierarchyIndex READ activeHierarchyIndex NOTIFY activeHierarchyIndexChanged)
     Q_PROPERTY(QObject* activeHierarchyViewModel READ activeHierarchyViewModel NOTIFY activeHierarchyViewModelChanged)
+    Q_PROPERTY(QObject* resolvedHierarchyViewModel READ activeHierarchyViewModel NOTIFY activeHierarchyViewModelChanged)
     Q_PROPERTY(QObject* activeNoteListModel READ activeNoteListModel NOTIFY activeNoteListModelChanged)
+    Q_PROPERTY(QObject* resolvedNoteListModel READ activeNoteListModel NOTIFY activeNoteListModelChanged)
 
 public:
     explicit SidebarHierarchyViewModel(QObject* parent = nullptr);
@@ -37,6 +40,7 @@ public:
     void setViewModelProvider(IHierarchyViewModelProvider* provider);
 
     signals  :
+
 
 
     void activeHierarchyIndexChanged();

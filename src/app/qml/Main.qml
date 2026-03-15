@@ -28,7 +28,6 @@ LV.ApplicationWindow {
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property var editorViewModeVm: editorViewModeViewModel
     readonly property var eventHierarchyVm: eventHierarchyViewModel
-    readonly property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
     readonly property bool hideListView: false
     readonly property bool hideRightPanel: false
     readonly property int hierarchyHorizontalInset: 2
@@ -66,10 +65,6 @@ LV.ApplicationWindow {
     readonly property var presetHierarchyVm: presetHierarchyViewModel
     readonly property var progressHierarchyVm: progressHierarchyViewModel
     readonly property var projectsHierarchyVm: projectsHierarchyViewModel
-    property bool resizeDrWasSuspended: false
-    property bool resizeInProgress: false
-    property int resizeRenderGuardDebounceMs: 220
-    property bool resizeRenderGuardEnabled: true
     readonly property var resourcesHierarchyVm: resourcesHierarchyViewModel
     readonly property color rightPanelColor: LV.Theme.panelBackground06
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
@@ -91,12 +86,6 @@ LV.ApplicationWindow {
 
     signal viewHookRequested
 
-    function applyRenderQualityPolicy(source) {
-        if (!isDesktopPlatform && !isMobilePlatform)
-            return;
-
-        console.log("[whatson:debug][render.policy][" + source + "] platform=" + platform + " action=resizeSuspendResumeGuard dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled);
-    }
     function clampPreferredSizes() {
         preferredSidebarWidth = Math.max(minSidebarWidth, preferredSidebarWidth);
         preferredListViewWidth = Math.max(minListViewWidth, preferredListViewWidth);
@@ -105,101 +94,14 @@ LV.ApplicationWindow {
         var maxDrawerHeight = Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness);
         preferredDrawerHeight = Math.max(minDrawerHeight, Math.min(maxDrawerHeight, preferredDrawerHeight));
     }
-    function clearActiveFocus(reason) {
-        let current = applicationWindow.activeFocusItem;
-        let depthGuard = 0;
-
-        while (current && depthGuard < 32) {
-            if (current.focus !== undefined)
-                current.focus = false;
-            current = current.parent;
-            depthGuard += 1;
-        }
-    }
-    function cycleNavigationModeFromShortcut() {
-        if (applicationWindow.hasFocusedTextInput())
-            return;
-        if (applicationWindow.navigationModeVm && applicationWindow.navigationModeVm.requestNextMode !== undefined)
-            applicationWindow.navigationModeVm.requestNextMode();
-    }
-    function finalizeResizeRenderQualityPolicy() {
-        if (!resizeRenderGuardEnabled || (!isMobilePlatform && !isDesktopPlatform))
-            return;
-
-        resizeInProgress = false;
-        if (!resizeDrWasSuspended) {
-            console.log("[whatson:debug][render.policy][resizeEnd] platform=" + platform + " action=resumeSkipped");
-            return;
-        }
-
-        // Ensure max supersample scale is restored before re-enabling dynamic resolution.
-        LV.RenderQuality.dynamicResolutionEnabled = false;
-        LV.RenderQuality.dynamicResolutionEnabled = true;
-        resizeDrWasSuspended = false;
-        console.log("[whatson:debug][render.policy][resizeEnd] platform=" + platform + " action=resumeWithMaxScaleReset");
-    }
-    function handleResizeForRenderQuality(source) {
-        if (!resizeRenderGuardEnabled || (!isMobilePlatform && !isDesktopPlatform))
-            return;
-
-        if (!resizeInProgress) {
-            resizeInProgress = true;
-            resizeDrWasSuspended = LV.RenderQuality.dynamicResolutionEnabled;
-
-            if (resizeDrWasSuspended) {
-                LV.RenderQuality.dynamicResolutionEnabled = false;
-                console.log("[whatson:debug][render.policy][" + source + "] platform=" + platform + " action=resizeBegin suspendDynamicResolution=true");
-            } else {
-                console.log("[whatson:debug][render.policy][" + source + "] platform=" + platform + " action=resizeBegin suspendDynamicResolution=false");
-            }
-        }
-
-        resizeDebounceTimer.restart();
-    }
-    function hasFocusedTextInput() {
-        let current = applicationWindow.activeFocusItem;
-        while (current) {
-            const isTextEditingItem = current.text !== undefined && current.cursorPosition !== undefined && current.selectedText !== undefined;
-            if (isTextEditingItem)
-                return true;
-            current = current.parent;
-        }
-        return false;
-    }
     function nativeMenuPlaceholderText() {
         return " ";
-    }
-    function reportLayoutBranch(source) {
-        const currentPath = activePageRouter && activePageRouter.currentPath !== undefined ? String(activePageRouter.currentPath) : "<none>";
-        console.log("[whatson:debug][main.layout][" + source + "] platform=" + platform + " adaptiveLayoutProfile=" + adaptiveLayoutProfile + " adaptiveNavigationMode=" + adaptiveNavigationMode + " adaptiveMobileLayout=" + adaptiveMobileLayout + " adaptiveDesktopLayout=" + adaptiveDesktopLayout + " currentPath=" + currentPath);
-    }
-    function shouldRetainFocusForUiHit(uiData) {
-        if (!uiData || uiData.insideWindow === false)
-            return true;
-
-        const className = uiData.className === undefined || uiData.className === null ? "" : String(uiData.className).toLowerCase();
-        const objectName = uiData.objectName === undefined || uiData.objectName === null ? "" : String(uiData.objectName).toLowerCase();
-        const path = uiData.path === undefined || uiData.path === null ? "" : String(uiData.path).toLowerCase();
-        const text = uiData.text === undefined || uiData.text === null ? "" : String(uiData.text).trim();
-        const label = uiData.label === undefined || uiData.label === null ? "" : String(uiData.label).trim();
-        const title = uiData.title === undefined || uiData.title === null ? "" : String(uiData.title).trim();
-        const searchable = className + " " + objectName + " " + path;
-
-        for (let i = 0; i < applicationWindow.focusRetainedUiTokens.length; ++i) {
-            const token = String(applicationWindow.focusRetainedUiTokens[i]).toLowerCase();
-            if (token.length > 0 && searchable.indexOf(token) >= 0)
-                return true;
-        }
-
-        if (text.length > 0 || label.length > 0 || title.length > 0)
-            return true;
-
-        return !(className.indexOf("rectangle") >= 0 || (className.indexOf("item") >= 0 && objectName === "unnamed"));
     }
 
     autoAttachRuntimeEvents: true
     globalEventListenersEnabled: true
     height: windowDefaultHeight
+    internalRouterRegisterAsGlobalNavigator: true
     minimumHeight: windowMinHeight
     minimumWidth: adaptiveMobileLayout ? windowMobileMinWidth : desktopMinimumBodyWidth
     navItems: []
@@ -216,37 +118,54 @@ LV.ApplicationWindow {
 
     Component.onCompleted: {
         clampPreferredSizes();
-        applyRenderQualityPolicy("completed");
-        reportLayoutBranch("completed");
+        windowInteractions.applyRenderQualityPolicy("completed");
+        windowInteractions.reportLayoutBranch("completed");
         if (applicationWindow.onboardingVisible)
             onboardingSubWindow.show();
     }
-    onAdaptiveLayoutStateChanged: reportLayoutBranch("adaptiveLayoutStateChanged")
+    onAdaptiveLayoutStateChanged: windowInteractions.reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
-    onHeightChanged: handleResizeForRenderQuality("heightChanged")
+    onHeightChanged: {
+        windowInteractions.handleResizeForRenderQuality("heightChanged");
+        resizeDebounceTimer.restart();
+    }
     onPageStackNavigated: function (path, params) {
-        applicationWindow.reportLayoutBranch("pageStackNavigated");
+        windowInteractions.reportLayoutBranch("pageStackNavigated");
     }
     onPageStackNavigationFailed: function (path) {
         console.warn("[whatson:debug][main.route][navigationFailed] path=" + path);
     }
-    onWidthChanged: handleResizeForRenderQuality("widthChanged")
+    onWidthChanged: {
+        windowInteractions.handleResizeForRenderQuality("widthChanged");
+        resizeDebounceTimer.restart();
+    }
 
+    MainWindowInteractionController {
+        id: windowInteractions
+
+        activePageRouter: applicationWindow.activePageRouter
+        adaptiveDesktopLayout: applicationWindow.adaptiveDesktopLayout
+        adaptiveLayoutProfile: applicationWindow.adaptiveLayoutProfile
+        adaptiveMobileLayout: applicationWindow.adaptiveMobileLayout
+        adaptiveNavigationMode: applicationWindow.adaptiveNavigationMode
+        hostWindow: applicationWindow
+        navigationModeViewModel: applicationWindow.navigationModeVm
+    }
     Timer {
         id: resizeDebounceTimer
 
-        interval: applicationWindow.resizeRenderGuardDebounceMs
+        interval: windowInteractions.resizeRenderGuardDebounceMs
         repeat: false
 
-        onTriggered: applicationWindow.finalizeResizeRenderQualityPolicy()
+        onTriggered: windowInteractions.finalizeResizeRenderQualityPolicy()
     }
     Shortcut {
         autoRepeat: false
         context: Qt.ApplicationShortcut
-        enabled: !applicationWindow.hasFocusedTextInput()
+        enabled: !windowInteractions.hasFocusedTextInput()
         sequence: "Tab"
 
-        onActivated: applicationWindow.cycleNavigationModeFromShortcut()
+        onActivated: windowInteractions.cycleNavigationModeFromShortcut()
     }
     LV.EventListener {
         action: function (eventData) {
@@ -254,9 +173,9 @@ LV.ApplicationWindow {
                 return;
             if (!eventData || (eventData.buttons & Qt.LeftButton) !== Qt.LeftButton)
                 return;
-            if (applicationWindow.shouldRetainFocusForUiHit(eventData.ui))
+            if (windowInteractions.shouldRetainFocusForUiHit(eventData.ui))
                 return;
-            applicationWindow.clearActiveFocus("blankGlobalPress");
+            windowInteractions.clearActiveFocus("blankGlobalPress");
         }
         enabled: applicationWindow.globalEventListenersEnabled
         includeInputState: false
@@ -328,7 +247,7 @@ LV.ApplicationWindow {
                 anchors.fill: parent
                 sourceComponent: applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent
 
-                onSourceComponentChanged: applicationWindow.reportLayoutBranch("workspaceSourceChanged")
+                onSourceComponentChanged: windowInteractions.reportLayoutBranch("workspaceSourceChanged")
             }
         }
     }

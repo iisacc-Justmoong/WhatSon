@@ -468,6 +468,25 @@ target_link_libraries(whatson_sidebar_hierarchy_module_tests
 add_test(NAME whatson_sidebar_hierarchy_module_tests COMMAND whatson_sidebar_hierarchy_module_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_hierarchy_module_tests)
 
+add_executable(whatson_contents_editor_bridge_tests
+        app/test_contents_editor_bridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsLogicalTextBridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsGutterMarkerBridge.cpp
+)
+set_target_properties(whatson_contents_editor_bridge_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_contents_editor_bridge_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_contents_editor_bridge_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_contents_editor_bridge_tests COMMAND whatson_contents_editor_bridge_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_contents_editor_bridge_tests)
+
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailContentSectionViewModel.cpp

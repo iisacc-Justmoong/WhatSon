@@ -43,10 +43,10 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Hierarchy Interaction
 
-- MVVM input normalization for internal-data views now happens at the assembly layer first. `BodyLayout.qml`,
-  `HierarchySidebarLayout.qml`, `ContentViewLayout.qml`, `ListBarLayout.qml`, and the detail-panel views expose
-  `resolved*` or capability-contract properties before child views consume hierarchy indices, active view-models,
-  toolbar specs, or note-list models.
+- `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` and
+  `HierarchySidebarLayout.qml` no longer normalize or resolve hierarchy state locally; they consume
+  `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that shared
+  backend object before passing child bindings down into the sidebar, note list, and editor.
 - `SidebarHierarchyView.qml` opens inline folder rename from both `Enter/Return` and mouse double-tap on the folder row.
 - Folder delegates expose hierarchy-folder drag metadata plus drop acceptance wrappers, so users can reorder folders and
   reparent them by drag-and-drop instead of only through model-side helpers. The sidebar now distinguishes `before`,
@@ -78,8 +78,8 @@ WhatSon is an LVRS-based Qt Quick application.
   payload extracted from `.wsnbody` `<body>` content.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
   the same logical document and current cursor line.
-- That gutter depends on a concrete logical-line offset array returned from `buildLogicalLineStartOffsets(...)`; when
-  the offset model is broken, the editor text can still render while every visible gutter number disappears.
+- That gutter depends on the logical-line offset model maintained by `ContentsLogicalTextBridge`; when that backend
+  offset model is broken, the editor text can still render while every visible gutter number disappears.
 - The editor-view helper contract is intentionally strict now: helper functions that feed gutter/minimap/layout state
   must behave like total functions with an explicit return value on every success path and every fallback path. QML
   silently propagates `undefined`, and that can blank the gutter while leaving the rest of the editor visible.
@@ -114,9 +114,16 @@ WhatSon is an LVRS-based Qt Quick application.
 - `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
   `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
   model changes must resync the visible current row immediately when the active hierarchy domain changes.
-- `ContentsDisplayView.qml` persists edited body text through the active hierarchy view-model's
-  `saveBodyTextForNote(...)` contract with a short idle debounce, so `.wsnbody` rewrites and note-list refreshes no
-  longer happen on every keystroke.
+- The note-card delegate reads `model.<role>` directly from the runtime role object instead of passing every field
+  through a dynamic role-extraction helper, which keeps note preview bindings simpler and avoids silent blank-card
+  regressions when a helper is removed.
+- `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
+  `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
+  `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,
+  and `ContentsEditorSession.qml` for debounce plus selection-to-editor text synchronization. The visual surface keeps
+  only editor-geometry sampling and render placement.
+- Body persistence still flows through the active hierarchy view-model's `saveBodyTextForNote(...)` contract with a
+  short idle debounce, so `.wsnbody` rewrites and note-list refreshes no longer happen on every keystroke.
 - When the active folder resolves to zero visible notes, `ContentsDisplayView.qml` no longer pretends that an unsaved
   line-1 draft exists. The entire editor surface is replaced with a centered `No files in this folder` placeholder
   using title typography plus `LV.Theme.disabledColor`.
@@ -153,9 +160,10 @@ WhatSon is an LVRS-based Qt Quick application.
   literals inside `Binding {}` blocks and standalone dotted expressions such as `noteListItem.imageSource` that should
   have been property assignments. Critical `ContentsDisplayView.qml` helper bodies are also asserted to keep their
   explicit `return` statements.
-- The same guard suite now also checks MVVM contract normalization for the data-driven views: hierarchy assembly,
-  note-list projection, content editor projection, and detail-panel projection must each keep their explicit
-  `resolved*` contract properties and helper functions.
+- The same guard suite now also checks the centralized MVVM contract boundaries for the data-driven views: sidebar
+  hierarchy state must stay anchored in `SidebarHierarchyViewModel`, sidebar rename/drag-drop state must stay routed
+  through `SidebarHierarchyInteractionController.qml`, and editor-side selection/persistence/text/gutter contracts
+  must stay split across the dedicated editor adapters instead of collapsing back into one bridge.
 
 ## Theme Token Usage
 

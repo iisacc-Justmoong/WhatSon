@@ -10,6 +10,9 @@ Item {
     property int headerToolbarWidth: 145
     property int panelSpacing: 10
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanel") : null
+    readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()
+    readonly property string resolvedActiveStateName: detailPanel.resolveActiveStateName()
+    readonly property var resolvedToolbarItems: detailPanel.resolveToolbarItems()
 
     signal viewHookRequested
 

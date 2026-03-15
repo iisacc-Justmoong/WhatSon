@@ -5,9 +5,9 @@ import LVRS 1.0 as LV
 Item {
     id: hStack
 
-    readonly property int activeHierarchyIndex: hStack.resolveActiveHierarchyIndex()
-    readonly property var activeHierarchyViewModel: hStack.resolveActiveHierarchyViewModel()
-    readonly property var activeNoteListModel: hStack.resolveActiveNoteListModel()
+    readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
+    readonly property var activeHierarchyViewModel: hStack.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel.resolvedNoteListModel
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentPanelColor: LV.Theme.panelBackground07
@@ -29,7 +29,7 @@ Item {
     property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: LV.Theme.panelBackground04
-    property var sidebarHierarchyViewModel: null
+    required property var sidebarHierarchyViewModel
     property int sidebarHorizontalInset: 2
     property int sidebarWidth: LV.Theme.gap24 * 9
     property color splitterColor: LV.Theme.panelBackground10
@@ -70,24 +70,6 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
-    function resolveActiveHierarchyIndex() {
-        if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeHierarchyIndex === undefined)
-            return 0;
-        const numericIndex = Number(hStack.sidebarHierarchyViewModel.activeHierarchyIndex);
-        if (!isFinite(numericIndex))
-            return 0;
-        return Math.max(0, Math.floor(numericIndex));
-    }
-    function resolveActiveHierarchyViewModel() {
-        if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeHierarchyViewModel === undefined)
-            return null;
-
-    }
-    function resolveActiveNoteListModel() {
-        if (!hStack.sidebarHierarchyViewModel || hStack.sidebarHierarchyViewModel.activeNoteListModel === undefined)
-            return null;
-
-    }
     function totalSplitterWidth() {
         // CRITICAL REGRESSION GUARD:
         // This function MUST return a finite number. If return is removed or undefined/NaN leaks,
@@ -118,47 +100,25 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.effectiveMinSidebarWidth
                 Layout.preferredWidth: hStack.sidebarWidth
-                activeToolbarIndex: hStack.activeHierarchyIndex
                 horizontalInset: hStack.sidebarHorizontalInset
                 panelColor: hStack.sidebarColor
                 sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
                 toolbarIconNames: hStack.toolbarIconNames
             }
-            Rectangle {
+            PanelEdgeSplitter {
                 id: sideBarSplitter
 
-                Layout.fillHeight: true
-                Layout.preferredWidth: hStack.splitterThickness
-                color: hStack.splitterColor
+                clampSize: function (value) {
+                    return hStack.clampSidebarWidth(value);
+                }
+                currentSize: hStack.sidebarWidth
+                dragDirection: 1
+                handleThickness: hStack.splitterHandleThickness
+                splitterColor: hStack.splitterColor
+                splitterThickness: hStack.splitterThickness
 
-                MouseArea {
-                    id: sideBarSplitterMouse
-
-                    property real dragStartGlobalX: 0
-                    property int dragStartSidebarWidth: hStack.sidebarWidth
-
-                    acceptedButtons: Qt.LeftButton
-                    anchors.bottom: parent.bottom
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    cursorShape: Qt.SizeHorCursor
-                    preventStealing: true
-                    width: hStack.splitterHandleThickness
-
-                    onPositionChanged: function (mouse) {
-                        if (!(pressedButtons & Qt.LeftButton))
-                            return;
-                        var movePoint = sideBarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                        var deltaX = movePoint.x - dragStartGlobalX;
-                        var nextSidebarWidth = hStack.clampSidebarWidth(dragStartSidebarWidth + deltaX);
-                        if (isFinite(nextSidebarWidth) && nextSidebarWidth !== hStack.sidebarWidth)
-                            hStack.sidebarWidthDragRequested(nextSidebarWidth);
-                    }
-                    onPressed: function (mouse) {
-                        var pressPoint = sideBarSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                        dragStartGlobalX = pressPoint.x;
-                        dragStartSidebarWidth = hStack.sidebarWidth;
-                    }
+                onSizeDragRequested: function (value) {
+                    hStack.sidebarWidthDragRequested(value);
                 }
             }
             Rectangle {
@@ -177,42 +137,21 @@ Item {
                     panelColor: hStack.sidebarColor
                 }
             }
-            Rectangle {
+            PanelEdgeSplitter {
                 id: listSplitter
 
-                Layout.fillHeight: true
-                Layout.preferredWidth: hStack.splitterThickness
-                color: hStack.splitterColor
+                clampSize: function (value) {
+                    return hStack.clampListViewWidth(value);
+                }
+                currentSize: hStack.listViewWidth
+                dragDirection: 1
+                handleThickness: hStack.splitterHandleThickness
+                splitterColor: hStack.splitterColor
+                splitterThickness: hStack.splitterThickness
                 visible: hStack.listVisible
 
-                MouseArea {
-                    id: listSplitterMouse
-
-                    property real dragStartGlobalX: 0
-                    property int dragStartListWidth: hStack.listViewWidth
-
-                    acceptedButtons: Qt.LeftButton
-                    anchors.bottom: parent.bottom
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    cursorShape: Qt.SizeHorCursor
-                    preventStealing: true
-                    width: hStack.splitterHandleThickness
-
-                    onPositionChanged: function (mouse) {
-                        if (!(pressedButtons & Qt.LeftButton))
-                            return;
-                        var movePoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                        var deltaX = movePoint.x - dragStartGlobalX;
-                        var nextListWidth = hStack.clampListViewWidth(dragStartListWidth + deltaX);
-                        if (isFinite(nextListWidth) && nextListWidth !== hStack.listViewWidth)
-                            hStack.listViewWidthDragRequested(nextListWidth);
-                    }
-                    onPressed: function (mouse) {
-                        var pressPoint = listSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                        dragStartGlobalX = pressPoint.x;
-                        dragStartListWidth = hStack.listViewWidth;
-                    }
+                onSizeDragRequested: function (value) {
+                    hStack.listViewWidthDragRequested(value);
                 }
             }
             ContentViewLayout {
@@ -236,42 +175,21 @@ Item {
                     hStack.drawerHeightDragRequested(value);
                 }
             }
-            Rectangle {
+            PanelEdgeSplitter {
                 id: rightSplitter
 
-                Layout.fillHeight: true
-                Layout.preferredWidth: hStack.splitterThickness
-                color: hStack.splitterColor
+                clampSize: function (value) {
+                    return hStack.clampRightPanelWidth(value);
+                }
+                currentSize: hStack.rightPanelWidth
+                dragDirection: -1
+                handleThickness: hStack.splitterHandleThickness
+                splitterColor: hStack.splitterColor
+                splitterThickness: hStack.splitterThickness
                 visible: hStack.rightVisible
 
-                MouseArea {
-                    id: rightSplitterMouse
-
-                    property real dragStartGlobalX: 0
-                    property int dragStartRightWidth: hStack.rightPanelWidth
-
-                    acceptedButtons: Qt.LeftButton
-                    anchors.bottom: parent.bottom
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    cursorShape: Qt.SizeHorCursor
-                    preventStealing: true
-                    width: hStack.splitterHandleThickness
-
-                    onPositionChanged: function (mouse) {
-                        if (!(pressedButtons & Qt.LeftButton))
-                            return;
-                        var movePoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                        var deltaX = movePoint.x - dragStartGlobalX;
-                        var nextRightWidth = hStack.clampRightPanelWidth(dragStartRightWidth - deltaX);
-                        if (isFinite(nextRightWidth) && nextRightWidth !== hStack.rightPanelWidth)
-                            hStack.rightPanelWidthDragRequested(nextRightWidth);
-                    }
-                    onPressed: function (mouse) {
-                        var pressPoint = rightSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
-                        dragStartGlobalX = pressPoint.x;
-                        dragStartRightWidth = hStack.rightPanelWidth;
-                    }
+                onSizeDragRequested: function (value) {
+                    hStack.rightPanelWidthDragRequested(value);
                 }
             }
             DetailPanelLayout {

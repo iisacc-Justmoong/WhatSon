@@ -4,14 +4,12 @@ import LVRS 1.0 as LV
 Item {
     id: hierarchyView
 
-    property int activeToolbarIndex: 0
-    readonly property int currentHierarchy: normalizeHierarchyIndex(hierarchyView.resolvedActiveHierarchyIndex)
+    readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
     property int horizontalInset: 2
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
-    readonly property int resolvedActiveHierarchyIndex: resolveActiveHierarchyIndex()
-    readonly property var resolvedHierarchyViewModel: resolveHierarchyViewModel(hierarchyView.currentHierarchy)
-    property var sidebarHierarchyViewModel: null
+    readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+    required property var sidebarHierarchyViewModel
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
     signal activeToolbarIndexChangeRequested(int index)
@@ -61,45 +59,9 @@ Item {
             return "sidebar.hierarchy.unknown";
         }
     }
-    function modelForHierarchy(index) {
-        return hierarchyView.resolveHierarchyViewModel(index);
-    }
-    function normalizeHierarchyIndex(index) {
-        var numericIndex = Number(index);
-        if (!isFinite(numericIndex))
-            return hierarchyEnum.library;
-        var normalizedIndex = Math.floor(numericIndex);
-        if (normalizedIndex < hierarchyEnum.library || normalizedIndex > hierarchyEnum.preset)
-
-
-    }
-    function resolveActiveHierarchyIndex() {
-        if (!hierarchyView.sidebarHierarchyViewModel || hierarchyView.sidebarHierarchyViewModel.activeHierarchyIndex === undefined)
-            return hierarchyView.activeToolbarIndex;
-        var numericIndex = Number(hierarchyView.sidebarHierarchyViewModel.activeHierarchyIndex);
-        if (!isFinite(numericIndex))
-            return hierarchyView.activeToolbarIndex;
-        return Math.floor(numericIndex);
-    }
-    function resolveHierarchyViewModel(index) {
-        var normalizedIndex = hierarchyView.normalizeHierarchyIndex(index);
-        if (!hierarchyView.sidebarHierarchyViewModel)
-            return null;
-        if (hierarchyView.sidebarHierarchyViewModel.hierarchyViewModelForIndex !== undefined)
-            return hierarchyView.sidebarHierarchyViewModel.hierarchyViewModelForIndex(normalizedIndex);
-        if (normalizedIndex === hierarchyView.normalizeHierarchyIndex(hierarchyView.resolveActiveHierarchyIndex()) && hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel !== undefined) {
-            return hierarchyView.sidebarHierarchyViewModel.activeHierarchyViewModel;
-        }
-        return null;
-    }
     function setActiveHierarchyIndex(index) {
-        var normalizedIndex = hierarchyView.normalizeHierarchyIndex(index);
-        if (hierarchyView.sidebarHierarchyViewModel && hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined) {
-            hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(normalizedIndex);
-        } else if (hierarchyView.activeToolbarIndex !== normalizedIndex) {
-            hierarchyView.activeToolbarIndex = normalizedIndex;
-        }
-        hierarchyView.activeToolbarIndexChangeRequested(normalizedIndex);
+        hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(index);
+        hierarchyView.activeToolbarIndexChangeRequested(hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex);
     }
 
     QtObject {

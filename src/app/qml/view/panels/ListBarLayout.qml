@@ -150,8 +150,7 @@ Rectangle {
 
                         required property int index
                         required property var model
-                        readonly property var roleModel: typeof noteItemDelegate.model === "object" ? noteItemDelegate.model : null
-                        readonly property bool useRuntimeModel: listBarLayout.resolvedNoteListModel !== null
+                        readonly property var roleModel: noteItemDelegate.model && typeof noteItemDelegate.model === "object" ? noteItemDelegate.model : ({})
 
                         Drag.active: noteDragHandler.active
                         Drag.hotSpot.x: width * 0.5
@@ -159,17 +158,17 @@ Rectangle {
                         Drag.keys: ["whatson.library.note"]
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
-                        bookmarkColor: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "bookmarkColor", "")) : ""
-                        bookmarked: useRuntimeModel ? Boolean(listBarLayout.roleValue(roleModel, "bookmarked", false)) : false
-                        displayDate: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "displayDate", "")) : ""
-                        folders: useRuntimeModel ? listBarLayout.normalizeEntries(listBarLayout.roleValue(roleModel, "folders", [])) : []
-                        image: useRuntimeModel ? Boolean(listBarLayout.roleValue(roleModel, "image", false)) : false
-                        imageSource: useRuntimeModel ? listBarLayout.roleValue(roleModel, "imageSource", "") : ""
-                        noteId: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "id", "")) : ""
+                        bookmarkColor: roleModel.bookmarkColor === undefined || roleModel.bookmarkColor === null ? "" : String(roleModel.bookmarkColor)
+                        bookmarked: roleModel.bookmarked === undefined ? false : Boolean(roleModel.bookmarked)
+                        displayDate: roleModel.displayDate === undefined || roleModel.displayDate === null ? "" : String(roleModel.displayDate)
+                        folders: listBarLayout.normalizeEntries(roleModel.folders)
+                        image: roleModel.image === undefined ? false : Boolean(roleModel.image)
+                        imageSource: roleModel.imageSource === undefined || roleModel.imageSource === null ? "" : roleModel.imageSource
+                        noteId: roleModel.id === undefined || roleModel.id === null ? "" : String(roleModel.id)
                         opacity: noteDragHandler.active ? 0.72 : 1
                         pressed: ListView.isCurrentItem
-                        primaryText: useRuntimeModel ? String(listBarLayout.roleValue(roleModel, "primaryText", "")) : ""
-                        tags: useRuntimeModel ? listBarLayout.normalizeEntries(listBarLayout.roleValue(roleModel, "tags", [])) : []
+                        primaryText: roleModel.primaryText === undefined || roleModel.primaryText === null ? "" : String(roleModel.primaryText)
+                        tags: listBarLayout.normalizeEntries(roleModel.tags)
                         width: ListView.view ? ListView.view.width : listBarLayout.width
 
                         DragHandler {

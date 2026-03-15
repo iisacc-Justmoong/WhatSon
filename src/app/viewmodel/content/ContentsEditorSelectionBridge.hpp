@@ -1,0 +1,94 @@
+#pragma once
+
+#include <QMetaObject>
+#include <QObject>
+#include <QPointer>
+#include <QString>
+
+class ContentsEditorSelectionBridge final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QObject* noteListModel READ noteListModel WRITE setNoteListModel NOTIFY noteListModelChanged)
+    Q_PROPERTY(QObject* contentViewModel READ contentViewModel WRITE setContentViewModel NOTIFY contentViewModelChanged)
+    Q_PROPERTY(
+        bool
+            noteSelectionContractAvailable READ noteSelectionContractAvailable NOTIFY noteSelectionContractAvailableChanged)
+
+
+    Q_PROPERTY(bool noteCountContractAvailable READ noteCountContractAvailable NOTIFY noteCountContractAvailableChanged)
+    Q_PROPERTY(
+        bool
+            contentPersistenceContractAvailable READ contentPersistenceContractAvailable NOTIFY contentPersistenceContractAvailableChanged)
+
+
+    Q_PROPERTY(QString selectedNoteId READ selectedNoteId NOTIFY selectedNoteIdChanged)
+    Q_PROPERTY(QString selectedNoteBodyText READ selectedNoteBodyText NOTIFY selectedNoteBodyTextChanged)
+    Q_PROPERTY(int visibleNoteCount READ visibleNoteCount NOTIFY visibleNoteCountChanged)
+
+public:
+    explicit ContentsEditorSelectionBridge(QObject* parent = nullptr);
+    ~ContentsEditorSelectionBridge() override;
+
+    QObject* noteListModel() const noexcept;
+    void setNoteListModel(QObject* model);
+
+    QObject* contentViewModel() const noexcept;
+    void setContentViewModel(QObject* model);
+
+    bool noteSelectionContractAvailable() const noexcept;
+    bool noteCountContractAvailable() const noexcept;
+    bool contentPersistenceContractAvailable() const noexcept;
+    QString selectedNoteId() const;
+    QString selectedNoteBodyText() const;
+    int visibleNoteCount() const noexcept;
+
+    Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text) const;
+
+    signals  :
+
+
+    void noteListModelChanged();
+    void contentViewModelChanged();
+    void noteSelectionContractAvailableChanged();
+    void noteCountContractAvailableChanged();
+    void contentPersistenceContractAvailableChanged();
+    void selectedNoteIdChanged();
+    void selectedNoteBodyTextChanged();
+    void visibleNoteCountChanged();
+
+private
+    slots  :
+
+
+    void handleNoteListSelectionChanged();
+    void handleNoteListCountChanged();
+    void handleNoteListDestroyed();
+    void handleContentViewModelDestroyed();
+
+private:
+    static bool hasReadableProperty(const QObject* object, const char* propertyName);
+    static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
+    static QString readStringProperty(const QObject* object, const char* propertyName);
+    static int readIntProperty(const QObject* object, const char* propertyName);
+
+    void refreshNoteSelectionState();
+    void refreshNoteCountState();
+    void refreshContentPersistenceState();
+    void disconnectNoteListModel();
+    void disconnectContentViewModel();
+
+    QPointer<QObject> m_noteListModel;
+    QPointer<QObject> m_contentViewModel;
+    bool m_noteSelectionContractAvailable = false;
+    bool m_noteCountContractAvailable = false;
+    bool m_contentPersistenceContractAvailable = false;
+    QString m_selectedNoteId;
+    QString m_selectedNoteBodyText;
+    int m_visibleNoteCount = 0;
+    QMetaObject::Connection m_noteListDestroyedConnection;
+    QMetaObject::Connection m_currentNoteIdChangedConnection;
+    QMetaObject::Connection m_currentBodyTextChangedConnection;
+    QMetaObject::Connection m_itemCountChangedConnection;
+    QMetaObject::Connection m_contentViewModelDestroyedConnection;
+};

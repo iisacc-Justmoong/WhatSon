@@ -9,6 +9,9 @@
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
+#include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
+#include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
+#include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -35,6 +38,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QVector>
+#include <qqml.h>
 #include <QtCore/qglobal.h>
 #include <QtCore/qpermissions.h>
 
@@ -338,6 +342,12 @@ int main(int argc, char* argv[])
 #if !defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT)
     qml_register_types_LVRS();
 #endif
+    qmlRegisterType<ContentsEditorSelectionBridge>(
+        "WhatSon.App.Internal", 1, 0, "ContentsEditorSelectionBridge");
+    qmlRegisterType<ContentsLogicalTextBridge>(
+        "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
+    qmlRegisterType<ContentsGutterMarkerBridge>(
+        "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
 #if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif

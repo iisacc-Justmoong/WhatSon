@@ -75,17 +75,20 @@ void NavigationQmlFramesTest::navigationPanels_mustExposeFrameScopedPanelKeys()
 void NavigationQmlFramesTest::mainQml_mustBindTabShortcutForNavigationModeCycling()
 {
     const QString mainQml = readQml(QStringLiteral("Main.qml"));
+    const QString interactionController = readQml(QStringLiteral("MainWindowInteractionController.qml"));
 
     QVERIFY(!mainQml.isEmpty());
-    QVERIFY(mainQml.contains(QStringLiteral("function hasFocusedTextInput()")));
-    QVERIFY(mainQml.contains(QStringLiteral("current.text !== undefined")));
-    QVERIFY(mainQml.contains(QStringLiteral("current.cursorPosition !== undefined")));
-    QVERIFY(mainQml.contains(QStringLiteral("current.selectedText !== undefined")));
-    QVERIFY(mainQml.contains(QStringLiteral("function cycleNavigationModeFromShortcut()")));
+    QVERIFY(!interactionController.isEmpty());
+    QVERIFY(interactionController.contains(QStringLiteral("function hasFocusedTextInput()")));
+    QVERIFY(interactionController.contains(QStringLiteral("current.text !== undefined")));
+    QVERIFY(interactionController.contains(QStringLiteral("current.cursorPosition !== undefined")));
+    QVERIFY(interactionController.contains(QStringLiteral("current.selectedText !== undefined")));
+    QVERIFY(interactionController.contains(QStringLiteral("function cycleNavigationModeFromShortcut()")));
     QVERIFY(mainQml.contains(QStringLiteral("sequence: \"Tab\"")));
     QVERIFY(mainQml.contains(QStringLiteral("context: Qt.ApplicationShortcut")));
-    QVERIFY(mainQml.contains(QStringLiteral("enabled: !applicationWindow.hasFocusedTextInput()")));
-    QVERIFY(mainQml.contains(QStringLiteral("applicationWindow.navigationModeVm.requestNextMode();")));
+    QVERIFY(mainQml.contains(QStringLiteral("enabled: !windowInteractions.hasFocusedTextInput()")));
+    QVERIFY(interactionController.contains(
+        QStringLiteral("interactionController.navigationModeViewModel.requestNextMode();")));
 }
 
 void NavigationQmlFramesTest::navigationBar_mustComposePropertiesFrame()

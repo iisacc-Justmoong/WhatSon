@@ -1,0 +1,14 @@
+{
+    "characterCount": 0,
+    "createdAtUtc": "2026-03-15T02:43:49Z",
+    "hub": "TestHub",
+    "lastModifiedAtUtc": "2026-03-15T02:51:10Z",
+    "noteCount": 9,
+    "participants": [
+    ],
+    "profileLastModifiedAtUtc": {
+    },
+    "resourceCount": 0,
+    "schema": "whatson.hub.stat",
+    "version": 1
+}

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Item {
@@ -8,13 +9,13 @@ Item {
 
     readonly property color activeLineNumberColor: "#9DA0A8"
     property var contentViewModel: null
-    readonly property int currentCursorLineNumber: contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
+    readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
     property color displayColor: LV.Theme.panelBackground09
     property color drawerColor: LV.Theme.panelBackground11
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int editorBottomInset: 16
-    property string editorBoundNoteId: ""
+    property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
             return 0;
@@ -23,7 +24,7 @@ Item {
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()
     readonly property int editorHorizontalInset: 16
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
-    property string editorText: ""
+    property alias editorText: editorSession.editorText
     readonly property int editorTextLineBoxHeight: 12
     readonly property int editorTopInset: 48
     readonly property var effectiveGutterMarkers: {
@@ -36,11 +37,15 @@ Item {
                 "type": "current"
             });
         }
-        const externalMarkers = Array.isArray(contentsView.gutterMarkers) ? contentsView.gutterMarkers : [];
+        const externalMarkers = Array.isArray(contentsView.normalizedExternalGutterMarkers) ? contentsView.normalizedExternalGutterMarkers : [];
         for (let i = 0; i < externalMarkers.length; ++i) {
-            const normalizedMarker = contentsView.normalizeGutterMarker(externalMarkers[i]);
-            if (normalizedMarker)
-                normalizedMarkers.push(normalizedMarker);
+            const marker = externalMarkers[i];
+            normalizedMarkers.push({
+                "color": contentsView.markerColorForType(marker.type),
+                "lineSpan": marker.lineSpan,
+                "startLine": marker.startLine,
+                "type": marker.type
+            });
         }
         return normalizedMarkers;
     }
@@ -65,11 +70,8 @@ Item {
     readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
     readonly property int lineNumberColumnWidth: 26
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
-    readonly property int logicalLineCount: {
-        const offsets = contentsView.logicalLineStartOffsets;
-        return offsets && offsets.length !== undefined ? Math.max(1, offsets.length) : 1;
-    }
-    readonly property var logicalLineStartOffsets: contentsView.normalizeLogicalLineOffsets(contentsView.buildLogicalLineStartOffsets(contentsView.editorText))
+    readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
+    readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
@@ -84,27 +86,27 @@ Item {
     readonly property color minimapViewportFillColor: "#149DA0A8"
     readonly property int minimapViewportMinHeight: 28
     readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
-    readonly property bool noteCountContractAvailable: noteListModel && noteListModel.itemCount !== undefined
+    readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
+    readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
-    readonly property bool noteSelectionContractAvailable: noteListModel && noteListModel.currentBodyText !== undefined && noteListModel.currentNoteId !== undefined
+    readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
     property color panelColor: LV.Theme.panelBackground07
     property var panelViewModel: null
-    property bool pendingBodySave: false
     readonly property int saveDebounceMs: 300
-    readonly property string selectedNoteBodyText: contentsView.noteSelectionContractAvailable ? String(noteListModel.currentBodyText) : ""
-    readonly property string selectedNoteId: contentsView.noteSelectionContractAvailable ? String(noteListModel.currentNoteId) : ""
+    readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
+    readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
     readonly property bool showEmptyFolderPlaceholder: contentsView.visibleNoteCount === 0
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
-    property bool syncingEditorTextFromModel: false
+    property alias syncingEditorTextFromModel: editorSession.syncingEditorTextFromModel
     readonly property real textOriginY: {
         if (!contentEditor.editorItem)
             return contentsView.editorTopInset;
         return (Number(contentEditor.editorItem.y) || contentsView.editorTopInset) + contentsView.editorContentOffsetY;
     }
-    readonly property int visibleNoteCount: contentsView.noteCountContractAvailable ? Math.max(0, Number(noteListModel.itemCount) || 0) : 0
+    readonly property int visibleNoteCount: selectionBridge.visibleNoteCount
 
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
@@ -113,7 +115,7 @@ Item {
     function buildFallbackMinimapVisualRows(textStartY) {
         const rows = [];
         for (let lineNumber = 1; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
-            const characterCount = contentsView.logicalLineCharacterCountAt(lineNumber - 1);
+            const characterCount = textMetricsBridge.logicalLineCharacterCountAt(lineNumber - 1);
             const rowCount = Math.max(1, Math.round(contentsView.lineVisualHeight(lineNumber, 1) / Math.max(1, contentsView.editorLineHeight)));
             for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
                 const segmentStart = Math.floor(rowIndex * characterCount / rowCount);
@@ -135,15 +137,6 @@ Item {
                 "lineNumber": 1,
                 "visualIndex": 0
             });
-        }
-
-    }
-    function buildLogicalLineStartOffsets(text) {
-        const value = text === undefined || text === null ? "" : String(text);
-        const offsets = [0];
-        for (let index = 0; index < value.length; ++index) {
-            if (value.charAt(index) === "\n")
-                offsets.push(index + 1);
         }
 
     }
@@ -189,7 +182,7 @@ Item {
                 "charCount": Math.max(0, characterCount),
                 "contentHeight": Math.max(1, nextY - segmentStartY),
                 "contentY": textStartY + segmentStartY,
-                "lineNumber": contentsView.logicalLineNumberForOffset(segmentStartOffset),
+                "lineNumber": textMetricsBridge.logicalLineNumberForOffset(segmentStartOffset),
                 "visualIndex": rows.length
             });
             segmentStartOffset = offset;
@@ -251,7 +244,7 @@ Item {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const safeOffset = Math.max(0, Number(offset) || 0);
         if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined) {
-            const fallbackLineNumber = contentsView.logicalLineNumberForOffset(safeOffset);
+            const fallbackLineNumber = textMetricsBridge.logicalLineNumberForOffset(safeOffset);
             return (fallbackLineNumber - 1) * contentsView.editorLineHeight;
         }
         const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
@@ -274,28 +267,9 @@ Item {
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorTopInset);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
-    function flushPendingEditorText() {
-        if (!contentsView.pendingBodySave)
-            return true;
-        const noteId = contentsView.editorBoundNoteId === undefined || contentsView.editorBoundNoteId === null ? "" : String(contentsView.editorBoundNoteId).trim();
-        if (noteId.length === 0) {
-            contentsView.pendingBodySave = false;
-            bodySaveTimer.stop();
-            return false;
-        }
-        const saved = contentsView.persistEditorTextForNote(noteId, contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText));
-        if (saved) {
-            contentsView.pendingBodySave = false;
-            bodySaveTimer.stop();
-            return true;
-        } else {
-            bodySaveTimer.restart();
-        }
-        return false;
-    }
     function lineDocumentY(lineNumber) {
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
-        return contentsView.documentYForOffset(contentsView.logicalLineStartOffsetAt(safeLineNumber - 1));
+        return contentsView.documentYForOffset(textMetricsBridge.logicalLineStartOffsetAt(safeLineNumber - 1));
     }
     function lineVisualHeight(startLine, lineSpan) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
@@ -312,15 +286,6 @@ Item {
     }
     function lineY(lineNumber) {
         return contentsView.editorViewportYForDocumentY(contentsView.lineDocumentY(lineNumber));
-    }
-    function logicalLineCharacterCountAt(index) {
-        const offsets = contentsView.logicalLineStartOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length === 0)
-            return 0;
-        const safeIndex = Math.max(0, Math.min(offsets.length - 1, Number(index) || 0));
-        const startOffset = Number(offsets[safeIndex]) || 0;
-        const nextOffset = safeIndex + 1 < offsets.length ? Number(offsets[safeIndex + 1]) || startOffset : contentsView.editorText.length;
-        return Math.max(0, nextOffset - startOffset - (safeIndex + 1 < offsets.length ? 1 : 0));
     }
     function logicalLineNumberForDocumentY(documentY) {
         const offsets = contentsView.logicalLineStartOffsets;
@@ -341,33 +306,6 @@ Item {
             }
         }
         return best + 1;
-    }
-    function logicalLineNumberForOffset(offset) {
-        const offsets = contentsView.logicalLineStartOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length === 0)
-            return 1;
-        const safeOffset = Math.max(0, Number(offset) || 0);
-        let low = 0;
-        let high = offsets.length - 1;
-        let best = 0;
-        while (low <= high) {
-            const middle = Math.floor((low + high) / 2);
-            const middleOffset = Number(offsets[middle]) || 0;
-            if (middleOffset <= safeOffset) {
-                best = middle;
-                low = middle + 1;
-            } else {
-                high = middle - 1;
-            }
-        }
-        return best + 1;
-    }
-    function logicalLineStartOffsetAt(index) {
-        const offsets = contentsView.logicalLineStartOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length === 0)
-            return 0;
-        const safeIndex = Math.max(0, Math.min(offsets.length - 1, Number(index) || 0));
-        return Number(offsets[safeIndex]) || 0;
     }
     function markerColorForType(markerType) {
         const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
@@ -496,52 +434,6 @@ Item {
         const visualIndex = rowSpec && rowSpec.visualIndex !== undefined ? Math.max(0, Number(rowSpec.visualIndex) || 0) : 0;
         return visualIndex * (contentsView.minimapRowGap + contentsView.minimapVisualRowPaintHeight(rowSpec));
     }
-    function normalizeGutterMarker(markerSpec) {
-        if (!markerSpec)
-            return null;
-        const rawStartLine = markerSpec.startLine !== undefined ? markerSpec.startLine : markerSpec.line;
-        const startLine = Math.max(1, Number(rawStartLine) || 1);
-        const hasExplicitSpan = markerSpec.lineSpan !== undefined && markerSpec.lineSpan !== null;
-        const explicitSpan = hasExplicitSpan ? Math.max(1, Number(markerSpec.lineSpan) || 1) : 0;
-        const endLine = Math.max(startLine, Number(markerSpec.endLine) || startLine);
-        const lineSpan = explicitSpan > 0 ? explicitSpan : Math.max(1, endLine - startLine + 1);
-        const markerType = markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";
-        if (markerType !== "changed" && markerType !== "conflict" && markerType !== "current")
-            return null;
-        return {
-            "color": contentsView.markerColorForType(markerType),
-            "lineSpan": lineSpan,
-            "startLine": startLine,
-            "type": markerType
-        };
-    }
-    function normalizeLogicalLineOffsets(offsets) {
-        if (!offsets || offsets.length === undefined || offsets.length === 0)
-            return [0];
-        const normalized = [];
-        for (let index = 0; index < offsets.length; ++index)
-            normalized.push(Math.max(0, Number(offsets[index]) || 0));
-        normalized.sort(function (left, right) {
-            return left - right;
-        });
-        if (normalized[0] !== 0)
-            normalized.unshift(0);
-
-    }
-    function persistEditorTextForNote(noteId, text) {
-        if (!contentsView.contentPersistenceContractAvailable)
-            return false;
-        if (contentViewModel.saveBodyTextForNote !== undefined)
-            return Boolean(contentViewModel.saveBodyTextForNote(noteId, text));
-        if (contentViewModel.saveCurrentBodyText !== undefined)
-            return Boolean(contentViewModel.saveCurrentBodyText(text));
-        return false;
-    }
-    function releaseEditorSyncGuard() {
-        Qt.callLater(function () {
-            contentsView.syncingEditorTextFromModel = false;
-        });
-    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -555,10 +447,6 @@ Item {
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
 
-    }
-    function scheduleEditorPersistence() {
-        contentsView.pendingBodySave = true;
-        bodySaveTimer.restart();
     }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
@@ -582,18 +470,6 @@ Item {
         const nextContentY = Math.max(0, Math.min(maxContentY, documentY - viewportHeight / 2));
         flickable.contentY = nextContentY;
     }
-    function syncEditorTextFromSelection(noteId, text) {
-        const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextText = text === undefined || text === null ? "" : String(text);
-        bodySaveTimer.stop();
-        contentsView.pendingBodySave = false;
-        contentsView.editorBoundNoteId = nextNoteId;
-        contentsView.syncingEditorTextFromModel = true;
-        if (contentsView.editorText !== nextText)
-            contentsView.editorText = nextText;
-        contentsView.releaseEditorSyncGuard();
-        contentsView.scheduleGutterRefresh(4);
-    }
     function visibleLineNumbers() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const visibleLines = [];
@@ -614,10 +490,10 @@ Item {
     clip: true
 
     Component.onCompleted: {
-        contentsView.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
         contentsView.scheduleGutterRefresh(4);
     }
-    Component.onDestruction: contentsView.flushPendingEditorText()
+    Component.onDestruction: editorSession.flushPendingEditorText()
     onEditorFlickableChanged: contentsView.scheduleGutterRefresh(2)
     onEditorTextChanged: {
         if (minimapLayer)
@@ -625,11 +501,12 @@ Item {
     }
     onHeightChanged: contentsView.scheduleGutterRefresh(2)
     onSelectedNoteBodyTextChanged: {
-        contentsView.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
         if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
-            contentsView.flushPendingEditorText();
+            editorSession.flushPendingEditorText();
         contentsView.scheduleGutterRefresh(4);
     }
     onVisibleChanged: {
@@ -640,14 +517,6 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
 
-    Timer {
-        id: bodySaveTimer
-
-        interval: contentsView.saveDebounceMs
-        repeat: false
-
-        onTriggered: contentsView.flushPendingEditorText()
-    }
     Timer {
         id: gutterRefreshTimer
 
@@ -663,6 +532,13 @@ Item {
             }
             contentsView.gutterRefreshPassesRemaining -= 1;
         }
+    }
+    Connections {
+        function onEditorTextSynchronized() {
+            contentsView.scheduleGutterRefresh(4);
+        }
+
+        target: editorSession
     }
     Connections {
         function onContentHeightChanged() {
@@ -794,14 +670,14 @@ Item {
 
                         onFocusedChanged: {
                             if (!focused)
-                                contentsView.flushPendingEditorText();
+                                editorSession.flushPendingEditorText();
                         }
                         onTextEdited: function (text) {
                             if (contentsView.editorText !== text)
                                 contentsView.editorText = text;
                             if (contentsView.syncingEditorTextFromModel)
                                 return;
-                            contentsView.scheduleEditorPersistence();
+                            editorSession.scheduleEditorPersistence();
                             contentsView.editorTextEdited(text);
                         }
                     }
