@@ -53,7 +53,6 @@ Window {
     readonly property int sidePanelMinWidth: 236
     property bool standaloneMode: false
     property string versionText: "Version: 1.0.0"
-    readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
     readonly property string statusText: {
         if (hubSessionController && hubSessionController.busy)
             return "Preparing WhatSon Hub...";
@@ -62,7 +61,6 @@ Window {
         return "";
     }
     readonly property color statusTextColor: hubSessionController && hubSessionController.lastError.length > 0 ? LV.Theme.danger : LV.Theme.descriptionColor
-    property string versionText: "Version: 1.0.0"
 
     signal createFileRequested
     signal dismissed
@@ -124,9 +122,11 @@ Window {
         id: createHubDialog
 
         currentFolder: root.currentFolderUrl
+        currentFile: root.suggestedCreateHubFileUrl
         defaultSuffix: "wshub"
         fileMode: FileDialog.SaveFile
         nameFilters: ["WhatSon Hub (*.wshub)"]
+        selectedFile: root.suggestedCreateHubFileUrl
         title: "Create WhatSon Hub"
 
         onAccepted: {
