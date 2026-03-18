@@ -476,12 +476,15 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
         QStringLiteral("pink"));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+    QCOMPARE(viewModel.noteListModel()->roleNames().value(BookmarksNoteListModel::NoteIdRole), QByteArray("noteId"));
 
     QStringList primaryTextAndColorPairs;
+    QStringList noteIds;
     for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
     {
         const QModelIndex index = viewModel.noteListModel()->index(row, 0);
         QVERIFY(viewModel.noteListModel()->data(index, BookmarksNoteListModel::BookmarkedRole).toBool());
+        noteIds.push_back(viewModel.noteListModel()->data(index, BookmarksNoteListModel::NoteIdRole).toString());
         const QString primaryText = viewModel.noteListModel()
                                              ->data(index, BookmarksNoteListModel::PrimaryTextRole)
                                              .toString();
@@ -491,9 +494,11 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
         primaryTextAndColorPairs.push_back(QStringLiteral("%1=%2").arg(primaryText, color));
     }
     primaryTextAndColorPairs.sort();
+    noteIds.sort();
     QCOMPARE(
         primaryTextAndColorPairs,
         QStringList({QStringLiteral("Blue summary=#3B82F6"), QStringLiteral("Pink summary=#EC4899")}));
+    QCOMPARE(noteIds, QStringList({QStringLiteral("note-blue"), QStringLiteral("note-pink")}));
 
     viewModel.setSelectedIndex(6); // blue
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE WHATSONNOTE>
+<contents id="s78lZvgHg5v34rex-wuu9oz5o4mlEYgLU">
+  <body>
+    <paragraph>다음으로 해야 할 일은 아이콘 리소스 정리다. 현재에는 resource 디렉터리에 무분별하게 배치되어 있다. 이것을 유형별로 카테고리화하여 서브디렉터리로 정리하고 리팩터링하라.</paragraph>
+  </body>
+</contents>

@@ -10,10 +10,10 @@ class CMakePlatformIconTests(unittest.TestCase):
     def test_app_target_declares_platform_icon_assets(self) -> None:
         cmake_text = (REPO_ROOT / "src/app/CMakeLists.txt").read_text(encoding="utf-8")
 
-        self.assertIn('set(WHATSON_APP_ICON_ICNS "${CMAKE_SOURCE_DIR}/resources/AppIcon.icns")', cmake_text)
-        self.assertIn('set(WHATSON_APP_ICON_ICO "${CMAKE_SOURCE_DIR}/resources/AppIcon.ico")', cmake_text)
+        self.assertIn('set(WHATSON_APP_ICON_ICNS "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.icns")', cmake_text)
+        self.assertIn('set(WHATSON_APP_ICON_ICO "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.ico")', cmake_text)
         self.assertIn('XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"', cmake_text)
-        self.assertIn('resources/${_whatson_android_density}/AppIcon.png', cmake_text)
+        self.assertIn('${WHATSON_APP_ICON_ANDROID_DIR}/${_whatson_android_density}/AppIcon.png', cmake_text)
         self.assertIn('ANDROID_PACKAGE_SOURCE_DIR "${_whatson_android_package_source_dir}"', cmake_text)
         self.assertIn('MACOSX_BUNDLE_ICON_FILE "AppIcon.icns"', cmake_text)
 
@@ -23,6 +23,35 @@ class CMakePlatformIconTests(unittest.TestCase):
         self.assertIn('DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps"', root_cmake_text)
         self.assertIn('DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps"', root_cmake_text)
         self.assertIn('RENAME "whatson.png"', root_cmake_text)
+
+    def test_repository_organizes_icon_assets_by_category(self) -> None:
+        desktop_dir = REPO_ROOT / "resources/icons/app/desktop"
+        ios_dir = REPO_ROOT / "resources/icons/app/ios"
+        android_dir = REPO_ROOT / "resources/icons/app/android"
+        watchos_dir = REPO_ROOT / "resources/icons/app/watchos"
+        store_dir = REPO_ROOT / "resources/icons/app/store/googleplay"
+        source_dir = REPO_ROOT / "resources/icons/app/source"
+        onboarding_dir = REPO_ROOT / "resources/illustrations/onboarding"
+
+        self.assertTrue((desktop_dir / "AppIcon.icns").is_file())
+        self.assertTrue((desktop_dir / "AppIcon.ico").is_file())
+        self.assertTrue((desktop_dir / "AppIcon.png").is_file())
+        self.assertTrue((ios_dir / "AppIcon@ios~marketing.png").is_file())
+        self.assertTrue((android_dir / "xxxhdpi/AppIcon.png").is_file())
+        self.assertTrue((watchos_dir / "AppIcon~watch-marketing.png").is_file())
+        self.assertTrue((store_dir / "AppIcon.png").is_file())
+        self.assertTrue((source_dir / "AppIcon.af").is_file())
+        self.assertTrue((source_dir / "AppIcon.icon/icon.json").is_file())
+        self.assertTrue((onboarding_dir / "Onboarding.png").is_file())
+        self.assertTrue((onboarding_dir / "Onboarding.af").is_file())
+
+        self.assertFalse((REPO_ROOT / "resources/AppIcon.icns").exists())
+        self.assertFalse((REPO_ROOT / "resources/AppIcon.ico").exists())
+        self.assertFalse((REPO_ROOT / "resources/AppIcon.png").exists())
+        self.assertFalse((REPO_ROOT / "resources/AppIconios~marketing.png").exists())
+        self.assertFalse((REPO_ROOT / "resources/xxxhdpi/AppIcon.png").exists())
+        self.assertFalse((REPO_ROOT / "resources/googleplay/AppIcon.png").exists())
+        self.assertFalse((REPO_ROOT / "resources/Onboarding.png").exists())
 
     def test_macos_info_plist_declares_bundle_icon_file(self) -> None:
         plist_text = (REPO_ROOT / "platform/Apple/Info.plist").read_text(encoding="utf-8")

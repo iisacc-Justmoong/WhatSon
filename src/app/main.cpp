@@ -12,6 +12,7 @@
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/onboarding/OnboardingHubController.hpp"
 #include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "viewmodel/panel/HierarchyDragDropBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
@@ -23,11 +24,14 @@
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
+#include "file/hub/WhatSonHubCreator.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
 
 #include <QByteArray>
+#include <QCommandLineOption>
+#include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
@@ -35,10 +39,13 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QPermission>
+#include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QSettings>
+#include <QStringList>
 #include <QTimer>
+#include <QVariant>
 #include <QVector>
 #include <qqml.h>
 #include <QtCore/qglobal.h>
@@ -54,6 +61,11 @@ namespace
 {
     constexpr auto kPermissionsGrantedSettingsKey = "permissions/granted";
     constexpr auto kPermissionsScopeKey = "permissions";
+
+    struct LaunchOptions final
+    {
+        bool onboardingOnly = false;
+    };
 
     void prependEnvPath(const char* variableName, const QByteArray& path)
     {
@@ -130,6 +142,23 @@ namespace
             QStringLiteral("main.blueprint"),
             QStringLiteral("resolve.notFound"));
         return QString();
+    }
+
+    LaunchOptions parseLaunchOptions(QGuiApplication& app)
+    {
+        QCommandLineParser parser;
+        parser.setApplicationDescription(QStringLiteral("WhatSon application launcher"));
+        parser.addHelpOption();
+
+        const QCommandLineOption onboardingOnlyOption(
+            QStringList{QStringLiteral("onboarding-only")},
+            QStringLiteral("Launch only the onboarding window and skip workspace initialization."));
+        parser.addOption(onboardingOnlyOption);
+        parser.process(app);
+
+        LaunchOptions options;
+        options.onboardingOnly = parser.isSet(onboardingOnlyOption);
+        return options;
     }
 
     using PermissionCompletion = std::function<void(bool granted)>;
@@ -361,13 +390,16 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("whatson.local"));
+    const LaunchOptions launchOptions = parseLaunchOptions(app);
 
     WhatSon::Debug::trace(
         QStringLiteral("main"),
         QStringLiteral("startup"),
-        QStringLiteral("debugMode=%1 cwd=%2 appDir=%3")
+        QStringLiteral("debugMode=%1 cwd=%2 appDir=%3 launchMode=%4")
         .arg(WhatSon::Debug::isEnabled() ? QStringLiteral("on") : QStringLiteral("off"))
-        .arg(QDir::currentPath(), QCoreApplication::applicationDirPath()));
+        .arg(QDir::currentPath())
+        .arg(QCoreApplication::applicationDirPath())
+        .arg(launchOptions.onboardingOnly ? QStringLiteral("onboardingOnly") : QStringLiteral("workspace")));
 
     QQmlApplicationEngine engine;
     SystemCalendarStore systemCalendarStore;
@@ -388,6 +420,9 @@ int main(int argc, char* argv[])
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     WhatSonHubRuntimeStore hubRuntimeStore;
+    OnboardingHubController onboardingHubController;
+    WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
+    PermissionBootstrapper permissionBootstrapper(app);
 
     const auto requestNewLibraryNote = [&libraryHierarchyViewModel, &sidebarHierarchyViewModel]()
     {
@@ -449,13 +484,34 @@ int main(int argc, char* argv[])
             }
         });
 
-    const QString blueprintHubPath = resolveBlueprintHubPath();
-    if (!blueprintHubPath.isEmpty())
+    const auto loadHubIntoRuntime =
+        [&libraryHierarchyViewModel,
+            &projectsHierarchyViewModel,
+            &bookmarksHierarchyViewModel,
+            &tagsHierarchyViewModel,
+            &resourcesHierarchyViewModel,
+            &progressHierarchyViewModel,
+            &eventHierarchyViewModel,
+            &presetHierarchyViewModel,
+            &hubRuntimeStore](const QString& hubPath, QString* errorMessage) -> bool
     {
+        const QString normalizedHubPath = hubPath.trimmed().isEmpty()
+                                              ? QString()
+                                              : QDir::cleanPath(QFileInfo(hubPath).absoluteFilePath());
+        if (normalizedHubPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Hub path must not be empty.");
+            }
+            return false;
+        }
+
         WhatSon::Debug::trace(
             QStringLiteral("main.runtime"),
             QStringLiteral("loadFromWshub.begin"),
-            QStringLiteral("path=%1").arg(blueprintHubPath));
+            QStringLiteral("path=%1").arg(normalizedHubPath));
+
         WhatSonRuntimeParallelLoader parallelLoader;
         WhatSonRuntimeParallelLoader::Targets targets;
         targets.libraryViewModel = &libraryHierarchyViewModel;
@@ -469,9 +525,10 @@ int main(int argc, char* argv[])
         targets.hubRuntimeStore = &hubRuntimeStore;
 
         QVector<WhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;
-        parallelLoader.loadFromWshub(blueprintHubPath, targets, &loadResults);
+        const bool loadSucceeded = parallelLoader.loadFromWshub(normalizedHubPath, targets, &loadResults);
 
         bool hubRuntimeLoadSucceeded = false;
+        QStringList failedDomains;
         for (const WhatSonRuntimeParallelLoader::DomainLoadResult& result : loadResults)
         {
             if (result.domain == QStringLiteral("hub.runtime"))
@@ -488,22 +545,23 @@ int main(int argc, char* argv[])
                 continue;
             }
 
-            const QString errorMessage = result.error.trimmed().isEmpty()
-                                             ? QStringLiteral("unknown load error")
-                                             : result.error;
+            failedDomains.push_back(result.domain);
+            const QString domainErrorMessage = result.error.trimmed().isEmpty()
+                                                   ? QStringLiteral("unknown load error")
+                                                   : result.error.trimmed();
             qWarning().noquote()
                 << QStringLiteral("Failed to load domain '%1' from .wshub: %2")
-                .arg(result.domain, errorMessage);
+                .arg(result.domain, domainErrorMessage);
             WhatSon::Debug::trace(
                 QStringLiteral("main.runtime"),
                 QStringLiteral("load.failed"),
-                QStringLiteral("domain=%1 reason=%2").arg(result.domain, errorMessage));
+                QStringLiteral("domain=%1 reason=%2").arg(result.domain, domainErrorMessage));
         }
 
         if (hubRuntimeLoadSucceeded)
         {
-            libraryHierarchyViewModel.setHubStore(hubRuntimeStore.hub(blueprintHubPath));
-            tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(blueprintHubPath));
+            libraryHierarchyViewModel.setHubStore(hubRuntimeStore.hub(normalizedHubPath));
+            tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(normalizedHubPath));
             WhatSon::Debug::trace(
                 QStringLiteral("main.runtime"),
                 QStringLiteral("applyTagsDepthEntries.success"),
@@ -515,6 +573,58 @@ int main(int argc, char* argv[])
                 QStringLiteral("main.runtime"),
                 QStringLiteral("applyTagsDepthEntries.skipped"),
                 QStringLiteral("reason=hub.runtime load failed"));
+        }
+
+        if (!loadSucceeded)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = failedDomains.isEmpty()
+                                    ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                                    : QStringLiteral("Failed to load .wshub domains: %1")
+                                    .arg(failedDomains.join(QStringLiteral(", ")));
+            }
+            return false;
+        }
+
+        if (!hubRuntimeLoadSucceeded)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to load the selected WhatSon Hub runtime state.");
+            }
+            return false;
+        }
+
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    };
+
+    onboardingHubController.setCreateHubCallback(
+        [&hubCreator](const QString& requestedHubPath, QString* outPackagePath, QString* errorMessage) -> bool
+        {
+            return hubCreator.createHubAtPath(requestedHubPath, outPackagePath, errorMessage);
+        });
+    onboardingHubController.setLoadHubCallback(loadHubIntoRuntime);
+
+    bool initialHubLoaded = false;
+    const QString blueprintHubPath = resolveBlueprintHubPath();
+    if (!blueprintHubPath.isEmpty())
+    {
+        QString errorMessage;
+        initialHubLoaded = loadHubIntoRuntime(blueprintHubPath, &errorMessage);
+        if (initialHubLoaded)
+        {
+            onboardingHubController.syncCurrentHubSelection(blueprintHubPath);
+        }
+        if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
+        {
+            qWarning().noquote()
+                << QStringLiteral("Failed to load startup WhatSon Hub '%1': %2")
+                .arg(blueprintHubPath, errorMessage.trimmed());
         }
     }
     else
@@ -579,7 +689,6 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
     engine.rootContext()->setContextProperty(QStringLiteral("systemCalendarStore"), &systemCalendarStore);
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
-
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -587,20 +696,124 @@ int main(int argc, char* argv[])
         []() { QCoreApplication::exit(EXIT_FAILURE); },
         Qt::QueuedConnection);
 
-    engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));
+    bool foregroundServicesStarted = false;
+    const auto startForegroundServices = [&asyncScheduler, &permissionBootstrapper, &foregroundServicesStarted]()
+    {
+        if (foregroundServicesStarted)
+        {
+            return;
+        }
 
-    if (engine.rootObjects().isEmpty())
+        foregroundServicesStarted = true;
+        asyncScheduler.start();
+        QTimer::singleShot(0, &permissionBootstrapper, [&permissionBootstrapper]()
+        {
+            permissionBootstrapper.start();
+        });
+    };
+
+    const auto loadMainWindow = [&engine]() -> QObject*
+    {
+        const qsizetype rootObjectCount = engine.rootObjects().size();
+        engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));
+        if (engine.rootObjects().size() <= rootObjectCount)
+        {
+            return nullptr;
+        }
+
+        return engine.rootObjects().constLast();
+    };
+
+    if (launchOptions.onboardingOnly)
+    {
+        const qsizetype rootObjectCount = engine.rootObjects().size();
+        engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Onboarding"));
+        if (engine.rootObjects().size() <= rootObjectCount)
+        {
+            return EXIT_FAILURE;
+        }
+
+        QObject* onboardingWindow = engine.rootObjects().constLast();
+        if (onboardingWindow == nullptr)
+        {
+            qWarning().noquote() << QStringLiteral("Failed to resolve onboarding window root object.");
+            return EXIT_FAILURE;
+        }
+
+        QPointer<QObject> onboardingWindowGuard(onboardingWindow);
+        QObject* workspaceMainWindow = nullptr;
+        onboardingWindow->setProperty(
+            "hubSessionController",
+            QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
+
+        QObject::connect(onboardingWindow, SIGNAL(dismissed()), &app, SLOT(quit()));
+        QObject::connect(
+            &onboardingHubController,
+            &OnboardingHubController::hubLoaded,
+            &app,
+            [&engine,
+                &startForegroundServices,
+                &workspaceMainWindow,
+                &onboardingHubController,
+                onboardingWindowGuard](const QString&)
+            {
+                if (workspaceMainWindow != nullptr)
+                {
+                    return;
+                }
+
+                if (onboardingWindowGuard)
+                {
+                    onboardingWindowGuard->setProperty("visible", false);
+                }
+
+                const qsizetype rootObjectCountBeforeMainWindow = engine.rootObjects().size();
+                engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));
+                if (engine.rootObjects().size() <= rootObjectCountBeforeMainWindow)
+                {
+                    qWarning().noquote() <<
+                        QStringLiteral("Failed to load the main workspace window after onboarding.");
+                    QCoreApplication::exit(EXIT_FAILURE);
+                    return;
+                }
+
+                workspaceMainWindow = engine.rootObjects().constLast();
+                if (workspaceMainWindow != nullptr)
+                {
+                    workspaceMainWindow->setProperty(
+                        "onboardingHubController",
+                        QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
+                    workspaceMainWindow->setProperty("onboardingVisible", false);
+                }
+
+                if (onboardingWindowGuard)
+                {
+                    onboardingWindowGuard->deleteLater();
+                }
+
+                startForegroundServices();
+            });
+
+        onboardingWindow->setProperty("standaloneMode", true);
+        onboardingWindow->setProperty("visible", true);
+        return app.exec();
+    }
+
+    QObject* mainWindow = loadMainWindow();
+    if (mainWindow == nullptr)
     {
         return EXIT_FAILURE;
     }
 
-    asyncScheduler.start();
+    mainWindow->setProperty(
+        "onboardingHubController",
+        QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
 
-    PermissionBootstrapper permissionBootstrapper(app);
-    QTimer::singleShot(0, &permissionBootstrapper, [&permissionBootstrapper]()
+    if (!initialHubLoaded)
     {
-        permissionBootstrapper.start();
-    });
+        mainWindow->setProperty("onboardingVisible", true);
+    }
 
+    startForegroundServices();
     return app.exec();
 }

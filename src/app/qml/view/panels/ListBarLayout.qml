@@ -263,7 +263,6 @@ Rectangle {
                             pressed: ListView.isCurrentItem || listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
                             primaryText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? "" : String(noteItemDelegate.primaryText)
                             tags: listBarLayout.normalizeEntries(noteItemDelegate.tags)
-                            width: noteItemDelegate.width
                         }
                         DragHandler {
                             id: noteDragHandler

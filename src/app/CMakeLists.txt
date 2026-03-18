@@ -1,4 +1,4 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2)
 find_package(LVRS CONFIG REQUIRED)
 qt_policy(SET QTP0004 NEW)
 
@@ -76,28 +76,35 @@ list(SORT WHATSON_APP_INCLUDE_DIRS)
 
 target_include_directories(WhatSon PRIVATE ${WHATSON_APP_INCLUDE_DIRS})
 
-set(WHATSON_APP_ICON_PNG "${CMAKE_SOURCE_DIR}/resources/AppIcon.png")
-set(WHATSON_APP_ICON_ICNS "${CMAKE_SOURCE_DIR}/resources/AppIcon.icns")
-set(WHATSON_APP_ICON_ICO "${CMAKE_SOURCE_DIR}/resources/AppIcon.ico")
+set(WHATSON_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
+set(WHATSON_APP_ICON_DIR "${WHATSON_RESOURCES_DIR}/icons/app")
+set(WHATSON_APP_ICON_DESKTOP_DIR "${WHATSON_APP_ICON_DIR}/desktop")
+set(WHATSON_APP_ICON_IOS_DIR "${WHATSON_APP_ICON_DIR}/ios")
+set(WHATSON_APP_ICON_ANDROID_DIR "${WHATSON_APP_ICON_DIR}/android")
+set(WHATSON_APP_ICON_STORE_DIR "${WHATSON_APP_ICON_DIR}/store")
+
+set(WHATSON_APP_ICON_PNG "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.png")
+set(WHATSON_APP_ICON_ICNS "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.icns")
+set(WHATSON_APP_ICON_ICO "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.ico")
 set(WHATSON_IOS_APP_ICON_FILES
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Notification@2x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Notification@3x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Settings@2x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Settings@3x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Spotlight-40@2x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Spotlight-40@3x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-60@2x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-60@3x.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Notification~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Notification@2x~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Settings~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Settings@2x~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Spotlight-40~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-Spotlight-40@2x~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-76~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-76@2x~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon-83.5@2x~ipad.png"
-        "${CMAKE_SOURCE_DIR}/resources/AppIcon@ios~marketing.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification@2x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification@3x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings@2x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings@3x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40@2x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40@3x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-60@2x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-60@3x.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Notification@2x~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Settings@2x~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-Spotlight-40@2x~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-76~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-76@2x~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon-83.5@2x~ipad.png"
+        "${WHATSON_APP_ICON_IOS_DIR}/AppIcon@ios~marketing.png"
 )
 set(WHATSON_IOS_BUNDLE_ICON_FILES "${WHATSON_APP_ICON_PNG}" ${WHATSON_IOS_APP_ICON_FILES})
 list(REMOVE_DUPLICATES WHATSON_IOS_BUNDLE_ICON_FILES)
@@ -234,7 +241,7 @@ if (ANDROID AND EXISTS "${WHATSON_ANDROID_DIR}")
     file(COPY "${WHATSON_ANDROID_DIR}/" DESTINATION "${_whatson_android_package_source_dir}")
 
     foreach (_whatson_android_density IN ITEMS ldpi mdpi hdpi xhdpi xxhdpi xxxhdpi)
-        set(_whatson_android_icon_src "${CMAKE_SOURCE_DIR}/resources/${_whatson_android_density}/AppIcon.png")
+        set(_whatson_android_icon_src "${WHATSON_APP_ICON_ANDROID_DIR}/${_whatson_android_density}/AppIcon.png")
         if (NOT EXISTS "${_whatson_android_icon_src}")
             continue()
         endif ()
@@ -247,7 +254,7 @@ if (ANDROID AND EXISTS "${WHATSON_ANDROID_DIR}")
                 ONLY_IF_DIFFERENT)
     endforeach ()
 
-    set(_whatson_android_googleplay_icon_src "${CMAKE_SOURCE_DIR}/resources/googleplay/AppIcon.png")
+    set(_whatson_android_googleplay_icon_src "${WHATSON_APP_ICON_STORE_DIR}/googleplay/AppIcon.png")
     if (EXISTS "${_whatson_android_googleplay_icon_src}")
         set(_whatson_android_googleplay_icon_dir "${_whatson_android_package_source_dir}/googleplay")
         file(MAKE_DIRECTORY "${_whatson_android_googleplay_icon_dir}")
@@ -325,6 +332,7 @@ endif ()
 target_link_libraries(WhatSon
         PRIVATE
         Qt6::Quick
+        Qt6::QuickDialogs2
         Qt6::QuickControls2
 )
 

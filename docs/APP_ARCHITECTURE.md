@@ -1,6 +1,6 @@
 # WhatSon Application Architecture Analysis
 
-Last Updated: 2026-03-14  
+Last Updated: 2026-03-18  
 Repository: `WhatSon`  
 Scope: Full application architecture (build, runtime, data, UI, eventing, and test contracts)
 
@@ -12,12 +12,14 @@ WhatSon is a cross-platform Qt 6.5+ application built with QML and LVRS 1.0. The
 
 - An LVRS-based GUI app (`WhatSon`)
 - A minimal background daemon (`WhatSon_daemon`)
-- A Rust CLI launcher (optional target)
+- A Rust CLI launcher (optional target, with `whatson onboard` for onboarding-only window launch)
 - A test suite validating file-format parsing, runtime stores, hierarchy view-model behavior, and QML wiring contracts
 
 At runtime, the app auto-discovers the first `blueprint/*.wshub` package, parses hierarchy domains in worker threads,
 applies snapshots to dedicated view-models on the main thread, and exposes those view-models to QML through context
-properties.
+properties. When no startup hub is available, the onboarding surface stays in charge of native create/select dialogs,
+can scaffold a new `.wshub` package via `WhatSonHubCreator`, and then loads the resulting hub into the same runtime
+view-model graph.
 
 The dominant architecture pattern is:
 
@@ -47,6 +49,11 @@ Defined in `CMakeLists.txt`:
     - `whatson_export_binaries`
     - `whatson_package`
     - mobile/export helpers for iOS/Android
+- CLI behavior:
+    - `build/cargo/release/whatson` launches the desktop app directly when a prebuilt executable exists
+    - `build/cargo/release/whatson onboard` forwards `--onboarding-only` into the app and loads
+      `src/app/qml/window/Onboarding.qml` without workspace bootstrap, then promotes into `Main.qml` after the user
+      creates or selects a hub
 
 Dependency discovery baseline:
 
@@ -64,11 +71,12 @@ Key behaviors:
 - `qt_add_qml_module` for all QML under `src/app/qml/**`
 - `lvrs_configure_project_defaults(...)` + `lvrs_configure_qml_app(WhatSon)`
 - Apple-specific framework linkage (EventKit, Photos, ApplicationServices on macOS host)
-- Platform icon wiring from `resources/`:
-    - macOS bundle embeds `AppIcon.icns`
-    - iOS generates an Xcode app icon catalog from the shipped PNG variants, with PNG bundle fallback when needed
-    - Android package staging overlays density-specific launcher icons from `resources/<density>/AppIcon.png`
-    - Windows executable embeds `AppIcon.ico`
+- Platform icon wiring from `resources/icons/app/`:
+    - macOS bundle embeds `desktop/AppIcon.icns`
+    - iOS generates an Xcode app icon catalog from the shipped PNG variants under `ios/`, with PNG bundle fallback when
+      needed
+    - Android package staging overlays density-specific launcher icons from `android/<density>/AppIcon.png`
+    - Windows executable embeds `desktop/AppIcon.ico`
 - Host/iOS LVRS module fallback/overlay logic for runtime QML import stability
 - Native desktop install/export path now stages a self-contained deploy tree:
     - macOS: `cmake --install ...` and `whatson_export_binaries` emit `WhatSon.app` at the install prefix root and

@@ -264,6 +264,19 @@ cmake --build build --target whatson_export_binaries
 cmake --build build --target whatson_package
 ```
 
+The optional Rust CLI launcher mirrors the same desktop app entrypoint and now supports reopening the onboarding window
+without bootstrapping the workspace shell:
+
+```bash
+cmake --build build --target whatson_cli
+build/cargo/release/whatson
+build/cargo/release/whatson onboard
+```
+
+`whatson onboard` forwards an internal `--onboarding-only` app flag and loads `Onboarding.qml` directly.
+The onboarding window now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected path
+through `WhatSonHubCreator` or load an existing package immediately into the workspace shell.
+
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
 
@@ -277,13 +290,14 @@ Desktop install/export layout:
 - Windows: `build/dist/bin/WhatSon.exe` plus deployed Qt/LVRS runtime DLLs, `qml/`, `plugins/`, and `qt.conf`
 - Linux: deployed Qt/LVRS runtime libraries, QML imports, the desktop entry, and the app icon metadata
 
-Platform icon packaging is resolved from `resources/` during configure time:
+Platform icon packaging is resolved from `resources/icons/app/` during configure time:
 
-- macOS bundle icon: `resources/AppIcon.icns`
-- iOS app icon set: generated Xcode asset catalog from the iPhone/iPad PNG variants under `resources/`
-- Android launcher icon: density-specific `resources/<density>/AppIcon.png` files overlaid into the Android package
-- Windows executable icon: `resources/AppIcon.ico`
-- Linux desktop/package icon: `resources/AppIcon.png`
+- macOS bundle icon: `resources/icons/app/desktop/AppIcon.icns`
+- iOS app icon set: generated Xcode asset catalog from the iPhone/iPad PNG variants under `resources/icons/app/ios/`
+- Android launcher icon: density-specific `resources/icons/app/android/<density>/AppIcon.png` files overlaid into the
+  Android package
+- Windows executable icon: `resources/icons/app/desktop/AppIcon.ico`
+- Linux desktop/package icon: `resources/icons/app/desktop/AppIcon.png`
 
 Mobile launch targets from root:
 

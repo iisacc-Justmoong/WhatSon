@@ -39,6 +39,7 @@ private
     void sanitizeHubName_normalizesInput();
     void baseFileHelpers_createDirectoryAndFile();
     void createHub_createsWorkspacePackageAndManifest();
+    void createHubAtPath_createsExplicitPackagePathAndAppendsExtension();
     void createHub_failsWhenHubAlreadyExists();
     void createHub_failsWhenWorkspaceRootIsEmpty();
 };
@@ -117,6 +118,30 @@ void WhatSonWorkspaceHubCreatorTest::createHub_createsWorkspacePackageAndManifes
     QVERIFY(QFileInfo(
             QDir(hubRootPath).filePath(QStringLiteral("brand-hub-2026.wscontents/Library.wslibrary/index.wsnindex"))).
         isFile());
+}
+
+void WhatSonWorkspaceHubCreatorTest::createHubAtPath_createsExplicitPackagePathAndAppendsExtension()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const WhatSonHubCreator creator(tempDir.path(), QStringLiteral("hubs"));
+    const QString requestedPackagePath = QDir(tempDir.path()).filePath(QStringLiteral("Custom Hub"));
+
+    QString packagePath;
+    QString errorMessage;
+    QVERIFY2(
+        creator.createHubAtPath(requestedPackagePath, &packagePath, &errorMessage),
+        qPrintable(errorMessage));
+
+    const QString expectedPackagePath =
+        QDir(tempDir.path()).filePath(QStringLiteral("Custom Hub.wshub"));
+    QCOMPARE(QDir::cleanPath(packagePath), QDir::cleanPath(expectedPackagePath));
+    QVERIFY(QFileInfo(expectedPackagePath).isDir());
+    QVERIFY(QFileInfo(QDir(expectedPackagePath).filePath(QStringLiteral(".whatson/hub.json"))).isFile());
+    QVERIFY(QFileInfo(QDir(expectedPackagePath).filePath(QStringLiteral("custom-hub.wscontents"))).isDir());
+    QVERIFY(QFileInfo(QDir(expectedPackagePath).filePath(QStringLiteral("custom-hub.wsresources"))).isDir());
+    QVERIFY(QFileInfo(QDir(expectedPackagePath).filePath(QStringLiteral("custom-hubStat.wsstat"))).isFile());
 }
 
 void WhatSonWorkspaceHubCreatorTest::createHub_failsWhenHubAlreadyExists()

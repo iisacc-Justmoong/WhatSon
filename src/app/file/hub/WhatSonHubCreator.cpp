@@ -93,40 +93,87 @@ bool WhatSonHubCreator::createHub(
         return false;
     }
 
-    const QString sanitizedHubName = sanitizeHubName(hubName);
-    const QString hubRootPath = hubDirectoryPath(hubName);
-    QDir hubRootDir(hubRootPath);
-    if (hubRootDir.exists())
+    return createHubAtPath(hubDirectoryPath(hubName), outPackagePath, errorMessage);
+}
+
+bool WhatSonHubCreator::createHubAtPath(
+    const QString& hubPackagePath,
+    QString* outPackagePath,
+    QString* errorMessage) const
+{
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("hub.creator"),
+                              QStringLiteral("createHubAtPath.begin"),
+                              QStringLiteral("requestedPath=%1").arg(hubPackagePath));
+    const QString trimmedHubPackagePath = hubPackagePath.trimmed();
+    if (trimmedHubPackagePath.isEmpty())
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = QStringLiteral("Hub already exists: %1").arg(hubRootPath);
+            *errorMessage = QStringLiteral("Hub package path must not be empty.");
         }
         return false;
     }
 
-    if (!ensureDirectory(hubRootPath, errorMessage))
+    QString normalizedHubPackagePath = QDir::cleanPath(trimmedHubPackagePath);
+    if (!normalizedHubPackagePath.endsWith(packageExtension(), Qt::CaseInsensitive))
+    {
+        normalizedHubPackagePath += packageExtension();
+    }
+
+    const QFileInfo requestedPackageInfo(normalizedHubPackagePath);
+    const QString absoluteHubPackagePath = QDir::cleanPath(requestedPackageInfo.absoluteFilePath());
+    const QString hubParentDirectoryPath = requestedPackageInfo.absolutePath();
+    const QString rawHubName = QFileInfo(absoluteHubPackagePath).completeBaseName();
+    const QString sanitizedHubName = sanitizeHubName(rawHubName);
+
+    if (hubParentDirectoryPath.trimmed().isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Hub parent directory must not be empty.");
+        }
+        return false;
+    }
+
+    if (!ensureDirectory(hubParentDirectoryPath, errorMessage))
     {
         return false;
     }
 
-    if (!createHubScaffold(hubRootPath, sanitizedHubName, errorMessage))
+    const QFileInfo absoluteHubPackageInfo(absoluteHubPackagePath);
+    if (absoluteHubPackageInfo.exists())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Hub already exists: %1").arg(absoluteHubPackagePath);
+        }
+        return false;
+    }
+
+    if (!ensureDirectory(absoluteHubPackagePath, errorMessage))
+    {
+        return false;
+    }
+
+    if (!createHubScaffold(absoluteHubPackagePath, sanitizedHubName, errorMessage))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("hub.creator"),
-                                  QStringLiteral("createHub.failed.scaffold"),
+                                  QStringLiteral("createHubAtPath.failed.scaffold"),
                                   errorMessage != nullptr ? *errorMessage : QString());
         return false;
     }
 
     if (outPackagePath != nullptr)
     {
-        *outPackagePath = hubRootPath;
+        *outPackagePath = absoluteHubPackagePath;
     }
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("hub.creator"),
-                              QStringLiteral("createHub.success"),
-                              QStringLiteral("hubRoot=%1").arg(hubRootPath));
+                              QStringLiteral("createHubAtPath.success"),
+                              QStringLiteral("hubRoot=%1 hubName=%2")
+                              .arg(absoluteHubPackagePath, sanitizedHubName));
     return true;
 }
 

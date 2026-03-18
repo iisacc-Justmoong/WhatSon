@@ -246,6 +246,7 @@ QVariant BookmarksNoteListModel::data(const QModelIndex& index, int role) const
     switch (role)
     {
     case IdRole:
+    case NoteIdRole:
         return item.id;
     case PrimaryTextRole:
         return item.primaryText;
@@ -274,6 +275,7 @@ QHash<int, QByteArray> BookmarksNoteListModel::roleNames() const
 {
     return {
         {IdRole, "id"},
+        {NoteIdRole, "noteId"},
         {PrimaryTextRole, "primaryText"},
         {BodyTextRole, "bodyText"},
         {ImageRole, "image"},

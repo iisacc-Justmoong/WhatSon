@@ -7,6 +7,7 @@ import QtQuick.Window
 import Qt.labs.platform as Platform
 import LVRS 1.0 as LV
 import "view/panels" as BodyPanelView
+import "window" as WindowView
 
 LV.ApplicationWindow {
     id: applicationWindow
@@ -53,10 +54,11 @@ LV.ApplicationWindow {
     readonly property color navigationBarColor: LV.Theme.panelBackground06
     readonly property int navigationBarHeight: LV.Theme.gap24
     readonly property var navigationModeVm: navigationModeViewModel
-    readonly property int onboardingDefaultHeight: LV.Theme.gap20 * 21
-    readonly property int onboardingDefaultWidth: LV.Theme.gap20 * 28
-    readonly property int onboardingMinHeight: LV.Theme.controlHeightMd * 10
-    readonly property int onboardingMinWidth: LV.Theme.gap20 * 26
+    readonly property int onboardingDefaultHeight: onboardingMinHeight
+    readonly property int onboardingDefaultWidth: onboardingMinWidth
+    property var onboardingHubController: null
+    readonly property int onboardingMinHeight: 420
+    readonly property int onboardingMinWidth: 620
     property bool onboardingVisible: false
     property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
@@ -128,6 +130,13 @@ LV.ApplicationWindow {
     onHeightChanged: {
         windowInteractions.handleResizeForRenderQuality("heightChanged");
         resizeDebounceTimer.restart();
+    }
+    onOnboardingVisibleChanged: {
+        if (applicationWindow.onboardingVisible) {
+            onboardingSubWindow.show();
+        } else {
+            onboardingSubWindow.close();
+        }
     }
     onPageStackNavigated: function (path, params) {
         windowInteractions.reportLayoutBranch("pageStackNavigated");
@@ -348,19 +357,22 @@ LV.ApplicationWindow {
             statusPlaceholderText: ""
         }
     }
-    Onboarding {
+    WindowView.Onboarding {
         id: onboardingSubWindow
 
         defaultHeight: applicationWindow.onboardingDefaultHeight
         defaultWidth: applicationWindow.onboardingDefaultWidth
         hostWindow: applicationWindow
+        hubSessionController: applicationWindow.onboardingHubController
         minHeight: applicationWindow.onboardingMinHeight
         minWidth: applicationWindow.onboardingMinWidth
-        panelColor: applicationWindow.windowColor
 
         onCreateFileRequested: {
             applicationWindow.onboardingVisible = false;
             onboardingSubWindow.close();
+        }
+        onDismissed: {
+            applicationWindow.onboardingVisible = false;
         }
         onSelectFileRequested: {
             applicationWindow.onboardingVisible = false;

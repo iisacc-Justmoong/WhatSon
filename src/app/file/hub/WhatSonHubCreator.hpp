@@ -28,6 +28,10 @@ public:
         const QString& hubName,
         QString* outPackagePath,
         QString* errorMessage) const;
+    bool createHubAtPath(
+        const QString& hubPackagePath,
+        QString* outPackagePath,
+        QString* errorMessage) const;
 
     QString packageExtension() const;
     QString manifestFileName() const;
