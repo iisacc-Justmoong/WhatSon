@@ -279,6 +279,10 @@ build/cargo/release/whatson onboard
 `whatson onboard` forwards an internal `--onboarding-only` app flag and loads `Onboarding.qml` directly.
 The onboarding window now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected path
 through `WhatSonHubCreator` or load an existing package immediately into the workspace shell.
+Its right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
+or the currently selected `.wshub` package name.
+The last successfully loaded `.wshub` is persisted through the app session store, so the next launch restores that
+selection before falling back to `blueprint/*.wshub`.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:

@@ -247,6 +247,8 @@ Rectangle {
                             })
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
+                        height: noteCard.implicitHeight
+                        width: ListView.view ? ListView.view.width : listBarLayout.width
 
                         NoteListItem {
                             id: noteCard

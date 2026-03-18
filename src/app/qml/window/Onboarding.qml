@@ -9,9 +9,11 @@ Window {
     id: root
 
     readonly property url appIconSource: "qrc:/whatson/AppIcon.png"
+    readonly property int closeColumnWidth: 48
     readonly property int compactMinHeight: 420
     readonly property int compactMinWidth: 620
     readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
+    readonly property string defaultCreateHubFileName: "Untitled.wshub"
     property int defaultHeight: compactMinHeight
     property int defaultWidth: compactMinWidth
     readonly property int designHeight: 542
@@ -21,28 +23,34 @@ Window {
     readonly property int fixedWidth: Math.max(defaultWidth, minWidth)
     property Window hostWindow: null
     property var hubSessionController: null
-    readonly property real layoutScale: Math.min(1, Math.min(root.width / root.designWidth, root.height / root.designHeight))
     readonly property color linkColor: LV.Theme.accent
-    readonly property int mainPanelHorizontalInset: Math.max(24, Math.round(32 * root.layoutScale))
-    readonly property int mainPanelIconSize: Math.max(188, Math.min(300, Math.round(300 * root.layoutScale)))
-    readonly property int mainPanelMaxWidth: 300
-    readonly property int mainPanelMinWidth: 220
-    readonly property int mainPanelSpacing: Math.max(12, Math.round(16 * root.layoutScale))
     readonly property color mainSurfaceColor: root.panelColor
     property int minHeight: compactMinHeight
     property int minWidth: compactMinWidth
-    readonly property url onboardingIllustrationSource: "qrc:/whatson/illustrations/onboarding/Onboarding.png"
     property color panelColor: LV.Theme.panelBackground06
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
         return value.length > 0 ? value : "Version: 1.0.0";
     }
+    readonly property int rightPanelWidth: Math.max(214, Math.min(306, Math.round(root.width * 306 / root.designWidth)))
     readonly property color secondarySurfaceColor: root.sidePanelColor
+    readonly property string selectedHubStatusText: {
+        if (root.hubSessionController) {
+            if (root.hubSessionController.currentHubPathName !== undefined) {
+                const pathName = String(root.hubSessionController.currentHubPathName).trim();
+                if (pathName.length > 0)
+                    return pathName;
+            }
+            if (root.hubSessionController.currentHubName !== undefined) {
+                const hubName = String(root.hubSessionController.currentHubName).trim();
+                if (hubName.length > 0)
+                    return hubName;
+            }
+        }
+        return "No WhatSon Hub Selected";
+    }
     property color sidePanelColor: LV.Theme.panelBackground10
-    readonly property int sidePanelMaxWidth: 306
-    readonly property int sidePanelMinWidth: 236
     property bool standaloneMode: false
-    property string versionText: "Version: 1.0.0"
     readonly property string statusText: {
         if (hubSessionController && hubSessionController.busy)
             return "Preparing WhatSon Hub...";
@@ -51,6 +59,14 @@ Window {
         return "";
     }
     readonly property color statusTextColor: hubSessionController && hubSessionController.lastError.length > 0 ? LV.Theme.danger : LV.Theme.descriptionColor
+    readonly property url suggestedCreateHubFileUrl: {
+        const folderText = root.currentFolderUrl ? String(root.currentFolderUrl).trim() : "";
+        if (folderText.length === 0)
+            return "";
+        const normalizedFolderText = folderText.endsWith("/") ? folderText.slice(0, -1) : folderText;
+        return normalizedFolderText + "/" + root.defaultCreateHubFileName;
+    }
+    property string versionText: "Version: 1.0.0"
 
     signal createFileRequested
     signal dismissed
@@ -105,14 +121,13 @@ Window {
             if (!root.standaloneMode)
                 root.close();
         }
-
-        target: root.hubSessionController
     }
+
     FileDialog {
         id: createHubDialog
 
-        currentFolder: root.currentFolderUrl
         currentFile: root.suggestedCreateHubFileUrl
+        currentFolder: root.currentFolderUrl
         defaultSuffix: "wshub"
         fileMode: FileDialog.SaveFile
         nameFilters: ["WhatSon Hub (*.wshub)"]
@@ -127,6 +142,7 @@ Window {
             }
         }
     }
+
     FolderDialog {
         id: selectHubDialog
 
@@ -141,6 +157,7 @@ Window {
             }
         }
     }
+
     Rectangle {
         id: windowFrame
 
@@ -162,13 +179,14 @@ Window {
                     root.startSystemMove();
             }
         }
+
         Item {
             id: closeColumn
 
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.top: parent.top
-            width: 48
+            width: root.closeColumnWidth
 
             Item {
                 id: closeButton
@@ -185,6 +203,7 @@ Window {
                     color: closeMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                     radius: 4
                 }
+
                 Canvas {
                     anchors.fill: parent
                     antialiasing: true
@@ -204,6 +223,7 @@ Window {
                         ctx.stroke();
                     }
                 }
+
                 MouseArea {
                     id: closeMouseArea
 
@@ -215,20 +235,18 @@ Window {
                 }
             }
         }
-        Item {
+
+        Rectangle {
             id: rightPanel
 
             anchors.bottom: parent.bottom
             anchors.right: parent.right
             anchors.top: parent.top
-            width: Math.max(root.sidePanelMinWidth, Math.min(root.sidePanelMaxWidth, Math.round(parent.width * root.sidePanelMaxWidth / root.designWidth)))
+            antialiasing: true
+            color: root.secondarySurfaceColor
+            radius: windowFrame.radius
+            width: root.rightPanelWidth
 
-            Rectangle {
-                anchors.fill: parent
-                antialiasing: true
-                color: root.secondarySurfaceColor
-                radius: windowFrame.radius
-            }
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
@@ -237,87 +255,21 @@ Window {
                 anchors.top: parent.top
                 color: root.secondarySurfaceColor
             }
-            Item {
-                id: previewGroup
 
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.topMargin: 32
-                height: Math.min(parent.width, 130)
-                width: Math.min(158, Math.max(140, parent.width - 32))
-
-                Image {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    fillMode: Image.PreserveAspectFit
-                    height: parent.height
-                    mipmap: true
-                    smooth: true
-                    root.onboardingIllustrationSource
-                    sourceSize.height: height
-                    sourceSize.width: width
-                    width: parent.width
-                }
-            }
-            Item {
-                id: actionGroup
-
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 32
-                anchors.horizontalCenter: parent.horizontalCenter
-                height: actionColumn.implicitHeight
-                width: Math.min(220, Math.max(createHubAction.implicitWidth, selectHubAction.implicitWidth, rightPanel.width - 32))
-
-                Column {
-                    id: actionColumn
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    spacing: 10
-                    width: parent.width
-
-                    ActionLink {
-                        id: createHubAction
-
-                        enabled: !root.hubSessionController || !root.hubSessionController.busy
-                        label: "Create new WhatSon Hub"
-                        width: parent.width
-
-                        onTriggered: {
-                            if (root.hubSessionController) {
-                                root.hubSessionController.clearLastError();
-                                createHubDialog.open();
-                            } else {
-                                root.createFileRequested();
-                            }
-                        }
-                    }
-                    ActionLink {
-                        id: selectHubAction
-
-                        enabled: !root.hubSessionController || !root.hubSessionController.busy
-                        label: "Select WhatSon Hub"
-                        width: parent.width
-
-                        onTriggered: {
-                            if (root.hubSessionController) {
-                                root.hubSessionController.clearLastError();
-                                selectHubDialog.open();
-                            } else {
-                                root.selectFileRequested();
-                            }
-                        }
-                    }
-                    LV.Label {
-                        color: root.statusTextColor
-                        horizontalAlignment: Text.AlignHCenter
-                        maximumLineCount: 4
-                        style: description
-                        text: root.statusText
-                        visible: text.length > 0
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
-                }
+            LV.Label {
+                anchors.centerIn: parent
+                color: LV.Theme.textPrimary
+                elide: Text.ElideMiddle
+                font.styleName: "SemiBold"
+                font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
+                lineHeight: 15
+                lineHeightMode: Text.FixedHeight
+                maximumLineCount: 1
+                style: header2
+                text: root.selectedHubStatusText
+                width: Math.max(0, parent.width - 32)
+                wrapMode: Text.NoWrap
             }
         }
         Item {
@@ -332,50 +284,100 @@ Window {
                 id: appPanelContent
 
                 anchors.centerIn: parent
-                height: contentColumn.implicitHeight
-                width: Math.max(root.mainPanelMinWidth, Math.min(root.mainPanelMaxWidth, appPanel.width - root.mainPanelHorizontalInset * 2))
+                height: appPanelColumn.implicitHeight
+                width: 209
 
                 Column {
-                    id: contentColumn
+                    id: appPanelColumn
 
                     anchors.centerIn: parent
-                    spacing: root.mainPanelSpacing
+                    spacing: 32
                     width: parent.width
 
                     Image {
                         anchors.horizontalCenter: parent.horizontalCenter
                         fillMode: Image.PreserveAspectFit
-                        height: root.mainPanelIconSize
+                        height: 144
                         mipmap: true
                         smooth: true
                         root.appIconSource
-                        sourceSize.height: height
-                        sourceSize.width: width
-                        width: root.mainPanelIconSize
+                        sourceSize.height: 144
+                        sourceSize.width: 144
+                        width: 144
                     }
                     LV.Label {
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: LV.Theme.textPrimary
-                        font.pixelSize: Math.max(40, Math.round(48 * root.layoutScale))
+                        font.pixelSize: 48
                         font.styleName: "Bold"
                         font.weight: Font.Bold
                         horizontalAlignment: Text.AlignHCenter
-                        lineHeight: font.pixelSize
-                        lineHeightMode: Text.FixedHeight
                         style: title
                         text: "WhatSon"
-                        verticalAlignment: Text.AlignVCenter
                         width: parent.width
                     }
                     LV.Label {
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: LV.Theme.descriptionColor
+                        font.pixelSize: 12
                         font.styleName: "SemiBold"
                         font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignHCenter
+                        lineHeight: 12
+                        lineHeightMode: Text.FixedHeight
                         style: description
                         text: root.resolvedVersionText
                         width: parent.width
+                    }
+
+                    Column {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 24
+                        width: 180
+
+                        ActionLink {
+                            id: createHubAction
+
+                            enabled: !root.hubSessionController || !root.hubSessionController.busy
+                            label: "Create new WhatSon Hub"
+                            width: parent.width
+
+                            onTriggered: {
+                                if (root.hubSessionController) {
+                                    root.hubSessionController.clearLastError();
+                                    createHubDialog.open();
+                                } else {
+                                    root.createFileRequested();
+                                }
+                            }
+                        }
+                        ActionLink {
+                            id: selectHubAction
+
+                            enabled: !root.hubSessionController || !root.hubSessionController.busy
+                            label: "Select WhatSon Hub"
+                            width: parent.width
+
+                            onTriggered: {
+                                if (root.hubSessionController) {
+                                    root.hubSessionController.clearLastError();
+                                    selectHubDialog.open();
+                                } else {
+                                    root.selectFileRequested();
+                                }
+                            }
+                        }
+                    }
+                    LV.Label {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        color: root.statusTextColor
+                        horizontalAlignment: Text.AlignHCenter
+                        maximumLineCount: 4
+                        style: description
+                        text: root.statusText
+                        visible: text.length > 0
+                        width: parent.width
+                        wrapMode: Text.WordWrap
                     }
                 }
             }
@@ -397,12 +399,19 @@ Window {
             id: actionText
 
             anchors.centerIn: parent
-            color: actionLink.enabled ? LV.Theme.accent : LV.Theme.descriptionColor
+            color: actionLink.enabled ? root.linkColor : LV.Theme.descriptionColor
+            font.pixelSize: 15
+            font.styleName: "SemiBold"
             font.weight: Font.DemiBold
+            horizontalAlignment: Text.AlignHCenter
+            lineHeight: 15
+            lineHeightMode: Text.FixedHeight
             opacity: !actionLink.enabled ? 0.42 : actionMouseArea.pressed ? 0.68 : actionMouseArea.containsMouse ? 0.84 : 1
             style: header2
             text: actionLink.label
+            width: parent.width
         }
+
         MouseArea {
             id: actionMouseArea
 

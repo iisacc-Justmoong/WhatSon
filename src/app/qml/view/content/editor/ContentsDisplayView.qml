@@ -317,7 +317,6 @@ Item {
         if (normalizedType === "current")
             return contentsView.gutterMarkerCurrentColor;
 
-
     }
     function markerHeight(markerSpec) {
         const markerType = markerSpec && markerSpec.type !== undefined ? String(markerSpec.type).toLowerCase() : "";

@@ -51,9 +51,14 @@ Defined in `CMakeLists.txt`:
     - mobile/export helpers for iOS/Android
 - CLI behavior:
     - `build/cargo/release/whatson` launches the desktop app directly when a prebuilt executable exists
-    - `build/cargo/release/whatson onboard` forwards `--onboarding-only` into the app and loads
-      `src/app/qml/window/Onboarding.qml` without workspace bootstrap, then promotes into `Main.qml` after the user
-      creates or selects a hub
+- `build/cargo/release/whatson onboard` forwards `--onboarding-only` into the app and loads
+  `src/app/qml/window/Onboarding.qml` without workspace bootstrap, then promotes into `Main.qml` after the user
+  creates or selects a hub
+- `Onboarding.qml` follows the Figma `OnboardWindowDesktop` split layout: close rail on the left, centered app/action
+  stack in the middle, and a right status panel that shows either `No WhatSon Hub Selected` or the selected `.wshub`
+  package name.
+- Startup hub resolution restores the last successfully loaded `.wshub` from the app session store first and only then
+  falls back to `blueprint/*.wshub`.
 
 Dependency discovery baseline:
 

@@ -35,6 +35,11 @@ namespace
         }
         return fileName.trimmed();
     }
+
+    QString hubPathNameFromPath(const QString& hubPath)
+    {
+        return QFileInfo(hubPath.trimmed()).fileName().trimmed();
+    }
 }
 
 OnboardingHubController::OnboardingHubController(QObject* parent)
@@ -51,6 +56,11 @@ bool OnboardingHubController::busy() const noexcept
 QString OnboardingHubController::currentHubName() const
 {
     return m_currentHubName;
+}
+
+QString OnboardingHubController::currentHubPathName() const
+{
+    return m_currentHubPathName;
 }
 
 QString OnboardingHubController::lastError() const
@@ -328,13 +338,24 @@ void OnboardingHubController::setBusy(bool busy)
 void OnboardingHubController::setCurrentHubPath(const QString& hubPath)
 {
     const QString nextHubName = hubNameFromPath(hubPath);
-    if (m_currentHubName == nextHubName)
+    const QString nextHubPathName = hubPathNameFromPath(hubPath);
+    const bool hubNameChanged = m_currentHubName != nextHubName;
+    const bool hubPathNameChanged = m_currentHubPathName != nextHubPathName;
+    if (!hubNameChanged && !hubPathNameChanged)
     {
         return;
     }
 
-    m_currentHubName = nextHubName;
-    emit currentHubNameChanged();
+    if (hubNameChanged)
+    {
+        m_currentHubName = nextHubName;
+        emit currentHubNameChanged();
+    }
+    if (hubPathNameChanged)
+    {
+        m_currentHubPathName = nextHubPathName;
+        emit currentHubPathNameChanged();
+    }
 }
 
 void OnboardingHubController::setCurrentFolderPath(const QString& folderPath)

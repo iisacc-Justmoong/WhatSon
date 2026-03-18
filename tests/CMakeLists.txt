@@ -38,6 +38,24 @@ target_link_libraries(whatson_onboarding_hub_controller_tests
 add_test(NAME whatson_onboarding_hub_controller_tests COMMAND whatson_onboarding_hub_controller_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_onboarding_hub_controller_tests)
 
+add_executable(whatson_selected_hub_store_tests
+        app/test_selected_hub_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/store/hub/SelectedHubStore.cpp
+)
+set_target_properties(whatson_selected_hub_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_selected_hub_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/store
+        ${CMAKE_SOURCE_DIR}/src/app/store/hub
+)
+target_link_libraries(whatson_selected_hub_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_selected_hub_store_tests COMMAND whatson_selected_hub_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_selected_hub_store_tests)
+
 add_executable(whatson_hub_parser_tests
         app/test_whatson_hub_parser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubParser.cpp

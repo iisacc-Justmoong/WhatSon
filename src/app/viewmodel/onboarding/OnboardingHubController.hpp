@@ -10,6 +10,7 @@ class OnboardingHubController final : public QObject
     Q_OBJECT
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString currentHubName READ currentHubName NOTIFY currentHubNameChanged)
+    Q_PROPERTY(QString currentHubPathName READ currentHubPathName NOTIFY currentHubPathNameChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
     Q_PROPERTY(QUrl currentFolderUrl READ currentFolderUrl NOTIFY currentFolderUrlChanged)
 
@@ -21,6 +22,7 @@ public:
 
     [[nodiscard]] bool busy() const noexcept;
     [[nodiscard]] QString currentHubName() const;
+    [[nodiscard]] QString currentHubPathName() const;
     [[nodiscard]] QString lastError() const;
     [[nodiscard]] QUrl currentFolderUrl() const;
 
@@ -34,6 +36,7 @@ public
     slots  :
 
 
+
     void clearLastError();
     void requestViewHook();
     void syncCurrentHubSelection(const QString& hubPath);
@@ -41,8 +44,10 @@ public
     signals  :
 
 
+
     void busyChanged();
     void currentHubNameChanged();
+    void currentHubPathNameChanged();
     void lastErrorChanged();
     void currentFolderUrlChanged();
     void hubCreated(const QString& hubPath);
@@ -63,6 +68,7 @@ private:
     LoadHubCallback m_loadHubCallback;
     bool m_busy = false;
     QString m_currentHubName;
+    QString m_currentHubPathName;
     QString m_lastError;
     QUrl m_currentFolderUrl;
 };

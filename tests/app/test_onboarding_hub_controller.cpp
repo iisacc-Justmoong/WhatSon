@@ -13,6 +13,7 @@ private
     slots  :
 
 
+
     void createHubAtUrl_createsAndLoadsHub();
     void loadHubFromUrl_resolvesSinglePackageInSelectedFolder();
     void loadHubFromUrl_rejectsAmbiguousPackageSelection();
@@ -58,6 +59,7 @@ void OnboardingHubControllerTest::createHubAtUrl_createsAndLoadsHub()
     QSignalSpy hubCreatedSpy(&controller, &OnboardingHubController::hubCreated);
     QSignalSpy hubLoadedSpy(&controller, &OnboardingHubController::hubLoaded);
     QSignalSpy currentHubNameChangedSpy(&controller, &OnboardingHubController::currentHubNameChanged);
+    QSignalSpy currentHubPathNameChangedSpy(&controller, &OnboardingHubController::currentHubPathNameChanged);
     QSignalSpy operationFailedSpy(&controller, &OnboardingHubController::operationFailed);
 
     QVERIFY(controller.createHubAtUrl(QUrl::fromLocalFile(createdHubPath)));
@@ -68,8 +70,10 @@ void OnboardingHubControllerTest::createHubAtUrl_createsAndLoadsHub()
     QCOMPARE(hubCreatedSpy.count(), 1);
     QCOMPARE(hubLoadedSpy.count(), 1);
     QCOMPARE(currentHubNameChangedSpy.count(), 1);
+    QCOMPARE(currentHubPathNameChangedSpy.count(), 1);
     QCOMPARE(operationFailedSpy.count(), 0);
     QCOMPARE(controller.currentHubName(), QStringLiteral("alpha"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("alpha.wshub"));
     QCOMPARE(controller.lastError(), QString());
     QCOMPARE(controller.currentFolderUrl(), QUrl::fromLocalFile(tempDir.path()));
 }
@@ -85,6 +89,7 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesSinglePackageInSelected
     OnboardingHubController controller;
     QString loadedHubPath;
     QSignalSpy currentHubNameChangedSpy(&controller, &OnboardingHubController::currentHubNameChanged);
+    QSignalSpy currentHubPathNameChangedSpy(&controller, &OnboardingHubController::currentHubPathNameChanged);
     controller.setLoadHubCallback([&loadedHubPath](const QString& hubPathValue, QString* errorMessage) -> bool
     {
         Q_UNUSED(errorMessage);
@@ -95,7 +100,9 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesSinglePackageInSelected
     QVERIFY(controller.loadHubFromUrl(QUrl::fromLocalFile(tempDir.path())));
     QCOMPARE(loadedHubPath, hubPath);
     QCOMPARE(currentHubNameChangedSpy.count(), 1);
+    QCOMPARE(currentHubPathNameChangedSpy.count(), 1);
     QCOMPARE(controller.currentHubName(), QStringLiteral("sample"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("sample.wshub"));
     QCOMPARE(controller.lastError(), QString());
 }
 
@@ -133,13 +140,16 @@ void OnboardingHubControllerTest::syncCurrentHubSelection_updatesHubNameAndFolde
 
     OnboardingHubController controller;
     QSignalSpy currentHubNameChangedSpy(&controller, &OnboardingHubController::currentHubNameChanged);
+    QSignalSpy currentHubPathNameChangedSpy(&controller, &OnboardingHubController::currentHubPathNameChanged);
     QSignalSpy currentFolderUrlChangedSpy(&controller, &OnboardingHubController::currentFolderUrlChanged);
 
     controller.syncCurrentHubSelection(hubPath);
 
     QCOMPARE(currentHubNameChangedSpy.count(), 1);
+    QCOMPARE(currentHubPathNameChangedSpy.count(), 1);
     QVERIFY(currentFolderUrlChangedSpy.count() >= 1);
     QCOMPARE(controller.currentHubName(), QStringLiteral("TestHub"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("TestHub.wshub"));
     QCOMPARE(controller.currentFolderUrl(), QUrl::fromLocalFile(tempDir.path()));
 }
 

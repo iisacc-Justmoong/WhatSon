@@ -38,7 +38,10 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn('mainWindow->setProperty("onboardingVisible", true);', app_main_text)
         self.assertIn('"hubSessionController"', app_main_text)
         self.assertIn('"onboardingHubController"', app_main_text)
-        self.assertIn("onboardingHubController.syncCurrentHubSelection(blueprintHubPath);", app_main_text)
+        self.assertIn("onboardingHubController.syncCurrentHubSelection(startupHubPath);", app_main_text)
+        self.assertIn("SelectedHubStore selectedHubStore;", app_main_text)
+        self.assertIn("selectedHubStore.startupHubPath(resolveBlueprintHubPath())", app_main_text)
+        self.assertIn("selectedHubStore.setSelectedHubPath(hubPath);", app_main_text)
         self.assertIn("readonly property int onboardingMinHeight: 420", main_qml_text)
         self.assertIn("readonly property int onboardingMinWidth: 620", main_qml_text)
         self.assertIn(
@@ -79,13 +82,21 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("FolderDialog {", onboarding_qml_text)
         self.assertIn("createHubAtUrl(selectedFile)", onboarding_qml_text)
         self.assertIn("loadHubFromUrl(selectedFolder)", onboarding_qml_text)
+        self.assertIn("width: 180", onboarding_qml_text)
+        self.assertIn("width: parent.width", onboarding_qml_text)
         self.assertIn("clearLastError();", onboarding_qml_text)
         self.assertIn("readonly property string statusText:", onboarding_qml_text)
+        self.assertIn('readonly property string selectedHubStatusText:', onboarding_qml_text)
+        self.assertIn('return "No WhatSon Hub Selected";', onboarding_qml_text)
         self.assertIn("property var hubSessionController: null", onboarding_qml_text)
-        self.assertIn('readonly property string fallbackHubName: "WhatSon Hub"', onboarding_qml_text)
+        self.assertIn("root.hubSessionController.currentHubPathName", onboarding_qml_text)
         self.assertIn("root.hubSessionController.currentHubName", onboarding_qml_text)
         self.assertIn(
             "Q_PROPERTY(QString currentHubName READ currentHubName NOTIFY currentHubNameChanged)",
+            controller_header_text,
+        )
+        self.assertIn(
+            "Q_PROPERTY(QString currentHubPathName READ currentHubPathName NOTIFY currentHubPathNameChanged)",
             controller_header_text,
         )
         self.assertIn("void syncCurrentHubSelection(const QString& hubPath);", controller_header_text)

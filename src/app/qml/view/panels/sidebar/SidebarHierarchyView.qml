@@ -34,6 +34,12 @@ Rectangle {
     property string frameNodeId: ""
     property var hierarchyDragDropBridge: null
     property bool hierarchyEditable: false
+    readonly property color hierarchyRenameFieldBackgroundColor: {
+        const item = sidebarHierarchyView.activeHierarchyItem;
+        if (item && item.rowBackgroundColor !== undefined)
+            return item.rowBackgroundColor;
+        return LV.Theme.accentBlueMuted;
+    }
     readonly property real hierarchyRenameFieldHeight: {
         const item = sidebarHierarchyView.activeHierarchyItem;
         return Math.max(16, item ? (Number(item.rowHeight) || Number(item.height) || 20) : 20);
@@ -129,7 +135,6 @@ Rectangle {
             return clone;
         for (const key in sourceItem)
             clone[key] = sourceItem[key];
-
     }
     function commitHierarchyRename() {
         if (!sidebarHierarchyView.renameEditingActive)
@@ -210,7 +215,6 @@ Rectangle {
         const projectedItem = sidebarHierarchyView.cloneHierarchyItem(projectedModel[editingIndex]);
         projectedItem.label = "";
         projectedModel[editingIndex] = projectedItem;
-
     }
     function requestCreateFolder() {
         if (sidebarHierarchyView.renameEditingActive)

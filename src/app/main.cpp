@@ -27,6 +27,7 @@
 #include "file/hub/WhatSonHubCreator.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
+#include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
 
 #include <QByteArray>
@@ -412,6 +413,7 @@ int main(int argc, char* argv[])
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
     SidebarSelectionStore sidebarSelectionStore;
+    SelectedHubStore selectedHubStore;
     HierarchyViewModelProvider hierarchyViewModelProvider;
     SidebarHierarchyViewModel sidebarHierarchyViewModel;
     DetailPanelViewModel detailPanelViewModel;
@@ -609,31 +611,40 @@ int main(int argc, char* argv[])
             return hubCreator.createHubAtPath(requestedHubPath, outPackagePath, errorMessage);
         });
     onboardingHubController.setLoadHubCallback(loadHubIntoRuntime);
+    QObject::connect(
+        &onboardingHubController,
+        &OnboardingHubController::hubLoaded,
+        &app,
+        [&selectedHubStore](const QString& hubPath)
+        {
+            selectedHubStore.setSelectedHubPath(hubPath);
+        });
 
     bool initialHubLoaded = false;
-    const QString blueprintHubPath = resolveBlueprintHubPath();
-    if (!blueprintHubPath.isEmpty())
+    const QString startupHubPath = selectedHubStore.startupHubPath(resolveBlueprintHubPath());
+    if (!startupHubPath.isEmpty())
     {
         QString errorMessage;
-        initialHubLoaded = loadHubIntoRuntime(blueprintHubPath, &errorMessage);
+        initialHubLoaded = loadHubIntoRuntime(startupHubPath, &errorMessage);
         if (initialHubLoaded)
         {
-            onboardingHubController.syncCurrentHubSelection(blueprintHubPath);
+            onboardingHubController.syncCurrentHubSelection(startupHubPath);
+            selectedHubStore.setSelectedHubPath(startupHubPath);
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {
             qWarning().noquote()
                 << QStringLiteral("Failed to load startup WhatSon Hub '%1': %2")
-                .arg(blueprintHubPath, errorMessage.trimmed());
+                .arg(startupHubPath, errorMessage.trimmed());
         }
     }
     else
     {
-        qWarning().noquote() << QStringLiteral("No .wshub package was found under blueprint directory.");
+        qWarning().noquote() << QStringLiteral("No startup WhatSon Hub could be resolved.");
         WhatSon::Debug::trace(
             QStringLiteral("main.runtime"),
             QStringLiteral("loadFromWshub.skipped"),
-            QStringLiteral("no blueprint .wshub detected"));
+            QStringLiteral("no startup .wshub detected"));
     }
 
     HierarchyViewModelProvider::Targets hierarchyViewModelTargets;
