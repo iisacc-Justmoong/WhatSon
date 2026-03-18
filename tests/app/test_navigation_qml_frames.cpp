@@ -38,6 +38,7 @@ private
     void navigationPropertiesFrame_mustComposeSeparatedChildFrames();
     void navigationChildFrames_mustBindPanelViewModelContracts();
     void navigationSelectionBars_mustUseContextMenuCombos();
+    void navigationApplicationControlBar_mustMatchFigmaChildOrder();
     void hierarchySidebar_mustReceiveSharedHorizontalInset();
 };
 
@@ -111,19 +112,19 @@ void NavigationQmlFramesTest::navigationBar_mustSwitchApplicationBarsByNavigatio
 {
     const QString navigationBarLayout = readQml(QStringLiteral("view/panels/NavigationBarLayout.qml"));
     const QString applicationViewBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationViewBar.qml"));
+        QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
     const QString applicationEditBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationEditBar.qml"));
+        QStringLiteral("view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
 
     QVERIFY(!navigationBarLayout.isEmpty());
     QVERIFY(!applicationViewBar.isEmpty());
     QVERIFY(!applicationEditBar.isEmpty());
     QVERIFY(navigationBarLayout.contains(QStringLiteral("readonly property string activeNavigationModeName")));
-    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationViewBar {")));
-    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationEditBar {")));
-    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationView.NavigationApplicationControlBar {")));
-    QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationPreferenceBar {")));
-    QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationPreferenceBar {")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationViewMode.NavigationApplicationViewBar {")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationEditMode.NavigationApplicationEditBar {")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationControlMode.NavigationApplicationControlBar {")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationShared.NavigationPreferenceBar {")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationShared.NavigationPreferenceBar {")));
 }
 
 void NavigationQmlFramesTest::navigationPropertiesFrame_mustComposeSeparatedChildFrames()
@@ -143,11 +144,11 @@ void NavigationQmlFramesTest::navigationChildFrames_mustBindPanelViewModelContra
     const QString modeBar = readQml(QStringLiteral("view/panels/navigation/NavigationModeBar.qml"));
     const QString editorViewBar = readQml(QStringLiteral("view/panels/navigation/NavigationEditorViewBar.qml"));
     const QString applicationViewBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationViewBar.qml"));
+        QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
     const QString applicationEditBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationEditBar.qml"));
+        QStringLiteral("view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
     const QString applicationControlBar = readQml(
-        QStringLiteral("view/panels/navigation/NavigationApplicationControlBar.qml"));
+        QStringLiteral("view/panels/navigation/control/NavigationApplicationControlBar.qml"));
 
     QVERIFY(propertiesBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationPropertiesBar\")")));
@@ -191,6 +192,31 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
     QVERIFY(!editorViewBar.contains(QStringLiteral("requestNextViewMode();")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("comboLabelRightInset")));
     QVERIFY(!editorViewBar.contains(QStringLiteral("resolvedBackgroundColor")));
+}
+
+void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChildOrder()
+{
+    const QString applicationControlBar = readQml(
+        QStringLiteral("view/panels/navigation/control/NavigationApplicationControlBar.qml"));
+
+    QVERIFY(!applicationControlBar.isEmpty());
+
+    const int calendarIndex = applicationControlBar.indexOf(QStringLiteral("NavigationCalendarBar {"));
+    const int appControlIndex = applicationControlBar.indexOf(QStringLiteral("NavigationAppControlBar {"));
+    const int exportIndex = applicationControlBar.indexOf(QStringLiteral("NavigationExportBar {"));
+    const int addNewIndex = applicationControlBar.indexOf(QStringLiteral("NavigationAddNewBar {"));
+    const int preferenceIndex = applicationControlBar.indexOf(QStringLiteral("NavigationPreferenceBar {"));
+
+    QVERIFY(calendarIndex >= 0);
+    QVERIFY(appControlIndex >= 0);
+    QVERIFY(exportIndex >= 0);
+    QVERIFY(addNewIndex >= 0);
+    QVERIFY(preferenceIndex >= 0);
+
+    QVERIFY(calendarIndex < appControlIndex);
+    QVERIFY(appControlIndex < exportIndex);
+    QVERIFY(exportIndex < addNewIndex);
+    QVERIFY(addNewIndex < preferenceIndex);
 }
 
 void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset()

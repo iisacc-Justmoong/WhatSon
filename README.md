@@ -444,11 +444,16 @@ for hub/note hierarchy payloads.
 - Figma navigation frames are split into dedicated QML files under `src/app/qml/view/panels/navigation/`:
   `NavigationPropertiesBar.qml`, `NavigationInformationBar.qml`, `NavigationModeBar.qml`,
   and `NavigationEditorViewBar.qml`.
-- The right-side application area is also split by navigation mode into dedicated QML files:
-  `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`,
-  `NavigationApplicationControlBar.qml`, and `NavigationApplicationPresentationBar.qml`.
-- `NavigationApplicationViewBar.qml`, `NavigationApplicationEditBar.qml`, and
-  `NavigationApplicationPresentationBar.qml` mount the same baseline `NavigationPreferenceBar.qml` used by the
+- The right-side application area is split by navigation mode into dedicated QML files under mode-specific
+  subdirectories: `navigation/view/NavigationApplicationViewBar.qml`,
+  `navigation/edit/NavigationApplicationEditBar.qml`, and
+  `navigation/control/NavigationApplicationControlBar.qml`.
+- Control-only child bars now live with the control-mode shell under `navigation/control/`, while shared bars such as
+  `NavigationAddNewBar.qml` and `NavigationPreferenceBar.qml` remain at the navigation root.
+- `navigation/control/NavigationApplicationControlBar.qml` follows the Figma child order `Calendar -> AppControl -> Export -> AddNew ->
+  Preference`, keeping the create control on the right side of the control-mode application cluster.
+- `navigation/view/NavigationApplicationViewBar.qml` and
+  `navigation/edit/NavigationApplicationEditBar.qml` mount the same baseline `NavigationPreferenceBar.qml` used by the
   control mode until mode-specific tools are added.
 - `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
   text editor currently owns focus.

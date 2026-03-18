@@ -475,7 +475,6 @@ Rectangle {
                     sidebarHierarchyView.requestViewOptions();
                 },
                 rightPadding: 4,
-                spacing: -4,
                 topPadding: 2,
                 bottomPadding: 2
             })

@@ -900,8 +900,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("rightPadding: 4")),
         "SidebarHierarchyView.qml footer menu button must keep the Figma 4px right padding.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("spacing: -4")),
-        "SidebarHierarchyView.qml footer menu button must tighten icon-chevron spacing to the Figma footer width.");
+        !sidebarViewText.contains(QStringLiteral("spacing: -4")),
+        "SidebarHierarchyView.qml footer menu button must not override the LVRS icon-chevron spacing contract.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestCreateFolder();")),
         "SidebarHierarchyView.qml footer add button must route into the shared create-folder helper.");

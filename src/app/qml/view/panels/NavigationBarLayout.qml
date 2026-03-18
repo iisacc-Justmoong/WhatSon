@@ -2,6 +2,9 @@ import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
 import "navigation" as NavigationView
+import "navigation/control" as NavigationControlMode
+import "navigation/edit" as NavigationEditMode
+import "navigation/view" as NavigationViewMode
 
 Rectangle {
     id: navigationBar
@@ -96,21 +99,21 @@ Rectangle {
     Component {
         id: applicationViewBarComponent
 
-        NavigationView.NavigationApplicationViewBar {
+        NavigationViewMode.NavigationApplicationViewBar {
             compactMode: navigationBar.compactMode
         }
     }
     Component {
         id: applicationEditBarComponent
 
-        NavigationView.NavigationApplicationEditBar {
+        NavigationEditMode.NavigationApplicationEditBar {
             compactMode: navigationBar.compactMode
         }
     }
     Component {
         id: applicationControlBarComponent
 
-        NavigationView.NavigationApplicationControlBar {
+        NavigationControlMode.NavigationApplicationControlBar {
             compactMode: navigationBar.compactMode
         }
     }
