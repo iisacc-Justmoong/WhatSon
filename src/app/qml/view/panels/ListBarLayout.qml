@@ -251,6 +251,7 @@ Rectangle {
                         NoteListItem {
                             id: noteCard
 
+                            active: noteListView.currentIndex === noteItemDelegate.index
                             anchors.fill: parent
                             bookmarkColor: noteItemDelegate.bookmarkColor === undefined || noteItemDelegate.bookmarkColor === null ? "" : String(noteItemDelegate.bookmarkColor)
                             bookmarked: noteItemDelegate.bookmarked === undefined ? false : Boolean(noteItemDelegate.bookmarked)
@@ -260,7 +261,7 @@ Rectangle {
                             imageSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? "" : noteItemDelegate.imageSource
                             noteId: noteItemDelegate.noteId === undefined || noteItemDelegate.noteId === null ? "" : String(noteItemDelegate.noteId)
                             opacity: noteDragHandler.active ? 0.72 : 1
-                            pressed: ListView.isCurrentItem || listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
+                            pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
                             primaryText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? "" : String(noteItemDelegate.primaryText)
                             tags: listBarLayout.normalizeEntries(noteItemDelegate.tags)
                         }

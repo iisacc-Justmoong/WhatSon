@@ -17,12 +17,9 @@ Window {
     readonly property int designHeight: 542
     readonly property int designWidth: 867
     readonly property int dragRegionHeight: 72
-    readonly property string fallbackHubName: "WhatSon Hub"
     readonly property int fixedHeight: Math.max(defaultHeight, minHeight)
     readonly property int fixedWidth: Math.max(defaultWidth, minWidth)
     property Window hostWindow: null
-    property string hubName: ""
-    property url hubPreviewSource: ""
     property var hubSessionController: null
     readonly property real layoutScale: Math.min(1, Math.min(root.width / root.designWidth, root.height / root.designHeight))
     readonly property color linkColor: LV.Theme.accent
@@ -34,15 +31,8 @@ Window {
     readonly property color mainSurfaceColor: root.panelColor
     property int minHeight: compactMinHeight
     property int minWidth: compactMinWidth
+    readonly property url onboardingIllustrationSource: "qrc:/whatson/illustrations/onboarding/Onboarding.png"
     property color panelColor: LV.Theme.panelBackground06
-    readonly property color previewPlaceholderColor: "#C4C4C4"
-    readonly property string resolvedHubName: {
-        const value = root.hubName === undefined || root.hubName === null ? "" : String(root.hubName).trim();
-        if (value.length > 0)
-            return value;
-        const controllerValue = root.hubSessionController ? String(root.hubSessionController.currentHubName || "").trim() : "";
-        return controllerValue.length > 0 ? controllerValue : root.fallbackHubName;
-    }
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
         return value.length > 0 ? value : "Version: 1.0.0";
@@ -253,41 +243,19 @@ Window {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: 32
-                height: 188
+                height: Math.min(parent.width, 130)
                 width: Math.min(158, Math.max(140, parent.width - 32))
 
-                Rectangle {
-                    id: previewPlaceholder
-
+                Image {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    color: root.previewPlaceholderColor
-                    height: Math.min(parent.width, 130)
-                    width: height
-
-                    Image {
-                        anchors.fill: parent
-                        fillMode: Image.PreserveAspectCrop
-                        mipmap: true
-                        smooth: true
-                        root.hubPreviewSource
-                        sourceSize.height: height
-                        sourceSize.width: width
-                        visible: root.hubPreviewSource.toString().length > 0
-                    }
-                }
-                LV.Label {
-                    anchors.bottom: parent.bottom
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: LV.Theme.textPrimary
-                    font.weight: Font.Bold
-                    height: implicitHeight
-                    horizontalAlignment: Text.AlignHCenter
-                    maximumLineCount: 2
-                    style: title
-                    text: root.resolvedHubName
-                    verticalAlignment: Text.AlignVCenter
+                    fillMode: Image.PreserveAspectFit
+                    height: parent.height
+                    mipmap: true
+                    smooth: true
+                    root.onboardingIllustrationSource
+                    sourceSize.height: height
+                    sourceSize.width: width
                     width: parent.width
-                    wrapMode: Text.WordWrap
                 }
             }
             Item {

@@ -299,6 +299,11 @@ Domain-isolated support:
               note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
               candidate row and selection is committed on tap release, then reasserted once through a short-lived
               pending-selection replay so drag startup is not canceled by note-model refresh. The surrounding
+              `NoteListItem.qml` surface keeps that contract split explicitly: persistent current-note highlight flows
+              through a dedicated `active` binding from `ListView.currentIndex`, while transient pointer/drag feedback
+              stays in `pressed`, preventing the active card from dropping its highlight as soon as the pointer is
+              released.
+              The surrounding
               `ListView` also yields drag-scrolling while a note row is pressed, so the delegate `DragHandler` can
               start the `whatson.library.note` drag before the viewport steals the pointer. `SidebarHierarchyView.qml`
               now binds the higher-level LVRS `Hierarchy` surface directly to each domain view-model's standard
@@ -578,6 +583,13 @@ Hierarchy rendering pipeline:
   direct `LV.ListFooter` instance anchored bottom-left, with fixed `78x24` geometry, transparent button backgrounds,
   and explicit `generaladd` / `generaldelete` / `generalsettings` icon names. The hierarchy list reserves that footer
   height explicitly instead of routing footer actions through a local wrapper.
+- Inline-rename policy: `SidebarHierarchyView.qml` owns the transient rename session locally, opens an inline
+  `LV.InputField` over the active LVRS hierarchy row on `Enter` / `Return` only when the bound domain exposes
+  `canRenameItem(...)` and `renameItem(...)`, commits via the domain view-model, and cancels on `Escape`, toolbar
+  switches, or selection changes so rename state never leaks across hierarchy contexts.
+- Expansion-state protection policy: user-triggered expand/collapse changes must flow into the bound hierarchy
+  view-model through a narrow `setItemExpanded(itemId, expanded)` hook. `createFolder()` and other point mutations must
+  not rebuild untouched hierarchy rows from stale expansion defaults, because that collapses unrelated UI state.
 - Toolbar spacing policy: `SidebarHierarchyView.qml` keeps the higher-level LVRS `Hierarchy` for the list surface, but
   mounts a dedicated LVRS icon-button `Row` over the header strip with a fixed `40 / 7` inter-icon gap so the eight
   `20px` toolbar icons remain left-anchored on the Figma `200px` `HierarchyHeaderToolbar` track.

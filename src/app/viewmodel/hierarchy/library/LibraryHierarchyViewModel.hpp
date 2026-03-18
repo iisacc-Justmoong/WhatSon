@@ -52,6 +52,7 @@ public:
     Q_INVOKABLE QString itemLabel(int index) const;
     Q_INVOKABLE bool canRenameItem(int index) const;
     Q_INVOKABLE bool renameItem(int index, const QString& displayName);
+    Q_INVOKABLE bool setItemExpanded(int index, bool expanded);
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;

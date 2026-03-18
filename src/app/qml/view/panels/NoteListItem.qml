@@ -5,7 +5,8 @@ import LVRS 1.0 as LV
 Item {
     id: noteListItem
 
-    readonly property bool activeState: pressed
+    property bool active: false
+    readonly property bool activeState: noteListItem.active || noteListItem.pressed
     property color bookmarkColor: LV.Theme.accentYellow
     property bool bookmarked: false
     readonly property var calendarStore: typeof systemCalendarStore !== "undefined" ? systemCalendarStore : null
@@ -42,12 +43,27 @@ Item {
     readonly property color tagLabelColor: LV.Theme.captionColor
     property var tags: []
     readonly property int verticalPadding: 8
-    readonly property var visibleFolders: metadataPreview(noteListItem.folders)
-    readonly property var visibleTags: metadataPreview(noteListItem.tags)
+    readonly property var visibleFolders: metadataPreview(noteListItem.folders, true)
+    readonly property var visibleTags: metadataPreview(noteListItem.tags, false)
 
     signal viewHookRequested
 
-    function metadataPreview(values) {
+    function leafFolderLabel(value) {
+        const text = value === undefined || value === null ? "" : String(value).trim();
+        if (!text.length)
+            return "";
+
+        const normalized = text.replace(/\\/g, "/");
+        const segments = normalized.split("/");
+        for (var index = segments.length - 1; index >= 0; --index) {
+            const segment = String(segments[index]).trim();
+            if (segment.length > 0)
+                return segment;
+        }
+
+        return "";
+    }
+    function metadataPreview(values, leafOnly) {
         if (values === undefined || values === null)
             return [];
 
@@ -59,7 +75,7 @@ Item {
 
         var items = [];
         for (var i = 0; i < sourceValues.length; ++i) {
-            var entry = String(sourceValues[i]).trim();
+            var entry = leafOnly ? leafFolderLabel(sourceValues[i]) : String(sourceValues[i]).trim();
             if (!entry.length || items.indexOf(entry) >= 0)
                 continue;
             items.push(entry);
@@ -113,7 +129,7 @@ Item {
                         anchors.fill: parent
                         asynchronous: true
                         fillMode: Image.PreserveAspectCrop
-                        source: noteListItem.imageSource
+                        noteListItem.imageSource
                         sourceSize.height: noteListItem.imagePreviewSize
                         sourceSize.width: noteListItem.imagePreviewSize
                         visible: noteListItem.imageSource.toString().length > 0
@@ -209,7 +225,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconSize
-                                        source: noteListItem.folderIconSource
+                                        noteListItem.folderIconSource
                                         sourceSize.height: noteListItem.metadataIconSize
                                         sourceSize.width: noteListItem.metadataIconSize
                                         width: noteListItem.metadataIconSize
@@ -256,7 +272,7 @@ Item {
                                         anchors.centerIn: parent
                                         fillMode: Image.PreserveAspectFit
                                         height: noteListItem.metadataIconFrameSize
-                                        source: noteListItem.tagIconSource
+                                        noteListItem.tagIconSource
                                         sourceSize.height: noteListItem.metadataIconFrameSize
                                         sourceSize.width: noteListItem.metadataIconFrameSize
                                         width: noteListItem.metadataIconFrameSize

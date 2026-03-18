@@ -82,6 +82,8 @@ set(WHATSON_APP_ICON_DESKTOP_DIR "${WHATSON_APP_ICON_DIR}/desktop")
 set(WHATSON_APP_ICON_IOS_DIR "${WHATSON_APP_ICON_DIR}/ios")
 set(WHATSON_APP_ICON_ANDROID_DIR "${WHATSON_APP_ICON_DIR}/android")
 set(WHATSON_APP_ICON_STORE_DIR "${WHATSON_APP_ICON_DIR}/store")
+set(WHATSON_ILLUSTRATIONS_DIR "${WHATSON_RESOURCES_DIR}/illustrations")
+set(WHATSON_ONBOARDING_ILLUSTRATION_PNG "${WHATSON_ILLUSTRATIONS_DIR}/onboarding/Onboarding.png")
 
 set(WHATSON_APP_ICON_PNG "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.png")
 set(WHATSON_APP_ICON_ICNS "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.icns")
@@ -117,6 +119,17 @@ if (EXISTS "${WHATSON_APP_ICON_PNG}")
             "/whatson"
             FILES
             "${WHATSON_APP_ICON_PNG}"
+    )
+endif ()
+
+if (EXISTS "${WHATSON_ONBOARDING_ILLUSTRATION_PNG}")
+    set_source_files_properties("${WHATSON_ONBOARDING_ILLUSTRATION_PNG}" PROPERTIES
+            QT_RESOURCE_ALIAS "Onboarding.png")
+    qt_add_resources(WhatSon "WhatSonOnboardingIllustration"
+            PREFIX
+            "/whatson/illustrations/onboarding"
+            FILES
+            "${WHATSON_ONBOARDING_ILLUSTRATION_PNG}"
     )
 endif ()
 

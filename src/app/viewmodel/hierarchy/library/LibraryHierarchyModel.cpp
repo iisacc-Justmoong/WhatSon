@@ -234,6 +234,26 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
     emit itemsChanged();
 }
 
+bool LibraryHierarchyModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    LibraryHierarchyItem& item = m_items[index];
+    if (item.expanded == expanded)
+    {
+        return true;
+    }
+
+    item.expanded = expanded;
+    const QModelIndex changedIndex = this->index(index, 0);
+    emit dataChanged(changedIndex, changedIndex, {ExpandedRole});
+    emit itemsChanged();
+    return true;
+}
+
 const QVector<LibraryHierarchyItem>& LibraryHierarchyModel::items() const noexcept
 {
     return m_items;

@@ -761,8 +761,45 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
+                "readonly property bool setItemExpandedContractAvailable: hierarchyViewModel && hierarchyViewModel.setItemExpanded !== undefined")),
+        "SidebarHierarchyView.qml must detect the optional targeted expansion-state contract before mutating any hierarchy expansion data.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral(
                 "readonly property bool deleteFolderContractAvailable: hierarchyViewModel && hierarchyViewModel.deleteSelectedFolder !== undefined")),
         "SidebarHierarchyView.qml must detect delete-folder support from the bound hierarchy view-model.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral(
+                "readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined")),
+        "SidebarHierarchyView.qml must detect rename support from the bound hierarchy view-model before exposing inline edit actions.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property int editingHierarchyIndex: -1")),
+        "SidebarHierarchyView.qml must keep explicit inline-rename state for the currently edited hierarchy row.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property string editingHierarchyLabel: \"\"")),
+        "SidebarHierarchyView.qml must store the transient rename text separately from the model snapshot.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function beginRenameSelectedHierarchyItem()")),
+        "SidebarHierarchyView.qml must expose a keyboard-driven entrypoint for inline hierarchy rename.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function commitHierarchyRename()")),
+        "SidebarHierarchyView.qml must centralize hierarchy rename commits through a dedicated helper.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function cancelHierarchyRename()")),
+        "SidebarHierarchyView.qml must centralize inline rename cancellation so selection and toolbar actions can unwind the editor cleanly.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("Keys.onEnterPressed: function (event)")) &&
+        sidebarViewText.contains(QStringLiteral("Keys.onReturnPressed: function (event)")),
+        "SidebarHierarchyView.qml must enter inline hierarchy rename when the active sidebar surface receives Enter or Return.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("LV.InputField {")) &&
+        sidebarViewText.contains(QStringLiteral("id: hierarchyRenameField")),
+        "SidebarHierarchyView.qml must render inline rename through an LVRS InputField overlay instead of a raw TextInput.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.renameItem(renameIndex, nextLabel)")),
+        "SidebarHierarchyView.qml must commit inline rename through the bound hierarchy view-model renameItem contract.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
@@ -850,6 +887,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")),
         "SidebarHierarchyView.qml footer delete button must route into the shared delete-folder helper.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("onListItemExpanded: function (item, itemId, index, expanded)")) &&
+        sidebarViewText.contains(
+            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setItemExpanded(itemId, expanded);")),
+        "SidebarHierarchyView.qml must sync user-triggered expansion changes through the targeted setItemExpanded contract instead of rebuilding unrelated hierarchy state.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sequence: \"Escape\"")) &&
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.cancelHierarchyRename();")),
+        "SidebarHierarchyView.qml must provide an Escape path that exits inline rename without mutating unrelated sidebar state.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth)")),
@@ -947,6 +993,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         noteListItemText.contains(QStringLiteral("readonly property string resolvedDisplayDate: {")),
         "NoteListItem.qml must resolve a visible display-date string.");
     QVERIFY2(
+        noteListItemText.contains(QStringLiteral("property bool active: false")),
+        "NoteListItem.qml must expose a dedicated persistent active-state contract separate from transient pointer press.");
+    QVERIFY2(
+        noteListItemText.contains(
+            QStringLiteral("readonly property bool activeState: noteListItem.active || noteListItem.pressed")),
+        "NoteListItem.qml visual active state must remain true for the committed current note even after pointer press ends.");
+    QVERIFY2(
         noteListItemText.contains(QStringLiteral("text: noteListItem.resolvedDisplayDate")),
         "NoteListItem.qml date label must render the resolved display date.");
     QVERIFY2(
@@ -955,6 +1008,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("font.pixelSize: noteListItem.metadataTextSize")),
         "NoteListItem.qml metadata text must use the dedicated 11px Figma size property.");
+    QVERIFY2(
+        noteListItemText.contains(
+            QStringLiteral("readonly property var visibleFolders: metadataPreview(noteListItem.folders, true)")),
+        "NoteListItem.qml folder metadata preview must collapse hierarchy paths to their final child labels.");
+    QVERIFY2(
+        noteListItemText.contains(
+            QStringLiteral("readonly property var visibleTags: metadataPreview(noteListItem.tags, false)")),
+        "NoteListItem.qml tag metadata preview must keep the non-folder metadata path untouched.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("function leafFolderLabel(value) {")),
+        "NoteListItem.qml must normalize folder labels through a dedicated leaf-folder helper.");
+    QVERIFY2(
+        noteListItemText.contains(
+            QStringLiteral(
+                "var entry = leafOnly ? leafFolderLabel(sourceValues[i]) : String(sourceValues[i]).trim();")),
+        "NoteListItem.qml metadata preview must only strip hierarchy depth for folder labels.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("property bool image: false")),
         "NoteListItem.qml must expose the image flag from the note-list model.");
@@ -1059,6 +1128,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("NoteListItem {")),
         "ListBarLayout.qml note delegates must wrap the visual card in a dedicated NoteListItem composition surface.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("active: noteListView.currentIndex === noteItemDelegate.index")),
+        "ListBarLayout.qml note delegates must bind persistent card activation directly to the committed ListView currentIndex.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active")),
+        "ListBarLayout.qml note delegates must keep transient pressed styling separate from persistent active selection.");
     QVERIFY2(
         listBarLayoutText.
         contains(QStringLiteral("listBarLayout.noteListModel.searchText = listBarLayout.searchText;")),

@@ -61,6 +61,7 @@ public:
     QString lastValidationMessage() const;
 
     void setItems(QVector<LibraryHierarchyItem> items);
+    bool setItemExpanded(int index, bool expanded);
     const QVector<LibraryHierarchyItem>& items() const noexcept;
 
 public

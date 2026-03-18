@@ -1709,6 +1709,34 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
     return true;
 }
 
+bool LibraryHierarchyViewModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (isProtectedRootItem(m_items.at(index)))
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    m_itemModel.setItemExpanded(index, expanded);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("setItemExpanded"),
+                              QStringLiteral("index=%1 expanded=%2")
+                              .arg(index)
+                              .arg(expanded ? QStringLiteral("true") : QStringLiteral("false")));
+    return true;
+}
+
 bool LibraryHierarchyViewModel::renameEnabled() const noexcept
 {
     return true;

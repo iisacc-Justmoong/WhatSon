@@ -29,6 +29,7 @@ private
     void renameItem_updatesDisplayName();
     void createFolder_insertsAsChildOfSelectedSubtree();
     void createFolder_whenSystemBucketSelected_insertsAfterSystemFolders();
+    void createFolder_preservesExpandedParentWhenExpansionCameFromUi();
     void deleteSelectedFolder_removesDescendantSubtree();
     void loadFromWshub_buildsAllDraftTodayBuckets();
     void loadFromWshub_protectsAllDraftTodaySystemFolders();
@@ -452,6 +453,42 @@ void LibraryHierarchyViewModelTest::createFolder_whenSystemBucketSelected_insert
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::DepthRole).toInt(),
         0);
+}
+
+void LibraryHierarchyViewModelTest::createFolder_preservesExpandedParentWhenExpansionCameFromUi()
+{
+    LibraryHierarchyViewModel viewModel;
+    viewModel.setDepthItems(QVariantList{
+        QVariantMap{
+            {"label", QStringLiteral("Root")},
+            {"depth", 0}
+        },
+        QVariantMap{
+            {"label", QStringLiteral("RootChild")},
+            {"depth", 1}
+        },
+        QVariantMap{
+            {"label", QStringLiteral("Sibling")},
+            {"depth", 0}
+        }
+    });
+
+    QVERIFY(viewModel.setItemExpanded(0, true));
+    viewModel.setSelectedIndex(0);
+
+    viewModel.createFolder();
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
+    QCOMPARE(viewModel.selectedIndex(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ExpandedRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Untitled"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Sibling"));
 }
 
 void LibraryHierarchyViewModelTest::deleteSelectedFolder_removesDescendantSubtree()

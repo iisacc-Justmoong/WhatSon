@@ -57,6 +57,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but press now only marks a transient
   visual candidate row; the authoritative note selection is committed on tap release and reasserted once on the next
   event turn so drag startup is not canceled by note-model refresh.
+- The note-card visual state now keeps a dedicated persistent `active` contract separate from transient `pressed`, so
+  the committed current note remains visibly highlighted after the pointer is released and while the editor is showing
+  that note.
 - The note list now follows the same rule for pointer ownership: while a note row is pressed, `ListView` temporarily
   stops drag-scrolling so the delegate `DragHandler` can win first and begin the `whatson.library.note` drag cleanly.
 - The same note delegates now use `Drag.Automatic` and publish `application/x-whatson-note-id` mime data, so the Qt
@@ -463,10 +466,16 @@ for hub/note hierarchy payloads.
   is provided, preventing accidental overwrite of runtime-loaded models.
 - Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
   `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
+- Expansion-state protection policy: `SidebarHierarchyView.qml` must only push user-touched expansion changes back into
+  a hierarchy view-model through a targeted `setItemExpanded(...)` hook. Bulk hierarchy rewrites are not allowed for
+  create-folder flows because they mutate untouched rows and destabilize the rendered LVRS tree.
 - `SidebarHierarchyView.qml` maps that CRUD/view-options surface into a direct bottom `LV.ListFooter` instance
   matching the Figma `HierarchyFooter` node (`134:3178`), with explicit `78x24` sizing, transparent button
   backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalsettings`) instead of relying on a
   local custom footer wrapper.
+- Rename interaction policy: when the active hierarchy row is renameable, `SidebarHierarchyView.qml` enters an inline
+  `LV.InputField` overlay on `Enter` / `Return`, commits through the bound view-model `renameItem(...)` contract, and
+  cancels cleanly on `Escape` or selection/toolbar changes.
 - The hierarchy toolbar keeps LVRS `Hierarchy` for the list surface, but `SidebarHierarchyView.qml` mounts a dedicated
   fixed `Row` of LVRS icon buttons over the header strip so the eight `20px` icons stay left-anchored on the Figma
   `200px` track with a stable `40 / 7` gap.
