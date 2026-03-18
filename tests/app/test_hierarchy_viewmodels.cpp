@@ -276,6 +276,12 @@ void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("RenamedRoot"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::ExpandedRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::DepthRole).toInt(),
+        1);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
@@ -302,6 +308,12 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Alpha-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProjectsHierarchyModel::ExpandedRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ProjectsHierarchyModel::DepthRole).toInt(),
+        1);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
@@ -666,6 +678,18 @@ void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("assets/logo-renamed.png"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(
+                     viewModel.itemModel()->index(0, 0),
+                     ResourcesHierarchyModel::ExpandedRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(
+                     viewModel.itemModel()->index(1, 0),
+                     ResourcesHierarchyModel::DepthRole)
+                 .toInt(),
+        1);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
@@ -706,6 +730,12 @@ void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Kickoff-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), EventHierarchyModel::ExpandedRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), EventHierarchyModel::DepthRole).toInt(),
+        1);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
@@ -724,6 +754,12 @@ void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Executive-Summary-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), PresetHierarchyModel::ExpandedRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), PresetHierarchyModel::DepthRole).toInt(),
+        1);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
@@ -745,6 +781,12 @@ void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Social-Renamed"));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), TagsHierarchyModel::ExpandedRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), TagsHierarchyModel::DepthRole).toInt(),
+        2);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);

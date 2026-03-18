@@ -384,6 +384,7 @@ namespace WhatSon::Hierarchy::EventSupport
 
         if (selectedIndex >= 0 && selectedIndex < items->size())
         {
+            (*items)[selectedIndex].expanded = true;
             const int selectedDepth = items->at(selectedIndex).depth;
             folderDepth = selectedDepth + 1;
 

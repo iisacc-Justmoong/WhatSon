@@ -99,6 +99,12 @@ LV.ApplicationWindow {
     function nativeMenuPlaceholderText() {
         return " ";
     }
+    function showOnboardingWindow() {
+        applicationWindow.onboardingVisible = true;
+        onboardingSubWindow.show();
+        onboardingSubWindow.raise();
+        onboardingSubWindow.requestActivate();
+    }
 
     autoAttachRuntimeEvents: true
     globalEventListenersEnabled: true
@@ -229,8 +235,9 @@ LV.ApplicationWindow {
                 title: qsTr("Window")
 
                 Platform.MenuItem {
-                    enabled: false
-                    text: applicationWindow.nativeMenuPlaceholderText()
+                    text: qsTr("Onboarding")
+
+                    onTriggered: applicationWindow.showOnboardingWindow()
                 }
             }
             Platform.Menu {

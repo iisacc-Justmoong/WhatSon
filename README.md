@@ -15,9 +15,9 @@ WhatSon is an LVRS-based Qt Quick application.
   LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
 - `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow
   through LVRS `Navigator` / `PageRouter` semantics instead of bespoke root state.
-- `src/app/qml/Main.qml` also declares the application menu bar at the root window level with empty `File`, `Edit`,
-  `View`, `Window`, and `Help` menus; macOS uses `Qt.labs.platform.MenuBar`, and each otherwise-empty native menu
-  keeps a disabled placeholder row so the top-level titles remain visible in the global menu bar.
+- `src/app/qml/Main.qml` also declares the application menu bar at the root window level; macOS uses
+  `Qt.labs.platform.MenuBar`, `File` / `Edit` / `View` / `Help` remain placeholder-backed top-level menus, and the
+  `Window` menu now exposes a native `Onboarding` command that reopens and foregrounds the shared onboarding subwindow.
 
 ## Search Input Behavior
 
@@ -469,13 +469,21 @@ for hub/note hierarchy payloads.
 - Expansion-state protection policy: `SidebarHierarchyView.qml` must only push user-touched expansion changes back into
   a hierarchy view-model through a targeted `setItemExpanded(...)` hook. Bulk hierarchy rewrites are not allowed for
   create-folder flows because they mutate untouched rows and destabilize the rendered LVRS tree.
+- Create-folder targeting policy: footer-triggered folder creation must snapshot the currently active LVRS hierarchy
+  row, insert the new folder as that row's child, and force the parent into the expanded state so the inserted row is
+  visible immediately.
+- Folder-identity policy: library note-folder assignments are stored and propagated as canonical full paths whenever
+  hierarchy context exists (`Parent/Child/Leaf`). UI rendering may collapse those paths to the leaf label for display,
+  but selection/filtering must use the exact canonical path and must never fan a note out across different folders that
+  merely share the same leaf name or ancestor-chain label.
 - `SidebarHierarchyView.qml` maps that CRUD/view-options surface into a direct bottom `LV.ListFooter` instance
   matching the Figma `HierarchyFooter` node (`134:3178`), with explicit `78x24` sizing, transparent button
   backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalsettings`) instead of relying on a
   local custom footer wrapper.
 - Rename interaction policy: when the active hierarchy row is renameable, `SidebarHierarchyView.qml` enters an inline
-  `LV.InputField` overlay on `Enter` / `Return`, commits through the bound view-model `renameItem(...)` contract, and
-  cancels cleanly on `Escape` or selection/toolbar changes.
+  `LV.InputField` overlay on `Enter` / `Return`, temporarily blanks the edited row label to avoid text overlap,
+  commits through the bound view-model `renameItem(...)` contract, and cancels cleanly on `Escape` or
+  selection/toolbar changes.
 - The hierarchy toolbar keeps LVRS `Hierarchy` for the list surface, but `SidebarHierarchyView.qml` mounts a dedicated
   fixed `Row` of LVRS icon buttons over the header strip so the eight `20px` icons stay left-anchored on the Figma
   `200px` track with a stable `40 / 7` gap.

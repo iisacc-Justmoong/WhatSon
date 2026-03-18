@@ -315,6 +315,7 @@ Item {
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
+            return contentsView.gutterMarkerCurrentColor;
 
 
     }

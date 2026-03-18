@@ -693,6 +693,18 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("MainWindowInteractionController {")),
         "Main.qml must delegate root interaction policy to a dedicated MainWindowInteractionController.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("function showOnboardingWindow()")),
+        "Main.qml must expose a dedicated helper that opens and foregrounds the onboarding subwindow from shell-level actions.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("onboardingSubWindow.raise();")) &&
+        mainQmlText.contains(QStringLiteral("onboardingSubWindow.requestActivate();")),
+        "Main.qml onboarding helper must foreground the existing onboarding subwindow when the user reopens it from the global menu bar.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("title: qsTr(\"Window\")")) &&
+        mainQmlText.contains(QStringLiteral("text: qsTr(\"Onboarding\")")) &&
+        mainQmlText.contains(QStringLiteral("onTriggered: applicationWindow.showOnboardingWindow()")),
+        "Main.qml Window menu must expose an Onboarding action wired to the dedicated onboarding-window helper.");
 
     const QString sidebarViewPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));
@@ -744,9 +756,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("function normalizeHierarchyModel(modelValue)")),
         "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function projectedHierarchyModel(modelValue)")) &&
+        sidebarViewText.contains(QStringLiteral("projectedItem.label = \"\";")) &&
         sidebarViewText.contains(QStringLiteral(
-            "readonly property var standardHierarchyModel: sidebarHierarchyView.normalizeHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])")),
-        "SidebarHierarchyView.qml must consume the direct standard hierarchy model exposed by each domain view-model through a JS-array normalization helper.");
+            "readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])")),
+        "SidebarHierarchyView.qml must project the direct hierarchy model through a rename-safe view that blanks the edited row label while inline rename is active.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property var hierarchyDragDropBridge: null")),
         "SidebarHierarchyView.qml must accept a dedicated hierarchy drag/drop bridge instead of embedding local reorder state.");
@@ -796,6 +810,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("LV.InputField {")) &&
         sidebarViewText.contains(QStringLiteral("id: hierarchyRenameField")),
         "SidebarHierarchyView.qml must render inline rename through an LVRS InputField overlay instead of a raw TextInput.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("readonly property color hierarchyRenameFieldBackgroundColor: {")) &&
+        sidebarViewText.contains(
+            QStringLiteral("backgroundColor: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor")) &&
+        sidebarViewText.contains(
+            QStringLiteral("backgroundColorFocused: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor")),
+        "SidebarHierarchyView.qml inline rename field must inherit the active row background so the original label never bleeds through the overlay.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.renameItem(renameIndex, nextLabel)")),
@@ -884,6 +905,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestCreateFolder();")),
         "SidebarHierarchyView.qml footer add button must route into the shared create-folder helper.");
+    QVERIFY2(
+        sidebarViewText.contains(
+            QStringLiteral("const activeHierarchyItemId = Number(hierarchyTree.activeListItemId);")) &&
+        sidebarViewText.contains(QStringLiteral(
+            "sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(Math.floor(activeHierarchyItemId));")),
+        "SidebarHierarchyView.qml create-folder flow must snapshot the visually active LVRS row before mutating the hierarchy so new folders always attach to the active parent.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")),
         "SidebarHierarchyView.qml footer delete button must route into the shared delete-folder helper.");

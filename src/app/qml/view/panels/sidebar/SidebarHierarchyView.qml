@@ -65,7 +65,7 @@ Rectangle {
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
     readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
     readonly property bool setItemExpandedContractAvailable: hierarchyViewModel && hierarchyViewModel.setItemExpanded !== undefined
-    readonly property var standardHierarchyModel: sidebarHierarchyView.normalizeHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])
+    readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])
     readonly property int toolbarButtonSize: 20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
     readonly property int toolbarFrameWidth: 200
@@ -122,6 +122,14 @@ Rectangle {
             sidebarHierarchyView.syncSelectedHierarchyItem(true);
         });
         return true;
+    }
+    function cloneHierarchyItem(sourceItem) {
+        const clone = {};
+        if (!sourceItem)
+            return clone;
+        for (const key in sourceItem)
+            clone[key] = sourceItem[key];
+
     }
     function commitHierarchyRename() {
         if (!sidebarHierarchyView.renameEditingActive)
@@ -191,11 +199,27 @@ Rectangle {
             return "";
         return String(source.noteId).trim();
     }
+    function projectedHierarchyModel(modelValue) {
+        const normalizedModel = sidebarHierarchyView.normalizeHierarchyModel(modelValue);
+        if (!sidebarHierarchyView.renameEditingActive)
+            return normalizedModel;
+        const editingIndex = Math.floor(Number(sidebarHierarchyView.editingHierarchyIndex) || -1);
+        if (editingIndex < 0 || editingIndex >= normalizedModel.length)
+            return normalizedModel;
+        const projectedModel = normalizedModel.slice();
+        const projectedItem = sidebarHierarchyView.cloneHierarchyItem(projectedModel[editingIndex]);
+        projectedItem.label = "";
+        projectedModel[editingIndex] = projectedItem;
+
+    }
     function requestCreateFolder() {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
         if (!sidebarHierarchyView.createFolderEnabled || !sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.createFolder === undefined)
             return;
+        const activeHierarchyItemId = Number(hierarchyTree.activeListItemId);
+        if (sidebarHierarchyView.hierarchyViewModel.setSelectedIndex !== undefined && isFinite(activeHierarchyItemId) && activeHierarchyItemId >= 0)
+            sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(Math.floor(activeHierarchyItemId));
         sidebarHierarchyView.hierarchyViewModel.createFolder();
         sidebarHierarchyView.requestViewHook("hierarchy.footer.create");
         Qt.callLater(function () {
@@ -317,11 +341,11 @@ Rectangle {
     LV.InputField {
         id: hierarchyRenameField
 
-        backgroundColor: "transparent"
-        backgroundColorDisabled: "transparent"
-        backgroundColorFocused: "transparent"
-        backgroundColorHover: "transparent"
-        backgroundColorPressed: "transparent"
+        backgroundColor: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor
+        backgroundColorDisabled: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor
+        backgroundColorFocused: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor
+        backgroundColorHover: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor
+        backgroundColorPressed: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor
         centeredTextHeight: 16
         clearButtonVisible: false
         cornerRadius: 0

@@ -255,11 +255,13 @@ void TagsHierarchyViewModel::createFolder()
 
     int insertIndex = m_entries.size();
     int depth = 0;
+    int expandedParentIndex = -1;
 
     if (m_selectedIndex >= 0 && m_selectedIndex < m_entries.size())
     {
         const int selectedDepth = std::max(0, m_entries.at(m_selectedIndex).depth);
         depth = selectedDepth + 1;
+        expandedParentIndex = m_selectedIndex;
 
         insertIndex = m_selectedIndex + 1;
         while (insertIndex < m_entries.size() && m_entries.at(insertIndex).depth > selectedDepth)
@@ -276,6 +278,10 @@ void TagsHierarchyViewModel::createFolder()
     m_entries.insert(insertIndex, std::move(entry));
 
     m_items = buildItems(m_entries);
+    if (expandedParentIndex >= 0 && expandedParentIndex < m_items.size())
+    {
+        m_items[expandedParentIndex].expanded = true;
+    }
     syncStore();
     syncModel();
     setSelectedIndex(insertIndex);

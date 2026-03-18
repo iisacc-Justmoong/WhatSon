@@ -78,7 +78,7 @@ namespace
         return {};
     }
 
-    QString noteSearchableText(const LibraryNoteRecord& note)
+    QString noteSearchableText(const LibraryNoteRecord& note, const QStringList& folderLabels)
     {
         QStringList parts;
 
@@ -94,7 +94,6 @@ namespace
             parts.push_back(bodyPlainText);
         }
 
-        const QStringList folderLabels = noteListFolders(note);
         for (const QString& folder : folderLabels)
         {
             const QString trimmed = folder.trimmed();
@@ -224,7 +223,10 @@ namespace
     {
         QHash<QString, QStringList> pathKeysByLeafKey;
         QHash<QString, QSet<QString>> ancestorLeafKeysByPathKey;
+        QHash<QString, QString> displayPathByPathKey;
     };
+
+    QStringList canonicalLeafFolderPaths(const QStringList& folderPaths);
 
     QStringList folderPathSegments(const QString& folderPath)
     {
@@ -252,6 +254,8 @@ namespace
             {
                 continue;
             }
+
+            lookup.displayPathByPathKey.insert(pathKey, normalizeFolderPath(item.folderPath));
 
             QString leafKey = normalizeFolderLookupKey(item.label);
             if (leafKey.isEmpty())
@@ -367,14 +371,47 @@ namespace
                 }
             }
 
-            const QStringList& matches = contextualMatches.isEmpty() ? candidates : contextualMatches;
-            for (const QString& candidatePathKey : matches)
+            if (contextualMatches.size() == 1)
             {
-                appendResolved(candidatePathKey);
+                appendResolved(contextualMatches.constFirst());
+                continue;
+            }
+
+            if (contextualMatches.isEmpty() && candidates.size() == 1)
+            {
+                appendResolved(candidates.constFirst());
             }
         }
 
         return resolved;
+    }
+
+    QStringList canonicalNoteFolderLabels(
+        const LibraryNoteRecord& note,
+        const FolderHierarchyLookup* lookup)
+    {
+        QStringList folders;
+        if (lookup != nullptr)
+        {
+            const QStringList resolvedFolderPathKeys = canonicalLeafFolderPaths(
+                resolvedNoteFolderPathKeys(note, *lookup));
+            folders.reserve(resolvedFolderPathKeys.size());
+            for (const QString& folderPathKey : resolvedFolderPathKeys)
+            {
+                const QString normalizedFolderPath = normalizeFolderPath(
+                    lookup->displayPathByPathKey.value(folderPathKey, folderPathKey));
+                if (!normalizedFolderPath.isEmpty() && !folders.contains(normalizedFolderPath))
+                {
+                    folders.push_back(normalizedFolderPath);
+                }
+            }
+        }
+
+        if (folders.isEmpty())
+        {
+            folders = noteListFolders(note);
+        }
+        return folders;
     }
 
     bool noteMatchesFolderScope(
@@ -391,10 +428,6 @@ namespace
         for (const QString& folderPathKey : resolvedFolderPathKeys)
         {
             if (folderPathKey == selectedPathKey)
-            {
-                return true;
-            }
-            if (folderPathKey.startsWith(selectedPathKey + QLatin1Char('/')))
             {
                 return true;
             }
@@ -1765,6 +1798,7 @@ void LibraryHierarchyViewModel::createFolder()
                               QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
     int insertIndex = m_items.size();
     int folderDepth = 0;
+    int expandedParentIndex = -1;
 
     if (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
     {
@@ -1776,6 +1810,7 @@ void LibraryHierarchyViewModel::createFolder()
         {
             const int selectedDepth = m_items.at(m_selectedIndex).depth;
             folderDepth = selectedDepth + 1;
+            expandedParentIndex = m_selectedIndex;
 
             insertIndex = m_selectedIndex + 1;
             while (insertIndex < m_items.size() && m_items.at(insertIndex).depth > selectedDepth)
@@ -1795,6 +1830,10 @@ void LibraryHierarchyViewModel::createFolder()
     newItem.showChevron = true;
 
     QVector<LibraryHierarchyItem> stagedItems = m_items;
+    if (expandedParentIndex >= 0 && expandedParentIndex < stagedItems.size())
+    {
+        stagedItems[expandedParentIndex].expanded = true;
+    }
     stagedItems.insert(insertIndex, std::move(newItem));
     if (insertIndex >= 0 && insertIndex < stagedItems.size())
     {
@@ -2963,20 +3002,23 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
 {
     QVector<LibraryNoteListItem> items;
     items.reserve(notes.size());
+    const FolderHierarchyLookup lookup = buildFolderHierarchyLookup(m_items);
+    const FolderHierarchyLookup* activeLookup = m_foldersHierarchyLoaded ? &lookup : nullptr;
 
     for (const LibraryNoteRecord& note : notes)
     {
+        const QStringList folderLabels = canonicalNoteFolderLabels(note, activeLookup);
         LibraryNoteListItem item;
         item.id = note.noteId.trimmed();
         item.primaryText = notePrimaryText(note);
-        item.searchableText = noteSearchableText(note);
+        item.searchableText = noteSearchableText(note, folderLabels);
         item.bodyText = note.bodyPlainText;
         item.image = note.bodyHasResource;
         item.imageSource = note.bodyFirstResourceThumbnailUrl;
         item.displayDate = m_systemCalendarStore
                                ? m_systemCalendarStore->formatNoteDate(note.lastModifiedAt, note.createdAt)
                                : SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
-        item.folders = noteListFolders(note);
+        item.folders = folderLabels;
         item.tags = noteListTags(note);
         item.bookmarked = note.bookmarked;
         item.bookmarkColor = bookmarkColorHexFromNote(note);

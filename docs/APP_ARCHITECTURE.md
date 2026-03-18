@@ -505,9 +505,9 @@ Primary root:
   `pageRoutes`, `activePageRouter`) instead of a root-level ad-hoc loader deciding which top-level surface to mount.
 - The current shell route is a single workspace page; that page decides between desktop and mobile shell composition
   from LVRS adaptive layout state (`adaptiveMobileLayout`), not from an independent root routing flag.
-- `Main.qml` owns the application menu bar and exposes empty `File`, `Edit`, `View`, `Window`, and `Help` menus
-  through a macOS-native `Qt.labs.platform.MenuBar`; each native menu keeps a disabled placeholder item so macOS does
-  not collapse otherwise-empty top-level entries.
+- `Main.qml` owns the application menu bar through a macOS-native `Qt.labs.platform.MenuBar`; `File`, `Edit`, `View`,
+  and `Help` still use placeholder items to preserve their top-level titles, while `Window` now exposes a concrete
+  `Onboarding` action that routes through `showOnboardingWindow()` and foregrounds the shared onboarding subwindow.
 - `Main.qml` owns the root focus-dismiss policy: when LVRS global hit-test metadata reports a left-click on a blank
   background/container surface, the active focus chain is cleared.
 - App bootstrap (`main.cpp`) enables `WHATSON_DEBUG_MODE=1` by default when the variable is not explicitly set,
@@ -585,11 +585,19 @@ Hierarchy rendering pipeline:
   height explicitly instead of routing footer actions through a local wrapper.
 - Inline-rename policy: `SidebarHierarchyView.qml` owns the transient rename session locally, opens an inline
   `LV.InputField` over the active LVRS hierarchy row on `Enter` / `Return` only when the bound domain exposes
-  `canRenameItem(...)` and `renameItem(...)`, commits via the domain view-model, and cancels on `Escape`, toolbar
-  switches, or selection changes so rename state never leaks across hierarchy contexts.
+  `canRenameItem(...)` and `renameItem(...)`, projects the edited row label to an empty string while the overlay is
+  active, commits via the domain view-model, and cancels on `Escape`, toolbar switches, or selection changes so rename
+  state never leaks across hierarchy contexts.
 - Expansion-state protection policy: user-triggered expand/collapse changes must flow into the bound hierarchy
   view-model through a narrow `setItemExpanded(itemId, expanded)` hook. `createFolder()` and other point mutations must
   not rebuild untouched hierarchy rows from stale expansion defaults, because that collapses unrelated UI state.
+- Create-folder visibility policy: `SidebarHierarchyView.qml` must resolve the active LVRS row before calling
+  `createFolder()`, and the receiving hierarchy view-model must expand that parent row before syncing the new child so
+  footer-created folders appear immediately under the visually active item.
+- Folder identity policy: library note-folder payloads should resolve to canonical full paths before they enter
+  note-list view data. The UI may display only the terminal folder segment, but hierarchy filtering must use the exact
+  canonical full path so duplicate leaf labels, including repeated labels along one ancestor chain, never resolve to
+  the same logical folder.
 - Toolbar spacing policy: `SidebarHierarchyView.qml` keeps the higher-level LVRS `Hierarchy` for the list surface, but
   mounts a dedicated LVRS icon-button `Row` over the header strip with a fixed `40 / 7` inter-icon gap so the eight
   `20px` toolbar icons remain left-anchored on the Figma `200px` `HierarchyHeaderToolbar` track.
