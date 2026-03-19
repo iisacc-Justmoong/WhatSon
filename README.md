@@ -375,6 +375,12 @@ cmake --build build --target whatson_run_app
 ./build/src/daemon/WhatSon_daemon --healthcheck
 ```
 
+Host desktop app builds now emit the runnable app artifact under `build/src/app/bin`:
+
+- macOS: `build/src/app/bin/WhatSon.app`
+- Windows: `build/src/app/bin/WhatSon.exe`
+- Linux and other non-bundle desktop targets: `build/src/app/bin/WhatSon`
+
 ## Debug Trace Mode
 
 The app now supports high-visibility runtime tracing for note/header indexing and hub runtime flow.

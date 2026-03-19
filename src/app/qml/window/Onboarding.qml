@@ -300,7 +300,7 @@ Window {
                         height: 144
                         mipmap: true
                         smooth: true
-                        root.appIconSource
+                        source: root.appIconSource
                         sourceSize.height: 144
                         sourceSize.width: 144
                         width: 144

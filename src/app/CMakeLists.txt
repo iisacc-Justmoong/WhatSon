@@ -354,6 +354,29 @@ if (UNIX AND NOT APPLE)
             INSTALL_RPATH "$ORIGIN/../lib")
 endif ()
 
+set(_whatson_app_runtime_output_dir "$<1:${CMAKE_CURRENT_BINARY_DIR}/bin>")
+set_target_properties(WhatSon PROPERTIES
+        OUTPUT_NAME "WhatSon"
+        RUNTIME_OUTPUT_DIRECTORY "${_whatson_app_runtime_output_dir}"
+)
+
+if (WIN32)
+    set_target_properties(WhatSon PROPERTIES
+            WIN32_EXECUTABLE ON)
+endif ()
+
+if (APPLE)
+    set_target_properties(WhatSon PROPERTIES
+            MACOSX_BUNDLE ON
+            MACOSX_BUNDLE_BUNDLE_NAME "WhatSon"
+    )
+
+    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND EXISTS "${WHATSON_APP_ICON_ICNS}")
+        set_target_properties(WhatSon PROPERTIES
+                MACOSX_BUNDLE_ICON_FILE "AppIcon.icns")
+    endif ()
+endif ()
+
 if (APPLE)
     find_library(WHATSON_EVENTKIT_FRAMEWORK EventKit)
     if (WHATSON_EVENTKIT_FRAMEWORK)
@@ -563,19 +586,3 @@ if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif ()
 
 lvrs_configure_qml_app(WhatSon)
-
-set_target_properties(WhatSon PROPERTIES
-        OUTPUT_NAME "WhatSon"
-)
-
-if (APPLE)
-    set_target_properties(WhatSon PROPERTIES
-            MACOSX_BUNDLE ON
-            MACOSX_BUNDLE_BUNDLE_NAME "WhatSon"
-    )
-
-    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND EXISTS "${WHATSON_APP_ICON_ICNS}")
-        set_target_properties(WhatSon PROPERTIES
-                MACOSX_BUNDLE_ICON_FILE "AppIcon.icns")
-    endif ()
-endif ()

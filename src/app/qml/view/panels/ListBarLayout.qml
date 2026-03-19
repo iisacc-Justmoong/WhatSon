@@ -14,6 +14,7 @@ Rectangle {
     readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable
     property var noteDeletionViewModel: null
     property bool noteDragActive: false
+    property bool notePointerPressed: false
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
@@ -83,6 +84,7 @@ Rectangle {
         if (deleted)
             noteListView.forceActiveFocus();
 
+        return deleted;
     }
     function normalizeEntries(value) {
         if (value === undefined || value === null)

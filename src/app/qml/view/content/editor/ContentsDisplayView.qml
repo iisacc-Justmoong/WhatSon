@@ -140,6 +140,7 @@ Item {
             });
         }
 
+        return rows;
     }
     function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
         const _editorWidth = Number(editorWidth) || 0;
@@ -448,6 +449,7 @@ Item {
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
 
+        return candidate;
     }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
@@ -486,6 +488,7 @@ Item {
         if (visibleLines.length === 0)
             visibleLines.push(firstVisibleLine);
 
+        return visibleLines;
     }
 
     clip: true
@@ -693,7 +696,7 @@ Item {
                         }
                     }
                     Binding {
-                        "y"
+                        property: "y"
                         target: contentEditor.editorItem
                         value: contentsView.editorTopInset
                     }
