@@ -5,15 +5,22 @@ import LVRS 1.0 as LV
 Item {
     id: hierarchyView
 
+    readonly property bool createFolderEnabled: sidebarView.createFolderEnabled
     readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
+    property bool footerVisible: true
     property int horizontalInset: 2
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
     readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
     required property var sidebarHierarchyViewModel
+    property bool searchFieldVisible: false
+    property string searchText: ""
+    property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
 
     signal activeToolbarIndexChangeRequested(int index)
+    signal searchSubmitted(string text)
+    signal searchTextEdited(string text)
     signal viewHookRequested
 
     function frameNameForHierarchy(index) {
@@ -64,6 +71,9 @@ Item {
         hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(index);
         hierarchyView.activeToolbarIndexChangeRequested(hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex);
     }
+    function requestCreateFolder() {
+        sidebarView.requestCreateFolder();
+    }
 
     QtObject {
         id: hierarchyEnum
@@ -88,6 +98,7 @@ Item {
         activeToolbarIndex: hierarchyView.currentHierarchy
         anchors.fill: parent
         defaultToolbarIndex: hierarchyEnum.library
+        footerVisible: hierarchyView.footerVisible
         frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
         frameNodeId: hierarchyView.frameNodeIdForHierarchy(hierarchyView.currentHierarchy)
         hierarchyDragDropBridge: hierarchyDragDropBridge
@@ -95,8 +106,19 @@ Item {
         hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
         horizontalInset: hierarchyView.horizontalInset
         panelColor: hierarchyView.panelColor
+        searchFieldVisible: hierarchyView.searchFieldVisible
+        searchText: hierarchyView.searchText
+        toolbarFrameWidth: hierarchyView.toolbarFrameWidth
         toolbarIconNames: hierarchyView.toolbarIconNames
 
+        onSearchSubmitted: function (text) {
+            hierarchyView.searchText = text;
+            hierarchyView.searchSubmitted(text);
+        }
+        onSearchTextEdited: function (text) {
+            hierarchyView.searchText = text;
+            hierarchyView.searchTextEdited(text);
+        }
         onToolbarIndexChangeRequested: function (index) {
             hierarchyView.setActiveHierarchyIndex(index);
         }

@@ -57,9 +57,10 @@ Defined in `CMakeLists.txt`:
 - iOS/Android startup reuses the same standalone onboarding bootstrap when no startup `.wshub` can be restored,
   instead of opening the desktop onboarding subwindow inside `Main.qml`
 - `Onboarding.qml` keeps the Figma `OnboardWindowDesktop` split layout on desktop, and switches to the Figma
-  `OnboardWindowMobile` stacked card on mobile/adaptive shells: app icon, title, version, and CTA links remain in the
-  upper surface while the selected `.wshub` package status is isolated in a lower `panelBackground10` section. The
-  mobile window itself now expands to the full device viewport instead of clamping to the 470x760 design frame.
+  `OnboardWindowMobile` single-surface layout on mobile/adaptive shells: a centered `209px` content stack with
+  `144px` app icon, `48px` title, `12px` version label (`75px` width), and an `180px` CTA column separated by
+  `32px` / `24px` gaps. The previous lower status panel was removed from the mobile branch, and the fallback design
+  frame is now the exact Figma `470x762` node.
 - Startup hub resolution restores the last successfully loaded `.wshub` from the app session store first and only then
   falls back to `blueprint/*.wshub`.
 
@@ -263,10 +264,16 @@ Domain-isolated support:
           one of `navigation/view/NavigationApplicationViewBar.qml`,
           `navigation/edit/NavigationApplicationEditBar.qml`, or
           `navigation/control/NavigationApplicationControlBar.qml`.
+        - `NavigationBarLayout.qml` compact mode is now the mobile floating top-bar contract: it keeps the shared
+          mode-switch combo, replaces the old compact placeholder row with a left settings affordance plus an optional
+          folder-create action, and still resolves the right-side application bar through the active navigation mode.
         - Control-only child bars (`NavigationCalendarBar.qml`, `NavigationAppControlBar.qml`,
           `NavigationExportBar.qml`)
           now live under `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
           `NavigationPreferenceBar.qml` stay at the navigation root.
+        - `navigation/control/NavigationApplicationControlBar.qml` compact mode is reduced to the collapsed menu button
+          only; tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second mobile-only
+          control strip.
         - `navigation/control/NavigationApplicationControlBar.qml` preserves the Figma child order `Calendar -> AppControl -> Export ->
           AddNew -> Preference`, which keeps the create control on the right side of the control-mode application bar.
             - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`,
@@ -286,6 +293,9 @@ Domain-isolated support:
               the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
             - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
               `create-note` hook path instead of duplicating note-creation policy in a second shortcut-only code path.
+            - `StatusBarLayout.qml` compact mode is now the mobile floating bottom bar and emits `createNoteRequested`,
+              which `MobileNormalLayout.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()`
+              so the bottom add-note affordance stays on the same shared creation path as desktop navigation controls.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
@@ -611,6 +621,13 @@ Desktop composition:
 Mobile composition:
 
 - `MobileNormalLayout` via loader branch
+- `MobileNormalLayout.qml` now composes the shared shell surfaces instead of drawing one-off mobile chrome:
+    - `NavigationBarLayout.qml` in `compactMode`
+    - `HierarchySidebarLayout.qml` with the same `SidebarHierarchyViewModel`
+    - `StatusBarLayout.qml` in `compactMode`
+- `HierarchySidebarLayout.qml` / `SidebarHierarchyView.qml` expose optional `searchFieldVisible` and `footerVisible`
+  switches so the mobile shell can reuse the hierarchy toolbar/list view-model pipeline while inserting the Figma
+  search header and dropping the desktop footer controls.
 
 Hierarchy rendering pipeline:
 

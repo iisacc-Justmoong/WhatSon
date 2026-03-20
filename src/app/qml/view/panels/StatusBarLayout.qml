@@ -37,6 +37,7 @@ Rectangle {
 
     signal searchSubmitted(string text)
     signal searchTextEdited(string text)
+    signal createNoteRequested
     signal viewHookRequested
     signal windowMoveRequested
 
@@ -188,6 +189,11 @@ Rectangle {
 
                     anchors.centerIn: parent
                     iconName: "addFile"
+
+                    onClicked: {
+                        statusBar.requestViewHook("create-note");
+                        statusBar.createNoteRequested();
+                    }
                 }
             }
         }

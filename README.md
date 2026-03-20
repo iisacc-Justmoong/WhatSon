@@ -441,6 +441,13 @@ for hub/note hierarchy payloads.
 - The navigation add surfaces share one `create-note` hook path:
   `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileNormalLayout.qml`
   all route into `LibraryHierarchyViewModel::createEmptyNote()`.
+- The mobile first-screen shell no longer paints a private top/bottom chrome. `MobileNormalLayout.qml` now composes
+  shared `NavigationBarLayout.qml` (`compactMode: true`), `HierarchySidebarLayout.qml`, and `StatusBarLayout.qml`,
+  so the floating top bar, hierarchy column, and bottom add-note bar all stay on the same navigation/sidebar model
+  contracts used by the desktop shell.
+- `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
+  existing context-menu button, while `NavigationBarLayout.qml` adds the separate folder-create affordance and keeps
+  the navigation mode combo on the shared `NavigationModeViewModel`.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
   `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.

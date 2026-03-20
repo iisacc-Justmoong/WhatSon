@@ -371,7 +371,12 @@ LV.ApplicationWindow {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: LV.Theme.panelBackground10
+            editorViewModeViewModel: applicationWindow.editorViewModeVm
+            navigationModeViewModel: applicationWindow.navigationModeVm
+            sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm
             statusPlaceholderText: ""
+            toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
+            windowInteractions: windowInteractions
         }
     }
     WindowView.Onboarding {

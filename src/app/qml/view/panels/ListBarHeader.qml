@@ -5,13 +5,15 @@ import LVRS 1.0 as LV
 Item {
     id: listBarHeader
 
-    readonly property color inlineFieldBackgroundColor: "transparent"
+    property color inlineFieldBackgroundColor: "transparent"
     readonly property int inlineFieldHeight: 18
     readonly property int inlineFieldHorizontalInset: 7
     readonly property int inlineFieldTextHeight: 12
     readonly property int inlineFieldVerticalInset: 3
     readonly property int resolvedInputTextHeight: Math.max(listBarHeader.inlineFieldTextHeight, Number(searchField && searchField.inputItem && searchField.inputItem.contentHeight !== undefined ? searchField.inputItem.contentHeight : listBarHeader.inlineFieldTextHeight) || listBarHeader.inlineFieldTextHeight)
     property string searchText: ""
+    property bool sortActionVisible: true
+    property bool visibilityActionVisible: true
 
     signal searchSubmitted(string text)
     signal searchTextEdited(string text)
@@ -76,6 +78,7 @@ Item {
             Layout.preferredHeight: 20
             Layout.preferredWidth: 20
             iconName: "cwmPermissionView"
+            visible: listBarHeader.visibilityActionVisible
 
             onClicked: listBarHeader.visibilityActionRequested()
         }
@@ -83,6 +86,7 @@ Item {
             Layout.preferredHeight: 20
             Layout.preferredWidth: 20
             iconName: "sortByType"
+            visible: listBarHeader.sortActionVisible
 
             onClicked: listBarHeader.sortActionRequested()
         }

@@ -21,10 +21,14 @@ Window {
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
-    readonly property int mobileDesignHeight: 760
+    readonly property int mobileActionSpacing: 24
+    readonly property int mobileActionWidth: 180
+    readonly property int mobileContentSpacing: 32
+    readonly property int mobileContentWidth: 209
+    readonly property int mobileDesignHeight: 762
     readonly property int mobileDesignWidth: 470
-    readonly property int mobileStatusPanelHeight: Math.max(172, Math.round(root.height * 0.5))
-    readonly property int mobileTopContentWidth: Math.min(260, Math.max(220, root.width - 64))
+    readonly property int mobileSurfaceRadius: 32
+    readonly property int mobileVersionWidth: 75
     readonly property int availableScreenHeight: {
         const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
         return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
@@ -194,7 +198,7 @@ Window {
         antialiasing: true
         clip: true
         color: root.mainSurfaceColor
-        radius: root.useMobileLayout ? 0 : 32
+        radius: root.useMobileLayout ? root.mobileSurfaceRadius : 32
 
         Item {
             anchors.fill: parent
@@ -425,65 +429,72 @@ Window {
             visible: root.useMobileLayout
 
             Item {
-                id: mobileAppPanel
-
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: mobileHubPanel.top
+                anchors.centerIn: parent
+                height: mobileAppColumn.implicitHeight
+                width: root.mobileContentWidth
 
                 Item {
                     anchors.centerIn: parent
                     height: mobileAppColumn.implicitHeight
-                    width: root.mobileTopContentWidth
+                    width: parent.width
 
                     Column {
                         id: mobileAppColumn
 
                         anchors.centerIn: parent
-                        spacing: 32
+                        spacing: root.mobileContentSpacing
                         width: parent.width
 
-                        Image {
+                        Column {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            fillMode: Image.PreserveAspectFit
-                            height: root.appIconSize
-                            mipmap: true
-                            smooth: true
-                            source: root.appIconSource
-                            sourceSize.height: root.appIconSize
-                            sourceSize.width: root.appIconSize
-                            width: root.appIconSize
-                        }
-                        LV.Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: LV.Theme.textPrimary
-                            font.pixelSize: 48
-                            font.styleName: "Bold"
-                            font.weight: Font.Bold
-                            horizontalAlignment: Text.AlignHCenter
-                            style: title
-                            text: "WhatSon"
+                            spacing: root.mobileContentSpacing
                             width: parent.width
-                        }
-                        LV.Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: LV.Theme.descriptionColor
-                            font.pixelSize: 12
-                            font.styleName: "SemiBold"
-                            font.weight: Font.DemiBold
-                            horizontalAlignment: Text.AlignHCenter
-                            lineHeight: 12
-                            lineHeightMode: Text.FixedHeight
-                            style: description
-                            text: root.resolvedVersionText
-                            width: parent.width
+
+                            Image {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                fillMode: Image.PreserveAspectFit
+                                height: root.appIconSize
+                                mipmap: true
+                                smooth: true
+                                source: root.appIconSource
+                                sourceSize.height: root.appIconSize
+                                sourceSize.width: root.appIconSize
+                                width: root.appIconSize
+                            }
+                            LV.Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: LV.Theme.titleHeaderColor
+                                font.pixelSize: 48
+                                font.styleName: "Bold"
+                                font.weight: Font.Bold
+                                horizontalAlignment: Text.AlignHCenter
+                                lineHeight: 26
+                                lineHeightMode: Text.FixedHeight
+                                maximumLineCount: 1
+                                style: title
+                                text: "WhatSon"
+                                width: parent.width
+                                wrapMode: Text.NoWrap
+                            }
+                            LV.Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: LV.Theme.descriptionColor
+                                font.pixelSize: 12
+                                font.styleName: "SemiBold"
+                                font.weight: Font.DemiBold
+                                horizontalAlignment: Text.AlignHCenter
+                                lineHeight: 12
+                                lineHeightMode: Text.FixedHeight
+                                style: description
+                                text: root.resolvedVersionText
+                                width: root.mobileVersionWidth
+                            }
                         }
 
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: 24
-                            width: parent.width
+                            spacing: root.mobileActionSpacing
+                            width: root.mobileActionWidth
 
                             ActionLink {
                                 enabled: !root.hubSessionController || !root.hubSessionController.busy
@@ -516,44 +527,7 @@ Window {
                                 }
                             }
                         }
-                        LV.Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: root.statusTextColor
-                            horizontalAlignment: Text.AlignHCenter
-                            maximumLineCount: 4
-                            style: description
-                            text: root.statusText
-                            visible: text.length > 0
-                            width: parent.width
-                            wrapMode: Text.WordWrap
-                        }
                     }
-                }
-            }
-
-            Rectangle {
-                id: mobileHubPanel
-
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                color: root.secondarySurfaceColor
-                height: root.mobileStatusPanelHeight
-
-                LV.Label {
-                    anchors.centerIn: parent
-                    color: LV.Theme.textPrimary
-                    elide: Text.ElideMiddle
-                    font.styleName: "SemiBold"
-                    font.weight: Font.DemiBold
-                    horizontalAlignment: Text.AlignHCenter
-                    lineHeight: 15
-                    lineHeightMode: Text.FixedHeight
-                    maximumLineCount: 2
-                    style: header2
-                    text: root.selectedHubStatusText
-                    width: Math.max(0, parent.width - 32)
-                    wrapMode: Text.WordWrap
                 }
             }
         }

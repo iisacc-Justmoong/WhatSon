@@ -1,5 +1,6 @@
 import QtQuick
 import LVRS 1.0 as LV
+import ".." as PanelView
 
 Rectangle {
     id: sidebarHierarchyView
@@ -30,6 +31,7 @@ Rectangle {
     readonly property bool deleteFolderEnabled: sidebarHierarchyView.deleteFolderContractAvailable && hierarchyViewModel.deleteFolderEnabled !== undefined && Boolean(hierarchyViewModel.deleteFolderEnabled)
     property int editingHierarchyIndex: -1
     property string editingHierarchyLabel: ""
+    property bool footerVisible: true
     property string frameName: ""
     property string frameNodeId: ""
     property var hierarchyDragDropBridge: null
@@ -69,12 +71,16 @@ Rectangle {
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
+    readonly property int searchHeaderTopGap: LV.Theme.gap4
+    property color searchFieldBackgroundColor: LV.Theme.panelBackground10
+    property bool searchFieldVisible: false
+    property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
     readonly property bool setItemExpandedContractAvailable: hierarchyViewModel && hierarchyViewModel.setItemExpanded !== undefined
     readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])
     readonly property int toolbarButtonSize: 20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
-    readonly property int toolbarFrameWidth: 200
+    property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     readonly property var toolbarItems: {
         if (sidebarHierarchyView.hierarchyViewModel && sidebarHierarchyView.hierarchyViewModel.toolbarItems !== undefined)
@@ -92,6 +98,8 @@ Rectangle {
     readonly property int verticalInset: 2
     readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? Boolean(hierarchyViewModel.viewOptionsEnabled) : true
 
+    signal searchSubmitted(string text)
+    signal searchTextEdited(string text)
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
 
@@ -135,6 +143,7 @@ Rectangle {
             return clone;
         for (const key in sourceItem)
             clone[key] = sourceItem[key];
+        return clone;
     }
     function commitHierarchyRename() {
         if (!sidebarHierarchyView.renameEditingActive)
@@ -215,6 +224,7 @@ Rectangle {
         const projectedItem = sidebarHierarchyView.cloneHierarchyItem(projectedModel[editingIndex]);
         projectedItem.label = "";
         projectedModel[editingIndex] = projectedItem;
+        return projectedModel;
     }
     function requestCreateFolder() {
         if (sidebarHierarchyView.renameEditingActive)
@@ -313,11 +323,11 @@ Rectangle {
     LV.Hierarchy {
         id: hierarchyTree
 
-        anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight
+        anchors.bottomMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.footerVisible ? hierarchyFooter.implicitHeight : 0)
         anchors.fill: parent
         anchors.leftMargin: sidebarHierarchyView.horizontalInset
         anchors.rightMargin: sidebarHierarchyView.horizontalInset
-        anchors.topMargin: sidebarHierarchyView.verticalInset
+        anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.toolbarButtonSize + sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight : 0)
         editable: sidebarHierarchyView.hierarchyEditable
         keyboardListNavigationEnabled: false
         model: sidebarHierarchyView.standardHierarchyModel
@@ -375,6 +385,31 @@ Rectangle {
         }
         onTextEdited: function (text) {
             sidebarHierarchyView.editingHierarchyLabel = text;
+        }
+    }
+    PanelView.ListBarHeader {
+        id: hierarchySearchHeader
+
+        anchors.left: parent.left
+        anchors.leftMargin: sidebarHierarchyView.horizontalInset
+        anchors.right: parent.right
+        anchors.rightMargin: sidebarHierarchyView.horizontalInset
+        anchors.top: hierarchyToolbar.bottom
+        anchors.topMargin: sidebarHierarchyView.searchHeaderTopGap
+        inlineFieldBackgroundColor: sidebarHierarchyView.searchFieldBackgroundColor
+        searchText: sidebarHierarchyView.searchText
+        sortActionVisible: false
+        visibilityActionVisible: false
+        visible: sidebarHierarchyView.searchFieldVisible
+        z: 2
+
+        onSearchSubmitted: function (text) {
+            sidebarHierarchyView.searchText = text;
+            sidebarHierarchyView.searchSubmitted(text);
+        }
+        onSearchTextEdited: function (text) {
+            sidebarHierarchyView.searchText = text;
+            sidebarHierarchyView.searchTextEdited(text);
         }
     }
     Row {
@@ -482,6 +517,7 @@ Rectangle {
         horizontalPadding: 2
         spacing: 0
         verticalPadding: 2
+        visible: sidebarHierarchyView.footerVisible
         width: 78
         z: 2
     }

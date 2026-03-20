@@ -162,7 +162,7 @@ Item {
         LV.HStack {
             id: compactApplicationControlBar
 
-            spacing: 12
+            spacing: 0
 
             LV.IconMenuButton {
                 id: applicationControlMenuButton
@@ -176,11 +176,6 @@ Item {
                     }
                     applicationControlContextMenu.openFor(applicationControlMenuButton, 0, height + applicationControlBar.menuYOffset);
                 }
-            }
-            LV.IconButton {
-                id: compactPreferenceButton
-
-                iconName: "audioToAudio"
             }
         }
     }

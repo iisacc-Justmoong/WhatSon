@@ -26,6 +26,7 @@ LV.HStack {
     ]
     property var navigationModeViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationModeBar") : null
+    property bool showLabel: true
 
     signal viewHookRequested
 
@@ -44,12 +45,13 @@ LV.HStack {
         modeBar.requestViewHook("open-navigation-mode-menu");
     }
 
-    spacing: 8
+    spacing: modeBar.showLabel ? 8 : 0
 
     LV.Label {
         color: LV.Theme.bodyColor
         style: body
         text: "Mode"
+        visible: modeBar.showLabel
     }
     LV.ComboBox {
         id: modeCombo

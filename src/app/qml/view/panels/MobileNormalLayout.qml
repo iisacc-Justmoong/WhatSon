@@ -7,10 +7,16 @@ Item {
 
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
-    property color hintColor: LV.Theme.descriptionColor
+    readonly property int contentInset: LV.Theme.gap16
+    property var editorViewModeViewModel: null
+    property string hierarchySearchText: ""
+    property var navigationModeViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("MobileNormalLayout") : null
+    required property var sidebarHierarchyViewModel
     property string statusPlaceholderText: ""
-    property color titleColor: LV.Theme.titleHeaderColor
+    property string statusSearchText: ""
+    property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
+    property var windowInteractions: null
 
     signal viewHookRequested
 
@@ -20,132 +26,73 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function requestCreateFolder() {
+        mobileNormalLayout.requestViewHook("create-folder");
+        if (hierarchySidebar && hierarchySidebar.requestCreateFolder !== undefined)
+            hierarchySidebar.requestCreateFolder();
+    }
+    function requestCreateNote() {
+        mobileNormalLayout.requestViewHook("create-note");
+        if (mobileNormalLayout.windowInteractions && mobileNormalLayout.windowInteractions.createNoteFromShortcut !== undefined)
+            mobileNormalLayout.windowInteractions.createNoteFromShortcut();
+    }
 
     Rectangle {
         anchors.fill: parent
         color: mobileNormalLayout.canvasColor
     }
-    Item {
-        anchors.bottomMargin: 16
+    ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 16
-        anchors.rightMargin: 16
-        anchors.topMargin: 16
+        spacing: 0
 
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 0
+        NavigationBarLayout {
+            id: compactNavigationBar
 
-            Rectangle {
-                id: topNavigationBar
+            compactAddFolderEnabled: hierarchySidebar.createFolderEnabled
+            compactAddFolderVisible: true
+            compactMode: true
+            compactSurfaceColor: mobileNormalLayout.controlSurfaceColor
+            editorViewModeViewModel: mobileNormalLayout.editorViewModeViewModel
+            navigationModeViewModel: mobileNormalLayout.navigationModeViewModel
 
-                Layout.fillWidth: true
-                Layout.preferredHeight: 24
-                color: mobileNormalLayout.controlSurfaceColor
-                radius: 32
+            onCompactAddFolderRequested: mobileNormalLayout.requestCreateFolder()
+        }
+        HierarchySidebarLayout {
+            id: hierarchySidebar
 
-                Item {
-                    anchors.bottomMargin: 2
-                    anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    anchors.topMargin: 2
+            Layout.bottomMargin: mobileNormalLayout.contentInset
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.leftMargin: mobileNormalLayout.contentInset
+            Layout.rightMargin: mobileNormalLayout.contentInset
+            Layout.topMargin: mobileNormalLayout.contentInset
+            footerVisible: false
+            panelColor: LV.Theme.panelBackground04
+            searchFieldVisible: true
+            searchText: mobileNormalLayout.hierarchySearchText
+            sidebarHierarchyViewModel: mobileNormalLayout.sidebarHierarchyViewModel
+            toolbarFrameWidth: 200
+            toolbarIconNames: mobileNormalLayout.toolbarIconNames
 
-                    LV.IconButton {
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "loggedInUser"
-                    }
-                    Row {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 12
-
-                        LV.IconButton {
-                            iconName: "audioToAudio"
-                        }
-                        LV.IconMenuButton {
-                            iconName: "generalprojectStructure"
-                        }
-                    }
-                }
+            onSearchSubmitted: function (text) {
+                mobileNormalLayout.hierarchySearchText = text;
             }
-            Item {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
+            onSearchTextEdited: function (text) {
+                mobileNormalLayout.hierarchySearchText = text;
             }
-            Item {
-                id: bottomStatusBar
+        }
+        StatusBarLayout {
+            compactFieldColor: mobileNormalLayout.controlSurfaceColor
+            compactMode: true
+            compactToolbarText: mobileNormalLayout.statusPlaceholderText
+            searchText: mobileNormalLayout.statusSearchText
 
-                Layout.fillWidth: true
-                Layout.preferredHeight: 20
-
-                Rectangle {
-                    id: statusTextField
-
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 1
-                    anchors.left: parent.left
-                    anchors.right: newFileSlot.left
-                    anchors.top: parent.top
-                    anchors.topMargin: 1
-                    color: mobileNormalLayout.controlSurfaceColor
-                    radius: 5
-
-                    Item {
-                        anchors.bottomMargin: 3
-                        anchors.fill: parent
-                        anchors.leftMargin: 7
-                        anchors.rightMargin: 7
-                        anchors.topMargin: 3
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 0
-
-                            LV.Label {
-                                color: mobileNormalLayout.titleColor
-                                style: body
-                                text: mobileNormalLayout.statusPlaceholderText
-                                visible: text.length > 0
-                            }
-                            Rectangle {
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: mobileNormalLayout.hintColor
-                                height: 12
-                                visible: mobileNormalLayout.statusPlaceholderText.length > 0
-                                width: 1
-                            }
-                        }
-                        Image {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            fillMode: Image.PreserveAspectFit
-                            height: LV.Theme.iconSm
-                            smooth: true
-                            source: LV.Theme.iconPath("generalcloseSmall")
-                            sourceSize.height: height
-                            sourceSize.width: width
-                            width: LV.Theme.iconSm
-                        }
-                    }
-                }
-                Item {
-                    id: newFileSlot
-
-                    anchors.bottom: parent.bottom
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    width: 36
-
-                    LV.IconButton {
-                        anchors.centerIn: parent
-                        iconName: "addFile"
-
-                        onClicked: mobileNormalLayout.requestViewHook("create-note")
-                    }
-                }
+            onCreateNoteRequested: mobileNormalLayout.requestCreateNote()
+            onSearchSubmitted: function (text) {
+                mobileNormalLayout.statusSearchText = text;
+            }
+            onSearchTextEdited: function (text) {
+                mobileNormalLayout.statusSearchText = text;
             }
         }
     }

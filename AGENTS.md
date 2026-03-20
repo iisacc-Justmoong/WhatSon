@@ -132,7 +132,7 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/top/StatusBarLayout.qml`
     - `src/app/qml/view/top/NavigationBarLayout.qml`
     - `src/app/qml/view/body/BodyLayout.qml`
-    - `src/app/qml/view/panels/MobileNormalLayout.qml` (Figma-driven mobile root layout for node `77:3144`)
+    - `src/app/qml/view/panels/MobileNormalLayout.qml` (Figma-driven mobile root layout for node `174:4986`, composed from shared compact navigation/status shells plus the shared hierarchy panel)
     - `src/app/qml/view/panels/ListBarLayout.qml` (Figma-driven list bar panel for node `73:2635`)
     - `src/app/qml/view/panels/ListBarHeader.qml` (Figma-driven list bar header for node `134:3180`)
         - `src/app/qml/view/panels/NoteListItem.qml` (Figma-driven note item card for node `119:3028`)

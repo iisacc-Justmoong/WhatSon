@@ -12,6 +12,8 @@ Rectangle {
     readonly property string activeNavigationModeName: navigationModeViewModel && navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : "Control"
     readonly property int bottomInset: 2
     readonly property int compactHorizontalInset: Math.max(12, Math.min(24, Math.round(width * 0.04)))
+    property bool compactAddFolderEnabled: true
+    property bool compactAddFolderVisible: false
     property bool compactMode: false
     property color compactSurfaceColor: LV.Theme.panelBackground06
     readonly property int compactTopInset: compactHorizontalInset
@@ -24,6 +26,7 @@ Rectangle {
     readonly property int sideInset: compactMode ? 8 : 4
     readonly property int topInset: 2
 
+    signal compactAddFolderRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -63,13 +66,14 @@ Rectangle {
             LV.HStack {
                 anchors.fill: parent
                 spacing: 0
+                visible: !navigationBar.compactMode
 
                 NavigationView.NavigationPropertiesBar {
                     id: propertiesBar
 
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredHeight: 20
-                    compactMode: navigationBar.compactMode
+                    compactMode: false
                     editorViewModeViewModel: navigationBar.editorViewModeViewModel
                     navigationModeViewModel: navigationBar.navigationModeViewModel
                 }
@@ -90,6 +94,60 @@ Rectangle {
                         case "Control":
                         default:
                             return applicationControlBarComponent;
+                        }
+                    }
+                }
+            }
+            LV.HStack {
+                anchors.fill: parent
+                spacing: 0
+                visible: navigationBar.compactMode
+
+                LV.HStack {
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: LV.Theme.gap12
+
+                    LV.IconButton {
+                        iconName: "generalsettings"
+
+                        onClicked: navigationBar.requestViewHook("compact-open-settings")
+                    }
+                    NavigationView.NavigationModeBar {
+                        Layout.alignment: Qt.AlignVCenter
+                        navigationModeViewModel: navigationBar.navigationModeViewModel
+                        showLabel: false
+                    }
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                LV.HStack {
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: LV.Theme.gap12
+
+                    LV.IconButton {
+                        enabled: navigationBar.compactAddFolderEnabled
+                        iconName: "nodeslibraryFolder"
+                        visible: navigationBar.compactAddFolderVisible
+
+                        onClicked: {
+                            navigationBar.requestViewHook("compact-create-folder");
+                            navigationBar.compactAddFolderRequested();
+                        }
+                    }
+                    Loader {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: 20
+                        sourceComponent: {
+                            switch (navigationBar.activeNavigationModeName) {
+                            case "View":
+                                return applicationViewBarComponent;
+                            case "Edit":
+                                return applicationEditBarComponent;
+                            case "Control":
+                            default:
+                                return applicationControlBarComponent;
+                            }
                         }
                     }
                 }
