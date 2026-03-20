@@ -13,6 +13,8 @@ class CMakePlatformIconTests(unittest.TestCase):
         self.assertIn('set(WHATSON_APP_ICON_ICNS "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.icns")', cmake_text)
         self.assertIn('set(WHATSON_APP_ICON_ICO "${WHATSON_APP_ICON_DESKTOP_DIR}/AppIcon.ico")', cmake_text)
         self.assertIn('XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"', cmake_text)
+        self.assertIn('MACOSX_PACKAGE_LOCATION "Resources"', cmake_text)
+        self.assertIn('XCODE_EXPLICIT_FILE_TYPE "folder.assetcatalog"', cmake_text)
         self.assertIn('${WHATSON_APP_ICON_ANDROID_DIR}/${_whatson_android_density}/AppIcon.png', cmake_text)
         self.assertIn('set(_whatson_android_default_icon_dst_dir "${_whatson_android_package_source_dir}/res/drawable")',
                       cmake_text)
@@ -67,6 +69,8 @@ class CMakePlatformIconTests(unittest.TestCase):
 
         self.assertNotIn("<key>CFBundleIconFile</key>", plist_text)
         self.assertNotIn("<string>AppIcon.png</string>", plist_text)
+        self.assertIn("<key>UIRequiresFullScreen</key>", plist_text)
+        self.assertIn("<true/>", plist_text)
         self.assertIn("<key>UILaunchStoryboardName</key>", plist_text)
         self.assertIn("<string>LaunchScreen</string>", plist_text)
 

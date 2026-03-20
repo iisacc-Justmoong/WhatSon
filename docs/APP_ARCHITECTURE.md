@@ -82,8 +82,9 @@ Key behaviors:
 - Apple-specific framework linkage (EventKit, Photos, ApplicationServices on macOS host)
 - Platform icon wiring from `resources/icons/app/`:
     - macOS bundle embeds `desktop/AppIcon.icns`
-    - iOS generates an Xcode app icon catalog from the shipped PNG variants under `ios/`, with PNG bundle fallback when
-      needed
+    - iOS generates an Xcode app icon catalog from the shipped PNG variants under `ios/`, attaches that `.xcassets`
+      tree to the bundle `Resources` phase so Xcode emits `Assets.car`, and keeps `UIRequiresFullScreen` aligned with
+      the declared portrait / landscape-left / landscape-right orientations
     - Android package staging overlays density-specific launcher icons from `android/<density>/AppIcon.png`
     - Windows executable embeds `desktop/AppIcon.ico`
 - Host/iOS LVRS module fallback/overlay logic for runtime QML import stability
@@ -579,9 +580,10 @@ Primary root:
   `pageRoutes`, `activePageRouter`) instead of a root-level ad-hoc loader deciding which top-level surface to mount.
 - The current shell route is a single workspace page; that page decides between desktop and mobile shell composition
   from LVRS adaptive layout state (`adaptiveMobileLayout`), not from an independent root routing flag.
-- `Main.qml` owns the application menu bar through a macOS-native `Qt.labs.platform.MenuBar`; `File`, `Edit`, `View`,
-  and `Help` still use placeholder items to preserve their top-level titles, while `Window` now exposes a concrete
-  `Onboarding` action that routes through `showOnboardingWindow()` and foregrounds the shared onboarding subwindow.
+- `Main.qml` no longer imports `Qt.labs.platform` directly. The macOS-native menu bar moved into
+  `window/MacNativeMenuBar.qml`, so the root shell stays loadable on iOS static-QML builds while `File`, `Edit`,
+  `View`, and `Help` keep their placeholder-backed top-level titles and `Window` still exposes the native
+  `Onboarding` command through `showOnboardingWindow()`.
 - `Main.qml` owns the root focus-dismiss policy: when LVRS global hit-test metadata reports a left-click on a blank
   background/container surface, the active focus chain is cleared.
 - App bootstrap (`main.cpp`) enables `WHATSON_DEBUG_MODE=1` by default when the variable is not explicitly set,

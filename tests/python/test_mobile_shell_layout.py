@@ -9,6 +9,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 class MobileShellLayoutTests(unittest.TestCase):
     def test_mobile_shell_reuses_shared_compact_layout_contract(self) -> None:
         main_text = (REPO_ROOT / "src/app/qml/Main.qml").read_text(encoding="utf-8")
+        mac_menu_bar_text = (
+            REPO_ROOT / "src/app/qml/window/MacNativeMenuBar.qml"
+        ).read_text(encoding="utf-8")
         mobile_layout_text = (
             REPO_ROOT / "src/app/qml/view/panels/MobileNormalLayout.qml"
         ).read_text(encoding="utf-8")
@@ -72,6 +75,13 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm", main_text)
         self.assertIn("toolbarIconNames: applicationWindow.hierarchyToolbarIconNames", main_text)
         self.assertIn("windowInteractions: windowInteractions", main_text)
+        self.assertNotIn("import Qt.labs.platform as Platform", main_text)
+        self.assertIn("WindowView.MacNativeMenuBar {", main_text)
+
+        self.assertIn("import Qt.labs.platform as Platform", mac_menu_bar_text)
+        self.assertIn("Platform.MenuBar {", mac_menu_bar_text)
+        self.assertIn('title: qsTr("Window")', mac_menu_bar_text)
+        self.assertIn("root.hostWindow.showOnboardingWindow();", mac_menu_bar_text)
 
         self.assertNotIn('iconName: "audioToAudio"', control_bar_text)
 

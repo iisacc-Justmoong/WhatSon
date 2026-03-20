@@ -202,6 +202,9 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
 }
 ]])
 
+            set_source_files_properties("${_whatson_ios_asset_catalog_dir}" PROPERTIES
+                    MACOSX_PACKAGE_LOCATION "Resources"
+                    XCODE_EXPLICIT_FILE_TYPE "folder.assetcatalog")
             target_sources(WhatSon PRIVATE "${_whatson_ios_asset_catalog_dir}")
             set_target_properties(WhatSon PROPERTIES
                     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon")

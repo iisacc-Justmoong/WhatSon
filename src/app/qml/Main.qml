@@ -4,7 +4,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQml
 import QtQuick.Window
-import Qt.labs.platform as Platform
 import LVRS 1.0 as LV
 import "view/panels" as BodyPanelView
 import "window" as WindowView
@@ -215,50 +214,8 @@ LV.ApplicationWindow {
     Component {
         id: nativeMenuBarComponent
 
-        Platform.MenuBar {
-            window: applicationWindow
-
-            Platform.Menu {
-                title: qsTr("File")
-
-                Platform.MenuItem {
-                    enabled: false
-                    text: applicationWindow.nativeMenuPlaceholderText()
-                }
-            }
-            Platform.Menu {
-                title: qsTr("Edit")
-
-                Platform.MenuItem {
-                    enabled: false
-                    text: applicationWindow.nativeMenuPlaceholderText()
-                }
-            }
-            Platform.Menu {
-                title: qsTr("View")
-
-                Platform.MenuItem {
-                    enabled: false
-                    text: applicationWindow.nativeMenuPlaceholderText()
-                }
-            }
-            Platform.Menu {
-                title: qsTr("Window")
-
-                Platform.MenuItem {
-                    text: qsTr("Onboarding")
-
-                    onTriggered: applicationWindow.showOnboardingWindow()
-                }
-            }
-            Platform.Menu {
-                title: qsTr("Help")
-
-                Platform.MenuItem {
-                    enabled: false
-                    text: applicationWindow.nativeMenuPlaceholderText()
-                }
-            }
+        WindowView.MacNativeMenuBar {
+            hostWindow: applicationWindow
         }
     }
     Component {

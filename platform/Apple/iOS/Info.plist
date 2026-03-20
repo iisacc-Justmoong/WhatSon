@@ -79,6 +79,9 @@
     <key>LSRequiresIPhoneOS</key>
     <true/>
 
+    <key>UIRequiresFullScreen</key>
+    <true/>
+
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
 

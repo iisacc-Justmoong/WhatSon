@@ -15,9 +15,9 @@ WhatSon is an LVRS-based Qt Quick application.
   LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
 - `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow
   through LVRS `Navigator` / `PageRouter` semantics instead of bespoke root state.
-- `src/app/qml/Main.qml` also declares the application menu bar at the root window level; macOS uses
-  `Qt.labs.platform.MenuBar`, `File` / `Edit` / `View` / `Help` remain placeholder-backed top-level menus, and the
-  `Window` menu now exposes a native `Onboarding` command that reopens and foregrounds the shared onboarding subwindow.
+- `src/app/qml/Main.qml` now loads the macOS-native menu bar through `src/app/qml/window/MacNativeMenuBar.qml` instead
+  of importing `Qt.labs.platform` in the root shell directly; this keeps the iOS static QML bundle free of the
+  macOS-only module while preserving the native `Onboarding` command under the `Window` menu.
 
 ## Search Input Behavior
 
@@ -302,7 +302,8 @@ Desktop install/export layout:
 Platform icon packaging is resolved from `resources/icons/app/` during configure time:
 
 - macOS bundle icon: `resources/icons/app/desktop/AppIcon.icns`
-- iOS app icon set: generated Xcode asset catalog from the iPhone/iPad PNG variants under `resources/icons/app/ios/`
+- iOS app icon set: generated Xcode asset catalog from the iPhone/iPad PNG variants under `resources/icons/app/ios/`,
+  attached to the iOS bundle `Resources` phase so Xcode compiles `Assets.car`
 - Android launcher icon: density-specific `resources/icons/app/android/<density>/AppIcon.png` files overlaid into the
   Android package
 - Windows executable icon: `resources/icons/app/desktop/AppIcon.ico`
