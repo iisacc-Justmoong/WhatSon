@@ -18,6 +18,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/Main.qml` now loads the macOS-native menu bar through `src/app/qml/window/MacNativeMenuBar.qml` instead
   of importing `Qt.labs.platform` in the root shell directly; this keeps the iOS static QML bundle free of the
   macOS-only module while preserving the native `Onboarding` command under the `Window` menu.
+- The iOS app target keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for Xcode export generation, so
+  `src/app/CMakeLists.txt` explicitly links the static QML plugin targets for `QtQuick`, `QtQuick.Window`,
+  `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs`. Without those links, the standalone mobile
+  onboarding path exits immediately with `module "QtQuick" plugin "qtquick2plugin" not found`.
+- The desktop navigation bar's left/right edge buttons now toggle the hierarchy sidebar and detail panel directly.
+  Collapse only zeros the live panel width; the last preferred widths are preserved so expanding restores the previous
+  splitter geometry instead of resetting panel sizes.
 
 ## Search Input Behavior
 
@@ -107,7 +114,8 @@ WhatSon is an LVRS-based Qt Quick application.
   `NoteListItem.qml` falls back to the store's short-date placeholder text when a card has no display date, with a
   generic `Date` label only as the last-resort UI fallback when that store is unavailable.
 - `NoteListItem.qml` now also accepts `image` + `imageSource` roles. When a `.wsnbody` `<resource ...>` entry exists,
-  the note card keeps the Figma `24px` `imageBox` at the left edge of the top row and uses the first resource's
+  the note card expands the image variant to the Figma `126px` frame, keeps a `48px` `imageBox` at the left edge of
+  the top row, anchors the two-line title block to the top-left of the text column, and uses the first resource's
   resolved thumbnail URL as the preview source.
 - `ListBarLayout.qml` now owns the note-list `ListView` directly, including the bidirectional selection bridge between
   `ListView.currentIndex` and the active domain note-list model; note-card taps must update the model selection, and
@@ -183,6 +191,9 @@ WhatSon is an LVRS-based Qt Quick application.
   compatibility wrappers or adapter layers, and
   editor-side selection/persistence/text/gutter contracts must stay split across the dedicated editor adapters instead
   of collapsing back into one bridge.
+- The obsolete LVRS override layers have been removed from the tree: no local hierarchy compat list, no sidebar
+  interaction-controller hierarchy engine, and no project-specific `NavigationIconButton` wrapper remain. Navigation
+  panels now bind stock LVRS primitives directly.
 - `tests/app/test_solid_architecture_contracts.cpp` now locks those shell/sidebar/editor boundaries as SOLID-facing
   contracts: sidebar state must stay single-sourced behind the interface-driven `SidebarHierarchyViewModel`, editor
   adapters must stay role-segregated, and the QML assembly must keep dedicated interaction/session/helper objects

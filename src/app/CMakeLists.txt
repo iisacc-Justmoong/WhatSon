@@ -359,6 +359,21 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # target finalization, so configure-time qmlimportscanner fails before project generation.
     set_target_properties(WhatSon PROPERTIES
             QT_QML_MODULE_NO_IMPORT_SCAN TRUE)
+
+    # With import scanning disabled, the static QML plugins for the built-in QtQuick modules
+    # used by the onboarding/main shells must be linked explicitly.
+    foreach (_whatson_ios_qml_plugin IN ITEMS
+            Qt6::qtquick2plugin
+            Qt6::quickwindow
+            Qt6::qquicklayoutsplugin
+            Qt6::qtquickcontrols2plugin
+            Qt6::qtquickcontrols2basicstyleplugin
+            Qt6::qtquickcontrols2iosstyleplugin
+            Qt6::qtquickdialogsplugin)
+        if (TARGET "${_whatson_ios_qml_plugin}")
+            target_link_libraries(WhatSon PRIVATE "${_whatson_ios_qml_plugin}")
+        endif ()
+    endforeach ()
 endif ()
 
 target_link_libraries(WhatSon

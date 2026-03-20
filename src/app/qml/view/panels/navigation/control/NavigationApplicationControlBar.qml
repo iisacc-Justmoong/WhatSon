@@ -94,8 +94,10 @@ Item {
     property bool compactMode: false
     property int menuItemWidth: 176
     property int menuYOffset: 2
+    property bool detailPanelCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationControlBar") : null
 
+    signal toggleDetailPanelRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -153,6 +155,9 @@ Item {
                 id: preferenceBar
 
                 Layout.alignment: Qt.AlignVCenter
+                detailPanelCollapsed: applicationControlBar.detailPanelCollapsed
+
+                onToggleDetailPanelRequested: applicationControlBar.toggleDetailPanelRequested()
             }
         }
     }

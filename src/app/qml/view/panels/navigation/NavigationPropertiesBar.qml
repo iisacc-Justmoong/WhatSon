@@ -7,8 +7,10 @@ LV.HStack {
     property bool compactMode: false
     property var editorViewModeViewModel: null
     property var navigationModeViewModel: null
+    property bool sidebarCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationPropertiesBar") : null
 
+    signal toggleSidebarRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -23,6 +25,9 @@ LV.HStack {
     NavigationInformationBar {
         id: informationBar
 
+        sidebarCollapsed: propertiesBar.sidebarCollapsed
+
+        onToggleSidebarRequested: propertiesBar.toggleSidebarRequested()
     }
     NavigationModeBar {
         id: modeBar

@@ -11,3 +11,7 @@ This directory contains iOS platform-specific bundle configuration.
   loading `Main.qml`.
 - `Main.qml` must not import macOS-only `Qt.labs.platform` directly. The native menu bar lives in
   `src/app/qml/window/MacNativeMenuBar.qml` so iOS static QML linking does not pull that module into the root shell.
+- `src/app/CMakeLists.txt` intentionally keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export path,
+  so the app target must explicitly link the static QML plugin targets for `QtQuick`, `QtQuick.Window`,
+  `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs`. Otherwise the standalone onboarding entry path exits
+  at runtime with `module "QtQuick" plugin "qtquick2plugin" not found`.

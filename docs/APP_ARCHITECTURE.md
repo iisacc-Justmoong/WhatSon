@@ -560,8 +560,9 @@ Library-specific modeling:
       padding,
       and an inner `86px` top/middle/bottom content stack separated by `8px` vertical gaps
     - primary text: 2-line `12px` semibold block with fixed `12px` line height
-        - optional image mode: top row inserts the Figma `24px` `imageBox` before the text block and paints the first
-          resource thumbnail over a neutral placeholder fill
+        - optional image mode: the card expands to `194x126`, the top row inserts the Figma `48px` `imageBox` before
+          the text block, the title text stays top-left anchored inside its column, and the first resource thumbnail is
+          painted over a neutral placeholder fill
         - fixed date row: always reserves the Figma middle slot and falls back to
           `systemCalendarStore.shortDatePlaceholderText` when `displayDate` is empty, or a generic `Date` label if
           the app-level calendar store is unavailable
@@ -584,10 +585,18 @@ Primary root:
   `window/MacNativeMenuBar.qml`, so the root shell stays loadable on iOS static-QML builds while `File`, `Edit`,
   `View`, and `Help` keep their placeholder-backed top-level titles and `Window` still exposes the native
   `Onboarding` command through `showOnboardingWindow()`.
+- The desktop navigation bar edge buttons now toggle the hierarchy sidebar and detail panel through root-window state
+  (`hideSidebar`, `hideRightPanel`), and `BodyLayout.qml` converts those booleans into zero-width hidden panels while
+  preserving the stored preferred widths so re-expansion restores the previous splitter geometry.
 - `Main.qml` owns the root focus-dismiss policy: when LVRS global hit-test metadata reports a left-click on a blank
   background/container surface, the active focus chain is cleared.
 - App bootstrap (`main.cpp`) enables `WHATSON_DEBUG_MODE=1` by default when the variable is not explicitly set,
   so `WhatSon::Debug::trace/traceSelf`-based logs are available in development sessions without extra launch flags.
+- The iOS app target keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for Xcode-project generation, so
+  `src/app/CMakeLists.txt` must explicitly link the static QML plugin targets for the built-in `QtQuick`,
+  `QtQuick.Window`, `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs` imports used by `Main.qml` and
+  `Onboarding.qml`; otherwise the mobile standalone onboarding path exits immediately with
+  `module "QtQuick" plugin "qtquick2plugin" not found`.
 - Render quality policy is enforced at app root for resize stability:
     - Desktop and mobile (`isDesktopPlatform || isMobilePlatform`): resize events (`onWidthChanged` /
       `onHeightChanged`) temporarily suspend dynamic
@@ -819,15 +828,18 @@ Conclusion:
 
 Audit result:
 
-- Total QML files: 46
-- Files declaring explicit `signal`: 39
-- Files without explicit `signal`: 7
+- Total QML files: 52
+- Files declaring explicit `signal`: 43
+- Files without explicit `signal`: 9
 
 Files without explicit signal declarations:
 
 - `src/app/qml/DesignTokens.qml`
-- `src/app/qml/view/panels/navigation/NavigationIconButton.qml`
+- `src/app/qml/MainWindowInteractionController.qml`
+- `src/app/qml/view/content/editor/ContentsGutterLayer.qml`
+- `src/app/qml/view/content/editor/ContentsMinimapLayer.qml`
 - `src/app/qml/window/DebugConsole.qml`
+- `src/app/qml/window/MacNativeMenuBar.qml`
 - `src/app/qml/window/Preference.qml`
 - `src/app/qml/window/ProfileControl.qml`
 - `src/app/qml/window/QuickNote.qml`
@@ -836,6 +848,8 @@ Implication:
 
 - If the rule is interpreted strictly as "every view must define explicit signal and slot-like handlers," these files
   are the current enforcement gap.
+- The previously retained LVRS override shims (`HierarchyListCompat.qml`, `SidebarHierarchyInteractionController.qml`,
+  `NavigationIconButton.qml`) were removed, so the sidebar/navigation layer now relies on stock LVRS surfaces only.
 
 ---
 

@@ -30,6 +30,7 @@ Item {
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: LV.Theme.panelBackground04
     required property var sidebarHierarchyViewModel
+    readonly property bool sidebarVisible: hStack.sidebarWidth > 0
     property int sidebarHorizontalInset: 2
     property int sidebarWidth: LV.Theme.gap24 * 9
     property color splitterColor: LV.Theme.panelBackground10
@@ -46,14 +47,14 @@ Item {
     function clampListViewWidth(value) {
         const numericValue = Number(value);
         const resolvedValue = isFinite(numericValue) ? numericValue : hStack.listViewWidth;
-        const occupiedWidth = hStack.totalSplitterWidth() + hStack.sidebarWidth + hStack.minContentWidth + (hStack.rightVisible ? hStack.minRightPanelWidth : 0);
+        const occupiedWidth = hStack.totalSplitterWidth() + (hStack.sidebarVisible ? hStack.sidebarWidth : 0) + hStack.minContentWidth + (hStack.rightVisible ? hStack.minRightPanelWidth : 0);
         const maxWidth = Math.max(hStack.minListViewWidth, hStack.width - occupiedWidth);
         return Math.max(hStack.minListViewWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
     }
     function clampRightPanelWidth(value) {
         const numericValue = Number(value);
         const resolvedValue = isFinite(numericValue) ? numericValue : hStack.rightPanelWidth;
-        const occupiedWidth = hStack.totalSplitterWidth() + hStack.sidebarWidth + hStack.minContentWidth + (hStack.listVisible ? hStack.minListViewWidth : 0);
+        const occupiedWidth = hStack.totalSplitterWidth() + (hStack.sidebarVisible ? hStack.sidebarWidth : 0) + hStack.minContentWidth + (hStack.listVisible ? hStack.minListViewWidth : 0);
         const maxWidth = Math.max(hStack.minRightPanelWidth, hStack.width - occupiedWidth);
         return Math.max(hStack.minRightPanelWidth, Math.min(maxWidth, Math.floor(resolvedValue)));
     }
@@ -74,7 +75,7 @@ Item {
         // CRITICAL REGRESSION GUARD:
         // This function MUST return a finite number. If return is removed or undefined/NaN leaks,
         // clamp math fails and panel edge drag-resizing becomes blocked (historically repeated issue).
-        var width = hStack.splitterThickness;
+        var width = hStack.sidebarVisible ? hStack.splitterThickness : 0;
         if (hStack.listVisible)
             width += hStack.splitterThickness;
         if (hStack.rightVisible)
@@ -98,12 +99,13 @@ Item {
                 id: sideBar
 
                 Layout.fillHeight: true
-                Layout.minimumWidth: hStack.effectiveMinSidebarWidth
-                Layout.preferredWidth: hStack.sidebarWidth
+                Layout.minimumWidth: hStack.sidebarVisible ? hStack.effectiveMinSidebarWidth : 0
+                Layout.preferredWidth: hStack.sidebarVisible ? hStack.sidebarWidth : 0
                 horizontalInset: hStack.sidebarHorizontalInset
                 panelColor: hStack.sidebarColor
                 sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
                 toolbarIconNames: hStack.toolbarIconNames
+                visible: hStack.sidebarVisible
             }
             PanelEdgeSplitter {
                 id: sideBarSplitter
@@ -116,6 +118,7 @@ Item {
                 handleThickness: hStack.splitterHandleThickness
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness
+                visible: hStack.sidebarVisible
 
                 onSizeDragRequested: function (value) {
                     hStack.sidebarWidthDragRequested(value);
@@ -126,7 +129,7 @@ Item {
 
                 Layout.fillHeight: true
                 Layout.minimumWidth: hStack.minListViewWidth
-                Layout.preferredWidth: hStack.listViewWidth
+                Layout.preferredWidth: hStack.listVisible ? hStack.listViewWidth : 0
                 color: LV.Theme.accentTransparent
                 visible: hStack.listVisible
 
@@ -197,8 +200,8 @@ Item {
                 id: rightPanel
 
                 Layout.fillHeight: true
-                Layout.minimumWidth: hStack.minRightPanelWidth
-                Layout.preferredWidth: hStack.rightPanelWidth
+                Layout.minimumWidth: hStack.rightVisible ? hStack.minRightPanelWidth : 0
+                Layout.preferredWidth: hStack.rightVisible ? hStack.rightPanelWidth : 0
                 panelColor: hStack.rightPanelColor
                 visible: hStack.rightVisible
             }

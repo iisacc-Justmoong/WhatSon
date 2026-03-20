@@ -17,16 +17,20 @@ Rectangle {
     property bool compactMode: false
     property color compactSurfaceColor: LV.Theme.panelBackground06
     readonly property int compactTopInset: compactHorizontalInset
+    property bool detailPanelCollapsed: false
     property var editorViewModeViewModel: null
     readonly property int effectivePanelHeight: compactMode ? (compactTopInset + panelHeight) : panelHeight
     property var navigationModeViewModel: null
     property color panelColor: LV.Theme.panelBackground06
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
     property int panelHeight: 24
+    property bool sidebarCollapsed: false
     readonly property int sideInset: compactMode ? 8 : 4
     readonly property int topInset: 2
 
     signal compactAddFolderRequested
+    signal toggleDetailPanelRequested
+    signal toggleSidebarRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -76,6 +80,9 @@ Rectangle {
                     compactMode: false
                     editorViewModeViewModel: navigationBar.editorViewModeViewModel
                     navigationModeViewModel: navigationBar.navigationModeViewModel
+                    sidebarCollapsed: navigationBar.sidebarCollapsed
+
+                    onToggleSidebarRequested: navigationBar.toggleSidebarRequested()
                 }
                 Item {
                     Layout.fillWidth: true
@@ -159,6 +166,9 @@ Rectangle {
 
         NavigationViewMode.NavigationApplicationViewBar {
             compactMode: navigationBar.compactMode
+            detailPanelCollapsed: navigationBar.detailPanelCollapsed
+
+            onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
         }
     }
     Component {
@@ -166,6 +176,9 @@ Rectangle {
 
         NavigationEditMode.NavigationApplicationEditBar {
             compactMode: navigationBar.compactMode
+            detailPanelCollapsed: navigationBar.detailPanelCollapsed
+
+            onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
         }
     }
     Component {
@@ -173,6 +186,9 @@ Rectangle {
 
         NavigationControlMode.NavigationApplicationControlBar {
             compactMode: navigationBar.compactMode
+            detailPanelCollapsed: navigationBar.detailPanelCollapsed
+
+            onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
         }
     }
 }

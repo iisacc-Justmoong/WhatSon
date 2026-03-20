@@ -4,8 +4,10 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: preferenceBar
 
+    property bool detailPanelCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationPreferenceBar") : null
 
+    signal toggleDetailPanelRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -26,5 +28,10 @@ LV.HStack {
         id: detailPanelControlButton
 
         iconName: "columnIndex"
+
+        onClicked: {
+            preferenceBar.requestViewHook(preferenceBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+            preferenceBar.toggleDetailPanelRequested();
+        }
     }
 }

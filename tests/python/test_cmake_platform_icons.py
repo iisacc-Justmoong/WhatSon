@@ -66,6 +66,10 @@ class CMakePlatformIconTests(unittest.TestCase):
 
     def test_ios_info_plist_uses_asset_catalog_icons(self) -> None:
         plist_text = (REPO_ROOT / "platform/Apple/iOS/Info.plist").read_text(encoding="utf-8")
+        cmake_text = (REPO_ROOT / "src/app/CMakeLists.txt").read_text(encoding="utf-8")
+        readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        ios_readme_text = (REPO_ROOT / "platform/Apple/iOS/README.md").read_text(encoding="utf-8")
+        architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
 
         self.assertNotIn("<key>CFBundleIconFile</key>", plist_text)
         self.assertNotIn("<string>AppIcon.png</string>", plist_text)
@@ -73,6 +77,17 @@ class CMakePlatformIconTests(unittest.TestCase):
         self.assertIn("<true/>", plist_text)
         self.assertIn("<key>UILaunchStoryboardName</key>", plist_text)
         self.assertIn("<string>LaunchScreen</string>", plist_text)
+        self.assertIn("QT_QML_MODULE_NO_IMPORT_SCAN TRUE", cmake_text)
+        self.assertIn("Qt6::qtquick2plugin", cmake_text)
+        self.assertIn("Qt6::quickwindow", cmake_text)
+        self.assertIn("Qt6::qquicklayoutsplugin", cmake_text)
+        self.assertIn("Qt6::qtquickcontrols2plugin", cmake_text)
+        self.assertIn("Qt6::qtquickdialogsplugin", cmake_text)
+        self.assertIn("module \"QtQuick\" plugin \"qtquick2plugin\" not found", readme_text)
+        self.assertIn("qtquick2plugin", ios_readme_text)
+        self.assertIn("QtQuick.Dialogs", ios_readme_text)
+        self.assertIn("qtquick2plugin", architecture_text)
+        self.assertIn("QT_QML_MODULE_NO_IMPORT_SCAN", architecture_text)
 
     def test_repository_uses_windows_safe_icon_filenames(self) -> None:
         invalid_chars = set('<>:"/\\\\|?*')

@@ -4,8 +4,10 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: informationBar
 
+    property bool sidebarCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationInformationBar") : null
 
+    signal toggleSidebarRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -21,6 +23,11 @@ LV.HStack {
         id: sidebarControlButton
 
         iconName: "columnIndex"
+
+        onClicked: {
+            informationBar.requestViewHook(informationBar.sidebarCollapsed ? "expand-sidebar" : "collapse-sidebar");
+            informationBar.toggleSidebarRequested();
+        }
     }
     LV.IconButton {
         id: profileButton

@@ -22,13 +22,21 @@ LV.ApplicationWindow {
     readonly property var bookmarksHierarchyVm: bookmarksHierarchyViewModel
     readonly property color canvasColor: LV.Theme.panelBackground01
     readonly property color contentsDisplayColor: LV.Theme.surfaceAlt
-    readonly property int desktopMinimumBodyWidth: minSidebarWidth + minListViewWidth + minContentWidth + minRightPanelWidth + bodySplitterThickness * 3
+    readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth)
+                                               + (hideListView ? 0 : minListViewWidth)
+                                               + minContentWidth
+                                               + (hideRightPanel ? 0 : minRightPanelWidth)
+                                               + bodySplitterThickness * Math.max(0, ((hideSidebar ? 0 : 1)
+                                                                                      + (hideListView ? 0 : 1)
+                                                                                      + 1
+                                                                                      + (hideRightPanel ? 0 : 1)) - 1)
     readonly property color drawerColor: LV.Theme.panelBackground08
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property var editorViewModeVm: editorViewModeViewModel
     readonly property var eventHierarchyVm: eventHierarchyViewModel
     readonly property bool hideListView: false
-    readonly property bool hideRightPanel: false
+    property bool hideRightPanel: false
+    property bool hideSidebar: false
     readonly property int hierarchyHorizontalInset: 2
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
@@ -71,7 +79,7 @@ LV.ApplicationWindow {
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
     readonly property color sidebarColor: LV.Theme.panelBackground04
     readonly property var sidebarHierarchyVm: sidebarHierarchyViewModel
-    readonly property int sidebarWidth: Math.max(minSidebarWidth, preferredSidebarWidth)
+    readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
     readonly property color statusBarColor: LV.Theme.panelBackground06
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property var tagsHierarchyVm: tagsHierarchyViewModel
@@ -103,6 +111,12 @@ LV.ApplicationWindow {
         onboardingSubWindow.show();
         onboardingSubWindow.raise();
         onboardingSubWindow.requestActivate();
+    }
+    function toggleDetailPanelVisibility() {
+        applicationWindow.hideRightPanel = !applicationWindow.hideRightPanel;
+    }
+    function toggleSidebarVisibility() {
+        applicationWindow.hideSidebar = !applicationWindow.hideSidebar;
     }
 
     autoAttachRuntimeEvents: true
@@ -268,10 +282,15 @@ LV.ApplicationWindow {
                     id: navigationBar
 
                     compactMode: false
+                    detailPanelCollapsed: applicationWindow.hideRightPanel
                     editorViewModeViewModel: applicationWindow.editorViewModeVm
                     navigationModeViewModel: applicationWindow.navigationModeVm
                     panelColor: applicationWindow.navigationBarColor
                     panelHeight: applicationWindow.navigationBarHeight
+                    sidebarCollapsed: applicationWindow.hideSidebar
+
+                    onToggleDetailPanelRequested: applicationWindow.toggleDetailPanelVisibility()
+                    onToggleSidebarRequested: applicationWindow.toggleSidebarVisibility()
                 }
                 BodyPanelView.BodyLayout {
                     id: hStack

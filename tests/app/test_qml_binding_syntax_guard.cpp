@@ -1005,8 +1005,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !noteListItemText.contains(QStringLiteral("readonly property string displayDatePlaceholder: \"YYYY-MM-dd\"")),
         "NoteListItem.qml must not hardcode YYYY-MM-dd as the only placeholder date format.");
     QVERIFY2(
-        noteListItemText.contains(QStringLiteral("implicitHeight: 102")),
-        "NoteListItem.qml must keep the Figma 102px outer frame height.");
+        noteListItemText.contains(QStringLiteral("implicitHeight: noteListItem.image ? 126 : 102")),
+        "NoteListItem.qml must expand to the Figma 126px frame in image mode while preserving the 102px text-only contract.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("implicitWidth: 194")),
         "NoteListItem.qml must keep the Figma 194px width.");
@@ -1058,9 +1058,18 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         noteListItemText.contains(QStringLiteral("property url imageSource: \"\"")),
         "NoteListItem.qml must expose the first resource thumbnail source as a url property.");
     QVERIFY2(
+        noteListItemText.contains(QStringLiteral("readonly property int imagePreviewSize: 48")),
+        "NoteListItem.qml image mode must use the Figma 48px preview frame.");
+    QVERIFY2(
         noteListItemText.contains(
             QStringLiteral("Layout.preferredWidth: noteListItem.image ? noteListItem.imagePreviewSize : 0")),
-        "NoteListItem.qml imageBox width must only reserve the 24px Figma slot when image=true.");
+        "NoteListItem.qml imageBox width must only reserve the 48px Figma slot when image=true.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("Layout.alignment: Qt.AlignLeft | Qt.AlignTop")),
+        "NoteListItem.qml image-mode title block must stay anchored to the top-left of the row.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("horizontalAlignment: Text.AlignLeft")),
+        "NoteListItem.qml title text must keep explicit left alignment in the image layout variant.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("visible: noteListItem.image")),
         "NoteListItem.qml must only show the imageBox when the image flag is true.");

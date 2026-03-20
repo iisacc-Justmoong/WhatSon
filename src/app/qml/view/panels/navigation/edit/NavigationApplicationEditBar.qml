@@ -7,8 +7,10 @@ LV.HStack {
     id: applicationEditBar
 
     property bool compactMode: false
+    property bool detailPanelCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar") : null
 
+    signal toggleDetailPanelRequested
     signal viewHookRequested
 
     function requestViewHook(reason) {
@@ -22,5 +24,8 @@ LV.HStack {
 
     NavigationShared.NavigationPreferenceBar {
         Layout.alignment: Qt.AlignVCenter
+        detailPanelCollapsed: applicationEditBar.detailPanelCollapsed
+
+        onToggleDetailPanelRequested: applicationEditBar.toggleDetailPanelRequested()
     }
 }

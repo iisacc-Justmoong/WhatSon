@@ -22,7 +22,7 @@ Item {
     readonly property bool hovered: noteHoverHandler.hovered
     property bool image: false
     readonly property color imageBoxPlaceholderColor: "#D9D9D9"
-    readonly property int imagePreviewSize: 24
+    readonly property int imagePreviewSize: 48
     property url imageSource: ""
     readonly property int metadataIconFrameSize: 16
     readonly property int metadataIconSize: 14
@@ -33,6 +33,7 @@ Item {
     property bool pressed: false
     property string primaryText: ""
     readonly property color primaryTextColor: LV.Theme.captionColor
+    readonly property int primaryTextBlockHeight: 24
     readonly property int primaryTextLineHeight: 12
     readonly property int primaryTextSize: 12
     readonly property string resolvedDisplayDate: {
@@ -90,7 +91,7 @@ Item {
     }
 
     clip: true
-    implicitHeight: 102
+    implicitHeight: noteListItem.image ? 126 : 102
     implicitWidth: 194
 
     Rectangle {
@@ -136,13 +137,15 @@ Item {
                     }
                 }
                 LV.Label {
+                    Layout.alignment: Qt.AlignLeft | Qt.AlignTop
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 24
+                    Layout.preferredHeight: noteListItem.primaryTextBlockHeight
                     clip: true
                     color: noteListItem.primaryTextColor
                     elide: Text.ElideRight
                     font.pixelSize: noteListItem.primaryTextSize
                     font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignLeft
                     lineHeight: noteListItem.primaryTextLineHeight
                     lineHeightMode: Text.FixedHeight
                     maximumLineCount: 2
