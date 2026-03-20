@@ -1,4 +1,6 @@
 #include "OnboardingHubController.hpp"
+#include "file/hub/WhatSonHubPathUtils.hpp"
+#include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -8,6 +10,13 @@
 
 namespace
 {
+    constexpr auto kDefaultMobileHubFileName = "Untitled.wshub";
+
+    QString normalizedAbsolutePath(const QString& path)
+    {
+        return WhatSon::HubPath::normalizeAbsolutePath(path);
+    }
+
     QString defaultOnboardingFolderPath()
     {
         const QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
@@ -40,6 +49,89 @@ namespace
     {
         return QFileInfo(hubPath.trimmed()).fileName().trimmed();
     }
+
+    QString enclosingHubPackagePath(const QString& selectedPath)
+    {
+        const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);
+        if (normalizedSelectedPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QFileInfo selectedInfo(normalizedSelectedPath);
+        if (selectedInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        {
+            return normalizedSelectedPath;
+        }
+
+        if (WhatSon::HubPath::isNonLocalUrl(normalizedSelectedPath))
+        {
+            return {};
+        }
+
+        QString candidatePath = selectedInfo.isDir()
+                                    ? selectedInfo.absoluteFilePath()
+                                    : selectedInfo.absolutePath();
+
+        while (!candidatePath.isEmpty())
+        {
+            const QFileInfo candidateInfo(candidatePath);
+            if (candidateInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+            {
+                return normalizedAbsolutePath(candidateInfo.absoluteFilePath());
+            }
+
+            const QString parentPath = candidateInfo.absolutePath();
+            if (parentPath.isEmpty() || parentPath == candidatePath)
+            {
+                break;
+            }
+
+            candidatePath = parentPath;
+        }
+
+        return QString();
+    }
+
+    QString normalizedHubPackageFileName(const QString& preferredFileName)
+    {
+        QString fileName = preferredFileName.trimmed();
+        if (fileName.isEmpty())
+        {
+            fileName = QString::fromLatin1(kDefaultMobileHubFileName);
+        }
+
+        if (!fileName.endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        {
+            fileName += QStringLiteral(".wshub");
+        }
+
+        return fileName;
+    }
+
+    QString uniqueHubPackagePathInDirectory(const QString& directoryPath, const QString& preferredFileName)
+    {
+        const QString normalizedDirectoryPath = normalizedAbsolutePath(directoryPath);
+        if (normalizedDirectoryPath.isEmpty())
+        {
+            return QString();
+        }
+
+        const QString normalizedFileName = normalizedHubPackageFileName(preferredFileName);
+        const QFileInfo preferredInfo(normalizedFileName);
+        const QString preferredBaseName = preferredInfo.completeBaseName();
+        const QString suffix = preferredInfo.suffix().trimmed();
+        const QString normalizedSuffix = suffix.isEmpty() ? QString() : QStringLiteral(".") + suffix;
+        QString candidateName = normalizedFileName;
+        int candidateIndex = 2;
+        while (QFileInfo::exists(WhatSon::HubPath::joinPath(normalizedDirectoryPath, candidateName)))
+        {
+            candidateName = QStringLiteral("%1-%2%3").arg(preferredBaseName).arg(candidateIndex).arg(normalizedSuffix);
+            ++candidateIndex;
+        }
+
+        return WhatSon::HubPath::joinPath(normalizedDirectoryPath, candidateName);
+    }
 }
 
 OnboardingHubController::OnboardingHubController(QObject* parent)
@@ -61,6 +153,17 @@ QString OnboardingHubController::currentHubName() const
 QString OnboardingHubController::currentHubPathName() const
 {
     return m_currentHubPathName;
+}
+
+QStringList OnboardingHubController::hubSelectionCandidateNames() const
+{
+    QStringList candidateNames;
+    candidateNames.reserve(m_hubSelectionCandidatePaths.size());
+    for (const QString& candidatePath : m_hubSelectionCandidatePaths)
+    {
+        candidateNames.append(hubPathNameFromPath(candidatePath));
+    }
+    return candidateNames;
 }
 
 QString OnboardingHubController::lastError() const
@@ -86,6 +189,7 @@ void OnboardingHubController::setLoadHubCallback(LoadHubCallback callback)
 bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
 {
     clearLastError();
+    clearHubSelectionCandidates();
     if (m_busy)
     {
         setLastError(QStringLiteral("A hub operation is already in progress."));
@@ -100,10 +204,20 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
         return false;
     }
 
+    QString accessError;
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::startAccessForUrl(hubUrl, true, &accessError))
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to access the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
     const QString requestedPackagePath = localPathFromUrl(hubUrl);
     if (requestedPackagePath.trimmed().isEmpty())
     {
-        setLastError(QStringLiteral("Selected hub path must be a local filesystem path."));
+        setLastError(QStringLiteral("Selected hub path must not be empty."));
         emit operationFailed(m_lastError);
         return false;
     }
@@ -126,9 +240,20 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
         return false;
     }
 
-    const QString normalizedCreatedHubPath = QDir::cleanPath(QFileInfo(createdHubPath).absoluteFilePath());
+    const QString normalizedCreatedHubPath = normalizedAbsolutePath(createdHubPath);
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(normalizedCreatedHubPath, &accessError))
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("The hub was created but iOS did not grant access to it.")
+                         : accessError.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
     setCurrentHubPath(normalizedCreatedHubPath);
-    setCurrentFolderPath(QFileInfo(normalizedCreatedHubPath).absolutePath());
+    if (hubUrl.isLocalFile())
+    {
+        setCurrentFolderPath(QFileInfo(normalizedCreatedHubPath).absolutePath());
+    }
     emit hubCreated(normalizedCreatedHubPath);
 
     if (loadCreatedHub(normalizedCreatedHubPath, &errorMessage))
@@ -143,9 +268,35 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
     return false;
 }
 
-bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
+bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, const QString& preferredFileName)
 {
     clearLastError();
+    clearHubSelectionCandidates();
+
+    const QString directoryPath = localPathFromUrl(directoryUrl);
+    if (directoryPath.trimmed().isEmpty())
+    {
+        setLastError(QStringLiteral("Selected hub directory must not be empty."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    const QString targetHubPath = uniqueHubPackagePathInDirectory(directoryPath, preferredFileName);
+    if (targetHubPath.isEmpty())
+    {
+        setLastError(QStringLiteral("Failed to resolve the target WhatSon Hub directory."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    setCurrentFolderPath(directoryPath);
+    return createHubAtUrl(WhatSon::HubPath::urlFromPath(targetHubPath));
+}
+
+bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
+{
+    clearLastError();
+    clearHubSelectionCandidates();
     if (m_busy)
     {
         setLastError(QStringLiteral("A hub operation is already in progress."));
@@ -156,6 +307,114 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
     if (!m_loadHubCallback)
     {
         setLastError(QStringLiteral("Hub loading callback is not configured."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    QString accessError;
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::startAccessForUrl(hubUrl, false, &accessError))
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to access the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    const QString selectedPath = localPathFromUrl(hubUrl);
+    const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);
+    if (normalizedSelectedPath.isEmpty())
+    {
+        setLastError(QStringLiteral("Selected hub path must not be empty."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    const QFileInfo selectedInfo(normalizedSelectedPath);
+    if (!selectedInfo.exists())
+    {
+        setLastError(QStringLiteral("Selected hub path does not exist: %1").arg(normalizedSelectedPath));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    const QString enclosingHubPath = enclosingHubPackagePath(normalizedSelectedPath);
+    if (!enclosingHubPath.isEmpty())
+    {
+        QString errorMessage;
+        if (loadResolvedHubPath(enclosingHubPath, &errorMessage))
+        {
+            return true;
+        }
+
+        setLastError(errorMessage.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                         : errorMessage.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    if (!selectedInfo.isDir())
+    {
+        setLastError(QStringLiteral(
+            "Selected hub path is not a directory and is not inside a WhatSon Hub package: %1")
+                         .arg(normalizedSelectedPath));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    const QStringList packageCandidates = hubPackageCandidatesInDirectory(normalizedSelectedPath);
+    if (packageCandidates.size() == 1)
+    {
+        QString errorMessage;
+        if (loadResolvedHubPath(packageCandidates.constFirst(), &errorMessage))
+        {
+            return true;
+        }
+
+        setLastError(errorMessage.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                         : errorMessage.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    if (packageCandidates.size() > 1)
+    {
+        setCurrentFolderPath(normalizedSelectedPath);
+        setHubSelectionCandidatePaths(packageCandidates);
+        return true;
+    }
+
+    setLastError(QStringLiteral("Selected folder does not contain a WhatSon Hub package."));
+    emit operationFailed(m_lastError);
+    return false;
+}
+
+bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
+{
+    clearLastError();
+    clearHubSelectionCandidates();
+    if (m_busy)
+    {
+        setLastError(QStringLiteral("A hub operation is already in progress."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    if (!m_loadHubCallback)
+    {
+        setLastError(QStringLiteral("Hub loading callback is not configured."));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    QString accessError;
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::startAccessForUrl(hubUrl, false, &accessError))
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to access the selected WhatSon Hub location.")
+                         : accessError.trimmed());
         emit operationFailed(m_lastError);
         return false;
     }
@@ -172,28 +431,49 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
         return false;
     }
 
-    setCurrentHubPath(resolvedHubPath);
-    setBusy(true);
-    const bool loaded = m_loadHubCallback(resolvedHubPath, &errorMessage);
-    setBusy(false);
-
-    if (!loaded)
+    if (loadResolvedHubPath(resolvedHubPath, &errorMessage))
     {
-        setLastError(errorMessage.trimmed().isEmpty()
-                         ? QStringLiteral("Failed to load the selected WhatSon Hub.")
-                         : errorMessage.trimmed());
+        return true;
+    }
+
+    setLastError(errorMessage.trimmed().isEmpty()
+                     ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                     : errorMessage.trimmed());
+    emit operationFailed(m_lastError);
+    return false;
+}
+
+bool OnboardingHubController::loadHubSelectionCandidate(int index)
+{
+    clearLastError();
+    if (index < 0 || index >= m_hubSelectionCandidatePaths.size())
+    {
+        setLastError(QStringLiteral("Selected WhatSon Hub candidate is out of range."));
         emit operationFailed(m_lastError);
         return false;
     }
 
-    setCurrentFolderPath(QFileInfo(resolvedHubPath).absolutePath());
-    emit hubLoaded(resolvedHubPath);
-    return true;
+    QString errorMessage;
+    if (loadResolvedHubPath(m_hubSelectionCandidatePaths.at(index), &errorMessage))
+    {
+        return true;
+    }
+
+    setLastError(errorMessage.trimmed().isEmpty()
+                     ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                     : errorMessage.trimmed());
+    emit operationFailed(m_lastError);
+    return false;
 }
 
 void OnboardingHubController::clearLastError()
 {
     setLastError(QString());
+}
+
+void OnboardingHubController::clearHubSelectionCandidates()
+{
+    setHubSelectionCandidatePaths(QStringList());
 }
 
 void OnboardingHubController::requestViewHook()
@@ -203,11 +483,9 @@ void OnboardingHubController::requestViewHook()
 
 void OnboardingHubController::syncCurrentHubSelection(const QString& hubPath)
 {
-    const QString normalizedHubPath = hubPath.trimmed().isEmpty()
-                                          ? QString()
-                                          : QDir::cleanPath(QFileInfo(hubPath).absoluteFilePath());
+    const QString normalizedHubPath = normalizedAbsolutePath(hubPath);
     setCurrentHubPath(normalizedHubPath);
-    if (!normalizedHubPath.isEmpty())
+    if (!normalizedHubPath.isEmpty() && !WhatSon::HubPath::isNonLocalUrl(normalizedHubPath))
     {
         setCurrentFolderPath(QFileInfo(normalizedHubPath).absolutePath());
     }
@@ -222,25 +500,17 @@ QString OnboardingHubController::localPathFromUrl(const QUrl& hubUrl) const
 
     if (hubUrl.isLocalFile())
     {
-        return QDir::cleanPath(hubUrl.toLocalFile());
+        return WhatSon::HubPath::normalizeAbsolutePath(hubUrl.toLocalFile());
     }
 
-    const QString fallbackPath = hubUrl.toString(QUrl::PreferLocalFile).trimmed();
-    if (fallbackPath.isEmpty())
-    {
-        return QString();
-    }
-
-    return QDir::cleanPath(fallbackPath);
+    return WhatSon::HubPath::pathFromUrl(hubUrl);
 }
 
 QString OnboardingHubController::resolveExistingHubPath(
     const QString& selectedPath,
     QString* errorMessage) const
 {
-    const QString normalizedSelectedPath = selectedPath.trimmed().isEmpty()
-                                               ? QString()
-                                               : QDir::cleanPath(QFileInfo(selectedPath).absoluteFilePath());
+    const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);
     if (normalizedSelectedPath.isEmpty())
     {
         if (errorMessage != nullptr)
@@ -260,29 +530,30 @@ QString OnboardingHubController::resolveExistingHubPath(
         return QString();
     }
 
+    // Mobile document/folder pickers can resolve to a path inside a package bundle rather than the
+    // `.wshub` root directory itself. Always promote nested selections back to the enclosing hub.
+    const QString enclosingHubPath = enclosingHubPackagePath(normalizedSelectedPath);
+    if (!enclosingHubPath.isEmpty())
+    {
+        return enclosingHubPath;
+    }
+
     if (!selectedInfo.isDir())
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = QStringLiteral("Selected hub path is not a directory: %1").arg(normalizedSelectedPath);
+            *errorMessage = QStringLiteral(
+                "Selected hub path is not a directory and is not inside a WhatSon Hub package: %1")
+                .arg(normalizedSelectedPath);
         }
         return QString();
     }
 
-    if (selectedInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
-    {
-        return normalizedSelectedPath;
-    }
-
-    const QDir selectedDirectory(normalizedSelectedPath);
-    const QFileInfoList packageCandidates = selectedDirectory.entryInfoList(
-        QStringList{QStringLiteral("*.wshub")},
-        QDir::Dirs | QDir::NoDotAndDotDot,
-        QDir::Name);
+    const QStringList packageCandidates = hubPackageCandidatesInDirectory(normalizedSelectedPath);
 
     if (packageCandidates.size() == 1)
     {
-        return QDir::cleanPath(packageCandidates.constFirst().absoluteFilePath());
+        return packageCandidates.constFirst();
     }
 
     if (errorMessage != nullptr)
@@ -299,6 +570,29 @@ QString OnboardingHubController::resolveExistingHubPath(
     }
 
     return QString();
+}
+
+QStringList OnboardingHubController::hubPackageCandidatesInDirectory(const QString& directoryPath) const
+{
+    const QString normalizedDirectoryPath = normalizedAbsolutePath(directoryPath);
+    if (normalizedDirectoryPath.isEmpty())
+    {
+        return QStringList();
+    }
+
+    const QDir selectedDirectory(normalizedDirectoryPath);
+    const QFileInfoList packageCandidates = selectedDirectory.entryInfoList(
+        QStringList{QStringLiteral("*.wshub")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+
+    QStringList candidatePaths;
+    candidatePaths.reserve(packageCandidates.size());
+    for (const QFileInfo& candidateInfo : packageCandidates)
+    {
+        candidatePaths.append(WhatSon::HubPath::normalizePath(candidateInfo.absoluteFilePath()));
+    }
+    return candidatePaths;
 }
 
 bool OnboardingHubController::loadCreatedHub(const QString& hubPath, QString* errorMessage)
@@ -322,6 +616,50 @@ bool OnboardingHubController::loadCreatedHub(const QString& hubPath, QString* er
     }
 
     return loaded;
+}
+
+bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage)
+{
+    QString accessError;
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(resolvedHubPath, &accessError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = accessError.trimmed().isEmpty()
+                                ? QStringLiteral("Failed to access the resolved WhatSon Hub package.")
+                                : accessError.trimmed();
+        }
+        return false;
+    }
+
+    setCurrentHubPath(resolvedHubPath);
+    setBusy(true);
+    QString callbackError;
+    const bool loaded = m_loadHubCallback(resolvedHubPath, &callbackError);
+    setBusy(false);
+
+    if (!loaded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = callbackError.trimmed().isEmpty()
+                                ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                                : callbackError.trimmed();
+        }
+        return false;
+    }
+
+    if (!WhatSon::HubPath::isNonLocalUrl(resolvedHubPath))
+    {
+        setCurrentFolderPath(QFileInfo(resolvedHubPath).absolutePath());
+    }
+    clearHubSelectionCandidates();
+    emit hubLoaded(resolvedHubPath);
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
 }
 
 void OnboardingHubController::setBusy(bool busy)
@@ -362,8 +700,8 @@ void OnboardingHubController::setCurrentFolderPath(const QString& folderPath)
 {
     const QString normalizedFolderPath = folderPath.trimmed().isEmpty()
                                              ? defaultOnboardingFolderPath()
-                                             : QDir::cleanPath(QFileInfo(folderPath).absoluteFilePath());
-    const QUrl nextFolderUrl = QUrl::fromLocalFile(normalizedFolderPath);
+                                             : normalizedAbsolutePath(folderPath);
+    const QUrl nextFolderUrl = WhatSon::HubPath::urlFromPath(normalizedFolderPath);
     if (m_currentFolderUrl == nextFolderUrl)
     {
         return;
@@ -371,6 +709,32 @@ void OnboardingHubController::setCurrentFolderPath(const QString& folderPath)
 
     m_currentFolderUrl = nextFolderUrl;
     emit currentFolderUrlChanged();
+}
+
+void OnboardingHubController::setHubSelectionCandidatePaths(const QStringList& hubCandidatePaths)
+{
+    const QStringList normalizedCandidatePaths = [&hubCandidatePaths]() {
+        QStringList normalizedPaths;
+        normalizedPaths.reserve(hubCandidatePaths.size());
+        for (const QString& hubCandidatePath : hubCandidatePaths)
+        {
+            const QString normalizedPath = normalizedAbsolutePath(hubCandidatePath);
+            if (!normalizedPath.isEmpty())
+            {
+                normalizedPaths.append(normalizedPath);
+            }
+        }
+        normalizedPaths.removeDuplicates();
+        return normalizedPaths;
+    }();
+
+    if (m_hubSelectionCandidatePaths == normalizedCandidatePaths)
+    {
+        return;
+    }
+
+    m_hubSelectionCandidatePaths = normalizedCandidatePaths;
+    emit hubSelectionCandidatesChanged();
 }
 
 void OnboardingHubController::setLastError(const QString& errorMessage)

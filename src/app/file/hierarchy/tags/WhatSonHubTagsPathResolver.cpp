@@ -1,6 +1,7 @@
 #include "WhatSonHubTagsPathResolver.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -9,12 +10,7 @@ namespace
 {
     QString normalizedPath(const QString& input)
     {
-        const QString trimmed = input.trimmed();
-        if (trimmed.isEmpty())
-        {
-            return {};
-        }
-        return QDir::cleanPath(trimmed);
+        return WhatSon::HubPath::normalizePath(input);
     }
 } // namespace
 
@@ -80,7 +76,7 @@ bool WhatSonHubTagsPathResolver::resolveTagsFilePath(
     const QDir hubDir(hubRootPath);
 
     // Preferred fixed internal path.
-    const QString fixedInternalPath = hubDir.filePath(QStringLiteral(".wscontents/Tags.wstags"));
+    const QString fixedInternalPath = WhatSon::HubPath::joinPath(hubDir.path(), QStringLiteral(".wscontents/Tags.wstags"));
     if (QFileInfo::exists(fixedInternalPath))
     {
         *outTagsFilePath = fixedInternalPath;
@@ -96,7 +92,8 @@ bool WhatSonHubTagsPathResolver::resolveTagsFilePath(
         hubDir.entryList(QStringList{QStringLiteral("*.wscontents")}, QDir::Dirs | QDir::NoDotAndDotDot);
     for (const QString& contentsDirName : contentsDirectories)
     {
-        const QString candidatePath = hubDir.filePath(
+        const QString candidatePath = WhatSon::HubPath::joinPath(
+            hubDir.path(),
             QDir(contentsDirName).filePath(QStringLiteral("Tags.wstags")));
         if (QFileInfo::exists(candidatePath))
         {

@@ -1,4 +1,5 @@
 #include "SelectedHubStore.hpp"
+#include "file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -87,9 +88,7 @@ bool SelectedHubStore::isStoredHubPathValid(const QString& hubPath) const
 
 QString SelectedHubStore::normalizeHubPath(const QString& hubPath) const
 {
-    if (hubPath.trimmed().isEmpty())
-        return QString();
-    return QDir::cleanPath(QFileInfo(hubPath).absoluteFilePath());
+    return WhatSon::HubPath::normalizeAbsolutePath(hubPath);
 }
 
 QString SelectedHubStore::selectedHubSettingsKey() const

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QStringList>
 #include <QUrl>
 
 #include <functional>
@@ -11,6 +12,7 @@ class OnboardingHubController final : public QObject
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString currentHubName READ currentHubName NOTIFY currentHubNameChanged)
     Q_PROPERTY(QString currentHubPathName READ currentHubPathName NOTIFY currentHubPathNameChanged)
+    Q_PROPERTY(QStringList hubSelectionCandidateNames READ hubSelectionCandidateNames NOTIFY hubSelectionCandidatesChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
     Q_PROPERTY(QUrl currentFolderUrl READ currentFolderUrl NOTIFY currentFolderUrlChanged)
 
@@ -23,6 +25,7 @@ public:
     [[nodiscard]] bool busy() const noexcept;
     [[nodiscard]] QString currentHubName() const;
     [[nodiscard]] QString currentHubPathName() const;
+    [[nodiscard]] QStringList hubSelectionCandidateNames() const;
     [[nodiscard]] QString lastError() const;
     [[nodiscard]] QUrl currentFolderUrl() const;
 
@@ -30,7 +33,10 @@ public:
     void setLoadHubCallback(LoadHubCallback callback);
 
     Q_INVOKABLE bool createHubAtUrl(const QUrl& hubUrl);
+    Q_INVOKABLE bool createHubInDirectoryUrl(const QUrl& directoryUrl, const QString& preferredFileName);
+    Q_INVOKABLE bool prepareHubSelectionFromUrl(const QUrl& hubUrl);
     Q_INVOKABLE bool loadHubFromUrl(const QUrl& hubUrl);
+    Q_INVOKABLE bool loadHubSelectionCandidate(int index);
 
 public
     slots  :
@@ -38,6 +44,7 @@ public
 
 
     void clearLastError();
+    void clearHubSelectionCandidates();
     void requestViewHook();
     void syncCurrentHubSelection(const QString& hubPath);
 
@@ -48,6 +55,7 @@ public
     void busyChanged();
     void currentHubNameChanged();
     void currentHubPathNameChanged();
+    void hubSelectionCandidatesChanged();
     void lastErrorChanged();
     void currentFolderUrlChanged();
     void hubCreated(const QString& hubPath);
@@ -57,11 +65,14 @@ public
 
 private:
     [[nodiscard]] QString localPathFromUrl(const QUrl& hubUrl) const;
+    [[nodiscard]] QStringList hubPackageCandidatesInDirectory(const QString& directoryPath) const;
     [[nodiscard]] QString resolveExistingHubPath(const QString& selectedPath, QString* errorMessage) const;
     bool loadCreatedHub(const QString& hubPath, QString* errorMessage);
+    bool loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage);
     void setBusy(bool busy);
     void setCurrentHubPath(const QString& hubPath);
     void setCurrentFolderPath(const QString& folderPath);
+    void setHubSelectionCandidatePaths(const QStringList& hubCandidatePaths);
     void setLastError(const QString& errorMessage);
 
     CreateHubCallback m_createHubCallback;
@@ -69,6 +80,7 @@ private:
     bool m_busy = false;
     QString m_currentHubName;
     QString m_currentHubPathName;
+    QStringList m_hubSelectionCandidatePaths;
     QString m_lastError;
     QUrl m_currentFolderUrl;
 };

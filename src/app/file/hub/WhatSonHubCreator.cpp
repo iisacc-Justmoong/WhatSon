@@ -1,9 +1,11 @@
 #include "WhatSonHubCreator.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonHubPathUtils.hpp"
 
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -115,15 +117,15 @@ bool WhatSonHubCreator::createHubAtPath(
         return false;
     }
 
-    QString normalizedHubPackagePath = QDir::cleanPath(trimmedHubPackagePath);
+    QString normalizedHubPackagePath = WhatSon::HubPath::normalizeAbsolutePath(trimmedHubPackagePath);
     if (!normalizedHubPackagePath.endsWith(packageExtension(), Qt::CaseInsensitive))
     {
         normalizedHubPackagePath += packageExtension();
     }
 
     const QFileInfo requestedPackageInfo(normalizedHubPackagePath);
-    const QString absoluteHubPackagePath = QDir::cleanPath(requestedPackageInfo.absoluteFilePath());
-    const QString hubParentDirectoryPath = requestedPackageInfo.absolutePath();
+    const QString absoluteHubPackagePath = WhatSon::HubPath::normalizeAbsolutePath(normalizedHubPackagePath);
+    const QString hubParentDirectoryPath = WhatSon::HubPath::parentPath(absoluteHubPackagePath);
     const QString rawHubName = QFileInfo(absoluteHubPackagePath).completeBaseName();
     const QString sanitizedHubName = sanitizeHubName(rawHubName);
 
@@ -226,16 +228,7 @@ QString WhatSonHubCreator::sanitizeHubName(const QString& hubName) const
 
 QString WhatSonHubCreator::joinPath(const QString& left, const QString& right) const
 {
-    if (left.isEmpty())
-    {
-        return QDir::cleanPath(right);
-    }
-    if (right.isEmpty())
-    {
-        return QDir::cleanPath(left);
-    }
-
-    return QDir::cleanPath(left + QLatin1Char('/') + right);
+    return WhatSon::HubPath::joinPath(left, right);
 }
 
 bool WhatSonHubCreator::ensureDirectory(const QString& absolutePath, QString* errorMessage) const
@@ -275,33 +268,59 @@ bool WhatSonHubCreator::writeTextFile(
                               QStringLiteral("hub.creator"),
                               QStringLiteral("writeTextFile.begin"),
                               QStringLiteral("path=%1 bytes=%2").arg(absolutePath).arg(content.toUtf8().size()));
-    QSaveFile file(absolutePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Failed to open file for writing: %1").arg(absolutePath);
-        }
-        return false;
-    }
-
     const QByteArray bytes = content.toUtf8();
-    if (file.write(bytes) != bytes.size())
+    if (WhatSon::HubPath::isNonLocalUrl(absolutePath))
     {
-        if (errorMessage != nullptr)
+        QFile file(absolutePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
         {
-            *errorMessage = QStringLiteral("Failed to write file: %1").arg(absolutePath);
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to open file for writing: %1").arg(absolutePath);
+            }
+            return false;
         }
-        return false;
-    }
 
-    if (!file.commit())
-    {
-        if (errorMessage != nullptr)
+        if (file.write(bytes) != bytes.size())
         {
-            *errorMessage = QStringLiteral("Failed to commit file: %1").arg(absolutePath);
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write file: %1").arg(absolutePath);
+            }
+            return false;
         }
-        return false;
+
+        file.close();
+    }
+    else
+    {
+        QSaveFile file(absolutePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to open file for writing: %1").arg(absolutePath);
+            }
+            return false;
+        }
+
+        if (file.write(bytes) != bytes.size())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to write file: %1").arg(absolutePath);
+            }
+            return false;
+        }
+
+        if (!file.commit())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to commit file: %1").arg(absolutePath);
+            }
+            return false;
+        }
     }
 
     WhatSon::Debug::traceSelf(this,

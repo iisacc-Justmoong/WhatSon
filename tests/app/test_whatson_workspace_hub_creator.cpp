@@ -38,6 +38,8 @@ private
 
     void sanitizeHubName_normalizesInput();
     void baseFileHelpers_createDirectoryAndFile();
+    void joinPath_preservesContentUriSegments();
+    void joinPath_resolvesAndroidExternalStorageTreeUri();
     void createHub_createsWorkspacePackageAndManifest();
     void createHubAtPath_createsExplicitPackagePathAndAppendsExtension();
     void createHub_failsWhenHubAlreadyExists();
@@ -74,6 +76,27 @@ void WhatSonWorkspaceHubCreatorTest::baseFileHelpers_createDirectoryAndFile()
     QFile file(filePath);
     QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
     QCOMPARE(QString::fromUtf8(file.readAll()), QStringLiteral("hello-whatson"));
+}
+
+void WhatSonWorkspaceHubCreatorTest::joinPath_preservesContentUriSegments()
+{
+    const HubCreatorProbe creator(QStringLiteral("/tmp"));
+    QCOMPARE(
+        creator.joinPath(
+            QStringLiteral("content://whatson.provider/tree/download"),
+            QStringLiteral(".whatson/hub.json")),
+        QStringLiteral("content://whatson.provider/tree/download/.whatson/hub.json"));
+}
+
+void WhatSonWorkspaceHubCreatorTest::joinPath_resolvesAndroidExternalStorageTreeUri()
+{
+    const HubCreatorProbe creator(QStringLiteral("/tmp"));
+    QCOMPARE(
+        creator.joinPath(
+            QStringLiteral(
+                "content://com.android.externalstorage.documents/tree/primary%3ADownload"),
+            QStringLiteral(".whatson/hub.json")),
+        QStringLiteral("/storage/emulated/0/Download/.whatson/hub.json"));
 }
 
 void WhatSonWorkspaceHubCreatorTest::createHub_createsWorkspacePackageAndManifest()

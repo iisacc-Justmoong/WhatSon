@@ -1,6 +1,7 @@
 #include "WhatSonHubTagsStateStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 
@@ -95,10 +96,5 @@ void WhatSonHubTagsStateStore::clear()
 
 QString WhatSonHubTagsStateStore::normalizeHubPath(const QString& hubPath)
 {
-    const QString trimmed = hubPath.trimmed();
-    if (trimmed.isEmpty())
-    {
-        return {};
-    }
-    return QDir::cleanPath(trimmed);
+    return WhatSon::HubPath::normalizePath(hubPath);
 }

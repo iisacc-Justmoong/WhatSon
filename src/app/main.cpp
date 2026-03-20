@@ -25,6 +25,7 @@
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
+#include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "store/hub/SelectedHubStore.hpp"
@@ -48,6 +49,7 @@
 #include <QTimer>
 #include <QVariant>
 #include <QVector>
+#include <QWindow>
 #include <qqml.h>
 #include <QtCore/qglobal.h>
 #include <QtCore/qpermissions.h>
@@ -499,7 +501,7 @@ int main(int argc, char* argv[])
     {
         const QString normalizedHubPath = hubPath.trimmed().isEmpty()
                                               ? QString()
-                                              : QDir::cleanPath(QFileInfo(hubPath).absoluteFilePath());
+                                              : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
         if (normalizedHubPath.isEmpty())
         {
             if (errorMessage != nullptr)
@@ -735,6 +737,16 @@ int main(int argc, char* argv[])
         return engine.rootObjects().constLast();
     };
 
+    const auto activateWindowObject = [](QObject* windowObject)
+    {
+        if (auto* window = qobject_cast<QWindow*>(windowObject))
+        {
+            window->show();
+            window->raise();
+            window->requestActivate();
+        }
+    };
+
     const bool mobileStandaloneOnboarding =
 #if defined(Q_OS_IOS) || defined(Q_OS_ANDROID)
         !initialHubLoaded;
@@ -764,15 +776,22 @@ int main(int argc, char* argv[])
             "hubSessionController",
             QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
 
-        QObject::connect(onboardingWindow, SIGNAL(dismissed()), &app, SLOT(quit()));
+        const QMetaObject::Connection onboardingDismissedConnection = QObject::connect(
+            onboardingWindow,
+            SIGNAL(dismissed()),
+            &app,
+            SLOT(quit()));
         QObject::connect(
             &onboardingHubController,
             &OnboardingHubController::hubLoaded,
             &app,
-            [&engine,
+            [&app,
+                &loadMainWindow,
                 &startForegroundServices,
                 &workspaceMainWindow,
                 &onboardingHubController,
+                &onboardingDismissedConnection,
+                &activateWindowObject,
                 onboardingWindowGuard](const QString&)
             {
                 if (workspaceMainWindow != nullptr)
@@ -780,14 +799,8 @@ int main(int argc, char* argv[])
                     return;
                 }
 
-                if (onboardingWindowGuard)
-                {
-                    onboardingWindowGuard->setProperty("visible", false);
-                }
-
-                const qsizetype rootObjectCountBeforeMainWindow = engine.rootObjects().size();
-                engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));
-                if (engine.rootObjects().size() <= rootObjectCountBeforeMainWindow)
+                workspaceMainWindow = loadMainWindow();
+                if (workspaceMainWindow == nullptr)
                 {
                     qWarning().noquote() <<
                         QStringLiteral("Failed to load the main workspace window after onboarding.");
@@ -795,18 +808,24 @@ int main(int argc, char* argv[])
                     return;
                 }
 
-                workspaceMainWindow = engine.rootObjects().constLast();
-                if (workspaceMainWindow != nullptr)
-                {
-                    workspaceMainWindow->setProperty(
-                        "onboardingHubController",
-                        QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
-                    workspaceMainWindow->setProperty("onboardingVisible", false);
-                }
+                QObject::disconnect(onboardingDismissedConnection);
+                workspaceMainWindow->setProperty(
+                    "onboardingHubController",
+                    QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
+                workspaceMainWindow->setProperty("onboardingVisible", false);
+                activateWindowObject(workspaceMainWindow);
 
                 if (onboardingWindowGuard)
                 {
-                    onboardingWindowGuard->deleteLater();
+                    QTimer::singleShot(0, &app, [onboardingWindowGuard]()
+                    {
+                        if (!onboardingWindowGuard)
+                        {
+                            return;
+                        }
+
+                        onboardingWindowGuard->setProperty("visible", false);
+                    });
                 }
 
                 startForegroundServices();
@@ -822,6 +841,8 @@ int main(int argc, char* argv[])
     {
         return EXIT_FAILURE;
     }
+
+    activateWindowObject(mainWindow);
 
     mainWindow->setProperty(
         "onboardingHubController",

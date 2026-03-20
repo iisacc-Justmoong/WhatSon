@@ -56,6 +56,24 @@ Defined in `CMakeLists.txt`:
   creates or selects a hub
 - iOS/Android startup reuses the same standalone onboarding bootstrap when no startup `.wshub` can be restored,
   instead of opening the desktop onboarding subwindow inside `Main.qml`
+- `OnboardingHubController` resolves existing hubs from the `.wshub` root, from a parent directory that contains a
+  single `.wshub`, and from any nested directory/file path inside a `.wshub` bundle so mobile document pickers can
+  still promote package-internal selections to the runtime hub root
+- On iOS `OnboardingHubController` starts a security-scoped resource session for Files-picker URLs before hub create/load
+  operations, and retains access to the resolved `.wshub` root so the runtime loader can mount unpacked hub directories
+  returned by the native document picker
+- Mobile onboarding no longer relies on desktop-style save-file semantics for hub creation. `Onboarding.qml` opens a
+  directory picker on iOS/Android, then `OnboardingHubController::createHubInDirectoryUrl()` synthesizes a unique
+  `Untitled*.wshub` package path inside that folder before delegating to the normal hub-creation callback
+- Existing hub selection now diverges by mobile platform: iOS keeps the native folder picker and
+  `OnboardingHubController::prepareHubSelectionFromUrl()` candidate flow, while Android uses a native file picker that
+  can target a `.wshub` package document directly
+- Android hub create/load bootstrap resolves common external-storage SAF `content://` document URLs back into shared
+  local filesystem paths before they reach the directory-based `.wshub` creator and runtime loader
+- The mobile standalone-onboarding bootstrap in `main.cpp` no longer lets the onboarding window's `dismissed` signal
+  quit the app after `Main.qml` has been loaded. Once a hub load succeeds, the bootstrap loads and activates the
+  workspace shell first, then hides the standalone onboarding window on the next event turn so iOS/Android never
+  drop into a no-window gap between onboarding and the workspace page
 - `Onboarding.qml` keeps the Figma `OnboardWindowDesktop` split layout on desktop, and switches to the Figma
   `OnboardWindowMobile` single-surface layout on mobile/adaptive shells: a centered `209px` content stack with
   `144px` app icon, `48px` title, `12px` version label (`75px` width), and an `180px` CTA column separated by

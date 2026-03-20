@@ -1,6 +1,7 @@
 #include "WhatSonHubPlacementStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -122,12 +123,7 @@ void WhatSonHubPlacementStore::clear()
 
 QString WhatSonHubPlacementStore::normalizeHubPath(const QString& hubPath)
 {
-    const QString trimmed = hubPath.trimmed();
-    if (trimmed.isEmpty())
-    {
-        return {};
-    }
-    return QDir::cleanPath(trimmed);
+    return WhatSon::HubPath::normalizePath(hubPath);
 }
 
 bool WhatSonHubPlacementStore::extractCoordinates(
@@ -152,8 +148,7 @@ bool WhatSonHubPlacementStore::extractCoordinates(
     *outX = 0.0;
     *outY = 0.0;
 
-    const QString manifestPath =
-        QDir(wshubPath).filePath(QStringLiteral(".whatson/hub.json"));
+    const QString manifestPath = WhatSon::HubPath::joinPath(wshubPath, QStringLiteral(".whatson/hub.json"));
 
     QFile manifestFile(manifestPath);
     if (!manifestFile.exists())

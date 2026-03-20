@@ -27,6 +27,7 @@ add_executable(whatson_onboarding_hub_controller_tests
 set_target_properties(whatson_onboarding_hub_controller_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_onboarding_hub_controller_tests
         PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding
 )
@@ -45,6 +46,7 @@ add_executable(whatson_selected_hub_store_tests
 set_target_properties(whatson_selected_hub_store_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_selected_hub_store_tests
         PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
         ${CMAKE_SOURCE_DIR}/src/app/store
         ${CMAKE_SOURCE_DIR}/src/app/store/hub
 )

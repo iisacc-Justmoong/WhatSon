@@ -1,6 +1,7 @@
 #include "WhatSonHubTagsDepthProvider.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubPathUtils.hpp"
 #include "note/WhatSonNoteHeaderParser.hpp"
 #include "note/WhatSonNoteHeaderStore.hpp"
 
@@ -24,12 +25,7 @@ namespace
 
     QString normalizeHubPath(const QString& input)
     {
-        const QString trimmed = input.trimmed();
-        if (trimmed.isEmpty())
-        {
-            return {};
-        }
-        return QDir::cleanPath(trimmed);
+        return WhatSon::HubPath::normalizePath(input);
     }
 
     bool resolveContentsDirectories(
@@ -93,7 +89,7 @@ namespace
         const QString fixedInternalPath = hubDir.filePath(QStringLiteral(".wscontents"));
         if (QFileInfo(fixedInternalPath).isDir())
         {
-            contentsDirectories.push_back(QDir::cleanPath(fixedInternalPath));
+            contentsDirectories.push_back(WhatSon::HubPath::normalizePath(fixedInternalPath));
         }
 
         const QStringList dynamicContentsDirectories = hubDir.entryList(
@@ -102,7 +98,7 @@ namespace
             QDir::Name);
         for (const QString& directoryName : dynamicContentsDirectories)
         {
-            contentsDirectories.push_back(QDir::cleanPath(hubDir.filePath(directoryName)));
+            contentsDirectories.push_back(WhatSon::HubPath::joinPath(hubDir.path(), directoryName));
         }
 
         if (contentsDirectories.isEmpty())
@@ -143,7 +139,7 @@ namespace
 
         for (const QString& contentsDirectory : contentsDirectories)
         {
-            const QString tagsPath = QDir(contentsDirectory).filePath(QStringLiteral("Tags.wstags"));
+            const QString tagsPath = WhatSon::HubPath::joinPath(contentsDirectory, QStringLiteral("Tags.wstags"));
             if (!QFileInfo(tagsPath).isFile())
             {
                 WhatSon::Debug::trace(
@@ -330,7 +326,7 @@ namespace
     {
         for (const QString& contentsDirectory : contentsDirectories)
         {
-            const QString candidatePath = QDir(contentsDirectory).filePath(QStringLiteral("Tags.wstags"));
+            const QString candidatePath = WhatSon::HubPath::joinPath(contentsDirectory, QStringLiteral("Tags.wstags"));
             if (QFileInfo(candidatePath).isFile())
             {
                 return candidatePath;
@@ -339,7 +335,7 @@ namespace
 
         if (!contentsDirectories.isEmpty())
         {
-            return QDir(contentsDirectories.first()).filePath(QStringLiteral("Tags.wstags"));
+            return WhatSon::HubPath::joinPath(contentsDirectories.first(), QStringLiteral("Tags.wstags"));
         }
 
         return {};

@@ -1,6 +1,7 @@
 #include "WhatSonHubParser.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonHubPathUtils.hpp"
 #include "hierarchy/bookmarks/WhatSonBookmarksHierarchyParser.hpp"
 #include "hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
 #include "hierarchy/event/WhatSonEventHierarchyParser.hpp"
@@ -38,7 +39,7 @@ namespace
         {
             return {};
         }
-        return QDir::cleanPath(path);
+        return WhatSon::HubPath::normalizePath(path);
     }
 
     QStringList sanitizeStringList(QStringList values)
@@ -142,7 +143,7 @@ bool WhatSonHubParser::parseFromWshub(
             QDir::Name);
         if (!libraryCandidates.isEmpty())
         {
-            libraryPath = QDir::cleanPath(contentsDir.filePath(libraryCandidates.first()));
+            libraryPath = WhatSon::HubPath::joinPath(contentsDir.path(), libraryCandidates.first());
         }
     }
     if (libraryPath.isEmpty() || !QFileInfo(libraryPath).isDir())
@@ -237,12 +238,7 @@ bool WhatSonHubParser::parseFromWshub(
 
 QString WhatSonHubParser::normalizeHubPath(const QString& hubPath)
 {
-    const QString trimmed = hubPath.trimmed();
-    if (trimmed.isEmpty())
-    {
-        return {};
-    }
-    return QDir::cleanPath(trimmed);
+    return WhatSon::HubPath::normalizePath(hubPath);
 }
 
 void WhatSonHubParser::requestParseFromWshub(const QString& wshubPath)
@@ -277,7 +273,7 @@ QString WhatSonHubParser::resolvePrimaryDirectory(
         QDir::Name);
     if (!candidates.isEmpty())
     {
-        return QDir::cleanPath(hubDir.filePath(candidates.first()));
+        return WhatSon::HubPath::joinPath(hubDir.path(), candidates.first());
     }
     return {};
 }
@@ -296,7 +292,7 @@ QString WhatSonHubParser::resolveStatPath(const QDir& hubDir, const QString& hub
         QDir::Name);
     if (!candidates.isEmpty())
     {
-        return QDir::cleanPath(hubDir.filePath(candidates.first()));
+        return WhatSon::HubPath::joinPath(hubDir.path(), candidates.first());
     }
     return {};
 }
@@ -774,18 +770,19 @@ QString WhatSonHubParser::requireEntryPath(
     bool allowFile,
     QString* errorMessage)
 {
-    const QString candidatePath = QDir(basePath).filePath(entryName);
+    const QString candidatePath = WhatSon::HubPath::joinPath(basePath, entryName);
     const QFileInfo info(candidatePath);
     const bool isValid = (allowDirectory && info.isDir()) || (allowFile && info.isFile());
     if (!isValid)
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = QStringLiteral("Missing required hub entry: %1").arg(QDir::cleanPath(candidatePath));
+            *errorMessage = QStringLiteral("Missing required hub entry: %1").arg(
+                WhatSon::HubPath::normalizePath(candidatePath));
         }
         return {};
     }
-    return QDir::cleanPath(candidatePath);
+    return WhatSon::HubPath::normalizePath(candidatePath);
 }
 
 QVariantList WhatSonHubParser::toFolderEntryList(const QVector<WhatSonFolderDepthEntry>& entries)

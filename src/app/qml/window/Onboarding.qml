@@ -18,7 +18,10 @@ Window {
     readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
     readonly property string defaultCreateHubFileName: "Untitled.wshub"
     readonly property int dragRegionHeight: 72
+    readonly property bool hasHubSelectionCandidates: root.hubSessionController && root.hubSessionController.hubSelectionCandidateNames.length > 0
+    readonly property bool useAndroidExistingHubFileFlow: Qt.platform.os === "android"
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
+    readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
     readonly property int mobileActionSpacing: 24
@@ -64,6 +67,15 @@ Window {
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
         return value.length > 0 ? value : "Version: 1.0.0";
+    }
+    readonly property string mobileSelectionAssistText: {
+        if (root.statusText.length > 0)
+            return root.statusText;
+        if (root.useAndroidExistingHubFileFlow)
+            return "On Android, choose the .wshub package directly from the native picker.";
+        if (root.hasHubSelectionCandidates)
+            return "Choose the WhatSon Hub package found in the selected folder.";
+        return "On mobile, choose the folder that contains your WhatSon Hub.";
     }
     readonly property string selectedHubStatusText: {
         if (root.hubSessionController) {
@@ -177,14 +189,49 @@ Window {
     }
 
     FolderDialog {
+        id: createHubDirectoryDialog
+
+        currentFolder: root.currentFolderUrl
+        title: "Choose Folder for New WhatSon Hub"
+
+        onAccepted: {
+            if (root.hubSessionController) {
+                root.hubSessionController.createHubInDirectoryUrl(selectedFolder, root.defaultCreateHubFileName);
+            } else {
+                root.createFileRequested();
+            }
+        }
+    }
+
+    FolderDialog {
         id: selectHubDialog
 
         currentFolder: root.currentFolderUrl
+        title: root.isMobilePlatform ? "Choose Folder Containing WhatSon Hub" : "Select WhatSon Hub"
+
+        onAccepted: {
+            if (root.hubSessionController) {
+                if (root.isMobilePlatform)
+                    root.hubSessionController.prepareHubSelectionFromUrl(selectedFolder);
+                else
+                    root.hubSessionController.loadHubFromUrl(selectedFolder);
+            } else {
+                root.selectFileRequested();
+            }
+        }
+    }
+
+    FileDialog {
+        id: selectHubFileDialog
+
+        currentFolder: root.currentFolderUrl
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["WhatSon Hub (*.wshub)"]
         title: "Select WhatSon Hub"
 
         onAccepted: {
             if (root.hubSessionController) {
-                root.hubSessionController.loadHubFromUrl(selectedFolder);
+                root.hubSessionController.loadHubFromUrl(selectedFile);
             } else {
                 root.selectFileRequested();
             }
@@ -384,7 +431,11 @@ Window {
                                     root.viewHookRequested();
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
-                                        createHubDialog.open();
+                                        root.hubSessionController.clearHubSelectionCandidates();
+                                        if (root.useMobileCreateDirectoryFlow)
+                                            createHubDirectoryDialog.open();
+                                        else
+                                            createHubDialog.open();
                                     } else {
                                         root.createFileRequested();
                                     }
@@ -401,7 +452,11 @@ Window {
                                     root.viewHookRequested();
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
-                                        selectHubDialog.open();
+                                        root.hubSessionController.clearHubSelectionCandidates();
+                                        if (root.useAndroidExistingHubFileFlow)
+                                            selectHubFileDialog.open();
+                                        else
+                                            selectHubDialog.open();
                                     } else {
                                         root.selectFileRequested();
                                     }
@@ -505,7 +560,11 @@ Window {
                                     root.viewHookRequested();
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
-                                        createHubDialog.open();
+                                        root.hubSessionController.clearHubSelectionCandidates();
+                                        if (root.useMobileCreateDirectoryFlow)
+                                            createHubDirectoryDialog.open();
+                                        else
+                                            createHubDialog.open();
                                     } else {
                                         root.createFileRequested();
                                     }
@@ -520,9 +579,49 @@ Window {
                                     root.viewHookRequested();
                                     if (root.hubSessionController) {
                                         root.hubSessionController.clearLastError();
-                                        selectHubDialog.open();
+                                        root.hubSessionController.clearHubSelectionCandidates();
+                                        if (root.useAndroidExistingHubFileFlow)
+                                            selectHubFileDialog.open();
+                                        else
+                                            selectHubDialog.open();
                                     } else {
                                         root.selectFileRequested();
+                                    }
+                                }
+                            }
+                        }
+
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: root.statusText.length > 0 ? root.statusTextColor : LV.Theme.descriptionColor
+                            horizontalAlignment: Text.AlignHCenter
+                            maximumLineCount: 4
+                            style: description
+                            text: root.mobileSelectionAssistText
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
+
+                        Column {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: root.mobileActionSpacing
+                            visible: root.hasHubSelectionCandidates
+                            width: root.mobileActionWidth
+
+                            Repeater {
+                                model: root.hubSessionController ? root.hubSessionController.hubSelectionCandidateNames : []
+
+                                delegate: ActionLink {
+                                    required property int index
+                                    required property string modelData
+
+                                    enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                    label: modelData
+                                    width: parent.width
+
+                                    onTriggered: {
+                                        if (root.hubSessionController)
+                                            root.hubSessionController.loadHubSelectionCandidate(index);
                                     }
                                 }
                             }

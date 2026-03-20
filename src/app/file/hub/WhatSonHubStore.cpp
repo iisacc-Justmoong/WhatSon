@@ -1,6 +1,7 @@
 #include "WhatSonHubStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 
@@ -10,12 +11,7 @@ namespace
 {
     QString normalizePath(const QString& value)
     {
-        const QString trimmed = value.trimmed();
-        if (trimmed.isEmpty())
-        {
-            return {};
-        }
-        return QDir::cleanPath(trimmed);
+        return WhatSon::HubPath::normalizePath(value);
     }
 } // namespace
 

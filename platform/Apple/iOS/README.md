@@ -15,3 +15,17 @@ This directory contains iOS platform-specific bundle configuration.
   so the app target must explicitly link the static QML plugin targets for `QtQuick`, `QtQuick.Window`,
   `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs`. Otherwise the standalone onboarding entry path exits
   at runtime with `module "QtQuick" plugin "qtquick2plugin" not found`.
+- `src/app/platform/Apple/AppleSecurityScopedResourceAccess.mm` must start a security-scoped resource session for Files
+  picker URLs before onboarding creates or loads a `.wshub`. The native iOS document picker returns document-provider
+  URLs, but Qt does not start access automatically for app-level file I/O, so the app must retain that access itself
+  for the rest of the session.
+- iOS native file dialogs only implement the open path (`QIOSFileDialog::show()` returns `false` for save mode), so
+  mobile onboarding must create hubs through a folder picker and synthesize a unique `Untitled*.wshub` path inside the
+  selected directory before calling `WhatSonHubCreator`.
+- iOS keeps the native Files folder picker for existing-hub selection as well. When the chosen folder contains multiple
+  `.wshub` packages, `OnboardingHubController::prepareHubSelectionFromUrl()` exposes those candidates back to
+  `Onboarding.qml` so the user can finish choosing the hub inside the onboarding session after the picker returns.
+- After a successful standalone onboarding hub load, `main.cpp` must load and activate the workspace `QWindow` before
+  hiding the standalone onboarding window, and it must stop treating the onboarding window's later `dismissed`
+  signal as an app-quit request. Otherwise iOS can appear to "crash" immediately after selection even though the hub
+  load itself succeeded.

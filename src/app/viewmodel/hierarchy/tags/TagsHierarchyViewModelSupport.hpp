@@ -1,5 +1,6 @@
 #pragma once
 
+#include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QDir>
@@ -10,12 +11,7 @@ namespace WhatSon::Hierarchy::TagsSupport
 {
     inline QString normalizePath(const QString& input)
     {
-        const QString trimmed = input.trimmed();
-        if (trimmed.isEmpty())
-        {
-            return {};
-        }
-        return QDir::cleanPath(trimmed);
+        return WhatSon::HubPath::normalizePath(input);
     }
 
     inline bool resolveContentsDirectories(
@@ -68,7 +64,7 @@ namespace WhatSon::Hierarchy::TagsSupport
         const QString fixedInternalPath = hubDir.filePath(QStringLiteral(".wscontents"));
         if (QFileInfo(fixedInternalPath).isDir())
         {
-            outContentsDirectories->push_back(QDir::cleanPath(fixedInternalPath));
+            outContentsDirectories->push_back(WhatSon::HubPath::normalizePath(fixedInternalPath));
         }
 
         const QStringList dynamicContentsDirectories = hubDir.entryList(
@@ -77,7 +73,7 @@ namespace WhatSon::Hierarchy::TagsSupport
             QDir::Name);
         for (const QString& directoryName : dynamicContentsDirectories)
         {
-            outContentsDirectories->push_back(QDir::cleanPath(hubDir.filePath(directoryName)));
+            outContentsDirectories->push_back(WhatSon::HubPath::joinPath(hubDir.path(), directoryName));
         }
 
         outContentsDirectories->removeDuplicates();

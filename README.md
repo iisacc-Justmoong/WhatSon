@@ -291,7 +291,22 @@ build/cargo/release/whatson onboard
 
 `whatson onboard` forwards an internal `--onboarding-only` app flag and loads `Onboarding.qml` directly.
 The onboarding window now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected path
-through `WhatSonHubCreator` or load an existing package immediately into the workspace shell.
+through `WhatSonHubCreator` or load an existing package immediately into the workspace shell. Existing hub selection
+accepts the `.wshub` package root, a parent directory that contains exactly one `.wshub`, or any nested path inside an
+existing `.wshub` bundle so mobile document pickers can promote package-internal selections back to the hub root.
+On iOS the native Files picker still provides security-scoped document URLs, so onboarding now starts a security-scoped
+resource session before creating or loading a `.wshub` and retains access to the resolved hub root for the rest of the
+app session. Mobile onboarding also switches hub creation to a directory-picker flow and synthesizes a unique
+`Untitled*.wshub` target path inside the chosen folder, because iOS native file dialogs only implement the open path
+and native mobile pickers diverge from desktop save-dialog semantics. Existing hub selection now keeps the iOS folder
+picker plus the in-session candidate fallback, but Android switches to a native file picker that can target a
+`.wshub` package document directly. Android onboarding then resolves external-storage SAF document URLs back to shared
+filesystem paths whenever the picker points at a local `.wshub`, so the existing directory-based hub creator and
+runtime loader can mount the package tree instead of treating the document URI itself as a virtual directory.
+When mobile standalone onboarding finishes loading a hub, `main.cpp` now loads `Main.qml`, explicitly activates the
+workspace window first, and only hides the standalone onboarding window on the next event turn. The bootstrap also
+ignores the onboarding window's `dismissed` signal after the workspace window exists so the successful handoff cannot
+terminate the app session or leave mobile platforms without an active window between onboarding and the workspace page.
 Its right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
 or the currently selected `.wshub` package name.
 The last successfully loaded `.wshub` is persisted through the app session store, so the next launch restores that
