@@ -1,6 +1,7 @@
 #include "WhatSonSystemIoGateway.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubWriteLease.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -59,6 +60,20 @@ bool WhatSonSystemIoGateway::ensureDirectory(const QString& directoryPath, QStri
         return false;
     }
 
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.system.gateway"),
+                                  QStringLiteral("ensureDirectory.failed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(normalizedPath, leaseError));
+        return false;
+    }
+
     if (m_ensuredDirectories.contains(normalizedPath))
     {
         return true;
@@ -110,6 +125,20 @@ bool WhatSonSystemIoGateway::writeUtf8File(const QString& filePath, const QStrin
                                   QStringLiteral("io.system.gateway"),
                                   QStringLiteral("writeUtf8File.failed"),
                                   QStringLiteral("reason=empty path"));
+        return false;
+    }
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.system.gateway"),
+                                  QStringLiteral("writeUtf8File.failed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(normalizedPath, leaseError));
         return false;
     }
 
@@ -184,6 +213,20 @@ bool WhatSonSystemIoGateway::appendUtf8File(const QString& filePath, const QStri
                                   QStringLiteral("io.system.gateway"),
                                   QStringLiteral("appendUtf8File.failed"),
                                   QStringLiteral("reason=empty path"));
+        return false;
+    }
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.system.gateway"),
+                                  QStringLiteral("appendUtf8File.failed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(normalizedPath, leaseError));
         return false;
     }
 
@@ -319,6 +362,20 @@ bool WhatSonSystemIoGateway::removeFile(const QString& filePath, QString* errorM
         return false;
     }
 
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.system.gateway"),
+                                  QStringLiteral("removeFile.failed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(normalizedPath, leaseError));
+        return false;
+    }
+
     QFile file(normalizedPath);
     if (!file.exists())
     {
@@ -368,6 +425,20 @@ bool WhatSonSystemIoGateway::removeDirectoryRecursively(const QString& directory
                                   QStringLiteral("io.system.gateway"),
                                   QStringLiteral("removeDirectoryRecursively.failed"),
                                   QStringLiteral("reason=empty path"));
+        return false;
+    }
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.system.gateway"),
+                                  QStringLiteral("removeDirectoryRecursively.failed"),
+                                  QStringLiteral("path=%1 reason=%2").arg(normalizedPath, leaseError));
         return false;
     }
 

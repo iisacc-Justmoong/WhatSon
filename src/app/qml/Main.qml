@@ -63,7 +63,13 @@ LV.ApplicationWindow {
     readonly property var navigationModeVm: navigationModeViewModel
     readonly property int onboardingDefaultHeight: onboardingMinHeight
     readonly property int onboardingDefaultWidth: onboardingMinWidth
+    readonly property var onboardingRoute: ({
+            path: applicationWindow.onboardingRoutePath,
+            component: onboardingPageComponent
+        })
+    readonly property string onboardingRoutePath: "/onboarding"
     property var onboardingHubController: null
+    property bool onboardingRouteCommitPending: false
     readonly property int onboardingMinHeight: 420
     readonly property int onboardingMinWidth: 620
     property bool onboardingVisible: false
@@ -83,6 +89,7 @@ LV.ApplicationWindow {
     readonly property color statusBarColor: LV.Theme.panelBackground06
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property var tagsHierarchyVm: tagsHierarchyViewModel
+    readonly property bool useEmbeddedOnboardingRoute: adaptiveMobileLayout || isMobilePlatform
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
     readonly property int windowMinHeight: LV.Theme.gap20 * 21
@@ -108,9 +115,19 @@ LV.ApplicationWindow {
     }
     function showOnboardingWindow() {
         applicationWindow.onboardingVisible = true;
-        onboardingSubWindow.show();
-        onboardingSubWindow.raise();
-        onboardingSubWindow.requestActivate();
+        applicationWindow.syncOnboardingRoute("showOnboardingWindow");
+    }
+    function syncOnboardingRoute(routeSource) {
+        if (!applicationWindow.useEmbeddedOnboardingRoute || !applicationWindow.activePageRouter)
+            return;
+
+        const targetPath = applicationWindow.onboardingVisible ? applicationWindow.onboardingRoutePath : applicationWindow.workspaceRoutePath;
+        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined ? String(applicationWindow.activePageRouter.currentPath) : "";
+        if (currentPath === targetPath)
+            return;
+
+        applicationWindow.activePageRouter.setRoot(targetPath);
+        console.log("[whatson:debug][main.route][" + routeSource + "] target=" + targetPath);
     }
     function toggleDetailPanelVisibility() {
         applicationWindow.hideRightPanel = !applicationWindow.hideRightPanel;
@@ -127,8 +144,8 @@ LV.ApplicationWindow {
     minimumWidth: adaptiveMobileLayout ? windowMobileMinWidth : desktopMinimumBodyWidth
     navItems: []
     navigationEnabled: false
-    pageInitialPath: workspaceRoutePath
-    pageRoutes: [workspaceShellRoute]
+    pageInitialPath: applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingVisible ? onboardingRoutePath : workspaceRoutePath
+    pageRoutes: [onboardingRoute, workspaceShellRoute]
     useInternalPageStack: true
     visible: true
     width: windowDefaultWidth
@@ -141,8 +158,13 @@ LV.ApplicationWindow {
         clampPreferredSizes();
         windowInteractions.applyRenderQualityPolicy("completed");
         windowInteractions.reportLayoutBranch("completed");
-        if (applicationWindow.onboardingVisible)
+        if (applicationWindow.onboardingVisible && applicationWindow.useEmbeddedOnboardingRoute) {
+            Qt.callLater(function () {
+                applicationWindow.syncOnboardingRoute("completed");
+            });
+        } else if (applicationWindow.onboardingVisible) {
             onboardingSubWindow.show();
+        }
     }
     onAdaptiveLayoutStateChanged: windowInteractions.reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
@@ -151,7 +173,9 @@ LV.ApplicationWindow {
         resizeDebounceTimer.restart();
     }
     onOnboardingVisibleChanged: {
-        if (applicationWindow.onboardingVisible) {
+        if (applicationWindow.useEmbeddedOnboardingRoute) {
+            applicationWindow.syncOnboardingRoute("onboardingVisibleChanged");
+        } else if (applicationWindow.onboardingVisible) {
             onboardingSubWindow.show();
         } else {
             onboardingSubWindow.close();
@@ -159,9 +183,23 @@ LV.ApplicationWindow {
     }
     onPageStackNavigated: function (path, params) {
         windowInteractions.reportLayoutBranch("pageStackNavigated");
+        if (applicationWindow.onboardingRouteCommitPending && String(path) === applicationWindow.workspaceRoutePath) {
+            applicationWindow.onboardingRouteCommitPending = false;
+            if (applicationWindow.onboardingHubController)
+                applicationWindow.onboardingHubController.completeWorkspaceTransition();
+        }
     }
     onPageStackNavigationFailed: function (path) {
         console.warn("[whatson:debug][main.route][navigationFailed] path=" + path);
+        if (applicationWindow.onboardingRouteCommitPending) {
+            applicationWindow.onboardingRouteCommitPending = false;
+            if (applicationWindow.onboardingHubController) {
+                applicationWindow.onboardingHubController.failWorkspaceTransition(
+                            "Failed to open the WhatSon workspace after onboarding.");
+            }
+            applicationWindow.onboardingVisible = true;
+            applicationWindow.syncOnboardingRoute("navigationFailed");
+        }
     }
     onWidthChanged: {
         windowInteractions.handleResizeForRenderQuality("widthChanged");
@@ -221,6 +259,31 @@ LV.ApplicationWindow {
         includeUiHit: true
         trigger: "globalPressed"
     }
+    Connections {
+        target: applicationWindow.onboardingHubController
+
+        function onHubLoaded(hubPath) {
+            if (!applicationWindow.useEmbeddedOnboardingRoute)
+                return;
+            if (applicationWindow.onboardingRouteCommitPending)
+                return;
+            if (applicationWindow.onboardingHubController)
+                applicationWindow.onboardingHubController.beginWorkspaceTransition();
+            applicationWindow.onboardingRouteCommitPending = true;
+            applicationWindow.onboardingVisible = false;
+            applicationWindow.syncOnboardingRoute("embeddedHubLoaded");
+        }
+
+        function onOperationFailed(message) {
+            if (!applicationWindow.onboardingRouteCommitPending)
+                return;
+            if (applicationWindow.onboardingHubController)
+                applicationWindow.onboardingHubController.failWorkspaceTransition(message);
+            applicationWindow.onboardingRouteCommitPending = false;
+            applicationWindow.onboardingVisible = true;
+            applicationWindow.syncOnboardingRoute("embeddedOperationFailed");
+        }
+    }
     Loader {
         active: applicationWindow.platform === "osx"
         sourceComponent: nativeMenuBarComponent
@@ -230,6 +293,31 @@ LV.ApplicationWindow {
 
         WindowView.MacNativeMenuBar {
             hostWindow: applicationWindow
+        }
+    }
+    Component {
+        id: onboardingPageComponent
+
+        Item {
+            anchors.fill: parent
+            clip: true
+
+            Rectangle {
+                anchors.fill: parent
+                color: applicationWindow.canvasColor
+            }
+            WindowView.OnboardingContent {
+                anchors.fill: parent
+                autoCompleteOnHubLoaded: false
+                hostWindow: applicationWindow
+                hubSessionController: applicationWindow.onboardingHubController
+
+                onDismissRequested: {
+                    applicationWindow.onboardingRouteCommitPending = false;
+                    applicationWindow.onboardingVisible = false;
+                    applicationWindow.syncOnboardingRoute("embeddedDismissed");
+                }
+            }
         }
     }
     Component {

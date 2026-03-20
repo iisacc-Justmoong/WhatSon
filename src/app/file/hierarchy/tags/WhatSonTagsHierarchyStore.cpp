@@ -1,6 +1,7 @@
 #include "WhatSonTagsHierarchyStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonTagsHierarchyCreator.hpp"
 
 #include <QDir>
@@ -63,6 +64,16 @@ bool WhatSonTagsHierarchyStore::writeToFile(const QString& filePath, QString* er
 
     WhatSonTagsHierarchyCreator creator;
     const QString text = creator.createText(*this);
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        return false;
+    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))

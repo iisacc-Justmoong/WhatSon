@@ -290,8 +290,8 @@ build/cargo/release/whatson onboard
 ```
 
 `whatson onboard` forwards an internal `--onboarding-only` app flag and loads `Onboarding.qml` directly.
-The onboarding window now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected path
-through `WhatSonHubCreator` or load an existing package immediately into the workspace shell. Existing hub selection
+The onboarding surface now uses native Qt Quick dialogs to either create a new `.wshub` package at a user-selected
+path through `WhatSonHubCreator` or load an existing package immediately into the workspace shell. Existing hub selection
 accepts the `.wshub` package root, a parent directory that contains exactly one `.wshub`, or any nested path inside an
 existing `.wshub` bundle so mobile document pickers can promote package-internal selections back to the hub root.
 On iOS the native Files picker still provides security-scoped document URLs, so onboarding now starts a security-scoped
@@ -303,14 +303,31 @@ picker plus the in-session candidate fallback, but Android switches to a native 
 `.wshub` package document directly. Android onboarding then resolves external-storage SAF document URLs back to shared
 filesystem paths whenever the picker points at a local `.wshub`, so the existing directory-based hub creator and
 runtime loader can mount the package tree instead of treating the document URI itself as a virtual directory.
-When mobile standalone onboarding finishes loading a hub, `main.cpp` now loads `Main.qml`, explicitly activates the
-workspace window first, and only hides the standalone onboarding window on the next event turn. The bootstrap also
-ignores the onboarding window's `dismissed` signal after the workspace window exists so the successful handoff cannot
-terminate the app session or leave mobile platforms without an active window between onboarding and the workspace page.
-Its right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
+Mobile startup now follows the LVRS page-stack contract instead of booting a separate standalone onboarding window when
+no hub is restored. `Main.qml` registers `/onboarding` beside the workspace route and lets the same
+`LV.ApplicationWindow` transition from onboarding into the workspace shell, so iOS/Android no longer cross a
+multi-window handoff that can terminate the app session after a successful hub load. The dedicated `Onboarding.qml`
+window wrapper remains available for the explicit `whatson onboard` entrypoint and the desktop window-menu command,
+but regular mobile bootstraps route inside `Main.qml` through the shared `OnboardingContent.qml` surface.
+Mobile onboarding no longer treats `hubLoaded` as an immediate page-complete event. `OnboardingHubController`
+now tracks a session-state ladder (`idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`)
+and `Main.qml` only commits `/onboarding -> /` after the LVRS router confirms the workspace navigation. If that route
+commit fails, the controller falls back to `failed`, keeps the app inside onboarding, and surfaces the error instead of
+tearing down the mobile session.
+Before the runtime loader starts, `OnboardingHubController` also performs a local `.wshub` mount preflight:
+non-local document-provider URLs that cannot be resolved into real package directories now fail inside onboarding with a
+targeted error, instead of cascading into a full-domain runtime bootstrap failure.
+The desktop onboarding window's right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
 or the currently selected `.wshub` package name.
 The last successfully loaded `.wshub` is persisted through the app session store, so the next launch restores that
 selection before falling back to `blueprint/*.wshub`.
+Hub mounting is now guarded by a cooperative single-writer lease stored at `.whatson/write-lease.json` inside the
+selected `.wshub`. `main.cpp` acquires that lease before the runtime load starts, refreshes the heartbeat every 15
+seconds while the hub remains mounted, and releases the lease on app shutdown or hub replacement. If another live
+WhatSon session already owns a fresh lease for the same hub, onboarding/runtime loading fails with an explicit
+single-writer conflict error instead of allowing a second writer to mount the package. All hub mutation paths
+(`WhatSonSystemIoGateway`, note body persistence, hierarchy store `writeToFile()`, library index repair, and note
+deletion) now revalidate that lease before writing or deleting filesystem content.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:

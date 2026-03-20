@@ -1,6 +1,7 @@
 #include "WhatSonPresetHierarchyStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonPresetHierarchyCreator.hpp"
 
 #include <QDir>
@@ -88,6 +89,16 @@ bool WhatSonPresetHierarchyStore::writeToFile(const QString& filePath, QString* 
 
     WhatSonPresetHierarchyCreator creator;
     const QString text = creator.createText(*this);
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        return false;
+    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))

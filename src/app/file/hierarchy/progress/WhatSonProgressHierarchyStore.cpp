@@ -1,6 +1,7 @@
 #include "WhatSonProgressHierarchyStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonProgressHierarchyCreator.hpp"
 
 #include <QDir>
@@ -121,6 +122,16 @@ bool WhatSonProgressHierarchyStore::writeToFile(const QString& filePath, QString
 
     WhatSonProgressHierarchyCreator creator;
     const QString text = creator.createText(*this);
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
+        }
+        return false;
+    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))

@@ -9,5 +9,13 @@ Android now keeps the native picker for existing-hub selection by opening a file
 platform folder picker cannot target a package document directly. When that picker returns a local external-storage
 document URI, onboarding resolves it back to the matching shared-storage filesystem path before hub creation/loading,
 because the current `.wshub` creator and runtime loader still operate on real package directories.
-Once a mobile hub load succeeds, `main.cpp` keeps the standalone onboarding window alive until the workspace `QWindow`
-has been loaded and activated, so Android does not fall into a transient no-window state during the onboarding handoff.
+Android startup now routes missing-hub onboarding inside `Main.qml` through the LVRS internal page stack, so the app
+does not rely on a second top-level onboarding window before entering the workspace shell.
+Android mobile bootstrap now mirrors iOS route ownership: `hubLoaded` only advances the onboarding controller into
+`routingWorkspace`, and `Main.qml` closes the session only after the LVRS router confirms the workspace route.
+`OnboardingHubController` also preflights the resolved `.wshub` scaffold before runtime bootstrap, so unsupported SAF
+document URLs or incomplete package directories fail in-session with a targeted onboarding error instead of exploding
+into a full-domain runtime load failure.
+Android hub loading also participates in the shared `.whatson/write-lease.json` single-writer contract. If a desktop
+or mobile WhatSon session already owns a fresh lease for the same `.wshub`, onboarding now fails early with that
+explicit conflict instead of mounting a second live writer on top of the shared package.

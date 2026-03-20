@@ -1,5 +1,6 @@
 #include "WhatSonNoteBodyPersistence.hpp"
 
+#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonNoteHeaderCreator.hpp"
 #include "WhatSonNoteHeaderParser.hpp"
 #include "WhatSonNoteHeaderStore.hpp"
@@ -40,6 +41,16 @@ namespace
 
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
+        QString leaseError;
+        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = leaseError;
+            }
+            return false;
+        }
+
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
         {

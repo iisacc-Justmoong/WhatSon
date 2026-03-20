@@ -1,6 +1,7 @@
 #include "WhatSonHubNoteDeletionService.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubWriteLease.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -100,6 +101,16 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
             *errorMessage = resolveError.isEmpty()
                                 ? QStringLiteral("Failed to resolve library path for note deletion.")
                                 : resolveError;
+        }
+        return false;
+    }
+
+    QString leaseError;
+    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedWshubPath, &leaseError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = leaseError;
         }
         return false;
     }

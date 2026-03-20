@@ -2,9 +2,47 @@
 #include "IO/WhatSonIoRuntimeController.hpp"
 #include "IO/WhatSonSystemIoGateway.hpp"
 
+#include <QDateTime>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTemporaryDir>
 #include <QtTest>
+
+namespace
+{
+    bool writeForeignLease(const QString& hubPath)
+    {
+        const QString leasePath = QDir(hubPath).filePath(QStringLiteral(".whatson/write-lease.json"));
+        if (!QDir().mkpath(QFileInfo(leasePath).absolutePath()))
+        {
+            return false;
+        }
+
+        const QString refreshedAtUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        const QJsonObject root{
+            {QStringLiteral("version"), 1},
+            {QStringLiteral("schema"), QStringLiteral("whatson.hub.writeLease")},
+            {QStringLiteral("hubPath"), hubPath},
+            {QStringLiteral("ownerId"), QStringLiteral("foreign-session")},
+            {QStringLiteral("ownerName"), QStringLiteral("Desktop@foreign(pid=42)")},
+            {QStringLiteral("hostName"), QStringLiteral("foreign-host")},
+            {QStringLiteral("pid"), 42},
+            {QStringLiteral("acquiredAtUtc"), refreshedAtUtc},
+            {QStringLiteral("refreshedAtUtc"), refreshedAtUtc},
+        };
+
+        QFile file(leasePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            return false;
+        }
+
+        return file.write(QJsonDocument(root).toJson(QJsonDocument::Indented)) >= 0;
+    }
+} // namespace
 
 class WhatSonIoRuntimeTest final : public QObject
 {
@@ -17,6 +55,7 @@ private
 
     void eventListener_filtersByPrefixAndQueuesEvents();
     void systemIoGateway_roundTripUtf8FileOperations();
+    void systemIoGateway_rejectsForeignWriteLease();
     void runtimeController_processesIoEventsEndToEnd();
 };
 
@@ -71,6 +110,25 @@ void WhatSonIoRuntimeTest::systemIoGateway_roundTripUtf8FileOperations()
 
     QVERIFY2(gateway.removeFile(filePath, &errorMessage), qPrintable(errorMessage));
     QVERIFY(!gateway.exists(filePath));
+}
+
+void WhatSonIoRuntimeTest::systemIoGateway_rejectsForeignWriteLease()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Alpha.wshub"));
+    const QString noteDirPath = QDir(hubPath).filePath(QStringLiteral("Alpha.wscontents/Library.wslibrary"));
+    const QString filePath = QDir(noteDirPath).filePath(QStringLiteral("note.txt"));
+
+    QVERIFY(QDir().mkpath(noteDirPath));
+    QVERIFY(writeForeignLease(hubPath));
+
+    WhatSonSystemIoGateway gateway;
+    QString errorMessage;
+    QVERIFY(!gateway.writeUtf8File(filePath, QStringLiteral("Blocked"), &errorMessage));
+    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
+    QVERIFY(!QFileInfo::exists(filePath));
 }
 
 void WhatSonIoRuntimeTest::runtimeController_processesIoEventsEndToEnd()

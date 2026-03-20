@@ -6,6 +6,109 @@
 #include <QTemporaryDir>
 #include <QtTest/QtTest>
 
+#include <stdexcept>
+
+namespace
+{
+    bool writeUtf8File(const QString& filePath, const QByteArray& bytes)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        {
+            return false;
+        }
+
+        if (file.write(bytes) != bytes.size())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool createMinimalHubPackage(const QString& hubPath)
+    {
+        const QFileInfo hubInfo(hubPath);
+        const QString hubName = hubInfo.completeBaseName();
+        const QDir hubDirectory(hubPath);
+        if (!QDir().mkpath(hubPath))
+        {
+            return false;
+        }
+
+        const QString contentsDirectoryPath = hubDirectory.filePath(hubName + QStringLiteral(".wscontents"));
+        const QString libraryDirectoryPath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Library.wslibrary"));
+        const QString presetDirectoryPath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Preset.wspreset"));
+        const QString resourcesDirectoryPath = hubDirectory.filePath(hubName + QStringLiteral(".wsresources"));
+        if (!QDir().mkpath(libraryDirectoryPath))
+        {
+            return false;
+        }
+        if (!QDir().mkpath(presetDirectoryPath))
+        {
+            return false;
+        }
+        if (!QDir().mkpath(resourcesDirectoryPath))
+        {
+            return false;
+        }
+
+        const QString statPath = hubDirectory.filePath(hubName + QStringLiteral("Stat.wsstat"));
+        if (!writeUtf8File(
+                statPath,
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.hub.stat\",\n  \"hub\": \"")
+                    + hubName.toUtf8()
+                    + QByteArray("\",\n  \"noteCount\": 0,\n  \"resourceCount\": 0,\n  \"characterCount\": 0,\n  \"createdAtUtc\": \"2026-03-20T00:00:00Z\",\n  \"lastModifiedAtUtc\": \"2026-03-20T00:00:00Z\",\n  \"participants\": [],\n  \"profileLastModifiedAtUtc\": {}\n}\n")))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(libraryDirectoryPath).filePath(QStringLiteral("index.wsnindex")),
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.library.index\",\n  \"notes\": []\n}\n")))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(contentsDirectoryPath).filePath(QStringLiteral("Folders.wsfolders")),
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.folders.tree\",\n  \"folders\": []\n}\n")))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(contentsDirectoryPath).filePath(QStringLiteral("ProjectLists.wsproj")),
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.projects.list\",\n  \"projects\": []\n}\n")))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(contentsDirectoryPath).filePath(QStringLiteral("Bookmarks.wsbookmarks")),
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.bookmarks.list\",\n  \"bookmarks\": []\n}\n")))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(contentsDirectoryPath).filePath(QStringLiteral("Tags.wstags")),
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.tags.depth\",\n  \"tags\": []\n}\n")))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(contentsDirectoryPath).filePath(QStringLiteral("Progress.wsprogress")),
+                QByteArray("{\n  \"version\": 1,\n  \"schema\": \"whatson.progress.state\",\n  \"value\": 0,\n  \"states\": [\"Ready\", \"Pending\", \"InProgress\", \"Done\"]\n}\n")))
+        {
+            return false;
+        }
+
+        return true;
+    }
+}
+
 class OnboardingHubControllerTest final : public QObject
 {
     Q_OBJECT
@@ -25,7 +128,10 @@ private
     void loadHubFromUrl_resolvesSinglePackageInSelectedFolder();
     void loadHubFromUrl_resolvesPackageFromNestedDirectory();
     void loadHubFromUrl_resolvesPackageFromNestedFile();
+    void loadHubFromUrl_rejectsUnsupportedDocumentProviderUrl();
     void loadHubFromUrl_rejectsAmbiguousPackageSelection();
+    void loadHubFromUrl_catchesLoadCallbackExceptions();
+    void workspaceTransition_updatesSessionState();
     void syncCurrentHubSelection_updatesHubNameAndFolder();
 };
 
@@ -234,8 +340,8 @@ void OnboardingHubControllerTest::loadHubSelectionCandidate_loadsChosenPackage()
 
     const QString alphaHubPath = QDir(tempDir.path()).filePath(QStringLiteral("alpha.wshub"));
     const QString betaHubPath = QDir(tempDir.path()).filePath(QStringLiteral("beta.wshub"));
-    QVERIFY(QDir().mkpath(alphaHubPath));
-    QVERIFY(QDir().mkpath(betaHubPath));
+    QVERIFY(createMinimalHubPackage(alphaHubPath));
+    QVERIFY(createMinimalHubPackage(betaHubPath));
 
     OnboardingHubController controller;
     QString loadedHubPath;
@@ -261,7 +367,7 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesSinglePackageInSelected
     QVERIFY(tempDir.isValid());
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("sample.wshub"));
-    QVERIFY(QDir().mkpath(hubPath));
+    QVERIFY(createMinimalHubPackage(hubPath));
 
     OnboardingHubController controller;
     QString loadedHubPath;
@@ -289,9 +395,8 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesPackageFromNestedDirect
     QVERIFY(tempDir.isValid());
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("sample.wshub"));
-    const QString nestedDirectoryPath =
-        QDir(hubPath).filePath(QStringLiteral("sample.wscontents/Library.wslibrary"));
-    QVERIFY(QDir().mkpath(nestedDirectoryPath));
+    QVERIFY(createMinimalHubPackage(hubPath));
+    const QString nestedDirectoryPath = QDir(hubPath).filePath(QStringLiteral("sample.wscontents/Library.wslibrary"));
 
     OnboardingHubController controller;
     QString loadedHubPath;
@@ -315,14 +420,8 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesPackageFromNestedFile()
     QVERIFY(tempDir.isValid());
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("sample.wshub"));
-    const QString contentsDirectoryPath = QDir(hubPath).filePath(QStringLiteral("sample.wscontents"));
-    QVERIFY(QDir().mkpath(contentsDirectoryPath));
-
-    const QString nestedFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("hub.wscontents"));
-    QFile nestedFile(nestedFilePath);
-    QVERIFY(nestedFile.open(QIODevice::WriteOnly | QIODevice::Text));
-    nestedFile.write("{}");
-    nestedFile.close();
+    QVERIFY(createMinimalHubPackage(hubPath));
+    const QString nestedFilePath = QDir(hubPath).filePath(QStringLiteral("sample.wscontents/Tags.wstags"));
 
     OnboardingHubController controller;
     QString loadedHubPath;
@@ -338,6 +437,25 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesPackageFromNestedFile()
     QCOMPARE(controller.currentHubName(), QStringLiteral("sample"));
     QCOMPARE(controller.currentHubPathName(), QStringLiteral("sample.wshub"));
     QCOMPARE(controller.lastError(), QString());
+}
+
+void OnboardingHubControllerTest::loadHubFromUrl_rejectsUnsupportedDocumentProviderUrl()
+{
+    OnboardingHubController controller;
+    bool loadCallbackInvoked = false;
+    controller.setLoadHubCallback([&loadCallbackInvoked](const QString&, QString*) -> bool
+    {
+        loadCallbackInvoked = true;
+        return true;
+    });
+
+    QSignalSpy operationFailedSpy(&controller, &OnboardingHubController::operationFailed);
+
+    QVERIFY(!controller.loadHubFromUrl(QUrl(QStringLiteral("content://whatson.provider/document/alpha.wshub"))));
+    QVERIFY(!loadCallbackInvoked);
+    QCOMPARE(operationFailedSpy.count(), 1);
+    QVERIFY(controller.lastError().contains(QStringLiteral("does not expose a mountable local directory path")));
+    QCOMPARE(controller.sessionState(), QStringLiteral("failed"));
 }
 
 void OnboardingHubControllerTest::loadHubFromUrl_rejectsAmbiguousPackageSelection()
@@ -362,6 +480,47 @@ void OnboardingHubControllerTest::loadHubFromUrl_rejectsAmbiguousPackageSelectio
     QVERIFY(!loadCallbackInvoked);
     QCOMPARE(operationFailedSpy.count(), 1);
     QVERIFY(controller.lastError().contains(QStringLiteral("multiple WhatSon Hub packages")));
+}
+
+void OnboardingHubControllerTest::loadHubFromUrl_catchesLoadCallbackExceptions()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("sample.wshub"));
+    QVERIFY(createMinimalHubPackage(hubPath));
+
+    OnboardingHubController controller;
+    controller.setLoadHubCallback([](const QString&, QString*) -> bool
+    {
+        throw std::runtime_error("simulated runtime failure");
+    });
+
+    QSignalSpy operationFailedSpy(&controller, &OnboardingHubController::operationFailed);
+
+    QVERIFY(!controller.loadHubFromUrl(QUrl::fromLocalFile(hubPath)));
+    QCOMPARE(operationFailedSpy.count(), 1);
+    QVERIFY(controller.lastError().contains(QStringLiteral("simulated runtime failure")));
+    QCOMPARE(controller.sessionState(), QStringLiteral("failed"));
+}
+
+void OnboardingHubControllerTest::workspaceTransition_updatesSessionState()
+{
+    OnboardingHubController controller;
+    QSignalSpy sessionStateChangedSpy(&controller, &OnboardingHubController::sessionStateChanged);
+
+    QCOMPARE(controller.sessionState(), QStringLiteral("idle"));
+
+    controller.beginWorkspaceTransition();
+    QCOMPARE(controller.sessionState(), QStringLiteral("routingWorkspace"));
+
+    controller.completeWorkspaceTransition();
+    QCOMPARE(controller.sessionState(), QStringLiteral("ready"));
+
+    controller.failWorkspaceTransition(QStringLiteral("routing failed"));
+    QCOMPARE(controller.sessionState(), QStringLiteral("failed"));
+    QCOMPARE(controller.lastError(), QStringLiteral("routing failed"));
+    QVERIFY(sessionStateChangedSpy.count() >= 3);
 }
 
 void OnboardingHubControllerTest::syncCurrentHubSelection_updatesHubNameAndFolder()

@@ -2,6 +2,7 @@
 #include "file/validator/WhatSonLibraryIndexIntegrityValidator.hpp"
 #include "file/validator/WhatSonNoteStorageValidator.hpp"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -52,6 +53,29 @@ namespace
             }
         }
         return noteIds;
+    }
+
+    bool writeForeignLease(const QString& hubPath)
+    {
+        const QString leasePath = QDir(hubPath).filePath(QStringLiteral(".whatson/write-lease.json"));
+        if (!QDir().mkpath(QFileInfo(leasePath).absolutePath()))
+        {
+            return false;
+        }
+
+        const QString refreshedAtUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        const QJsonObject root{
+            {QStringLiteral("version"), 1},
+            {QStringLiteral("schema"), QStringLiteral("whatson.hub.writeLease")},
+            {QStringLiteral("hubPath"), hubPath},
+            {QStringLiteral("ownerId"), QStringLiteral("foreign-session")},
+            {QStringLiteral("ownerName"), QStringLiteral("Desktop@foreign(pid=42)")},
+            {QStringLiteral("hostName"), QStringLiteral("foreign-host")},
+            {QStringLiteral("pid"), 42},
+            {QStringLiteral("acquiredAtUtc"), refreshedAtUtc},
+            {QStringLiteral("refreshedAtUtc"), refreshedAtUtc}
+        };
+        return writeUtf8File(leasePath, QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented)));
     }
 
     bool prepareValidationHub(QString* outHubPath)
@@ -138,6 +162,7 @@ private
     void hubStructureValidator_resolvesHubPaths();
     void noteStorageValidator_resolvesMaterializedStorage();
     void libraryIndexIntegrityValidator_prunesOrphansAndRewritesIndex();
+    void libraryIndexIntegrityValidator_rejectsForeignWriteLease();
 };
 
 void WhatSonFileValidatorsTest::hubStructureValidator_resolvesHubPaths()
@@ -252,6 +277,29 @@ void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_prunesOrphansAndR
     QCOMPARE(
         noteIdsFromIndexArray(indexDocument.object().value(QStringLiteral("notes")).toArray()),
         QStringList({QStringLiteral("note-a"), QStringLiteral("note-b"), QStringLiteral("note-c")}));
+}
+
+void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_rejectsForeignWriteLease()
+{
+    QString hubPath;
+    QVERIFY(prepareValidationHub(&hubPath));
+    QVERIFY(writeForeignLease(hubPath));
+
+    const QString libraryPath = QDir(hubPath).filePath(QStringLiteral("ValidatorHub.wscontents/Library.wslibrary"));
+    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+    const QString previousIndexText = readUtf8File(indexPath);
+
+    QVector<LibraryNoteRecord> records;
+    LibraryNoteRecord alpha;
+    alpha.noteId = QStringLiteral("note-a");
+    alpha.noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"));
+    records.push_back(alpha);
+
+    WhatSonLibraryIndexIntegrityValidator validator;
+    QString errorMessage;
+    QVERIFY(!validator.rewriteIndexesFromRecords(hubPath, QStringList{libraryPath}, records, &errorMessage));
+    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
+    QCOMPARE(readUtf8File(indexPath), previousIndexText);
 }
 
 QTEST_APPLESS_MAIN(WhatSonFileValidatorsTest)

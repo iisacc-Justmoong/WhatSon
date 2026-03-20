@@ -1,6 +1,7 @@
 #include "WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "hub/WhatSonHubWriteLease.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 
@@ -14,6 +15,16 @@ namespace
 {
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage)
     {
+        QString leaseError;
+        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = leaseError;
+            }
+            return false;
+        }
+
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
         {

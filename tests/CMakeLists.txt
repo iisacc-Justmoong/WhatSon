@@ -20,6 +20,23 @@ target_link_libraries(whatson_hub_creator_tests
 add_test(NAME whatson_hub_creator_tests COMMAND whatson_hub_creator_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_creator_tests)
 
+add_executable(whatson_hub_write_lease_tests
+        app/test_whatson_hub_write_lease.cpp
+)
+set_target_properties(whatson_hub_write_lease_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_hub_write_lease_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub
+)
+target_link_libraries(whatson_hub_write_lease_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_hub_write_lease_tests COMMAND whatson_hub_write_lease_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_hub_write_lease_tests)
+
 add_executable(whatson_onboarding_hub_controller_tests
         app/test_onboarding_hub_controller.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding/OnboardingHubController.cpp

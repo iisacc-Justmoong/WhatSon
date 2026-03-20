@@ -54,8 +54,9 @@ Defined in `CMakeLists.txt`:
 - `build/cargo/release/whatson onboard` forwards `--onboarding-only` into the app and loads
   `src/app/qml/window/Onboarding.qml` without workspace bootstrap, then promotes into `Main.qml` after the user
   creates or selects a hub
-- iOS/Android startup reuses the same standalone onboarding bootstrap when no startup `.wshub` can be restored,
-  instead of opening the desktop onboarding subwindow inside `Main.qml`
+- iOS/Android startup now stays inside `src/app/qml/Main.qml` when no startup `.wshub` can be restored. The mobile
+  shell uses LVRS `ApplicationWindow` page-stack routing (`/onboarding` -> `/`) instead of bootstrapping a second
+  top-level onboarding window and then handing off to the workspace shell
 - `OnboardingHubController` resolves existing hubs from the `.wshub` root, from a parent directory that contains a
   single `.wshub`, and from any nested directory/file path inside a `.wshub` bundle so mobile document pickers can
   still promote package-internal selections to the runtime hub root
@@ -70,12 +71,20 @@ Defined in `CMakeLists.txt`:
   can target a `.wshub` package document directly
 - Android hub create/load bootstrap resolves common external-storage SAF `content://` document URLs back into shared
   local filesystem paths before they reach the directory-based `.wshub` creator and runtime loader
-- The mobile standalone-onboarding bootstrap in `main.cpp` no longer lets the onboarding window's `dismissed` signal
-  quit the app after `Main.qml` has been loaded. Once a hub load succeeds, the bootstrap loads and activates the
-  workspace shell first, then hides the standalone onboarding window on the next event turn so iOS/Android never
-  drop into a no-window gap between onboarding and the workspace page
+- `Main.qml` now registers both the workspace shell route (`/`) and a mobile onboarding route (`/onboarding`) on the
+  LVRS internal `PageRouter`. `onboardingVisible` becomes the route source of truth for mobile/adaptive shells, while
+  desktop continues to present onboarding through the dedicated `Onboarding.qml` dialog window
+- `OnboardingHubController` now owns an explicit mobile bootstrap session state:
+  `idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`. Embedded mobile onboarding does
+  not declare success on `hubLoaded` alone; `Main.qml` waits for the LVRS router to confirm the `/` workspace route
+  before the controller moves to `ready`
+- Mobile hub selection now performs a `.wshub` mount preflight before the runtime loader starts. If the selected
+  document-provider URL cannot be resolved to a real local package directory, or if the unpacked hub scaffold is
+  structurally incomplete, onboarding fails in-session with a targeted error instead of handing a broken path to the
+  runtime parallel loader
 - `Onboarding.qml` keeps the Figma `OnboardWindowDesktop` split layout on desktop, and switches to the Figma
-  `OnboardWindowMobile` single-surface layout on mobile/adaptive shells: a centered `209px` content stack with
+  `OnboardWindowMobile` single-surface layout through the shared `OnboardingContent.qml` surface on mobile/adaptive
+  shells: a centered `209px` content stack with
   `144px` app icon, `48px` title, `12px` version label (`75px` width), and an `180px` CTA column separated by
   `32px` / `24px` gaps. The previous lower status panel was removed from the mobile branch, and the fallback design
   frame is now the exact Figma `470x762` node.
@@ -612,8 +621,8 @@ Primary root:
   so `WhatSon::Debug::trace/traceSelf`-based logs are available in development sessions without extra launch flags.
 - The iOS app target keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for Xcode-project generation, so
   `src/app/CMakeLists.txt` must explicitly link the static QML plugin targets for the built-in `QtQuick`,
-  `QtQuick.Window`, `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs` imports used by `Main.qml` and
-  `Onboarding.qml`; otherwise the mobile standalone onboarding path exits immediately with
+  `QtQuick.Window`, `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs` imports used by `Main.qml`,
+  `Onboarding.qml`, and `OnboardingContent.qml`; otherwise the mobile onboarding route exits immediately with
   `module "QtQuick" plugin "qtquick2plugin" not found`.
 - Render quality policy is enforced at app root for resize stability:
     - Desktop and mobile (`isDesktopPlatform || isMobilePlatform`): resize events (`onWidthChanged` /
@@ -799,9 +808,13 @@ Hub synchronization is intentionally network-agnostic:
 Design policy for conflict reduction:
 
 - Domain creator/parser pairs own write/read normalization for each file type.
-- Runtime timer jobs are expected to perform periodic read/write cycles for frequently changing hub files (`.wslibrary`,
-  `.wsresources`, `.wsstat`,
-  and hierarchy sidecar files).
+- `main.cpp` now acquires a cooperative single-writer lease before a `.wshub` runtime load succeeds. The lease is
+  materialized at `.whatson/write-lease.json`, refreshed every 15 seconds, considered stale after three missed
+  heartbeats, and released on app shutdown or hub replacement.
+- A second live WhatSon session cannot mount the same hub for writing while that lease remains fresh. The runtime load
+  fails early with an explicit conflict error instead of allowing two writers to mutate the same filesystem package.
+- All mutation paths (`WhatSonSystemIoGateway`, note-body persistence, hierarchy `writeToFile()` calls, library index
+  repair, and note deletion) must revalidate the active lease before any filesystem write/delete operation proceeds.
 - Records should include profile-aware last-modified timestamps so conflict merge can be resolved with explicit edit
   provenance rather than opaque
   file-level overwrite behavior.

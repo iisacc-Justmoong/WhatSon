@@ -26,6 +26,7 @@
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#include "file/hub/WhatSonHubWriteLease.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "store/hub/SelectedHubStore.hpp"
@@ -416,6 +417,57 @@ int main(int argc, char* argv[])
     PresetHierarchyViewModel presetHierarchyViewModel;
     SidebarSelectionStore sidebarSelectionStore;
     SelectedHubStore selectedHubStore;
+    QString currentWriteLeaseHubPath;
+    QTimer hubWriteLeaseTimer;
+    hubWriteLeaseTimer.setInterval(WhatSon::HubWriteLease::heartbeatIntervalMs());
+    const auto updateWriteLeaseOwnership = [&currentWriteLeaseHubPath, &hubWriteLeaseTimer](const QString& hubPath)
+    {
+        const QString normalizedHubPath = hubPath.trimmed().isEmpty()
+                                              ? QString()
+                                              : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
+        if (normalizedHubPath.isEmpty())
+        {
+            if (!currentWriteLeaseHubPath.isEmpty())
+            {
+                WhatSon::HubWriteLease::releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);
+                currentWriteLeaseHubPath.clear();
+            }
+            hubWriteLeaseTimer.stop();
+            return;
+        }
+
+        if (currentWriteLeaseHubPath != normalizedHubPath && !currentWriteLeaseHubPath.isEmpty())
+        {
+            WhatSon::HubWriteLease::releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);
+        }
+
+        currentWriteLeaseHubPath = normalizedHubPath;
+        hubWriteLeaseTimer.start();
+    };
+    QObject::connect(&hubWriteLeaseTimer, &QTimer::timeout, &app, [&currentWriteLeaseHubPath]()
+    {
+        if (currentWriteLeaseHubPath.isEmpty())
+        {
+            return;
+        }
+
+        QString leaseError;
+        if (!WhatSon::HubWriteLease::refreshWriteLeaseForHub(currentWriteLeaseHubPath, &leaseError))
+        {
+            qWarning().noquote()
+                << QStringLiteral("Failed to refresh WhatSon Hub write lease '%1': %2")
+                .arg(currentWriteLeaseHubPath, leaseError.trimmed());
+        }
+    });
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&currentWriteLeaseHubPath]()
+    {
+        if (currentWriteLeaseHubPath.isEmpty())
+        {
+            return;
+        }
+
+        WhatSon::HubWriteLease::releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);
+    });
     HierarchyViewModelProvider hierarchyViewModelProvider;
     SidebarHierarchyViewModel sidebarHierarchyViewModel;
     DetailPanelViewModel detailPanelViewModel;
@@ -497,7 +549,8 @@ int main(int argc, char* argv[])
             &progressHierarchyViewModel,
             &eventHierarchyViewModel,
             &presetHierarchyViewModel,
-            &hubRuntimeStore](const QString& hubPath, QString* errorMessage) -> bool
+            &hubRuntimeStore,
+            &currentWriteLeaseHubPath](const QString& hubPath, QString* errorMessage) -> bool
     {
         const QString normalizedHubPath = hubPath.trimmed().isEmpty()
                                               ? QString()
@@ -507,6 +560,17 @@ int main(int argc, char* argv[])
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral("Hub path must not be empty.");
+            }
+            return false;
+        }
+
+        QString leaseError;
+        const bool replacingCurrentLease = currentWriteLeaseHubPath == normalizedHubPath;
+        if (!WhatSon::HubWriteLease::refreshWriteLeaseForHub(normalizedHubPath, &leaseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = leaseError;
             }
             return false;
         }
@@ -581,6 +645,10 @@ int main(int argc, char* argv[])
 
         if (!loadSucceeded)
         {
+            if (!replacingCurrentLease)
+            {
+                WhatSon::HubWriteLease::releaseWriteLeaseForHub(normalizedHubPath, nullptr);
+            }
             if (errorMessage != nullptr)
             {
                 *errorMessage = failedDomains.isEmpty()
@@ -593,6 +661,10 @@ int main(int argc, char* argv[])
 
         if (!hubRuntimeLoadSucceeded)
         {
+            if (!replacingCurrentLease)
+            {
+                WhatSon::HubWriteLease::releaseWriteLeaseForHub(normalizedHubPath, nullptr);
+            }
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral("Failed to load the selected WhatSon Hub runtime state.");
@@ -617,9 +689,10 @@ int main(int argc, char* argv[])
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
-        [&selectedHubStore](const QString& hubPath)
+        [&selectedHubStore, &updateWriteLeaseOwnership](const QString& hubPath)
         {
             selectedHubStore.setSelectedHubPath(hubPath);
+            updateWriteLeaseOwnership(hubPath);
         });
 
     bool initialHubLoaded = false;
@@ -631,7 +704,9 @@ int main(int argc, char* argv[])
         if (initialHubLoaded)
         {
             onboardingHubController.syncCurrentHubSelection(startupHubPath);
+            onboardingHubController.completeWorkspaceTransition();
             selectedHubStore.setSelectedHubPath(startupHubPath);
+            updateWriteLeaseOwnership(startupHubPath);
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {
@@ -747,14 +822,7 @@ int main(int argc, char* argv[])
         }
     };
 
-    const bool mobileStandaloneOnboarding =
-#if defined(Q_OS_IOS) || defined(Q_OS_ANDROID)
-        !initialHubLoaded;
-#else
-        false;
-#endif
-
-    if (launchOptions.onboardingOnly || mobileStandaloneOnboarding)
+    if (launchOptions.onboardingOnly)
     {
         const qsizetype rootObjectCount = engine.rootObjects().size();
         engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Onboarding"));
@@ -842,8 +910,6 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    activateWindowObject(mainWindow);
-
     mainWindow->setProperty(
         "onboardingHubController",
         QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
@@ -852,6 +918,8 @@ int main(int argc, char* argv[])
     {
         mainWindow->setProperty("onboardingVisible", true);
     }
+
+    activateWindowObject(mainWindow);
 
     startForegroundServices();
     return app.exec();

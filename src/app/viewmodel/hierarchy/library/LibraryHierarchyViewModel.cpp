@@ -2,6 +2,7 @@
 
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hub/WhatSonHubWriteLease.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
@@ -609,6 +610,16 @@ namespace
             return false;
         }
 
+        QString leaseError;
+        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(directoryPath, &leaseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = leaseError;
+            }
+            return false;
+        }
+
         QDir directory;
         if (directory.mkpath(directoryPath))
         {
@@ -646,6 +657,16 @@ namespace
 
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
+        QString leaseError;
+        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = leaseError;
+            }
+            return false;
+        }
+
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
         {

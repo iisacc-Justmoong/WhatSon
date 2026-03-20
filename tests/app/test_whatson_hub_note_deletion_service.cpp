@@ -1,5 +1,6 @@
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -40,6 +41,29 @@ namespace
             return {};
         }
         return document.object();
+    }
+
+    bool writeForeignLease(const QString& hubPath)
+    {
+        const QString leasePath = QDir(hubPath).filePath(QStringLiteral(".whatson/write-lease.json"));
+        if (!QDir().mkpath(QFileInfo(leasePath).absolutePath()))
+        {
+            return false;
+        }
+
+        const QString refreshedAtUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+        const QJsonObject root{
+            {QStringLiteral("version"), 1},
+            {QStringLiteral("schema"), QStringLiteral("whatson.hub.writeLease")},
+            {QStringLiteral("hubPath"), hubPath},
+            {QStringLiteral("ownerId"), QStringLiteral("foreign-session")},
+            {QStringLiteral("ownerName"), QStringLiteral("Desktop@foreign(pid=42)")},
+            {QStringLiteral("hostName"), QStringLiteral("foreign-host")},
+            {QStringLiteral("pid"), 42},
+            {QStringLiteral("acquiredAtUtc"), refreshedAtUtc},
+            {QStringLiteral("refreshedAtUtc"), refreshedAtUtc}
+        };
+        return writeUtf8File(leasePath, QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented)));
     }
 
     QStringList noteIdsFromIndexArray(const QJsonArray& notesArray)
@@ -150,6 +174,7 @@ private
 
     void deleteNote_removesFocusedWsnoteAndUpdatesIndexAndStat();
     void deleteNote_prunesIndexOnlyEntryWithoutWsnoteDirectory();
+    void deleteNote_rejectsForeignWriteLease();
 };
 
 void WhatSonHubNoteDeletionServiceTest::deleteNote_removesFocusedWsnoteAndUpdatesIndexAndStat()
@@ -287,6 +312,44 @@ void WhatSonHubNoteDeletionServiceTest::deleteNote_prunesIndexOnlyEntryWithoutWs
     const QJsonObject statRoot = readJsonObjectFile(statPath);
     QCOMPARE(statRoot.value(QStringLiteral("noteCount")).toInt(), 3);
     QVERIFY(!statRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
+}
+
+void WhatSonHubNoteDeletionServiceTest::deleteNote_rejectsForeignWriteLease()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+    QVERIFY(writeForeignLease(hubPath));
+
+    const QString libraryPath = QDir(hubPath).filePath(
+        QStringLiteral("NoteDeletionServiceHub.wscontents/Library.wslibrary"));
+
+    WhatSonHubStat hubStat;
+    hubStat.setNoteCount(2);
+
+    QVector<LibraryNoteRecord> notes;
+    LibraryNoteRecord alpha;
+    alpha.noteId = QStringLiteral("note-a");
+    alpha.noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"));
+    notes.push_back(alpha);
+
+    LibraryNoteRecord beta;
+    beta.noteId = QStringLiteral("note-b");
+    beta.noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"));
+    notes.push_back(beta);
+
+    WhatSonHubNoteDeletionService service;
+    WhatSonHubNoteDeletionService::Request request;
+    request.wshubPath = hubPath;
+    request.hubName = QStringLiteral("NoteDeletionServiceHub");
+    request.hubStat = hubStat;
+    request.notes = notes;
+    request.noteId = QStringLiteral("note-b");
+
+    WhatSonHubNoteDeletionService::Result result;
+    QString errorMessage;
+    QVERIFY(!service.deleteNote(std::move(request), &result, &errorMessage));
+    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
+    QVERIFY(QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"))).isDir());
 }
 
 QTEST_APPLESS_MAIN(WhatSonHubNoteDeletionServiceTest)
