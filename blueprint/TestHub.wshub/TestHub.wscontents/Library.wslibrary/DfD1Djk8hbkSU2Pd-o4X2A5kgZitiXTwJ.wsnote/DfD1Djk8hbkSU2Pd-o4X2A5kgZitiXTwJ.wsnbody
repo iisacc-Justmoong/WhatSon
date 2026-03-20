@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE WHATSONNOTE>
-<contents id="DfD1Djk8hbkSU2Pd-o4X2A5kgZitiXTwJ">
-  <body>
-    <paragraph>현재 노트리스트아이템과 에디터 뷰가 같은 모델을 추적하지 않는 듯 하다. 빈 노트에 텍스트를 입력하여 에디터에 텍스트가 새겨지면 노트리스트아이템의 본문 표시가 바뀌어야 하는데, 현재에는 어떤 노트에도 id만 표시되고 있으며, 심지어는 노트리스트아이템의 포커스를 바꾸어 다른 노트를 켜도 에디터 내용이 유지된다. 심지어 이 에디터의 내용은 저장되지 않는다. 이는 명백히 노트 앱으로써 중대한 문제다.</paragraph>
-    <paragraph></paragraph>
-  </body>
-</contents>

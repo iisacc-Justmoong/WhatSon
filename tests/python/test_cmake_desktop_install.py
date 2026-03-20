@@ -48,6 +48,25 @@ class CMakeDesktopInstallTests(unittest.TestCase):
         self.assertIn("cmake -S . -B build -DQT_ROOT_PATH=/absolute/path/to/Qt/kit", readme_text)
         self.assertIn("- macOS: `build/dist/WhatSon.app`", readme_text)
         self.assertIn("- Windows: `build/dist/bin/WhatSon.exe`", readme_text)
+        self.assertIn("Host desktop app builds now emit the runnable app artifact at the build-directory root", readme_text)
+        self.assertIn("- macOS: `build/WhatSon.app`", readme_text)
+        self.assertIn("- Windows: `build/WhatSon.exe`", readme_text)
+
+    def test_desktop_runtime_output_uses_build_root(self) -> None:
+        app_cmake_text = (REPO_ROOT / "src/app/CMakeLists.txt").read_text(encoding="utf-8")
+
+        self.assertIn('set(_whatson_app_runtime_output_dir "$<1:${CMAKE_CURRENT_BINARY_DIR}/bin>")', app_cmake_text)
+        self.assertIn('if (NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))', app_cmake_text)
+        self.assertIn('set(_whatson_app_runtime_output_dir "$<1:${CMAKE_BINARY_DIR}>")', app_cmake_text)
+
+    def test_cli_and_mobile_scripts_use_build_root_artifacts(self) -> None:
+        cli_text = (REPO_ROOT / "src/cli/src/main.rs").read_text(encoding="utf-8")
+        runner_text = (REPO_ROOT / "scripts/build_platform_runner.py").read_text(encoding="utf-8")
+
+        self.assertIn('    "build/host-auto/WhatSon.app/Contents/MacOS/WhatSon",', cli_text)
+        self.assertIn('    "build/WhatSon.exe",', cli_text)
+        self.assertIn('destination=self.ios_project_dir / "WhatSon.app",', runner_text)
+        self.assertIn('destination=self.android_build_dir / "WhatSon.apk",', runner_text)
 
 
 if __name__ == "__main__":

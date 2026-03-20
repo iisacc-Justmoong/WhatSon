@@ -10,9 +10,8 @@ Item {
     readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel.resolvedNoteListModel
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
-    property color contentPanelColor: LV.Theme.panelBackground07
-    property color contentsDisplayColor: LV.Theme.panelBackground09
-    property color drawerColor: LV.Theme.panelBackground11
+    property color contentsDisplayColor: LV.Theme.surfaceAlt
+    property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property color listViewColor: LV.Theme.panelBackground08
@@ -166,10 +165,10 @@ Item {
                 displayColor: hStack.contentsDisplayColor
                 drawerColor: hStack.drawerColor
                 drawerHeight: hStack.drawerHeight
+                libraryHierarchyViewModel: libraryHierarchyViewModel
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight
                 noteListModel: hStack.activeNoteListModel
-                panelColor: hStack.contentPanelColor
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness
 

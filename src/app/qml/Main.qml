@@ -22,10 +22,9 @@ LV.ApplicationWindow {
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property var bookmarksHierarchyVm: bookmarksHierarchyViewModel
     readonly property color canvasColor: LV.Theme.panelBackground01
-    readonly property color contentPanelColor: LV.Theme.panelBackground07
-    readonly property color contentsDisplayColor: LV.Theme.panelBackground09
+    readonly property color contentsDisplayColor: LV.Theme.surfaceAlt
     readonly property int desktopMinimumBodyWidth: minSidebarWidth + minListViewWidth + minContentWidth + minRightPanelWidth + bodySplitterThickness * 3
-    readonly property color drawerColor: LV.Theme.panelBackground11
+    readonly property color drawerColor: LV.Theme.panelBackground08
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property var editorViewModeVm: editorViewModeViewModel
     readonly property var eventHierarchyVm: eventHierarchyViewModel
@@ -39,6 +38,7 @@ LV.ApplicationWindow {
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
     // Fail-fast binding contract: these context properties must exist from main.cpp.
+    readonly property int libraryHierarchyIndex: 0
     readonly property var libraryHierarchyVm: libraryHierarchyViewModel
     readonly property color listViewColor: LV.Theme.panelBackground08
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
@@ -164,7 +164,11 @@ LV.ApplicationWindow {
         adaptiveMobileLayout: applicationWindow.adaptiveMobileLayout
         adaptiveNavigationMode: applicationWindow.adaptiveNavigationMode
         hostWindow: applicationWindow
+        libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex
+        libraryHierarchyViewModel: applicationWindow.libraryHierarchyVm
         navigationModeViewModel: applicationWindow.navigationModeVm
+        panelViewModelRegistry: panelViewModelRegistry
+        sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm
     }
     Timer {
         id: resizeDebounceTimer
@@ -181,6 +185,13 @@ LV.ApplicationWindow {
         sequence: "Tab"
 
         onActivated: windowInteractions.cycleNavigationModeFromShortcut()
+    }
+    Shortcut {
+        autoRepeat: false
+        context: Qt.ApplicationShortcut
+        sequence: StandardKey.New
+
+        onActivated: windowInteractions.createNoteFromShortcut()
     }
     LV.EventListener {
         action: function (eventData) {
@@ -312,7 +323,6 @@ LV.ApplicationWindow {
                     Layout.fillWidth: true
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: false
-                    contentPanelColor: applicationWindow.contentPanelColor
                     contentsDisplayColor: applicationWindow.contentsDisplayColor
                     drawerColor: applicationWindow.drawerColor
                     drawerHeight: applicationWindow.drawerHeight

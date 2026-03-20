@@ -54,9 +54,12 @@ Defined in `CMakeLists.txt`:
 - `build/cargo/release/whatson onboard` forwards `--onboarding-only` into the app and loads
   `src/app/qml/window/Onboarding.qml` without workspace bootstrap, then promotes into `Main.qml` after the user
   creates or selects a hub
-- `Onboarding.qml` follows the Figma `OnboardWindowDesktop` split layout: close rail on the left, centered app/action
-  stack in the middle, and a right status panel that shows either `No WhatSon Hub Selected` or the selected `.wshub`
-  package name.
+- iOS/Android startup reuses the same standalone onboarding bootstrap when no startup `.wshub` can be restored,
+  instead of opening the desktop onboarding subwindow inside `Main.qml`
+- `Onboarding.qml` keeps the Figma `OnboardWindowDesktop` split layout on desktop, and switches to the Figma
+  `OnboardWindowMobile` stacked card on mobile/adaptive shells: app icon, title, version, and CTA links remain in the
+  upper surface while the selected `.wshub` package status is isolated in a lower `panelBackground10` section. The
+  mobile window itself now expands to the full device viewport instead of clamping to the 470x760 design frame.
 - Startup hub resolution restores the last successfully loaded `.wshub` from the app session store first and only then
   falls back to `blueprint/*.wshub`.
 
@@ -281,6 +284,13 @@ Domain-isolated support:
               `LV.ContextMenu`, not direct next-state cycling.
             - `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileNormalLayout.qml` all forward
               the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
+            - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
+              `create-note` hook path instead of duplicating note-creation policy in a second shortcut-only code path.
+            - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
+              `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
+              transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
+            - If the current note-list search filter would hide the new note, `LibraryHierarchyViewModel` clears that
+              search before selecting the created note so the editor focus handoff still succeeds.
             - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
               use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
               text-color literals.
@@ -408,6 +418,11 @@ Domain-isolated support:
                   rather
                   than the whole trailing fill area of the editor, otherwise the blue marker can incorrectly extend from
                   the last logical line to the bottom of the panel.
+                  The editor theme contract follows the Figma `ContentsDisplayView` tokens through LVRS aliases:
+                  `subSurface`
+                  (`panelBackground04`) for the gutter, `surfaceAlt` (`panelBackground06`) for the single main editor surface,
+                  explicit `Body` typography via `LV.Theme.bodyColor` plus `12px` medium text, and the lower drawer on
+                  `panelBackground08`.
                   A right-side Xcode-style minimap is also attached to the same editor document. It resolves the
                   internal
                   `TextEditor` flickable, draws a compressed body-text silhouette on `Canvas`, and maps each bar through

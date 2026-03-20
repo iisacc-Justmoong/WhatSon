@@ -253,6 +253,22 @@ if (ANDROID AND EXISTS "${WHATSON_ANDROID_DIR}")
     file(MAKE_DIRECTORY "${_whatson_android_package_source_dir}")
     file(COPY "${WHATSON_ANDROID_DIR}/" DESTINATION "${_whatson_android_package_source_dir}")
 
+    set(_whatson_android_default_icon_dst_dir "${_whatson_android_package_source_dir}/res/drawable")
+    foreach (_whatson_android_default_icon_src IN ITEMS
+            "${WHATSON_APP_ICON_ANDROID_DIR}/mdpi/AppIcon.png"
+            "${WHATSON_APP_ICON_ANDROID_DIR}/xhdpi/AppIcon.png"
+            "${WHATSON_APP_ICON_PNG}")
+        if (NOT EXISTS "${_whatson_android_default_icon_src}")
+            continue()
+        endif ()
+
+        file(MAKE_DIRECTORY "${_whatson_android_default_icon_dst_dir}")
+        file(COPY_FILE "${_whatson_android_default_icon_src}"
+                "${_whatson_android_default_icon_dst_dir}/app_icon.png"
+                ONLY_IF_DIFFERENT)
+        break()
+    endforeach ()
+
     foreach (_whatson_android_density IN ITEMS ldpi mdpi hdpi xhdpi xxhdpi xxxhdpi)
         set(_whatson_android_icon_src "${WHATSON_APP_ICON_ANDROID_DIR}/${_whatson_android_density}/AppIcon.png")
         if (NOT EXISTS "${_whatson_android_icon_src}")
@@ -355,6 +371,9 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 set(_whatson_app_runtime_output_dir "$<1:${CMAKE_CURRENT_BINARY_DIR}/bin>")
+if (NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))
+    set(_whatson_app_runtime_output_dir "$<1:${CMAKE_BINARY_DIR}>")
+endif ()
 set_target_properties(WhatSon PROPERTIES
         OUTPUT_NAME "WhatSon"
         RUNTIME_OUTPUT_DIRECTORY "${_whatson_app_runtime_output_dir}"

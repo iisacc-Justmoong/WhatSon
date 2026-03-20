@@ -14,9 +14,6 @@
     <key>CFBundleDisplayName</key>
     <string>WhatSon</string>
 
-    <key>CFBundleIconFile</key>
-    <string>AppIcon.png</string>
-
     <key>CFBundleIdentifier</key>
     <string>com.iisacc.app.whatson</string>
 

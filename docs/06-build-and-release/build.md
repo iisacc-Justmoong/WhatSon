@@ -33,6 +33,15 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
 - LVRS 설치는 플랫폼 부트스트랩(wasm/macos/ios/android)에 따라 시간이 길어질 수 있다.
 - 운영 관점에서는 실사용 플랫폼만 지정한 설치가 더 안정적이다.
 
+## Mobile Build Script Notes
+
+- The Android packaging stage must stage a fallback `res/drawable/app_icon.png` before density-specific icons so Qt Android generation can complete on a fresh build tree.
+- Mobile artifact cleanup retries transient macOS `Directory not empty` failures before the script aborts.
+- Desktop build trees now place the runnable host artifact at the build-directory root: `build/WhatSon.app`, `build/WhatSon.exe`, or `build/WhatSon`.
+- `scripts/build_host.py` and `scripts/build_all.py` keep the packaged host artifact at `build/host-auto/WhatSon.app`, `build/host-auto/WhatSon.exe`, or `build/host-auto/WhatSon` even when a later aggregate host subtarget fails.
+- `scripts/build_android.py` stages the installable APK at `build/android-auto/WhatSon.apk`.
+- `scripts/build_ios.py` stages the device-ready app bundle at `build/ios-xcode-artifact/WhatSon.app`.
+
 ## TODO
 
 - CI 환경별 권장 configure preset 문서화

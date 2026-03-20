@@ -34,6 +34,8 @@ class CliOnboardingTests(unittest.TestCase):
             app_main_text,
         )
         self.assertIn('engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));', app_main_text)
+        self.assertIn("mobileStandaloneOnboarding", app_main_text)
+        self.assertIn("if (launchOptions.onboardingOnly || mobileStandaloneOnboarding)", app_main_text)
         self.assertIn('onboardingWindow->setProperty("standaloneMode", true);', app_main_text)
         self.assertIn('mainWindow->setProperty("onboardingVisible", true);', app_main_text)
         self.assertIn('"hubSessionController"', app_main_text)
@@ -55,22 +57,50 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("onOnboardingVisibleChanged:", main_qml_text)
         self.assertIn("property var onboardingHubController: null", main_qml_text)
         self.assertIn("hubSessionController: applicationWindow.onboardingHubController", main_qml_text)
-        self.assertIn("readonly property int compactMinHeight: 420", onboarding_qml_text)
-        self.assertIn("readonly property int compactMinWidth: 620", onboarding_qml_text)
+        self.assertIn("readonly property int desktopMinHeight: 420", onboarding_qml_text)
+        self.assertIn("readonly property int desktopMinWidth: 620", onboarding_qml_text)
+        self.assertIn("readonly property int mobileDesignHeight: 760", onboarding_qml_text)
+        self.assertIn("readonly property int mobileDesignWidth: 470", onboarding_qml_text)
+        self.assertIn("readonly property bool useMobileLayout:", onboarding_qml_text)
+        self.assertIn(
+            "readonly property int mobileWindowHeight: Math.max(0, root.availableScreenHeight)",
+            onboarding_qml_text,
+        )
+        self.assertIn(
+            "readonly property int mobileWindowWidth: Math.max(0, root.availableScreenWidth)",
+            onboarding_qml_text,
+        )
+        self.assertIn(
+            "readonly property int compactMinHeight: root.useMobileLayout ? root.mobileWindowHeight : root.desktopMinHeight",
+            onboarding_qml_text,
+        )
+        self.assertIn(
+            "readonly property int compactMinWidth: root.useMobileLayout ? root.mobileWindowWidth : root.desktopMinWidth",
+            onboarding_qml_text,
+        )
         self.assertIn("readonly property int dragRegionHeight: 72", onboarding_qml_text)
         self.assertIn("typeof root.startSystemMove === \"function\"", onboarding_qml_text)
         self.assertIn("cursorShape: Qt.SizeAllCursor", onboarding_qml_text)
         self.assertIn("readonly property int fixedHeight: Math.max(defaultHeight, minHeight)", onboarding_qml_text)
         self.assertIn("readonly property int fixedWidth: Math.max(defaultWidth, minWidth)", onboarding_qml_text)
+        self.assertIn(
+            "readonly property int effectiveHeight: root.useMobileLayout ? root.compactMinHeight : root.fixedHeight",
+            onboarding_qml_text,
+        )
+        self.assertIn(
+            "readonly property int effectiveWidth: root.useMobileLayout ? root.compactMinWidth : root.fixedWidth",
+            onboarding_qml_text,
+        )
         self.assertIn("property int defaultHeight: compactMinHeight", onboarding_qml_text)
         self.assertIn("property int defaultWidth: compactMinWidth", onboarding_qml_text)
-        self.assertIn("height: fixedHeight", onboarding_qml_text)
-        self.assertIn("width: fixedWidth", onboarding_qml_text)
-        self.assertIn("minimumHeight: fixedHeight", onboarding_qml_text)
-        self.assertIn("minimumWidth: fixedWidth", onboarding_qml_text)
-        self.assertIn("maximumHeight: fixedHeight", onboarding_qml_text)
-        self.assertIn("maximumWidth: fixedWidth", onboarding_qml_text)
+        self.assertIn("height: effectiveHeight", onboarding_qml_text)
+        self.assertIn("width: effectiveWidth", onboarding_qml_text)
+        self.assertIn("minimumHeight: effectiveHeight", onboarding_qml_text)
+        self.assertIn("minimumWidth: effectiveWidth", onboarding_qml_text)
+        self.assertIn("maximumHeight: effectiveHeight", onboarding_qml_text)
+        self.assertIn("maximumWidth: effectiveWidth", onboarding_qml_text)
         self.assertIn("var targetScreen = root.screen;", onboarding_qml_text)
+        self.assertIn("radius: root.useMobileLayout ? 0 : 32", onboarding_qml_text)
         self.assertIn("radius: windowFrame.radius", onboarding_qml_text)
         self.assertIn("anchors.rightMargin: windowFrame.radius", onboarding_qml_text)
         self.assertIn("import QtQuick.Dialogs", onboarding_qml_text)
@@ -88,6 +118,10 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("readonly property string statusText:", onboarding_qml_text)
         self.assertIn('readonly property string selectedHubStatusText:', onboarding_qml_text)
         self.assertIn('return "No WhatSon Hub Selected";', onboarding_qml_text)
+        self.assertIn("target: root.hubSessionController", onboarding_qml_text)
+        self.assertIn("visible: root.useMobileLayout", onboarding_qml_text)
+        self.assertIn("id: mobileHubPanel", onboarding_qml_text)
+        self.assertIn("id: mobileAppPanel", onboarding_qml_text)
         self.assertIn("property var hubSessionController: null", onboarding_qml_text)
         self.assertIn("root.hubSessionController.currentHubPathName", onboarding_qml_text)
         self.assertIn("root.hubSessionController.currentHubName", onboarding_qml_text)

@@ -33,6 +33,7 @@ private
     void mainQml_mustBindSidebarInitWidthToHierarchyToolbarWidth();
     void navigationPanels_mustExposeFrameScopedPanelKeys();
     void mainQml_mustBindTabShortcutForNavigationModeCycling();
+    void mainQml_mustBindNewShortcutForNoteCreation();
     void navigationBar_mustComposePropertiesFrame();
     void navigationBar_mustSwitchApplicationBarsByNavigationMode();
     void navigationPropertiesFrame_mustComposeSeparatedChildFrames();
@@ -92,6 +93,30 @@ void NavigationQmlFramesTest::mainQml_mustBindTabShortcutForNavigationModeCyclin
     QVERIFY(mainQml.contains(QStringLiteral("enabled: !windowInteractions.hasFocusedTextInput()")));
     QVERIFY(interactionController.contains(
         QStringLiteral("interactionController.navigationModeViewModel.requestNextMode();")));
+}
+
+void NavigationQmlFramesTest::mainQml_mustBindNewShortcutForNoteCreation()
+{
+    const QString mainQml = readQml(QStringLiteral("Main.qml"));
+    const QString interactionController = readQml(QStringLiteral("MainWindowInteractionController.qml"));
+
+    QVERIFY(!mainQml.isEmpty());
+    QVERIFY(!interactionController.isEmpty());
+    QVERIFY(mainQml.contains(QStringLiteral("readonly property int libraryHierarchyIndex: 0")));
+    QVERIFY(interactionController.contains(QStringLiteral("property int libraryHierarchyIndex: 0")));
+    QVERIFY(interactionController.contains(QStringLiteral("property var libraryHierarchyViewModel: null")));
+    QVERIFY(interactionController.contains(QStringLiteral("property var sidebarHierarchyViewModel: null")));
+    QVERIFY(interactionController.contains(QStringLiteral("function createNoteFromShortcut()")));
+    QVERIFY(interactionController.contains(QStringLiteral(
+        "interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);")));
+    QVERIFY(interactionController.contains(QStringLiteral(
+        "interactionController.libraryHierarchyViewModel.createEmptyNote()")));
+    QVERIFY(mainQml.contains(QStringLiteral("sequence: StandardKey.New")));
+    QVERIFY(mainQml.contains(QStringLiteral("context: Qt.ApplicationShortcut")));
+    QVERIFY(mainQml.contains(QStringLiteral("onActivated: windowInteractions.createNoteFromShortcut()")));
+    QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex")));
+    QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyViewModel: applicationWindow.libraryHierarchyVm")));
+    QVERIFY(mainQml.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm")));
 }
 
 void NavigationQmlFramesTest::navigationBar_mustComposePropertiesFrame()

@@ -8,7 +8,7 @@ Rectangle {
     property int currentCursorLineNumber: 1
     property int editorLineHeight: 12
     property var effectiveGutterMarkers: []
-    property color gutterColor: LV.Theme.panelBackground04
+    property color gutterColor: LV.Theme.subSurface
     property int gutterCommentMarkerOffset: 2
     property int gutterCommentRailLeft: 4
     property int gutterIconRailLeft: 40

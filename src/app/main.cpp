@@ -735,7 +735,14 @@ int main(int argc, char* argv[])
         return engine.rootObjects().constLast();
     };
 
-    if (launchOptions.onboardingOnly)
+    const bool mobileStandaloneOnboarding =
+#if defined(Q_OS_IOS) || defined(Q_OS_ANDROID)
+        !initialHubLoaded;
+#else
+        false;
+#endif
+
+    if (launchOptions.onboardingOnly || mobileStandaloneOnboarding)
     {
         const qsizetype rootObjectCount = engine.rootObjects().size();
         engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Onboarding"));

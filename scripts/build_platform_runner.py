@@ -6,6 +6,7 @@ from __future__ import annotations
 # import and execute this logic with a single fixed task.
 
 import argparse
+import errno
 import json
 import os
 import platform
@@ -696,7 +697,65 @@ class BuildAll:
         if path.is_symlink() or path.is_file():
             path.unlink(missing_ok=True)
             return
-        shutil.rmtree(path)
+
+        retryable_errnos = {
+            errno.ENOTEMPTY,
+            errno.EBUSY,
+            errno.EACCES,
+            errno.EPERM,
+        }
+        last_error: Optional[OSError] = None
+        for attempt in range(5):
+            try:
+                shutil.rmtree(path)
+                return
+            except FileNotFoundError:
+                return
+            except OSError as exc:
+                if exc.errno not in retryable_errnos:
+                    raise
+                last_error = exc
+                if attempt == 4:
+                    break
+                time.sleep(0.2 * (attempt + 1))
+
+        if last_error is not None:
+            raise last_error
+
+    def _stage_packaging_artifact(
+            self,
+            *,
+            task: str,
+            source: Path,
+            destination: Path,
+            log_path: Path,
+            artifact_kind: str,
+    ) -> Path:
+        if not source.exists():
+            raise CommandError(f"Cannot stage missing {artifact_kind}: {source}")
+        if source == destination:
+            return source
+
+        if destination.exists() or destination.is_symlink():
+            self._clean_path(task=task, path=destination, log_path=log_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        self._emit_state(
+            "stage_artifact",
+            task=task,
+            artifact_kind=artifact_kind,
+            source=_path_state(source),
+            destination=_path_state(destination),
+            log_path=_path_state(log_path),
+        )
+        with log_path.open("a", encoding="utf-8") as fp:
+            fp.write(f"# stage {artifact_kind}: {source} -> {destination}\n")
+
+        if source.is_dir():
+            shutil.copytree(source, destination, symlinks=True)
+        else:
+            shutil.copy2(source, destination)
+        return destination
 
     def _reset_task_log(self, log_path: Path) -> None:
         if log_path.exists():
@@ -877,11 +936,15 @@ class BuildAll:
         candidates: List[Path] = []
         if self.system_name == "Darwin":
             candidates.append(
+                self.host_build_dir / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon")
+            candidates.append(
                 self.host_build_dir / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon")
         elif self.system_name == "Windows":
+            candidates.append(self.host_build_dir / "WhatSon.exe")
             candidates.append(self.host_build_dir / "src" / "app" / "bin" / "WhatSon.exe")
             candidates.append(self.host_build_dir / "src" / "app" / "WhatSon.exe")
         else:
+            candidates.append(self.host_build_dir / "WhatSon")
             candidates.append(self.host_build_dir / "src" / "app" / "bin" / "WhatSon")
             candidates.append(self.host_build_dir / "src" / "app" / "WhatSon")
         return _find_existing(candidates)
@@ -1679,6 +1742,18 @@ class BuildAll:
                     "--build",
                     str(self.host_build_dir),
                     "--target",
+                    "WhatSon",
+                    *self._build_parallel_args(task),
+                ],
+                log_path=log_path,
+            )
+            self._run(
+                task=task,
+                cmd=[
+                    "cmake",
+                    "--build",
+                    str(self.host_build_dir),
+                    "--target",
                     "whatson_build_all",
                     *self._build_parallel_args(task),
                 ],
@@ -1851,6 +1926,13 @@ class BuildAll:
                     app_bundle = candidates[-1]
             if not app_bundle.exists():
                 raise CommandError("iOS .app bundle was not generated for iphoneos.")
+            app_bundle = self._stage_packaging_artifact(
+                task=task,
+                source=app_bundle,
+                destination=self.ios_project_dir / "WhatSon.app",
+                log_path=log_path,
+                artifact_kind="ios_app_bundle",
+            )
 
             detected_bundle_id = self._read_bundle_id_from_app_bundle(app_bundle)
             launch_bundle_id = detected_bundle_id or self.ios_bundle_id
@@ -2095,7 +2177,13 @@ class BuildAll:
             debug_apks = sorted((gradle_dir / "build" / "outputs" / "apk").glob("**/*debug*.apk"))
         if not debug_apks:
             raise CommandError("Debug APK was not generated.")
-        debug_apk = debug_apks[-1]
+        debug_apk = self._stage_packaging_artifact(
+            task=task,
+            source=debug_apks[-1],
+            destination=self.android_build_dir / "WhatSon.apk",
+            log_path=log_path,
+            artifact_kind="android_apk",
+        )
 
         launch_package = self.android_package
         if not self.android_package_explicit:

@@ -11,11 +11,15 @@ QtObject {
     property string adaptiveNavigationMode: ""
     property var focusRetainedUiTokens: ["button", "combobox", "checkbox", "radiobutton", "switch", "slider", "spinbox", "dial", "textinput", "textedit", "inputfield", "editor", "menu", "popup", "tooltip", "mousearea", "taphandler", "flickable", "listview", "scrollview", "tableview", "scrollbar", "hierarchy", "contextmenu", "itemdelegate", "notelistitem"]
     property var hostWindow: null
+    property int libraryHierarchyIndex: 0
+    property var libraryHierarchyViewModel: null
     property var navigationModeViewModel: null
+    property var panelViewModelRegistry: null
     property bool resizeDrWasSuspended: false
     property bool resizeInProgress: false
     property int resizeRenderGuardDebounceMs: 220
     property bool resizeRenderGuardEnabled: true
+    property var sidebarHierarchyViewModel: null
 
     function applyRenderQualityPolicy(source) {
         if (!interactionController.hostWindow || (!interactionController.hostWindow.isDesktopPlatform && !interactionController.hostWindow.isMobilePlatform))
@@ -33,6 +37,21 @@ QtObject {
             current = current.parent;
             depthGuard += 1;
         }
+    }
+    function createNoteFromShortcut() {
+        const addNewPanelViewModel = interactionController.panelViewModelRegistry
+                && interactionController.panelViewModelRegistry.panelViewModel !== undefined
+                ? interactionController.panelViewModelRegistry.panelViewModel("navigation.NavigationAddNewBar")
+                : null;
+        if (addNewPanelViewModel && addNewPanelViewModel.requestViewModelHook !== undefined) {
+            addNewPanelViewModel.requestViewModelHook("create-note");
+            return true;
+        }
+        if (!interactionController.libraryHierarchyViewModel || interactionController.libraryHierarchyViewModel.createEmptyNote === undefined)
+            return false;
+        if (interactionController.sidebarHierarchyViewModel && interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
+            interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
+        return Boolean(interactionController.libraryHierarchyViewModel.createEmptyNote());
     }
     function cycleNavigationModeFromShortcut() {
         if (interactionController.hasFocusedTextInput())

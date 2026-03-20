@@ -150,16 +150,22 @@ class RuntimeSmokeMatrix:
     def _host_binary(self) -> Optional[Path]:
         if self.system_name.startswith("darwin"):
             candidates = [
+                self.root / "build" / "host-auto" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
+                self.root / "build" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
                 self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
                 self.root / "build" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
             ]
         elif self.system_name.startswith("win"):
             candidates = [
+                self.root / "build" / "host-auto" / "WhatSon.exe",
+                self.root / "build" / "WhatSon.exe",
                 self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.exe",
                 self.root / "build" / "src" / "app" / "bin" / "WhatSon.exe",
             ]
         else:
             candidates = [
+                self.root / "build" / "host-auto" / "WhatSon",
+                self.root / "build" / "WhatSon",
                 self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon",
                 self.root / "build" / "src" / "app" / "bin" / "WhatSon",
             ]

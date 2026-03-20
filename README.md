@@ -83,8 +83,8 @@ WhatSon is an LVRS-based Qt Quick application.
   silently propagates `undefined`, and that can blank the gutter while leaving the rest of the editor visible.
 - The same rule now applies to MVVM-fed bindings: views should not scatter direct `viewModel.foo !== undefined` checks
   across delegates. Normalize the incoming model/view-model once, then bind children only to the resolved contract.
-- The gutter now follows the Figma `ContentsDisplayView` token contract directly: `panelBackground04` background,
-  `#4E5157` inactive caption line numbers and `#9DA0A8` active line number.
+- The gutter now follows the Figma `ContentsDisplayView` token contract directly: LVRS `subSurface`
+  (`panelBackground04`) background, `#4E5157` inactive caption line numbers and `#9DA0A8` active line number.
 - The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
   terminate on the same vertical edge that the editable text begins from.
 - The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
@@ -96,8 +96,8 @@ WhatSon is an LVRS-based Qt Quick application.
   still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
   document.
 - `LV.TextEditor` now binds the body token more explicitly for this surface: `LV.Theme.fontBody`, `12px` medium weight,
-  zero letter spacing, and the standard LVRS input selection highlight (`LV.Theme.accent`), matching the Figma `Body`
-  token and the rest of the app's input controls.
+  zero letter spacing, explicit `LV.Theme.bodyColor` text color, and the standard LVRS input selection highlight
+  (`LV.Theme.accent`), matching the Figma `Body` token and the rest of the app's input controls.
 - `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
   state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
   without cross-domain model reuse.
@@ -153,8 +153,10 @@ WhatSon is an LVRS-based Qt Quick application.
   previous note/session.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
   through the whole remaining editor height when the cursor sits on the last logical line.
-- `ContentsDisplayView.qml` keeps both the surrounding editor panel and the embedded `LV.TextEditor` fill on
-  `LV.Theme.panelBackground06`; only the lower drawer stays on `LV.Theme.panelBackground08`.
+- `ContentsDisplayView.qml` now consumes the semantic LVRS surface aliases from the shell without a second redundant
+  panel-color layer: the editor surface and embedded `LV.TextEditor` stay on `LV.Theme.surfaceAlt`
+  (`panelBackground06`), the gutter stays on `LV.Theme.subSurface` (`panelBackground04`), and the lower drawer stays on
+  `LV.Theme.panelBackground08`.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
   offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
@@ -375,11 +377,11 @@ cmake --build build --target whatson_run_app
 ./build/src/daemon/WhatSon_daemon --healthcheck
 ```
 
-Host desktop app builds now emit the runnable app artifact under `build/src/app/bin`:
+Host desktop app builds now emit the runnable app artifact at the build-directory root:
 
-- macOS: `build/src/app/bin/WhatSon.app`
-- Windows: `build/src/app/bin/WhatSon.exe`
-- Linux and other non-bundle desktop targets: `build/src/app/bin/WhatSon`
+- macOS: `build/WhatSon.app`
+- Windows: `build/WhatSon.exe`
+- Linux and other non-bundle desktop targets: `build/WhatSon`
 
 ## Debug Trace Mode
 
@@ -416,9 +418,9 @@ WHATSON_DEBUG_MODE=1 cmake --build build --target whatson_run_app
 Filter only debug lines during a run:
 
 ```bash
-./build/src/app/bin/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
+./build/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
 # macOS bundle path equivalent:
-./build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
+./build/WhatSon.app/Contents/MacOS/WhatSon 2>&1 | rg "\\[whatson:debug\\]|\\[wsnhead:index\\]"
 ```
 
 ## Hierarchy IO Components
@@ -463,6 +465,13 @@ for hub/note hierarchy payloads.
   control mode until mode-specific tools are added.
 - `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
   text editor currently owns focus.
+- `Main.qml` also binds a global platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) and routes it to
+  the existing `create-note` hook path used by the navigation add surfaces, preserving the same library-note creation
+  behavior.
+- New note creation now emits a dedicated runtime signal from `LibraryHierarchyViewModel`, and `ContentsDisplayView.qml`
+  consumes it to move keyboard focus into the editor so body text entry can begin immediately.
+- If the active note search would hide the freshly created note, the library list clears that search first so the new
+  note can still become the active editor target.
 - `Main.qml` also listens to LVRS global press hit-tests and clears the current focus chain when a left-click lands on
   an empty background/container surface instead of an interactive control.
 - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` use `LV.ComboBox` as the trigger surface and open

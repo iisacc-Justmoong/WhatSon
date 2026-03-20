@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import io
 import json
 import sys
@@ -202,6 +203,8 @@ class BuildParallelismTests(unittest.TestCase):
         self.assertIn("--parallel", build_commands[0])
         self.assertEqual(build_commands[0][-2:], ["--parallel", "5"])
         self.assertNotIn("-j", build_commands[0])
+        self.assertEqual(build_commands[0][3:5], ["--target", "WhatSon"])
+        self.assertEqual(build_commands[1][3:5], ["--target", "whatson_build_all"])
         self.assertEqual(result.status, "success")
 
     def test_linux_headless_host_build_keeps_desktop_app_build_enabled(self) -> None:
@@ -233,6 +236,23 @@ class BuildParallelismTests(unittest.TestCase):
         self.assertTrue(configure_commands)
         self.assertNotIn("-DWHATSON_BUILD_APP=OFF", configure_commands[0])
         self.assertEqual(result.status, "success")
+
+    def test_host_app_binary_prefers_build_root_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = _make_args(Path(temp_dir), jobs=4)
+            build_runner = runner.BuildAll(args)
+            build_runner.system_name = "Darwin"
+
+            root_app = build_runner.host_build_dir / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
+            legacy_app = build_runner.host_build_dir / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
+            root_app.parent.mkdir(parents=True, exist_ok=True)
+            legacy_app.parent.mkdir(parents=True, exist_ok=True)
+            root_app.write_text("", encoding="utf-8")
+            legacy_app.write_text("", encoding="utf-8")
+
+            detected = build_runner._host_app_binary()
+
+        self.assertEqual(detected, root_app)
 
     def test_android_generic_build_uses_explicit_parallel_budget(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -274,6 +294,55 @@ class BuildParallelismTests(unittest.TestCase):
             gradle_args = build_runner._gradle_job_args(runner.TASK_ANDROID)
 
         self.assertEqual(gradle_args, ["--max-workers", "2", "-Dorg.gradle.parallel=false"])
+
+    def test_clean_path_retries_transient_directory_not_empty_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            args = _make_args(temp_root, jobs=2)
+            build_runner = runner.BuildAll(args)
+            target_dir = temp_root / "transient-clean"
+            target_dir.mkdir(parents=True, exist_ok=True)
+            (target_dir / "stale.txt").write_text("stale", encoding="utf-8")
+            log_path = temp_root / "logs" / "clean.log"
+            original_rmtree = runner.shutil.rmtree
+            attempts = {"count": 0}
+
+            def flaky_rmtree(path):
+                attempts["count"] += 1
+                if attempts["count"] == 1:
+                    raise OSError(errno.ENOTEMPTY, "Directory not empty", str(path))
+                return original_rmtree(path)
+
+            with patch.object(runner.shutil, "rmtree", side_effect=flaky_rmtree):
+                with patch.object(runner.time, "sleep", return_value=None):
+                    build_runner._clean_path(task=runner.TASK_IOS, path=target_dir, log_path=log_path)
+
+        self.assertEqual(attempts["count"], 2)
+        self.assertFalse(target_dir.exists())
+
+    def test_stage_packaging_artifact_copies_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            args = _make_args(temp_root, jobs=2)
+            build_runner = runner.BuildAll(args)
+            source = temp_root / "derived" / "WhatSon.app"
+            destination = build_runner.ios_project_dir / "WhatSon.app"
+            log_path = temp_root / "logs" / "stage.log"
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_path.write_text("", encoding="utf-8")
+            (source / "Contents" / "MacOS").mkdir(parents=True, exist_ok=True)
+            (source / "Contents" / "MacOS" / "WhatSon").write_text("binary", encoding="utf-8")
+
+            staged = build_runner._stage_packaging_artifact(
+                task=runner.TASK_IOS,
+                source=source,
+                destination=destination,
+                log_path=log_path,
+                artifact_kind="ios_app_bundle",
+            )
+
+            self.assertEqual(staged, destination)
+            self.assertTrue((destination / "Contents" / "MacOS" / "WhatSon").is_file())
 
     def test_build_all_parallel_splits_job_budget(self) -> None:
         recorded: dict[str, int] = {}
@@ -335,6 +404,24 @@ class BuildParallelismTests(unittest.TestCase):
         xcode_commands = [cmd for name, cmd in smoke_runner.commands if name == "ios_xcodebuild"]
         self.assertTrue(xcode_commands)
         self.assertEqual(xcode_commands[0][:3], ["xcodebuild", "-jobs", "5"])
+
+    def test_runtime_smoke_matrix_prefers_build_root_host_binary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = _make_smoke_args(Path(temp_dir), jobs=2)
+            smoke_runner = smoke_matrix.RuntimeSmokeMatrix(args)
+            smoke_runner.system_name = "darwin"
+            root_binary = smoke_runner.root / "build" / "host-auto" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
+            legacy_binary = (
+                smoke_runner.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
+            )
+            root_binary.parent.mkdir(parents=True, exist_ok=True)
+            legacy_binary.parent.mkdir(parents=True, exist_ok=True)
+            root_binary.write_text("", encoding="utf-8")
+            legacy_binary.write_text("", encoding="utf-8")
+
+            detected = smoke_runner._host_binary()
+
+        self.assertEqual(detected, root_binary)
 
     def test_dev_env_print_only_emits_state_lines(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

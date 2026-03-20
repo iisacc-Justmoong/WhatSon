@@ -9,31 +9,58 @@ Window {
     id: root
 
     readonly property url appIconSource: "qrc:/whatson/AppIcon.png"
+    readonly property int appIconSize: 144
     readonly property int closeColumnWidth: 48
-    readonly property int compactMinHeight: 420
-    readonly property int compactMinWidth: 620
+    readonly property int desktopDesignHeight: 542
+    readonly property int desktopDesignWidth: 867
+    readonly property int desktopMinHeight: 420
+    readonly property int desktopMinWidth: 620
     readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
     readonly property string defaultCreateHubFileName: "Untitled.wshub"
-    property int defaultHeight: compactMinHeight
-    property int defaultWidth: compactMinWidth
-    readonly property int designHeight: 542
-    readonly property int designWidth: 867
     readonly property int dragRegionHeight: 72
-    readonly property int fixedHeight: Math.max(defaultHeight, minHeight)
-    readonly property int fixedWidth: Math.max(defaultWidth, minWidth)
-    property Window hostWindow: null
-    property var hubSessionController: null
+    readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
+    readonly property int mobileDesignHeight: 760
+    readonly property int mobileDesignWidth: 470
+    readonly property int mobileStatusPanelHeight: Math.max(172, Math.round(root.height * 0.5))
+    readonly property int mobileTopContentWidth: Math.min(260, Math.max(220, root.width - 64))
+    readonly property int availableScreenHeight: {
+        const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
+        return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
+    }
+    readonly property int availableScreenWidth: {
+        const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
+        return targetScreen ? Math.round(targetScreen.width) : root.mobileDesignWidth;
+    }
+    readonly property int mobileWindowHeight: Math.max(0, root.availableScreenHeight)
+    readonly property int mobileWindowWidth: Math.max(0, root.availableScreenWidth)
+    readonly property bool useMobileLayout: {
+        if (root.hostWindow && root.hostWindow.adaptiveMobileLayout !== undefined)
+            return Boolean(root.hostWindow.adaptiveMobileLayout) || root.isMobilePlatform;
+        return root.isMobilePlatform;
+    }
+    readonly property int compactMinHeight: root.useMobileLayout ? root.mobileWindowHeight : root.desktopMinHeight
+    readonly property int compactMinWidth: root.useMobileLayout ? root.mobileWindowWidth : root.desktopMinWidth
+    property int defaultHeight: compactMinHeight
+    property int defaultWidth: compactMinWidth
+    readonly property int designHeight: root.useMobileLayout ? root.mobileDesignHeight : root.desktopDesignHeight
+    readonly property int designWidth: root.useMobileLayout ? root.mobileDesignWidth : root.desktopDesignWidth
+    readonly property int fixedHeight: Math.max(defaultHeight, minHeight)
+    readonly property int fixedWidth: Math.max(defaultWidth, minWidth)
+    readonly property int effectiveHeight: root.useMobileLayout ? root.compactMinHeight : root.fixedHeight
+    readonly property int effectiveWidth: root.useMobileLayout ? root.compactMinWidth : root.fixedWidth
+    property Window hostWindow: null
+    property var hubSessionController: null
     property int minHeight: compactMinHeight
     property int minWidth: compactMinWidth
     property color panelColor: LV.Theme.panelBackground06
+    readonly property int rightPanelWidth: Math.max(214, Math.min(306, Math.round(root.width * 306 / root.desktopDesignWidth)))
+    readonly property color secondarySurfaceColor: root.sidePanelColor
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
         return value.length > 0 ? value : "Version: 1.0.0";
     }
-    readonly property int rightPanelWidth: Math.max(214, Math.min(306, Math.round(root.width * 306 / root.designWidth)))
-    readonly property color secondarySurfaceColor: root.sidePanelColor
     readonly property string selectedHubStatusText: {
         if (root.hubSessionController) {
             if (root.hubSessionController.currentHubPathName !== undefined) {
@@ -82,22 +109,22 @@ Window {
         var targetScreen = root.screen;
         if (!targetScreen)
             return;
-        x = Math.round(Screen.virtualX + (Screen.width - width) / 2);
-        y = Math.round(Screen.virtualY + (Screen.height - height) / 2);
+        x = Math.round(targetScreen.virtualX + (targetScreen.width - width) / 2);
+        y = Math.round(targetScreen.virtualY + (targetScreen.height - height) / 2);
     }
 
     color: "transparent"
     flags: Qt.Dialog | Qt.FramelessWindowHint
-    height: fixedHeight
-    maximumHeight: fixedHeight
-    maximumWidth: fixedWidth
-    minimumHeight: fixedHeight
-    minimumWidth: fixedWidth
+    height: effectiveHeight
+    maximumHeight: effectiveHeight
+    maximumWidth: effectiveWidth
+    minimumHeight: effectiveHeight
+    minimumWidth: effectiveWidth
     modality: Qt.ApplicationModal
     title: "WhatSon Onboarding"
     transientParent: hostWindow
     visible: false
-    width: fixedWidth
+    width: effectiveWidth
 
     onClosing: function (close) {
         dismissed();
@@ -117,6 +144,8 @@ Window {
     }
 
     Connections {
+        target: root.hubSessionController
+
         function onHubLoaded(hubPath) {
             if (!root.standaloneMode)
                 root.close();
@@ -165,220 +194,366 @@ Window {
         antialiasing: true
         clip: true
         color: root.mainSurfaceColor
-        radius: 32
+        radius: root.useMobileLayout ? 0 : 32
 
-        MouseArea {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            cursorShape: Qt.SizeAllCursor
-            height: root.dragRegionHeight
+        Item {
+            anchors.fill: parent
+            visible: !root.useMobileLayout
 
-            onPressed: function (mouse) {
-                if (mouse.button === Qt.LeftButton && typeof root.startSystemMove === "function")
-                    root.startSystemMove();
+            MouseArea {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                cursorShape: Qt.SizeAllCursor
+                height: root.dragRegionHeight
+
+                onPressed: function (mouse) {
+                    if (mouse.button === Qt.LeftButton && typeof root.startSystemMove === "function")
+                        root.startSystemMove();
+                }
+            }
+
+            Item {
+                id: closeColumn
+
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.top: parent.top
+                width: root.closeColumnWidth
+
+                Item {
+                    id: closeButton
+
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
+                    anchors.top: parent.top
+                    anchors.topMargin: 16
+                    height: 16
+                    width: 16
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: closeMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                        radius: 4
+                    }
+
+                    Canvas {
+                        anchors.fill: parent
+                        antialiasing: true
+                        opacity: closeMouseArea.pressed ? 0.68 : closeMouseArea.containsMouse ? 0.84 : 1
+
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.strokeStyle = LV.Theme.accentGray;
+                            ctx.lineCap = "round";
+                            ctx.lineWidth = 1.6;
+                            ctx.beginPath();
+                            ctx.moveTo(5, 5);
+                            ctx.lineTo(11, 11);
+                            ctx.moveTo(11, 5);
+                            ctx.lineTo(5, 11);
+                            ctx.stroke();
+                        }
+                    }
+
+                    MouseArea {
+                        id: closeMouseArea
+
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+
+                        onClicked: root.close()
+                    }
+                }
+            }
+
+            Rectangle {
+                id: rightPanel
+
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.top: parent.top
+                antialiasing: true
+                color: root.secondarySurfaceColor
+                radius: windowFrame.radius
+                width: root.rightPanelWidth
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.rightMargin: windowFrame.radius
+                    anchors.top: parent.top
+                    color: root.secondarySurfaceColor
+                }
+
+                LV.Label {
+                    anchors.centerIn: parent
+                    color: LV.Theme.textPrimary
+                    elide: Text.ElideMiddle
+                    font.styleName: "SemiBold"
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    lineHeight: 15
+                    lineHeightMode: Text.FixedHeight
+                    maximumLineCount: 1
+                    style: header2
+                    text: root.selectedHubStatusText
+                    width: Math.max(0, parent.width - 32)
+                    wrapMode: Text.NoWrap
+                }
+            }
+
+            Item {
+                id: appPanel
+
+                anchors.bottom: parent.bottom
+                anchors.left: closeColumn.right
+                anchors.right: rightPanel.left
+                anchors.top: parent.top
+
+                Item {
+                    id: appPanelContent
+
+                    anchors.centerIn: parent
+                    height: appPanelColumn.implicitHeight
+                    width: 209
+
+                    Column {
+                        id: appPanelColumn
+
+                        anchors.centerIn: parent
+                        spacing: 32
+                        width: parent.width
+
+                        Image {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            fillMode: Image.PreserveAspectFit
+                            height: root.appIconSize
+                            mipmap: true
+                            smooth: true
+                            source: root.appIconSource
+                            sourceSize.height: root.appIconSize
+                            sourceSize.width: root.appIconSize
+                            width: root.appIconSize
+                        }
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: LV.Theme.textPrimary
+                            font.pixelSize: 48
+                            font.styleName: "Bold"
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            style: title
+                            text: "WhatSon"
+                            width: parent.width
+                        }
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: LV.Theme.descriptionColor
+                            font.pixelSize: 12
+                            font.styleName: "SemiBold"
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                            lineHeight: 12
+                            lineHeightMode: Text.FixedHeight
+                            style: description
+                            text: root.resolvedVersionText
+                            width: parent.width
+                        }
+
+                        Column {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: 24
+                            width: 180
+
+                            ActionLink {
+                                id: createHubAction
+
+                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                label: "Create new WhatSon Hub"
+                                width: parent.width
+
+                                onTriggered: {
+                                    root.viewHookRequested();
+                                    if (root.hubSessionController) {
+                                        root.hubSessionController.clearLastError();
+                                        createHubDialog.open();
+                                    } else {
+                                        root.createFileRequested();
+                                    }
+                                }
+                            }
+                            ActionLink {
+                                id: selectHubAction
+
+                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                label: "Select WhatSon Hub"
+                                width: parent.width
+
+                                onTriggered: {
+                                    root.viewHookRequested();
+                                    if (root.hubSessionController) {
+                                        root.hubSessionController.clearLastError();
+                                        selectHubDialog.open();
+                                    } else {
+                                        root.selectFileRequested();
+                                    }
+                                }
+                            }
+                        }
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: root.statusTextColor
+                            horizontalAlignment: Text.AlignHCenter
+                            maximumLineCount: 4
+                            style: description
+                            text: root.statusText
+                            visible: text.length > 0
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
             }
         }
 
         Item {
-            id: closeColumn
-
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.top: parent.top
-            width: root.closeColumnWidth
+            anchors.fill: parent
+            visible: root.useMobileLayout
 
             Item {
-                id: closeButton
+                id: mobileAppPanel
 
                 anchors.left: parent.left
-                anchors.leftMargin: 16
+                anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.topMargin: 16
-                height: 16
-                width: 16
+                anchors.bottom: mobileHubPanel.top
 
-                Rectangle {
-                    anchors.fill: parent
-                    color: closeMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                    radius: 4
-                }
+                Item {
+                    anchors.centerIn: parent
+                    height: mobileAppColumn.implicitHeight
+                    width: root.mobileTopContentWidth
 
-                Canvas {
-                    anchors.fill: parent
-                    antialiasing: true
-                    opacity: closeMouseArea.pressed ? 0.68 : closeMouseArea.containsMouse ? 0.84 : 1
+                    Column {
+                        id: mobileAppColumn
 
-                    onPaint: {
-                        const ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        ctx.strokeStyle = LV.Theme.accentGray;
-                        ctx.lineCap = "round";
-                        ctx.lineWidth = 1.6;
-                        ctx.beginPath();
-                        ctx.moveTo(5, 5);
-                        ctx.lineTo(11, 11);
-                        ctx.moveTo(11, 5);
-                        ctx.lineTo(5, 11);
-                        ctx.stroke();
+                        anchors.centerIn: parent
+                        spacing: 32
+                        width: parent.width
+
+                        Image {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            fillMode: Image.PreserveAspectFit
+                            height: root.appIconSize
+                            mipmap: true
+                            smooth: true
+                            source: root.appIconSource
+                            sourceSize.height: root.appIconSize
+                            sourceSize.width: root.appIconSize
+                            width: root.appIconSize
+                        }
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: LV.Theme.textPrimary
+                            font.pixelSize: 48
+                            font.styleName: "Bold"
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            style: title
+                            text: "WhatSon"
+                            width: parent.width
+                        }
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: LV.Theme.descriptionColor
+                            font.pixelSize: 12
+                            font.styleName: "SemiBold"
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                            lineHeight: 12
+                            lineHeightMode: Text.FixedHeight
+                            style: description
+                            text: root.resolvedVersionText
+                            width: parent.width
+                        }
+
+                        Column {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: 24
+                            width: parent.width
+
+                            ActionLink {
+                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                label: "Create new WhatSon Hub"
+                                width: parent.width
+
+                                onTriggered: {
+                                    root.viewHookRequested();
+                                    if (root.hubSessionController) {
+                                        root.hubSessionController.clearLastError();
+                                        createHubDialog.open();
+                                    } else {
+                                        root.createFileRequested();
+                                    }
+                                }
+                            }
+                            ActionLink {
+                                enabled: !root.hubSessionController || !root.hubSessionController.busy
+                                label: "Select WhatSon Hub"
+                                width: parent.width
+
+                                onTriggered: {
+                                    root.viewHookRequested();
+                                    if (root.hubSessionController) {
+                                        root.hubSessionController.clearLastError();
+                                        selectHubDialog.open();
+                                    } else {
+                                        root.selectFileRequested();
+                                    }
+                                }
+                            }
+                        }
+                        LV.Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: root.statusTextColor
+                            horizontalAlignment: Text.AlignHCenter
+                            maximumLineCount: 4
+                            style: description
+                            text: root.statusText
+                            visible: text.length > 0
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
                     }
                 }
-
-                MouseArea {
-                    id: closeMouseArea
-
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-
-                    onClicked: root.close()
-                }
             }
-        }
-
-        Rectangle {
-            id: rightPanel
-
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.top: parent.top
-            antialiasing: true
-            color: root.secondarySurfaceColor
-            radius: windowFrame.radius
-            width: root.rightPanelWidth
 
             Rectangle {
+                id: mobileHubPanel
+
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.rightMargin: windowFrame.radius
-                anchors.top: parent.top
                 color: root.secondarySurfaceColor
-            }
+                height: root.mobileStatusPanelHeight
 
-            LV.Label {
-                anchors.centerIn: parent
-                color: LV.Theme.textPrimary
-                elide: Text.ElideMiddle
-                font.styleName: "SemiBold"
-                font.weight: Font.DemiBold
-                horizontalAlignment: Text.AlignHCenter
-                lineHeight: 15
-                lineHeightMode: Text.FixedHeight
-                maximumLineCount: 1
-                style: header2
-                text: root.selectedHubStatusText
-                width: Math.max(0, parent.width - 32)
-                wrapMode: Text.NoWrap
-            }
-        }
-        Item {
-            id: appPanel
-
-            anchors.bottom: parent.bottom
-            anchors.left: closeColumn.right
-            anchors.right: rightPanel.left
-            anchors.top: parent.top
-
-            Item {
-                id: appPanelContent
-
-                anchors.centerIn: parent
-                height: appPanelColumn.implicitHeight
-                width: 209
-
-                Column {
-                    id: appPanelColumn
-
+                LV.Label {
                     anchors.centerIn: parent
-                    spacing: 32
-                    width: parent.width
-
-                    Image {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        fillMode: Image.PreserveAspectFit
-                        height: 144
-                        mipmap: true
-                        smooth: true
-                        source: root.appIconSource
-                        sourceSize.height: 144
-                        sourceSize.width: 144
-                        width: 144
-                    }
-                    LV.Label {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: LV.Theme.textPrimary
-                        font.pixelSize: 48
-                        font.styleName: "Bold"
-                        font.weight: Font.Bold
-                        horizontalAlignment: Text.AlignHCenter
-                        style: title
-                        text: "WhatSon"
-                        width: parent.width
-                    }
-                    LV.Label {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: LV.Theme.descriptionColor
-                        font.pixelSize: 12
-                        font.styleName: "SemiBold"
-                        font.weight: Font.DemiBold
-                        horizontalAlignment: Text.AlignHCenter
-                        lineHeight: 12
-                        lineHeightMode: Text.FixedHeight
-                        style: description
-                        text: root.resolvedVersionText
-                        width: parent.width
-                    }
-
-                    Column {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 24
-                        width: 180
-
-                        ActionLink {
-                            id: createHubAction
-
-                            enabled: !root.hubSessionController || !root.hubSessionController.busy
-                            label: "Create new WhatSon Hub"
-                            width: parent.width
-
-                            onTriggered: {
-                                if (root.hubSessionController) {
-                                    root.hubSessionController.clearLastError();
-                                    createHubDialog.open();
-                                } else {
-                                    root.createFileRequested();
-                                }
-                            }
-                        }
-                        ActionLink {
-                            id: selectHubAction
-
-                            enabled: !root.hubSessionController || !root.hubSessionController.busy
-                            label: "Select WhatSon Hub"
-                            width: parent.width
-
-                            onTriggered: {
-                                if (root.hubSessionController) {
-                                    root.hubSessionController.clearLastError();
-                                    selectHubDialog.open();
-                                } else {
-                                    root.selectFileRequested();
-                                }
-                            }
-                        }
-                    }
-                    LV.Label {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: root.statusTextColor
-                        horizontalAlignment: Text.AlignHCenter
-                        maximumLineCount: 4
-                        style: description
-                        text: root.statusText
-                        visible: text.length > 0
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
+                    color: LV.Theme.textPrimary
+                    elide: Text.ElideMiddle
+                    font.styleName: "SemiBold"
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    lineHeight: 15
+                    lineHeightMode: Text.FixedHeight
+                    maximumLineCount: 2
+                    style: header2
+                    text: root.selectedHubStatusText
+                    width: Math.max(0, parent.width - 32)
+                    wrapMode: Text.WordWrap
                 }
             }
         }

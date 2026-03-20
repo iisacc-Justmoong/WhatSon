@@ -2730,20 +2730,30 @@ bool LibraryHierarchyViewModel::createEmptyNote()
 
     refreshNoteListForSelection();
 
-    int createdNoteIndex = -1;
-    const QVector<LibraryNoteListItem>& noteItems = m_noteListModel.items();
-    for (int index = 0; index < noteItems.size(); ++index)
+    auto createdNoteIndexForCurrentItems = [this, &noteId]() -> int
     {
-        if (noteItems.at(index).id.trimmed() == noteId)
+        const QVector<LibraryNoteListItem>& noteItems = m_noteListModel.items();
+        for (int index = 0; index < noteItems.size(); ++index)
         {
-            createdNoteIndex = index;
-            break;
+            if (noteItems.at(index).id.trimmed() == noteId)
+            {
+                return index;
+            }
         }
+        return -1;
+    };
+
+    int createdNoteIndex = createdNoteIndexForCurrentItems();
+    if (createdNoteIndex < 0 && !m_noteListModel.searchText().trimmed().isEmpty())
+    {
+        m_noteListModel.setSearchText(QString());
+        createdNoteIndex = createdNoteIndexForCurrentItems();
     }
     if (createdNoteIndex >= 0)
     {
         m_noteListModel.setCurrentIndex(createdNoteIndex);
     }
+    emit emptyNoteCreated(noteId);
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),

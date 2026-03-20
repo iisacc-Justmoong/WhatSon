@@ -110,6 +110,7 @@ public
     void noteItemCountChanged();
     void loadStateChanged();
     void noteDeleted(const QString& noteId);
+    void emptyNoteCreated(const QString& noteId);
     void viewModelHookRequested();
 
 private:

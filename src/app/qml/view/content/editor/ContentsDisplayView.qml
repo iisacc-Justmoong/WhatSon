@@ -12,7 +12,7 @@ Item {
     property var contentViewModel: null
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
-    property color displayColor: LV.Theme.panelBackground06
+    property color displayColor: LV.Theme.surfaceAlt
     property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int editorBottomInset: 16
@@ -51,7 +51,7 @@ Item {
         return normalizedMarkers;
     }
     readonly property int frameHorizontalInset: 2
-    readonly property color gutterColor: LV.Theme.panelBackground04
+    readonly property color gutterColor: LV.Theme.subSurface
     readonly property int gutterCommentMarkerOffset: 2
     readonly property int gutterCommentRailLeft: 4
     readonly property int gutterCommentRailWidth: 10
@@ -73,6 +73,7 @@ Item {
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
     readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
     readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
+    property var libraryHierarchyViewModel: null
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
@@ -91,8 +92,8 @@ Item {
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
-    property color panelColor: LV.Theme.panelBackground06
     property var panelViewModel: null
+    property string pendingEditorFocusNoteId: ""
     property alias pendingBodySave: editorSession.pendingBodySave
     readonly property int saveDebounceMs: 300
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
@@ -442,6 +443,44 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function focusEditorForPendingNote() {
+        const pendingNoteId = contentsView.pendingEditorFocusNoteId === undefined || contentsView.pendingEditorFocusNoteId === null
+                ? ""
+                : String(contentsView.pendingEditorFocusNoteId).trim();
+        const selectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (pendingNoteId.length === 0 || pendingNoteId !== selectedNoteId || !contentsView.hasSelectedNote)
+            return;
+
+        contentsView.pendingEditorFocusNoteId = "";
+        Qt.callLater(function () {
+            const activeNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                    ? ""
+                    : String(contentsView.selectedNoteId).trim();
+            if (activeNoteId !== pendingNoteId)
+                return;
+
+            const cursorPosition = contentsView.editorText === undefined || contentsView.editorText === null
+                    ? 0
+                    : String(contentsView.editorText).length;
+            contentEditor.forceActiveFocus();
+            if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
+                contentEditor.editorItem.forceActiveFocus();
+            if (contentEditor.cursorPosition !== undefined)
+                contentEditor.cursorPosition = cursorPosition;
+            if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined)
+                contentEditor.editorItem.cursorPosition = cursorPosition;
+        });
+    }
+    function scheduleEditorFocusForNote(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length === 0)
+            return;
+
+        contentsView.pendingEditorFocusNoteId = normalizedNoteId;
+        contentsView.focusEditorForPendingNote();
+    }
     function resolveEditorFlickable() {
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
             return null;
@@ -512,6 +551,7 @@ Item {
         if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
             editorSession.flushPendingEditorText();
         editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
     onVisibleChanged: {
@@ -561,6 +601,14 @@ Item {
         }
     }
     Connections {
+        function onEmptyNoteCreated(noteId) {
+            contentsView.scheduleEditorFocusForNote(noteId);
+        }
+
+        ignoreUnknownSignals: true
+        target: contentsView.libraryHierarchyViewModel
+    }
+    Connections {
         function onEditorTextSynchronized() {
             contentsView.scheduleGutterRefresh(4);
         }
@@ -589,10 +637,6 @@ Item {
         }
 
         target: contentsView.editorFlickable
-    }
-    Rectangle {
-        anchors.fill: parent
-        color: contentsView.panelColor
     }
     LV.VStack {
         id: drawerView
@@ -678,7 +722,7 @@ Item {
                         showRenderedOutput: false
                         showScrollBar: false
                         text: contentsView.editorText
-                        textColor: LV.Theme.textSecondary
+                        textColor: LV.Theme.bodyColor
                         textFormat: TextEdit.PlainText
                         wrapMode: TextEdit.Wrap
 

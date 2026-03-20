@@ -6,10 +6,18 @@ use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 
 const APP_EXECUTABLES: &[&str] = &[
+    "build/host-auto/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/host-auto/WhatSon.exe",
+    "build/host-auto/WhatSon",
     "build/host-auto/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/host-auto/src/app/bin/WhatSon.exe",
     "build/host-auto/src/app/bin/WhatSon",
     "build/host-auto/src/app/WhatSon",
+    "build/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/WhatSon.exe",
+    "build/WhatSon",
     "build/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/src/app/bin/WhatSon.exe",
     "build/src/app/bin/WhatSon",
     "build/src/app/WhatSon",
 ];

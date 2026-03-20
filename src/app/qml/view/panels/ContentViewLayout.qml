@@ -8,13 +8,13 @@ Item {
     id: contentViewLayout
 
     property var contentViewModel: null
-    property color displayColor: LV.Theme.panelBackground06
+    property color displayColor: LV.Theme.surfaceAlt
     property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
+    property var libraryHierarchyViewModel: null
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
     property var noteListModel: null
-    property color panelColor: LV.Theme.panelBackground07
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
@@ -35,10 +35,10 @@ Item {
         displayColor: contentViewLayout.displayColor
         drawerColor: contentViewLayout.drawerColor
         drawerHeight: contentViewLayout.drawerHeight
+        libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
         minDisplayHeight: contentViewLayout.minDisplayHeight
         minDrawerHeight: contentViewLayout.minDrawerHeight
         noteListModel: contentViewLayout.resolvedNoteListModel
-        panelColor: contentViewLayout.panelColor
         panelViewModel: contentViewLayout.panelViewModel
         splitterColor: contentViewLayout.splitterColor
         splitterHandleThickness: contentViewLayout.splitterHandleThickness
