@@ -142,6 +142,7 @@ LV.ApplicationWindow {
     internalRouterRegisterAsGlobalNavigator: true
     minimumHeight: windowMinHeight
     minimumWidth: adaptiveMobileLayout ? windowMobileMinWidth : desktopMinimumBodyWidth
+    mobileOversizedHeightEnabled: false
     navItems: []
     navigationEnabled: false
     pageInitialPath: applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingVisible ? onboardingRoutePath : workspaceRoutePath

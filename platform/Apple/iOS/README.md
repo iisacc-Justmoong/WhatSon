@@ -29,6 +29,11 @@ This directory contains iOS platform-specific bundle configuration.
   The app keeps a single `ApplicationWindow` alive and only commits `/onboarding` -> `/` after both hub load success
   and LVRS route confirmation. `hubLoaded` now advances the onboarding controller into `routingWorkspace`, while the
   final `ready` state is only reached after `Main.qml` receives the workspace navigation callback.
+- `main.cpp` must inject the initial `onboardingVisible` flag before `Main.qml` is loaded. LVRS `PageRouter`
+  snapshots `pageInitialPath` during startup, so post-load `setProperty(...)` mutations can miss the first
+  `/onboarding` commit on iOS.
+- `Main.qml` also disables LVRS `mobileOversizedHeightEnabled` on iOS. The default oversized mobile surface can place
+  the routed onboarding page host outside the visible viewport, leaving only the dark `windowColor` fill on screen.
 - `OnboardingHubController` also validates that the resolved iOS selection is a mountable local `.wshub` directory
   before runtime bootstrap starts. Unsupported document-provider URLs or incomplete package scaffolds now stay inside
   onboarding with an explicit error instead of collapsing the app session after the picker closes.

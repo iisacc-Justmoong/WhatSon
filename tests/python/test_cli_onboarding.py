@@ -44,15 +44,35 @@ class CliOnboardingTests(unittest.TestCase):
 
         self.assertIn("#include <QCommandLineParser>", app_main_text)
         self.assertIn('QStringLiteral("onboarding-only")', app_main_text)
+        self.assertIn("engine.loadFromModule(moduleUri, typeName);", app_main_text)
         self.assertIn(
-            'engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Onboarding"));',
+            'QObject* onboardingWindow = loadWindowFromModule(',
             app_main_text,
         )
-        self.assertIn('engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));', app_main_text)
+        self.assertIn(
+            'QStringLiteral("WhatSon.App"),',
+            app_main_text,
+        )
+        self.assertIn(
+            'QStringLiteral("Onboarding"),',
+            app_main_text,
+        )
+        self.assertIn(
+            'QStringLiteral("Main"),',
+            app_main_text,
+        )
         self.assertNotIn("mobileStandaloneOnboarding", app_main_text)
         self.assertIn("if (launchOptions.onboardingOnly)", app_main_text)
-        self.assertIn('onboardingWindow->setProperty("standaloneMode", true);', app_main_text)
-        self.assertIn('mainWindow->setProperty("onboardingVisible", true);', app_main_text)
+        self.assertIn("const auto loadWindowFromModule =", app_main_text)
+        self.assertIn("engine.setInitialProperties(initialProperties);", app_main_text)
+        self.assertIn("engine.setInitialProperties({});", app_main_text)
+        self.assertIn("const QVariantMap onboardingWindowInitialProperties{", app_main_text)
+        self.assertIn("const QVariantMap mainWindowInitialProperties{", app_main_text)
+        self.assertIn('QStringLiteral("standaloneMode"), true', app_main_text)
+        self.assertIn('QStringLiteral("visible"), true', app_main_text)
+        self.assertIn('QStringLiteral("onboardingVisible"), !initialHubLoaded', app_main_text)
+        self.assertNotIn('onboardingWindow->setProperty("standaloneMode", true);', app_main_text)
+        self.assertNotIn('mainWindow->setProperty("onboardingVisible", true);', app_main_text)
         self.assertIn('"hubSessionController"', app_main_text)
         self.assertIn('"onboardingHubController"', app_main_text)
         self.assertIn("onboardingHubController.syncCurrentHubSelection(startupHubPath);", app_main_text)
@@ -68,14 +88,15 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("SIGNAL(dismissed())", app_main_text)
         self.assertIn("SLOT(quit())", app_main_text)
         self.assertIn("&loadMainWindow", app_main_text)
-        self.assertIn("workspaceMainWindow = loadMainWindow();", app_main_text)
+        self.assertIn("workspaceMainWindow = loadMainWindow(mainWindowInitialProperties);", app_main_text)
+        self.assertIn("QObject* mainWindow = loadMainWindow(mainWindowInitialProperties);", app_main_text)
         self.assertIn("QObject::disconnect(onboardingDismissedConnection);", app_main_text)
         self.assertIn("&activateWindowObject", app_main_text)
         self.assertIn("activateWindowObject(workspaceMainWindow);", app_main_text)
         self.assertIn("activateWindowObject(mainWindow);", app_main_text)
         self.assertIn("QTimer::singleShot(0, &app, [onboardingWindowGuard]()", app_main_text)
         self.assertNotIn("onboardingWindowGuard->deleteLater();", app_main_text)
-        load_main_index = app_main_text.find("workspaceMainWindow = loadMainWindow();")
+        load_main_index = app_main_text.find("workspaceMainWindow = loadMainWindow(mainWindowInitialProperties);")
         activate_main_index = app_main_text.find("activateWindowObject(workspaceMainWindow);")
         hide_onboarding_index = app_main_text.find('onboardingWindowGuard->setProperty("visible", false);')
         self.assertGreaterEqual(load_main_index, 0)
@@ -97,6 +118,7 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("readonly property bool useEmbeddedOnboardingRoute: adaptiveMobileLayout || isMobilePlatform", main_qml_text)
         self.assertIn("property bool onboardingVisible: false", main_qml_text)
         self.assertIn("property bool onboardingRouteCommitPending: false", main_qml_text)
+        self.assertIn("mobileOversizedHeightEnabled: false", main_qml_text)
         self.assertIn("function syncOnboardingRoute(routeSource)", main_qml_text)
         self.assertIn("applicationWindow.activePageRouter.setRoot(targetPath);", main_qml_text)
         self.assertIn("pageInitialPath: applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingVisible ? onboardingRoutePath : workspaceRoutePath", main_qml_text)
@@ -259,10 +281,13 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("return createHubAtUrl(WhatSon::HubPath::urlFromPath(targetHubPath));", controller_text)
         self.assertIn("return WhatSon::HubPath::pathFromUrl(hubUrl);", controller_text)
         self.assertIn("androidDocumentIdFromUrl(const QUrl& url)", hub_path_utils_text)
+        self.assertIn("androidDownloadsPathFromDocumentId(const QString& documentId)", hub_path_utils_text)
         self.assertIn("resolveAndroidDocumentPath(const QUrl& url)", hub_path_utils_text)
         self.assertIn('authority == QStringLiteral("com.android.externalstorage.documents")', hub_path_utils_text)
+        self.assertIn('authority == QStringLiteral("com.android.providers.downloads.documents")', hub_path_utils_text)
+        self.assertIn('const QString basePath = QStringLiteral("/storage/emulated/0/Download");', hub_path_utils_text)
         self.assertIn('QStringLiteral("/storage/emulated/0")', hub_path_utils_text)
-        self.assertIn('documentId.startsWith(QStringLiteral("raw:"), Qt::CaseInsensitive)', hub_path_utils_text)
+        self.assertIn('trimmedDocumentId.startsWith(QStringLiteral("raw:"), Qt::CaseInsensitive)', hub_path_utils_text)
         self.assertIn("bool startAccessForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage);",
                       ios_access_header_text)
         self.assertIn("bool ensureAccessForPath(const QString& localPath, QString* errorMessage);",

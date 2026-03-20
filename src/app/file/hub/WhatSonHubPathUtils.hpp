@@ -86,6 +86,53 @@ namespace WhatSon::HubPath
         return QDir::cleanPath(QDir(basePath).filePath(relativePath));
     }
 
+    inline QString androidDownloadsPathFromDocumentId(const QString& documentId)
+    {
+        const QString trimmedDocumentId = documentId.trimmed();
+        if (trimmedDocumentId.isEmpty())
+        {
+            return {};
+        }
+
+        if (trimmedDocumentId.startsWith(QStringLiteral("raw:"), Qt::CaseInsensitive))
+        {
+            return QDir::cleanPath(trimmedDocumentId.mid(4));
+        }
+
+        if (trimmedDocumentId.startsWith(QStringLiteral("/storage/"), Qt::CaseInsensitive))
+        {
+            return QDir::cleanPath(trimmedDocumentId);
+        }
+
+        if (trimmedDocumentId.startsWith(QStringLiteral("file://"), Qt::CaseInsensitive))
+        {
+            return QDir::cleanPath(QUrl(trimmedDocumentId).toLocalFile());
+        }
+
+        const QString basePath = QStringLiteral("/storage/emulated/0/Download");
+        const int separatorIndex = trimmedDocumentId.indexOf(QLatin1Char(':'));
+        const QString rootName = separatorIndex < 0 ? trimmedDocumentId : trimmedDocumentId.left(separatorIndex).trimmed();
+        QString relativePath = separatorIndex < 0 ? QString() : trimmedDocumentId.mid(separatorIndex + 1).trimmed();
+
+        if (rootName.compare(QStringLiteral("download"), Qt::CaseInsensitive) != 0
+            && rootName.compare(QStringLiteral("downloads"), Qt::CaseInsensitive) != 0)
+        {
+            return {};
+        }
+
+        if (relativePath.startsWith(QStringLiteral("Download/"), Qt::CaseInsensitive))
+        {
+            relativePath.remove(0, QStringLiteral("Download/").size());
+        }
+
+        if (relativePath.isEmpty())
+        {
+            return basePath;
+        }
+
+        return QDir::cleanPath(QDir(basePath).filePath(relativePath));
+    }
+
     inline QString resolveAndroidDocumentPath(const QUrl& url)
     {
         if (!url.isValid() || url.scheme() != QStringLiteral("content"))
@@ -107,18 +154,7 @@ namespace WhatSon::HubPath
 
         if (authority == QStringLiteral("com.android.providers.downloads.documents"))
         {
-            if (documentId.startsWith(QStringLiteral("raw:"), Qt::CaseInsensitive))
-            {
-                return QDir::cleanPath(documentId.mid(4));
-            }
-            if (documentId.startsWith(QStringLiteral("/storage/"), Qt::CaseInsensitive))
-            {
-                return QDir::cleanPath(documentId);
-            }
-            if (documentId.startsWith(QStringLiteral("file://"), Qt::CaseInsensitive))
-            {
-                return QDir::cleanPath(QUrl(documentId).toLocalFile());
-            }
+            return androidDownloadsPathFromDocumentId(documentId);
         }
 
         return {};

@@ -40,6 +40,7 @@ private
     void baseFileHelpers_createDirectoryAndFile();
     void joinPath_preservesContentUriSegments();
     void joinPath_resolvesAndroidExternalStorageTreeUri();
+    void joinPath_resolvesAndroidDownloadsTreeUri();
     void createHub_createsWorkspacePackageAndManifest();
     void createHubAtPath_createsExplicitPackagePathAndAppendsExtension();
     void createHub_failsWhenHubAlreadyExists();
@@ -95,6 +96,16 @@ void WhatSonWorkspaceHubCreatorTest::joinPath_resolvesAndroidExternalStorageTree
         creator.joinPath(
             QStringLiteral(
                 "content://com.android.externalstorage.documents/tree/primary%3ADownload"),
+            QStringLiteral(".whatson/hub.json")),
+        QStringLiteral("/storage/emulated/0/Download/.whatson/hub.json"));
+}
+
+void WhatSonWorkspaceHubCreatorTest::joinPath_resolvesAndroidDownloadsTreeUri()
+{
+    const HubCreatorProbe creator(QStringLiteral("/tmp"));
+    QCOMPARE(
+        creator.joinPath(
+            QStringLiteral("content://com.android.providers.downloads.documents/tree/download"),
             QStringLiteral(".whatson/hub.json")),
         QStringLiteral("/storage/emulated/0/Download/.whatson/hub.json"));
 }

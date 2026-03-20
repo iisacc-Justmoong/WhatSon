@@ -71,9 +71,17 @@ Defined in `CMakeLists.txt`:
   can target a `.wshub` package document directly
 - Android hub create/load bootstrap resolves common external-storage SAF `content://` document URLs back into shared
   local filesystem paths before they reach the directory-based `.wshub` creator and runtime loader
+- That Android URI bridge now covers both `com.android.externalstorage.documents` and the stock Downloads provider
+  `com.android.providers.downloads.documents`, mapping the latter's `tree/download` and `download:*` document IDs to
+  `/storage/emulated/0/Download/...` so onboarding create/select flows agree on the same package root
 - `Main.qml` now registers both the workspace shell route (`/`) and a mobile onboarding route (`/onboarding`) on the
   LVRS internal `PageRouter`. `onboardingVisible` becomes the route source of truth for mobile/adaptive shells, while
   desktop continues to present onboarding through the dedicated `Onboarding.qml` dialog window
+- `main.cpp` now injects `onboardingVisible` and `onboardingHubController` as QML initial properties before loading
+  `Main.qml`, so LVRS `PageRouter.initialPath` resolves the correct mobile startup route on the very first frame
+- `Main.qml` explicitly disables LVRS `mobileOversizedHeightEnabled` for the app root. The default oversized mobile
+  window contract centers the live page host inside a much taller synthetic surface, which is incompatible with
+  WhatSon's full-screen routed onboarding surface and can leave only the background fill visible on iOS/Android
 - `OnboardingHubController` now owns an explicit mobile bootstrap session state:
   `idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`. Embedded mobile onboarding does
   not declare success on `hubLoaded` alone; `Main.qml` waits for the LVRS router to confirm the `/` workspace route
@@ -606,6 +614,12 @@ Primary root:
 - `Main.qml` (`LV.ApplicationWindow`)
 - `Main.qml` now uses LVRS internal page-stack routing for the shell (`useInternalPageStack`, `pageInitialPath`,
   `pageRoutes`, `activePageRouter`) instead of a root-level ad-hoc loader deciding which top-level surface to mount.
+- `main.cpp` must provide the mobile onboarding startup flag through `QQmlApplicationEngine::setInitialProperties(...)`
+  before `Main.qml` is loaded; mutating `onboardingVisible` only after construction races LVRS `PageRouter` startup and
+  can skip the `/onboarding` first-page commit on iOS/Android.
+- `Main.qml` also opts out of LVRS oversized mobile window height (`mobileOversizedHeightEnabled: false`) so the
+  internal page router's active page remains inside the visible viewport instead of being centered inside a synthetic
+  `16384px` mobile surface.
 - The current shell route is a single workspace page; that page decides between desktop and mobile shell composition
   from LVRS adaptive layout state (`adaptiveMobileLayout`), not from an independent root routing flag.
 - `Main.qml` no longer imports `Qt.labs.platform` directly. The macOS-native menu bar moved into

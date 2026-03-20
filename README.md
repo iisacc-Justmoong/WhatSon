@@ -10,7 +10,11 @@ WhatSon is an LVRS-based Qt Quick application.
 ## Adaptive Layout
 
 - `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs:
-  `useInternalPageStack: true`, `pageInitialPath: "/"`, and an explicit routed workspace entry in `pageRoutes`.
+  `useInternalPageStack: true`, an explicit routed workspace entry in `pageRoutes`, and a `pageInitialPath` that is
+  seeded from the window's initial `onboardingVisible` state before the root QML object is loaded.
+- `src/app/qml/Main.qml` also disables LVRS `mobileOversizedHeightEnabled` for this app root. The default oversized
+  mobile window strategy paints large top/bottom fill regions with `windowColor`, which pushed the routed onboarding
+  page host outside the visible first-frame viewport and produced an apparently blank screen on iOS/Android.
 - The routed workspace page still composes WhatSon's custom desktop/mobile shells, but layout selection now hangs off
   LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
 - `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow

@@ -123,6 +123,7 @@ private
     void createHubInDirectoryUrl_avoidsCollidingHubFileNames();
     void createHubInDirectoryUrl_preservesContentUriTargetPath();
     void createHubInDirectoryUrl_resolvesAndroidExternalStorageTreeUri();
+    void createHubInDirectoryUrl_resolvesAndroidDownloadsTreeUri();
     void prepareHubSelectionFromUrl_collectsMultiplePackageCandidates();
     void loadHubSelectionCandidate_loadsChosenPackage();
     void loadHubFromUrl_resolvesSinglePackageInSelectedFolder();
@@ -302,6 +303,34 @@ void OnboardingHubControllerTest::createHubInDirectoryUrl_resolvesAndroidExterna
 
     const QUrl directoryUrl(
         QStringLiteral("content://com.android.externalstorage.documents/tree/primary%3ADownload"));
+    QVERIFY(controller.createHubInDirectoryUrl(directoryUrl, QStringLiteral("Untitled.wshub")));
+    QCOMPARE(capturedCreatePath, QStringLiteral("/storage/emulated/0/Download/Untitled.wshub"));
+    QCOMPARE(controller.currentFolderUrl(), QUrl::fromLocalFile(QStringLiteral("/storage/emulated/0/Download")));
+}
+
+void OnboardingHubControllerTest::createHubInDirectoryUrl_resolvesAndroidDownloadsTreeUri()
+{
+    OnboardingHubController controller;
+    QString capturedCreatePath;
+    controller.setCreateHubCallback(
+        [&capturedCreatePath](const QString& requestedPath, QString* outPackagePath, QString* errorMessage) -> bool
+        {
+            Q_UNUSED(errorMessage);
+            capturedCreatePath = requestedPath;
+            if (outPackagePath != nullptr)
+            {
+                *outPackagePath = requestedPath;
+            }
+            return true;
+        });
+    controller.setLoadHubCallback([](const QString&, QString* errorMessage) -> bool
+    {
+        Q_UNUSED(errorMessage);
+        return true;
+    });
+
+    const QUrl directoryUrl(
+        QStringLiteral("content://com.android.providers.downloads.documents/tree/download"));
     QVERIFY(controller.createHubInDirectoryUrl(directoryUrl, QStringLiteral("Untitled.wshub")));
     QCOMPARE(capturedCreatePath, QStringLiteral("/storage/emulated/0/Download/Untitled.wshub"));
     QCOMPARE(controller.currentFolderUrl(), QUrl::fromLocalFile(QStringLiteral("/storage/emulated/0/Download")));

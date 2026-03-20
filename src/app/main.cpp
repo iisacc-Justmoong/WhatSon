@@ -800,16 +800,28 @@ int main(int argc, char* argv[])
         });
     };
 
-    const auto loadMainWindow = [&engine]() -> QObject*
+    const auto loadWindowFromModule =
+        [&engine](const QString& moduleUri, const QString& typeName, const QVariantMap& initialProperties = {}) -> QObject*
     {
         const qsizetype rootObjectCount = engine.rootObjects().size();
-        engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Main"));
+        engine.setInitialProperties(initialProperties);
+        engine.loadFromModule(moduleUri, typeName);
+        engine.setInitialProperties({});
         if (engine.rootObjects().size() <= rootObjectCount)
         {
             return nullptr;
         }
 
         return engine.rootObjects().constLast();
+    };
+
+    const auto loadMainWindow =
+        [&loadWindowFromModule](const QVariantMap& initialProperties = {}) -> QObject*
+    {
+        return loadWindowFromModule(
+            QStringLiteral("WhatSon.App"),
+            QStringLiteral("Main"),
+            initialProperties);
     };
 
     const auto activateWindowObject = [](QObject* windowObject)
@@ -824,14 +836,15 @@ int main(int argc, char* argv[])
 
     if (launchOptions.onboardingOnly)
     {
-        const qsizetype rootObjectCount = engine.rootObjects().size();
-        engine.loadFromModule(QStringLiteral("WhatSon.App"), QStringLiteral("Onboarding"));
-        if (engine.rootObjects().size() <= rootObjectCount)
-        {
-            return EXIT_FAILURE;
-        }
-
-        QObject* onboardingWindow = engine.rootObjects().constLast();
+        const QVariantMap onboardingWindowInitialProperties{
+            {QStringLiteral("hubSessionController"), QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))},
+            {QStringLiteral("standaloneMode"), true},
+            {QStringLiteral("visible"), true}
+        };
+        QObject* onboardingWindow = loadWindowFromModule(
+            QStringLiteral("WhatSon.App"),
+            QStringLiteral("Onboarding"),
+            onboardingWindowInitialProperties);
         if (onboardingWindow == nullptr)
         {
             qWarning().noquote() << QStringLiteral("Failed to resolve onboarding window root object.");
@@ -840,9 +853,6 @@ int main(int argc, char* argv[])
 
         QPointer<QObject> onboardingWindowGuard(onboardingWindow);
         QObject* workspaceMainWindow = nullptr;
-        onboardingWindow->setProperty(
-            "hubSessionController",
-            QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
 
         const QMetaObject::Connection onboardingDismissedConnection = QObject::connect(
             onboardingWindow,
@@ -867,7 +877,14 @@ int main(int argc, char* argv[])
                     return;
                 }
 
-                workspaceMainWindow = loadMainWindow();
+                const QVariantMap mainWindowInitialProperties{
+                    {
+                        QStringLiteral("onboardingHubController"),
+                        QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))
+                    },
+                    {QStringLiteral("onboardingVisible"), false}
+                };
+                workspaceMainWindow = loadMainWindow(mainWindowInitialProperties);
                 if (workspaceMainWindow == nullptr)
                 {
                     qWarning().noquote() <<
@@ -877,10 +894,6 @@ int main(int argc, char* argv[])
                 }
 
                 QObject::disconnect(onboardingDismissedConnection);
-                workspaceMainWindow->setProperty(
-                    "onboardingHubController",
-                    QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
-                workspaceMainWindow->setProperty("onboardingVisible", false);
                 activateWindowObject(workspaceMainWindow);
 
                 if (onboardingWindowGuard)
@@ -898,25 +911,20 @@ int main(int argc, char* argv[])
 
                 startForegroundServices();
             });
-
-        onboardingWindow->setProperty("standaloneMode", true);
-        onboardingWindow->setProperty("visible", true);
         return app.exec();
     }
 
-    QObject* mainWindow = loadMainWindow();
+    const QVariantMap mainWindowInitialProperties{
+        {
+            QStringLiteral("onboardingHubController"),
+            QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))
+        },
+        {QStringLiteral("onboardingVisible"), !initialHubLoaded}
+    };
+    QObject* mainWindow = loadMainWindow(mainWindowInitialProperties);
     if (mainWindow == nullptr)
     {
         return EXIT_FAILURE;
-    }
-
-    mainWindow->setProperty(
-        "onboardingHubController",
-        QVariant::fromValue(static_cast<QObject*>(&onboardingHubController)));
-
-    if (!initialHubLoaded)
-    {
-        mainWindow->setProperty("onboardingVisible", true);
     }
 
     activateWindowObject(mainWindow);
