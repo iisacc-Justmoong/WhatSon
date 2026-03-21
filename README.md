@@ -521,6 +521,11 @@ for hub/note hierarchy payloads.
   shared `NavigationBarLayout.qml` (`compactMode: true`), `HierarchySidebarLayout.qml`, and `StatusBarLayout.qml`,
   so the floating top bar, hierarchy column, and bottom add-note bar all stay on the same navigation/sidebar model
   contracts used by the desktop shell.
+- The node `174:4986` mobile shell now follows the Figma stack contract directly: `16px` outer inset and `24px`
+  section spacing are owned by `MobileNormalLayout.qml`, the compact navigation frame stays `24px` high on
+  `panelBackground10`, the hierarchy column stays on the same `panelBackground01` canvas as the mobile root instead of
+  reusing the desktop `panelBackground04` block, and the compact status bar resolves to a `20px` frame with the
+  existing add-note affordance on the trailing control-height slot.
 - `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
   existing context-menu button, while `NavigationBarLayout.qml` adds the separate folder-create affordance and keeps
   the navigation mode combo on the shared `NavigationModeViewModel`.

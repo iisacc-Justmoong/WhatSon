@@ -66,19 +66,20 @@ Rectangle {
         return rectY + Math.max(0, Math.floor((rectHeight - sidebarHierarchyView.hierarchyRenameFieldHeight) * 0.5));
     }
     property var hierarchyViewModel: null
-    property int horizontalInset: 2
+    property int horizontalInset: LV.Theme.gap2
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
-    readonly property int searchHeaderTopGap: LV.Theme.gap4
+    property int searchHeaderTopGap: LV.Theme.gap4
+    property int searchListGap: LV.Theme.gapNone
     property color searchFieldBackgroundColor: LV.Theme.panelBackground10
     property bool searchFieldVisible: false
     property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel && hierarchyViewModel.selectedIndex !== undefined ? hierarchyViewModel.selectedIndex : -1
     readonly property bool setItemExpandedContractAvailable: hierarchyViewModel && hierarchyViewModel.setItemExpanded !== undefined
     readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel && hierarchyViewModel.hierarchyModel !== undefined ? hierarchyViewModel.hierarchyModel : [])
-    readonly property int toolbarButtonSize: 20
+    readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
     property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
@@ -95,7 +96,7 @@ Rectangle {
         }
         return items;
     }
-    readonly property int verticalInset: 2
+    property int verticalInset: LV.Theme.gap2
     readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? Boolean(hierarchyViewModel.viewOptionsEnabled) : true
 
     signal searchSubmitted(string text)
@@ -327,7 +328,7 @@ Rectangle {
         anchors.fill: parent
         anchors.leftMargin: sidebarHierarchyView.horizontalInset
         anchors.rightMargin: sidebarHierarchyView.horizontalInset
-        anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.toolbarButtonSize + sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight : 0)
+        anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.toolbarButtonSize + sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap : 0)
         editable: sidebarHierarchyView.hierarchyEditable
         keyboardListNavigationEnabled: false
         model: sidebarHierarchyView.standardHierarchyModel

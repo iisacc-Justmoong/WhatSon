@@ -10,23 +10,25 @@ Rectangle {
     id: navigationBar
 
     readonly property string activeNavigationModeName: navigationModeViewModel && navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : "Control"
-    readonly property int bottomInset: 2
-    readonly property int compactHorizontalInset: Math.max(12, Math.min(24, Math.round(width * 0.04)))
+    readonly property int bottomInset: LV.Theme.gap2
+    readonly property int compactHorizontalInset: LV.Theme.gapNone
+    readonly property int compactLeftGroupSpacing: LV.Theme.gap4
+    readonly property int compactRightGroupSpacing: LV.Theme.gap12
     property bool compactAddFolderEnabled: true
     property bool compactAddFolderVisible: false
     property bool compactMode: false
-    property color compactSurfaceColor: LV.Theme.panelBackground06
-    readonly property int compactTopInset: compactHorizontalInset
+    property color compactSurfaceColor: LV.Theme.panelBackground10
+    readonly property int compactTopInset: LV.Theme.gapNone
     property bool detailPanelCollapsed: false
     property var editorViewModeViewModel: null
-    readonly property int effectivePanelHeight: compactMode ? (compactTopInset + panelHeight) : panelHeight
+    readonly property int effectivePanelHeight: panelHeight
     property var navigationModeViewModel: null
     property color panelColor: LV.Theme.panelBackground06
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
-    property int panelHeight: 24
+    property int panelHeight: LV.Theme.gap24
     property bool sidebarCollapsed: false
-    readonly property int sideInset: compactMode ? 8 : 4
-    readonly property int topInset: 2
+    readonly property int sideInset: compactMode ? LV.Theme.gap8 : LV.Theme.gap4
+    readonly property int topInset: LV.Theme.gap2
 
     signal compactAddFolderRequested
     signal toggleDetailPanelRequested
@@ -50,13 +52,13 @@ Rectangle {
 
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.leftMargin: navigationBar.compactMode ? navigationBar.compactHorizontalInset : 0
+        anchors.leftMargin: navigationBar.compactMode ? navigationBar.compactHorizontalInset : LV.Theme.gapNone
         anchors.right: parent.right
-        anchors.rightMargin: navigationBar.compactMode ? navigationBar.compactHorizontalInset : 0
+        anchors.rightMargin: navigationBar.compactMode ? navigationBar.compactHorizontalInset : LV.Theme.gapNone
         anchors.top: parent.top
-        anchors.topMargin: navigationBar.compactMode ? navigationBar.compactTopInset : 0
+        anchors.topMargin: navigationBar.compactMode ? navigationBar.compactTopInset : LV.Theme.gapNone
         color: navigationBar.compactMode ? navigationBar.compactSurfaceColor : navigationBar.panelColor
-        radius: navigationBar.compactMode ? 32 : 0
+        radius: navigationBar.compactMode ? LV.Theme.radiusXl * 2 : LV.Theme.gapNone
 
         Item {
             id: navigationBarContents
@@ -69,14 +71,14 @@ Rectangle {
 
             LV.HStack {
                 anchors.fill: parent
-                spacing: 0
+                spacing: LV.Theme.gapNone
                 visible: !navigationBar.compactMode
 
                 NavigationView.NavigationPropertiesBar {
                     id: propertiesBar
 
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredHeight: 20
+                    Layout.preferredHeight: LV.Theme.gap20
                     compactMode: false
                     editorViewModeViewModel: navigationBar.editorViewModeViewModel
                     navigationModeViewModel: navigationBar.navigationModeViewModel
@@ -91,7 +93,7 @@ Rectangle {
                     id: applicationBarLoader
 
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredHeight: 20
+                    Layout.preferredHeight: LV.Theme.gap20
                     sourceComponent: {
                         switch (navigationBar.activeNavigationModeName) {
                         case "View":
@@ -107,20 +109,24 @@ Rectangle {
             }
             LV.HStack {
                 anchors.fill: parent
-                spacing: 0
+                spacing: LV.Theme.gapNone
                 visible: navigationBar.compactMode
 
                 LV.HStack {
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: LV.Theme.gap12
+                    spacing: navigationBar.compactLeftGroupSpacing
 
                     LV.IconButton {
                         iconName: "generalsettings"
+                        horizontalPadding: LV.Theme.gap2
+                        tone: LV.AbstractButton.Borderless
+                        verticalPadding: LV.Theme.gap2
 
                         onClicked: navigationBar.requestViewHook("compact-open-settings")
                     }
                     NavigationView.NavigationModeBar {
                         Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredHeight: LV.Theme.gap18
                         navigationModeViewModel: navigationBar.navigationModeViewModel
                         showLabel: false
                     }
@@ -130,11 +136,14 @@ Rectangle {
                 }
                 LV.HStack {
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: LV.Theme.gap12
+                    spacing: navigationBar.compactRightGroupSpacing
 
                     LV.IconButton {
                         enabled: navigationBar.compactAddFolderEnabled
-                        iconName: "nodeslibraryFolder"
+                        horizontalPadding: LV.Theme.gap2
+                        iconName: "nodesnewFolder"
+                        tone: LV.AbstractButton.Borderless
+                        verticalPadding: LV.Theme.gap2
                         visible: navigationBar.compactAddFolderVisible
 
                         onClicked: {
@@ -144,7 +153,7 @@ Rectangle {
                     }
                     Loader {
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredHeight: 20
+                        Layout.preferredHeight: LV.Theme.gap20
                         sourceComponent: {
                             switch (navigationBar.activeNavigationModeName) {
                             case "View":

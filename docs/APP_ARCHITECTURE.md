@@ -325,9 +325,10 @@ Domain-isolated support:
           one of `navigation/view/NavigationApplicationViewBar.qml`,
           `navigation/edit/NavigationApplicationEditBar.qml`, or
           `navigation/control/NavigationApplicationControlBar.qml`.
-        - `NavigationBarLayout.qml` compact mode is now the mobile floating top-bar contract: it keeps the shared
-          mode-switch combo, replaces the old compact placeholder row with a left settings affordance plus an optional
-          folder-create action, and still resolves the right-side application bar through the active navigation mode.
+        - `NavigationBarLayout.qml` compact mode is now the mobile node `174:4986` top-bar contract: the shared frame
+          stays `24px` high on `panelBackground10`, uses `8px/2px` internal padding from LVRS tokens, keeps a `4px`
+          settings-to-mode gap on the left, and a `12px` new-folder-to-menu gap on the right while still resolving the
+          application surface through the active navigation mode.
         - Control-only child bars (`NavigationCalendarBar.qml`, `NavigationAppControlBar.qml`,
           `NavigationExportBar.qml`)
           now live under `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
@@ -354,9 +355,15 @@ Domain-isolated support:
               the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
             - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
               `create-note` hook path instead of duplicating note-creation policy in a second shortcut-only code path.
-            - `StatusBarLayout.qml` compact mode is now the mobile floating bottom bar and emits `createNoteRequested`,
-              which `MobileNormalLayout.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()`
-              so the bottom add-note affordance stays on the same shared creation path as desktop navigation controls.
+            - `StatusBarLayout.qml` compact mode is now the node `174:4986` mobile bottom bar: it resolves to a `20px`
+              frame, keeps the field flush with the shared `370px` content span, reserves the trailing
+              `controlHeightMd` slot for the add-note affordance, and still emits `createNoteRequested`, which
+              `MobileNormalLayout.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
+              bottom add-note affordance stays on the same shared creation path as desktop navigation controls.
+            - `HierarchySidebarLayout.qml` now exposes `searchHeaderTopGap`, `searchListGap`, and `verticalInset`
+              overrides so the shared hierarchy panel can match the mobile `174:4986` geometry without forking the
+              implementation; the mobile shell uses those overrides to keep hierarchy content on the root
+              `panelBackground01` canvas instead of reintroducing the desktop `panelBackground04` panel background.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.

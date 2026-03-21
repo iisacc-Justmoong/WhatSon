@@ -8,15 +8,18 @@ Item {
     readonly property bool createFolderEnabled: sidebarView.createFolderEnabled
     readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
     property bool footerVisible: true
-    property int horizontalInset: 2
+    property int horizontalInset: LV.Theme.gap2
     property color panelColor: LV.Theme.panelBackground04
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
     readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
     required property var sidebarHierarchyViewModel
     property bool searchFieldVisible: false
+    property int searchHeaderTopGap: LV.Theme.gap4
+    property int searchListGap: LV.Theme.gapNone
     property string searchText: ""
     property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
+    property int verticalInset: LV.Theme.gap2
 
     signal activeToolbarIndexChangeRequested(int index)
     signal searchSubmitted(string text)
@@ -107,9 +110,12 @@ Item {
         horizontalInset: hierarchyView.horizontalInset
         panelColor: hierarchyView.panelColor
         searchFieldVisible: hierarchyView.searchFieldVisible
+        searchHeaderTopGap: hierarchyView.searchHeaderTopGap
+        searchListGap: hierarchyView.searchListGap
         searchText: hierarchyView.searchText
         toolbarFrameWidth: hierarchyView.toolbarFrameWidth
         toolbarIconNames: hierarchyView.toolbarIconNames
+        verticalInset: hierarchyView.verticalInset
 
         onSearchSubmitted: function (text) {
             hierarchyView.searchText = text;

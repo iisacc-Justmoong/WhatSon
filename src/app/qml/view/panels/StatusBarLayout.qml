@@ -5,17 +5,17 @@ import LVRS 1.0 as LV
 Rectangle {
     id: statusBar
 
-    property int compactBottomInset: compactHorizontalInset
+    property int compactBottomInset: LV.Theme.gapNone
     property int compactContainerRadius: LV.Theme.radiusXl * 2
     property color compactFieldColor: LV.Theme.panelBackground10
     property int compactFieldHeight: LV.Theme.gap18
-    property int compactFieldRadius: Math.round(compactFieldHeight / 2)
-    property int compactHorizontalInset: Math.max(LV.Theme.gap12, Math.min(LV.Theme.gap24, Math.round(width * 0.04)))
+    property int compactFieldRadius: LV.Theme.radiusControl
+    property int compactHorizontalInset: LV.Theme.gapNone
     property bool compactMode: false
     property int compactNewFileSlotWidth: LV.Theme.controlHeightMd
     property int compactToolbarHeight: LV.Theme.gap20
     property string compactToolbarText: ""
-    readonly property int effectivePanelHeight: compactMode ? (compactBottomInset + compactToolbarHeight) : panelHeight
+    readonly property int effectivePanelHeight: compactMode ? compactToolbarHeight : panelHeight
     property color panelColor: LV.Theme.panelBackground06
     property int panelHeight: LV.Theme.controlHeightMd
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("StatusBarLayout") : null
@@ -24,7 +24,7 @@ Rectangle {
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
     readonly property int searchFieldMaxWidth: 541
     readonly property int searchFieldMinWidth: 220
-    property int searchFieldRadius: 5
+    property int searchFieldRadius: LV.Theme.radiusControl
     readonly property int searchFieldWidth: {
         var availableWidth = Math.max(0, width - searchFieldHorizontalInset * 2);
         if (availableWidth < searchFieldMinWidth)
@@ -140,13 +140,7 @@ Rectangle {
         LV.HStack {
             id: compactSearchBar
 
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: statusBar.compactBottomInset
-            anchors.left: parent.left
-            anchors.leftMargin: statusBar.compactHorizontalInset
-            anchors.right: parent.right
-            anchors.rightMargin: statusBar.compactHorizontalInset
-            anchors.top: parent.top
+            anchors.fill: parent
             spacing: LV.Theme.gapNone
 
             Rectangle {
@@ -189,6 +183,9 @@ Rectangle {
 
                     anchors.centerIn: parent
                     iconName: "addFile"
+                    horizontalPadding: LV.Theme.gap2
+                    tone: LV.AbstractButton.Borderless
+                    verticalPadding: LV.Theme.gap2
 
                     onClicked: {
                         statusBar.requestViewHook("create-note");

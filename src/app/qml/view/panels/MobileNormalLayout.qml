@@ -8,6 +8,7 @@ Item {
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
     readonly property int contentInset: LV.Theme.gap16
+    readonly property int sectionSpacing: LV.Theme.gap24
     property var editorViewModeViewModel: null
     property string hierarchySearchText: ""
     property var navigationModeViewModel: null
@@ -43,7 +44,8 @@ Item {
     }
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: mobileNormalLayout.contentInset
+        spacing: mobileNormalLayout.sectionSpacing
 
         NavigationBarLayout {
             id: compactNavigationBar
@@ -60,19 +62,19 @@ Item {
         HierarchySidebarLayout {
             id: hierarchySidebar
 
-            Layout.bottomMargin: mobileNormalLayout.contentInset
             Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.leftMargin: mobileNormalLayout.contentInset
-            Layout.rightMargin: mobileNormalLayout.contentInset
-            Layout.topMargin: mobileNormalLayout.contentInset
             footerVisible: false
-            panelColor: LV.Theme.panelBackground04
+            horizontalInset: LV.Theme.gapNone
+            panelColor: mobileNormalLayout.canvasColor
             searchFieldVisible: true
+            searchHeaderTopGap: LV.Theme.gap2
+            searchListGap: LV.Theme.gap2
             searchText: mobileNormalLayout.hierarchySearchText
             sidebarHierarchyViewModel: mobileNormalLayout.sidebarHierarchyViewModel
-            toolbarFrameWidth: 200
+            toolbarFrameWidth: width
             toolbarIconNames: mobileNormalLayout.toolbarIconNames
+            verticalInset: LV.Theme.gapNone
 
             onSearchSubmitted: function (text) {
                 mobileNormalLayout.hierarchySearchText = text;
