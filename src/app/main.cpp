@@ -1,3 +1,4 @@
+#include "backend/runtime/appbootstrap.h"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
@@ -13,6 +14,7 @@
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/onboarding/OnboardingHubController.hpp"
+#include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 #include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "viewmodel/panel/HierarchyDragDropBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
@@ -28,6 +30,7 @@
 #include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/hub/WhatSonHubWriteLease.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
@@ -360,7 +363,19 @@ namespace
 
 int main(int argc, char* argv[])
 {
+    lvrs::AppBootstrapOptions bootstrapOptions;
+    bootstrapOptions.applicationName = QStringLiteral("WhatSon");
+    bootstrapOptions.quickStyleName = QStringLiteral("Basic");
+
+    const lvrs::AppBootstrapState bootstrapState = lvrs::preApplicationBootstrap(bootstrapOptions);
+    if (!bootstrapState.ok)
+    {
+        qCritical().noquote() << bootstrapState.errorMessage;
+        return EXIT_FAILURE;
+    }
+
     QGuiApplication app(argc, argv);
+    lvrs::postApplicationBootstrap(app, bootstrapOptions);
 
     if (qEnvironmentVariableIsEmpty("WHATSON_DEBUG_MODE"))
     {
@@ -685,6 +700,8 @@ int main(int argc, char* argv[])
             return hubCreator.createHubAtPath(requestedHubPath, outPackagePath, errorMessage);
         });
     onboardingHubController.setLoadHubCallback(loadHubIntoRuntime);
+    OnboardingRouteBootstrapController onboardingRouteBootstrapController;
+    onboardingRouteBootstrapController.setHubController(&onboardingHubController);
     QObject::connect(
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
@@ -696,7 +713,27 @@ int main(int argc, char* argv[])
         });
 
     bool initialHubLoaded = false;
-    const QString startupHubPath = selectedHubStore.startupHubPath(resolveBlueprintHubPath());
+    QString startupHubPath = selectedHubStore.startupHubPath(resolveBlueprintHubPath());
+    if (WhatSon::Android::Storage::isMountedHubPath(startupHubPath))
+    {
+        const QString sourceUri = WhatSon::Android::Storage::mountedHubSourceUri(startupHubPath);
+        if (!sourceUri.isEmpty())
+        {
+            QString remountedHubPath;
+            QString remountError;
+            if (WhatSon::Android::Storage::mountHub(sourceUri, &remountedHubPath, &remountError))
+            {
+                startupHubPath = remountedHubPath;
+            }
+            else
+            {
+                qWarning().noquote()
+                    << QStringLiteral("Failed to remount Android provider-backed WhatSon Hub '%1': %2")
+                        .arg(sourceUri, remountError.trimmed());
+            }
+        }
+    }
+
     if (!startupHubPath.isEmpty())
     {
         QString errorMessage;
@@ -868,6 +905,7 @@ int main(int argc, char* argv[])
                 &startForegroundServices,
                 &workspaceMainWindow,
                 &onboardingHubController,
+                &onboardingRouteBootstrapController,
                 &onboardingDismissedConnection,
                 &activateWindowObject,
                 onboardingWindowGuard](const QString&)
@@ -882,8 +920,13 @@ int main(int argc, char* argv[])
                         QStringLiteral("onboardingHubController"),
                         QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))
                     },
-                    {QStringLiteral("onboardingVisible"), false}
+                    {QStringLiteral("desktopOnboardingWindowVisible"), false},
+                    {
+                        QStringLiteral("onboardingRouteBootstrapController"),
+                        QVariant::fromValue(static_cast<QObject*>(&onboardingRouteBootstrapController))
+                    }
                 };
+                onboardingRouteBootstrapController.configure(false, true);
                 workspaceMainWindow = loadMainWindow(mainWindowInitialProperties);
                 if (workspaceMainWindow == nullptr)
                 {
@@ -914,12 +957,24 @@ int main(int argc, char* argv[])
         return app.exec();
     }
 
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
+    const bool useEmbeddedStartupOnboarding = true;
+#else
+    const bool useEmbeddedStartupOnboarding = false;
+#endif
+    const bool showDesktopStartupOnboarding = !initialHubLoaded && !useEmbeddedStartupOnboarding;
+    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, initialHubLoaded);
+
     const QVariantMap mainWindowInitialProperties{
         {
             QStringLiteral("onboardingHubController"),
             QVariant::fromValue(static_cast<QObject*>(&onboardingHubController))
         },
-        {QStringLiteral("onboardingVisible"), !initialHubLoaded}
+        {QStringLiteral("desktopOnboardingWindowVisible"), showDesktopStartupOnboarding},
+        {
+            QStringLiteral("onboardingRouteBootstrapController"),
+            QVariant::fromValue(static_cast<QObject*>(&onboardingRouteBootstrapController))
+        }
     };
     QObject* mainWindow = loadMainWindow(mainWindowInitialProperties);
     if (mainWindow == nullptr)

@@ -14,14 +14,15 @@ QString SelectedHubStore::selectedHubPath()
 {
     QSettings settings;
     const QString rawStoredPath = settings.value(selectedHubSettingsKey()).toString();
-    const QString normalizedStoredPath = normalizeHubPath(rawStoredPath);
+    QString normalizedStoredPath = normalizeHubPath(rawStoredPath);
+
     if (normalizedStoredPath.isEmpty())
     {
         if (!rawStoredPath.trimmed().isEmpty())
         {
             settings.remove(selectedHubSettingsKey());
-            settings.sync();
         }
+        settings.sync();
         return QString();
     }
 

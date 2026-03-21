@@ -669,11 +669,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         mainQmlText.contains(QStringLiteral("internalRouterRegisterAsGlobalNavigator: true")),
         "Main.qml must register its internal LVRS router as the active global navigator.");
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("pageInitialPath: workspaceRoutePath")),
-        "Main.qml must drive initial shell state through pageInitialPath.");
+        mainQmlText.contains(QStringLiteral("initialRoutePath: startupRoutePath")),
+        "Main.qml must drive initial shell state through LVRS initialRoutePath.");
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("pageRoutes: [workspaceShellRoute]")),
-        "Main.qml must expose the workspace shell through pageRoutes.");
+        mainQmlText.contains(QStringLiteral("pageInitialPath: startupRoutePath")),
+        "Main.qml must mirror the first-frame route seed through pageInitialPath for deterministic mobile bootstrap.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("pageRoutes: [onboardingRoute, workspaceShellRoute]")),
+        "Main.qml must expose both onboarding and workspace shell routes through pageRoutes.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral(
             "sourceComponent: applicationWindow.adaptiveMobileLayout ? mobileMainLayoutComponent : desktopMainLayoutComponent")),
@@ -700,11 +703,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         mainQmlText.contains(QStringLiteral("onboardingSubWindow.raise();")) &&
         mainQmlText.contains(QStringLiteral("onboardingSubWindow.requestActivate();")),
         "Main.qml onboarding helper must foreground the existing onboarding subwindow when the user reopens it from the global menu bar.");
+
+    const QString nativeMenuBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("window/MacNativeMenuBar.qml"));
+    QFile nativeMenuBarFile(nativeMenuBarPath);
+    QVERIFY2(nativeMenuBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(nativeMenuBarPath));
+    const QString nativeMenuBarText = QString::fromUtf8(nativeMenuBarFile.readAll());
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("title: qsTr(\"Window\")")) &&
-        mainQmlText.contains(QStringLiteral("text: qsTr(\"Onboarding\")")) &&
-        mainQmlText.contains(QStringLiteral("onTriggered: applicationWindow.showOnboardingWindow()")),
-        "Main.qml Window menu must expose an Onboarding action wired to the dedicated onboarding-window helper.");
+        mainQmlText.contains(QStringLiteral("Qt.resolvedUrl(\"window/MacNativeMenuBar.qml\")")) &&
+        mainQmlText.contains(QStringLiteral("item.hostWindow = applicationWindow")) &&
+        nativeMenuBarText.contains(QStringLiteral("title: qsTr(\"Window\")")) &&
+        nativeMenuBarText.contains(QStringLiteral("text: qsTr(\"Onboarding\")")) &&
+        nativeMenuBarText.contains(QStringLiteral("root.hostWindow.showOnboardingWindow();")),
+        "MacNativeMenuBar.qml must stay lazily loaded from Main.qml and expose an Onboarding Window-menu action wired to the root onboarding helper.");
 
     const QString sidebarViewPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));

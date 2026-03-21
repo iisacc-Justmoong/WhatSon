@@ -46,44 +46,26 @@ namespace WhatSon::HubPath
 
     inline QString androidExternalStoragePathFromDocumentId(const QString& documentId)
     {
-        const int separatorIndex = documentId.indexOf(QLatin1Char(':'));
-        const QString volumeName = separatorIndex < 0 ? documentId : documentId.left(separatorIndex).trimmed();
-        QString relativePath = separatorIndex < 0 ? QString() : documentId.mid(separatorIndex + 1).trimmed();
-
-        if (volumeName.isEmpty())
+        const QString trimmedDocumentId = documentId.trimmed();
+        if (trimmedDocumentId.isEmpty())
         {
             return {};
         }
+
+        const int separatorIndex = trimmedDocumentId.indexOf(QLatin1Char(':'));
+        const QString volumeName = separatorIndex < 0 ? trimmedDocumentId : trimmedDocumentId.left(separatorIndex).trimmed();
+        const QString relativePath = separatorIndex < 0 ? QString() : trimmedDocumentId.mid(separatorIndex + 1).trimmed();
 
         if (volumeName.compare(QStringLiteral("raw"), Qt::CaseInsensitive) == 0)
         {
             return relativePath.trimmed().isEmpty() ? QString() : QDir::cleanPath(relativePath);
         }
 
-        QString basePath;
-        if (volumeName.compare(QStringLiteral("primary"), Qt::CaseInsensitive) == 0)
-        {
-            basePath = QStringLiteral("/storage/emulated/0");
-        }
-        else if (volumeName.compare(QStringLiteral("home"), Qt::CaseInsensitive) == 0)
-        {
-            basePath = QStringLiteral("/storage/emulated/0/Documents");
-            if (relativePath.startsWith(QStringLiteral("Documents/"), Qt::CaseInsensitive))
-            {
-                relativePath.remove(0, QStringLiteral("Documents/").size());
-            }
-        }
-        else
-        {
-            basePath = QStringLiteral("/storage/%1").arg(volumeName);
-        }
-
-        if (relativePath.isEmpty())
-        {
-            return QDir::cleanPath(basePath);
-        }
-
-        return QDir::cleanPath(QDir(basePath).filePath(relativePath));
+        // Android SAF tree/document URIs such as `primary:Download/foo` or
+        // `home:Documents/foo` do not guarantee that `/storage/...` is a
+        // mountable path that the app can read or write directly. Preserve the
+        // original provider URI for those cases instead of inventing a local path.
+        return {};
     }
 
     inline QString androidDownloadsPathFromDocumentId(const QString& documentId)
@@ -109,28 +91,12 @@ namespace WhatSon::HubPath
             return QDir::cleanPath(QUrl(trimmedDocumentId).toLocalFile());
         }
 
-        const QString basePath = QStringLiteral("/storage/emulated/0/Download");
-        const int separatorIndex = trimmedDocumentId.indexOf(QLatin1Char(':'));
-        const QString rootName = separatorIndex < 0 ? trimmedDocumentId : trimmedDocumentId.left(separatorIndex).trimmed();
-        QString relativePath = separatorIndex < 0 ? QString() : trimmedDocumentId.mid(separatorIndex + 1).trimmed();
-
-        if (rootName.compare(QStringLiteral("download"), Qt::CaseInsensitive) != 0
-            && rootName.compare(QStringLiteral("downloads"), Qt::CaseInsensitive) != 0)
-        {
-            return {};
-        }
-
-        if (relativePath.startsWith(QStringLiteral("Download/"), Qt::CaseInsensitive))
-        {
-            relativePath.remove(0, QStringLiteral("Download/").size());
-        }
-
-        if (relativePath.isEmpty())
-        {
-            return basePath;
-        }
-
-        return QDir::cleanPath(QDir(basePath).filePath(relativePath));
+        // The Android Downloads provider often returns document IDs such as
+        // `download`, `download:foo`, `downloads:foo`, or opaque IDs that do
+        // not guarantee a directly accessible `/storage/...` filesystem path.
+        // Preserving the content URI is safer than projecting a fake local
+        // directory that may not actually exist or be readable by the app.
+        return {};
     }
 
     inline QString resolveAndroidDocumentPath(const QUrl& url)

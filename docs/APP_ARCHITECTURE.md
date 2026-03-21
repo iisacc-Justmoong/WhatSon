@@ -69,30 +69,49 @@ Defined in `CMakeLists.txt`:
 - Existing hub selection now diverges by mobile platform: iOS keeps the native folder picker and
   `OnboardingHubController::prepareHubSelectionFromUrl()` candidate flow, while Android uses a native file picker that
   can target a `.wshub` package document directly
-- Android hub create/load bootstrap resolves common external-storage SAF `content://` document URLs back into shared
-  local filesystem paths before they reach the directory-based `.wshub` creator and runtime loader
-- That Android URI bridge now covers both `com.android.externalstorage.documents` and the stock Downloads provider
-  `com.android.providers.downloads.documents`, mapping the latter's `tree/download` and `download:*` document IDs to
-  `/storage/emulated/0/Download/...` so onboarding create/select flows agree on the same package root
+- Android hub create/load bootstrap no longer rewrites SAF `content://` document URLs from either
+  `com.android.externalstorage.documents` or `com.android.providers.downloads.documents` into synthetic
+  `/storage/...` filesystem paths
+- Android onboarding now routes those provider URIs through `src/app/platform/Android/WhatSonAndroidStorageBackend.*`.
+  The backend keeps the SAF URI as the source document, materializes the selected `.wshub` package into a stable
+  app-local mounted directory, and passes that mounted local path into the existing runtime loader so the loader can
+  keep its directory-based contract
+- iOS keeps the opposite strategy inside the active app session: `src/app/platform/Apple/AppleSecurityScopedResourceAccess.*`
+  starts and retains a security-scoped resource session for the selected `.wshub`, and the runtime keeps reading and
+  writing the real package directory in place like a Files-backed vault instead of using a mirrored local mount. A cold
+  relaunch still requires re-selection because the bookmark restoration APIs used on macOS are unavailable on iOS
+- `OnboardingHubController::localPathFromUrl()` now preserves the raw fully-encoded Android picker URI before desktop
+  path normalization runs, so opaque SAF providers still enter the Android document backend instead of falling through
+  to the generic non-mountable-provider rejection branch
+- Android hub creation uses the same backend in reverse: `WhatSonHubCreator` scaffolds a temporary local `.wshub`,
+  `WhatSonAndroidStorageBackend::exportLocalHubToDirectory()` writes it into the selected SAF directory, and the
+  mounted local copy becomes the hub path that runtime/state stores and `SelectedHubStore` persist
 - `Main.qml` now registers both the workspace shell route (`/`) and a mobile onboarding route (`/onboarding`) on the
-  LVRS internal `PageRouter`. `onboardingVisible` becomes the route source of truth for mobile/adaptive shells, while
-  desktop continues to present onboarding through the dedicated `Onboarding.qml` dialog window
-- `main.cpp` now injects `onboardingVisible` and `onboardingHubController` as QML initial properties before loading
-  `Main.qml`, so LVRS `PageRouter.initialPath` resolves the correct mobile startup route on the very first frame
+  LVRS internal `PageRouter`, but the embedded mobile route state itself is owned by
+  `OnboardingRouteBootstrapController` rather than by ad-hoc `Main.qml` booleans
+- `main.cpp` now injects `onboardingHubController`, `desktopOnboardingWindowVisible`, and
+  `onboardingRouteBootstrapController` before loading `Main.qml`. The coordinator provides the app-owned
+  `startupRoutePath`, and `Main.qml` mirrors that seed into LVRS `initialRoutePath` and `pageInitialPath` so mobile
+  startup does not depend on a later post-load route correction
 - `Main.qml` explicitly disables LVRS `mobileOversizedHeightEnabled` for the app root. The default oversized mobile
   window contract centers the live page host inside a much taller synthetic surface, which is incompatible with
   WhatSon's full-screen routed onboarding surface and can leave only the background fill visible on iOS/Android
-- `Main.qml` also overrides LVRS `forcedDeviceTierPreset` on mobile from `UltraTier` (`3`) to `HighTier` (`2`).
-  LVRS `RenderQuality::inferDeviceTier()` never returns `UltraTier` on iOS/Android, so WhatSon keeps mobile startup on
-  the framework's own mobile inference ceiling instead of forcing the desktop-quality 16x-MSAA shell preset
-- `OnboardingHubController` now owns an explicit mobile bootstrap session state:
-  `idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`. Embedded mobile onboarding does
-  not declare success on `hubLoaded` alone; `Main.qml` waits for the LVRS router to confirm the `/` workspace route
-  before the controller moves to `ready`
-- Mobile hub selection now performs a `.wshub` mount preflight before the runtime loader starts. If the selected
-  document-provider URL cannot be resolved to a real local package directory, or if the unpacked hub scaffold is
-  structurally incomplete, onboarding fails in-session with a targeted error instead of handing a broken path to the
-  runtime parallel loader
+- `Main.qml` also installs an app-owned mobile safe-area backdrop override while LVRS keeps OS-managed inset
+  delegation enabled. The override paints only the visible non-content safe-area bands with `canvasColor`; it does not
+  opt the app back into full-window content coverage or change routed page layout bounds
+- `Main.qml` now keeps LVRS `forcedDeviceTierPreset` in auto-detect mode (`-1`). Current LVRS bootstrap defaults
+  already removed the old `UltraTier` shell pin, so WhatSon must not retain a stale downstream preset override
+- `OnboardingHubController` still owns the session state
+  `idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`, but
+  `OnboardingRouteBootstrapController` now owns the LVRS route commit state that sits around that session
+- Embedded mobile onboarding still defers the actual route flip one event turn after `hubLoaded` / `operationFailed`,
+  but that deferral is now emitted from `OnboardingRouteBootstrapController::routeSyncRequested(...)` instead of being
+  hand-coded in multiple `Main.qml` branches
+- Mobile hub selection now performs a `.wshub` mount preflight before the runtime loader starts. On Android that
+  preflight runs through `WhatSonAndroidStorageBackend`, which verifies the provider-backed `.wshub`, mirrors it into
+  the deterministic app-local mount root, and only then hands the mounted directory to the runtime parallel loader. If
+  the provider document is unreadable or the unpacked hub scaffold is structurally incomplete, onboarding fails
+  in-session with a targeted error instead of handing a broken path to the runtime loader
 - `Onboarding.qml` keeps the Figma `OnboardWindowDesktop` split layout on desktop, and switches to the Figma
   `OnboardWindowMobile` single-surface layout through the shared `OnboardingContent.qml` surface on mobile/adaptive
   shells: a centered `209px` content stack with
@@ -101,6 +120,9 @@ Defined in `CMakeLists.txt`:
   frame is now the exact Figma `470x762` node.
 - Startup hub resolution restores the last successfully loaded `.wshub` from the app session store first and only then
   falls back to `blueprint/*.wshub`.
+- If the stored startup hub is an Android mounted hub, `main.cpp` re-materializes it from the persisted source
+  provider URI before runtime bootstrap so the startup mount reflects the current external `.wshub` contents instead of
+  a stale app-local copy.
 
 Dependency discovery baseline:
 
@@ -615,20 +637,23 @@ Library-specific modeling:
 Primary root:
 
 - `Main.qml` (`LV.ApplicationWindow`)
-- `Main.qml` now uses LVRS internal page-stack routing for the shell (`useInternalPageStack`, `pageInitialPath`,
-  `pageRoutes`, `activePageRouter`) instead of a root-level ad-hoc loader deciding which top-level surface to mount.
-- `main.cpp` must provide the mobile onboarding startup flag through `QQmlApplicationEngine::setInitialProperties(...)`
-  before `Main.qml` is loaded; mutating `onboardingVisible` only after construction races LVRS `PageRouter` startup and
-  can skip the `/onboarding` first-page commit on iOS/Android.
+- `Main.qml` now uses LVRS internal page-stack routing for the shell (`useInternalPageStack`, `initialRoutePath`,
+  `pageInitialPath`, `pageRoutes`, `activePageRouter`) instead of a root-level ad-hoc loader deciding which top-level
+  surface to mount.
+- `main.cpp` must provide the mobile onboarding startup state through `QQmlApplicationEngine::setInitialProperties(...)`
+  before `Main.qml` is loaded; WhatSon now injects `onboardingRouteBootstrapController` and
+  `desktopOnboardingWindowVisible`, and the coordinator's `startupRoutePath` is mirrored into LVRS
+  `initialRoutePath` and `pageInitialPath` before startup routing begins.
 - `Main.qml` also opts out of LVRS oversized mobile window height (`mobileOversizedHeightEnabled: false`) so the
   internal page router's active page remains inside the visible viewport instead of being centered inside a synthetic
   `16384px` mobile surface.
 - The current shell route is a single workspace page; that page decides between desktop and mobile shell composition
   from LVRS adaptive layout state (`adaptiveMobileLayout`), not from an independent root routing flag.
-- `Main.qml` no longer imports `Qt.labs.platform` directly. The macOS-native menu bar moved into
-  `window/MacNativeMenuBar.qml`, so the root shell stays loadable on iOS static-QML builds while `File`, `Edit`,
-  `View`, and `Help` keep their placeholder-backed top-level titles and `Window` still exposes the native
-  `Onboarding` command through `showOnboardingWindow()`.
+- `Main.qml` no longer imports `Qt.labs.platform` directly, and it must also avoid a static `WindowView.MacNativeMenuBar`
+  type reference. The macOS-native menu bar is lazy-loaded via `Qt.resolvedUrl("window/MacNativeMenuBar.qml")`, so
+  the root shell stays loadable on iOS static-QML builds while `File`, `Edit`, `View`, and `Help` keep their
+  placeholder-backed top-level titles and `Window` still exposes the native `Onboarding` command through
+  `showOnboardingWindow()`.
 - The desktop navigation bar edge buttons now toggle the hierarchy sidebar and detail panel through root-window state
   (`hideSidebar`, `hideRightPanel`), and `BodyLayout.qml` converts those booleans into zero-width hidden panels while
   preserving the stored preferred widths so re-expansion restores the previous splitter geometry.
@@ -973,8 +998,9 @@ Status update (2026-03-01):
 - The prior `Main.qml` contract drift around shell routing has been resolved.
 - `Main.qml` now uses:
     - `useInternalPageStack: true`
-    - `pageInitialPath: workspaceRoutePath`
-    - `pageRoutes: [workspaceShellRoute]`
+    - `initialRoutePath: startupRoutePath`
+    - `pageInitialPath: startupRoutePath`
+    - `pageRoutes: [onboardingRoute, workspaceShellRoute]`
     - routed workspace layout selection from `adaptiveMobileLayout`
 - This removes dependence on a root-level ad-hoc loader path and keeps shell state aligned with LVRS
   `ApplicationWindow` / `PageRouter` contracts.

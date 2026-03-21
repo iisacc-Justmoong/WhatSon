@@ -40,6 +40,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_write_lease_tests)
 add_executable(whatson_onboarding_hub_controller_tests
         app/test_onboarding_hub_controller.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding/OnboardingHubController.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp
 )
 set_target_properties(whatson_onboarding_hub_controller_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_onboarding_hub_controller_tests
@@ -55,6 +56,27 @@ target_link_libraries(whatson_onboarding_hub_controller_tests
 )
 add_test(NAME whatson_onboarding_hub_controller_tests COMMAND whatson_onboarding_hub_controller_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_onboarding_hub_controller_tests)
+
+add_executable(whatson_onboarding_route_bootstrap_controller_tests
+        app/test_onboarding_route_bootstrap_controller.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding/OnboardingHubController.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp
+)
+set_target_properties(whatson_onboarding_route_bootstrap_controller_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_onboarding_route_bootstrap_controller_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/onboarding
+)
+target_link_libraries(whatson_onboarding_route_bootstrap_controller_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_onboarding_route_bootstrap_controller_tests COMMAND whatson_onboarding_route_bootstrap_controller_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_onboarding_route_bootstrap_controller_tests)
 
 add_executable(whatson_selected_hub_store_tests
         app/test_selected_hub_store.cpp

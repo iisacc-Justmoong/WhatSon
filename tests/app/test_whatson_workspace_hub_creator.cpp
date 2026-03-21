@@ -97,7 +97,7 @@ void WhatSonWorkspaceHubCreatorTest::joinPath_resolvesAndroidExternalStorageTree
             QStringLiteral(
                 "content://com.android.externalstorage.documents/tree/primary%3ADownload"),
             QStringLiteral(".whatson/hub.json")),
-        QStringLiteral("/storage/emulated/0/Download/.whatson/hub.json"));
+        QStringLiteral("content://com.android.externalstorage.documents/tree/primary%3ADownload/.whatson/hub.json"));
 }
 
 void WhatSonWorkspaceHubCreatorTest::joinPath_resolvesAndroidDownloadsTreeUri()
@@ -107,7 +107,7 @@ void WhatSonWorkspaceHubCreatorTest::joinPath_resolvesAndroidDownloadsTreeUri()
         creator.joinPath(
             QStringLiteral("content://com.android.providers.downloads.documents/tree/download"),
             QStringLiteral(".whatson/hub.json")),
-        QStringLiteral("/storage/emulated/0/Download/.whatson/hub.json"));
+        QStringLiteral("content://com.android.providers.downloads.documents/tree/download/.whatson/hub.json"));
 }
 
 void WhatSonWorkspaceHubCreatorTest::createHub_createsWorkspacePackageAndManifest()

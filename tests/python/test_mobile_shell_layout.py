@@ -76,7 +76,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("toolbarIconNames: applicationWindow.hierarchyToolbarIconNames", main_text)
         self.assertIn("windowInteractions: windowInteractions", main_text)
         self.assertNotIn("import Qt.labs.platform as Platform", main_text)
-        self.assertIn("WindowView.MacNativeMenuBar {", main_text)
+        self.assertIn('source: applicationWindow.platform === "osx"', main_text)
+        self.assertIn('Qt.resolvedUrl("window/MacNativeMenuBar.qml")', main_text)
+        self.assertIn("if (item)", main_text)
+        self.assertIn("item.hostWindow = applicationWindow", main_text)
 
         self.assertIn("import Qt.labs.platform as Platform", mac_menu_bar_text)
         self.assertIn("Platform.MenuBar {", mac_menu_bar_text)

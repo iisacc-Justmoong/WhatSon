@@ -1,15 +1,254 @@
 #include "OnboardingHubController.hpp"
+#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 
 #include <QDir>
 #include <QFile>
+#include <QHash>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QtTest/QtTest>
 
+#include <memory>
 #include <stdexcept>
 
 namespace
 {
+    struct FakeAndroidStorageNode final
+    {
+        QString uri;
+        QString name;
+        bool directory = false;
+        QByteArray fileBytes;
+        QStringList childUris;
+    };
+
+    class FakeAndroidStorageBridge final : public WhatSon::Android::Storage::Bridge
+    {
+    public:
+        void addDirectory(const QString& uri, const QString& name)
+        {
+            FakeAndroidStorageNode node;
+            node.uri = uri.trimmed();
+            node.name = name.trimmed();
+            node.directory = true;
+            m_nodes.insert(node.uri, node);
+        }
+
+        void addFile(const QString& uri, const QString& name, const QByteArray& bytes)
+        {
+            FakeAndroidStorageNode node;
+            node.uri = uri.trimmed();
+            node.name = name.trimmed();
+            node.directory = false;
+            node.fileBytes = bytes;
+            m_nodes.insert(node.uri, node);
+        }
+
+        void importDirectoryTree(const QString& localDirectoryPath, const QString& rootUri)
+        {
+            const QFileInfo rootInfo(localDirectoryPath);
+            addDirectory(rootUri, rootInfo.fileName());
+            importDirectoryContents(localDirectoryPath, rootUri);
+        }
+
+        bool stat(const QString& uri, WhatSon::Android::Storage::EntryMetadata* outEntry, QString* errorMessage) override
+        {
+            const auto it = m_nodes.constFind(uri.trimmed());
+            if (it == m_nodes.cend())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Unknown fake Android document URI: %1").arg(uri);
+                }
+                return false;
+            }
+
+            if (outEntry != nullptr)
+            {
+                outEntry->uri = it->uri;
+                outEntry->name = it->name;
+                outEntry->exists = true;
+                outEntry->directory = it->directory;
+                outEntry->file = !it->directory;
+            }
+            return true;
+        }
+
+        bool listChildren(
+            const QString& uri,
+            QVector<WhatSon::Android::Storage::EntryMetadata>* outEntries,
+            QString* errorMessage) override
+        {
+            const auto it = m_nodes.constFind(uri.trimmed());
+            if (it == m_nodes.cend() || !it->directory)
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Unknown fake Android directory URI: %1").arg(uri);
+                }
+                return false;
+            }
+
+            if (outEntries == nullptr)
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("outEntries must not be null.");
+                }
+                return false;
+            }
+
+            outEntries->clear();
+            outEntries->reserve(it->childUris.size());
+            for (const QString& childUri : it->childUris)
+            {
+                WhatSon::Android::Storage::EntryMetadata entry;
+                if (!stat(childUri, &entry, errorMessage))
+                {
+                    return false;
+                }
+                outEntries->append(entry);
+            }
+            return true;
+        }
+
+        bool createDirectory(
+            const QString& parentUri,
+            const QString& name,
+            QString* outChildUri,
+            QString* errorMessage) override
+        {
+            return createEntry(parentUri, name, true, outChildUri, errorMessage);
+        }
+
+        bool createFile(
+            const QString& parentUri,
+            const QString& name,
+            QString* outChildUri,
+            QString* errorMessage) override
+        {
+            return createEntry(parentUri, name, false, outChildUri, errorMessage);
+        }
+
+        bool readBytes(const QString& uri, QByteArray* outBytes, QString* errorMessage) override
+        {
+            const auto it = m_nodes.constFind(uri.trimmed());
+            if (it == m_nodes.cend() || it->directory)
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Unknown fake Android file URI: %1").arg(uri);
+                }
+                return false;
+            }
+
+            if (outBytes != nullptr)
+            {
+                *outBytes = it->fileBytes;
+            }
+            return true;
+        }
+
+        bool writeBytes(const QString& uri, const QByteArray& bytes, QString* errorMessage) override
+        {
+            auto it = m_nodes.find(uri.trimmed());
+            if (it == m_nodes.end() || it->directory)
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Unknown fake Android file URI: %1").arg(uri);
+                }
+                return false;
+            }
+
+            it->fileBytes = bytes;
+            return true;
+        }
+
+    private:
+        QString childUri(const QString& parentUri, const QString& name) const
+        {
+            QString normalizedParentUri = parentUri.trimmed();
+            if (normalizedParentUri.endsWith(QLatin1Char('/')))
+            {
+                normalizedParentUri.chop(1);
+            }
+
+            return normalizedParentUri + QLatin1Char('/')
+                + QString::fromUtf8(QUrl::toPercentEncoding(name));
+        }
+
+        bool createEntry(
+            const QString& parentUri,
+            const QString& name,
+            const bool directory,
+            QString* outChildUri,
+            QString* errorMessage)
+        {
+            auto parentIt = m_nodes.find(parentUri.trimmed());
+            if (parentIt == m_nodes.end() || !parentIt->directory)
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Unknown fake Android parent URI: %1").arg(parentUri);
+                }
+                return false;
+            }
+
+            const QString nextChildUri = childUri(parentUri, name);
+            if (m_nodes.contains(nextChildUri))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral("Fake Android entry already exists: %1").arg(nextChildUri);
+                }
+                return false;
+            }
+
+            if (directory)
+            {
+                addDirectory(nextChildUri, name);
+            }
+            else
+            {
+                addFile(nextChildUri, name, {});
+            }
+            m_nodes[parentUri.trimmed()].childUris.append(nextChildUri);
+
+            if (outChildUri != nullptr)
+            {
+                *outChildUri = nextChildUri;
+            }
+            return true;
+        }
+
+        void importDirectoryContents(const QString& localDirectoryPath, const QString& parentUri)
+        {
+            const QDir localDirectory(localDirectoryPath);
+            const QFileInfoList entries = localDirectory.entryInfoList(
+                QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
+                QDir::Name);
+            for (const QFileInfo& entryInfo : entries)
+            {
+                const QString nextUri = childUri(parentUri, entryInfo.fileName());
+                if (entryInfo.isDir())
+                {
+                    addDirectory(nextUri, entryInfo.fileName());
+                    m_nodes[parentUri].childUris.append(nextUri);
+                    importDirectoryContents(entryInfo.absoluteFilePath(), nextUri);
+                    continue;
+                }
+
+                QFile file(entryInfo.absoluteFilePath());
+                file.open(QIODevice::ReadOnly);
+                addFile(nextUri, entryInfo.fileName(), file.readAll());
+                m_nodes[parentUri].childUris.append(nextUri);
+            }
+        }
+
+        QHash<QString, FakeAndroidStorageNode> m_nodes;
+    };
+
     bool writeUtf8File(const QString& filePath, const QByteArray& bytes)
     {
         QFile file(filePath);
@@ -118,23 +357,38 @@ private
 
 
 
+    void init();
+    void cleanup();
     void createHubAtUrl_createsAndLoadsHub();
     void createHubInDirectoryUrl_appendsDefaultHubFileName();
     void createHubInDirectoryUrl_avoidsCollidingHubFileNames();
-    void createHubInDirectoryUrl_preservesContentUriTargetPath();
-    void createHubInDirectoryUrl_resolvesAndroidExternalStorageTreeUri();
-    void createHubInDirectoryUrl_resolvesAndroidDownloadsTreeUri();
+    void createHubInDirectoryUrl_exportsIntoOpaqueAndroidTreeUri();
+    void createHubInDirectoryUrl_exportsIntoAndroidExternalStorageTreeUri();
+    void createHubInDirectoryUrl_exportsIntoAndroidDownloadsTreeUri();
     void prepareHubSelectionFromUrl_collectsMultiplePackageCandidates();
     void loadHubSelectionCandidate_loadsChosenPackage();
     void loadHubFromUrl_resolvesSinglePackageInSelectedFolder();
     void loadHubFromUrl_resolvesPackageFromNestedDirectory();
     void loadHubFromUrl_resolvesPackageFromNestedFile();
-    void loadHubFromUrl_rejectsUnsupportedDocumentProviderUrl();
+    void loadHubFromUrl_mountsOpaqueAndroidContentProviderDocumentUrl();
+    void loadHubFromUrl_mountsAndroidExternalStorageDocumentProviderUrl();
+    void loadHubFromUrl_mountsAndroidDownloadsDocumentProviderUrl();
+    void loadHubFromUrl_rejectsUnsupportedNonContentProviderUrl();
     void loadHubFromUrl_rejectsAmbiguousPackageSelection();
     void loadHubFromUrl_catchesLoadCallbackExceptions();
     void workspaceTransition_updatesSessionState();
     void syncCurrentHubSelection_updatesHubNameAndFolder();
 };
+
+void OnboardingHubControllerTest::init()
+{
+    WhatSon::Android::Storage::clearBridgeForTesting();
+}
+
+void OnboardingHubControllerTest::cleanup()
+{
+    WhatSon::Android::Storage::clearBridgeForTesting();
+}
 
 void OnboardingHubControllerTest::createHubAtUrl_createsAndLoadsHub()
 {
@@ -253,87 +507,142 @@ void OnboardingHubControllerTest::createHubInDirectoryUrl_avoidsCollidingHubFile
     QCOMPARE(capturedCreatePath, QDir(tempDir.path()).filePath(QStringLiteral("Untitled-2.wshub")));
 }
 
-void OnboardingHubControllerTest::createHubInDirectoryUrl_preservesContentUriTargetPath()
+void OnboardingHubControllerTest::createHubInDirectoryUrl_exportsIntoOpaqueAndroidTreeUri()
 {
+    const auto bridge = std::make_shared<FakeAndroidStorageBridge>();
+    bridge->addDirectory(
+        QStringLiteral("content://whatson.provider/tree/download"),
+        QStringLiteral("Download"));
+    WhatSon::Android::Storage::setBridgeForTesting(bridge);
+
     OnboardingHubController controller;
     QString capturedCreatePath;
+    QString loadedHubPath;
     controller.setCreateHubCallback(
         [&capturedCreatePath](const QString& requestedPath, QString* outPackagePath, QString* errorMessage) -> bool
         {
             Q_UNUSED(errorMessage);
-            capturedCreatePath = requestedPath;
+            capturedCreatePath = QDir::cleanPath(requestedPath);
+            createMinimalHubPackage(capturedCreatePath);
             if (outPackagePath != nullptr)
             {
                 *outPackagePath = requestedPath;
             }
             return true;
         });
-    controller.setLoadHubCallback([](const QString&, QString* errorMessage) -> bool
+    controller.setLoadHubCallback([&loadedHubPath](const QString& hubPath, QString* errorMessage) -> bool
     {
         Q_UNUSED(errorMessage);
+        loadedHubPath = QDir::cleanPath(hubPath);
         return true;
     });
 
     const QUrl directoryUrl(QStringLiteral("content://whatson.provider/tree/download"));
     QVERIFY(controller.createHubInDirectoryUrl(directoryUrl, QStringLiteral("Untitled.wshub")));
-    QCOMPARE(capturedCreatePath, QStringLiteral("content://whatson.provider/tree/download/Untitled.wshub"));
-    QCOMPARE(controller.currentFolderUrl(), directoryUrl);
+    QVERIFY(!capturedCreatePath.startsWith(QStringLiteral("content://")));
+    QVERIFY(capturedCreatePath.endsWith(QStringLiteral("Untitled.wshub")));
+    QVERIFY(QFileInfo(loadedHubPath).isDir());
+    QVERIFY(loadedHubPath.endsWith(QStringLiteral(".wshub")));
+    QVERIFY(WhatSon::Android::Storage::isMountedHubPath(loadedHubPath));
+    QCOMPARE(
+        WhatSon::Android::Storage::mountedHubSourceUri(loadedHubPath),
+        QStringLiteral("content://whatson.provider/tree/download/Untitled.wshub"));
+    QVERIFY(controller.currentFolderUrl().isValid());
+    QVERIFY(controller.currentFolderUrl().isLocalFile());
 }
 
-void OnboardingHubControllerTest::createHubInDirectoryUrl_resolvesAndroidExternalStorageTreeUri()
+void OnboardingHubControllerTest::createHubInDirectoryUrl_exportsIntoAndroidExternalStorageTreeUri()
 {
+    const auto bridge = std::make_shared<FakeAndroidStorageBridge>();
+    bridge->addDirectory(
+        QStringLiteral("content://com.android.externalstorage.documents/tree/primary%3ADownload"),
+        QStringLiteral("Download"));
+    WhatSon::Android::Storage::setBridgeForTesting(bridge);
+
     OnboardingHubController controller;
     QString capturedCreatePath;
+    QString loadedHubPath;
     controller.setCreateHubCallback(
         [&capturedCreatePath](const QString& requestedPath, QString* outPackagePath, QString* errorMessage) -> bool
         {
             Q_UNUSED(errorMessage);
-            capturedCreatePath = requestedPath;
+            capturedCreatePath = QDir::cleanPath(requestedPath);
+            createMinimalHubPackage(capturedCreatePath);
             if (outPackagePath != nullptr)
             {
                 *outPackagePath = requestedPath;
             }
             return true;
         });
-    controller.setLoadHubCallback([](const QString&, QString* errorMessage) -> bool
+    controller.setLoadHubCallback([&loadedHubPath](const QString& hubPath, QString* errorMessage) -> bool
     {
         Q_UNUSED(errorMessage);
+        loadedHubPath = QDir::cleanPath(hubPath);
         return true;
     });
 
     const QUrl directoryUrl(
         QStringLiteral("content://com.android.externalstorage.documents/tree/primary%3ADownload"));
     QVERIFY(controller.createHubInDirectoryUrl(directoryUrl, QStringLiteral("Untitled.wshub")));
-    QCOMPARE(capturedCreatePath, QStringLiteral("/storage/emulated/0/Download/Untitled.wshub"));
-    QCOMPARE(controller.currentFolderUrl(), QUrl::fromLocalFile(QStringLiteral("/storage/emulated/0/Download")));
+    QVERIFY(!capturedCreatePath.startsWith(QStringLiteral("content://")));
+    QVERIFY(capturedCreatePath.endsWith(QStringLiteral("Untitled.wshub")));
+    QVERIFY(QFileInfo(loadedHubPath).isDir());
+    QVERIFY(loadedHubPath.endsWith(QStringLiteral(".wshub")));
+    QVERIFY(WhatSon::Android::Storage::isMountedHubPath(loadedHubPath));
+    QCOMPARE(
+        WhatSon::Android::Storage::mountedHubSourceUri(loadedHubPath),
+        QStringLiteral("content://com.android.externalstorage.documents/tree/primary%3ADownload/Untitled.wshub"));
+    QCOMPARE(controller.currentHubName(), QStringLiteral("Untitled"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("Untitled.wshub"));
+    QVERIFY(controller.currentFolderUrl().isValid());
 }
 
-void OnboardingHubControllerTest::createHubInDirectoryUrl_resolvesAndroidDownloadsTreeUri()
+void OnboardingHubControllerTest::createHubInDirectoryUrl_exportsIntoAndroidDownloadsTreeUri()
 {
+    const auto bridge = std::make_shared<FakeAndroidStorageBridge>();
+    const QString rootUri = QStringLiteral("content://com.android.providers.downloads.documents/tree/download");
+    bridge->addDirectory(rootUri, QStringLiteral("Download"));
+    QString existingHubUri;
+    QString bridgeError;
+    QVERIFY(bridge->createDirectory(rootUri, QStringLiteral("Untitled.wshub"), &existingHubUri, &bridgeError));
+    WhatSon::Android::Storage::setBridgeForTesting(bridge);
+
     OnboardingHubController controller;
     QString capturedCreatePath;
+    QString loadedHubPath;
     controller.setCreateHubCallback(
         [&capturedCreatePath](const QString& requestedPath, QString* outPackagePath, QString* errorMessage) -> bool
         {
             Q_UNUSED(errorMessage);
-            capturedCreatePath = requestedPath;
+            capturedCreatePath = QDir::cleanPath(requestedPath);
+            createMinimalHubPackage(capturedCreatePath);
             if (outPackagePath != nullptr)
             {
                 *outPackagePath = requestedPath;
             }
             return true;
         });
-    controller.setLoadHubCallback([](const QString&, QString* errorMessage) -> bool
+    controller.setLoadHubCallback([&loadedHubPath](const QString& hubPath, QString* errorMessage) -> bool
     {
         Q_UNUSED(errorMessage);
+        loadedHubPath = QDir::cleanPath(hubPath);
         return true;
     });
 
     const QUrl directoryUrl(
         QStringLiteral("content://com.android.providers.downloads.documents/tree/download"));
     QVERIFY(controller.createHubInDirectoryUrl(directoryUrl, QStringLiteral("Untitled.wshub")));
-    QCOMPARE(capturedCreatePath, QStringLiteral("/storage/emulated/0/Download/Untitled.wshub"));
-    QCOMPARE(controller.currentFolderUrl(), QUrl::fromLocalFile(QStringLiteral("/storage/emulated/0/Download")));
+    QVERIFY(!capturedCreatePath.startsWith(QStringLiteral("content://")));
+    QVERIFY(capturedCreatePath.endsWith(QStringLiteral("Untitled.wshub")));
+    QVERIFY(QFileInfo(loadedHubPath).isDir());
+    QVERIFY(loadedHubPath.endsWith(QStringLiteral(".wshub")));
+    QVERIFY(WhatSon::Android::Storage::isMountedHubPath(loadedHubPath));
+    QCOMPARE(
+        WhatSon::Android::Storage::mountedHubSourceUri(loadedHubPath),
+        QStringLiteral("content://com.android.providers.downloads.documents/tree/download/Untitled-2.wshub"));
+    QCOMPARE(controller.currentHubName(), QStringLiteral("Untitled-2"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("Untitled-2.wshub"));
+    QVERIFY(controller.currentFolderUrl().isValid());
 }
 
 void OnboardingHubControllerTest::prepareHubSelectionFromUrl_collectsMultiplePackageCandidates()
@@ -468,7 +777,105 @@ void OnboardingHubControllerTest::loadHubFromUrl_resolvesPackageFromNestedFile()
     QCOMPARE(controller.lastError(), QString());
 }
 
-void OnboardingHubControllerTest::loadHubFromUrl_rejectsUnsupportedDocumentProviderUrl()
+void OnboardingHubControllerTest::loadHubFromUrl_mountsOpaqueAndroidContentProviderDocumentUrl()
+{
+    const auto bridge = std::make_shared<FakeAndroidStorageBridge>();
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString localHubPath = QDir(tempDir.path()).filePath(QStringLiteral("alpha.wshub"));
+    QVERIFY(createMinimalHubPackage(localHubPath));
+    bridge->importDirectoryTree(
+        localHubPath,
+        QStringLiteral("content://whatson.provider/document/alpha.wshub"));
+    WhatSon::Android::Storage::setBridgeForTesting(bridge);
+
+    OnboardingHubController controller;
+    QString loadedHubPath;
+    controller.setLoadHubCallback([&loadedHubPath](const QString& hubPathValue, QString*) -> bool
+    {
+        loadedHubPath = QDir::cleanPath(hubPathValue);
+        return true;
+    });
+
+    const QUrl hubUrl(QStringLiteral("content://whatson.provider/document/alpha.wshub"));
+    QVERIFY(controller.loadHubFromUrl(hubUrl));
+    QVERIFY(QFileInfo(loadedHubPath).isDir());
+    QVERIFY(loadedHubPath.endsWith(QStringLiteral(".wshub")));
+    QVERIFY(WhatSon::Android::Storage::isMountedHubPath(loadedHubPath));
+    QCOMPARE(WhatSon::Android::Storage::mountedHubSourceUri(loadedHubPath), hubUrl.toString(QUrl::FullyEncoded));
+    QCOMPARE(controller.currentHubName(), QStringLiteral("alpha"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("alpha.wshub"));
+    QCOMPARE(controller.lastError(), QString());
+    QCOMPARE(controller.sessionState(), QStringLiteral("hubLoaded"));
+}
+
+void OnboardingHubControllerTest::loadHubFromUrl_mountsAndroidExternalStorageDocumentProviderUrl()
+{
+    const auto bridge = std::make_shared<FakeAndroidStorageBridge>();
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString localHubPath = QDir(tempDir.path()).filePath(QStringLiteral("Untitled.wshub"));
+    QVERIFY(createMinimalHubPackage(localHubPath));
+    bridge->importDirectoryTree(
+        localHubPath,
+        QStringLiteral("content://com.android.externalstorage.documents/document/primary%3ADownload%2FUntitled.wshub"));
+    WhatSon::Android::Storage::setBridgeForTesting(bridge);
+
+    OnboardingHubController controller;
+    QString loadedHubPath;
+    controller.setLoadHubCallback([&loadedHubPath](const QString& hubPath, QString*) -> bool
+    {
+        loadedHubPath = QDir::cleanPath(hubPath);
+        return true;
+    });
+
+    const QUrl hubUrl(QStringLiteral("content://com.android.externalstorage.documents/document/primary%3ADownload%2FUntitled.wshub"));
+
+    QVERIFY(controller.loadHubFromUrl(hubUrl));
+    QVERIFY(QFileInfo(loadedHubPath).isDir());
+    QVERIFY(loadedHubPath.endsWith(QStringLiteral(".wshub")));
+    QVERIFY(WhatSon::Android::Storage::isMountedHubPath(loadedHubPath));
+    QCOMPARE(WhatSon::Android::Storage::mountedHubSourceUri(loadedHubPath), hubUrl.toString(QUrl::FullyEncoded));
+    QCOMPARE(controller.currentHubName(), QStringLiteral("Untitled"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("Untitled.wshub"));
+    QCOMPARE(controller.lastError(), QString());
+    QCOMPARE(controller.sessionState(), QStringLiteral("hubLoaded"));
+}
+
+void OnboardingHubControllerTest::loadHubFromUrl_mountsAndroidDownloadsDocumentProviderUrl()
+{
+    const auto bridge = std::make_shared<FakeAndroidStorageBridge>();
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString localHubPath = QDir(tempDir.path()).filePath(QStringLiteral("Untitled.wshub"));
+    QVERIFY(createMinimalHubPackage(localHubPath));
+    bridge->importDirectoryTree(
+        localHubPath,
+        QStringLiteral("content://com.android.providers.downloads.documents/document/download%3AUntitled.wshub"));
+    WhatSon::Android::Storage::setBridgeForTesting(bridge);
+
+    OnboardingHubController controller;
+    QString loadedHubPath;
+    controller.setLoadHubCallback([&loadedHubPath](const QString& hubPath, QString*) -> bool
+    {
+        loadedHubPath = QDir::cleanPath(hubPath);
+        return true;
+    });
+
+    const QUrl hubUrl(QStringLiteral("content://com.android.providers.downloads.documents/document/download%3AUntitled.wshub"));
+
+    QVERIFY(controller.loadHubFromUrl(hubUrl));
+    QVERIFY(QFileInfo(loadedHubPath).isDir());
+    QVERIFY(loadedHubPath.endsWith(QStringLiteral(".wshub")));
+    QVERIFY(WhatSon::Android::Storage::isMountedHubPath(loadedHubPath));
+    QCOMPARE(WhatSon::Android::Storage::mountedHubSourceUri(loadedHubPath), hubUrl.toString(QUrl::FullyEncoded));
+    QCOMPARE(controller.currentHubName(), QStringLiteral("Untitled"));
+    QCOMPARE(controller.currentHubPathName(), QStringLiteral("Untitled.wshub"));
+    QCOMPARE(controller.lastError(), QString());
+    QCOMPARE(controller.sessionState(), QStringLiteral("hubLoaded"));
+}
+
+void OnboardingHubControllerTest::loadHubFromUrl_rejectsUnsupportedNonContentProviderUrl()
 {
     OnboardingHubController controller;
     bool loadCallbackInvoked = false;
@@ -480,7 +887,7 @@ void OnboardingHubControllerTest::loadHubFromUrl_rejectsUnsupportedDocumentProvi
 
     QSignalSpy operationFailedSpy(&controller, &OnboardingHubController::operationFailed);
 
-    QVERIFY(!controller.loadHubFromUrl(QUrl(QStringLiteral("content://whatson.provider/document/alpha.wshub"))));
+    QVERIFY(!controller.loadHubFromUrl(QUrl(QStringLiteral("https://whatson.provider/alpha.wshub"))));
     QVERIFY(!loadCallbackInvoked);
     QCOMPARE(operationFailedSpy.count(), 1);
     QVERIFY(controller.lastError().contains(QStringLiteral("does not expose a mountable local directory path")));

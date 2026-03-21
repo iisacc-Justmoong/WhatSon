@@ -1,6 +1,7 @@
 #include "AppleSecurityScopedResourceAccess.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
+#include <QByteArray>
 #include <QDir>
 #include <QFileInfo>
 #include <QHash>
@@ -52,6 +53,11 @@ namespace
             return m_urls.contains(localPath);
         }
 
+        [[nodiscard]] NSURL* urlForPath(const QString& localPath) const
+        {
+            return m_urls.value(localPath, nil);
+        }
+
         void retain(const QString& localPath, NSURL* url)
         {
             if (localPath.trimmed().isEmpty() || url == nil)
@@ -77,6 +83,32 @@ namespace
     {
         static ScopedResourceRegistry registry;
         return registry;
+    }
+
+    QString localizedErrorText(NSError* error, const QString& fallbackText)
+    {
+        if (error == nil || error.localizedDescription == nil)
+        {
+            return fallbackText;
+        }
+
+        return QString::fromUtf8([error.localizedDescription UTF8String]);
+    }
+
+    NSURL* resolvedFileUrlForPath(const QString& localPath)
+    {
+        const QString normalizedLocalPath = normalizeAbsolutePath(localPath);
+        if (normalizedLocalPath.isEmpty())
+        {
+            return nil;
+        }
+
+        if (NSURL* retainedUrl = scopedResourceRegistry().urlForPath(normalizedLocalPath))
+        {
+            return retainedUrl;
+        }
+
+        return QUrl::fromLocalFile(normalizedLocalPath).toNSURL();
     }
 
     bool beginAccessForLocalFileUrl(const QUrl& url, QString* errorMessage)

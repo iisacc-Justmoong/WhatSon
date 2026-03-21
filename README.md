@@ -10,21 +10,44 @@ WhatSon is an LVRS-based Qt Quick application.
 ## Adaptive Layout
 
 - `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs:
-  `useInternalPageStack: true`, an explicit routed workspace entry in `pageRoutes`, and a `pageInitialPath` that is
-  seeded from the window's initial `onboardingVisible` state before the root QML object is loaded.
+  `useInternalPageStack: true`, explicit routed onboarding/workspace entries in `pageRoutes`, and an app-owned
+  `startupRoutePath` that now comes from `src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.*` and is
+  mirrored into both `initialRoutePath` and `pageInitialPath` before the first frame.
+- The embedded mobile onboarding bootstrap state machine now lives in
+  `src/app/viewmodel/onboarding/OnboardingRouteBootstrapController.*` instead of being open-coded across `Main.qml`.
+  `Main.qml` only applies requested LVRS route changes and keeps the desktop onboarding subwindow separate from the
+  mobile embedded route flow.
+- Mobile onboarding success now defers the `/onboarding -> /` route flip with `Qt.callLater(...)` so iOS/Android native
+  picker teardown can finish before the workspace shell replaces the onboarding surface.
+- Android onboarding now routes `content://` SAF hub selections and destination directories through
+  `src/app/platform/Android/WhatSonAndroidStorageBackend.*`. The backend keeps the OS-provided document URI as the
+  source of truth, materializes the selected `.wshub` package into a deterministic app-local mount directory under app
+  data, and refreshes that mounted copy again from the stored source URI before startup runtime bootstrap.
+- iOS onboarding now follows the same direct-filesystem vault principle used by Obsidian mobile inside the active app
+  session: once Files grants access to a `.wshub`, `src/app/platform/Apple/AppleSecurityScopedResourceAccess.*`
+  opens a security-scoped resource session and the runtime reads and writes the real `.wshub` directory in place
+  instead of going through a copied mount. iOS does not expose security-scoped bookmark restoration APIs here, so
+  reopening the same external Files-backed hub after a cold relaunch still requires the user to select it again.
+- The onboarding controller now preserves the raw fully-encoded Android picker URI before any desktop path
+  normalization runs, so opaque SAF providers still reach the Android document backend instead of being rejected as
+  non-mountable local paths.
 - `src/app/qml/Main.qml` also disables LVRS `mobileOversizedHeightEnabled` for this app root. The default oversized
   mobile window strategy paints large top/bottom fill regions with `windowColor`, which pushed the routed onboarding
   page host outside the visible first-frame viewport and produced an apparently blank screen on iOS/Android.
-- `src/app/qml/Main.qml` also overrides LVRS `forcedDeviceTierPreset` on iOS/Android from the shell default
-  `UltraTier` (`3`) down to `HighTier` (`2`), matching the highest tier that LVRS `RenderQuality` actually infers on
-  mobile instead of forcing the desktop-class 16x-MSAA startup baseline.
+- `src/app/qml/Main.qml` also paints app-owned mobile safe-area backdrop bands while LVRS keeps OS-managed inset
+  delegation enabled. This only overrides the visible background color around the routed content viewport with
+  WhatSon `canvasColor`; it does not rebind the mobile content root to full-window coverage.
+- `src/app/qml/Main.qml` now keeps LVRS shell render quality in auto-detect mode
+  (`forcedDeviceTierPreset: -1`). Recent LVRS bootstrap profiles already dropped the old `UltraTier` shell default, so
+  WhatSon must not keep the stale mobile `HighTier` override.
 - The routed workspace page still composes WhatSon's custom desktop/mobile shells, but layout selection now hangs off
   LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
 - `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow
   through LVRS `Navigator` / `PageRouter` semantics instead of bespoke root state.
-- `src/app/qml/Main.qml` now loads the macOS-native menu bar through `src/app/qml/window/MacNativeMenuBar.qml` instead
-  of importing `Qt.labs.platform` in the root shell directly; this keeps the iOS static QML bundle free of the
-  macOS-only module while preserving the native `Onboarding` command under the `Window` menu.
+- `src/app/qml/Main.qml` now lazy-loads the macOS-native menu bar via `Qt.resolvedUrl("window/MacNativeMenuBar.qml")`
+  instead of holding a static `WindowView.MacNativeMenuBar` type reference in the root shell; this keeps the iOS
+  static QML bundle from parsing the macOS-only `Qt.labs.platform` module while preserving the native `Onboarding`
+  command under the `Window` menu.
 - The iOS app target keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for Xcode export generation, so
   `src/app/CMakeLists.txt` explicitly links the static QML plugin targets for `QtQuick`, `QtQuick.Window`,
   `QtQuick.Layouts`, `QtQuick.Controls`, and `QtQuick.Dialogs`. Without those links, the standalone mobile
@@ -303,7 +326,9 @@ accepts the `.wshub` package root, a parent directory that contains exactly one 
 existing `.wshub` bundle so mobile document pickers can promote package-internal selections back to the hub root.
 On iOS the native Files picker still provides security-scoped document URLs, so onboarding now starts a security-scoped
 resource session before creating or loading a `.wshub` and retains access to the resolved hub root for the rest of the
-app session. Mobile onboarding also switches hub creation to a directory-picker flow and synthesizes a unique
+app session. After a cold relaunch the same external Files-backed hub may need to be selected again, because iOS does
+not expose the bookmark restoration APIs used on macOS for sandbox reopening in this code path. Mobile onboarding also
+switches hub creation to a directory-picker flow and synthesizes a unique
 `Untitled*.wshub` target path inside the chosen folder, because iOS native file dialogs only implement the open path
 and native mobile pickers diverge from desktop save-dialog semantics. Existing hub selection now keeps the iOS folder
 picker plus the in-session candidate fallback, but Android switches to a native file picker that can target a

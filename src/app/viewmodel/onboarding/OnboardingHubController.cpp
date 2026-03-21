@@ -1,10 +1,12 @@
 #include "OnboardingHubController.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
+#include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QTemporaryDir>
 
 #include <exception>
 #include <utility>
@@ -44,8 +46,17 @@ namespace
 
     QString hubNameFromPath(const QString& hubPath)
     {
-        const QFileInfo hubInfo(hubPath.trimmed());
-        QString fileName = hubInfo.fileName().trimmed();
+        const QString normalizedHubPath = WhatSon::HubPath::normalizePath(hubPath);
+        QString fileName;
+        if (WhatSon::Android::Storage::isSupportedUri(normalizedHubPath))
+        {
+            fileName = WhatSon::Android::Storage::displayName(normalizedHubPath).trimmed();
+        }
+        else
+        {
+            fileName = QFileInfo(normalizedHubPath).fileName().trimmed();
+        }
+
         if (fileName.endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
         {
             fileName.chop(QStringLiteral(".wshub").size());
@@ -55,7 +66,13 @@ namespace
 
     QString hubPathNameFromPath(const QString& hubPath)
     {
-        return QFileInfo(hubPath.trimmed()).fileName().trimmed();
+        const QString normalizedHubPath = WhatSon::HubPath::normalizePath(hubPath);
+        if (WhatSon::Android::Storage::isSupportedUri(normalizedHubPath))
+        {
+            return WhatSon::Android::Storage::displayName(normalizedHubPath).trimmed();
+        }
+
+        return QFileInfo(normalizedHubPath).fileName().trimmed();
     }
 
     QString enclosingHubPackagePath(const QString& selectedPath)
@@ -435,6 +452,95 @@ bool OnboardingHubController::createHubInDirectoryUrl(const QUrl& directoryUrl, 
     }
 
     setCurrentFolderPath(directoryPath);
+
+    if (WhatSon::Android::Storage::isSupportedUri(directoryPath))
+    {
+        if (m_busy)
+        {
+            setLastError(QStringLiteral("A hub operation is already in progress."));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        if (!m_createHubCallback)
+        {
+            setLastError(QStringLiteral("Hub creation callback is not configured."));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        if (!m_loadHubCallback)
+        {
+            setLastError(QStringLiteral("Hub loading callback is not configured."));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        QTemporaryDir temporaryDirectory;
+        if (!temporaryDirectory.isValid())
+        {
+            setLastError(QStringLiteral("Failed to prepare a temporary WhatSon Hub scaffold directory."));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        const QString temporaryHubPath = QDir(temporaryDirectory.path()).filePath(
+            normalizedHubPackageFileName(preferredFileName));
+        setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
+        setBusy(true);
+
+        QString createdHubPath;
+        QString errorMessage;
+        bool created = invokeCreateHubCallbackSafely(
+            m_createHubCallback,
+            temporaryHubPath,
+            &createdHubPath,
+            &errorMessage);
+        if (created)
+        {
+            const QString localScaffoldPath = normalizedAbsolutePath(
+                createdHubPath.trimmed().isEmpty() ? temporaryHubPath : createdHubPath);
+            QString mountedHubPath;
+            created = WhatSon::Android::Storage::exportLocalHubToDirectory(
+                localScaffoldPath,
+                directoryPath,
+                &mountedHubPath,
+                &errorMessage);
+            if (created)
+            {
+                createdHubPath = mountedHubPath;
+            }
+        }
+
+        setBusy(false);
+
+        if (!created)
+        {
+            setLastError(errorMessage.trimmed().isEmpty()
+                             ? QStringLiteral("Failed to create the WhatSon Hub.")
+                             : errorMessage.trimmed());
+            setSessionState(QString::fromLatin1(kSessionStateFailed));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        const QString normalizedCreatedHubPath = normalizedAbsolutePath(createdHubPath);
+        setCurrentHubPath(normalizedCreatedHubPath);
+        emit hubCreated(normalizedCreatedHubPath);
+
+        if (loadResolvedHubPath(normalizedCreatedHubPath, &errorMessage))
+        {
+            return true;
+        }
+
+        setLastError(errorMessage.trimmed().isEmpty()
+                         ? QStringLiteral("The hub was created but could not be loaded.")
+                         : QStringLiteral("The hub was created but could not be loaded: %1").arg(errorMessage.trimmed()));
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
     return createHubAtUrl(WhatSon::HubPath::urlFromPath(targetHubPath));
 }
 
@@ -475,6 +581,69 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
     if (normalizedSelectedPath.isEmpty())
     {
         setLastError(QStringLiteral("Selected hub path must not be empty."));
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    if (WhatSon::Android::Storage::isSupportedUri(normalizedSelectedPath))
+    {
+        QStringList packageCandidates;
+        QString errorMessage;
+        if (!WhatSon::Android::Storage::resolveHubSelection(
+                normalizedSelectedPath,
+                &packageCandidates,
+                &errorMessage))
+        {
+            setLastError(errorMessage.trimmed().isEmpty()
+                             ? QStringLiteral("Failed to resolve the selected WhatSon Hub.")
+                             : errorMessage.trimmed());
+            setSessionState(QString::fromLatin1(kSessionStateFailed));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        if (packageCandidates.size() == 1)
+        {
+            if (loadResolvedHubPath(packageCandidates.constFirst(), &errorMessage))
+            {
+                return true;
+            }
+
+            setLastError(errorMessage.trimmed().isEmpty()
+                             ? QStringLiteral("Failed to load the selected WhatSon Hub.")
+                             : errorMessage.trimmed());
+            setSessionState(QString::fromLatin1(kSessionStateFailed));
+            emit operationFailed(m_lastError);
+            return false;
+        }
+
+        if (packageCandidates.size() > 1)
+        {
+            setCurrentFolderPath(normalizedSelectedPath);
+            setHubSelectionCandidatePaths(packageCandidates);
+            setSessionState(QString::fromLatin1(kSessionStateIdle));
+            return true;
+        }
+
+        setLastError(QStringLiteral("Selected Android folder does not contain a WhatSon Hub package directory."));
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+
+    if (WhatSon::HubPath::isNonLocalUrl(normalizedSelectedPath))
+    {
+        QString errorMessage;
+        const QString resolvedHubPath = resolveExistingHubPath(normalizedSelectedPath, &errorMessage);
+        if (!resolvedHubPath.isEmpty() && loadResolvedHubPath(resolvedHubPath, &errorMessage))
+        {
+            return true;
+        }
+
+        setLastError(errorMessage.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to resolve the selected WhatSon Hub.")
+                         : errorMessage.trimmed());
         setSessionState(QString::fromLatin1(kSessionStateFailed));
         emit operationFailed(m_lastError);
         return false;
@@ -680,6 +849,17 @@ QString OnboardingHubController::localPathFromUrl(const QUrl& hubUrl) const
         return QString();
     }
 
+    const QString rawUrlText = hubUrl.toString(QUrl::FullyEncoded).trimmed();
+    if (WhatSon::Android::Storage::isSupportedUri(rawUrlText))
+    {
+        return WhatSon::HubPath::normalizePath(rawUrlText);
+    }
+
+    if (rawUrlText.startsWith(QStringLiteral("content:"), Qt::CaseInsensitive))
+    {
+        return rawUrlText;
+    }
+
     if (hubUrl.isLocalFile())
     {
         return WhatSon::HubPath::normalizeAbsolutePath(hubUrl.toLocalFile());
@@ -700,6 +880,34 @@ QString OnboardingHubController::resolveExistingHubPath(
             *errorMessage = QStringLiteral("Selected hub path must not be empty.");
         }
         return QString();
+    }
+
+    if (WhatSon::Android::Storage::isSupportedUri(normalizedSelectedPath))
+    {
+        QStringList packageCandidates;
+        if (!WhatSon::Android::Storage::resolveHubSelection(normalizedSelectedPath, &packageCandidates, errorMessage))
+        {
+            return {};
+        }
+
+        if (packageCandidates.size() == 1)
+        {
+            return WhatSon::HubPath::normalizePath(packageCandidates.constFirst());
+        }
+
+        if (errorMessage != nullptr)
+        {
+            if (packageCandidates.isEmpty())
+            {
+                *errorMessage = QStringLiteral("Selected Android folder does not contain a WhatSon Hub package directory.");
+            }
+            else
+            {
+                *errorMessage = QStringLiteral(
+                    "Selected Android folder contains multiple WhatSon Hub packages. Choose a single .wshub package directory.");
+            }
+        }
+        return {};
     }
 
     if (WhatSon::HubPath::isNonLocalUrl(normalizedSelectedPath))
@@ -929,8 +1137,17 @@ bool OnboardingHubController::loadCreatedHub(const QString& hubPath, QString* er
 
 bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath, QString* errorMessage)
 {
+    QString mountableHubPath = resolvedHubPath;
+    if (WhatSon::Android::Storage::isSupportedUri(resolvedHubPath))
+    {
+        if (!WhatSon::Android::Storage::mountHub(resolvedHubPath, &mountableHubPath, errorMessage))
+        {
+            return false;
+        }
+    }
+
     QString accessError;
-    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(resolvedHubPath, &accessError))
+    if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(mountableHubPath, &accessError))
     {
         if (errorMessage != nullptr)
         {
@@ -942,7 +1159,7 @@ bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath
     }
 
     QString validationError;
-    if (!validateMountableHubPath(resolvedHubPath, &validationError))
+    if (!validateMountableHubPath(mountableHubPath, &validationError))
     {
         if (errorMessage != nullptr)
         {
@@ -951,11 +1168,11 @@ bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath
         return false;
     }
 
-    setCurrentHubPath(resolvedHubPath);
+    setCurrentHubPath(mountableHubPath);
     setSessionState(QString::fromLatin1(kSessionStateLoadingHub));
     setBusy(true);
     QString callbackError;
-    const bool loaded = invokeLoadHubCallbackSafely(m_loadHubCallback, resolvedHubPath, &callbackError);
+    const bool loaded = invokeLoadHubCallbackSafely(m_loadHubCallback, mountableHubPath, &callbackError);
     setBusy(false);
 
     if (!loaded)
@@ -969,13 +1186,13 @@ bool OnboardingHubController::loadResolvedHubPath(const QString& resolvedHubPath
         return false;
     }
 
-    if (!WhatSon::HubPath::isNonLocalUrl(resolvedHubPath))
+    if (!WhatSon::HubPath::isNonLocalUrl(mountableHubPath))
     {
-        setCurrentFolderPath(QFileInfo(resolvedHubPath).absolutePath());
+        setCurrentFolderPath(QFileInfo(mountableHubPath).absolutePath());
     }
     clearHubSelectionCandidates();
     setSessionState(QString::fromLatin1(kSessionStateHubLoaded));
-    emit hubLoaded(resolvedHubPath);
+    emit hubLoaded(mountableHubPath);
     if (errorMessage != nullptr)
     {
         errorMessage->clear();
