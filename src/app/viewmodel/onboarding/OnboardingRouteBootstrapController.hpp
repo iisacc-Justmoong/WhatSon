@@ -23,7 +23,7 @@ public:
     [[nodiscard]] QString startupRoutePath() const;
 
     void setHubController(OnboardingHubController* controller);
-    void configure(bool embeddedEnabled, bool startupHubLoaded);
+    void configure(bool embeddedEnabled, bool startupHubMounted);
 
     Q_INVOKABLE void handleHubLoaded();
     Q_INVOKABLE void handleOperationFailed(const QString& message);

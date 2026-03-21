@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class HubWriteLeaseTests(unittest.TestCase):
-    def test_runtime_and_docs_reference_single_writer_lease(self) -> None:
+    def test_runtime_and_docs_reference_shared_hub_access(self) -> None:
         lease_header = (REPO_ROOT / "src/app/file/hub/WhatSonHubWriteLease.hpp").read_text(encoding="utf-8")
         app_main = (REPO_ROOT / "src/app/main.cpp").read_text(encoding="utf-8")
         io_gateway = (REPO_ROOT / "src/app/file/IO/WhatSonSystemIoGateway.cpp").read_text(encoding="utf-8")
@@ -38,9 +38,9 @@ class HubWriteLeaseTests(unittest.TestCase):
         self.assertIn("ensureWriteLeaseForPath(normalizedWshubPath, &leaseError)", note_deletion)
 
         self.assertIn(".whatson/write-lease.json", readme)
-        self.assertIn("single-writer lease", readme)
+        self.assertIn("Concurrent hub access", readme)
         self.assertIn(".whatson/write-lease.json", architecture)
-        self.assertIn("single-writer lease", architecture)
+        self.assertIn("legacy cleanup shim", architecture)
 
 
 if __name__ == "__main__":

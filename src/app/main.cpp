@@ -712,29 +712,123 @@ int main(int argc, char* argv[])
             updateWriteLeaseOwnership(hubPath);
         });
 
-    bool initialHubLoaded = false;
-    QString startupHubPath = selectedHubStore.startupHubPath(resolveBlueprintHubPath());
-    if (WhatSon::Android::Storage::isMountedHubPath(startupHubPath))
+    const auto resolveStartupHubMountPath = [](const QString& hubPath, QString* errorMessage) -> QString
     {
-        const QString sourceUri = WhatSon::Android::Storage::mountedHubSourceUri(startupHubPath);
-        if (!sourceUri.isEmpty())
+        const QString normalizedHubPath = hubPath.trimmed().isEmpty()
+                                              ? QString()
+                                              : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
+        if (normalizedHubPath.isEmpty())
         {
-            QString remountedHubPath;
-            QString remountError;
-            if (WhatSon::Android::Storage::mountHub(sourceUri, &remountedHubPath, &remountError))
+            if (errorMessage != nullptr)
             {
-                startupHubPath = remountedHubPath;
+                errorMessage->clear();
             }
-            else
+            return {};
+        }
+
+        if (WhatSon::Android::Storage::isSupportedUri(normalizedHubPath))
+        {
+            QString mountedHubPath;
+            if (!WhatSon::Android::Storage::mountHub(normalizedHubPath, &mountedHubPath, errorMessage))
+            {
+                return {};
+            }
+            return WhatSon::HubPath::normalizeAbsolutePath(mountedHubPath);
+        }
+
+        if (WhatSon::Android::Storage::isMountedHubPath(normalizedHubPath))
+        {
+            const QString sourceUri = WhatSon::Android::Storage::mountedHubSourceUri(normalizedHubPath);
+            if (sourceUri.trimmed().isEmpty())
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = QStringLiteral(
+                        "Stored Android mounted WhatSon Hub is missing its source document URI.");
+                }
+                return {};
+            }
+
+            QString remountedHubPath;
+            if (!WhatSon::Android::Storage::mountHub(sourceUri, &remountedHubPath, errorMessage))
+            {
+                return {};
+            }
+            return WhatSon::HubPath::normalizeAbsolutePath(remountedHubPath);
+        }
+
+        const QFileInfo hubInfo(normalizedHubPath);
+        if (!hubInfo.exists() || !hubInfo.isDir())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Startup WhatSon Hub directory does not exist: %1")
+                                    .arg(normalizedHubPath);
+            }
+            return {};
+        }
+
+        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Startup WhatSon Hub path is not a .wshub directory: %1")
+                                    .arg(normalizedHubPath);
+            }
+            return {};
+        }
+
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return normalizedHubPath;
+    };
+
+    bool initialHubLoaded = false;
+    bool startupHubMounted = false;
+    const QString blueprintFallbackHubPath = resolveBlueprintHubPath();
+    const QString startupHubSelectionPath = selectedHubStore.startupHubPath(blueprintFallbackHubPath);
+    QString startupHubPath;
+    const auto tryResolveStartupHubSelection =
+        [&resolveStartupHubMountPath, &startupHubMounted, &startupHubPath](const QString& selectionPath,
+                                                                           const QString& selectionLabel) -> bool
+    {
+        QString startupMountError;
+        const QString resolvedStartupHubPath = resolveStartupHubMountPath(selectionPath, &startupMountError);
+        if (resolvedStartupHubPath.isEmpty())
+        {
+            if (!startupMountError.trimmed().isEmpty())
             {
                 qWarning().noquote()
-                    << QStringLiteral("Failed to remount Android provider-backed WhatSon Hub '%1': %2")
-                        .arg(sourceUri, remountError.trimmed());
+                    << QStringLiteral("Failed to resolve %1 startup WhatSon Hub mount '%2': %3")
+                           .arg(selectionLabel, selectionPath, startupMountError.trimmed());
             }
+            return false;
+        }
+
+        startupHubPath = resolvedStartupHubPath;
+        startupHubMounted = true;
+        return true;
+    };
+
+    if (!startupHubSelectionPath.isEmpty())
+    {
+        const bool startupSelectionResolved = tryResolveStartupHubSelection(
+            startupHubSelectionPath,
+            QStringLiteral("persisted"));
+        if (!startupSelectionResolved
+            && !blueprintFallbackHubPath.trimmed().isEmpty()
+            && WhatSon::HubPath::normalizePath(startupHubSelectionPath)
+                != WhatSon::HubPath::normalizePath(blueprintFallbackHubPath))
+        {
+            tryResolveStartupHubSelection(
+                blueprintFallbackHubPath,
+                QStringLiteral("blueprint fallback"));
         }
     }
 
-    if (!startupHubPath.isEmpty())
+    if (startupHubMounted)
     {
         QString errorMessage;
         initialHubLoaded = loadHubIntoRuntime(startupHubPath, &errorMessage);
@@ -962,8 +1056,8 @@ int main(int argc, char* argv[])
 #else
     const bool useEmbeddedStartupOnboarding = false;
 #endif
-    const bool showDesktopStartupOnboarding = !initialHubLoaded && !useEmbeddedStartupOnboarding;
-    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, initialHubLoaded);
+    const bool showDesktopStartupOnboarding = !startupHubMounted && !useEmbeddedStartupOnboarding;
+    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupHubMounted);
 
     const QVariantMap mainWindowInitialProperties{
         {

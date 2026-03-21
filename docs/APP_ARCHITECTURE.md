@@ -118,11 +118,14 @@ Defined in `CMakeLists.txt`:
   `144px` app icon, `48px` title, `12px` version label (`75px` width), and an `180px` CTA column separated by
   `32px` / `24px` gaps. The previous lower status panel was removed from the mobile branch, and the fallback design
   frame is now the exact Figma `470x762` node.
-- Startup hub resolution restores the last successfully loaded `.wshub` from the app session store first and only then
-  falls back to `blueprint/*.wshub`.
-- If the stored startup hub is an Android mounted hub, `main.cpp` re-materializes it from the persisted source
-  provider URI before runtime bootstrap so the startup mount reflects the current external `.wshub` contents instead of
-  a stale app-local copy.
+- Startup hub resolution restores the last selected `.wshub` startup candidate from the app session store first,
+  defers final validity to the mount preflight itself, and only then falls back to `blueprint/*.wshub` if the
+  persisted candidate can no longer be mounted.
+- `SelectedHubStore` now normalizes Android mounted-hub paths back to their provider source URI before persistence, so
+  the next app launch can re-materialize the hub even if the previous app-local mount directory was transient.
+- Startup onboarding is now driven by a `startupHubMounted` preflight state rather than by full runtime-domain load
+  success. `main.cpp` first resolves the persisted selection into a mountable startup hub path, and only then decides
+  whether onboarding should own the first route.
 
 Dependency discovery baseline:
 
@@ -360,10 +363,13 @@ Domain-isolated support:
               `controlHeightMd` slot for the add-note affordance, and still emits `createNoteRequested`, which
               `MobileNormalLayout.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
               bottom add-note affordance stays on the same shared creation path as desktop navigation controls.
-            - `HierarchySidebarLayout.qml` now exposes `searchHeaderTopGap`, `searchListGap`, and `verticalInset`
-              overrides so the shared hierarchy panel can match the mobile `174:4986` geometry without forking the
+            - `HierarchySidebarLayout.qml` now exposes `searchHeaderHorizontalInset`, `searchHeaderVerticalInset`,
+              `searchHeaderMinHeight`, `searchHeaderTopGap`, `searchListGap`, and `verticalInset` overrides so the
+              shared hierarchy panel can match the mobile `174:4986` / `174:4987` geometry without forking the
               implementation; the mobile shell uses those overrides to keep hierarchy content on the root
-              `panelBackground01` canvas instead of reintroducing the desktop `panelBackground04` panel background.
+              `panelBackground01` canvas, collapse the desktop `ListBarHeader` chrome to a bare `gap18` search row,
+              and preserve the Figma `20px` toolbar + `2px` gap + `18px` search + `2px` gap rhythm before the
+              hierarchy list starts.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
@@ -857,13 +863,10 @@ Hub synchronization is intentionally network-agnostic:
 Design policy for conflict reduction:
 
 - Domain creator/parser pairs own write/read normalization for each file type.
-- `main.cpp` now acquires a cooperative single-writer lease before a `.wshub` runtime load succeeds. The lease is
-  materialized at `.whatson/write-lease.json`, refreshed every 15 seconds, considered stale after three missed
-  heartbeats, and released on app shutdown or hub replacement.
-- A second live WhatSon session cannot mount the same hub for writing while that lease remains fresh. The runtime load
-  fails early with an explicit conflict error instead of allowing two writers to mutate the same filesystem package.
-- All mutation paths (`WhatSonSystemIoGateway`, note-body persistence, hierarchy `writeToFile()` calls, library index
-  repair, and note deletion) must revalidate the active lease before any filesystem write/delete operation proceeds.
+- WhatSon no longer enforces a single-writer lease for `.wshub` mounts. Desktop, iOS, and Android sessions may mount
+  the same hub concurrently, and conflict handling is deferred to the normal file-level merge/reconciliation policy.
+- `WhatSonHubWriteLease` is now a legacy cleanup shim for stale `.whatson/write-lease.json` artifacts left by older
+  builds. Runtime load and mutation paths keep calling the helper, but it no longer blocks concurrent sessions.
 - Records should include profile-aware last-modified timestamps so conflict merge can be resolved with explicit edit
   provenance rather than opaque
   file-level overwrite behavior.

@@ -68,8 +68,11 @@ Item {
             horizontalInset: LV.Theme.gapNone
             panelColor: mobileNormalLayout.canvasColor
             searchFieldVisible: true
+            searchHeaderHorizontalInset: LV.Theme.gapNone
+            searchHeaderMinHeight: LV.Theme.gap18
             searchHeaderTopGap: LV.Theme.gap2
             searchListGap: LV.Theme.gap2
+            searchHeaderVerticalInset: LV.Theme.gapNone
             searchText: mobileNormalLayout.hierarchySearchText
             sidebarHierarchyViewModel: mobileNormalLayout.sidebarHierarchyViewModel
             toolbarFrameWidth: width

@@ -300,37 +300,13 @@ namespace WhatSon::HubWriteLease
 
     inline bool refreshWriteLeaseForHub(const QString& hubPath, QString* errorMessage = nullptr)
     {
-        const QString normalizedHubPath = Detail::resolveExistingHubRootPath(hubPath);
-        if (normalizedHubPath.isEmpty())
+        Q_UNUSED(hubPath)
+        if (errorMessage != nullptr)
         {
-            return true;
+            errorMessage->clear();
         }
 
-        QMutexLocker locker(&Detail::leaseMutex());
-        Detail::LeaseRecord leaseRecord;
-        QString readError;
-        if (!Detail::readLeaseRecord(normalizedHubPath, &leaseRecord, &readError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = readError;
-            }
-            return false;
-        }
-
-        const QDateTime nowUtc = QDateTime::currentDateTimeUtc();
-        if (!leaseRecord.ownerId.isEmpty()
-            && !Detail::leaseIsOwnedByCurrentSession(leaseRecord)
-            && Detail::leaseIsActive(leaseRecord, nowUtc))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = Detail::activeWriterError(leaseRecord);
-            }
-            return false;
-        }
-
-        return Detail::writeLeaseRecord(normalizedHubPath, leaseRecord, errorMessage);
+        return true;
     }
 
     inline bool ensureWriteLeaseForPath(const QString& path, QString* errorMessage = nullptr)
@@ -342,23 +318,6 @@ namespace WhatSon::HubWriteLease
     {
         const QString normalizedHubPath = Detail::resolveExistingHubRootPath(hubPath);
         if (normalizedHubPath.isEmpty())
-        {
-            return true;
-        }
-
-        QMutexLocker locker(&Detail::leaseMutex());
-        Detail::LeaseRecord leaseRecord;
-        QString readError;
-        if (!Detail::readLeaseRecord(normalizedHubPath, &leaseRecord, &readError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = readError;
-            }
-            return false;
-        }
-
-        if (!Detail::leaseIsOwnedByCurrentSession(leaseRecord))
         {
             return true;
         }
@@ -379,7 +338,7 @@ namespace WhatSon::HubWriteLease
         {
             if (errorMessage != nullptr)
             {
-                *errorMessage = QStringLiteral("Failed to remove write lease file: %1 (%2)")
+                *errorMessage = QStringLiteral("Failed to remove legacy write lease file: %1 (%2)")
                     .arg(leasePath, file.errorString());
             }
             return false;

@@ -162,7 +162,7 @@ private
     void hubStructureValidator_resolvesHubPaths();
     void noteStorageValidator_resolvesMaterializedStorage();
     void libraryIndexIntegrityValidator_prunesOrphansAndRewritesIndex();
-    void libraryIndexIntegrityValidator_rejectsForeignWriteLease();
+    void libraryIndexIntegrityValidator_allowsConcurrentRewrite();
 };
 
 void WhatSonFileValidatorsTest::hubStructureValidator_resolvesHubPaths()
@@ -279,7 +279,7 @@ void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_prunesOrphansAndR
         QStringList({QStringLiteral("note-a"), QStringLiteral("note-b"), QStringLiteral("note-c")}));
 }
 
-void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_rejectsForeignWriteLease()
+void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_allowsConcurrentRewrite()
 {
     QString hubPath;
     QVERIFY(prepareValidationHub(&hubPath));
@@ -297,9 +297,10 @@ void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_rejectsForeignWri
 
     WhatSonLibraryIndexIntegrityValidator validator;
     QString errorMessage;
-    QVERIFY(!validator.rewriteIndexesFromRecords(hubPath, QStringList{libraryPath}, records, &errorMessage));
-    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
-    QCOMPARE(readUtf8File(indexPath), previousIndexText);
+    QVERIFY2(
+        validator.rewriteIndexesFromRecords(hubPath, QStringList{libraryPath}, records, &errorMessage),
+        qPrintable(errorMessage));
+    QVERIFY(readUtf8File(indexPath) != previousIndexText);
 }
 
 QTEST_APPLESS_MAIN(WhatSonFileValidatorsTest)

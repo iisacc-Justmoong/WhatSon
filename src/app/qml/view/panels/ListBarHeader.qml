@@ -6,10 +6,14 @@ Item {
     id: listBarHeader
 
     property color inlineFieldBackgroundColor: "transparent"
-    readonly property int inlineFieldHeight: 18
-    readonly property int inlineFieldHorizontalInset: 7
-    readonly property int inlineFieldTextHeight: 12
-    readonly property int inlineFieldVerticalInset: 3
+    readonly property int actionButtonSize: LV.Theme.gap20
+    property int frameMinHeight: LV.Theme.gap24
+    readonly property int inlineFieldHeight: LV.Theme.gap18
+    readonly property int inlineFieldHorizontalInset: LV.Theme.gap7
+    readonly property int inlineFieldTextHeight: LV.Theme.gap12
+    readonly property int inlineFieldVerticalInset: LV.Theme.gap3
+    property int outerHorizontalInset: LV.Theme.gap2
+    property int outerVerticalInset: LV.Theme.gap2
     readonly property int resolvedInputTextHeight: Math.max(listBarHeader.inlineFieldTextHeight, Number(searchField && searchField.inputItem && searchField.inputItem.contentHeight !== undefined ? searchField.inputItem.contentHeight : listBarHeader.inlineFieldTextHeight) || listBarHeader.inlineFieldTextHeight)
     property string searchText: ""
     property bool sortActionVisible: true
@@ -20,12 +24,17 @@ Item {
     signal sortActionRequested
     signal visibilityActionRequested
 
-    implicitHeight: 24
-    implicitWidth: 198
+    implicitHeight: Math.max(listBarHeader.frameMinHeight, headerRow.implicitHeight + listBarHeader.outerVerticalInset * 2)
+    implicitWidth: headerRow.implicitWidth + listBarHeader.outerHorizontalInset * 2
 
     RowLayout {
+        id: headerRow
+
         anchors.fill: parent
-        anchors.margins: 2
+        anchors.bottomMargin: listBarHeader.outerVerticalInset
+        anchors.leftMargin: listBarHeader.outerHorizontalInset
+        anchors.rightMargin: listBarHeader.outerHorizontalInset
+        anchors.topMargin: listBarHeader.outerVerticalInset
         spacing: 0
 
         LV.InputField {
@@ -75,16 +84,16 @@ Item {
             value: Math.max(0, Math.floor((searchField.height - searchField.resolvedInputTextHeight) / 2))
         }
         LV.IconButton {
-            Layout.preferredHeight: 20
-            Layout.preferredWidth: 20
+            Layout.preferredHeight: listBarHeader.actionButtonSize
+            Layout.preferredWidth: listBarHeader.actionButtonSize
             iconName: "cwmPermissionView"
             visible: listBarHeader.visibilityActionVisible
 
             onClicked: listBarHeader.visibilityActionRequested()
         }
         LV.IconButton {
-            Layout.preferredHeight: 20
-            Layout.preferredWidth: 20
+            Layout.preferredHeight: listBarHeader.actionButtonSize
+            Layout.preferredWidth: listBarHeader.actionButtonSize
             iconName: "sortByType"
             visible: listBarHeader.sortActionVisible
 

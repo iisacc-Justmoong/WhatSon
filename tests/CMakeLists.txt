@@ -81,6 +81,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_onboarding_route_bootstrap_controller_t
 add_executable(whatson_selected_hub_store_tests
         app/test_selected_hub_store.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/hub/SelectedHubStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/platform/Android/WhatSonAndroidStorageBackend.cpp
 )
 set_target_properties(whatson_selected_hub_store_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_selected_hub_store_tests

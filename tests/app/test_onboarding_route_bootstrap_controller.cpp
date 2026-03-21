@@ -11,7 +11,7 @@ class OnboardingRouteBootstrapControllerTest final : public QObject
 
 private slots:
     void configure_embeddedStartupWithoutHub_usesOnboardingRoute();
-    void configure_workspaceStartupWhenHubLoaded_usesWorkspaceRoute();
+    void configure_workspaceStartupWhenHubMounted_usesWorkspaceRoute();
     void handleHubLoaded_requestsDeferredWorkspaceRoute();
     void handlePageStackNavigated_completesPendingTransition();
     void handlePageStackNavigationFailed_restoresOnboardingRoute();
@@ -29,7 +29,7 @@ void OnboardingRouteBootstrapControllerTest::configure_embeddedStartupWithoutHub
     QCOMPARE(controller.startupRoutePath(), QStringLiteral("/onboarding"));
 }
 
-void OnboardingRouteBootstrapControllerTest::configure_workspaceStartupWhenHubLoaded_usesWorkspaceRoute()
+void OnboardingRouteBootstrapControllerTest::configure_workspaceStartupWhenHubMounted_usesWorkspaceRoute()
 {
     OnboardingRouteBootstrapController controller;
 

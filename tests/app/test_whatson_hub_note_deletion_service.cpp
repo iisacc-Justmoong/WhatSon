@@ -174,7 +174,7 @@ private
 
     void deleteNote_removesFocusedWsnoteAndUpdatesIndexAndStat();
     void deleteNote_prunesIndexOnlyEntryWithoutWsnoteDirectory();
-    void deleteNote_rejectsForeignWriteLease();
+    void deleteNote_allowsConcurrentDelete();
 };
 
 void WhatSonHubNoteDeletionServiceTest::deleteNote_removesFocusedWsnoteAndUpdatesIndexAndStat()
@@ -314,7 +314,7 @@ void WhatSonHubNoteDeletionServiceTest::deleteNote_prunesIndexOnlyEntryWithoutWs
     QVERIFY(!statRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
 }
 
-void WhatSonHubNoteDeletionServiceTest::deleteNote_rejectsForeignWriteLease()
+void WhatSonHubNoteDeletionServiceTest::deleteNote_allowsConcurrentDelete()
 {
     QString hubPath;
     QVERIFY(prepareIndexedLibraryHub(&hubPath));
@@ -347,9 +347,8 @@ void WhatSonHubNoteDeletionServiceTest::deleteNote_rejectsForeignWriteLease()
 
     WhatSonHubNoteDeletionService::Result result;
     QString errorMessage;
-    QVERIFY(!service.deleteNote(std::move(request), &result, &errorMessage));
-    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
-    QVERIFY(QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"))).isDir());
+    QVERIFY2(service.deleteNote(std::move(request), &result, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(!QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"))).exists());
 }
 
 QTEST_APPLESS_MAIN(WhatSonHubNoteDeletionServiceTest)

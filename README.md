@@ -351,15 +351,15 @@ non-local document-provider URLs that cannot be resolved into real package direc
 targeted error, instead of cascading into a full-domain runtime bootstrap failure.
 The desktop onboarding window's right-hand status panel stays aligned with the Figma onboarding design and shows either `No WhatSon Hub Selected`
 or the currently selected `.wshub` package name.
-The last successfully loaded `.wshub` is persisted through the app session store, so the next launch restores that
-selection before falling back to `blueprint/*.wshub`.
-Hub mounting is now guarded by a cooperative single-writer lease stored at `.whatson/write-lease.json` inside the
-selected `.wshub`. `main.cpp` acquires that lease before the runtime load starts, refreshes the heartbeat every 15
-seconds while the hub remains mounted, and releases the lease on app shutdown or hub replacement. If another live
-WhatSon session already owns a fresh lease for the same hub, onboarding/runtime loading fails with an explicit
-single-writer conflict error instead of allowing a second writer to mount the package. All hub mutation paths
-(`WhatSonSystemIoGateway`, note body persistence, hierarchy store `writeToFile()`, library index repair, and note
-deletion) now revalidate that lease before writing or deleting filesystem content.
+The last selected `.wshub` is persisted through the app session store as a startup candidate, so the next launch tries
+that selection before falling back to `blueprint/*.wshub`.
+Startup onboarding is now gated by hub mountability rather than by full runtime-domain success. WhatSon first resolves
+the persisted hub selection into a mountable startup hub path (local `.wshub`, Android source URI -> mounted local
+copy, or restored Android mounted-hub source URI). If that persisted candidate can no longer be mounted, startup
+retries the bundled blueprint hub before handing control to onboarding.
+Concurrent hub access is now allowed across desktop and mobile sessions. `WhatSonHubWriteLease` remains only as a
+legacy cleanup shim for old `.whatson/write-lease.json` artifacts, so onboarding/runtime loading and filesystem
+mutation paths no longer reject a `.wshub` just because another WhatSon session already touched the same package.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
@@ -524,8 +524,11 @@ for hub/note hierarchy payloads.
 - The node `174:4986` mobile shell now follows the Figma stack contract directly: `16px` outer inset and `24px`
   section spacing are owned by `MobileNormalLayout.qml`, the compact navigation frame stays `24px` high on
   `panelBackground10`, the hierarchy column stays on the same `panelBackground01` canvas as the mobile root instead of
-  reusing the desktop `panelBackground04` block, and the compact status bar resolves to a `20px` frame with the
-  existing add-note affordance on the trailing control-height slot.
+  reusing the desktop `panelBackground04` block, the compact hierarchy search row now collapses the `ListBarHeader`
+  outer chrome through `searchHeaderHorizontalInset: gapNone`, `searchHeaderVerticalInset: gapNone`, and
+  `searchHeaderMinHeight: gap18` so the mobile hierarchy keeps the Figma `20 / 2 / 18 / 2` toolbar-search-list
+  rhythm, and the compact status bar resolves to a `20px` frame with the existing add-note affordance on the trailing
+  control-height slot.
 - `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
   existing context-menu button, while `NavigationBarLayout.qml` adds the separate folder-create affordance and keeps
   the navigation mode combo on the shared `NavigationModeViewModel`.

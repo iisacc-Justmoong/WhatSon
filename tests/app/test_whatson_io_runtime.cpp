@@ -55,7 +55,7 @@ private
 
     void eventListener_filtersByPrefixAndQueuesEvents();
     void systemIoGateway_roundTripUtf8FileOperations();
-    void systemIoGateway_rejectsForeignWriteLease();
+    void systemIoGateway_allowsWritesWithLegacyForeignLease();
     void runtimeController_processesIoEventsEndToEnd();
 };
 
@@ -112,7 +112,7 @@ void WhatSonIoRuntimeTest::systemIoGateway_roundTripUtf8FileOperations()
     QVERIFY(!gateway.exists(filePath));
 }
 
-void WhatSonIoRuntimeTest::systemIoGateway_rejectsForeignWriteLease()
+void WhatSonIoRuntimeTest::systemIoGateway_allowsWritesWithLegacyForeignLease()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -126,9 +126,12 @@ void WhatSonIoRuntimeTest::systemIoGateway_rejectsForeignWriteLease()
 
     WhatSonSystemIoGateway gateway;
     QString errorMessage;
-    QVERIFY(!gateway.writeUtf8File(filePath, QStringLiteral("Blocked"), &errorMessage));
-    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
-    QVERIFY(!QFileInfo::exists(filePath));
+    QVERIFY2(gateway.writeUtf8File(filePath, QStringLiteral("Allowed"), &errorMessage), qPrintable(errorMessage));
+    QVERIFY(QFileInfo::exists(filePath));
+
+    QString text;
+    QVERIFY2(gateway.readUtf8File(filePath, &text, &errorMessage), qPrintable(errorMessage));
+    QCOMPARE(text, QStringLiteral("Allowed"));
 }
 
 void WhatSonIoRuntimeTest::runtimeController_processesIoEventsEndToEnd()

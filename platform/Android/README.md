@@ -28,6 +28,9 @@ workspace route.
 - Embedded Android onboarding still defers the actual route flip after `hubLoaded` / `operationFailed` with
   `Qt.callLater(...)`, but `Main.qml` now only applies the route requested by the coordinator instead of owning the
   full mobile onboarding state machine itself.
+- Startup onboarding now keeps the persisted Android hub selection as a mount candidate even when the previous local
+  materialized mount path is gone. Startup re-materializes the persisted source URI first, retries the blueprint hub if
+  that remount fails, and only then returns to onboarding.
 - `Main.qml` disables LVRS `mobileOversizedHeightEnabled` on Android as well. The default oversized mobile window can
   center the routed onboarding page outside the visible viewport and leave only the background fill visible.
 - `Main.qml` also paints app-owned Android safe-area bands while LVRS keeps system inset delegation enabled, so the
@@ -40,6 +43,6 @@ document URLs or incomplete package directories fail in-session with a targeted 
 into a full-domain runtime load failure. Startup now also refreshes previously selected Android mounted hubs from their
 stored source URI before bootstrapping the runtime, so the persisted app-local mount does not drift from the original
 provider-backed `.wshub`.
-Android hub loading also participates in the shared `.whatson/write-lease.json` single-writer contract. If a desktop
-or mobile WhatSon session already owns a fresh lease for the same `.wshub`, onboarding now fails early with that
-explicit conflict instead of mounting a second live writer on top of the shared package.
+Android hub loading now allows the same `.wshub` to stay open across multiple devices and sessions. The legacy
+`.whatson/write-lease.json` marker is ignored as a concurrency gate, so onboarding no longer rejects a shared hub just
+because another WhatSon session has already mounted it.

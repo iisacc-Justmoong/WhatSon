@@ -71,8 +71,11 @@ Rectangle {
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
+    property int searchHeaderHorizontalInset: LV.Theme.gap2
+    property int searchHeaderMinHeight: LV.Theme.gap24
     property int searchHeaderTopGap: LV.Theme.gap4
     property int searchListGap: LV.Theme.gapNone
+    property int searchHeaderVerticalInset: LV.Theme.gap2
     property color searchFieldBackgroundColor: LV.Theme.panelBackground10
     property bool searchFieldVisible: false
     property string searchText: ""
@@ -397,7 +400,10 @@ Rectangle {
         anchors.rightMargin: sidebarHierarchyView.horizontalInset
         anchors.top: hierarchyToolbar.bottom
         anchors.topMargin: sidebarHierarchyView.searchHeaderTopGap
+        frameMinHeight: sidebarHierarchyView.searchHeaderMinHeight
         inlineFieldBackgroundColor: sidebarHierarchyView.searchFieldBackgroundColor
+        outerHorizontalInset: sidebarHierarchyView.searchHeaderHorizontalInset
+        outerVerticalInset: sidebarHierarchyView.searchHeaderVerticalInset
         searchText: sidebarHierarchyView.searchText
         sortActionVisible: false
         visibilityActionVisible: false

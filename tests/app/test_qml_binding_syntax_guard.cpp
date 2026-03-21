@@ -1294,26 +1294,41 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarHeader.qml search field must suppress the default clear affordance for the Figma inline style.");
     QVERIFY2(
         listBarHeaderText.contains(
-            QStringLiteral("readonly property color inlineFieldBackgroundColor: \"transparent\"")),
+            QStringLiteral("property color inlineFieldBackgroundColor: \"transparent\"")),
         "ListBarHeader.qml inline input must centralize the transparent inline background override.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("readonly property int actionButtonSize: LV.Theme.gap20")),
+        "ListBarHeader.qml trailing action buttons must resolve through the LVRS gap20 token.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("property int frameMinHeight: LV.Theme.gap24")),
+        "ListBarHeader.qml must keep the desktop header height contract on the LVRS gap24 token.");
     QVERIFY2(
         listBarHeaderText.contains(QStringLiteral("shapeStyle: shapeCylinder")),
         "ListBarHeader.qml inline input must use the cylindrical pill shape from Figma.");
     QVERIFY2(
-        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHeight: 18")),
-        "ListBarHeader.qml inline input must keep the 18px height contract from Figma.");
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHeight: LV.Theme.gap18")),
+        "ListBarHeader.qml inline input must keep the 18px height contract from the LVRS gap18 token.");
     QVERIFY2(
-        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldTextHeight: 12")),
-        "ListBarHeader.qml inline input must keep the 12px text line box from Figma.");
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldTextHeight: LV.Theme.gap12")),
+        "ListBarHeader.qml inline input must keep the 12px text line box from the LVRS gap12 token.");
     QVERIFY2(
-        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHorizontalInset: 7")),
-        "ListBarHeader.qml inline input must use the 7px horizontal inset from Figma.");
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHorizontalInset: LV.Theme.gap7")),
+        "ListBarHeader.qml inline input must use the LVRS gap7 token for the horizontal inset.");
     QVERIFY2(
-        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldVerticalInset: 3")),
-        "ListBarHeader.qml inline input must use the 3px vertical inset from Figma.");
+        listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldVerticalInset: LV.Theme.gap3")),
+        "ListBarHeader.qml inline input must use the LVRS gap3 token for the vertical inset.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("property int outerHorizontalInset: LV.Theme.gap2")),
+        "ListBarHeader.qml must expose tokenized outer horizontal chrome so mobile can collapse the search wrapper.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("property int outerVerticalInset: LV.Theme.gap2")),
+        "ListBarHeader.qml must expose tokenized outer vertical chrome so mobile can collapse the search wrapper.");
     QVERIFY2(
         listBarHeaderText.contains(QStringLiteral("readonly property int resolvedInputTextHeight: Math.max(")),
         "ListBarHeader.qml must derive the live search text box height from the InputField contentHeight so whitespace edits stay vertically centered.");
+    QVERIFY2(
+        listBarHeaderText.contains(QStringLiteral("implicitHeight: Math.max(listBarHeader.frameMinHeight, headerRow.implicitHeight + listBarHeader.outerVerticalInset * 2)")),
+        "ListBarHeader.qml must derive its wrapper height from the tokenized outer chrome so mobile can reduce the search/header gap.");
     QVERIFY2(
         listBarHeaderText.contains(QStringLiteral("target: searchField.inputItem")),
         "ListBarHeader.qml must override the underlying LVRS input item directly for stable inline search alignment.");

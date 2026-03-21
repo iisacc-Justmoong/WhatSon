@@ -14,8 +14,11 @@ Item {
     readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
     required property var sidebarHierarchyViewModel
     property bool searchFieldVisible: false
+    property int searchHeaderHorizontalInset: LV.Theme.gap2
+    property int searchHeaderMinHeight: LV.Theme.gap24
     property int searchHeaderTopGap: LV.Theme.gap4
     property int searchListGap: LV.Theme.gapNone
+    property int searchHeaderVerticalInset: LV.Theme.gap2
     property string searchText: ""
     property int toolbarFrameWidth: 200
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
@@ -110,8 +113,11 @@ Item {
         horizontalInset: hierarchyView.horizontalInset
         panelColor: hierarchyView.panelColor
         searchFieldVisible: hierarchyView.searchFieldVisible
+        searchHeaderHorizontalInset: hierarchyView.searchHeaderHorizontalInset
+        searchHeaderMinHeight: hierarchyView.searchHeaderMinHeight
         searchHeaderTopGap: hierarchyView.searchHeaderTopGap
         searchListGap: hierarchyView.searchListGap
+        searchHeaderVerticalInset: hierarchyView.searchHeaderVerticalInset
         searchText: hierarchyView.searchText
         toolbarFrameWidth: hierarchyView.toolbarFrameWidth
         toolbarIconNames: hierarchyView.toolbarIconNames

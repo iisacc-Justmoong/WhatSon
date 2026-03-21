@@ -65,14 +65,13 @@ class WhatSonHubWriteLeaseTest final : public QObject
     Q_OBJECT
 
 private slots:
-    void refreshWriteLeaseForHub_createsCurrentSessionLease();
-    void refreshWriteLeaseForHub_rejectsActiveForeignLease();
-    void refreshWriteLeaseForHub_reclaimsStaleForeignLease();
-    void ensureWriteLeaseForPath_resolvesNestedPaths();
-    void releaseWriteLeaseForHub_removesOwnedLeaseFile();
+    void refreshWriteLeaseForHub_allowsConcurrentSessions();
+    void refreshWriteLeaseForHub_ignoresLegacyForeignLease();
+    void ensureWriteLeaseForPath_allowsNestedPaths();
+    void releaseWriteLeaseForHub_removesLegacyLeaseFile();
 };
 
-void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_createsCurrentSessionLease()
+void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_allowsConcurrentSessions()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -82,15 +81,10 @@ void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_createsCurrentSessionLeas
 
     QString errorMessage;
     QVERIFY2(WhatSon::HubWriteLease::refreshWriteLeaseForHub(hubPath, &errorMessage), qPrintable(errorMessage));
-
-    const QJsonObject root = readLeaseJson(hubPath);
-    QCOMPARE(root.value(QStringLiteral("schema")).toString(), QStringLiteral("whatson.hub.writeLease"));
-    QCOMPARE(root.value(QStringLiteral("hubPath")).toString(), hubPath);
-    QCOMPARE(root.value(QStringLiteral("ownerId")).toString(), WhatSon::HubWriteLease::currentSessionOwnerId());
-    QVERIFY(!root.value(QStringLiteral("refreshedAtUtc")).toString().trimmed().isEmpty());
+    QVERIFY(readLeaseJson(hubPath).isEmpty());
 }
 
-void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_rejectsActiveForeignLease()
+void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_ignoresLegacyForeignLease()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -102,31 +96,13 @@ void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_rejectsActiveForeignLease
         foreignLeaseRecord(hubPath, QDateTime::currentDateTimeUtc().toString(Qt::ISODate))));
 
     QString errorMessage;
-    QVERIFY(!WhatSon::HubWriteLease::refreshWriteLeaseForHub(hubPath, &errorMessage));
-    QVERIFY(errorMessage.contains(QStringLiteral("currently locked for writing")));
+    QVERIFY2(WhatSon::HubWriteLease::refreshWriteLeaseForHub(hubPath, &errorMessage), qPrintable(errorMessage));
 
     const QJsonObject root = readLeaseJson(hubPath);
     QCOMPARE(root.value(QStringLiteral("ownerId")).toString(), QStringLiteral("foreign-session"));
 }
 
-void WhatSonHubWriteLeaseTest::refreshWriteLeaseForHub_reclaimsStaleForeignLease()
-{
-    QTemporaryDir tempDir;
-    QVERIFY(tempDir.isValid());
-
-    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Alpha.wshub"));
-    QVERIFY(QDir().mkpath(hubPath));
-    const QString staleTimestamp = QDateTime::currentDateTimeUtc().addSecs(-120).toString(Qt::ISODate);
-    QVERIFY(writeLeaseJson(hubPath, foreignLeaseRecord(hubPath, staleTimestamp)));
-
-    QString errorMessage;
-    QVERIFY2(WhatSon::HubWriteLease::refreshWriteLeaseForHub(hubPath, &errorMessage), qPrintable(errorMessage));
-
-    const QJsonObject root = readLeaseJson(hubPath);
-    QCOMPARE(root.value(QStringLiteral("ownerId")).toString(), WhatSon::HubWriteLease::currentSessionOwnerId());
-}
-
-void WhatSonHubWriteLeaseTest::ensureWriteLeaseForPath_resolvesNestedPaths()
+void WhatSonHubWriteLeaseTest::ensureWriteLeaseForPath_allowsNestedPaths()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -141,12 +117,10 @@ void WhatSonHubWriteLeaseTest::ensureWriteLeaseForPath_resolvesNestedPaths()
             QDir(nestedDir).filePath(QStringLiteral("note.wsnbody")),
             &errorMessage),
         qPrintable(errorMessage));
-
-    const QJsonObject root = readLeaseJson(hubPath);
-    QCOMPARE(root.value(QStringLiteral("ownerId")).toString(), WhatSon::HubWriteLease::currentSessionOwnerId());
+    QVERIFY(readLeaseJson(hubPath).isEmpty());
 }
 
-void WhatSonHubWriteLeaseTest::releaseWriteLeaseForHub_removesOwnedLeaseFile()
+void WhatSonHubWriteLeaseTest::releaseWriteLeaseForHub_removesLegacyLeaseFile()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -154,10 +128,13 @@ void WhatSonHubWriteLeaseTest::releaseWriteLeaseForHub_removesOwnedLeaseFile()
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Alpha.wshub"));
     QVERIFY(QDir().mkpath(hubPath));
 
-    QString errorMessage;
-    QVERIFY2(WhatSon::HubWriteLease::refreshWriteLeaseForHub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(writeLeaseJson(
+        hubPath,
+        foreignLeaseRecord(hubPath, QDateTime::currentDateTimeUtc().toString(Qt::ISODate))));
+
     QVERIFY(QFileInfo::exists(leaseFilePathForHub(hubPath)));
 
+    QString errorMessage;
     QVERIFY2(WhatSon::HubWriteLease::releaseWriteLeaseForHub(hubPath, &errorMessage), qPrintable(errorMessage));
     QVERIFY(!QFileInfo::exists(leaseFilePathForHub(hubPath)));
 }

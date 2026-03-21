@@ -40,6 +40,9 @@ This directory contains iOS platform-specific bundle configuration.
   `pageInitialPath`, so the first `/onboarding` commit is established before the root shell finishes booting.
 - Embedded iOS onboarding now defers the actual `/onboarding -> /` route flip by one event turn after `hubLoaded` /
   `operationFailed`, keeping the workspace transition out of the native Files picker teardown stack.
+- Startup onboarding now consults the persisted hub selection as a mount candidate first instead of deleting that
+  selection during settings validation. If the stored iOS `.wshub` path can still be mounted, the app enters the
+  workspace directly; otherwise startup retries the bundled blueprint fallback before reopening onboarding.
 - `Main.qml` also disables LVRS `mobileOversizedHeightEnabled` on iOS. The default oversized mobile surface can place
   the routed onboarding page host outside the visible viewport, leaving only the dark `windowColor` fill on screen.
 - `Main.qml` also paints an app-owned safe-area backdrop on iOS while LVRS keeps system inset delegation enabled. This
@@ -50,6 +53,6 @@ This directory contains iOS platform-specific bundle configuration.
 - `OnboardingHubController` also validates that the resolved iOS selection is a mountable local `.wshub` directory
   before runtime bootstrap starts. Unsupported document-provider URLs or incomplete package scaffolds now stay inside
   onboarding with an explicit error instead of collapsing the app session after the picker closes.
-- iOS participates in the same `.whatson/write-lease.json` single-writer lease as desktop and Android. A hub cannot be
-  mounted for writing while another live WhatSon session is still refreshing that lease, so onboarding surfaces a
-  conflict error instead of silently allowing concurrent package mutation.
+- iOS now allows the same `.wshub` to be mounted concurrently with desktop and Android sessions. The old
+  `.whatson/write-lease.json` gate is treated as a legacy cleanup artifact only and no longer blocks onboarding or
+  runtime filesystem access.
