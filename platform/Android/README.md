@@ -21,6 +21,9 @@ Android mobile bootstrap now mirrors iOS route ownership: `hubLoaded` only advan
   booted.
 - `Main.qml` disables LVRS `mobileOversizedHeightEnabled` on Android as well. The default oversized mobile window can
   center the routed onboarding page outside the visible viewport and leave only the background fill visible.
+- `Main.qml` also overrides LVRS `forcedDeviceTierPreset` to `HighTier` (`2`) on Android. LVRS shell defaults pin
+  startup to `UltraTier` (`3`), but mobile `RenderQuality` inference only rises to `HighTier`, so WhatSon avoids
+  forcing the desktop-class 16x-MSAA startup preset on Android devices.
 `OnboardingHubController` also preflights the resolved `.wshub` scaffold before runtime bootstrap, so unsupported SAF
 document URLs or incomplete package directories fail in-session with a targeted onboarding error instead of exploding
 into a full-domain runtime load failure.

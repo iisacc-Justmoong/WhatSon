@@ -119,6 +119,7 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("property bool onboardingVisible: false", main_qml_text)
         self.assertIn("property bool onboardingRouteCommitPending: false", main_qml_text)
         self.assertIn("mobileOversizedHeightEnabled: false", main_qml_text)
+        self.assertIn("forcedDeviceTierPreset: isMobilePlatform ? 2 : 3", main_qml_text)
         self.assertIn("function syncOnboardingRoute(routeSource)", main_qml_text)
         self.assertIn("applicationWindow.activePageRouter.setRoot(targetPath);", main_qml_text)
         self.assertIn("pageInitialPath: applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingVisible ? onboardingRoutePath : workspaceRoutePath", main_qml_text)

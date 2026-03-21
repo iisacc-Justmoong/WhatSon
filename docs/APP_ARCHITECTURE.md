@@ -82,6 +82,9 @@ Defined in `CMakeLists.txt`:
 - `Main.qml` explicitly disables LVRS `mobileOversizedHeightEnabled` for the app root. The default oversized mobile
   window contract centers the live page host inside a much taller synthetic surface, which is incompatible with
   WhatSon's full-screen routed onboarding surface and can leave only the background fill visible on iOS/Android
+- `Main.qml` also overrides LVRS `forcedDeviceTierPreset` on mobile from `UltraTier` (`3`) to `HighTier` (`2`).
+  LVRS `RenderQuality::inferDeviceTier()` never returns `UltraTier` on iOS/Android, so WhatSon keeps mobile startup on
+  the framework's own mobile inference ceiling instead of forcing the desktop-quality 16x-MSAA shell preset
 - `OnboardingHubController` now owns an explicit mobile bootstrap session state:
   `idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`. Embedded mobile onboarding does
   not declare success on `hubLoaded` alone; `Main.qml` waits for the LVRS router to confirm the `/` workspace route

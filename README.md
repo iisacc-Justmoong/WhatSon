@@ -15,6 +15,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/Main.qml` also disables LVRS `mobileOversizedHeightEnabled` for this app root. The default oversized
   mobile window strategy paints large top/bottom fill regions with `windowColor`, which pushed the routed onboarding
   page host outside the visible first-frame viewport and produced an apparently blank screen on iOS/Android.
+- `src/app/qml/Main.qml` also overrides LVRS `forcedDeviceTierPreset` on iOS/Android from the shell default
+  `UltraTier` (`3`) down to `HighTier` (`2`), matching the highest tier that LVRS `RenderQuality` actually infers on
+  mobile instead of forcing the desktop-class 16x-MSAA startup baseline.
 - The routed workspace page still composes WhatSon's custom desktop/mobile shells, but layout selection now hangs off
   LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
 - `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow

@@ -137,6 +137,7 @@ LV.ApplicationWindow {
     }
 
     autoAttachRuntimeEvents: true
+    forcedDeviceTierPreset: isMobilePlatform ? 2 : 3
     globalEventListenersEnabled: true
     height: windowDefaultHeight
     internalRouterRegisterAsGlobalNavigator: true

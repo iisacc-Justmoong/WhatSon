@@ -34,6 +34,9 @@ This directory contains iOS platform-specific bundle configuration.
   `/onboarding` commit on iOS.
 - `Main.qml` also disables LVRS `mobileOversizedHeightEnabled` on iOS. The default oversized mobile surface can place
   the routed onboarding page host outside the visible viewport, leaving only the dark `windowColor` fill on screen.
+- `Main.qml` also overrides LVRS `forcedDeviceTierPreset` to `HighTier` (`2`) on iOS. LVRS shells default to
+  `UltraTier` (`3`), which applies the highest-fidelity render baseline (`MSAA=16`, 2D depth buffer, no dynamic
+  resolution). WhatSon now aligns startup with the highest tier LVRS actually infers for mobile devices.
 - `OnboardingHubController` also validates that the resolved iOS selection is a mountable local `.wshub` directory
   before runtime bootstrap starts. Unsupported document-provider URLs or incomplete package scaffolds now stay inside
   onboarding with an explicit error instead of collapsing the app session after the picker closes.
