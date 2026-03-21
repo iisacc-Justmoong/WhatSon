@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -70,7 +71,13 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int searchHeaderVerticalInset: LV.Theme.gap2", hierarchy_layout_text)
         self.assertIn("property int verticalInset: LV.Theme.gap2", hierarchy_layout_text)
         self.assertIn("function requestCreateFolder()", hierarchy_layout_text)
+        self.assertNotIn("property bool hierarchyEditable: true", hierarchy_layout_text)
+        self.assertIn(
+            "hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable",
+            hierarchy_layout_text,
+        )
         self.assertIn("property bool footerVisible: true", hierarchy_view_text)
+        self.assertIn("property bool hierarchyEditable: false", hierarchy_view_text)
         self.assertIn("property bool searchFieldVisible: false", hierarchy_view_text)
         self.assertIn("property int searchHeaderHorizontalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("property int searchHeaderMinHeight: LV.Theme.gap24", hierarchy_view_text)
@@ -101,19 +108,13 @@ class MobileShellLayoutTests(unittest.TestCase):
 
         self.assertIn("NavigationBarLayout {", mobile_layout_text)
         self.assertIn("compactMode: true", mobile_layout_text)
-        self.assertIn("compactAddFolderVisible: true", mobile_layout_text)
+        self.assertNotIn("compactAddFolderVisible: true", mobile_layout_text)
         self.assertIn("HierarchySidebarLayout {", mobile_layout_text)
-        self.assertIn("footerVisible: false", mobile_layout_text)
-        self.assertIn("horizontalInset: LV.Theme.gapNone", mobile_layout_text)
+        self.assertNotIn("footerVisible: false", mobile_layout_text)
+        self.assertNotIn("hierarchyEditable: false", mobile_layout_text)
         self.assertIn("panelColor: mobileNormalLayout.canvasColor", mobile_layout_text)
         self.assertIn("searchFieldVisible: true", mobile_layout_text)
-        self.assertIn("searchHeaderHorizontalInset: LV.Theme.gapNone", mobile_layout_text)
-        self.assertIn("searchHeaderMinHeight: LV.Theme.gap18", mobile_layout_text)
-        self.assertIn("searchHeaderTopGap: LV.Theme.gap2", mobile_layout_text)
-        self.assertIn("searchListGap: LV.Theme.gap2", mobile_layout_text)
-        self.assertIn("searchHeaderVerticalInset: LV.Theme.gapNone", mobile_layout_text)
         self.assertIn("toolbarFrameWidth: width", mobile_layout_text)
-        self.assertIn("verticalInset: LV.Theme.gapNone", mobile_layout_text)
         self.assertIn("StatusBarLayout {", mobile_layout_text)
         self.assertIn("onCreateNoteRequested: mobileNormalLayout.requestCreateNote()", mobile_layout_text)
         self.assertIn("windowInteractions.createNoteFromShortcut();", mobile_layout_text)
@@ -143,15 +144,17 @@ class MobileShellLayoutTests(unittest.TestCase):
         agents_text = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
         self.assertIn("shared `NavigationBarLayout.qml` (`compactMode: true`)", readme_text)
-        self.assertIn("compact hierarchy search row now collapses the `ListBarHeader`", readme_text)
-        self.assertIn("`searchHeaderHorizontalInset: gapNone`", readme_text)
+        self.assertIn("keeps the shared hierarchy footer and editable contract intact", readme_text)
+        self.assertIn("emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)", readme_text)
         self.assertIn("same `panelBackground01` canvas as the mobile root", readme_text)
         self.assertIn("stays `24px` high on `panelBackground10`", architecture_text)
+        self.assertRegex(
+            architecture_text,
+            re.compile(r"mobile shell does\s+not fork `Hierarchy\.editable`"),
+        )
+        self.assertIn("system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`", architecture_text)
         self.assertIn("resolves to a `20px`", architecture_text)
-        self.assertIn("searchHeaderHorizontalInset", architecture_text)
-        self.assertIn("searchHeaderMinHeight", architecture_text)
-        self.assertIn("searchHeaderTopGap", architecture_text)
-        self.assertIn("searchListGap", architecture_text)
+        self.assertIn("shared `HierarchySidebarLayout.qml` defaults", architecture_text)
         self.assertIn("node `174:4986`", agents_text)
 
 

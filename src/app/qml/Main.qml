@@ -146,6 +146,8 @@ LV.ApplicationWindow {
     }
 
     autoAttachRuntimeEvents: true
+    delegateMobileInsetsToSystem: false
+    forceFullWindowAreaOnMobile: applicationWindow.isMobilePlatform
     forcedDeviceTierPreset: -1
     globalEventListenersEnabled: true
     height: windowDefaultHeight

@@ -27,11 +27,6 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
-    function requestCreateFolder() {
-        mobileNormalLayout.requestViewHook("create-folder");
-        if (hierarchySidebar && hierarchySidebar.requestCreateFolder !== undefined)
-            hierarchySidebar.requestCreateFolder();
-    }
     function requestCreateNote() {
         mobileNormalLayout.requestViewHook("create-note");
         if (mobileNormalLayout.windowInteractions && mobileNormalLayout.windowInteractions.createNoteFromShortcut !== undefined)
@@ -50,34 +45,22 @@ Item {
         NavigationBarLayout {
             id: compactNavigationBar
 
-            compactAddFolderEnabled: hierarchySidebar.createFolderEnabled
-            compactAddFolderVisible: true
             compactMode: true
             compactSurfaceColor: mobileNormalLayout.controlSurfaceColor
             editorViewModeViewModel: mobileNormalLayout.editorViewModeViewModel
             navigationModeViewModel: mobileNormalLayout.navigationModeViewModel
-
-            onCompactAddFolderRequested: mobileNormalLayout.requestCreateFolder()
         }
         HierarchySidebarLayout {
             id: hierarchySidebar
 
             Layout.fillHeight: true
             Layout.fillWidth: true
-            footerVisible: false
-            horizontalInset: LV.Theme.gapNone
             panelColor: mobileNormalLayout.canvasColor
             searchFieldVisible: true
-            searchHeaderHorizontalInset: LV.Theme.gapNone
-            searchHeaderMinHeight: LV.Theme.gap18
-            searchHeaderTopGap: LV.Theme.gap2
-            searchListGap: LV.Theme.gap2
-            searchHeaderVerticalInset: LV.Theme.gapNone
             searchText: mobileNormalLayout.hierarchySearchText
             sidebarHierarchyViewModel: mobileNormalLayout.sidebarHierarchyViewModel
             toolbarFrameWidth: width
             toolbarIconNames: mobileNormalLayout.toolbarIconNames
-            verticalInset: LV.Theme.gapNone
 
             onSearchSubmitted: function (text) {
                 mobileNormalLayout.hierarchySearchText = text;

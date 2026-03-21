@@ -45,9 +45,9 @@ This directory contains iOS platform-specific bundle configuration.
   workspace directly; otherwise startup retries the bundled blueprint fallback before reopening onboarding.
 - `Main.qml` also disables LVRS `mobileOversizedHeightEnabled` on iOS. The default oversized mobile surface can place
   the routed onboarding page host outside the visible viewport, leaving only the dark `windowColor` fill on screen.
-- `Main.qml` also paints an app-owned safe-area backdrop on iOS while LVRS keeps system inset delegation enabled. This
-  override only fills the visible safe-area background with WhatSon `canvasColor`; it does not switch the routed
-  content root to full-window coverage.
+- `Main.qml` disables LVRS `delegateMobileInsetsToSystem` and forces `forceFullWindowAreaOnMobile` on iOS, so the
+  status-bar and home-indicator safe-area bands are part of the routed WhatSon content surface instead of a
+  background-only fallback.
 - `Main.qml` now leaves `forcedDeviceTierPreset` in LVRS auto-detect mode (`-1`) on iOS. Recent LVRS shell defaults no
   longer pin startup to `UltraTier`, so WhatSon must not keep the stale mobile override from the older bootstrap path.
 - `OnboardingHubController` also validates that the resolved iOS selection is a mountable local `.wshub` directory

@@ -508,6 +508,7 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
     }
 
     refreshNoteListForSelection();
+    emit hubFilesystemMutated();
     return true;
 }
 

@@ -31,9 +31,11 @@
 #include "file/hub/WhatSonHubWriteLease.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
+#include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 #include "permissions/ApplePermissionBridge.hpp"
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "sync/WhatSonHubSyncController.hpp"
 
 #include <QByteArray>
 #include <QCommandLineOption>
@@ -694,6 +696,31 @@ int main(int argc, char* argv[])
         return true;
     };
 
+    WhatSonHubSyncController hubSyncController;
+    hubSyncController.attachToApplication(&app);
+    hubSyncController.setReloadCallback(loadHubIntoRuntime);
+    QObject::connect(
+        &hubSyncController,
+        &WhatSonHubSyncController::syncFailed,
+        &app,
+        [](const QString& errorMessage)
+        {
+            if (!errorMessage.trimmed().isEmpty())
+            {
+                qWarning().noquote() << QStringLiteral("Hub sync failed: %1").arg(errorMessage.trimmed());
+            }
+        });
+    QObject::connect(
+        &libraryHierarchyViewModel,
+        &LibraryHierarchyViewModel::hubFilesystemMutated,
+        &hubSyncController,
+        &WhatSonHubSyncController::acknowledgeLocalMutation);
+    QObject::connect(
+        &bookmarksHierarchyViewModel,
+        &BookmarksHierarchyViewModel::hubFilesystemMutated,
+        &hubSyncController,
+        &WhatSonHubSyncController::acknowledgeLocalMutation);
+
     onboardingHubController.setCreateHubCallback(
         [&hubCreator](const QString& requestedHubPath, QString* outPackagePath, QString* errorMessage) -> bool
         {
@@ -706,10 +733,11 @@ int main(int argc, char* argv[])
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
-        [&selectedHubStore, &updateWriteLeaseOwnership](const QString& hubPath)
+        [&selectedHubStore, &updateWriteLeaseOwnership, &hubSyncController](const QString& hubPath)
         {
             selectedHubStore.setSelectedHubPath(hubPath);
             updateWriteLeaseOwnership(hubPath);
+            hubSyncController.setCurrentHubPath(hubPath);
         });
 
     const auto resolveStartupHubMountPath = [](const QString& hubPath, QString* errorMessage) -> QString
@@ -756,6 +784,35 @@ int main(int argc, char* argv[])
             }
             return WhatSon::HubPath::normalizeAbsolutePath(remountedHubPath);
         }
+
+#if defined(Q_OS_IOS)
+        QString iosAccessError;
+        if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(
+                normalizedHubPath,
+                &iosAccessError))
+        {
+            const QString parentDirectoryPath = QFileInfo(normalizedHubPath).absolutePath();
+            QString parentAccessError;
+            const bool parentAccessGranted =
+                !parentDirectoryPath.trimmed().isEmpty()
+                && WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(
+                    parentDirectoryPath,
+                    &parentAccessError);
+            if (!parentAccessGranted)
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = iosAccessError.trimmed().isEmpty()
+                                        ? (parentAccessError.trimmed().isEmpty()
+                                               ? QStringLiteral(
+                                                     "iOS denied access to the stored WhatSon Hub path during startup.")
+                                               : parentAccessError.trimmed())
+                                        : iosAccessError.trimmed();
+                }
+                return {};
+            }
+        }
+#endif
 
         const QFileInfo hubInfo(normalizedHubPath);
         if (!hubInfo.exists() || !hubInfo.isDir())
@@ -838,6 +895,7 @@ int main(int argc, char* argv[])
             onboardingHubController.completeWorkspaceTransition();
             selectedHubStore.setSelectedHubPath(startupHubPath);
             updateWriteLeaseOwnership(startupHubPath);
+            hubSyncController.setCurrentHubPath(startupHubPath);
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {

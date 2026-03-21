@@ -33,9 +33,9 @@ workspace route.
   that remount fails, and only then returns to onboarding.
 - `Main.qml` disables LVRS `mobileOversizedHeightEnabled` on Android as well. The default oversized mobile window can
   center the routed onboarding page outside the visible viewport and leave only the background fill visible.
-- `Main.qml` also paints app-owned Android safe-area bands while LVRS keeps system inset delegation enabled, so the
-  visible cutout and gesture-area background matches WhatSon `canvasColor` without rebinding the content root to
-  fullscreen coverage.
+- `Main.qml` disables LVRS `delegateMobileInsetsToSystem` and forces `forceFullWindowAreaOnMobile` on Android, so the
+  visible cutout and gesture-area bands belong to the routed WhatSon surface itself instead of staying on a
+  system-owned inset background.
 - `Main.qml` now leaves `forcedDeviceTierPreset` in LVRS auto-detect mode (`-1`) on Android. Recent LVRS shell
   defaults already removed the old `UltraTier` startup pin, so WhatSon must not carry the stale downstream override.
 `OnboardingHubController` also preflights the resolved `.wshub` scaffold before runtime bootstrap, so unsupported SAF

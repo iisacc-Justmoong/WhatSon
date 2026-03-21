@@ -126,6 +126,21 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("WhatSon::Android::Storage::mountedHubSourceUri(normalizedHubPath);", app_main_text)
         self.assertIn("WhatSon::Android::Storage::mountHub(normalizedHubPath, &mountedHubPath, errorMessage)", app_main_text)
         self.assertIn("WhatSon::Android::Storage::mountHub(sourceUri, &remountedHubPath, errorMessage)", app_main_text)
+        self.assertIn('#include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"', app_main_text)
+        self.assertIn(
+            "WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(",
+            app_main_text,
+        )
+        self.assertIn("normalizedHubPath,", app_main_text)
+        self.assertIn(
+            "const QString parentDirectoryPath = QFileInfo(normalizedHubPath).absolutePath();",
+            app_main_text,
+        )
+        self.assertIn("parentDirectoryPath,", app_main_text)
+        self.assertIn(
+            "iOS denied access to the stored WhatSon Hub path during startup.",
+            app_main_text,
+        )
         self.assertIn("#include <QWindow>", app_main_text)
         self.assertIn("const auto activateWindowObject = [](QObject* windowObject)", app_main_text)
         self.assertIn("if (auto* window = qobject_cast<QWindow*>(windowObject))", app_main_text)
@@ -170,6 +185,8 @@ class CliOnboardingTests(unittest.TestCase):
         self.assertIn("readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false", main_qml_text)
         self.assertIn("readonly property color mobileSafeAreaBackdropColor: canvasColor", main_qml_text)
         self.assertIn("mobileOversizedHeightEnabled: false", main_qml_text)
+        self.assertIn("delegateMobileInsetsToSystem: false", main_qml_text)
+        self.assertIn("forceFullWindowAreaOnMobile: applicationWindow.isMobilePlatform", main_qml_text)
         self.assertIn("forcedDeviceTierPreset: -1", main_qml_text)
         self.assertIn("function applyRequestedRoute(targetPath, routeSource)", main_qml_text)
         self.assertIn("applicationWindow.activePageRouter.setRoot(targetPath);", main_qml_text)

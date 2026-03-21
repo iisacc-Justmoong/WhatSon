@@ -96,11 +96,15 @@ Defined in `CMakeLists.txt`:
 - `Main.qml` explicitly disables LVRS `mobileOversizedHeightEnabled` for the app root. The default oversized mobile
   window contract centers the live page host inside a much taller synthetic surface, which is incompatible with
   WhatSon's full-screen routed onboarding surface and can leave only the background fill visible on iOS/Android
-- `Main.qml` also installs an app-owned mobile safe-area backdrop override while LVRS keeps OS-managed inset
-  delegation enabled. The override paints only the visible non-content safe-area bands with `canvasColor`; it does not
-  opt the app back into full-window content coverage or change routed page layout bounds
+- `Main.qml` disables LVRS `delegateMobileInsetsToSystem` and forces `forceFullWindowAreaOnMobile`, so the routed app
+  surface itself owns the visible safe-area bands on iOS and Android. The old backdrop override remains only as a
+  fallback path for non-full-window mobile hosts
 - `Main.qml` now keeps LVRS `forcedDeviceTierPreset` in auto-detect mode (`-1`). Current LVRS bootstrap defaults
   already removed the old `UltraTier` shell pin, so WhatSon must not retain a stale downstream preset override
+- `main.cpp` re-acquires iOS Files access during startup hub preflight through
+  `AppleSecurityScopedResourceAccess::ensureAccessForPath(...)` before it decides `startupHubMounted`. The stored
+  `.wshub` path is checked first and its parent directory is retried as a fallback, reducing false onboarding
+  fallbacks after reopening the app with a previously selected Files-backed hub
 - `OnboardingHubController` still owns the session state
   `idle -> resolvingSelection -> loadingHub -> hubLoaded -> routingWorkspace -> ready`, but
   `OnboardingRouteBootstrapController` now owns the LVRS route commit state that sits around that session
@@ -126,6 +130,15 @@ Defined in `CMakeLists.txt`:
 - Startup onboarding is now driven by a `startupHubMounted` preflight state rather than by full runtime-domain load
   success. `main.cpp` first resolves the persisted selection into a mountable startup hub path, and only then decides
   whether onboarding should own the first route.
+- Runtime hub change detection now lives in `src/app/sync/WhatSonHubSyncController.*`. `main.cpp` wires that
+  controller to the existing `loadHubIntoRuntime(...)` callback so the active workspace can accept on-disk hub changes
+  without restarting the app.
+- `WhatSonHubSyncController` combines a periodic poll, a recursive filesystem watcher over the mounted `.wshub`, and
+  app interaction hints (`TouchBegin`, pointer press, and app activation) into one debounced filesystem watcher /
+  reload path.
+- Local app-owned note/folder writes are acknowledged separately through `hubFilesystemMutated()` signals from
+  `LibraryHierarchyViewModel` and `BookmarksHierarchyViewModel`, allowing the sync controller to refresh its baseline
+  after self-writes instead of treating every save as an external runtime reload.
 
 Dependency discovery baseline:
 
@@ -363,13 +376,11 @@ Domain-isolated support:
               `controlHeightMd` slot for the add-note affordance, and still emits `createNoteRequested`, which
               `MobileNormalLayout.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
               bottom add-note affordance stays on the same shared creation path as desktop navigation controls.
-            - `HierarchySidebarLayout.qml` now exposes `searchHeaderHorizontalInset`, `searchHeaderVerticalInset`,
-              `searchHeaderMinHeight`, `searchHeaderTopGap`, `searchListGap`, and `verticalInset` overrides so the
-              shared hierarchy panel can match the mobile `174:4986` / `174:4987` geometry without forking the
-              implementation; the mobile shell uses those overrides to keep hierarchy content on the root
-              `panelBackground01` canvas, collapse the desktop `ListBarHeader` chrome to a bare `gap18` search row,
-              and preserve the Figma `20px` toolbar + `2px` gap + `18px` search + `2px` gap rhythm before the
-              hierarchy list starts.
+            - `HierarchySidebarLayout.qml` still exposes search/inset geometry inputs for shared use, but the mobile
+              shell no longer overrides those values. `MobileNormalLayout.qml` keeps the hierarchy on the root
+              `panelBackground01` canvas while inheriting the shared `HierarchySidebarLayout.qml` defaults for list
+              padding and toolbar-to-list spacing, so mobile and desktop stay on the same LVRS hierarchy geometry
+              contract instead of forking gap behavior.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
@@ -552,6 +563,9 @@ Library-specific modeling:
 - `LibraryHierarchyViewModel` exposes `All Library`, `Draft`, and `Today` as immutable depth-0 system folders and
   synchronizes
   note-list filtering from those buckets plus persisted library folders
+- The same system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked` in the serialized LVRS
+  hierarchy payload, and `applyHierarchyNodes(...)` preserves the `All Library -> Draft -> Today` prefix even if an
+  incoming editable-drag payload tries to move user folders across that fixed boundary.
 - Folder selection/filtering is path-based (`Folders.wsfolders.id` / normalized folder path), so nested folders and
   duplicate leaf labels do not alias each other. When note headers persist nested folder membership as split ancestor /
   leaf `<folder>` entries or leaf-only values such as `/Competitor`, the view-model rebuilds candidate full paths from
@@ -729,9 +743,10 @@ Hierarchy rendering pipeline:
 - `SidebarHierarchyView` now mounts the LVRS `Hierarchy` surface directly instead of composing a custom list/adapter
   stack around `HierarchyList`.
 - Each domain hierarchy view-model exposes a direct `hierarchyModel` `QVariantList` property with LVRS-default roles
-  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`, `draggable`) and preserves the persisted flat depth
-  ordering, matching the current LVRS `HierarchyList` contract where child presence, expand/collapse, and row-level
-  drag affordance are inferred from row order plus explicit depth/drag roles without an intermediate WhatSon adapter.
+  (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`, `draggable`) plus compatible drag-lock roles
+  (`dragAllowed`, `movable`, `dragLocked`) and preserves the persisted flat depth ordering, matching the current LVRS
+  `HierarchyList` contract where child presence, expand/collapse, and row-level drag affordance are inferred from row
+  order plus explicit depth/drag roles without an intermediate WhatSon adapter.
 - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` consumes
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
   backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into
@@ -781,6 +796,10 @@ Hierarchy rendering pipeline:
   exposes `applyHierarchyNodes(...)` through `HierarchyDragDropBridge`, and successful LVRS `listItemMoved(...)`
   events are persisted immediately back into the domain view-model. The bound hierarchy payload is first normalized
   into a JS array because LVRS editable drag support rejects raw C++ `QVariantList` payloads.
+- Mobile hierarchy policy: `MobileNormalLayout.qml` only repositions the shared hierarchy shell; the mobile shell does
+  not fork `Hierarchy.editable`. LVRS editability still follows
+  `HierarchyDragDropBridge::reorderContractAvailable`, and the shared footer remains visible so mobile preserves the
+  same folder create/delete/options contract as desktop.
 - Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through

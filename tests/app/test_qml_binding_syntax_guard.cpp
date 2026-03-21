@@ -838,7 +838,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
                 "readonly property bool viewOptionsEnabled: hierarchyViewModel && hierarchyViewModel.viewOptionsEnabled !== undefined ? Boolean(hierarchyViewModel.viewOptionsEnabled) : true")),
         "SidebarHierarchyView.qml must expose a view-options capability contract for the footer menu button.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("readonly property int toolbarFrameWidth: 200")),
+        sidebarViewText.contains(QStringLiteral("property int toolbarFrameWidth: 200")),
         "SidebarHierarchyView.qml hierarchy toolbar must keep the 200px Figma track width.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
@@ -869,7 +869,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
-                "anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight")),
+                "anchors.bottomMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.footerVisible ? hierarchyFooter.implicitHeight : 0)")),
         "SidebarHierarchyView.qml must reserve explicit space above the bottom footer instance.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("LV.ListFooter {")),
@@ -975,7 +975,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !sidebarViewText.contains(QStringLiteral("LV.HierarchyList {")),
         "SidebarHierarchyView.qml must not bypass the higher-level LVRS Hierarchy surface.");
     QVERIFY2(
-        !sidebarViewText.contains(QStringLiteral("footerVisible: true")),
+        !sidebarViewText.contains(QStringLiteral("footer: hierarchyFooter")),
         "SidebarHierarchyView.qml footer must stay implemented through direct LVRS ListFooter wiring rather than the Hierarchy footer alias.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("property string searchQuery: \"\"")),

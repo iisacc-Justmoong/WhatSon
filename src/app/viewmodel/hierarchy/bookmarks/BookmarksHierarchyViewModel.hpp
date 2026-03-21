@@ -87,6 +87,7 @@ public
     void itemCountChanged();
     void noteItemCountChanged();
     void loadStateChanged();
+    void hubFilesystemMutated();
     void viewModelHookRequested();
 
 private:

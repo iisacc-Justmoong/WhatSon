@@ -841,6 +841,65 @@ namespace
         return combined;
     }
 
+    QString hierarchyItemKey(const LibraryHierarchyItem& item, int fallbackIndex)
+    {
+        if (item.systemBucket == LibraryHierarchyItem::SystemBucket::All)
+        {
+            return QStringLiteral("bucket:all");
+        }
+        if (item.systemBucket == LibraryHierarchyItem::SystemBucket::Draft)
+        {
+            return QStringLiteral("bucket:draft");
+        }
+        if (item.systemBucket == LibraryHierarchyItem::SystemBucket::Today)
+        {
+            return QStringLiteral("bucket:today");
+        }
+
+        const QString itemKey = normalizeFolderPath(item.folderPath);
+        if (!itemKey.isEmpty())
+        {
+            return itemKey;
+        }
+
+        return QStringLiteral("item:%1").arg(fallbackIndex);
+    }
+
+    bool flatNodeTargetsSystemBucket(
+        const WhatSon::Sidebar::Lvrs::FlatNode& node,
+        const QVector<LibraryHierarchyItem>& currentItems)
+    {
+        if (node.sourceIndex >= 0 && node.sourceIndex < currentItems.size())
+        {
+            return currentItems.at(node.sourceIndex).systemBucket != LibraryHierarchyItem::SystemBucket::None;
+        }
+
+        return node.key == QStringLiteral("bucket:all")
+            || node.key == QStringLiteral("bucket:draft")
+            || node.key == QStringLiteral("bucket:today");
+    }
+
+    int selectedHierarchyIndexForKey(
+        const QVector<LibraryHierarchyItem>& items,
+        const QString& activeItemKey)
+    {
+        const QString normalizedActiveKey = activeItemKey.trimmed();
+        if (normalizedActiveKey.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (hierarchyItemKey(items.at(index), index) == normalizedActiveKey)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
     QVector<LibraryHierarchyItem> buildFolderItems(const QVector<WhatSonFolderDepthEntry>& entries)
     {
         QVector<LibraryHierarchyItem> items;
@@ -1629,33 +1688,20 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
     for (int index = 0; index < m_items.size(); ++index)
     {
         const LibraryHierarchyItem& item = m_items.at(index);
-        QString itemKey = normalizeFolderPath(item.folderPath);
-        if (item.systemBucket == LibraryHierarchyItem::SystemBucket::All)
-        {
-            itemKey = QStringLiteral("bucket:all");
-        }
-        else if (item.systemBucket == LibraryHierarchyItem::SystemBucket::Draft)
-        {
-            itemKey = QStringLiteral("bucket:draft");
-        }
-        else if (item.systemBucket == LibraryHierarchyItem::SystemBucket::Today)
-        {
-            itemKey = QStringLiteral("bucket:today");
-        }
-        else if (itemKey.isEmpty())
-        {
-            itemKey = QStringLiteral("item:%1").arg(index);
-        }
+        const bool movable = canMoveFolder(index);
 
         serializedItems.push_back(QVariantMap{
             {"label", item.label},
             {"id", item.folderPath},
             {"itemId", index},
-            {"key", itemKey},
+            {"key", hierarchyItemKey(item, index)},
             {"depth", item.depth},
             {"accent", item.accent},
             {"expanded", item.expanded},
-            {"draggable", canMoveFolder(index)},
+            {"draggable", movable},
+            {"dragAllowed", movable},
+            {"movable", movable},
+            {"dragLocked", !movable},
             {"showChevron", item.showChevron}
         });
     }
@@ -1883,6 +1929,7 @@ void LibraryHierarchyViewModel::createFolder()
     rebuildBucketRanges();
     syncModel();
     setSelectedIndex(insertIndex);
+    emit hubFilesystemMutated();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("createFolder"),
@@ -1950,6 +1997,7 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
     rebuildBucketRanges();
     syncModel();
+    emit hubFilesystemMutated();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("deleteSelectedFolder"),
@@ -2028,6 +2076,7 @@ bool LibraryHierarchyViewModel::moveFolderBefore(int sourceIndex, int targetInde
                               QStringLiteral("selectedIndex=%1 itemCount=%2")
                               .arg(operation.normalizedInsertIndex)
                               .arg(m_items.size()));
+    emit hubFilesystemMutated();
     return true;
 }
 
@@ -2088,6 +2137,7 @@ bool LibraryHierarchyViewModel::moveFolder(int sourceIndex, int targetIndex, boo
                               QStringLiteral("selectedIndex=%1 itemCount=%2")
                               .arg(operation.normalizedInsertIndex)
                               .arg(m_items.size()));
+    emit hubFilesystemMutated();
     return true;
 }
 
@@ -2137,6 +2187,7 @@ bool LibraryHierarchyViewModel::moveFolderToRoot(int sourceIndex)
                               QStringLiteral("selectedIndex=%1 itemCount=%2")
                               .arg(operation.normalizedInsertIndex)
                               .arg(m_items.size()));
+    emit hubFilesystemMutated();
     return true;
 }
 
@@ -2282,6 +2333,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                               QStringLiteral("index=%1 noteId=%2 folder=%3")
                               .arg(index)
                               .arg(noteId, targetFolderPath));
+    emit hubFilesystemMutated();
     return true;
 }
 
@@ -2296,63 +2348,83 @@ bool LibraryHierarchyViewModel::applyHierarchyNodes(const QVariantList& hierarch
 
     QVector<LibraryHierarchyItem> stagedItems;
     stagedItems.reserve(flattened.size());
+    QVector<int> stagedIndexByFlatIndex(flattened.size(), -1);
+    const bool preserveSystemBucketPrefix = std::any_of(
+        m_items.cbegin(),
+        m_items.cend(),
+        [](const LibraryHierarchyItem& item)
+        {
+            return item.systemBucket != LibraryHierarchyItem::SystemBucket::None;
+        });
 
-    int selectedIndex = -1;
     const QString normalizedActiveKey = activeItemKey.trimmed();
+    int selectedIndex = -1;
     for (int flatIndex = 0; flatIndex < flattened.size(); ++flatIndex)
     {
         const WhatSon::Sidebar::Lvrs::FlatNode& node = flattened.at(flatIndex);
-        if (node.key == normalizedActiveKey)
+        if (preserveSystemBucketPrefix && flatNodeTargetsSystemBucket(node, m_items))
         {
-            selectedIndex = flatIndex;
+            continue;
         }
 
         LibraryHierarchyItem item;
         const bool validSourceIndex = node.sourceIndex >= 0 && node.sourceIndex < m_items.size();
-        if (validSourceIndex && m_items.at(node.sourceIndex).systemBucket != LibraryHierarchyItem::SystemBucket::None)
+        item.depth = std::max(0, node.depth);
+        item.label = node.label.trimmed();
+        item.accent = false;
+        item.expanded = node.expanded;
+        item.showChevron = node.showChevron;
+        if (validSourceIndex)
         {
-            item = m_items.at(node.sourceIndex);
-            item.depth = 0;
-            item.accent = true;
-            item.expanded = false;
-            item.showChevron = false;
-            item.folderPath.clear();
+            item.folderPath = normalizeFolderPath(m_items.at(node.sourceIndex).folderPath);
+        }
+        else if (!node.id.isEmpty())
+        {
+            item.folderPath = normalizeFolderPath(node.id);
         }
         else
         {
-            item.depth = std::max(0, node.depth);
-            item.label = node.label.trimmed();
-            item.accent = false;
-            item.expanded = node.expanded;
-            item.showChevron = node.showChevron;
-            if (validSourceIndex)
-            {
-                item.folderPath = normalizeFolderPath(m_items.at(node.sourceIndex).folderPath);
-            }
-            else if (!node.id.isEmpty())
-            {
-                item.folderPath = normalizeFolderPath(node.id);
-            }
-            else
-            {
-                item.folderPath = normalizeFolderPath(node.key);
-            }
+            item.folderPath = normalizeFolderPath(node.key);
         }
 
+        stagedIndexByFlatIndex[flatIndex] = stagedItems.size();
         stagedItems.push_back(std::move(item));
+        if (node.key == normalizedActiveKey)
+        {
+            selectedIndex = stagedIndexByFlatIndex.at(flatIndex);
+        }
     }
 
     finalizeFolderItems(&stagedItems, false);
+    if (preserveSystemBucketPrefix)
+    {
+        stagedItems = prependSystemBuckets(std::move(stagedItems));
+        if (selectedIndex >= 0)
+        {
+            selectedIndex += 3;
+        }
+    }
 
     QHash<QString, QString> movedFolderPathMap;
     for (int flatIndex = 0; flatIndex < flattened.size() && flatIndex < stagedItems.size(); ++flatIndex)
     {
         const WhatSon::Sidebar::Lvrs::FlatNode& node = flattened.at(flatIndex);
-        const LibraryHierarchyItem& stagedItem = stagedItems.at(flatIndex);
-        if (stagedItem.systemBucket != LibraryHierarchyItem::SystemBucket::None)
+        if (preserveSystemBucketPrefix && flatNodeTargetsSystemBucket(node, m_items))
         {
             continue;
         }
+
+        int stagedIndex = stagedIndexByFlatIndex.at(flatIndex);
+        if (stagedIndex >= 0 && preserveSystemBucketPrefix)
+        {
+            stagedIndex += 3;
+        }
+        if (stagedIndex < 0 || stagedIndex >= stagedItems.size())
+        {
+            continue;
+        }
+
+        const LibraryHierarchyItem& stagedItem = stagedItems.at(stagedIndex);
 
         QString previousFolderPath;
         if (node.sourceIndex >= 0 && node.sourceIndex < m_items.size())
@@ -2375,6 +2447,10 @@ bool LibraryHierarchyViewModel::applyHierarchyNodes(const QVariantList& hierarch
         }
     }
 
+    if (selectedIndex < 0)
+    {
+        selectedIndex = selectedHierarchyIndexForKey(stagedItems, normalizedActiveKey);
+    }
     return commitFolderHierarchyUpdate(std::move(stagedItems), selectedIndex, movedFolderPathMap);
 }
 
@@ -2775,6 +2851,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
         m_noteListModel.setCurrentIndex(createdNoteIndex);
     }
     emit emptyNoteCreated(noteId);
+    emit hubFilesystemMutated();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
@@ -2850,6 +2927,7 @@ bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
     }
 
     emit noteDeleted(result.noteId.isEmpty() ? normalizedNoteId : result.noteId);
+    emit hubFilesystemMutated();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
@@ -2908,6 +2986,7 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
     m_libraryDraft.rebuild(m_libraryAll.notes());
     m_libraryToday.rebuild(m_libraryAll.notes());
     refreshNoteListForSelection();
+    emit hubFilesystemMutated();
     return true;
 }
 

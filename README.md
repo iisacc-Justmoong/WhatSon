@@ -34,9 +34,14 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/Main.qml` also disables LVRS `mobileOversizedHeightEnabled` for this app root. The default oversized
   mobile window strategy paints large top/bottom fill regions with `windowColor`, which pushed the routed onboarding
   page host outside the visible first-frame viewport and produced an apparently blank screen on iOS/Android.
-- `src/app/qml/Main.qml` also paints app-owned mobile safe-area backdrop bands while LVRS keeps OS-managed inset
-  delegation enabled. This only overrides the visible background color around the routed content viewport with
-  WhatSon `canvasColor`; it does not rebind the mobile content root to full-window coverage.
+- `src/app/qml/Main.qml` opts mobile back into LVRS full-window content coverage by disabling
+  `delegateMobileInsetsToSystem` and forcing `forceFullWindowAreaOnMobile`. WhatSon therefore owns the visible top and
+  bottom safe-area bands as part of the routed app surface instead of painting a background-only fallback outside the
+  live content root.
+- `main.cpp` now re-acquires iOS Files access during startup mount preflight before deciding whether onboarding is
+  needed. The stored `.wshub` path is checked through `AppleSecurityScopedResourceAccess::ensureAccessForPath(...)`
+  first, and its parent directory is retried as a fallback, so reopening the app no longer falls back to onboarding
+  merely because the new iOS session starts with an empty in-memory access registry.
 - `src/app/qml/Main.qml` now keeps LVRS shell render quality in auto-detect mode
   (`forcedDeviceTierPreset: -1`). Recent LVRS bootstrap profiles already dropped the old `UltraTier` shell default, so
   WhatSon must not keep the stale mobile `HighTier` override.
@@ -360,6 +365,13 @@ retries the bundled blueprint hub before handing control to onboarding.
 Concurrent hub access is now allowed across desktop and mobile sessions. `WhatSonHubWriteLease` remains only as a
 legacy cleanup shim for old `.whatson/write-lease.json` artifacts, so onboarding/runtime loading and filesystem
 mutation paths no longer reject a `.wshub` just because another WhatSon session already touched the same package.
+Runtime hub refresh now flows through `src/app/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
+filesystem resync timer, recursive `QFileSystemWatcher` coverage over the mounted `.wshub`, and app-level interaction
+hints (`TouchBegin`, pointer press, and app activation) that trigger a debounced runtime reload whenever the observed
+hub signature changes.
+App-owned note and folder mutations do not bounce the runtime through a full reload immediately. Instead,
+`LibraryHierarchyViewModel` and `BookmarksHierarchyViewModel` emit a local mutation acknowledgment so
+`WhatSonHubSyncController` can refresh its baseline after self-writes and keep the current editing session stable.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
@@ -524,14 +536,12 @@ for hub/note hierarchy payloads.
 - The node `174:4986` mobile shell now follows the Figma stack contract directly: `16px` outer inset and `24px`
   section spacing are owned by `MobileNormalLayout.qml`, the compact navigation frame stays `24px` high on
   `panelBackground10`, the hierarchy column stays on the same `panelBackground01` canvas as the mobile root instead of
-  reusing the desktop `panelBackground04` block, the compact hierarchy search row now collapses the `ListBarHeader`
-  outer chrome through `searchHeaderHorizontalInset: gapNone`, `searchHeaderVerticalInset: gapNone`, and
-  `searchHeaderMinHeight: gap18` so the mobile hierarchy keeps the Figma `20 / 2 / 18 / 2` toolbar-search-list
-  rhythm, and the compact status bar resolves to a `20px` frame with the existing add-note affordance on the trailing
-  control-height slot.
+  reusing the desktop `panelBackground04` block, keeps the shared `HierarchySidebarLayout.qml` defaults for hierarchy
+  padding and toolbar-to-list spacing instead of injecting mobile-only gap overrides, keeps the shared hierarchy footer and editable contract intact, and the compact status bar resolves to a `20px` frame with the existing add-note
+  affordance on the trailing control-height slot.
 - `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
-  existing context-menu button, while `NavigationBarLayout.qml` adds the separate folder-create affordance and keeps
-  the navigation mode combo on the shared `NavigationModeViewModel`.
+  existing context-menu button, while `NavigationBarLayout.qml` keeps the navigation mode combo on the shared
+  `NavigationModeViewModel` without replacing the shared hierarchy footer actions.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
   `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.
@@ -632,6 +642,9 @@ Folders hierarchy file behavior (Library sidebar):
   so duplicate leaf labels under different parents stay disambiguated.
 - Runtime-injected `All Library`, `Draft`, and `Today` are explicit system buckets; user-created folders such as
   `All` remain regular editable folders.
+- Library system buckets emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)
+  and stay pinned as the immutable `All Library -> Draft -> Today` depth-0 prefix even when LVRS editable reorder
+  payloads are committed back into the library hierarchy view-model.
 - Legacy list/object formats are still accepted and normalized into runtime depth entries.
 
 Library runtime classification behavior:
