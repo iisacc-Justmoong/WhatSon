@@ -144,6 +144,10 @@ Defined in `CMakeLists.txt`:
 - `src/app/qml/view/content/editor/ContentsEditorSession.qml` now tracks per-note local editor authority. Once the
   user edits the selected note, divergent same-note model payloads are rejected and the local editor buffer is
   persisted back out, making the live editing session the source of truth for that note until selection changes.
+- Local note storage CRUD is centralized in `src/app/file/note/WhatSonLocalNoteFileStore.*`, with
+  `WhatSonLocalNoteDocument` carrying the local header/body snapshot. Library note creation, body saves, folder-drop
+  assignment, folder hierarchy remaps, and note deletion now all pass through that file-layer object so `.wsnhead` /
+  `.wsnbody` mutations are authored locally first and only then projected back into runtime view-model state.
 
 Dependency discovery baseline:
 
@@ -644,6 +648,9 @@ Library-specific modeling:
   / `Draft` / `Today` buckets from the returned note set, restores visible neighbor selection, and emits
   `noteDeleted(noteId)` so bookmark-only projections can drop the same note without owning file-system deletion
   themselves.
+- `LibraryHierarchyViewModel` no longer writes note headers/bodies through ad-hoc file helpers for note CRUD. It now
+  delegates local note creation and header/body persistence to `WhatSonLocalNoteFileStore`, including folder-drop
+  assignment and folder hierarchy move/rename header rewrites, keeping note file ownership inside one CRUD boundary.
 - `LibraryAll::indexFromWshub()` no longer keeps index-only ghost notes alive when `index.wsnindex` mentions ids whose
   `.wsnote` storage has disappeared. It now delegates that repair to `WhatSonLibraryIndexIntegrityValidator`, so
   orphan entries are pruned from the runtime note set and the library index is rewritten from the remaining

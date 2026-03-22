@@ -377,6 +377,10 @@ App-owned note and folder mutations do not bounce the runtime through a full rel
 Within `ContentsDisplayView.qml`, a selected note's live editor buffer becomes the source of truth after the user edits
 it once; divergent same-note storage payloads are rejected and re-persisted so runtime reloads cannot steal the caret
 or overwrite the active mobile/desktop editing session.
+Local note-file CRUD is now centralized under `src/app/file/note/WhatSonLocalNoteFileStore.*` and
+`src/app/file/note/WhatSonLocalNoteDocument.hpp`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
+operations for library note creation, body persistence, folder-drop header rewrites, folder hierarchy remaps, and note
+deletion, so the local filesystem remains the first writer of record before runtime projections or external sync react.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:

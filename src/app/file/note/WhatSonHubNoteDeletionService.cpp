@@ -315,18 +315,23 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     }
 
     QString removeError;
-    if (!missingMaterializedDirectory && !m_ioGateway.removeDirectoryRecursively(stagedNoteDirectoryPath, &removeError))
+    if (!missingMaterializedDirectory)
     {
-        restoreStatFile();
-        restoreIndexFile();
-        const bool restoredDirectory = restoreStagedDirectory();
-        if (errorMessage != nullptr)
+        WhatSonLocalNoteFileStore::DeleteRequest deleteRequest;
+        deleteRequest.noteDirectoryPath = stagedNoteDirectoryPath;
+        if (!m_localNoteFileStore.deleteNote(std::move(deleteRequest), &removeError))
         {
-            *errorMessage = QStringLiteral("%1 (directoryRestored=%2)").arg(
-                removeError,
-                restoredDirectory ? QStringLiteral("true") : QStringLiteral("false"));
+            restoreStatFile();
+            restoreIndexFile();
+            const bool restoredDirectory = restoreStagedDirectory();
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("%1 (directoryRestored=%2)").arg(
+                    removeError,
+                    restoredDirectory ? QStringLiteral("true") : QStringLiteral("false"));
+            }
+            return false;
         }
-        return false;
     }
 
     WhatSonHubStat updatedHubStat = request.hubStat;

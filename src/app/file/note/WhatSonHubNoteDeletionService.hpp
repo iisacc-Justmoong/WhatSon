@@ -1,5 +1,6 @@
 #pragma once
 
+#include "WhatSonLocalNoteFileStore.hpp"
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "file/hub/WhatSonHubStat.hpp"
@@ -40,6 +41,7 @@ public:
     bool deleteNote(Request request, Result* outResult = nullptr, QString* errorMessage = nullptr) const;
 
 private:
+    WhatSonLocalNoteFileStore m_localNoteFileStore;
     WhatSonSystemIoGateway m_ioGateway;
     WhatSonHubStructureValidator m_hubStructureValidator;
     WhatSonLibraryIndexIntegrityValidator m_libraryIndexIntegrityValidator;

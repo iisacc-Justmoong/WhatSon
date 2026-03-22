@@ -11,11 +11,10 @@
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
 #include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/note/WhatSonNoteBodyCreator.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
-#include "file/note/WhatSonNoteHeaderParser.hpp"
 #include "file/note/WhatSonNoteHeaderStore.hpp"
+#include "file/note/WhatSonLocalNoteFileStore.hpp"
 #include "file/note/WhatSonNoteLinkManagerCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
@@ -2368,37 +2367,33 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    QString rawHeaderText;
+    WhatSonLocalNoteFileStore localNoteFileStore;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = note.noteId;
+    readRequest.noteDirectoryPath = note.noteDirectoryPath;
+    readRequest.noteHeaderPath = headerPath;
+
+    WhatSonLocalNoteDocument noteDocument;
     QString ioError;
-    if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(headerPath, &rawHeaderText, &ioError))
+    if (!localNoteFileStore.readNote(std::move(readRequest), &noteDocument, &ioError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("assignNoteToFolder.failed"),
-                                  QStringLiteral("reason=readHeader path=%1 error=%2").arg(headerPath, ioError));
+                                  QStringLiteral("reason=readLocalNote path=%1 error=%2").arg(headerPath, ioError));
         return false;
     }
 
-    WhatSonNoteHeaderStore headerStore;
-    WhatSonNoteHeaderParser headerParser;
-    QString parseError;
-    if (!headerParser.parse(rawHeaderText, &headerStore, &parseError))
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("assignNoteToFolder.failed"),
-                                  QStringLiteral("reason=parseHeader path=%1 error=%2").arg(headerPath, parseError));
-        return false;
-    }
+    noteDocument.headerStore.setFolders(folderAssignmentForDrop(noteDocument.headerStore.folders(), targetFolderPath));
+    noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
 
-    headerStore.setFolders(folderAssignmentForDrop(headerStore.folders(), targetFolderPath));
-    headerStore.setLastModifiedAt(currentNoteTimestamp());
-
-    WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());
-    const QString nextHeaderText = headerCreator.createHeaderText(headerStore);
+    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+    updateRequest.document = noteDocument;
+    updateRequest.persistHeader = true;
+    updateRequest.persistBody = false;
 
     QString writeError;
-    if (!writeUtf8File(headerPath, nextHeaderText, &writeError))
+    if (!localNoteFileStore.updateNote(std::move(updateRequest), &noteDocument, &writeError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
@@ -2407,12 +2402,13 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    note.folders = headerStore.folders();
-    note.lastModifiedAt = headerStore.lastModifiedAt();
-    note.noteHeaderPath = headerPath;
+    const LibraryNoteRecord updatedRecord = noteDocument.toLibraryNoteRecord();
+    note.folders = updatedRecord.folders;
+    note.lastModifiedAt = updatedRecord.lastModifiedAt;
+    note.noteHeaderPath = updatedRecord.noteHeaderPath;
     if (note.noteDirectoryPath.isEmpty())
     {
-        note.noteDirectoryPath = QFileInfo(headerPath).absolutePath();
+        note.noteDirectoryPath = updatedRecord.noteDirectoryPath;
     }
 
     m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
@@ -2597,12 +2593,10 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     }
 
     WhatSonNoteHeaderCreator headerCreator(libraryPath, QString());
-    WhatSonNoteBodyCreator bodyCreator(libraryPath, QString());
     WhatSonNoteAttachManagerCreator attachCreator(libraryPath, QString());
     WhatSonNoteLinkManagerCreator linkCreator(libraryPath, QString());
 
     const QString headerPath = headerCreator.targetPathForNote(noteId);
-    const QString bodyPath = bodyCreator.targetPathForNote(noteId);
     const QString attachmentManifestPath = attachCreator.targetPathForNote(noteId);
     const QString linksPath = linkCreator.targetPathForNote(noteId);
     const QString noteDirectoryPath = QFileInfo(headerPath).absolutePath();
@@ -2678,17 +2672,6 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     headerStore.setProgress(0);
     headerStore.setPreset(false);
 
-    if (!writeUtf8File(headerPath, headerCreator.createHeaderText(headerStore), &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=writeHeader path=%1 error=%2").arg(
-                                      headerPath, createError));
-        return false;
-    }
-
     if (!writeUtf8File(attachmentManifestPath, createAttachmentManifestText(noteId), &createError))
     {
         rollbackNoteDirectory();
@@ -2726,24 +2709,26 @@ bool LibraryHierarchyViewModel::createEmptyNote()
         return false;
     }
 
-    QString normalizedBodyText;
-    QString lastModifiedAt;
-    if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
-        noteId,
-        noteDirectoryPath,
-        headerPath,
-        QString(),
-        &normalizedBodyText,
-        &lastModifiedAt,
-        &createError))
+    WhatSonLocalNoteFileStore localNoteFileStore;
+    WhatSonLocalNoteFileStore::CreateRequest createRequest;
+    createRequest.noteId = noteId;
+    createRequest.noteDirectoryPath = noteDirectoryPath;
+    createRequest.headerStore = headerStore;
+    createRequest.bodyPlainText = QString();
+
+    WhatSonLocalNoteDocument createdNoteDocument;
+    if (!localNoteFileStore.createNote(std::move(createRequest), &createdNoteDocument, &createError))
     {
         rollbackNoteDirectory();
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=writeBody path=%1 error=%2").arg(bodyPath, createError));
+                                  QStringLiteral("reason=createLocalNote path=%1 error=%2").arg(noteDirectoryPath, createError));
         return false;
     }
+
+    const QString normalizedBodyText = createdNoteDocument.bodyPlainText;
+    const QString lastModifiedAt = createdNoteDocument.headerStore.lastModifiedAt();
 
     QVector<LibraryNoteRecord> nextAllNotes = m_libraryAll.notes();
     LibraryNoteRecord newNote;
@@ -3323,15 +3308,13 @@ bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
     struct PendingNoteFolderRewrite final
     {
         int noteIndex = -1;
-        QString headerPath;
-        QString previousText;
-        QString nextText;
-        QStringList nextFolders;
-        QString nextLastModifiedAt;
+        WhatSonLocalNoteDocument previousDocument;
+        WhatSonLocalNoteDocument nextDocument;
     };
 
     QVector<PendingNoteFolderRewrite> pendingNoteWrites;
     QVector<LibraryNoteRecord> stagedAllNotes = m_libraryAll.notes();
+    WhatSonLocalNoteFileStore localNoteFileStore;
 
     if (m_runtimeIndexLoaded && !movedFolderPathMap.isEmpty())
     {
@@ -3384,53 +3367,45 @@ bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
                 return false;
             }
 
-            QString rawHeaderText;
+            WhatSonLocalNoteFileStore::ReadRequest readRequest;
+            readRequest.noteId = note.noteId;
+            readRequest.noteDirectoryPath = note.noteDirectoryPath;
+            readRequest.noteHeaderPath = headerPath;
+
+            WhatSonLocalNoteDocument previousDocument;
             QString readError;
-            if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(headerPath, &rawHeaderText, &readError))
+            if (!localNoteFileStore.readNote(std::move(readRequest), &previousDocument, &readError))
             {
                 WhatSon::Debug::traceSelf(this,
                                           QStringLiteral("library.viewmodel"),
                                           QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                          QStringLiteral("reason=readHeader path=%1 error=%2").arg(
+                                          QStringLiteral("reason=readLocalNote path=%1 error=%2").arg(
                                               headerPath, readError));
                 return false;
             }
 
-            WhatSonNoteHeaderStore headerStore;
-            WhatSonNoteHeaderParser headerParser;
-            QString parseError;
-            if (!headerParser.parse(rawHeaderText, &headerStore, &parseError))
-            {
-                WhatSon::Debug::traceSelf(this,
-                                          QStringLiteral("library.viewmodel"),
-                                          QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                          QStringLiteral("reason=parseHeader path=%1 error=%2").arg(
-                                              headerPath, parseError));
-                return false;
-            }
-
-            headerStore.setFolders(remappedFolders);
-            headerStore.setLastModifiedAt(rewriteTimestamp);
-
-            WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());
+            WhatSonLocalNoteDocument nextDocument = previousDocument;
+            nextDocument.headerStore.setFolders(remappedFolders);
+            nextDocument.headerStore.setLastModifiedAt(rewriteTimestamp);
 
             PendingNoteFolderRewrite rewrite;
             rewrite.noteIndex = noteIndex;
-            rewrite.headerPath = headerPath;
-            rewrite.previousText = rawHeaderText;
-            rewrite.nextText = headerCreator.createHeaderText(headerStore);
-            rewrite.nextFolders = headerStore.folders();
-            rewrite.nextLastModifiedAt = headerStore.lastModifiedAt();
+            rewrite.previousDocument = std::move(previousDocument);
+            rewrite.nextDocument = std::move(nextDocument);
             pendingNoteWrites.push_back(std::move(rewrite));
         }
     }
 
-    auto rollbackNoteWrites = [](const QVector<PendingNoteFolderRewrite>& writes)
+    auto rollbackNoteWrites = [&localNoteFileStore](const QVector<PendingNoteFolderRewrite>& writes)
     {
         for (int index = writes.size() - 1; index >= 0; --index)
         {
             const PendingNoteFolderRewrite& rewrite = writes.at(index);
-            writeUtf8File(rewrite.headerPath, rewrite.previousText, nullptr);
+            WhatSonLocalNoteFileStore::UpdateRequest rollbackRequest;
+            rollbackRequest.document = rewrite.previousDocument;
+            rollbackRequest.persistHeader = true;
+            rollbackRequest.persistBody = false;
+            localNoteFileStore.updateNote(std::move(rollbackRequest), nullptr, nullptr);
         }
     };
 
@@ -3438,18 +3413,27 @@ bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
     appliedNoteWrites.reserve(pendingNoteWrites.size());
     for (const PendingNoteFolderRewrite& rewrite : pendingNoteWrites)
     {
+        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+        updateRequest.document = rewrite.nextDocument;
+        updateRequest.persistHeader = true;
+        updateRequest.persistBody = false;
+
+        WhatSonLocalNoteDocument updatedDocument;
         QString writeError;
-        if (!writeUtf8File(rewrite.headerPath, rewrite.nextText, &writeError))
+        if (!localNoteFileStore.updateNote(std::move(updateRequest), &updatedDocument, &writeError))
         {
             rollbackNoteWrites(appliedNoteWrites);
             WhatSon::Debug::traceSelf(this,
                                       QStringLiteral("library.viewmodel"),
                                       QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                      QStringLiteral("reason=writeHeader path=%1 error=%2").arg(
-                                          rewrite.headerPath, writeError));
+                                      QStringLiteral("reason=writeLocalNote path=%1 error=%2").arg(
+                                          rewrite.nextDocument.noteHeaderPath, writeError));
             return false;
         }
-        appliedNoteWrites.push_back(rewrite);
+
+        PendingNoteFolderRewrite appliedRewrite = rewrite;
+        appliedRewrite.nextDocument = std::move(updatedDocument);
+        appliedNoteWrites.push_back(std::move(appliedRewrite));
     }
 
     if (!m_foldersFilePath.trimmed().isEmpty())
@@ -3467,16 +3451,14 @@ bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
         }
     }
 
-    for (const PendingNoteFolderRewrite& rewrite : pendingNoteWrites)
+    for (const PendingNoteFolderRewrite& rewrite : appliedNoteWrites)
     {
         LibraryNoteRecord& note = stagedAllNotes[rewrite.noteIndex];
-        note.folders = rewrite.nextFolders;
-        note.lastModifiedAt = rewrite.nextLastModifiedAt;
-        note.noteHeaderPath = rewrite.headerPath;
-        if (note.noteDirectoryPath.isEmpty())
-        {
-            note.noteDirectoryPath = QFileInfo(rewrite.headerPath).absolutePath();
-        }
+        const LibraryNoteRecord updatedRecord = rewrite.nextDocument.toLibraryNoteRecord();
+        note.folders = updatedRecord.folders;
+        note.lastModifiedAt = updatedRecord.lastModifiedAt;
+        note.noteHeaderPath = updatedRecord.noteHeaderPath;
+        note.noteDirectoryPath = updatedRecord.noteDirectoryPath;
     }
 
     m_items = std::move(stagedItems);

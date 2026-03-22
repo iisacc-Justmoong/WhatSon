@@ -1,29 +1,12 @@
 #include "WhatSonNoteBodyPersistence.hpp"
 
-#include "hub/WhatSonHubWriteLease.hpp"
-#include "WhatSonNoteHeaderCreator.hpp"
-#include "WhatSonNoteHeaderParser.hpp"
-#include "WhatSonNoteHeaderStore.hpp"
+#include "WhatSonLocalNoteFileStore.hpp"
 
-#include <QDateTime>
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
 
 namespace
 {
-    constexpr auto kNoteTimestampFormat = "yyyy-MM-dd-hh-mm-ss";
-
-    QString escapeXmlText(QString value)
-    {
-        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
-        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
-        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
-        value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
-        value.replace(QStringLiteral("'"), QStringLiteral("&apos;"));
-        return value;
-    }
-
     QString normalizePath(QString path)
     {
         path = path.trimmed();
@@ -32,113 +15,6 @@ namespace
             return {};
         }
         return QDir::cleanPath(path);
-    }
-
-    QString currentNoteTimestamp()
-    {
-        return QDateTime::currentDateTime().toString(QString::fromLatin1(kNoteTimestampFormat));
-    }
-
-    bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
-    {
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
-
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Failed to write file: %1").arg(filePath);
-            }
-            return false;
-        }
-
-        if (file.write(text.toUtf8()) < 0)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Failed to write file bytes: %1").arg(filePath);
-            }
-            return false;
-        }
-        return true;
-    }
-
-    QString serializeBodyDocument(const QString& noteId, const QString& plainText)
-    {
-        const QString normalizedId = noteId.trimmed().isEmpty()
-                                         ? QStringLiteral("note")
-                                         : escapeXmlText(noteId.trimmed());
-        const QStringList lines = plainText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-
-        QString text;
-        text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
-        text += QStringLiteral("<contents id=\"") + normalizedId + QStringLiteral("\">\n");
-        text += QStringLiteral("  <body>\n");
-        if (plainText.isEmpty())
-        {
-            text += QStringLiteral("  </body>\n");
-            text += QStringLiteral("</contents>\n");
-            return text;
-        }
-
-        for (const QString& line : lines)
-        {
-            text += QStringLiteral("    <paragraph>") + escapeXmlText(line) + QStringLiteral("</paragraph>\n");
-        }
-        text += QStringLiteral("  </body>\n");
-        text += QStringLiteral("</contents>\n");
-        return text;
-    }
-
-    void updateHeaderLastModified(const QString& headerPath, QString* outLastModifiedAt = nullptr)
-    {
-        if (headerPath.isEmpty() || !QFileInfo(headerPath).isFile())
-        {
-            return;
-        }
-
-        QFile headerFile(headerPath);
-        if (!headerFile.open(QIODevice::ReadOnly | QIODevice::Text))
-        {
-            return;
-        }
-
-        const QString rawHeaderText = QString::fromUtf8(headerFile.readAll());
-        headerFile.close();
-
-        WhatSonNoteHeaderStore headerStore;
-        WhatSonNoteHeaderParser headerParser;
-        QString parseError;
-        if (!headerParser.parse(rawHeaderText, &headerStore, &parseError))
-        {
-            Q_UNUSED(parseError);
-            return;
-        }
-
-        const QString nextTimestamp = currentNoteTimestamp();
-        headerStore.setLastModifiedAt(nextTimestamp);
-
-        WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());
-        const QString nextHeaderText = headerCreator.createHeaderText(headerStore);
-        if (!writeUtf8File(headerPath, nextHeaderText))
-        {
-            return;
-        }
-
-        if (outLastModifiedAt != nullptr)
-        {
-            *outLastModifiedAt = nextTimestamp;
-        }
     }
 } // namespace
 
@@ -287,7 +163,11 @@ namespace WhatSon::NoteBodyPersistence
             return QDir::cleanPath(draftHeaderPath);
         }
 
-        return {};
+        if (!noteStem.isEmpty())
+        {
+            return QDir::cleanPath(noteDir.filePath(noteStem + QStringLiteral(".wsnhead")));
+        }
+        return QDir::cleanPath(noteDir.filePath(QStringLiteral("note.wsnhead")));
     }
 
     bool persistBodyPlainText(
@@ -299,33 +179,48 @@ namespace WhatSon::NoteBodyPersistence
         QString* outLastModifiedAt,
         QString* errorMessage)
     {
-        const QString bodyPath = resolveBodyPath(noteDirectoryPath);
-        if (bodyPath.isEmpty())
+        WhatSonLocalNoteFileStore localNoteFileStore;
+        WhatSonLocalNoteFileStore::ReadRequest readRequest;
+        readRequest.noteId = noteId;
+        readRequest.noteDirectoryPath = noteDirectoryPath;
+        readRequest.noteHeaderPath = noteHeaderPath;
+
+        WhatSonLocalNoteDocument document;
+        QString readError;
+        if (!localNoteFileStore.readNote(std::move(readRequest), &document, &readError))
         {
             if (errorMessage != nullptr)
             {
-                *errorMessage = QStringLiteral("Failed to resolve .wsnbody path.");
+                *errorMessage = readError;
             }
             return false;
         }
 
-        const QString normalizedBodyText = normalizeBodyPlainText(bodyPlainText);
-        const QString bodyDocumentText = serializeBodyDocument(noteId, normalizedBodyText);
-        if (!writeUtf8File(bodyPath, bodyDocumentText, errorMessage))
+        document.bodyPlainText = normalizeBodyPlainText(bodyPlainText);
+
+        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+        updateRequest.document = document;
+        updateRequest.persistHeader = true;
+        updateRequest.persistBody = true;
+        updateRequest.touchLastModified = true;
+
+        QString updateError;
+        if (!localNoteFileStore.updateNote(std::move(updateRequest), &document, &updateError))
         {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = updateError;
+            }
             return false;
         }
 
         if (outNormalizedBodyText != nullptr)
         {
-            *outNormalizedBodyText = normalizedBodyText;
+            *outNormalizedBodyText = document.bodyPlainText;
         }
-
-        QString updatedLastModifiedAt;
-        updateHeaderLastModified(resolveHeaderPath(noteHeaderPath, noteDirectoryPath), &updatedLastModifiedAt);
         if (outLastModifiedAt != nullptr)
         {
-            *outLastModifiedAt = updatedLastModifiedAt;
+            *outLastModifiedAt = document.headerStore.lastModifiedAt();
         }
         return true;
     }
