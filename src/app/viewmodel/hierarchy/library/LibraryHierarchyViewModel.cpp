@@ -12,6 +12,7 @@
 #include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteBodyCreator.hpp"
+#include "file/note/WhatSonNoteFolderSemantics.hpp"
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 #include "file/note/WhatSonNoteHeaderStore.hpp"
@@ -216,6 +217,11 @@ namespace
             return normalizedLabel;
         }
         return normalizedParent + QLatin1Char('/') + normalizedLabel;
+    }
+
+    bool usesReservedTodayFolderToken(const QString& value)
+    {
+        return WhatSon::NoteFolders::usesReservedTodayFolderSegment(value);
     }
 
     bool isProtectedRootItem(const LibraryHierarchyItem& item);
@@ -926,6 +932,8 @@ namespace
         return -1;
     }
 
+    void finalizeFolderItems(QVector<LibraryHierarchyItem>* items, bool preserveExistingPaths);
+
     QVector<LibraryHierarchyItem> buildFolderItems(const QVector<WhatSonFolderDepthEntry>& entries)
     {
         QVector<LibraryHierarchyItem> items;
@@ -953,6 +961,45 @@ namespace
 
         applyChevronByDepth(&items);
         return items;
+    }
+
+    void dropReservedTodayFolderItems(QVector<LibraryHierarchyItem>* items)
+    {
+        if (items == nullptr || items->isEmpty())
+        {
+            return;
+        }
+
+        bool removedAny = false;
+        for (int index = items->size() - 1; index >= 0; --index)
+        {
+            const LibraryHierarchyItem& item = items->at(index);
+            if (item.systemBucket != LibraryHierarchyItem::SystemBucket::None)
+            {
+                continue;
+            }
+
+            const QString reservedCheckValue = item.folderPath.isEmpty() ? item.label : item.folderPath;
+            if (!usesReservedTodayFolderToken(reservedCheckValue))
+            {
+                continue;
+            }
+
+            WhatSon::Debug::trace(
+                QStringLiteral("library.viewmodel"),
+                QStringLiteral("dropReservedTodayFolderItems.remove"),
+                QStringLiteral("label=%1 path=%2 depth=%3")
+                .arg(item.label)
+                .arg(item.folderPath)
+                .arg(item.depth));
+            items->removeAt(index);
+            removedAny = true;
+        }
+
+        if (removedAny)
+        {
+            finalizeFolderItems(items, false);
+        }
     }
 
     void finalizeFolderItems(QVector<LibraryHierarchyItem>* items, bool preserveExistingPaths)
@@ -1027,6 +1074,12 @@ namespace
                 continue;
             }
             if (isProtectedRootItem(item))
+            {
+                continue;
+            }
+
+            const QString reservedCheckValue = item.folderPath.isEmpty() ? label : item.folderPath;
+            if (usesReservedTodayFolderToken(reservedCheckValue))
             {
                 continue;
             }
@@ -1497,6 +1550,7 @@ void LibraryHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
 
     m_items = m_runtimeIndexLoaded ? prependSystemBuckets(std::move(parsedItems)) : std::move(parsedItems);
     finalizeFolderItems(&m_items, true);
+    dropReservedTodayFolderItems(&m_items);
     m_foldersHierarchyLoaded = m_runtimeIndexLoaded;
     rebuildBucketRanges();
     m_createdFolderSequence = nextFolderSequence(m_items);
@@ -1619,6 +1673,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
     {
         m_items = prependSystemBuckets(buildFolderItems(folderEntries));
         finalizeFolderItems(&m_items, true);
+        dropReservedTodayFolderItems(&m_items);
         m_foldersHierarchyLoaded = true;
         rebuildBucketRanges();
         m_createdFolderSequence = nextFolderSequence(m_items);
@@ -1691,6 +1746,7 @@ void LibraryHierarchyViewModel::applyRuntimeSnapshot(
     {
         m_items = prependSystemBuckets(buildFolderItems(folderEntries));
         finalizeFolderItems(&m_items, true);
+        dropReservedTodayFolderItems(&m_items);
         m_foldersHierarchyLoaded = true;
         rebuildBucketRanges();
         m_createdFolderSequence = nextFolderSequence(m_items);
@@ -1792,6 +1848,17 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("renameItem.rejected"),
                                   QStringLiteral("reason=empty label index=%1").arg(index));
+        return false;
+    }
+
+    if (usesReservedTodayFolderToken(trimmedName))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("renameItem.rejected"),
+                                  QStringLiteral("reason=reserved today token index=%1 label=%2")
+                                  .arg(index)
+                                  .arg(trimmedName));
         return false;
     }
 
@@ -2241,7 +2308,7 @@ bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& note
     }
 
     const QString targetFolderPath = normalizeFolderPath(folderPathForIndex(index));
-    if (targetFolderPath.isEmpty())
+    if (targetFolderPath.isEmpty() || usesReservedTodayFolderToken(targetFolderPath))
     {
         return false;
     }
@@ -2422,6 +2489,7 @@ bool LibraryHierarchyViewModel::applyHierarchyNodes(const QVariantList& hierarch
     }
 
     finalizeFolderItems(&stagedItems, false);
+    dropReservedTodayFolderItems(&stagedItems);
     if (preserveSystemBucketPrefix)
     {
         stagedItems = prependSystemBuckets(std::move(stagedItems));

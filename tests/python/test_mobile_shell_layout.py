@@ -76,7 +76,12 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int compactHorizontalInset: LV.Theme.gapNone", status_bar_text)
         self.assertIn("property int compactFieldRadius: LV.Theme.radiusControl", status_bar_text)
         self.assertIn("anchors.fill: parent", status_bar_text)
+        self.assertIn("fieldMinHeight: statusBar.compactFieldHeight", status_bar_text)
+        self.assertIn("backgroundColor: statusBar.compactFieldColor", status_bar_text)
+        self.assertIn("backgroundColorFocused: statusBar.compactFieldColor", status_bar_text)
+        self.assertIn("placeholderText: statusBar.compactToolbarText", status_bar_text)
         self.assertIn("shapeStyle: shapeCylinder", status_bar_text)
+        self.assertNotIn("id: compactSearchTextField", status_bar_text)
         self.assertIn('statusBar.requestViewHook("create-note");', status_bar_text)
         self.assertIn("statusBar.createNoteRequested();", status_bar_text)
 
@@ -154,7 +159,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("readonly property var bodyItem: bodyRouter.currentPageItem", mobile_scaffold_text)
         self.assertIn("readonly property real bodyWidth: bodyRouter.width", mobile_scaffold_text)
         self.assertIn('property string bodyInitialPath: "/"', mobile_scaffold_text)
-        self.assertIn("property int bodyInteractiveTransitionSettleDuration: 0", mobile_scaffold_text)
         self.assertIn("property var bodyRoutes: []", mobile_scaffold_text)
         self.assertIn("readonly property int contentHorizontalPadding: LV.Theme.gap16", mobile_scaffold_text)
         self.assertIn("readonly property int contentTopPadding: LV.Theme.gap24 + LV.Theme.gap24", mobile_scaffold_text)
@@ -173,10 +177,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("LV.PageRouter {", mobile_scaffold_text)
         self.assertIn("id: bodyRouter", mobile_scaffold_text)
         self.assertIn("initialPath: mobilePageScaffold.bodyInitialPath", mobile_scaffold_text)
-        self.assertIn(
-            "interactiveTransitionSettleDuration: mobilePageScaffold.bodyInteractiveTransitionSettleDuration",
-            mobile_scaffold_text,
-        )
         self.assertIn("registerAsGlobalNavigator: false", mobile_scaffold_text)
         self.assertIn("routes: mobilePageScaffold.bodyRoutes", mobile_scaffold_text)
         self.assertIn("PanelView.StatusBarLayout {", mobile_scaffold_text)
@@ -313,7 +313,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("note-list body", readme_text)
         self.assertIn("`LV.PageRouter`", readme_text)
         self.assertIn("`LV.PageTransitionController`", readme_text)
-        self.assertIn("interactive settle duration to `0`", readme_text)
         self.assertIn("`LV.EventListener` touch events", readme_text)
         self.assertIn("hides the shared hierarchy footer on mobile", readme_text)
         self.assertIn("emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)", readme_text)
@@ -349,7 +348,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("note-list body", architecture_text)
         self.assertIn("`LV.PageRouter`", architecture_text)
         self.assertIn("`LV.PageTransitionController`", architecture_text)
-        self.assertIn("interactiveTransitionSettleDuration = 0", architecture_text)
         self.assertIn("`LV.EventListener`", architecture_text)
         self.assertIn("disables `usePlatformSafeMargin`", architecture_text)
         self.assertRegex(

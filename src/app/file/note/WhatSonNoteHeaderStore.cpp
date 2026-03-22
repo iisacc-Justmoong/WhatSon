@@ -2,6 +2,7 @@
 
 #include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonNoteFolderSemantics.hpp"
 
 #include <QRegularExpression>
 #include <QUuid>
@@ -96,6 +97,46 @@ namespace
                 sanitized.push_back(resolved);
                 continue;
             }
+            sanitized.push_back(value);
+        }
+
+        return sanitized;
+    }
+
+    QStringList sanitizeFolderList(QStringList values)
+    {
+        QStringList sanitized;
+        sanitized.reserve(values.size());
+
+        for (QString& value : values)
+        {
+            value = value.trimmed();
+            if (value.isEmpty())
+            {
+                continue;
+            }
+
+            if (isTemplateToken(value))
+            {
+                value = templatePayload(value);
+                if (value.isEmpty())
+                {
+                    WhatSon::Debug::trace(
+                        QStringLiteral("note.header.store"),
+                        QStringLiteral("sanitizeFolderList.dropEmptyTemplateToken"));
+                    continue;
+                }
+            }
+
+            if (WhatSon::NoteFolders::usesReservedTodayFolderSegment(value))
+            {
+                WhatSon::Debug::trace(
+                    QStringLiteral("note.header.store"),
+                    QStringLiteral("sanitizeFolderList.dropReservedTodayToken"),
+                    QStringLiteral("value=%1").arg(value));
+                continue;
+            }
+
             sanitized.push_back(value);
         }
 
@@ -247,7 +288,7 @@ QStringList WhatSonNoteHeaderStore::folders() const
 void WhatSonNoteHeaderStore::setFolders(QStringList folders)
 {
     const int rawCount = folders.size();
-    m_folders = sanitizeStringList(std::move(folders), QStringLiteral("folder"));
+    m_folders = sanitizeFolderList(std::move(folders));
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("note.header.store"),
                               QStringLiteral("setFolders"),

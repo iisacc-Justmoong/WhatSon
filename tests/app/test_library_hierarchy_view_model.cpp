@@ -51,6 +51,8 @@ private
     void deleteNoteById_removesScaffoldUpdatesIndexAndSelectsNeighbor();
     void loadFromWshub_prunesOrphanIndexEntriesAndRewritesIndex();
     void loadFromWshub_treatsUserFolderNamedAllAsRegularFolder();
+    void loadFromWshub_treatsTodayAsReservedSmartFolderInsteadOfConcreteFolder();
+    void loadFromWshub_draftBucket_requiresEmptyRawHeaderFoldersBlock();
     void loadFromWshub_readsDynamicWslibraryDirectory();
     void setDepthItems_emptyInput_preservesIndexedBuckets();
     void applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
@@ -1780,6 +1782,218 @@ void LibraryHierarchyViewModelTest::loadFromWshub_treatsUserFolderNamedAllAsRegu
 
     viewModel.setSelectedIndex(allLibraryIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_treatsTodayAsReservedSmartFolderInsteadOfConcreteFolder()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+
+    const QString todayText = QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")) + QStringLiteral(
+        "-12-00-00");
+    const QString oldText = QStringLiteral("2024-01-01-00-00-00");
+
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Today\",\n"
+        "      \"label\": \"Today\"\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-a"),
+            oldText,
+            oldText,
+            {QStringLiteral("today")})));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote/Beta.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-b"),
+            oldText,
+            todayText,
+            {})));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote/Gamma.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-c"),
+            oldText,
+            oldText,
+            {QStringLiteral("Brand")})));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    int todayLabelCount = 0;
+    int systemTodayIndex = -1;
+    int draftIndex = -1;
+    int brandIndex = -1;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QString label = viewModel.itemModel()
+                                  ->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole)
+                                  .toString();
+        if (label == QStringLiteral("Today"))
+        {
+            ++todayLabelCount;
+            if (systemTodayIndex < 0)
+            {
+                systemTodayIndex = row;
+            }
+        }
+        else if (label == QStringLiteral("Draft"))
+        {
+            draftIndex = row;
+        }
+        else if (label == QStringLiteral("Brand"))
+        {
+            brandIndex = row;
+        }
+    }
+
+    QCOMPARE(todayLabelCount, 1);
+    QVERIFY(systemTodayIndex >= 0);
+    QVERIFY(draftIndex >= 0);
+    QVERIFY(brandIndex >= 0);
+
+    viewModel.setSelectedIndex(systemTodayIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-b"));
+
+    viewModel.setSelectedIndex(draftIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-b"));
+
+    viewModel.setSelectedIndex(brandIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-c"));
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_draftBucket_requiresEmptyRawHeaderFoldersBlock()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+
+    const QString oldText = QStringLiteral("2024-01-01-00-00-00");
+
+    const QString malformedDraftHeader =
+        QStringLiteral(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            "<!DOCTYPE WHATSONNOTE>\n"
+            "<contents id=\"note-a\">\n"
+            "  <head>\n"
+            "    <created>%1</created>\n"
+            "    <lastModified>%1</lastModified>\n"
+            "    <folders>Draft</folders>\n"
+            "  </head>\n"
+            "</contents>\n").arg(oldText);
+
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
+        malformedDraftHeader));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote/Beta.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-b"),
+            oldText,
+            oldText,
+            {})));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Gamma.wsnote/Gamma.wsnhead")),
+        makeWsnHeadText(
+            QStringLiteral("note-c"),
+            oldText,
+            oldText,
+            {QStringLiteral("Brand")})));
+
+    QJsonArray notesArray;
+    notesArray.append(QJsonObject{
+        {QStringLiteral("id"), QStringLiteral("note-a")},
+        {QStringLiteral("lastModified"), oldText}
+    });
+    notesArray.append(QJsonObject{
+        {QStringLiteral("id"), QStringLiteral("note-b")},
+        {QStringLiteral("lastModified"), oldText},
+        {QStringLiteral("folders"), QJsonArray{QStringLiteral("Workspace")}}
+    });
+    notesArray.append(QJsonObject{
+        {QStringLiteral("id"), QStringLiteral("note-c")},
+        {QStringLiteral("lastModified"), oldText},
+        {QStringLiteral("folders"), QJsonArray{QStringLiteral("Brand")}}
+    });
+
+    QJsonObject indexRoot;
+    indexRoot.insert(QStringLiteral("version"), 1);
+    indexRoot.insert(QStringLiteral("schema"), QStringLiteral("whatson.library.index"));
+    indexRoot.insert(QStringLiteral("notes"), notesArray);
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+        QString::fromUtf8(QJsonDocument(indexRoot).toJson(QJsonDocument::Indented))));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    int draftIndex = -1;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QString label = viewModel.itemModel()
+                                  ->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole)
+                                  .toString();
+        if (label == QStringLiteral("Draft"))
+        {
+            draftIndex = row;
+            break;
+        }
+    }
+
+    QVERIFY(draftIndex >= 0);
+    viewModel.setSelectedIndex(draftIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-b"));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_readsDynamicWslibraryDirectory()

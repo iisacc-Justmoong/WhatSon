@@ -378,8 +378,9 @@ Domain-isolated support:
               `controlHeightMd` slot for the add-note affordance, and still emits `createNoteRequested`, which
               `MobileHierarchyPage.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
               bottom add-note affordance stays on the same shared creation path as desktop navigation controls. The
-              compact search input itself now uses the LVRS `shapeCylinder` type so the mobile bottom bar keeps the
-              shared pill-shaped search affordance without a custom field fork.
+              compact search input itself now lets `LV.InputField` render the LVRS `shapeCylinder` frame directly and
+              binds the scaffold placeholder through `placeholderText`, so the mobile bottom bar keeps the shared
+              pill-shaped search affordance without a wrapped custom field shell.
             - `MobilePageScaffold.qml` keeps the compact navigation bar and compact status bar mounted around every
               routed mobile workspace page, so those top/bottom controls are not re-declared per page.
             - `MobilePageScaffold.qml` follows the Figma `174:4987` VStack contract directly:
@@ -397,9 +398,6 @@ Domain-isolated support:
             - `MobilePageScaffold.qml` now mounts the routed mobile body through `LV.PageRouter`, and
               `MobileHierarchyPage.qml` feeds that stack with explicit `/mobile/hierarchy` and
               `/mobile/note-list` routes instead of a private page enum plus copied route history.
-            - `MobilePageScaffold.qml` now sets `LV.PageRouter.interactiveTransitionSettleDuration = 0`, so
-              interactive back-swipe commit does not replay a second stack transition after the gesture-driven motion
-              already reached the target page.
             - `MobileHierarchyPage.qml` now suppresses the compact leading action on the note-list route, so the mobile
               list top bar matches the Figma frame and leaves page undo to swipe navigation instead of a visible back
               button.
@@ -590,8 +588,10 @@ Domain-isolated support:
 Library-specific modeling:
 
 - `LibraryAll`: full note index and metadata assembly
-- `LibraryDraft`: filter notes without folders
-- `LibraryToday`: filter notes by `createdAt/lastModifiedAt == today`
+- `LibraryDraft`: filter notes only when the raw `.wsnhead` `<folders>...</folders>` block is present and empty; stale
+  `.wsnindex` folder metadata or literal `Draft` text inside that block do not qualify as draft membership
+- `LibraryToday`: filter notes by `createdAt/lastModifiedAt == today`; literal folder assignments whose path contains
+  a `Today` segment are discarded instead of being treated as concrete library folders
 - `LibraryHierarchyViewModel` exposes `All Library`, `Draft`, and `Today` as immutable depth-0 system folders and
   synchronizes
   note-list filtering from those buckets plus persisted library folders
@@ -609,8 +609,9 @@ Library-specific modeling:
   keeps the same numeric row focused but swaps in a different visible folder (for example after deleting the focused
   folder and collapsing to its neighbor), `LibraryHierarchyViewModel` re-emits selection state and rebuilds the note
   list for the newly focused folder.
-- System-bucket behavior is identity-based rather than label-based; user folders named `All`, `Draft`, or similar are
-  still treated as normal folders unless they are one of the runtime-injected system buckets.
+- System-bucket behavior is identity-based rather than label-based for `All` / `Draft`, but the exact folder segment
+  `Today` is reserved for the smart date bucket and is removed from concrete library folder trees / note header
+  assignments instead of being treated as a user folder.
 - Accent depth-0 library headers are treated as protected structural roots for rename/delete/move targets even when
   they are not runtime-injected system buckets.
 - `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note scaffold inside the active `.wslibrary` using a
@@ -647,9 +648,9 @@ Library-specific modeling:
 - `LibraryNoteListModel.searchText` filters the current visible note set against preassembled searchable user-facing
   text sourced from `LibraryNoteRecord.bodyPlainText`, the visible preview slice, and folder/tag labels, excluding
   internal note IDs and filesystem-derived metadata.
-- Empty folder metadata is promoted to the user-facing `Draft` label before note-list roles are built, so cards with no
-  real folder assignment still render a visible folder row and the immutable `Draft` hierarchy bucket uses the same
-  classification rule as the note-card metadata.
+- Empty resolved folder metadata is still promoted to the user-facing `Draft` label before note-list roles are built,
+  so cards with no real folder assignment render a visible folder row even though the immutable `Draft` hierarchy
+  bucket now follows the stricter raw `.wsnhead <folders>` contract.
 - `BookmarksHierarchyViewModel` uses its own `BookmarksNoteListModel`; Bookmarks must not reuse
   `LibraryNoteListModel` because note-list contracts remain domain-owned even when role shapes are similar.
 - `BookmarksHierarchyViewModel` may remove a bookmarked note from its own projection state after receiving
@@ -767,8 +768,6 @@ Mobile composition:
     - `NavigationBarLayout.qml` in `compactMode`
     - `StatusBarLayout.qml` in `compactMode`
     - `LV.PageRouter` for the routed mobile body stack
-    - `interactiveTransitionSettleDuration = 0` on that router so left-edge back commits do not appear to traverse a
-      duplicated route entry
     - scaffold-level section spacing reduced to `gap2`, so the hierarchy body sits directly under the compact
       navigation bar instead of inheriting the earlier `gap24` page stack gap
 - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` mounts two routed bodies inside that scaffold:

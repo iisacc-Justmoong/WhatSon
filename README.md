@@ -537,9 +537,9 @@ for hub/note hierarchy payloads.
 - `MobilePageScaffold.qml` composes the shared `NavigationBarLayout.qml` (`compactMode: true`) and
   `StatusBarLayout.qml`, so mobile pages reuse the same LVRS navigation/sidebar contracts as the desktop shell instead
   of redrawing private chrome.
-- The compact search field inside `StatusBarLayout.qml` now declares the LVRS `shapeCylinder` input style, so the
-  mobile bottom bar keeps the pill-shaped search affordance from the shared LVRS component set instead of a local
-  rectangle-specific input variant.
+- The compact search field inside `StatusBarLayout.qml` now lets `LV.InputField` render its own
+  `shapeCylinder` frame directly and binds `compactToolbarText` through `placeholderText`, so the mobile bottom bar
+  keeps the pill-shaped search affordance from the shared LVRS component set instead of a wrapped local rectangle.
 - `MobilePageScaffold.qml` now keeps the token-only page paddings (`16 / 48 / 16`) but reduces the scaffold-level
   spacing between the compact navigation bar, the routed page body, and the compact
   status/add-note bar.
@@ -553,9 +553,6 @@ for hub/note hierarchy payloads.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
   drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
   enum plus route-memory copies.
-- `MobilePageScaffold.qml` also pins the routed mobile `LV.PageRouter` interactive settle duration to `0`, so
-  left-edge back-swipe commits do not replay a second stack animation after the interactive gesture has already
-  completed.
 - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
   `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so mobile back
   navigation follows the patched LVRS routing stack and gesture runtime instead of a local `DragHandler`.
@@ -677,7 +674,8 @@ Folders hierarchy file behavior (Library sidebar):
 - Library sidebar filtering uses the persisted folder `id`/path as the canonical scope key, not the display `label`,
   so duplicate leaf labels under different parents stay disambiguated.
 - Runtime-injected `All Library`, `Draft`, and `Today` are explicit system buckets; user-created folders such as
-  `All` remain regular editable folders.
+  `All` remain regular editable folders, but any concrete folder segment named `Today` is treated as the reserved
+  smart-folder token and is dropped from library folder trees / note header assignments.
 - Library system buckets emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)
   and stay pinned as the immutable `All Library -> Draft -> Today` depth-0 prefix even when LVRS editable reorder
   payloads are committed back into the library hierarchy view-model.
@@ -689,17 +687,20 @@ Library runtime classification behavior:
   timestamps, and related fields)
 - `All`: reads each note's `.wsnbody`, extracts text inside `<body>...</body>`, and uses only that body text as
   note-list summary text; blank bodies stay visually blank instead of falling back to internal IDs or filesystem stems
-- Notes whose header resolves to no folder labels are treated as `Draft` for user-facing note-list metadata, so the
-  note card renders the folder row as `Draft` and the immutable `Draft` hierarchy bucket stays visually consistent with
-  the same classification rule.
+- Notes whose resolved folder metadata is empty are still rendered with a user-facing `Draft` folder label in the note
+  card, while the immutable `Draft` hierarchy bucket now uses the stricter raw `.wsnhead <folders>` contract described
+  below.
 - `All`: detects the first non-text `<resource ...>` entry in `.wsnbody`, resolves its thumbnail path against the note
   directory / hub root, and exposes that preview to the note-list card
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
 - `All`: `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note directly under the active `.wslibrary`
   with a mixed-case alphanumeric `16-16` ID, persists the header/body/link/attachment scaffold through the existing
   note creators, updates `index.wsnindex` plus hub stat metadata, and keeps the new note selected in the current scope
-- `Draft`: filters notes where `<folders>` resolves to an empty list
-- `Today`: filters notes where `<created>` or `<lastModified>` matches the current date
+- `Draft`: filters notes only when the raw `.wsnhead` `<folders>...</folders>` block is present and contains no
+  concrete folder text or `<folder>` entries, so stale `.wsnindex` folder values and literal `Draft` text do not
+  qualify as draft membership
+- `Today`: filters notes where `<created>` or `<lastModified>` matches the current date; literal `<folder>Today</folder>`
+  values are ignored rather than treated as concrete folder membership
 
 Runtime IO components (`src/app/file/IO`):
 

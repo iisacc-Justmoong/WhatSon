@@ -53,13 +53,6 @@ Rectangle {
     clip: true
     color: statusBar.compactMode ? LV.Theme.accentTransparent : statusBar.panelColor
 
-    Component.onCompleted: {
-        if (!statusBar.compactMode)
-            return;
-        if (statusBar.searchText.length === 0 && statusBar.compactToolbarText.length > 0)
-            statusBar.searchText = statusBar.compactToolbarText;
-    }
-
     Rectangle {
         id: searchBarTextField
 
@@ -143,34 +136,37 @@ Rectangle {
             anchors.fill: parent
             spacing: LV.Theme.gapNone
 
-            Rectangle {
-                id: compactSearchTextField
+            LV.InputField {
+                id: compactSearchInput
 
                 Layout.alignment: Qt.AlignVCenter
                 Layout.fillWidth: true
-                color: statusBar.compactFieldColor
-                height: statusBar.compactFieldHeight
-                radius: statusBar.compactFieldRadius
+                Layout.minimumWidth: 0
+                Layout.preferredHeight: statusBar.compactFieldHeight
+                backgroundColor: statusBar.compactFieldColor
+                backgroundColorDisabled: statusBar.compactFieldColor
+                backgroundColorFocused: statusBar.compactFieldColor
+                backgroundColorHover: statusBar.compactFieldColor
+                backgroundColorPressed: statusBar.compactFieldColor
+                centeredTextHeight: LV.Theme.gap12
+                fieldMinHeight: statusBar.compactFieldHeight
+                insetHorizontal: LV.Theme.gap7
+                insetVertical: LV.Theme.gap3
+                mode: searchMode
+                placeholderText: statusBar.compactToolbarText
+                selectByMouse: true
+                shapeStyle: shapeCylinder
+                text: statusBar.searchText
 
-                LV.InputField {
-                    id: compactSearchInput
-
-                    anchors.fill: parent
-                    mode: searchMode
-                    selectByMouse: true
-                    shapeStyle: shapeCylinder
-                    text: statusBar.searchText
-
-                    onAccepted: function (text) {
-                        var nextText = typeof text === "string" ? text : compactSearchInput.text;
-                        statusBar.searchText = nextText;
-                        statusBar.searchSubmitted(nextText);
-                    }
-                    onTextEdited: function (text) {
-                        var nextText = typeof text === "string" ? text : compactSearchInput.text;
-                        statusBar.searchText = nextText;
-                        statusBar.searchTextEdited(nextText);
-                    }
+                onAccepted: function (text) {
+                    var nextText = typeof text === "string" ? text : compactSearchInput.text;
+                    statusBar.searchText = nextText;
+                    statusBar.searchSubmitted(nextText);
+                }
+                onTextEdited: function (text) {
+                    var nextText = typeof text === "string" ? text : compactSearchInput.text;
+                    statusBar.searchText = nextText;
+                    statusBar.searchTextEdited(nextText);
                 }
             }
             Item {

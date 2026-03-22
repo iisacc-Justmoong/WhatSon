@@ -2,6 +2,7 @@
 
 #include "WhatSonDebugTrace.hpp"
 #include "note/WhatSonNoteHeaderParser.hpp"
+#include "note/WhatSonNoteFolderSemantics.hpp"
 #include "note/WhatSonNoteHeaderStore.hpp"
 
 #include <QDebug>
@@ -888,6 +889,27 @@ namespace
         {
             record->storageKind = QStringLiteral("wsnote");
         }
+
+        QStringList sanitizedFolders;
+        sanitizedFolders.reserve(record->folders.size());
+        for (const QString& folder : std::as_const(record->folders))
+        {
+            if (WhatSon::NoteFolders::usesReservedTodayFolderSegment(folder))
+            {
+                WhatSon::Debug::trace(
+                    QStringLiteral("library.all"),
+                    QStringLiteral("normalizeRecordFallbacks.dropReservedTodayFolder"),
+                    QStringLiteral("noteId=%1 folder=%2").arg(record->noteId).arg(folder));
+                continue;
+            }
+
+            const QString trimmedFolder = folder.trimmed();
+            if (!trimmedFolder.isEmpty())
+            {
+                sanitizedFolders.push_back(trimmedFolder);
+            }
+        }
+        record->folders = sanitizedFolders;
 
         if (record->noteId.trimmed().isEmpty() && !record->noteDirectoryPath.isEmpty())
         {

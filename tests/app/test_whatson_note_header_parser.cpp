@@ -15,6 +15,7 @@ private
     void parse_readsWsnHeadFieldsWithExpectedTypes();
     void parse_mapsProgressEnumLabelToInteger();
     void parse_resolvesTemplateTokensInFolderAndTagArrays();
+    void parse_dropsReservedTodayFolderTokens();
     void parse_resolvesTemplateTokensInSingleFields();
     void createHeaderText_roundTripsThroughParser();
 };
@@ -110,6 +111,28 @@ void WhatSonNoteHeaderParserTest::parse_resolvesTemplateTokensInFolderAndTagArra
 
     QCOMPARE(store.folders(), QStringList({QStringLiteral("folder1"), QStringLiteral("Folder-A")}));
     QCOMPARE(store.tags(), QStringList({QStringLiteral("tag1"), QStringLiteral("tag-a")}));
+}
+
+void WhatSonNoteHeaderParserTest::parse_dropsReservedTodayFolderTokens()
+{
+    const QString input =
+        QStringLiteral(
+            "<contents id=note-003>\n"
+            "  <head>\n"
+            "    <folders>\n"
+            "      <folder>Today</folder>\n"
+            "      <folder>Research/Today</folder>\n"
+            "      <folder>Inbox</folder>\n"
+            "    </folders>\n"
+            "  </head>\n"
+            "</contents>\n");
+
+    WhatSonNoteHeaderStore store;
+    WhatSonNoteHeaderParser parser;
+    QString errorMessage;
+    QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(store.folders(), QStringList({QStringLiteral("Inbox")}));
 }
 
 void WhatSonNoteHeaderParserTest::parse_resolvesTemplateTokensInSingleFields()

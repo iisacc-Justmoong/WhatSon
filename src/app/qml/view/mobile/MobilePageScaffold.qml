@@ -10,7 +10,6 @@ Rectangle {
     readonly property var bodyItem: bodyRouter.currentPageItem
     readonly property real bodyWidth: bodyRouter.width
     property string bodyInitialPath: "/"
-    property int bodyInteractiveTransitionSettleDuration: 0
     property var bodyRoutes: []
     readonly property int contentBottomPadding: LV.Theme.gap16
     readonly property int contentHorizontalPadding: LV.Theme.gap16
@@ -67,7 +66,6 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
             initialPath: mobilePageScaffold.bodyInitialPath
-            interactiveTransitionSettleDuration: mobilePageScaffold.bodyInteractiveTransitionSettleDuration
             registerAsGlobalNavigator: false
             routes: mobilePageScaffold.bodyRoutes
         }

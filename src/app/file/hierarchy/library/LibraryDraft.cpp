@@ -1,22 +1,123 @@
 #include "LibraryDraft.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "note/WhatSonNoteFolderSemantics.hpp"
 
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QDebug>
 #include <utility>
 
 namespace
 {
-    bool hasFolderValue(const QStringList& folders)
+    QString normalizePath(const QString& input)
     {
-        for (const QString& folder : folders)
+        const QString trimmed = input.trimmed();
+        if (trimmed.isEmpty())
         {
-            if (!folder.trimmed().isEmpty())
+            return {};
+        }
+        return QDir::cleanPath(trimmed);
+    }
+
+    QString resolveNoteHeaderPath(const LibraryNoteRecord& note)
+    {
+        const QString directPath = normalizePath(note.noteHeaderPath);
+        if (!directPath.isEmpty() && QFileInfo(directPath).isFile())
+        {
+            return directPath;
+        }
+
+        const QString noteDirectoryPath = normalizePath(note.noteDirectoryPath);
+        if (noteDirectoryPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QDir noteDir(noteDirectoryPath);
+        if (!noteDir.exists())
+        {
+            return {};
+        }
+
+        const QString noteStem = QFileInfo(noteDirectoryPath).completeBaseName().trimmed();
+        if (!noteStem.isEmpty())
+        {
+            const QString stemHeaderPath = noteDir.filePath(noteStem + QStringLiteral(".wsnhead"));
+            if (QFileInfo(stemHeaderPath).isFile())
             {
-                return true;
+                return QDir::cleanPath(stemHeaderPath);
             }
         }
-        return false;
+
+        const QString canonicalHeaderPath = noteDir.filePath(QStringLiteral("note.wsnhead"));
+        if (QFileInfo(canonicalHeaderPath).isFile())
+        {
+            return QDir::cleanPath(canonicalHeaderPath);
+        }
+
+        const QFileInfoList headerCandidates = noteDir.entryInfoList(
+            QStringList{QStringLiteral("*.wsnhead")},
+            QDir::Files,
+            QDir::Name);
+        QString draftHeaderPath;
+        for (const QFileInfo& fileInfo : headerCandidates)
+        {
+            const QString loweredName = fileInfo.fileName().toCaseFolded();
+            if (loweredName.contains(QStringLiteral(".draft.")))
+            {
+                if (draftHeaderPath.isEmpty())
+                {
+                    draftHeaderPath = fileInfo.absoluteFilePath();
+                }
+                continue;
+            }
+            return QDir::cleanPath(fileInfo.absoluteFilePath());
+        }
+
+        if (!draftHeaderPath.isEmpty())
+        {
+            return QDir::cleanPath(draftHeaderPath);
+        }
+
+        return {};
+    }
+
+    bool readUtf8File(const QString& filePath, QString* outText)
+    {
+        if (outText == nullptr)
+        {
+            return false;
+        }
+
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            return false;
+        }
+
+        *outText = QString::fromUtf8(file.readAll());
+        return true;
+    }
+
+    bool headerDeclaresDraftMembership(const LibraryNoteRecord& record)
+    {
+        const QString headerPath = resolveNoteHeaderPath(record);
+        if (headerPath.isEmpty())
+        {
+            return false;
+        }
+
+        QString rawHeaderText;
+        if (!readUtf8File(headerPath, &rawHeaderText))
+        {
+            return false;
+        }
+
+        const WhatSon::NoteFolders::RawFoldersBlockState foldersState =
+            WhatSon::NoteFolders::inspectRawFoldersBlock(rawHeaderText);
+        return foldersState.blockPresent && !foldersState.hasConcreteEntry;
     }
 } // namespace
 
@@ -37,7 +138,7 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
 
     for (const LibraryNoteRecord& record : allNotes)
     {
-        if (!hasFolderValue(record.folders))
+        if (headerDeclaresDraftMembership(record))
         {
             m_notes.push_back(record);
         }

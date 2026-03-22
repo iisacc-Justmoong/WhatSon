@@ -1594,7 +1594,6 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobileScaffoldText.contains(QStringLiteral("property bool compactLeadingActionVisible: false")) &&
             mobileScaffoldText.contains(QStringLiteral("signal compactLeadingActionRequested")) &&
             mobileScaffoldText.contains(QStringLiteral("property string bodyInitialPath: \"/\"")) &&
-            mobileScaffoldText.contains(QStringLiteral("property int bodyInteractiveTransitionSettleDuration: 0")) &&
             mobileScaffoldText.contains(QStringLiteral("property var bodyRoutes: []")),
         "MobilePageScaffold.qml must expose compact-bar visibility knobs so routed mobile pages can switch chrome without cloning the shared scaffold.");
     QVERIFY2(
@@ -1607,11 +1606,9 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobileScaffoldText.contains(QStringLiteral("readonly property var activePageRouter: bodyRouter")) &&
             mobileScaffoldText.contains(QStringLiteral("readonly property var bodyItem: bodyRouter.currentPageItem")) &&
             mobileScaffoldText.contains(QStringLiteral("LV.PageRouter {")) &&
-            mobileScaffoldText.contains(
-                QStringLiteral("interactiveTransitionSettleDuration: mobilePageScaffold.bodyInteractiveTransitionSettleDuration")) &&
             mobileScaffoldText.contains(QStringLiteral("routes: mobilePageScaffold.bodyRoutes")) &&
             !mobileScaffoldText.contains(QStringLiteral("Loader {")),
-        "MobilePageScaffold.qml must forward compact chrome through the shared bars while routing mobile body pages through LV.PageRouter instead of a private loader, while disabling settle replay so swipe-back does not look like a duplicated stack transition.");
+        "MobilePageScaffold.qml must forward compact chrome through the shared bars while routing mobile body pages through LV.PageRouter instead of a private loader.");
 
     const QString statusBarPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/StatusBarLayout.qml"));
@@ -1620,8 +1617,12 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
     const QString statusBarText = QString::fromUtf8(statusBarFile.readAll());
     QVERIFY2(
         statusBarText.contains(QStringLiteral("id: compactSearchInput")) &&
-            statusBarText.contains(QStringLiteral("shapeStyle: shapeCylinder")),
-        "StatusBarLayout.qml compact search input must use the LVRS cylindrical field type so the mobile bottom bar keeps the shared pill-shaped search affordance.");
+            statusBarText.contains(QStringLiteral("fieldMinHeight: statusBar.compactFieldHeight")) &&
+            statusBarText.contains(QStringLiteral("backgroundColor: statusBar.compactFieldColor")) &&
+            statusBarText.contains(QStringLiteral("placeholderText: statusBar.compactToolbarText")) &&
+            statusBarText.contains(QStringLiteral("shapeStyle: shapeCylinder")) &&
+            !statusBarText.contains(QStringLiteral("id: compactSearchTextField")),
+        "StatusBarLayout.qml compact search input must let LVRS InputField render the cylindrical frame directly so the mobile bottom bar keeps the shared pill-shaped search affordance instead of a wrapped round-rect shell.");
 
     const QString mobilePagePath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/mobile/pages/MobileHierarchyPage.qml"));
