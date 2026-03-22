@@ -9,6 +9,11 @@ namespace WhatSon::Apple::SecurityScopedResourceAccess
 #if defined(Q_OS_IOS)
     bool startAccessForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage);
     bool ensureAccessForPath(const QString& localPath, QString* errorMessage);
+    QByteArray bookmarkDataForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage);
+    bool restoreAccessFromBookmarkData(
+        const QByteArray& bookmarkData,
+        QString* restoredPath,
+        QString* errorMessage);
 #else
     inline bool startAccessForUrl(const QUrl&, bool, QString*)
     {
@@ -18,6 +23,16 @@ namespace WhatSon::Apple::SecurityScopedResourceAccess
     inline bool ensureAccessForPath(const QString&, QString*)
     {
         return true;
+    }
+
+    inline QByteArray bookmarkDataForUrl(const QUrl&, bool, QString*)
+    {
+        return {};
+    }
+
+    inline bool restoreAccessFromBookmarkData(const QByteArray&, QString*, QString*)
+    {
+        return false;
     }
 #endif
 } // namespace WhatSon::Apple::SecurityScopedResourceAccess

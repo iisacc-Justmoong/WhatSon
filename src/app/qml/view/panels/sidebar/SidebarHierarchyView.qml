@@ -104,6 +104,7 @@ Rectangle {
 
     signal searchSubmitted(string text)
     signal searchTextEdited(string text)
+    signal hierarchyItemActivated(var item, int itemId, int index)
     signal toolbarIndexChangeRequested(int index)
     signal viewHookRequested
 
@@ -331,7 +332,7 @@ Rectangle {
         anchors.fill: parent
         anchors.leftMargin: sidebarHierarchyView.horizontalInset
         anchors.rightMargin: sidebarHierarchyView.horizontalInset
-        anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.toolbarButtonSize + sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap : 0)
+        anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap : 0)
         editable: sidebarHierarchyView.hierarchyEditable
         keyboardListNavigationEnabled: false
         model: sidebarHierarchyView.standardHierarchyModel
@@ -342,6 +343,7 @@ Rectangle {
             if (!sidebarHierarchyView.hierarchyViewModel || sidebarHierarchyView.hierarchyViewModel.setSelectedIndex === undefined)
                 return;
             sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(itemId);
+            sidebarHierarchyView.hierarchyItemActivated(item, itemId, index);
         }
         onListItemExpanded: function (item, itemId, index, expanded) {
             if (!sidebarHierarchyView.setItemExpandedContractAvailable)

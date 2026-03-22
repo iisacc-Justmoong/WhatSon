@@ -58,9 +58,9 @@ void NavigationQmlFramesTest::mainQml_mustBindSidebarInitWidthToHierarchyToolbar
     QVERIFY(mainQml.contains(QStringLiteral("sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property int sidebarHorizontalInset: 2")));
     QVERIFY(bodyLayout.contains(QStringLiteral("horizontalInset: hStack.sidebarHorizontalInset")));
-    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("property int horizontalInset: 2")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("property int horizontalInset: LV.Theme.gap2")));
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("horizontalInset: hierarchyView.horizontalInset")));
-    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("property int horizontalInset: 2")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("property int horizontalInset: LV.Theme.gap2")));
 }
 
 void NavigationQmlFramesTest::navigationPanels_mustExposeFrameScopedPanelKeys()
@@ -242,6 +242,12 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(appControlIndex < exportIndex);
     QVERIFY(exportIndex < addNewIndex);
     QVERIFY(addNewIndex < preferenceIndex);
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"keyVisible\": false")));
+    QVERIFY(applicationControlBar.contains(
+        QStringLiteral("applicationControlMenuButton.width")));
+    QVERIFY(applicationControlBar.contains(
+        QStringLiteral("applicationControlMenuButton.height + applicationControlBar.menuYOffset")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("openFor(applicationControlMenuButton, 0,")));
 }
 
 void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset()
@@ -260,7 +266,7 @@ void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset(
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("width: 78")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset")));
     QVERIFY(sidebarHierarchyView.contains(
-        QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset + hierarchyFooter.implicitHeight")));
+        QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.footerVisible ? hierarchyFooter.implicitHeight : 0)")));
 }
 
 QTEST_APPLESS_MAIN(NavigationQmlFramesTest)

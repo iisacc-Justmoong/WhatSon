@@ -9,6 +9,7 @@
 namespace
 {
     constexpr auto kSelectedHubPathSettingsKey = "workspace/selectedHubPath";
+    constexpr auto kSelectedHubBookmarkSettingsKey = "workspace/selectedHubBookmark";
 }
 
 QString SelectedHubStore::selectedHubPath()
@@ -22,6 +23,7 @@ QString SelectedHubStore::selectedHubPath()
         if (!rawStoredPath.trimmed().isEmpty())
         {
             settings.remove(selectedHubSettingsKey());
+            settings.remove(selectedHubBookmarkSettingsKey());
         }
         settings.sync();
         return QString();
@@ -30,6 +32,7 @@ QString SelectedHubStore::selectedHubPath()
     if (!isStoredHubPathValid(normalizedStoredPath))
     {
         settings.remove(selectedHubSettingsKey());
+        settings.remove(selectedHubBookmarkSettingsKey());
         settings.sync();
         return QString();
     }
@@ -41,6 +44,17 @@ QString SelectedHubStore::selectedHubPath()
     }
 
     return normalizedStoredPath;
+}
+
+QByteArray SelectedHubStore::selectedHubAccessBookmark()
+{
+    if (selectedHubPath().isEmpty())
+    {
+        return {};
+    }
+
+    QSettings settings;
+    return settings.value(selectedHubBookmarkSettingsKey()).toByteArray();
 }
 
 QString SelectedHubStore::startupHubPath(const QString& blueprintFallbackHubPath)
@@ -59,21 +73,36 @@ void SelectedHubStore::clearSelectedHubPath()
 {
     QSettings settings;
     settings.remove(selectedHubSettingsKey());
+    settings.remove(selectedHubBookmarkSettingsKey());
     settings.sync();
 }
 
 void SelectedHubStore::setSelectedHubPath(const QString& hubPath)
+{
+    setSelectedHubSelection(hubPath, {});
+}
+
+void SelectedHubStore::setSelectedHubSelection(const QString& hubPath, const QByteArray& accessBookmark)
 {
     const QString normalizedHubPath = normalizeHubPath(hubPath);
     QSettings settings;
     if (!isStoredHubPathValid(normalizedHubPath))
     {
         settings.remove(selectedHubSettingsKey());
+        settings.remove(selectedHubBookmarkSettingsKey());
         settings.sync();
         return;
     }
 
     settings.setValue(selectedHubSettingsKey(), normalizedHubPath);
+    if (accessBookmark.isEmpty())
+    {
+        settings.remove(selectedHubBookmarkSettingsKey());
+    }
+    else
+    {
+        settings.setValue(selectedHubBookmarkSettingsKey(), accessBookmark);
+    }
     settings.sync();
 }
 
@@ -109,4 +138,9 @@ QString SelectedHubStore::normalizeHubPath(const QString& hubPath) const
 QString SelectedHubStore::selectedHubSettingsKey() const
 {
     return QString::fromLatin1(kSelectedHubPathSettingsKey);
+}
+
+QString SelectedHubStore::selectedHubBookmarkSettingsKey() const
+{
+    return QString::fromLatin1(kSelectedHubBookmarkSettingsKey);
 }

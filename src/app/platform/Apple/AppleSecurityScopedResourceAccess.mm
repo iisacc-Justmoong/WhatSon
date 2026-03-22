@@ -111,6 +111,57 @@ namespace
         return QUrl::fromLocalFile(normalizedLocalPath).toNSURL();
     }
 
+    bool effectiveUrlForSource(
+        const QUrl& url,
+        const bool parentDirectoryScope,
+        QUrl* effectiveUrl,
+        QString* errorMessage)
+    {
+        if (!url.isValid())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("The selected iOS document URL is invalid.");
+            }
+            return false;
+        }
+
+        if (!url.isLocalFile())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("The selected iOS document URL is not a local filesystem URL.");
+            }
+            return false;
+        }
+
+        QUrl nextEffectiveUrl = url;
+        if (parentDirectoryScope)
+        {
+            const QString parentDirectoryPath = QFileInfo(url.toLocalFile()).absolutePath();
+            nextEffectiveUrl = QUrl::fromLocalFile(parentDirectoryPath);
+        }
+
+        if (!nextEffectiveUrl.isValid() || !nextEffectiveUrl.isLocalFile())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("The effective iOS document URL is invalid.");
+            }
+            return false;
+        }
+
+        if (effectiveUrl != nullptr)
+        {
+            *effectiveUrl = nextEffectiveUrl;
+        }
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
     bool beginAccessForLocalFileUrl(const QUrl& url, QString* errorMessage)
     {
         const QString normalizedLocalPath = normalizeAbsolutePath(url.toLocalFile());
@@ -175,31 +226,11 @@ namespace
 
 bool startAccessForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
 {
-    if (!url.isValid())
+    QUrl effectiveUrl;
+    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
     {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("The selected iOS document URL is invalid.");
-        }
         return false;
     }
-
-    if (!url.isLocalFile())
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("The selected iOS document URL is not a local filesystem URL.");
-        }
-        return false;
-    }
-
-    QUrl effectiveUrl = url;
-    if (parentDirectoryScope)
-    {
-        const QString parentDirectoryPath = QFileInfo(url.toLocalFile()).absolutePath();
-        effectiveUrl = QUrl::fromLocalFile(parentDirectoryPath);
-    }
-
     return beginAccessForLocalFileUrl(effectiveUrl, errorMessage);
 }
 
@@ -225,6 +256,141 @@ bool ensureAccessForPath(const QString& localPath, QString* errorMessage)
     }
 
     return beginAccessForLocalFileUrl(QUrl::fromLocalFile(normalizedLocalPath), errorMessage);
+}
+
+QByteArray bookmarkDataForUrl(const QUrl& url, bool parentDirectoryScope, QString* errorMessage)
+{
+    QUrl effectiveUrl;
+    if (!effectiveUrlForSource(url, parentDirectoryScope, &effectiveUrl, errorMessage))
+    {
+        return {};
+    }
+
+    NSURL* nsUrl = effectiveUrl.toNSURL();
+    if (nsUrl == nil)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to convert the selected iOS document URL into an NSURL.");
+        }
+        return {};
+    }
+
+    NSError* bookmarkError = nil;
+    NSData* bookmarkData = [nsUrl bookmarkDataWithOptions:0
+                           includingResourceValuesForKeys:nil
+                                            relativeToURL:nil
+                                                    error:&bookmarkError];
+    if (bookmarkData == nil)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = localizedErrorText(
+                bookmarkError,
+                QStringLiteral("Failed to create a persistent bookmark for the selected iOS WhatSon Hub."));
+        }
+        return {};
+    }
+
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return QByteArray(
+        static_cast<const char*>([bookmarkData bytes]),
+        static_cast<qsizetype>([bookmarkData length]));
+}
+
+bool restoreAccessFromBookmarkData(
+    const QByteArray& bookmarkData,
+    QString* restoredPath,
+    QString* errorMessage)
+{
+    if (restoredPath != nullptr)
+    {
+        restoredPath->clear();
+    }
+
+    if (bookmarkData.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("The stored iOS WhatSon Hub bookmark is empty.");
+        }
+        return false;
+    }
+
+    NSData* bookmarkNsData = [NSData dataWithBytes:bookmarkData.constData()
+                                            length:static_cast<NSUInteger>(bookmarkData.size())];
+    if (bookmarkNsData == nil)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to materialize the stored iOS WhatSon Hub bookmark.");
+        }
+        return false;
+    }
+
+    BOOL staleBookmark = NO;
+    NSError* restoreError = nil;
+    NSURLBookmarkResolutionOptions options = NSURLBookmarkResolutionWithoutUI | NSURLBookmarkResolutionWithoutMounting;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140200
+    options |= NSURLBookmarkResolutionWithoutImplicitStartAccessing;
+#endif
+    NSURL* resolvedUrl = [NSURL URLByResolvingBookmarkData:bookmarkNsData
+                                                   options:options
+                                             relativeToURL:nil
+                                       bookmarkDataIsStale:&staleBookmark
+                                                     error:&restoreError];
+    if (resolvedUrl == nil)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = localizedErrorText(
+                restoreError,
+                QStringLiteral("Failed to restore the stored iOS WhatSon Hub bookmark."));
+        }
+        return false;
+    }
+
+    const QString resolvedLocalPath = normalizeAbsolutePath(
+        QString::fromUtf8([[resolvedUrl path] UTF8String]));
+    const BOOL started = [resolvedUrl startAccessingSecurityScopedResource];
+    if (started)
+    {
+        scopedResourceRegistry().retain(resolvedLocalPath, resolvedUrl);
+    }
+
+    const bool accessibleAfterRestore =
+        !resolvedLocalPath.trimmed().isEmpty() && pathExists(resolvedLocalPath);
+    WhatSon::Debug::trace(
+        QStringLiteral("ios.securityScoped"),
+        QStringLiteral("restoreBookmark"),
+        QStringLiteral("path=%1 started=%2 stale=%3 accessible=%4")
+            .arg(resolvedLocalPath)
+            .arg(started ? QStringLiteral("1") : QStringLiteral("0"))
+            .arg(staleBookmark ? QStringLiteral("1") : QStringLiteral("0"))
+            .arg(accessibleAfterRestore ? QStringLiteral("1") : QStringLiteral("0")));
+
+    if (!started && !accessibleAfterRestore)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral(
+                "iOS denied access while restoring the stored WhatSon Hub bookmark.");
+        }
+        return false;
+    }
+
+    if (restoredPath != nullptr)
+    {
+        *restoredPath = resolvedLocalPath;
+    }
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
 }
 #endif
 } // namespace WhatSon::Apple::SecurityScopedResourceAccess

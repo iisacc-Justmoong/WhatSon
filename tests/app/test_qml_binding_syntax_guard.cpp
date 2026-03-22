@@ -55,6 +55,7 @@ private
     void criticalViewHelpers_mustReturnExplicitValues();
     void contentView_mustComposeTextEditorGutter();
     void hierarchySidebarWiring_mustBindLoaderAndToolbarTarget();
+    void mobileHierarchyPage_mustRouteHierarchyActivationIntoNoteListBody();
     void noteListDeleteShortcutWiring_mustStayCentralized();
 };
 
@@ -653,6 +654,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("hierarchyView.setActiveHierarchyIndex(index);")),
         "HierarchySidebarLayout.qml must route toolbar index updates through the normalized setter helper.");
+    QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral("signal hierarchyItemActivated(var item, int itemId, int index)")),
+        "HierarchySidebarLayout.qml must expose a dedicated hierarchyItemActivated signal for routed mobile page transitions.");
 
     const QString mainQmlPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("Main.qml"));
     QFile mainQmlFile(mainQmlPath);
@@ -763,6 +767,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setSelectedIndex(itemId);")),
         "SidebarHierarchyView.qml must mirror LVRS item activation into the bound hierarchy view-model by stable itemId.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("signal hierarchyItemActivated(var item, int itemId, int index)")) &&
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyItemActivated(item, itemId, index);")),
+        "SidebarHierarchyView.qml must re-emit hierarchy row activation after syncing selection so mobile routing can subscribe without bypassing the bound view-model.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function normalizeHierarchyModel(modelValue)")),
         "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
@@ -997,6 +1005,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         hierarchySidebarLayoutText.contains(QStringLiteral("hierarchyDragDropBridge: hierarchyDragDropBridge")),
         "HierarchySidebarLayout.qml must forward the dedicated hierarchy drag/drop bridge into SidebarHierarchyView.");
+    QVERIFY2(
+        hierarchySidebarLayoutText.contains(QStringLiteral("onHierarchyItemActivated: function (item, itemId, index)")) &&
+            hierarchySidebarLayoutText.contains(QStringLiteral("hierarchyView.hierarchyItemActivated(item, itemId, index);")),
+        "HierarchySidebarLayout.qml must forward hierarchy row activation directly from SidebarHierarchyView.");
 
     const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(QStringLiteral("view/panels/NoteListItem.qml"));
     QFile noteListItemFile(noteListItemPath);
@@ -1210,6 +1222,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("property bool noteDragActive: false")),
         "ListBarLayout.qml must track whether a note-card drag is active so the parent ListView can stop treating the gesture as scrolling.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property var noteDragPreviewDelegate: null")),
+        "ListBarLayout.qml must track the actively dragged delegate so a live note-card preview can follow the pointer.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("property bool notePointerPressed: false")),
         "ListBarLayout.qml must track row-press ownership so ListView flicking cannot swallow note drags before the delegate DragHandler activates.");
     QVERIFY2(
@@ -1227,8 +1242,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")),
         "ListBarLayout.qml must bind ListView only to the resolved note-list model.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("Drag.dragType: Drag.Automatic")),
-        "ListBarLayout.qml note delegates must use automatic Qt drag dispatch so note drags follow the pointer even when the row itself stays fixed.");
+        listBarLayoutText.contains(QStringLiteral("Drag.dragType: Drag.Internal")),
+        "ListBarLayout.qml note delegates must use internal Qt drag dispatch so the app can keep a custom note-card drag preview instead of the platform text tooltip.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
@@ -1238,6 +1253,18 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.supportedActions: Qt.CopyAction")),
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("parent: Controls.Overlay.overlay ? Controls.Overlay.overlay : listBarLayout")),
+        "ListBarLayout.qml drag preview must be reparented into the overlay layer so the grabbed note card can cross panel boundaries.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("active: true")),
+        "ListBarLayout.qml drag preview note card must force the active visual state while dragging.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function beginNoteDragPreview(delegateItem, hotSpotX, hotSpotY)")),
+        "ListBarLayout.qml must expose an explicit helper that captures the dragged note-card preview state.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function updateNoteDragPreviewPosition(delegateItem, localX, localY)")),
+        "ListBarLayout.qml must expose an explicit helper that moves the dragged note-card preview with the pointer.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "image: noteItemDelegate.image === undefined ? false : Boolean(noteItemDelegate.image)")),
@@ -1252,6 +1279,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("dragThreshold: 4")),
         "ListBarLayout.qml note drag handler should lower the drag threshold so note-to-folder drags start before vertical scrolling wins.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onCentroidChanged: {")),
+        "ListBarLayout.qml note drag handler must update the floating note-card preview while the pointer moves.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
         "ListBarLayout.qml must keep note-card tap handling passive until drag threshold so note drags can start from the same surface.");
@@ -1395,6 +1425,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         bodyLayoutText.contains(QStringLiteral("contentViewModel: hStack.activeHierarchyViewModel")),
         "BodyLayout.qml must pass the resolved active hierarchy view-model into the content surface.");
     QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("searchFieldVisible: true")),
+        "BodyLayout.qml desktop hierarchy route must keep the shared hierarchy search field visible.");
+    QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("PanelEdgeSplitter {")),
         "BodyLayout.qml must delegate splitter drag interactions to the reusable PanelEdgeSplitter component.");
 
@@ -1522,6 +1555,152 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("state: detailContents.resolvedActiveStateName")),
         "DetailContents.qml must bind QML state to the resolved active state name.");
+}
+
+void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivationIntoNoteListBody()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+
+    const QString navigationBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/NavigationBarLayout.qml"));
+    QFile navigationBarFile(navigationBarPath);
+    QVERIFY2(navigationBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(navigationBarPath));
+    const QString navigationBarText = QString::fromUtf8(navigationBarFile.readAll());
+    QVERIFY2(
+        navigationBarText.contains(QStringLiteral("signal compactLeadingActionRequested")) &&
+            navigationBarText.contains(QStringLiteral("property bool compactLeadingActionVisible: false")) &&
+            navigationBarText.contains(
+                QStringLiteral("property string compactLeadingActionIconName: \"generalchevronLeft\"")),
+        "NavigationBarLayout.qml compact mode must expose a dedicated leading-action slot so mobile pages can mount a back affordance without forking the shared bar.");
+    QVERIFY2(
+        navigationBarText.contains(QStringLiteral("iconName: navigationBar.compactLeadingActionIconName")) &&
+            navigationBarText.contains(QStringLiteral("navigationBar.compactLeadingActionRequested()")),
+        "NavigationBarLayout.qml compact leading action must bind its icon and click flow through the dedicated compactLeadingAction contract.");
+
+    const QString mobileScaffoldPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/mobile/MobilePageScaffold.qml"));
+    QFile mobileScaffoldFile(mobileScaffoldPath);
+    QVERIFY2(mobileScaffoldFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mobileScaffoldPath));
+    const QString mobileScaffoldText = QString::fromUtf8(mobileScaffoldFile.readAll());
+    QVERIFY2(
+        mobileScaffoldText.contains(QStringLiteral("property bool compactAddFolderVisible: true")) &&
+            mobileScaffoldText.contains(QStringLiteral("property bool compactLeadingActionVisible: false")) &&
+            mobileScaffoldText.contains(QStringLiteral("signal compactLeadingActionRequested")) &&
+            mobileScaffoldText.contains(QStringLiteral("property string bodyInitialPath: \"/\"")) &&
+            mobileScaffoldText.contains(QStringLiteral("property var bodyRoutes: []")),
+        "MobilePageScaffold.qml must expose compact-bar visibility knobs so routed mobile pages can switch chrome without cloning the shared scaffold.");
+    QVERIFY2(
+        mobileScaffoldText.contains(
+            QStringLiteral("compactAddFolderVisible: mobilePageScaffold.compactAddFolderVisible")) &&
+            mobileScaffoldText.contains(
+                QStringLiteral("compactLeadingActionVisible: mobilePageScaffold.compactLeadingActionVisible")) &&
+            mobileScaffoldText.contains(
+                QStringLiteral("onCompactLeadingActionRequested: mobilePageScaffold.compactLeadingActionRequested()")) &&
+            mobileScaffoldText.contains(QStringLiteral("readonly property var activePageRouter: bodyRouter")) &&
+            mobileScaffoldText.contains(QStringLiteral("readonly property var bodyItem: bodyRouter.currentPageItem")) &&
+            mobileScaffoldText.contains(QStringLiteral("LV.PageRouter {")) &&
+            mobileScaffoldText.contains(QStringLiteral("routes: mobilePageScaffold.bodyRoutes")) &&
+            !mobileScaffoldText.contains(QStringLiteral("Loader {")),
+        "MobilePageScaffold.qml must forward compact chrome through the shared bars while routing mobile body pages through LV.PageRouter instead of a private loader.");
+
+    const QString statusBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/StatusBarLayout.qml"));
+    QFile statusBarFile(statusBarPath);
+    QVERIFY2(statusBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(statusBarPath));
+    const QString statusBarText = QString::fromUtf8(statusBarFile.readAll());
+    QVERIFY2(
+        statusBarText.contains(QStringLiteral("id: compactSearchInput")) &&
+            statusBarText.contains(QStringLiteral("shapeStyle: shapeCylinder")),
+        "StatusBarLayout.qml compact search input must use the LVRS cylindrical field type so the mobile bottom bar keeps the shared pill-shaped search affordance.");
+
+    const QString mobilePagePath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/mobile/pages/MobileHierarchyPage.qml"));
+    QFile mobilePageFile(mobilePagePath);
+    QVERIFY2(mobilePageFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mobilePagePath));
+    const QString mobilePageText = QString::fromUtf8(mobilePageFile.readAll());
+    QVERIFY2(
+        mobilePageText.contains(
+            QStringLiteral("readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel")) &&
+            mobilePageText.contains(QStringLiteral("resolvedNoteListModel")),
+        "MobileHierarchyPage.qml must source the active note-list model directly from SidebarHierarchyViewModel instead of resolving a separate mobile-only list pipeline.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("readonly property string hierarchyRoutePath: \"/mobile/hierarchy\"")) &&
+            mobilePageText.contains(QStringLiteral("readonly property string noteListRoutePath: \"/mobile/note-list\"")) &&
+            mobilePageText.contains(QStringLiteral("readonly property var mobileBodyRoutes: [")) &&
+            mobilePageText.contains(QStringLiteral("\"component\": hierarchyBodyComponent")) &&
+            mobilePageText.contains(QStringLiteral("\"component\": noteListBodyComponent")),
+        "MobileHierarchyPage.qml must declare explicit LV.PageRouter route entries for the hierarchy body and note-list body.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("property int backSwipeSessionId: -1")) &&
+            mobilePageText.contains(
+                QStringLiteral("readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter")) &&
+            mobilePageText.contains(QStringLiteral("readonly property int backSwipeEdgeWidth: LV.Theme.gap24")) &&
+            mobilePageText.contains(
+                QStringLiteral("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.noteListRoutePath")),
+        "MobileHierarchyPage.qml must derive mobile note-list state from the scaffold PageRouter instead of a private route-memory stack.");
+    QVERIFY2(
+        mobilePageText.contains(
+            QStringLiteral("bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath")) &&
+            mobilePageText.contains(QStringLiteral("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes")) &&
+            mobilePageText.contains(
+                QStringLiteral("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive")) &&
+            mobilePageText.contains(
+                QStringLiteral("compactLeadingActionVisible: mobileHierarchyPage.noteListPageActive")),
+        "MobileHierarchyPage.qml must drive scaffold body routing and compact chrome from the shared mobile PageRouter state.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("function requestBackToHierarchy()")) &&
+            mobilePageText.contains(QStringLiteral("function requestOpenNoteList(item, itemId, index)")) &&
+            mobilePageText.contains(QStringLiteral("function routeToHierarchyRoot()")) &&
+            mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")),
+        "MobileHierarchyPage.qml must expose explicit open/back helpers and route the compact leading action into hierarchy-page return.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("LV.PageTransitionController {")) &&
+            mobilePageText.contains(QStringLiteral("router: mobileScaffold.activePageRouter")) &&
+            mobilePageText.contains(QStringLiteral("function beginBackSwipeGesture(eventData)")) &&
+            mobilePageText.contains(QStringLiteral("function updateBackSwipeGesture(eventData)")) &&
+            mobilePageText.contains(QStringLiteral("function finishBackSwipeGesture(eventData, cancelled)")) &&
+            mobilePageText.contains(QStringLiteral("pageTransitionController.shouldCommit(")),
+        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController instead of mutating ad-hoc stack records.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("onHierarchyItemActivated: function (item, itemId, index)")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenNoteList(item, itemId, index);")) &&
+            mobilePageText.contains(QStringLiteral("mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);")),
+        "MobileHierarchyPage.qml must transition into the mobile note-list body by pushing the note-list route onto the LV.PageRouter stack.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("id: noteListBodyComponent")) &&
+            mobilePageText.contains(QStringLiteral("PanelView.ListBarLayout {")) &&
+            mobilePageText.contains(QStringLiteral("activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex")) &&
+            mobilePageText.contains(QStringLiteral("headerVisible: false")) &&
+            mobilePageText.contains(QStringLiteral("noteListModel: mobileHierarchyPage.activeNoteListModel")) &&
+            mobilePageText.contains(QStringLiteral("searchText: mobileHierarchyPage.statusSearchText")),
+        "MobileHierarchyPage.qml must reuse ListBarLayout with the shared note-list model while hiding the desktop-only list header so the compact status bar owns mobile search.");
+    QVERIFY2(
+            mobilePageText.contains(QStringLiteral("id: backSwipeEdgeZone")) &&
+            mobilePageText.contains(QStringLiteral("visible: mobileHierarchyPage.backNavigationAvailable")) &&
+            mobilePageText.contains(QStringLiteral("width: visible ? mobileHierarchyPage.backSwipeEdgeWidth : 0")) &&
+            mobilePageText.contains(QStringLiteral("trigger: \"touchStarted\"")) &&
+            mobilePageText.contains(QStringLiteral("trigger: \"touchUpdated\"")) &&
+            mobilePageText.contains(QStringLiteral("trigger: \"touchEnded\"")) &&
+            mobilePageText.contains(QStringLiteral("trigger: \"touchCancelled\"")) &&
+            !mobilePageText.contains(QStringLiteral("DragHandler {")),
+        "MobileHierarchyPage.qml must expose left-edge LV.EventListener touch hooks so the mobile back swipe drives the LVRS gesture runtime instead of a local DragHandler.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("onActiveNoteListModelChanged: {")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.routeToHierarchyRoot();")),
+        "MobileHierarchyPage.qml must fall back to the hierarchy route when the resolved note-list model disappears.");
+
+    const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ListBarLayout.qml"));
+    QFile listBarLayoutFile(listBarLayoutPath);
+    QVERIFY2(listBarLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(listBarLayoutPath));
+    const QString listBarLayoutText = QString::fromUtf8(listBarLayoutFile.readAll());
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property bool headerVisible: true")) &&
+            listBarLayoutText.contains(
+                QStringLiteral("Layout.preferredHeight: listBarLayout.headerVisible ? 24 : 0")) &&
+            listBarLayoutText.contains(QStringLiteral("visible: listBarLayout.headerVisible")),
+        "ListBarLayout.qml must expose a headerVisible switch so mobile note-list pages can reuse the shared note-model wiring without mounting the desktop header frame.");
 }
 
 void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized()

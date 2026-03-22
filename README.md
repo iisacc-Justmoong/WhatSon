@@ -26,8 +26,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - iOS onboarding now follows the same direct-filesystem vault principle used by Obsidian mobile inside the active app
   session: once Files grants access to a `.wshub`, `src/app/platform/Apple/AppleSecurityScopedResourceAccess.*`
   opens a security-scoped resource session and the runtime reads and writes the real `.wshub` directory in place
-  instead of going through a copied mount. iOS does not expose security-scoped bookmark restoration APIs here, so
-  reopening the same external Files-backed hub after a cold relaunch still requires the user to select it again.
+  instead of going through a copied mount. WhatSon also persists an implicit iOS bookmark for that Files-backed hub
+  scope and restores it during startup preflight before deciding whether onboarding is needed.
 - The onboarding controller now preserves the raw fully-encoded Android picker URI before any desktop path
   normalization runs, so opaque SAF providers still reach the Android document backend instead of being rejected as
   non-mountable local paths.
@@ -104,8 +104,9 @@ WhatSon is an LVRS-based Qt Quick application.
   that note.
 - The note list now follows the same rule for pointer ownership: while a note row is pressed, `ListView` temporarily
   stops drag-scrolling so the delegate `DragHandler` can win first and begin the `whatson.library.note` drag cleanly.
-- The same note delegates now use `Drag.Automatic` and publish `application/x-whatson-note-id` mime data, so the Qt
-  drag session follows the pointer even though the fixed LVRS note row does not translate across the list viewport.
+- The same note delegates now use `Drag.Internal`, keep publishing `application/x-whatson-note-id` mime data, and
+  mount an overlay-parented `NoteListItem` preview in the active visual state so the grabbed card itself follows the
+  pointer instead of falling back to the platform note-id tooltip.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
   `Folder1`.
 
@@ -236,7 +237,7 @@ WhatSon is an LVRS-based Qt Quick application.
 
 ## Theme Token Usage
 
-- `NoteListItem.qml`, `ListBarLayout.qml`, `MobileNormalLayout.qml`, `NavigationModeBar.qml`, and
+- `NoteListItem.qml`, `ListBarLayout.qml`, `MobilePageScaffold.qml`, `MobileHierarchyPage.qml`, `NavigationModeBar.qml`, and
   `NavigationEditorViewBar.qml` consume LVRS theme tokens for label typography and accent colors.
 - Local hardcoded font-family names and ad-hoc RGBA/hex UI colors are not part of the view contract for those panels;
   use `LV.Label`, `LV.Theme.fontBody`, and the matching `LV.Theme` color tokens instead.
@@ -331,8 +332,8 @@ accepts the `.wshub` package root, a parent directory that contains exactly one 
 existing `.wshub` bundle so mobile document pickers can promote package-internal selections back to the hub root.
 On iOS the native Files picker still provides security-scoped document URLs, so onboarding now starts a security-scoped
 resource session before creating or loading a `.wshub` and retains access to the resolved hub root for the rest of the
-app session. After a cold relaunch the same external Files-backed hub may need to be selected again, because iOS does
-not expose the bookmark restoration APIs used on macOS for sandbox reopening in this code path. Mobile onboarding also
+app session. The selected Files scope is also persisted as an implicit bookmark so startup can restore that access and
+reopen the same external `.wshub` without replaying onboarding when the bookmark remains valid. Mobile onboarding also
 switches hub creation to a directory-picker flow and synthesizes a unique
 `Untitled*.wshub` target path inside the chosen folder, because iOS native file dialogs only implement the open path
 and native mobile pickers diverge from desktop save-dialog semantics. Existing hub selection now keeps the iOS folder
@@ -527,21 +528,50 @@ for hub/note hierarchy payloads.
   `main.cpp` injects `panelViewModelRegistry`, and each panel binds its own key
   (`panelViewModelRegistry.panelViewModel("<panel-key>")`) to a dedicated `PanelViewModel` instance.
 - The navigation add surfaces share one `create-note` hook path:
-  `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileNormalLayout.qml`
+  `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileHierarchyPage.qml`
   all route into `LibraryHierarchyViewModel::createEmptyNote()`.
-- The mobile first-screen shell no longer paints a private top/bottom chrome. `MobileNormalLayout.qml` now composes
-  shared `NavigationBarLayout.qml` (`compactMode: true`), `HierarchySidebarLayout.qml`, and `StatusBarLayout.qml`,
-  so the floating top bar, hierarchy column, and bottom add-note bar all stay on the same navigation/sidebar model
-  contracts used by the desktop shell.
-- The node `174:4986` mobile shell now follows the Figma stack contract directly: `16px` outer inset and `24px`
-  section spacing are owned by `MobileNormalLayout.qml`, the compact navigation frame stays `24px` high on
-  `panelBackground10`, the hierarchy column stays on the same `panelBackground01` canvas as the mobile root instead of
-  reusing the desktop `panelBackground04` block, keeps the shared `HierarchySidebarLayout.qml` defaults for hierarchy
-  padding and toolbar-to-list spacing instead of injecting mobile-only gap overrides, keeps the shared hierarchy footer and editable contract intact, and the compact status bar resolves to a `20px` frame with the existing add-note
-  affordance on the trailing control-height slot.
+- Mobile workspace views now live under `src/app/qml/view/mobile/**`. `src/app/qml/view/mobile/MobilePageScaffold.qml`
+  keeps the top navigation bar and the bottom status/add-note bar persistent across mobile workspace pages, while
+  `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` now mounts the node `174:5026` hierarchy body and the
+  node `174:5169` note-list body through an internal `LV.PageRouter` inside that scaffold.
+- `MobilePageScaffold.qml` composes the shared `NavigationBarLayout.qml` (`compactMode: true`) and
+  `StatusBarLayout.qml`, so mobile pages reuse the same LVRS navigation/sidebar contracts as the desktop shell instead
+  of redrawing private chrome.
+- The compact search field inside `StatusBarLayout.qml` now declares the LVRS `shapeCylinder` input style, so the
+  mobile bottom bar keeps the pill-shaped search affordance from the shared LVRS component set instead of a local
+  rectangle-specific input variant.
+- `MobilePageScaffold.qml` now keeps the token-only page paddings (`16 / 48 / 16`) but reduces the scaffold-level
+  spacing between the compact navigation bar, the routed page body, and the compact
+  status/add-note bar.
+- `MobileHierarchyPage.qml` disables LVRS `usePlatformSafeMargin`, keeps the hierarchy column on the same `panelBackground01` canvas as the mobile root, follows the Figma `174:5026` hierarchy-local `gap2` spacing for toolbar/search/list, applies token-only body paddings (`16 / 48 / 16` via LVRS gap composition), shows the compact top-right add-folder affordance, overrides the shared hierarchy shell geometry to `0 / 0 / 2 / 2` for toolbar/search/list spacing, and hides the shared hierarchy footer on mobile.
+- The same `MobileHierarchyPage.qml` now mounts the mobile note-list body through the shared `ListBarLayout.qml`
+  contract instead of duplicating note delegates locally: it binds `SidebarHierarchyViewModel.resolvedNoteListModel`,
+  hides the desktop list header with `headerVisible: false`, keeps the note-list body on the same
+  `panelBackground01` canvas, and routes hierarchy row taps into that note-list body.
+- `MobilePageScaffold.qml` and `NavigationBarLayout.qml` expose a compact leading action slot so the mobile note-list
+  body can show a back affordance while the hierarchy page keeps the compact add-folder action on the right.
+- `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
+  drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
+  enum plus route-memory copies.
+- `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
+  `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so mobile back
+  navigation follows the patched LVRS routing stack and gesture runtime instead of a local `DragHandler`.
+- The same `MobileHierarchyPage.qml` now pins the hierarchy header stack to the exact Figma `174:5026` rhythm:
+  `toolbar 20 / gap 2 / search 18 / gap 2 / hierarchy list`, instead of inheriting the shared desktop
+  `24px` search-header frame minimum.
+- The desktop `BodyLayout.qml` explicitly keeps `HierarchySidebarLayout.searchFieldVisible: true`, so the shared
+  hierarchy search header remains visible on the desktop workspace while mobile still controls that affordance per
+  routed page.
+- `SidebarHierarchyView.qml` now lets the embedded LVRS `Hierarchy` consume its own internal `20px` toolbar reserve and
+  only adds the explicit `searchHeaderTopGap + searchHeaderMinHeight + searchListGap` when the shared search header is
+  visible, removing the duplicated toolbar-height gap that previously appeared under the search bar on both desktop and
+  mobile.
 - `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
   existing context-menu button, while `NavigationBarLayout.qml` keeps the navigation mode combo on the shared
-  `NavigationModeViewModel` without replacing the shared hierarchy footer actions.
+  `NavigationModeViewModel` without replacing the shared hierarchy footer actions. The compact control menu anchors
+  from the trigger's bottom-right corner, the compact navigation right group resolves in the Figma order `menu ->
+  new folder`, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
+  budget on mobile.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
   `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.

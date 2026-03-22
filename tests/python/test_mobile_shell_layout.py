@@ -16,6 +16,12 @@ class MobileShellLayoutTests(unittest.TestCase):
         mobile_layout_text = (
             REPO_ROOT / "src/app/qml/view/panels/MobileNormalLayout.qml"
         ).read_text(encoding="utf-8")
+        mobile_scaffold_text = (
+            REPO_ROOT / "src/app/qml/view/mobile/MobilePageScaffold.qml"
+        ).read_text(encoding="utf-8")
+        mobile_page_text = (
+            REPO_ROOT / "src/app/qml/view/mobile/pages/MobileHierarchyPage.qml"
+        ).read_text(encoding="utf-8")
         list_bar_header_text = (
             REPO_ROOT / "src/app/qml/view/panels/ListBarHeader.qml"
         ).read_text(encoding="utf-8")
@@ -41,15 +47,23 @@ class MobileShellLayoutTests(unittest.TestCase):
 
         self.assertIn("signal compactAddFolderRequested", navigation_bar_text)
         self.assertIn("property bool compactAddFolderVisible: false", navigation_bar_text)
+        self.assertIn("signal compactLeadingActionRequested", navigation_bar_text)
+        self.assertIn("property bool compactLeadingActionVisible: false", navigation_bar_text)
+        self.assertIn('property string compactLeadingActionIconName: "generalchevronLeft"', navigation_bar_text)
         self.assertIn("readonly property int compactLeftGroupSpacing: LV.Theme.gap4", navigation_bar_text)
         self.assertIn("readonly property int compactRightGroupSpacing: LV.Theme.gap12", navigation_bar_text)
+        self.assertIn("iconName: navigationBar.compactLeadingActionIconName", navigation_bar_text)
         self.assertIn('iconName: "generalsettings"', navigation_bar_text)
         self.assertIn("showLabel: false", navigation_bar_text)
         self.assertIn('iconName: "nodesnewFolder"', navigation_bar_text)
+        self.assertIn("navigationBar.compactLeadingActionRequested()", navigation_bar_text)
         self.assertIn("navigationBar.compactAddFolderRequested();", navigation_bar_text)
         self.assertIn("visible: navigationBar.compactMode", navigation_bar_text)
         self.assertIn("property color compactSurfaceColor: LV.Theme.panelBackground10", navigation_bar_text)
         self.assertIn("radius: navigationBar.compactMode ? LV.Theme.radiusXl * 2 : LV.Theme.gapNone", navigation_bar_text)
+        compact_loader_index = navigation_bar_text.index("Loader {", navigation_bar_text.index("spacing: navigationBar.compactRightGroupSpacing"))
+        compact_add_folder_index = navigation_bar_text.index('iconName: "nodesnewFolder"')
+        self.assertLess(compact_loader_index, compact_add_folder_index)
 
         self.assertIn("property bool showLabel: true", mode_bar_text)
         self.assertIn("visible: modeBar.showLabel", mode_bar_text)
@@ -59,6 +73,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int compactHorizontalInset: LV.Theme.gapNone", status_bar_text)
         self.assertIn("property int compactFieldRadius: LV.Theme.radiusControl", status_bar_text)
         self.assertIn("anchors.fill: parent", status_bar_text)
+        self.assertIn("shapeStyle: shapeCylinder", status_bar_text)
         self.assertIn('statusBar.requestViewHook("create-note");', status_bar_text)
         self.assertIn("statusBar.createNoteRequested();", status_bar_text)
 
@@ -71,6 +86,8 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int searchHeaderVerticalInset: LV.Theme.gap2", hierarchy_layout_text)
         self.assertIn("property int verticalInset: LV.Theme.gap2", hierarchy_layout_text)
         self.assertIn("function requestCreateFolder()", hierarchy_layout_text)
+        self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_layout_text)
+        self.assertIn("hierarchyView.hierarchyItemActivated(item, itemId, index);", hierarchy_layout_text)
         self.assertNotIn("property bool hierarchyEditable: true", hierarchy_layout_text)
         self.assertIn(
             "hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable",
@@ -85,6 +102,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int searchListGap: LV.Theme.gapNone", hierarchy_view_text)
         self.assertIn("property int searchHeaderVerticalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("property int verticalInset: LV.Theme.gap2", hierarchy_view_text)
+        self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_view_text)
         self.assertIn("PanelView.ListBarHeader", hierarchy_view_text)
         self.assertIn("frameMinHeight: sidebarHierarchyView.searchHeaderMinHeight", hierarchy_view_text)
         self.assertIn("outerHorizontalInset: sidebarHierarchyView.searchHeaderHorizontalInset", hierarchy_view_text)
@@ -94,6 +112,14 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("return clone;", hierarchy_view_text)
         self.assertIn("return projectedModel;", hierarchy_view_text)
         self.assertIn("hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap", hierarchy_view_text)
+        self.assertIn(
+            "anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap : 0)",
+            hierarchy_view_text,
+        )
+        self.assertNotIn(
+            "sidebarHierarchyView.toolbarButtonSize + sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap",
+            hierarchy_view_text,
+        )
 
         self.assertIn("readonly property int actionButtonSize: LV.Theme.gap20", list_bar_header_text)
         self.assertIn("property int frameMinHeight: LV.Theme.gap24", list_bar_header_text)
@@ -105,26 +131,128 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int outerVerticalInset: LV.Theme.gap2", list_bar_header_text)
         self.assertIn("implicitHeight: Math.max(listBarHeader.frameMinHeight, headerRow.implicitHeight + listBarHeader.outerVerticalInset * 2)", list_bar_header_text)
         self.assertIn("anchors.topMargin: listBarHeader.outerVerticalInset", list_bar_header_text)
+        self.assertIn("mode: searchMode", list_bar_header_text)
+        self.assertIn("shapeStyle: shapeCylinder", list_bar_header_text)
+        self.assertNotIn("readonly property int inlineFieldSearchIconSize", list_bar_header_text)
+        self.assertNotIn("cornerRadius: LV.Theme.radiusControl", list_bar_header_text)
+        self.assertNotIn("searchIconVisible: false", list_bar_header_text)
+        self.assertNotIn("trailingItems: Item {", list_bar_header_text)
 
-        self.assertIn("NavigationBarLayout {", mobile_layout_text)
-        self.assertIn("compactMode: true", mobile_layout_text)
-        self.assertNotIn("compactAddFolderVisible: true", mobile_layout_text)
-        self.assertIn("HierarchySidebarLayout {", mobile_layout_text)
-        self.assertNotIn("footerVisible: false", mobile_layout_text)
-        self.assertNotIn("hierarchyEditable: false", mobile_layout_text)
-        self.assertIn("panelColor: mobileNormalLayout.canvasColor", mobile_layout_text)
-        self.assertIn("searchFieldVisible: true", mobile_layout_text)
-        self.assertIn("toolbarFrameWidth: width", mobile_layout_text)
-        self.assertIn("StatusBarLayout {", mobile_layout_text)
-        self.assertIn("onCreateNoteRequested: mobileNormalLayout.requestCreateNote()", mobile_layout_text)
-        self.assertIn("windowInteractions.createNoteFromShortcut();", mobile_layout_text)
-        self.assertIn("anchors.margins: mobileNormalLayout.contentInset", mobile_layout_text)
-        self.assertIn("spacing: mobileNormalLayout.sectionSpacing", mobile_layout_text)
+        self.assertIn('import "../mobile/pages" as MobilePageView', mobile_layout_text)
+        self.assertIn('panelViewModelRegistry.panelViewModel("MobileNormalLayout")', mobile_layout_text)
+        self.assertIn("MobilePageView.MobileHierarchyPage {", mobile_layout_text)
+        self.assertIn('onViewHookRequested: mobileNormalLayout.requestViewHook("mobile-hierarchy-page")', mobile_layout_text)
+
+        self.assertIn("readonly property var activePageRouter: bodyRouter", mobile_scaffold_text)
+        self.assertIn("readonly property var bodyItem: bodyRouter.currentPageItem", mobile_scaffold_text)
+        self.assertIn("readonly property real bodyWidth: bodyRouter.width", mobile_scaffold_text)
+        self.assertIn('property string bodyInitialPath: "/"', mobile_scaffold_text)
+        self.assertIn("property var bodyRoutes: []", mobile_scaffold_text)
+        self.assertIn("readonly property int contentHorizontalPadding: LV.Theme.gap16", mobile_scaffold_text)
+        self.assertIn("readonly property int contentTopPadding: LV.Theme.gap24 + LV.Theme.gap24", mobile_scaffold_text)
+        self.assertIn("readonly property int contentBottomPadding: LV.Theme.gap16", mobile_scaffold_text)
+        self.assertIn("readonly property int sectionSpacing: LV.Theme.gap2", mobile_scaffold_text)
+        self.assertIn("spacing: mobilePageScaffold.sectionSpacing", mobile_scaffold_text)
+        self.assertIn("PanelView.NavigationBarLayout {", mobile_scaffold_text)
+        self.assertIn("property bool compactAddFolderVisible: true", mobile_scaffold_text)
+        self.assertIn("property bool compactLeadingActionVisible: false", mobile_scaffold_text)
+        self.assertIn('property string compactLeadingActionIconName: "generalchevronLeft"', mobile_scaffold_text)
+        self.assertIn("compactAddFolderVisible: mobilePageScaffold.compactAddFolderVisible", mobile_scaffold_text)
+        self.assertIn("compactLeadingActionVisible: mobilePageScaffold.compactLeadingActionVisible", mobile_scaffold_text)
+        self.assertIn("compactMode: true", mobile_scaffold_text)
+        self.assertIn("onCompactAddFolderRequested: mobilePageScaffold.compactAddFolderRequested()", mobile_scaffold_text)
+        self.assertIn("onCompactLeadingActionRequested: mobilePageScaffold.compactLeadingActionRequested()", mobile_scaffold_text)
+        self.assertIn("LV.PageRouter {", mobile_scaffold_text)
+        self.assertIn("id: bodyRouter", mobile_scaffold_text)
+        self.assertIn("initialPath: mobilePageScaffold.bodyInitialPath", mobile_scaffold_text)
+        self.assertIn("registerAsGlobalNavigator: false", mobile_scaffold_text)
+        self.assertIn("routes: mobilePageScaffold.bodyRoutes", mobile_scaffold_text)
+        self.assertIn("PanelView.StatusBarLayout {", mobile_scaffold_text)
+        self.assertIn("onCreateNoteRequested: mobilePageScaffold.createNoteRequested()", mobile_scaffold_text)
+        self.assertNotIn("Loader {", mobile_scaffold_text)
+
+        self.assertIn('import ".." as MobileView', mobile_page_text)
+        self.assertIn("MobileView.MobilePageScaffold {", mobile_page_text)
+        self.assertIn("readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel", mobile_page_text)
+        self.assertIn("resolvedNoteListModel", mobile_page_text)
+        self.assertIn('readonly property string hierarchyRoutePath: "/mobile/hierarchy"', mobile_page_text)
+        self.assertIn('readonly property string noteListRoutePath: "/mobile/note-list"', mobile_page_text)
+        self.assertIn("readonly property var mobileBodyRoutes: [", mobile_page_text)
+        self.assertIn('"path": mobileHierarchyPage.hierarchyRoutePath', mobile_page_text)
+        self.assertIn('"component": hierarchyBodyComponent', mobile_page_text)
+        self.assertIn('"path": mobileHierarchyPage.noteListRoutePath', mobile_page_text)
+        self.assertIn('"component": noteListBodyComponent', mobile_page_text)
+        self.assertIn("readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter", mobile_page_text)
+        self.assertIn("property int backSwipeSessionId: -1", mobile_page_text)
+        self.assertIn("readonly property int backSwipeEdgeWidth: LV.Theme.gap24", mobile_page_text)
+        self.assertIn("readonly property bool noteListPageActive: mobileScaffold.activePageRouter", mobile_page_text)
+        self.assertIn("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.noteListRoutePath", mobile_page_text)
+        self.assertIn("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive", mobile_page_text)
+        self.assertIn("compactLeadingActionVisible: mobileHierarchyPage.noteListPageActive", mobile_page_text)
+        self.assertIn("bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath", mobile_page_text)
+        self.assertIn("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes", mobile_page_text)
+        self.assertIn("onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()", mobile_page_text)
+        self.assertIn("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()", mobile_page_text)
+        self.assertIn("onCreateNoteRequested: mobileHierarchyPage.requestCreateNote()", mobile_page_text)
+        self.assertIn("function beginBackSwipeGesture(eventData)", mobile_page_text)
+        self.assertIn("function cancelBackSwipeGesture(eventData)", mobile_page_text)
+        self.assertIn("function finishBackSwipeGesture(eventData, cancelled)", mobile_page_text)
+        self.assertIn("function requestBackToHierarchy()", mobile_page_text)
+        self.assertIn("function requestOpenNoteList(item, itemId, index)", mobile_page_text)
+        self.assertIn("function routeToHierarchyRoot()", mobile_page_text)
+        self.assertIn("function updateBackSwipeGesture(eventData)", mobile_page_text)
+        self.assertIn("Component {", mobile_page_text)
+        self.assertIn("id: hierarchyBodyComponent", mobile_page_text)
+        self.assertIn("PanelView.HierarchySidebarLayout {", mobile_page_text)
+        self.assertIn("footerVisible: false", mobile_page_text)
+        self.assertIn("horizontalInset: LV.Theme.gapNone", mobile_page_text)
+        self.assertIn("verticalInset: LV.Theme.gapNone", mobile_page_text)
+        self.assertIn("searchFieldVisible: true", mobile_page_text)
+        self.assertIn("searchHeaderHorizontalInset: LV.Theme.gapNone", mobile_page_text)
+        self.assertIn("searchHeaderMinHeight: LV.Theme.gap18", mobile_page_text)
+        self.assertIn("searchHeaderVerticalInset: LV.Theme.gapNone", mobile_page_text)
+        self.assertIn("searchHeaderTopGap: LV.Theme.gap2", mobile_page_text)
+        self.assertIn("searchListGap: LV.Theme.gap2", mobile_page_text)
+        self.assertIn("toolbarFrameWidth: width", mobile_page_text)
+        self.assertIn("onHierarchyItemActivated: function (item, itemId, index) {", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.requestOpenNoteList(item, itemId, index);", mobile_page_text)
+        self.assertIn("LV.PageTransitionController {", mobile_page_text)
+        self.assertIn("router: mobileScaffold.activePageRouter", mobile_page_text)
+        self.assertIn("onCommitted: mobileHierarchyPage.requestViewHook()", mobile_page_text)
+        self.assertIn("id: backSwipeEdgeZone", mobile_page_text)
+        self.assertIn("visible: mobileHierarchyPage.backNavigationAvailable", mobile_page_text)
+        self.assertIn("width: visible ? mobileHierarchyPage.backSwipeEdgeWidth : 0", mobile_page_text)
+        self.assertIn('trigger: "touchStarted"', mobile_page_text)
+        self.assertIn('trigger: "touchUpdated"', mobile_page_text)
+        self.assertIn('trigger: "touchEnded"', mobile_page_text)
+        self.assertIn('trigger: "touchCancelled"', mobile_page_text)
+        self.assertIn("pageTransitionController.beginBack({", mobile_page_text)
+        self.assertIn("pageTransitionController.shouldCommit(", mobile_page_text)
+        self.assertIn("pageTransitionController.finish(shouldCommit);", mobile_page_text)
+        self.assertIn("pageTransitionController.update(progress, {", mobile_page_text)
+        self.assertIn("id: noteListBodyComponent", mobile_page_text)
+        self.assertIn("activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex", mobile_page_text)
+        self.assertIn("headerVisible: false", mobile_page_text)
+        self.assertIn("noteListModel: mobileHierarchyPage.activeNoteListModel", mobile_page_text)
+        self.assertIn("searchText: mobileHierarchyPage.statusSearchText", mobile_page_text)
+        self.assertIn("onActiveNoteListModelChanged:", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.routeToHierarchyRoot();", mobile_page_text)
+        self.assertIn("if (mobileScaffold.bodyItem && mobileScaffold.bodyItem.requestCreateFolder !== undefined)", mobile_page_text)
+        self.assertIn("mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);", mobile_page_text)
+        self.assertIn("mobileScaffold.activePageRouter.back();", mobile_page_text)
+        self.assertIn("mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);", mobile_page_text)
+        self.assertIn("windowInteractions.createNoteFromShortcut();", mobile_page_text)
+        self.assertNotIn("routeMemoryStack", mobile_page_text)
+        self.assertNotIn("activeMobilePage", mobile_page_text)
+        self.assertNotIn("DragHandler {", mobile_page_text)
+        self.assertNotIn("bodyComponent: hierarchyBodyComponent", mobile_page_text)
 
         self.assertIn("navigationModeViewModel: applicationWindow.navigationModeVm", main_text)
         self.assertIn("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm", main_text)
         self.assertIn("toolbarIconNames: applicationWindow.hierarchyToolbarIconNames", main_text)
         self.assertIn("windowInteractions: windowInteractions", main_text)
+        self.assertIn('import "view/mobile/pages" as MobilePageView', main_text)
+        self.assertIn("MobilePageView.MobileHierarchyPage {", main_text)
         self.assertNotIn("import Qt.labs.platform as Platform", main_text)
         self.assertIn('source: applicationWindow.platform === "osx"', main_text)
         self.assertIn('Qt.resolvedUrl("window/MacNativeMenuBar.qml")', main_text)
@@ -137,16 +265,64 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("root.hostWindow.showOnboardingWindow();", mac_menu_bar_text)
 
         self.assertNotIn('iconName: "audioToAudio"', control_bar_text)
+        self.assertIn('"keyVisible": false', control_bar_text)
+        self.assertEqual(
+            control_bar_text.count('"keyVisible": false'),
+            control_bar_text.count('"showChevron": false'),
+        )
+        self.assertIn(
+            "applicationControlContextMenu.openFor(",
+            control_bar_text,
+        )
+        self.assertIn(
+            "applicationControlMenuButton.width,",
+            control_bar_text,
+        )
+        self.assertIn(
+            "applicationControlMenuButton.height + applicationControlBar.menuYOffset",
+            control_bar_text,
+        )
 
     def test_mobile_shell_contract_is_documented(self) -> None:
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
         agents_text = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
-        self.assertIn("shared `NavigationBarLayout.qml` (`compactMode: true`)", readme_text)
-        self.assertIn("keeps the shared hierarchy footer and editable contract intact", readme_text)
+        self.assertRegex(
+            readme_text,
+            re.compile(
+                r"shared `NavigationBarLayout\.qml`\s+\(`compactMode: true`\)"
+            ),
+        )
+        self.assertIn("`MobilePageScaffold.qml`", readme_text)
+        self.assertIn("`MobileHierarchyPage.qml`", readme_text)
+        self.assertIn("top navigation bar and the bottom status/add-note bar persistent", readme_text)
+        self.assertIn("back affordance", readme_text)
+        self.assertIn("note-list body", readme_text)
+        self.assertIn("`LV.PageRouter`", readme_text)
+        self.assertIn("`LV.PageTransitionController`", readme_text)
+        self.assertIn("`LV.EventListener` touch events", readme_text)
+        self.assertIn("hides the shared hierarchy footer on mobile", readme_text)
         self.assertIn("emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)", readme_text)
-        self.assertIn("same `panelBackground01` canvas as the mobile root", readme_text)
+        self.assertIn("disables LVRS `usePlatformSafeMargin`", readme_text)
+        self.assertRegex(
+            readme_text,
+            re.compile(
+                r"keeps the hierarchy column on the same `panelBackground01` canvas as the\s+mobile root"
+            ),
+        )
+        self.assertRegex(
+            readme_text,
+            re.compile(
+                r"compact control menu anchors\s+from the trigger's bottom-right corner"
+            ),
+        )
+        self.assertRegex(
+            readme_text,
+            re.compile(
+                r"action-only control entries suppress the LVRS shortcut column"
+            ),
+        )
         self.assertIn("stays `24px` high on `panelBackground10`", architecture_text)
         self.assertRegex(
             architecture_text,
@@ -154,8 +330,34 @@ class MobileShellLayoutTests(unittest.TestCase):
         )
         self.assertIn("system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked`", architecture_text)
         self.assertIn("resolves to a `20px`", architecture_text)
-        self.assertIn("shared `HierarchySidebarLayout.qml` defaults", architecture_text)
-        self.assertIn("node `174:4986`", agents_text)
+        self.assertIn("`MobilePageScaffold.qml`", architecture_text)
+        self.assertIn("`MobileHierarchyPage.qml`", architecture_text)
+        self.assertIn("compact leading action", architecture_text)
+        self.assertIn("note-list body", architecture_text)
+        self.assertIn("`LV.PageRouter`", architecture_text)
+        self.assertIn("`LV.PageTransitionController`", architecture_text)
+        self.assertIn("`LV.EventListener`", architecture_text)
+        self.assertIn("disables `usePlatformSafeMargin`", architecture_text)
+        self.assertRegex(
+            architecture_text,
+            re.compile(r"keeps the compact navigation bar and compact status bar mounted"),
+        )
+        self.assertRegex(
+            architecture_text,
+            re.compile(
+                r"`gap2` VStack spacing"
+            ),
+        )
+        self.assertRegex(
+            architecture_text,
+            re.compile(r"anchors from the trigger's bottom-right point"),
+        )
+        self.assertRegex(
+            architecture_text,
+            re.compile(r"disable\w* the\s+default LVRS shortcut placeholder column"),
+        )
+        self.assertIn("node `174:4987`", agents_text)
+        self.assertIn("node `174:5026`", agents_text)
 
 
 if __name__ == "__main__":

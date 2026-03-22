@@ -103,6 +103,7 @@ Item {
                 Layout.preferredWidth: hStack.sidebarVisible ? hStack.sidebarWidth : 0
                 horizontalInset: hStack.sidebarHorizontalInset
                 panelColor: hStack.sidebarColor
+                searchFieldVisible: true
                 sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
                 toolbarIconNames: hStack.toolbarIconNames
                 visible: hStack.sidebarVisible

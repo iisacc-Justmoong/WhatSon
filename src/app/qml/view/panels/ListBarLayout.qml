@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
@@ -10,10 +11,16 @@ Rectangle {
 
     property int activeToolbarIndex: 0
     readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
+    property bool headerVisible: true
     property color hintColor: LV.Theme.descriptionColor
     readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable
     property var noteDeletionViewModel: null
     property bool noteDragActive: false
+    property var noteDragPreviewDelegate: null
+    property real noteDragPreviewHotSpotX: 0
+    property real noteDragPreviewHotSpotY: 0
+    property real noteDragPreviewX: 0
+    property real noteDragPreviewY: 0
     property bool notePointerPressed: false
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
@@ -69,6 +76,23 @@ Rectangle {
         }
         if (listBarLayout.noteListModel.setSearchText !== undefined)
             listBarLayout.noteListModel.setSearchText(listBarLayout.searchText);
+    }
+    function beginNoteDragPreview(delegateItem, hotSpotX, hotSpotY) {
+        if (!delegateItem)
+            return;
+        listBarLayout.noteDragPreviewDelegate = delegateItem;
+        listBarLayout.noteDragPreviewHotSpotX = Math.max(0, Number(hotSpotX) || 0);
+        listBarLayout.noteDragPreviewHotSpotY = Math.max(0, Number(hotSpotY) || 0);
+        listBarLayout.updateNoteDragPreviewPosition(delegateItem, hotSpotX, hotSpotY);
+    }
+    function clearNoteDragPreview(delegateItem) {
+        if (delegateItem && listBarLayout.noteDragPreviewDelegate !== delegateItem)
+            return;
+        listBarLayout.noteDragPreviewDelegate = null;
+        listBarLayout.noteDragPreviewHotSpotX = 0;
+        listBarLayout.noteDragPreviewHotSpotY = 0;
+        listBarLayout.noteDragPreviewX = 0;
+        listBarLayout.noteDragPreviewY = 0;
     }
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -147,6 +171,14 @@ Rectangle {
         }
         noteDeletionBridge.focusedNoteId = "";
     }
+    function updateNoteDragPreviewPosition(delegateItem, localX, localY) {
+        if (!delegateItem || listBarLayout.noteDragPreviewDelegate !== delegateItem)
+            return;
+        const previewParent = noteDragPreview.parent ? noteDragPreview.parent : listBarLayout;
+        const mappedPoint = delegateItem.mapToItem(previewParent, Number(localX) || 0, Number(localY) || 0);
+        listBarLayout.noteDragPreviewX = Math.round((Number(mappedPoint.x) || 0) - listBarLayout.noteDragPreviewHotSpotX);
+        listBarLayout.noteDragPreviewY = Math.round((Number(mappedPoint.y) || 0) - listBarLayout.noteDragPreviewHotSpotY);
+    }
 
     color: panelColor
 
@@ -157,6 +189,7 @@ Rectangle {
     onNoteListModeChanged: applySearchTextToModel()
     onNoteListModelChanged: {
         listBarLayout.noteDragActive = false;
+        listBarLayout.clearNoteDragPreview(null);
         listBarLayout.notePointerPressed = false;
         listBarLayout.pendingSelectionIndex = -1;
         listBarLayout.pressedNoteIndex = -1;
@@ -173,6 +206,28 @@ Rectangle {
         deletionTarget: listBarLayout.noteDeletionViewModel
         noteListModel: listBarLayout.resolvedNoteListModel
     }
+    NoteListItem {
+        id: noteDragPreview
+
+        parent: Controls.Overlay.overlay ? Controls.Overlay.overlay : listBarLayout
+        visible: listBarLayout.noteDragActive && listBarLayout.noteDragPreviewDelegate !== null
+        z: 1000
+
+        active: true
+        bookmarkColor: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.bookmarkColor !== undefined && listBarLayout.noteDragPreviewDelegate.bookmarkColor !== null ? String(listBarLayout.noteDragPreviewDelegate.bookmarkColor) : ""
+        bookmarked: listBarLayout.noteDragPreviewDelegate ? Boolean(listBarLayout.noteDragPreviewDelegate.bookmarked) : false
+        displayDate: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.displayDate !== undefined && listBarLayout.noteDragPreviewDelegate.displayDate !== null ? String(listBarLayout.noteDragPreviewDelegate.displayDate) : ""
+        folders: listBarLayout.noteDragPreviewDelegate ? listBarLayout.normalizeEntries(listBarLayout.noteDragPreviewDelegate.folders) : []
+        image: listBarLayout.noteDragPreviewDelegate ? Boolean(listBarLayout.noteDragPreviewDelegate.image) : false
+        imageSource: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.imageSource !== undefined && listBarLayout.noteDragPreviewDelegate.imageSource !== null ? listBarLayout.noteDragPreviewDelegate.imageSource : ""
+        noteId: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.noteId !== undefined && listBarLayout.noteDragPreviewDelegate.noteId !== null ? String(listBarLayout.noteDragPreviewDelegate.noteId) : ""
+        opacity: 0.96
+        primaryText: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.primaryText !== undefined && listBarLayout.noteDragPreviewDelegate.primaryText !== null ? String(listBarLayout.noteDragPreviewDelegate.primaryText) : ""
+        tags: listBarLayout.noteDragPreviewDelegate ? listBarLayout.normalizeEntries(listBarLayout.noteDragPreviewDelegate.tags) : []
+        width: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.width !== undefined ? Number(listBarLayout.noteDragPreviewDelegate.width) || implicitWidth : implicitWidth
+        x: listBarLayout.noteDragPreviewX
+        y: listBarLayout.noteDragPreviewY
+    }
     Item {
         anchors.fill: parent
 
@@ -184,11 +239,13 @@ Rectangle {
                 id: topToolbar
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: 24
+                Layout.preferredHeight: listBarLayout.headerVisible ? 24 : 0
+                visible: listBarLayout.headerVisible
 
                 ListBarHeader {
                     anchors.fill: parent
                     searchText: listBarLayout.searchText
+                    visible: listBarLayout.headerVisible
 
                     onSearchSubmitted: function (text) {
                         listBarLayout.searchText = text;
@@ -237,11 +294,13 @@ Rectangle {
                         required property string noteId
                         required property string primaryText
                         required property var tags
+                        property real dragHotSpotX: width * 0.5
+                        property real dragHotSpotY: height * 0.5
 
                         Drag.active: noteDragHandler.active
-                        Drag.dragType: Drag.Automatic
-                        Drag.hotSpot.x: width * 0.5
-                        Drag.hotSpot.y: height * 0.5
+                        Drag.dragType: Drag.Internal
+                        Drag.hotSpot.x: noteItemDelegate.dragHotSpotX
+                        Drag.hotSpot.y: noteItemDelegate.dragHotSpotY
                         Drag.keys: ["whatson.library.note"]
                         Drag.mimeData: ({
                                 "application/x-whatson-note-id": noteItemDelegate.noteId,
@@ -279,10 +338,31 @@ Rectangle {
 
                             onActiveChanged: {
                                 listBarLayout.noteDragActive = active;
-                                if (active)
+                                if (active) {
+                                    noteItemDelegate.dragHotSpotX = Number(noteDragHandler.centroid.pressPosition.x) || width * 0.5;
+                                    noteItemDelegate.dragHotSpotY = Number(noteDragHandler.centroid.pressPosition.y) || height * 0.5;
+                                    listBarLayout.beginNoteDragPreview(
+                                                noteItemDelegate,
+                                                noteItemDelegate.dragHotSpotX,
+                                                noteItemDelegate.dragHotSpotY);
                                     listBarLayout.notePointerPressed = false;
+                                } else {
+                                    listBarLayout.clearNoteDragPreview(noteItemDelegate);
+                                }
                                 if (active && listBarLayout.pressedNoteIndex === noteItemDelegate.index)
                                     listBarLayout.pressedNoteIndex = -1;
+                            }
+                            onCentroidChanged: {
+                                if (!active)
+                                    return;
+                                listBarLayout.updateNoteDragPreviewPosition(
+                                            noteItemDelegate,
+                                            noteDragHandler.centroid.position.x,
+                                            noteDragHandler.centroid.position.y);
+                            }
+                            onCanceled: {
+                                listBarLayout.noteDragActive = false;
+                                listBarLayout.clearNoteDragPreview(noteItemDelegate);
                             }
                         }
                         TapHandler {

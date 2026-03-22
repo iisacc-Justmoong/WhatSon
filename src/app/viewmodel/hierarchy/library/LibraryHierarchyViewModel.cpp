@@ -770,15 +770,41 @@ namespace
         return -1;
     }
 
-    QStringList folderAssignmentForDrop(const QString& folderPath)
+    QStringList folderAssignmentForDrop(QStringList existingFolders, const QString& folderPath)
     {
-        const QString normalizedFolderPath = normalizeFolderPath(folderPath);
-        if (normalizedFolderPath.isEmpty())
+        QStringList assignedFolders;
+        assignedFolders.reserve(existingFolders.size() + 1);
+        QSet<QString> assignedFolderKeys;
+
+        auto appendFolder = [&assignedFolders, &assignedFolderKeys](
+                                const QString& folderValue,
+                                bool preserveOriginalValue)
+        {
+            const QString trimmedValue = folderValue.trimmed();
+            const QString normalizedFolderPath = normalizeFolderPath(trimmedValue);
+            const QString normalizedFolderKey = normalizeFolderLookupKey(trimmedValue);
+            if (normalizedFolderKey.isEmpty() || assignedFolderKeys.contains(normalizedFolderKey))
+            {
+                return;
+            }
+
+            assignedFolderKeys.insert(normalizedFolderKey);
+            assignedFolders.push_back(
+                preserveOriginalValue ? trimmedValue : normalizedFolderPath);
+        };
+
+        for (const QString& existingFolder : std::as_const(existingFolders))
+        {
+            appendFolder(existingFolder, true);
+        }
+
+        appendFolder(folderPath, false);
+        if (assignedFolders.isEmpty())
         {
             return {};
         }
 
-        return {normalizedFolderPath};
+        return assignedFolders;
     }
 
     void applyChevronByDepth(QVector<LibraryHierarchyItem>* items)
@@ -2298,7 +2324,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    headerStore.setFolders(folderAssignmentForDrop(targetFolderPath));
+    headerStore.setFolders(folderAssignmentForDrop(headerStore.folders(), targetFolderPath));
     headerStore.setLastModifiedAt(currentNoteTimestamp());
 
     WhatSonNoteHeaderCreator headerCreator(QFileInfo(headerPath).absolutePath(), QString());

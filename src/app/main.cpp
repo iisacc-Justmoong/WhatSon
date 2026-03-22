@@ -733,14 +733,17 @@ int main(int argc, char* argv[])
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
-        [&selectedHubStore, &updateWriteLeaseOwnership, &hubSyncController](const QString& hubPath)
+        [&onboardingHubController, &selectedHubStore, &updateWriteLeaseOwnership, &hubSyncController](const QString& hubPath)
         {
-            selectedHubStore.setSelectedHubPath(hubPath);
+            selectedHubStore.setSelectedHubSelection(
+                hubPath,
+                onboardingHubController.currentHubAccessBookmark());
             updateWriteLeaseOwnership(hubPath);
             hubSyncController.setCurrentHubPath(hubPath);
         });
 
-    const auto resolveStartupHubMountPath = [](const QString& hubPath, QString* errorMessage) -> QString
+    const auto resolveStartupHubMountPath =
+        [](const QString& hubPath, const QByteArray& hubAccessBookmark, QString* errorMessage) -> QString
     {
         const QString normalizedHubPath = hubPath.trimmed().isEmpty()
                                               ? QString()
@@ -786,6 +789,16 @@ int main(int argc, char* argv[])
         }
 
 #if defined(Q_OS_IOS)
+        QString restoredBookmarkPath;
+        QString bookmarkRestoreError;
+        if (!hubAccessBookmark.isEmpty())
+        {
+            WhatSon::Apple::SecurityScopedResourceAccess::restoreAccessFromBookmarkData(
+                hubAccessBookmark,
+                &restoredBookmarkPath,
+                &bookmarkRestoreError);
+        }
+
         QString iosAccessError;
         if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(
                 normalizedHubPath,
@@ -803,10 +816,12 @@ int main(int argc, char* argv[])
                 if (errorMessage != nullptr)
                 {
                     *errorMessage = iosAccessError.trimmed().isEmpty()
-                                        ? (parentAccessError.trimmed().isEmpty()
+                                        ? (bookmarkRestoreError.trimmed().isEmpty()
+                                               ? (parentAccessError.trimmed().isEmpty()
                                                ? QStringLiteral(
                                                      "iOS denied access to the stored WhatSon Hub path during startup.")
-                                               : parentAccessError.trimmed())
+                                                      : parentAccessError.trimmed())
+                                               : bookmarkRestoreError.trimmed())
                                         : iosAccessError.trimmed();
                 }
                 return {};
@@ -846,13 +861,22 @@ int main(int argc, char* argv[])
     bool startupHubMounted = false;
     const QString blueprintFallbackHubPath = resolveBlueprintHubPath();
     const QString startupHubSelectionPath = selectedHubStore.startupHubPath(blueprintFallbackHubPath);
+    const QByteArray startupHubAccessBookmark = selectedHubStore.selectedHubAccessBookmark();
     QString startupHubPath;
+    QByteArray startupHubAccessBookmarkInUse;
     const auto tryResolveStartupHubSelection =
-        [&resolveStartupHubMountPath, &startupHubMounted, &startupHubPath](const QString& selectionPath,
-                                                                           const QString& selectionLabel) -> bool
+        [&resolveStartupHubMountPath,
+         &startupHubMounted,
+         &startupHubPath,
+         &startupHubAccessBookmarkInUse](const QString& selectionPath,
+                                         const QByteArray& selectionBookmark,
+                                         const QString& selectionLabel) -> bool
     {
         QString startupMountError;
-        const QString resolvedStartupHubPath = resolveStartupHubMountPath(selectionPath, &startupMountError);
+        const QString resolvedStartupHubPath = resolveStartupHubMountPath(
+            selectionPath,
+            selectionBookmark,
+            &startupMountError);
         if (resolvedStartupHubPath.isEmpty())
         {
             if (!startupMountError.trimmed().isEmpty())
@@ -865,6 +889,7 @@ int main(int argc, char* argv[])
         }
 
         startupHubPath = resolvedStartupHubPath;
+        startupHubAccessBookmarkInUse = selectionBookmark;
         startupHubMounted = true;
         return true;
     };
@@ -873,6 +898,7 @@ int main(int argc, char* argv[])
     {
         const bool startupSelectionResolved = tryResolveStartupHubSelection(
             startupHubSelectionPath,
+            startupHubAccessBookmark,
             QStringLiteral("persisted"));
         if (!startupSelectionResolved
             && !blueprintFallbackHubPath.trimmed().isEmpty()
@@ -881,6 +907,7 @@ int main(int argc, char* argv[])
         {
             tryResolveStartupHubSelection(
                 blueprintFallbackHubPath,
+                {},
                 QStringLiteral("blueprint fallback"));
         }
     }
@@ -893,7 +920,7 @@ int main(int argc, char* argv[])
         {
             onboardingHubController.syncCurrentHubSelection(startupHubPath);
             onboardingHubController.completeWorkspaceTransition();
-            selectedHubStore.setSelectedHubPath(startupHubPath);
+            selectedHubStore.setSelectedHubSelection(startupHubPath, startupHubAccessBookmarkInUse);
             updateWriteLeaseOwnership(startupHubPath);
             hubSyncController.setCurrentHubPath(startupHubPath);
         }

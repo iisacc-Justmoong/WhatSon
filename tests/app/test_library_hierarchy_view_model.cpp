@@ -55,7 +55,7 @@ private
     void setDepthItems_emptyInput_preservesIndexedBuckets();
     void applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection();
-    void assignNoteToFolder_replacesExistingFolderValueWithDroppedTarget();
+    void assignNoteToFolder_preservesExistingFolderValuesAndAppendsDroppedTarget();
     void createEmptyNote_whenFolderSelected_createsScaffoldUpdatesIndexAndSelectsNote();
     void loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments();
     void loadFromWshub_applyHierarchyNodes_persistsLvrsEditableMove();
@@ -1988,7 +1988,7 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
         QStringLiteral("note-a"));
 }
 
-void LibraryHierarchyViewModelTest::assignNoteToFolder_replacesExistingFolderValueWithDroppedTarget()
+void LibraryHierarchyViewModelTest::assignNoteToFolder_preservesExistingFolderValuesAndAppendsDroppedTarget()
 {
     QString hubPath;
     QVERIFY(prepareIndexedLibraryHub(&hubPath));
@@ -2054,8 +2054,9 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_replacesExistingFolderVal
     QString parseError;
     QVERIFY2(headerParser.parse(QString::fromUtf8(betaHeaderFile.readAll()), &headerStore, &parseError),
              qPrintable(parseError));
-    QCOMPARE(headerStore.folders(), QStringList({QStringLiteral("Research/Competitor")}));
-    QVERIFY(!headerStore.folders().contains(QStringLiteral("Workspace")));
+    QCOMPARE(
+        headerStore.folders(),
+        QStringList({QStringLiteral("Workspace"), QStringLiteral("Research/Competitor")}));
 
     viewModel.setSelectedIndex(competitorIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);

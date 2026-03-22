@@ -330,6 +330,11 @@ QString OnboardingHubController::sessionState() const
     return m_sessionState;
 }
 
+QByteArray OnboardingHubController::currentHubAccessBookmark() const
+{
+    return m_currentHubAccessBookmark;
+}
+
 void OnboardingHubController::setCreateHubCallback(CreateHubCallback callback)
 {
     m_createHubCallback = std::move(callback);
@@ -367,6 +372,22 @@ bool OnboardingHubController::createHubAtUrl(const QUrl& hubUrl)
         emit operationFailed(m_lastError);
         return false;
     }
+
+#if defined(Q_OS_IOS)
+    const QByteArray accessBookmark = WhatSon::Apple::SecurityScopedResourceAccess::bookmarkDataForUrl(
+        hubUrl,
+        true,
+        &accessError);
+    if (accessBookmark.isEmpty())
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to persist access to the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        emit operationFailed(m_lastError);
+        return false;
+    }
+    setCurrentHubAccessBookmark(accessBookmark);
+#endif
 
     const QString requestedPackagePath = localPathFromUrl(hubUrl);
     if (requestedPackagePath.trimmed().isEmpty())
@@ -576,6 +597,23 @@ bool OnboardingHubController::prepareHubSelectionFromUrl(const QUrl& hubUrl)
         return false;
     }
 
+#if defined(Q_OS_IOS)
+    const QByteArray accessBookmark = WhatSon::Apple::SecurityScopedResourceAccess::bookmarkDataForUrl(
+        hubUrl,
+        false,
+        &accessError);
+    if (accessBookmark.isEmpty())
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to persist access to the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+    setCurrentHubAccessBookmark(accessBookmark);
+#endif
+
     const QString selectedPath = localPathFromUrl(hubUrl);
     const QString normalizedSelectedPath = normalizedAbsolutePath(selectedPath);
     if (normalizedSelectedPath.isEmpty())
@@ -746,6 +784,23 @@ bool OnboardingHubController::loadHubFromUrl(const QUrl& hubUrl)
         emit operationFailed(m_lastError);
         return false;
     }
+
+#if defined(Q_OS_IOS)
+    const QByteArray accessBookmark = WhatSon::Apple::SecurityScopedResourceAccess::bookmarkDataForUrl(
+        hubUrl,
+        false,
+        &accessError);
+    if (accessBookmark.isEmpty())
+    {
+        setLastError(accessError.trimmed().isEmpty()
+                         ? QStringLiteral("Failed to persist access to the selected WhatSon Hub location.")
+                         : accessError.trimmed());
+        setSessionState(QString::fromLatin1(kSessionStateFailed));
+        emit operationFailed(m_lastError);
+        return false;
+    }
+    setCurrentHubAccessBookmark(accessBookmark);
+#endif
 
     QString errorMessage;
     const QString selectedPath = localPathFromUrl(hubUrl);
@@ -1247,6 +1302,16 @@ void OnboardingHubController::setCurrentFolderPath(const QString& folderPath)
 
     m_currentFolderUrl = nextFolderUrl;
     emit currentFolderUrlChanged();
+}
+
+void OnboardingHubController::setCurrentHubAccessBookmark(const QByteArray& accessBookmark)
+{
+    if (m_currentHubAccessBookmark == accessBookmark)
+    {
+        return;
+    }
+
+    m_currentHubAccessBookmark = accessBookmark;
 }
 
 void OnboardingHubController::setHubSelectionCandidatePaths(const QStringList& hubCandidatePaths)

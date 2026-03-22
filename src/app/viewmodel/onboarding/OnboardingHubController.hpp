@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QByteArray>
 #include <QStringList>
 #include <QUrl>
 
@@ -30,6 +31,7 @@ public:
     [[nodiscard]] QString lastError() const;
     [[nodiscard]] QUrl currentFolderUrl() const;
     [[nodiscard]] QString sessionState() const;
+    [[nodiscard]] QByteArray currentHubAccessBookmark() const;
 
     void setCreateHubCallback(CreateHubCallback callback);
     void setLoadHubCallback(LoadHubCallback callback);
@@ -79,6 +81,7 @@ private:
     void setBusy(bool busy);
     void setCurrentHubPath(const QString& hubPath);
     void setCurrentFolderPath(const QString& folderPath);
+    void setCurrentHubAccessBookmark(const QByteArray& accessBookmark);
     void setHubSelectionCandidatePaths(const QStringList& hubCandidatePaths);
     void setLastError(const QString& errorMessage);
     void setSessionState(const QString& sessionState);
@@ -91,5 +94,6 @@ private:
     QStringList m_hubSelectionCandidatePaths;
     QString m_lastError;
     QUrl m_currentFolderUrl;
+    QByteArray m_currentHubAccessBookmark;
     QString m_sessionState = QStringLiteral("idle");
 };

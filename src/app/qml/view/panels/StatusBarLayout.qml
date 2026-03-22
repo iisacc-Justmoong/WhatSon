@@ -158,6 +158,7 @@ Rectangle {
                     anchors.fill: parent
                     mode: searchMode
                     selectByMouse: true
+                    shapeStyle: shapeCylinder
                     text: statusBar.searchText
 
                     onAccepted: function (text) {

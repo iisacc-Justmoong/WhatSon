@@ -1,23 +1,20 @@
 import QtQuick
-import QtQuick.Layouts
-import LVRS 1.0 as LV
+import "../mobile/pages" as MobilePageView
 
 Item {
     id: mobileNormalLayout
 
-    property color canvasColor: LV.Theme.panelBackground01
-    property color controlSurfaceColor: LV.Theme.panelBackground10
-    readonly property int contentInset: LV.Theme.gap16
-    readonly property int sectionSpacing: LV.Theme.gap24
-    property var editorViewModeViewModel: null
-    property string hierarchySearchText: ""
-    property var navigationModeViewModel: null
+    property color canvasColor
+    property color controlSurfaceColor
+    property var editorViewModeViewModel
+    property string hierarchySearchText
+    property var navigationModeViewModel
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("MobileNormalLayout") : null
     required property var sidebarHierarchyViewModel
-    property string statusPlaceholderText: ""
-    property string statusSearchText: ""
-    property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
-    property var windowInteractions: null
+    property string statusPlaceholderText
+    property string statusSearchText
+    property var toolbarIconNames
+    property var windowInteractions
 
     signal viewHookRequested
 
@@ -27,61 +24,20 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
-    function requestCreateNote() {
-        mobileNormalLayout.requestViewHook("create-note");
-        if (mobileNormalLayout.windowInteractions && mobileNormalLayout.windowInteractions.createNoteFromShortcut !== undefined)
-            mobileNormalLayout.windowInteractions.createNoteFromShortcut();
-    }
 
-    Rectangle {
+    MobilePageView.MobileHierarchyPage {
         anchors.fill: parent
-        color: mobileNormalLayout.canvasColor
-    }
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: mobileNormalLayout.contentInset
-        spacing: mobileNormalLayout.sectionSpacing
+        canvasColor: mobileNormalLayout.canvasColor
+        controlSurfaceColor: mobileNormalLayout.controlSurfaceColor
+        editorViewModeViewModel: mobileNormalLayout.editorViewModeViewModel
+        hierarchySearchText: mobileNormalLayout.hierarchySearchText
+        navigationModeViewModel: mobileNormalLayout.navigationModeViewModel
+        sidebarHierarchyViewModel: mobileNormalLayout.sidebarHierarchyViewModel
+        statusPlaceholderText: mobileNormalLayout.statusPlaceholderText
+        statusSearchText: mobileNormalLayout.statusSearchText
+        toolbarIconNames: mobileNormalLayout.toolbarIconNames
+        windowInteractions: mobileNormalLayout.windowInteractions
 
-        NavigationBarLayout {
-            id: compactNavigationBar
-
-            compactMode: true
-            compactSurfaceColor: mobileNormalLayout.controlSurfaceColor
-            editorViewModeViewModel: mobileNormalLayout.editorViewModeViewModel
-            navigationModeViewModel: mobileNormalLayout.navigationModeViewModel
-        }
-        HierarchySidebarLayout {
-            id: hierarchySidebar
-
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            panelColor: mobileNormalLayout.canvasColor
-            searchFieldVisible: true
-            searchText: mobileNormalLayout.hierarchySearchText
-            sidebarHierarchyViewModel: mobileNormalLayout.sidebarHierarchyViewModel
-            toolbarFrameWidth: width
-            toolbarIconNames: mobileNormalLayout.toolbarIconNames
-
-            onSearchSubmitted: function (text) {
-                mobileNormalLayout.hierarchySearchText = text;
-            }
-            onSearchTextEdited: function (text) {
-                mobileNormalLayout.hierarchySearchText = text;
-            }
-        }
-        StatusBarLayout {
-            compactFieldColor: mobileNormalLayout.controlSurfaceColor
-            compactMode: true
-            compactToolbarText: mobileNormalLayout.statusPlaceholderText
-            searchText: mobileNormalLayout.statusSearchText
-
-            onCreateNoteRequested: mobileNormalLayout.requestCreateNote()
-            onSearchSubmitted: function (text) {
-                mobileNormalLayout.statusSearchText = text;
-            }
-            onSearchTextEdited: function (text) {
-                mobileNormalLayout.statusSearchText = text;
-            }
-        }
+        onViewHookRequested: mobileNormalLayout.requestViewHook("mobile-hierarchy-page")
     }
 }

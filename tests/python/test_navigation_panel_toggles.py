@@ -80,6 +80,7 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("readonly property bool sidebarVisible: hStack.sidebarWidth > 0", body_text)
         self.assertIn("Layout.minimumWidth: hStack.sidebarVisible ? hStack.effectiveMinSidebarWidth : 0", body_text)
         self.assertIn("Layout.preferredWidth: hStack.sidebarVisible ? hStack.sidebarWidth : 0", body_text)
+        self.assertIn("searchFieldVisible: true", body_text)
         self.assertIn("visible: hStack.sidebarVisible", body_text)
         self.assertIn("Layout.minimumWidth: hStack.rightVisible ? hStack.minRightPanelWidth : 0", body_text)
         self.assertIn("Layout.preferredWidth: hStack.rightVisible ? hStack.rightPanelWidth : 0", body_text)

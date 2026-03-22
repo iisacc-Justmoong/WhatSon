@@ -16,6 +16,7 @@ class SelectedHubStoreTest final : public QObject
 private slots:
     void init();
     void selectedHubPath_persistsNormalizedPath();
+    void selectedHubSelection_persistsAccessBookmark();
     void selectedHubPath_convertsAndroidMountedHubToSourceUri();
     void startupHubPath_prefersPersistedSelection();
     void startupHubPath_preservesAndroidSourceUriSelection();
@@ -48,6 +49,33 @@ void SelectedHubStoreTest::selectedHubPath_persistsNormalizedPath()
 
     SelectedHubStore reloadedStore;
     QCOMPARE(reloadedStore.selectedHubPath(), QDir::cleanPath(hubPath));
+}
+
+void SelectedHubStoreTest::selectedHubSelection_persistsAccessBookmark()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, tempDir.path());
+    QSettings settings;
+    settings.clear();
+    settings.sync();
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Alpha.wshub"));
+    QVERIFY(QDir().mkpath(hubPath));
+
+    const QByteArray bookmarkData("bookmark-data");
+    SelectedHubStore store;
+    store.setSelectedHubSelection(hubPath, bookmarkData);
+
+    SelectedHubStore reloadedStore;
+    QCOMPARE(reloadedStore.selectedHubPath(), QDir::cleanPath(hubPath));
+    QCOMPARE(reloadedStore.selectedHubAccessBookmark(), bookmarkData);
+
+    reloadedStore.clearSelectedHubPath();
+    QCOMPARE(reloadedStore.selectedHubPath(), QString());
+    QCOMPARE(reloadedStore.selectedHubAccessBookmark(), QByteArray());
 }
 
 void SelectedHubStoreTest::selectedHubPath_convertsAndroidMountedHubToSourceUri()

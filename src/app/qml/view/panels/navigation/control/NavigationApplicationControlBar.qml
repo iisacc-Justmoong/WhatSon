@@ -11,11 +11,13 @@ Item {
         {
             "label": "Show Structure",
             "iconName": "columnIndex",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Sync Files",
             "iconName": "syncFiles",
+            "keyVisible": false,
             "showChevron": false
         },
         {
@@ -24,26 +26,31 @@ Item {
         {
             "label": "Todo List",
             "iconName": "toolWindowCheckDetails",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Daily",
             "iconName": "newUIlightThemeSelected",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Weekly",
             "iconName": "table",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Monthly",
             "iconName": "pnpm",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Yearly",
             "iconName": "runshowCurrentFrame",
+            "keyVisible": false,
             "showChevron": false
         },
         {
@@ -55,21 +62,25 @@ Item {
             "onTriggered": function () {
                 applicationControlBar.requestViewHook("create-note");
             },
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Pin",
             "iconName": "pin",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Notifications",
             "iconName": "toolwindownotifications",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Timer",
             "iconName": "startTimer",
+            "keyVisible": false,
             "showChevron": false
         },
         {
@@ -78,16 +89,19 @@ Item {
         {
             "label": "Export",
             "iconName": "generalupload",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Print",
             "iconName": "generalprint",
+            "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Mail",
             "iconName": "mailer",
+            "keyVisible": false,
             "showChevron": false
         }
     ]
@@ -179,7 +193,10 @@ Item {
                         applicationControlContextMenu.close();
                         return;
                     }
-                    applicationControlContextMenu.openFor(applicationControlMenuButton, 0, height + applicationControlBar.menuYOffset);
+                    applicationControlContextMenu.openFor(
+                        applicationControlMenuButton,
+                        applicationControlMenuButton.width,
+                        applicationControlMenuButton.height + applicationControlBar.menuYOffset);
                 }
             }
         }

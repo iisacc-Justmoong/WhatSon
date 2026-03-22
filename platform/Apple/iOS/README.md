@@ -21,10 +21,9 @@ This directory contains iOS platform-specific bundle configuration.
   picker URLs before onboarding creates or loads a `.wshub`. The native iOS document picker returns document-provider
   URLs, but Qt does not start access automatically for app-level file I/O, so the app must retain that access itself
   for the rest of the session.
-- iOS in this code path does not expose the bookmark restoration APIs available on macOS, so WhatSon cannot persist the
-  external Files permission across a cold relaunch through a security-scoped bookmark. The runtime still works against
-  the real Files-backed `.wshub` directory for the active session, but the user may need to reselect that hub after a
-  fresh app launch.
+- The same bridge now persists an implicit iOS bookmark for the selected Files-backed hub scope and restores that
+  access during startup preflight before `main.cpp` decides whether onboarding is required. WhatSon therefore reopens
+  the previously selected external `.wshub` on cold relaunch as long as the bookmark still resolves successfully.
 - iOS native file dialogs only implement the open path (`QIOSFileDialog::show()` returns `false` for save mode), so
   mobile onboarding must create hubs through a folder picker and synthesize a unique `Untitled*.wshub` path inside the
   selected directory before calling `WhatSonHubCreator`.

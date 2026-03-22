@@ -25,6 +25,7 @@ Item {
     property int verticalInset: LV.Theme.gap2
 
     signal activeToolbarIndexChangeRequested(int index)
+    signal hierarchyItemActivated(var item, int itemId, int index)
     signal searchSubmitted(string text)
     signal searchTextEdited(string text)
     signal viewHookRequested
@@ -126,6 +127,9 @@ Item {
         onSearchSubmitted: function (text) {
             hierarchyView.searchText = text;
             hierarchyView.searchSubmitted(text);
+        }
+        onHierarchyItemActivated: function (item, itemId, index) {
+            hierarchyView.hierarchyItemActivated(item, itemId, index);
         }
         onSearchTextEdited: function (text) {
             hierarchyView.searchText = text;

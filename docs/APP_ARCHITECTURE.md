@@ -78,8 +78,9 @@ Defined in `CMakeLists.txt`:
   keep its directory-based contract
 - iOS keeps the opposite strategy inside the active app session: `src/app/platform/Apple/AppleSecurityScopedResourceAccess.*`
   starts and retains a security-scoped resource session for the selected `.wshub`, and the runtime keeps reading and
-  writing the real package directory in place like a Files-backed vault instead of using a mirrored local mount. A cold
-  relaunch still requires re-selection because the bookmark restoration APIs used on macOS are unavailable on iOS
+  writing the real package directory in place like a Files-backed vault instead of using a mirrored local mount. The
+  selected Files scope is also persisted as an implicit bookmark and restored during startup preflight, so cold
+  relaunch no longer falls back to onboarding when the bookmark remains valid
 - `OnboardingHubController::localPathFromUrl()` now preserves the raw fully-encoded Android picker URI before desktop
   path normalization runs, so opaque SAF providers still enter the Android document backend instead of falling through
   to the generic non-mountable-provider rejection branch
@@ -343,7 +344,7 @@ Domain-isolated support:
           `navigation/control/NavigationApplicationControlBar.qml`.
         - `NavigationBarLayout.qml` compact mode is now the mobile node `174:4986` top-bar contract: the shared frame
           stays `24px` high on `panelBackground10`, uses `8px/2px` internal padding from LVRS tokens, keeps a `4px`
-          settings-to-mode gap on the left, and a `12px` new-folder-to-menu gap on the right while still resolving the
+          settings-to-mode gap on the left, and a `12px` menu-to-new-folder gap on the right while still resolving the
           application surface through the active navigation mode.
         - Control-only child bars (`NavigationCalendarBar.qml`, `NavigationAppControlBar.qml`,
           `NavigationExportBar.qml`)
@@ -351,7 +352,8 @@ Domain-isolated support:
           `NavigationPreferenceBar.qml` stay at the navigation root.
         - `navigation/control/NavigationApplicationControlBar.qml` compact mode is reduced to the collapsed menu button
           only; tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second mobile-only
-          control strip.
+          control strip. The popup anchors from the trigger's bottom-right point, and action-only entries disable the
+          default LVRS shortcut placeholder column so label width matches the intended mobile control-menu layout.
         - `navigation/control/NavigationApplicationControlBar.qml` preserves the Figma child order `Calendar -> AppControl -> Export ->
           AddNew -> Preference`, which keeps the create control on the right side of the control-mode application bar.
             - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`,
@@ -367,26 +369,47 @@ Domain-isolated support:
               case
               through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
               `LV.ContextMenu`, not direct next-state cycling.
-            - `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileNormalLayout.qml` all forward
+            - `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileHierarchyPage.qml` all forward
               the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
             - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
               `create-note` hook path instead of duplicating note-creation policy in a second shortcut-only code path.
             - `StatusBarLayout.qml` compact mode is now the node `174:4986` mobile bottom bar: it resolves to a `20px`
               frame, keeps the field flush with the shared `370px` content span, reserves the trailing
               `controlHeightMd` slot for the add-note affordance, and still emits `createNoteRequested`, which
-              `MobileNormalLayout.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
-              bottom add-note affordance stays on the same shared creation path as desktop navigation controls.
-            - `HierarchySidebarLayout.qml` still exposes search/inset geometry inputs for shared use, but the mobile
-              shell no longer overrides those values. `MobileNormalLayout.qml` keeps the hierarchy on the root
-              `panelBackground01` canvas while inheriting the shared `HierarchySidebarLayout.qml` defaults for list
-              padding and toolbar-to-list spacing, so mobile and desktop stay on the same LVRS hierarchy geometry
-              contract instead of forking gap behavior.
+              `MobileHierarchyPage.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
+              bottom add-note affordance stays on the same shared creation path as desktop navigation controls. The
+              compact search input itself now uses the LVRS `shapeCylinder` type so the mobile bottom bar keeps the
+              shared pill-shaped search affordance without a custom field fork.
+            - `MobilePageScaffold.qml` keeps the compact navigation bar and compact status bar mounted around every
+              routed mobile workspace page, so those top/bottom controls are not re-declared per page.
+            - `MobilePageScaffold.qml` follows the Figma `174:4987` VStack contract directly:
+              `left/right = 16`, `top = 48`, `bottom = 16`, and a shared `gap2` VStack spacing between navigation,
+              body, and status sections.
+            - `HierarchySidebarLayout.qml` still exposes search/inset geometry inputs for shared use, and the routed
+              `MobileHierarchyPage.qml` now applies the node `174:5026` geometry explicitly with LVRS tokens:
+              `horizontalInset = 0`, `verticalInset = 0`, `searchHeaderHorizontalInset = 0`,
+              `searchHeaderMinHeight = 18`, `searchHeaderVerticalInset = 0`, `searchHeaderTopGap = 2`, and
+              `searchListGap = 2`.
+            - `MobileHierarchyPage.qml` disables `usePlatformSafeMargin`, keeps the hierarchy on the root
+              `panelBackground01` canvas, composes token-only page paddings (`16 / 48 / 16` via LVRS gap
+              composition), while the scaffold keeps a reduced `gap2` VStack spacing between the compact
+              navigation bar, hierarchy shell, and compact status bar.
+            - `NavigationBarLayout.qml` compact mode now exposes a compact leading action slot, and
+              `MobilePageScaffold.qml` forwards that compact leading action so `MobileHierarchyPage.qml` can show a
+              back affordance on the note-list body without forking the shared navigation bar.
+            - `MobilePageScaffold.qml` now mounts the routed mobile body through `LV.PageRouter`, and
+              `MobileHierarchyPage.qml` feeds that stack with explicit `/mobile/hierarchy` and
+              `/mobile/note-list` routes instead of a private page enum plus copied route history.
+            - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
+              `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so
+              back-swipe policy follows the patched LVRS routing stack and gesture runtime instead of a local
+              `DragHandler`.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
             - If the current note-list search filter would hide the new note, `LibraryHierarchyViewModel` clears that
               search before selecting the created note so the editor focus handoff still succeeds.
-            - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileNormalLayout.qml`
+            - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileHierarchyPage.qml`
               use LVRS label styles/theme tokens for local typography and avoid panel-local hardcoded font families or
               text-color literals.
                 - `ListBarLayout.qml` now composes the dedicated `ListBarHeader.qml` frame (Figma node `134:3180`),
@@ -421,7 +444,7 @@ Domain-isolated support:
                   path
                   simple and avoids silent blank bindings when helper functions disappear. Note drags are also app-wired
                   rather than LVRS-blocked: delegates
-                  advertise `whatson.library.note` plus copy semantics, `Drag.Automatic`, and explicit note-id mime data
+                  advertise `whatson.library.note` plus copy semantics, `Drag.Internal`, and explicit note-id mime data
                   while forcing `DragHandler` pointer takeover, while the
                   note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
                   candidate row and selection is committed on tap release, then reasserted once through a short-lived
@@ -432,6 +455,9 @@ Domain-isolated support:
                   feedback
                   stays in `pressed`, preventing the active card from dropping its highlight as soon as the pointer is
                   released.
+                  A dedicated overlay-parented `NoteListItem` preview mirrors the dragged row in the forced active
+                  state, using the pointer press position as the drag hot spot so the actual card component follows the
+                  cursor instead of the platform text tooltip.
                   The surrounding
                   `ListView` also yields drag-scrolling while a note row is pressed, so the delegate `DragHandler` can
                   start the `whatson.library.note` drag before the viewport steals the pointer.
@@ -727,15 +753,30 @@ Desktop composition:
 
 Mobile composition:
 
-- `MobileNormalLayout` via loader branch
-- `MobileNormalLayout.qml` now composes the shared shell surfaces instead of drawing one-off mobile chrome:
+- `MobileHierarchyPage` via loader branch
+- `Main.qml` now routes the mobile workspace shell through `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`.
+  The legacy `MobileNormalLayout.qml` remains only as a compatibility wrapper for the existing panel-viewmodel
+  registry.
+- `src/app/qml/view/mobile/MobilePageScaffold.qml` owns the persistent mobile chrome:
     - `NavigationBarLayout.qml` in `compactMode`
-    - `HierarchySidebarLayout.qml` with the same `SidebarHierarchyViewModel`
     - `StatusBarLayout.qml` in `compactMode`
+    - `LV.PageRouter` for the routed mobile body stack
+    - scaffold-level section spacing reduced to `gap2`, so the hierarchy body sits directly under the compact
+      navigation bar instead of inheriting the earlier `gap24` page stack gap
+- `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` mounts two routed bodies inside that scaffold:
+    - `HierarchySidebarLayout.qml` with the same `SidebarHierarchyViewModel`
+    - a note-list body that reuses `ListBarLayout.qml` with `headerVisible: false` and the same
+      `SidebarHierarchyViewModel.resolvedNoteListModel`
+    - `LV.PageTransitionController` bound to the scaffold router plus left-edge `LV.EventListener` touch hooks for
+      interactive back navigation
 - `HierarchySidebarLayout.qml` / `SidebarHierarchyView.qml` expose optional `searchFieldVisible` and `footerVisible`
   switches so the mobile shell can reuse the hierarchy toolbar/list view-model pipeline while inserting the Figma
   search header and dropping the desktop footer controls.
-
+- `BodyLayout.qml` opts the desktop hierarchy column into `searchFieldVisible: true`, preserving the shared search
+  header on desktop while mobile pages decide that affordance explicitly.
+- `SidebarHierarchyView.qml` does not add the custom toolbar height twice when search is enabled: LVRS `Hierarchy`
+  keeps its built-in toolbar reserve, while WhatSon only contributes the explicit search-header stack gap. This keeps
+  the post-search list gap at the intended token rhythm on both desktop and mobile.
 Hierarchy rendering pipeline:
 
 - `HierarchySidebarLayout` forwards toolbar activation into `SidebarHierarchyViewModel` and consumes the resolved
@@ -762,7 +803,9 @@ Hierarchy rendering pipeline:
   `expanded`/`showChevron` roles emitted by each hierarchy view-model.
 - Row-activation policy: LVRS `Hierarchy.listItemActivated(...)` is authoritative. WhatSon mirrors the resulting
   `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays selection with
-  `activateListItemById(...)` when the underlying model changes.
+  `activateListItemById(...)` when the underlying model changes. The same activation is also re-emitted through
+  `SidebarHierarchyView.qml` and `HierarchySidebarLayout.qml` so `MobileHierarchyPage.qml` can transition from the
+  hierarchy body into the note-list body without bypassing the shared selection contract.
 - The current sidebar contract keeps hierarchy search out of the mounted QML surface, but folder drag-reorder and
   note-to-folder drops are restored through `HierarchyDragDropBridge` on top of the direct LVRS model contract instead
   of replacing it.
@@ -796,15 +839,21 @@ Hierarchy rendering pipeline:
   exposes `applyHierarchyNodes(...)` through `HierarchyDragDropBridge`, and successful LVRS `listItemMoved(...)`
   events are persisted immediately back into the domain view-model. The bound hierarchy payload is first normalized
   into a JS array because LVRS editable drag support rejects raw C++ `QVariantList` payloads.
-- Mobile hierarchy policy: `MobileNormalLayout.qml` only repositions the shared hierarchy shell; the mobile shell does
-  not fork `Hierarchy.editable`. LVRS editability still follows
-  `HierarchyDragDropBridge::reorderContractAvailable`, and the shared footer remains visible so mobile preserves the
-  same folder create/delete/options contract as desktop.
+- Mobile hierarchy policy: `MobileHierarchyPage.qml` repositions the shared hierarchy shell as a routed page, but the
+  mobile shell does not fork `Hierarchy.editable`. LVRS editability still follows
+  `HierarchyDragDropBridge::reorderContractAvailable`, while the first-screen mobile page hides the shared hierarchy
+  footer and keeps the compact bottom status/add-note bar as the only bottom chrome. When the user activates a
+  hierarchy row, the same mobile page swaps its body to a note-list body backed by
+  `SidebarHierarchyViewModel::resolvedNoteListModel`, hides the desktop list header, and enables a compact leading
+  action back affordance while suppressing the hierarchy add-folder action. That mobile page now routes through an
+  internal `LV.PageRouter` stack and uses `LV.PageTransitionController` plus left-edge `LV.EventListener` touch hooks,
+  so mobile-only page undo is committed by the patched LVRS routing runtime instead of replaying a private copied
+  route-memory stack.
 - Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
-  `HierarchyDragDropBridge::assignNoteToFolder(...)`, which rewrites the note header `<folders>` payload to the dropped
-  hierarchy path.
+  `HierarchyDragDropBridge::assignNoteToFolder(...)`, which appends the dropped hierarchy path into the note header
+  `<folders>` payload while preserving existing folder assignments.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

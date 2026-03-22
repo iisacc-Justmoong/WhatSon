@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import QtQml
 import QtQuick.Window
 import LVRS 1.0 as LV
+import "view/mobile/pages" as MobilePageView
 import "view/panels" as BodyPanelView
 import "window" as WindowView
 
@@ -161,6 +162,7 @@ LV.ApplicationWindow {
     pageInitialPath: startupRoutePath
     pageRoutes: [onboardingRoute, workspaceShellRoute]
     useInternalPageStack: true
+    usePlatformSafeMargin: false
     visible: true
     width: windowDefaultWidth
     windowColor: canvasColor
@@ -489,7 +491,7 @@ LV.ApplicationWindow {
     Component {
         id: mobileMainLayoutComponent
 
-        BodyPanelView.MobileNormalLayout {
+        MobilePageView.MobileHierarchyPage {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: LV.Theme.panelBackground10
