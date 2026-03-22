@@ -548,14 +548,20 @@ for hub/note hierarchy payloads.
   contract instead of duplicating note delegates locally: it binds `SidebarHierarchyViewModel.resolvedNoteListModel`,
   hides the desktop list header with `headerVisible: false`, keeps the note-list body on the same
   `panelBackground01` canvas, and routes hierarchy row taps into that note-list body.
-- `MobilePageScaffold.qml` and `NavigationBarLayout.qml` expose a compact leading action slot so the mobile note-list
-  body can show a back affordance while the hierarchy page keeps the compact add-folder action on the right.
+- `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
+  matches the Figma top bar and leaves page undo to swipe navigation instead of a visible back button.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
   drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
   enum plus route-memory copies.
+- `MobilePageScaffold.qml` also pins the routed mobile `LV.PageRouter` interactive settle duration to `0`, so
+  left-edge back-swipe commits do not replay a second stack animation after the interactive gesture has already
+  completed.
 - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
   `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so mobile back
   navigation follows the patched LVRS routing stack and gesture runtime instead of a local `DragHandler`.
+- `StatusBarLayout.qml` keeps the compact mobile search field on the LVRS cylinder style, while
+  `SidebarHierarchyView.qml` overrides the shared `ListBarHeader.qml` search input back to LVRS `shapeRoundRect` so the
+  hierarchy search field stays rounded instead of pill-shaped.
 - The same `MobileHierarchyPage.qml` now pins the hierarchy header stack to the exact Figma `174:5026` rhythm:
   `toolbar 20 / gap 2 / search 18 / gap 2 / hierarchy list`, instead of inheriting the shared desktop
   `24px` search-header frame minimum.
@@ -570,7 +576,7 @@ for hub/note hierarchy payloads.
   existing context-menu button, while `NavigationBarLayout.qml` keeps the navigation mode combo on the shared
   `NavigationModeViewModel` without replacing the shared hierarchy footer actions. The compact control menu anchors
   from the trigger's bottom-right corner, the compact navigation right group resolves in the Figma order `menu ->
-  new folder`, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
+  new folder`, the compact control `LV.IconMenuButton` now uses the `generalsearch` glyph, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
   budget on mobile.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed

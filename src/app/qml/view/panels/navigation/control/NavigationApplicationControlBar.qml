@@ -186,7 +186,7 @@ Item {
             LV.IconMenuButton {
                 id: applicationControlMenuButton
 
-                iconName: "generalprojectStructure"
+                iconName: "generalsearch"
 
                 onClicked: {
                     if (applicationControlContextMenu.opened) {

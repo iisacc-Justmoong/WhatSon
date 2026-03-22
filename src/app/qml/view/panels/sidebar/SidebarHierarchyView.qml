@@ -406,6 +406,7 @@ Rectangle {
         inlineFieldBackgroundColor: sidebarHierarchyView.searchFieldBackgroundColor
         outerHorizontalInset: sidebarHierarchyView.searchHeaderHorizontalInset
         outerVerticalInset: sidebarHierarchyView.searchHeaderVerticalInset
+        searchFieldShapeStyle: hierarchySearchHeader.shapeRoundRect
         searchText: sidebarHierarchyView.searchText
         sortActionVisible: false
         visibilityActionVisible: false

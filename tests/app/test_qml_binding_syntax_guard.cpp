@@ -859,6 +859,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("toolbarItems: []")),
         "SidebarHierarchyView.qml must disable the built-in LVRS toolbar items when mounting the fixed Figma toolbar row.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("searchFieldShapeStyle: hierarchySearchHeader.shapeRoundRect")),
+        "SidebarHierarchyView.qml must override the shared search header to LVRS shapeRoundRect so hierarchy search stays rounded instead of pill-shaped.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("Row {")),
         "SidebarHierarchyView.qml must compose a dedicated fixed toolbar row for the Figma header icons.");
     QVERIFY2(
@@ -1333,8 +1336,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarHeaderText.contains(QStringLiteral("property int frameMinHeight: LV.Theme.gap24")),
         "ListBarHeader.qml must keep the desktop header height contract on the LVRS gap24 token.");
     QVERIFY2(
-        listBarHeaderText.contains(QStringLiteral("shapeStyle: shapeCylinder")),
-        "ListBarHeader.qml inline input must use the cylindrical pill shape from Figma.");
+        listBarHeaderText.contains(QStringLiteral("readonly property int shapeCylinder: searchField.shapeCylinder")) &&
+            listBarHeaderText.contains(QStringLiteral("readonly property int shapeRoundRect: searchField.shapeRoundRect")) &&
+            listBarHeaderText.contains(QStringLiteral("property int searchFieldShapeStyle: listBarHeader.shapeCylinder")) &&
+            listBarHeaderText.contains(QStringLiteral("shapeStyle: listBarHeader.searchFieldShapeStyle")),
+        "ListBarHeader.qml inline input must expose both LVRS search-field shapes while defaulting the list header to the cylindrical pill shape from Figma.");
     QVERIFY2(
         listBarHeaderText.contains(QStringLiteral("readonly property int inlineFieldHeight: LV.Theme.gap18")),
         "ListBarHeader.qml inline input must keep the 18px height contract from the LVRS gap18 token.");
@@ -1588,6 +1594,7 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobileScaffoldText.contains(QStringLiteral("property bool compactLeadingActionVisible: false")) &&
             mobileScaffoldText.contains(QStringLiteral("signal compactLeadingActionRequested")) &&
             mobileScaffoldText.contains(QStringLiteral("property string bodyInitialPath: \"/\"")) &&
+            mobileScaffoldText.contains(QStringLiteral("property int bodyInteractiveTransitionSettleDuration: 0")) &&
             mobileScaffoldText.contains(QStringLiteral("property var bodyRoutes: []")),
         "MobilePageScaffold.qml must expose compact-bar visibility knobs so routed mobile pages can switch chrome without cloning the shared scaffold.");
     QVERIFY2(
@@ -1600,9 +1607,11 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobileScaffoldText.contains(QStringLiteral("readonly property var activePageRouter: bodyRouter")) &&
             mobileScaffoldText.contains(QStringLiteral("readonly property var bodyItem: bodyRouter.currentPageItem")) &&
             mobileScaffoldText.contains(QStringLiteral("LV.PageRouter {")) &&
+            mobileScaffoldText.contains(
+                QStringLiteral("interactiveTransitionSettleDuration: mobilePageScaffold.bodyInteractiveTransitionSettleDuration")) &&
             mobileScaffoldText.contains(QStringLiteral("routes: mobilePageScaffold.bodyRoutes")) &&
             !mobileScaffoldText.contains(QStringLiteral("Loader {")),
-        "MobilePageScaffold.qml must forward compact chrome through the shared bars while routing mobile body pages through LV.PageRouter instead of a private loader.");
+        "MobilePageScaffold.qml must forward compact chrome through the shared bars while routing mobile body pages through LV.PageRouter instead of a private loader, while disabling settle replay so swipe-back does not look like a duplicated stack transition.");
 
     const QString statusBarPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/StatusBarLayout.qml"));
@@ -1645,9 +1654,8 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes")) &&
             mobilePageText.contains(
                 QStringLiteral("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive")) &&
-            mobilePageText.contains(
-                QStringLiteral("compactLeadingActionVisible: mobileHierarchyPage.noteListPageActive")),
-        "MobileHierarchyPage.qml must drive scaffold body routing and compact chrome from the shared mobile PageRouter state.");
+            mobilePageText.contains(QStringLiteral("compactLeadingActionVisible: false")),
+        "MobileHierarchyPage.qml must drive scaffold body routing from the shared mobile PageRouter state while suppressing the compact leading action on the note-list view.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("function requestBackToHierarchy()")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenNoteList(item, itemId, index)")) &&

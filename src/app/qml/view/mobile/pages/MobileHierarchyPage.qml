@@ -178,7 +178,7 @@ Item {
         bodyRoutes: mobileHierarchyPage.mobileBodyRoutes
         canvasColor: mobileHierarchyPage.canvasColor
         compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive
-        compactLeadingActionVisible: mobileHierarchyPage.noteListPageActive
+        compactLeadingActionVisible: false
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
         editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
         navigationModeViewModel: mobileHierarchyPage.navigationModeViewModel

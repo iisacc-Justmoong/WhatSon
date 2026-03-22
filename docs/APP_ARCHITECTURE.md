@@ -351,7 +351,7 @@ Domain-isolated support:
           now live under `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
           `NavigationPreferenceBar.qml` stay at the navigation root.
         - `navigation/control/NavigationApplicationControlBar.qml` compact mode is reduced to the collapsed menu button
-          only; tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second mobile-only
+          only; that `LV.IconMenuButton` now uses the `generalsearch` glyph, and tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second mobile-only
           control strip. The popup anchors from the trigger's bottom-right point, and action-only entries disable the
           default LVRS shortcut placeholder column so label width matches the intended mobile control-menu layout.
         - `navigation/control/NavigationApplicationControlBar.qml` preserves the Figma child order `Calendar -> AppControl -> Export ->
@@ -394,16 +394,22 @@ Domain-isolated support:
               `panelBackground01` canvas, composes token-only page paddings (`16 / 48 / 16` via LVRS gap
               composition), while the scaffold keeps a reduced `gap2` VStack spacing between the compact
               navigation bar, hierarchy shell, and compact status bar.
-            - `NavigationBarLayout.qml` compact mode now exposes a compact leading action slot, and
-              `MobilePageScaffold.qml` forwards that compact leading action so `MobileHierarchyPage.qml` can show a
-              back affordance on the note-list body without forking the shared navigation bar.
             - `MobilePageScaffold.qml` now mounts the routed mobile body through `LV.PageRouter`, and
               `MobileHierarchyPage.qml` feeds that stack with explicit `/mobile/hierarchy` and
               `/mobile/note-list` routes instead of a private page enum plus copied route history.
+            - `MobilePageScaffold.qml` now sets `LV.PageRouter.interactiveTransitionSettleDuration = 0`, so
+              interactive back-swipe commit does not replay a second stack transition after the gesture-driven motion
+              already reached the target page.
+            - `MobileHierarchyPage.qml` now suppresses the compact leading action on the note-list route, so the mobile
+              list top bar matches the Figma frame and leaves page undo to swipe navigation instead of a visible back
+              button.
             - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
               `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so
               back-swipe policy follows the patched LVRS routing stack and gesture runtime instead of a local
               `DragHandler`.
+            - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
+              header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
+              search header to `shapeRoundRect`.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
@@ -761,6 +767,8 @@ Mobile composition:
     - `NavigationBarLayout.qml` in `compactMode`
     - `StatusBarLayout.qml` in `compactMode`
     - `LV.PageRouter` for the routed mobile body stack
+    - `interactiveTransitionSettleDuration = 0` on that router so left-edge back commits do not appear to traverse a
+      duplicated route entry
     - scaffold-level section spacing reduced to `gap2`, so the hierarchy body sits directly under the compact
       navigation bar instead of inheriting the earlier `gap24` page stack gap
 - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` mounts two routed bodies inside that scaffold:
@@ -844,8 +852,8 @@ Hierarchy rendering pipeline:
   `HierarchyDragDropBridge::reorderContractAvailable`, while the first-screen mobile page hides the shared hierarchy
   footer and keeps the compact bottom status/add-note bar as the only bottom chrome. When the user activates a
   hierarchy row, the same mobile page swaps its body to a note-list body backed by
-  `SidebarHierarchyViewModel::resolvedNoteListModel`, hides the desktop list header, and enables a compact leading
-  action back affordance while suppressing the hierarchy add-folder action. That mobile page now routes through an
+  `SidebarHierarchyViewModel::resolvedNoteListModel`, hides the desktop list header, suppresses the compact leading
+  action, and suppresses the hierarchy add-folder action. That mobile page now routes through an
   internal `LV.PageRouter` stack and uses `LV.PageTransitionController` plus left-edge `LV.EventListener` touch hooks,
   so mobile-only page undo is committed by the patched LVRS routing runtime instead of replaying a private copied
   route-memory stack.

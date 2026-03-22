@@ -14,7 +14,10 @@ Item {
     readonly property int inlineFieldVerticalInset: LV.Theme.gap3
     property int outerHorizontalInset: LV.Theme.gap2
     property int outerVerticalInset: LV.Theme.gap2
+    readonly property int shapeCylinder: searchField.shapeCylinder
+    readonly property int shapeRoundRect: searchField.shapeRoundRect
     readonly property int resolvedInputTextHeight: Math.max(listBarHeader.inlineFieldTextHeight, Number(searchField && searchField.inputItem && searchField.inputItem.contentHeight !== undefined ? searchField.inputItem.contentHeight : listBarHeader.inlineFieldTextHeight) || listBarHeader.inlineFieldTextHeight)
+    property int searchFieldShapeStyle: listBarHeader.shapeCylinder
     property string searchText: ""
     property bool sortActionVisible: true
     property bool visibilityActionVisible: true
@@ -57,7 +60,7 @@ Item {
             insetVertical: listBarHeader.inlineFieldVerticalInset
             mode: searchMode
             selectByMouse: true
-            shapeStyle: shapeCylinder
+            shapeStyle: listBarHeader.searchFieldShapeStyle
             text: listBarHeader.searchText
 
             onAccepted: function (text) {

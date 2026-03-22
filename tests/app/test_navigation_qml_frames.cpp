@@ -242,6 +242,9 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(appControlIndex < exportIndex);
     QVERIFY(exportIndex < addNewIndex);
     QVERIFY(addNewIndex < preferenceIndex);
+    QVERIFY(applicationControlBar.contains(QStringLiteral("LV.IconMenuButton {")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"generalsearch\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("iconName: \"generalprojectStructure\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"keyVisible\": false")));
     QVERIFY(applicationControlBar.contains(
         QStringLiteral("applicationControlMenuButton.width")));
