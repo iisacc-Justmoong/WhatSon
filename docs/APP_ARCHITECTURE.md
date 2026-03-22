@@ -136,10 +136,14 @@ Defined in `CMakeLists.txt`:
   without restarting the app.
 - `WhatSonHubSyncController` combines a periodic poll, a recursive filesystem watcher over the mounted `.wshub`, and
   app interaction hints (`TouchBegin`, pointer press, and app activation) into one debounced filesystem watcher /
-  reload path.
+  reload path. The controller explicitly excludes the app-owned `.whatson/write-lease.json` heartbeat from both the
+  watcher set and the computed hub signature, preventing self-maintenance metadata from forcing a runtime reload.
 - Local app-owned note/folder writes are acknowledged separately through `hubFilesystemMutated()` signals from
   `LibraryHierarchyViewModel` and `BookmarksHierarchyViewModel`, allowing the sync controller to refresh its baseline
   after self-writes instead of treating every save as an external runtime reload.
+- `src/app/qml/view/content/editor/ContentsEditorSession.qml` now tracks per-note local editor authority. Once the
+  user edits the selected note, divergent same-note model payloads are rejected and the local editor buffer is
+  persisted back out, making the live editing session the source of truth for that note until selection changes.
 
 Dependency discovery baseline:
 
@@ -397,14 +401,24 @@ Domain-isolated support:
               navigation bar, hierarchy shell, and compact status bar.
             - `MobilePageScaffold.qml` now mounts the routed mobile body through `LV.PageRouter`, and
               `MobileHierarchyPage.qml` feeds that stack with explicit `/mobile/hierarchy` and
-              `/mobile/note-list` routes instead of a private page enum plus copied route history.
-            - `MobileHierarchyPage.qml` now suppresses the compact leading action on the note-list route, so the mobile
-              list top bar matches the Figma frame and leaves page undo to swipe navigation instead of a visible back
-              button.
+              `/mobile/note-list` plus `/mobile/editor` routes instead of a private page enum plus copied route
+              history.
+            - `MobileHierarchyPage.qml` now suppresses the compact leading action on the note-list and editor routes,
+              so the mobile top bar matches the Figma frames and leaves page undo to swipe navigation instead of a
+              visible back button.
             - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
               `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so
               back-swipe policy follows the patched LVRS routing stack and gesture runtime instead of a local
               `DragHandler`.
+            - The mobile note-list route still reuses `ListBarLayout.qml`; that shared list surface now emits
+              `noteActivated(index, noteId)` after its authoritative selection update, which lets the mobile shell push
+              the editor route without forking the note card delegate.
+            - The mobile editor route reuses `ContentViewLayout.qml` with the same
+              `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used by desktop.
+              Mobile-specific geometry only overrides layout knobs:
+              `drawerVisible = false`, `minimapVisible = false`, `editorTopInsetOverride = 0`,
+              `frameHorizontalInsetOverride = 0`, `gutterWidthOverride = 40`, and
+              `lineNumberColumnTextWidthOverride = 22`.
             - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
               header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
               search header to `shapeRoundRect`.

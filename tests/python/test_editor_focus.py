@@ -47,6 +47,30 @@ class EditorFocusTests(unittest.TestCase):
         self.assertIn("immediate body typing works after creation", architecture_text)
         self.assertIn("current note-list search filter would hide the new note", architecture_text)
 
+    def test_selected_editor_session_keeps_local_body_authority(self) -> None:
+        editor_session_text = (
+            REPO_ROOT / "src/app/qml/view/content/editor/ContentsEditorSession.qml"
+        ).read_text(encoding="utf-8")
+        editor_view_text = (
+            REPO_ROOT / "src/app/qml/view/content/editor/ContentsDisplayView.qml"
+        ).read_text(encoding="utf-8")
+        readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
+
+        self.assertIn("property bool localEditorAuthority: false", editor_session_text)
+        self.assertIn("function markLocalEditorAuthority()", editor_session_text)
+        self.assertIn("function shouldAcceptModelBodyText(noteId, text)", editor_session_text)
+        self.assertIn("return !editorSession.localEditorAuthority;", editor_session_text)
+        self.assertIn(
+            "editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, contentsView.selectedNoteBodyText)",
+            editor_view_text,
+        )
+        self.assertIn("editorSession.markLocalEditorAuthority();", editor_view_text)
+        self.assertIn("editorSession.scheduleEditorPersistence();", editor_view_text)
+        self.assertIn("live editor buffer becomes the source of truth", readme_text)
+        self.assertIn("tracks per-note local editor authority", architecture_text)
+        self.assertIn("source of truth for that note until selection changes", architecture_text)
+
 
 if __name__ == "__main__":
     unittest.main()

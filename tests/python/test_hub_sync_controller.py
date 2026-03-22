@@ -49,6 +49,8 @@ class HubSyncControllerTests(unittest.TestCase):
         self.assertIn("QCryptographicHash::Sha256", controller_impl_text)
         self.assertIn("QEvent::TouchBegin", controller_impl_text)
         self.assertIn("QEvent::MouseButtonPress", controller_impl_text)
+        self.assertIn("shouldIgnoreObservedRelativePath", controller_impl_text)
+        self.assertIn('QStringLiteral(".whatson/write-lease.json")', controller_impl_text)
         self.assertIn("emit syncReloaded(m_currentHubPath);", controller_impl_text)
         self.assertIn("emit syncFailed(", controller_impl_text)
         self.assertIn("if (m_localMutationPending)", controller_impl_text)

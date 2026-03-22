@@ -369,10 +369,14 @@ mutation paths no longer reject a `.wshub` just because another WhatSon session 
 Runtime hub refresh now flows through `src/app/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
 filesystem resync timer, recursive `QFileSystemWatcher` coverage over the mounted `.wshub`, and app-level interaction
 hints (`TouchBegin`, pointer press, and app activation) that trigger a debounced runtime reload whenever the observed
-hub signature changes.
+hub signature changes. App-owned `.whatson/write-lease.json` heartbeat updates are excluded from that observed
+signature/watch set so local lease maintenance never bounces the runtime through a self-reload.
 App-owned note and folder mutations do not bounce the runtime through a full reload immediately. Instead,
 `LibraryHierarchyViewModel` and `BookmarksHierarchyViewModel` emit a local mutation acknowledgment so
 `WhatSonHubSyncController` can refresh its baseline after self-writes and keep the current editing session stable.
+Within `ContentsDisplayView.qml`, a selected note's live editor buffer becomes the source of truth after the user edits
+it once; divergent same-note storage payloads are rejected and re-persisted so runtime reloads cannot steal the caret
+or overwrite the active mobile/desktop editing session.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
@@ -533,7 +537,8 @@ for hub/note hierarchy payloads.
 - Mobile workspace views now live under `src/app/qml/view/mobile/**`. `src/app/qml/view/mobile/MobilePageScaffold.qml`
   keeps the top navigation bar and the bottom status/add-note bar persistent across mobile workspace pages, while
   `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` now mounts the node `174:5026` hierarchy body and the
-  node `174:5169` note-list body through an internal `LV.PageRouter` inside that scaffold.
+  node `174:5169` note-list body plus the node `174:5687` editor body through an internal `LV.PageRouter` inside that
+  scaffold.
 - `MobilePageScaffold.qml` composes the shared `NavigationBarLayout.qml` (`compactMode: true`) and
   `StatusBarLayout.qml`, so mobile pages reuse the same LVRS navigation/sidebar contracts as the desktop shell instead
   of redrawing private chrome.
@@ -547,9 +552,17 @@ for hub/note hierarchy payloads.
 - The same `MobileHierarchyPage.qml` now mounts the mobile note-list body through the shared `ListBarLayout.qml`
   contract instead of duplicating note delegates locally: it binds `SidebarHierarchyViewModel.resolvedNoteListModel`,
   hides the desktop list header with `headerVisible: false`, keeps the note-list body on the same
-  `panelBackground01` canvas, and routes hierarchy row taps into that note-list body.
+  `panelBackground01` canvas, routes hierarchy row taps into that note-list body, and lets the shared list delegate
+  emit `noteActivated(index, noteId)` so mobile routing can follow note selection without a second list-specific
+  delegate stack.
+- `MobileHierarchyPage.qml` now mounts the mobile editor body through the shared `ContentViewLayout.qml` contract and
+  binds the same `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used on
+  desktop, so note-card taps open the real editor for the selected note instead of a mobile-only text surface.
+- The mobile editor route only overrides layout knobs that differ from desktop Figma: it keeps the shared LVRS editor
+  session/persistence wiring, but hides the minimap and drawer, drops the top inset to `0`, removes the frame side
+  inset, and narrows the gutter to `40px` with a `22px` line-number column.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
-  matches the Figma top bar and leaves page undo to swipe navigation instead of a visible back button.
+  and editor views match the Figma top bar and leave page undo to swipe navigation instead of a visible back button.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
   drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
   enum plus route-memory copies.

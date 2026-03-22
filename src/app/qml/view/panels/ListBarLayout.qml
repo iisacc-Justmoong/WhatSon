@@ -34,6 +34,7 @@ Rectangle {
     property string searchText: ""
     property int selectionRequestRevision: 0
 
+    signal noteActivated(int index, string noteId)
     signal viewHookRequested
 
     function activateNoteIndex(index, noteId) {
@@ -52,6 +53,7 @@ Rectangle {
             noteListView.currentIndex = targetIndex;
         listBarLayout.pushCurrentIndexToModel(targetIndex);
         noteListView.forceActiveFocus();
+        listBarLayout.noteActivated(targetIndex, normalizedNoteId);
         Qt.callLater(function () {
             if (listBarLayout.selectionRequestRevision !== requestRevision)
                 return;

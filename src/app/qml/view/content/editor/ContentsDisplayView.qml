@@ -13,6 +13,7 @@ Item {
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
     property color displayColor: LV.Theme.surfaceAlt
+    property bool drawerVisible: true
     property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int editorBottomInset: 16
@@ -28,6 +29,8 @@ Item {
     property alias editorText: editorSession.editorText
     readonly property int editorTextLineBoxHeight: 12
     readonly property int editorTopInset: 48
+    property int editorTopInsetOverride: -1
+    readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
     readonly property var effectiveGutterMarkers: {
         const normalizedMarkers = [];
         if (contentsView.showCurrentLineMarker) {
@@ -51,6 +54,8 @@ Item {
         return normalizedMarkers;
     }
     readonly property int frameHorizontalInset: 2
+    property int frameHorizontalInsetOverride: -1
+    readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
     readonly property color gutterColor: LV.Theme.subSurface
     readonly property int gutterCommentMarkerOffset: 2
     readonly property int gutterCommentRailLeft: 4
@@ -65,10 +70,16 @@ Item {
     property int gutterRefreshRevision: 0
     readonly property real gutterViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
     readonly property int gutterWidth: 74
+    property int gutterWidthOverride: -1
+    readonly property int effectiveGutterWidth: contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     readonly property color lineNumberColor: "#4E5157"
     readonly property int lineNumberColumnLeft: 14
     readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
+    property int lineNumberColumnLeftOverride: -1
+    property int lineNumberColumnTextWidthOverride: -1
+    readonly property int effectiveLineNumberColumnLeft: contentsView.lineNumberColumnLeftOverride >= 0 ? contentsView.lineNumberColumnLeftOverride : contentsView.lineNumberColumnLeft
+    readonly property int effectiveLineNumberColumnTextWidth: contentsView.lineNumberColumnTextWidthOverride >= 0 ? contentsView.lineNumberColumnTextWidthOverride : contentsView.lineNumberColumnTextWidth
     readonly property int lineNumberColumnWidth: 26
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
     readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
@@ -80,6 +91,7 @@ Item {
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
     readonly property color minimapLineColor: contentsView.lineNumberColor
     readonly property int minimapOuterWidth: 56
+    property bool minimapVisible: true
     readonly property int minimapRowGap: 1
     readonly property int minimapTrackInset: 8
     readonly property int minimapTrackWidth: 36
@@ -105,8 +117,8 @@ Item {
     property alias syncingEditorTextFromModel: editorSession.syncingEditorTextFromModel
     readonly property real textOriginY: {
         if (!contentEditor.editorItem)
-            return contentsView.editorTopInset;
-        return (Number(contentEditor.editorItem.y) || contentsView.editorTopInset) + contentsView.editorContentOffsetY;
+            return contentsView.effectiveEditorTopInset;
+        return (Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset) + contentsView.editorContentOffsetY;
     }
     readonly property int visibleNoteCount: selectionBridge.visibleNoteCount
 
@@ -147,7 +159,7 @@ Item {
         const _editorWidth = Number(editorWidth) || 0;
         const _editorContentHeight = Number(editorContentHeight) || 0;
         const value = text === undefined || text === null ? "" : String(text);
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.editorTopInset : contentsView.editorTopInset;
+        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
         if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined || _editorWidth <= 0 || _editorContentHeight <= 0)
             return contentsView.buildFallbackMinimapVisualRows(textStartY);
 
@@ -254,11 +266,11 @@ Item {
         return Number(rect.y) || 0;
     }
     function editorOccupiedContentHeight() {
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.editorTopInset : contentsView.editorTopInset;
+        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
         return Math.max(textStartY + contentsView.documentOccupiedBottomY(), textStartY + contentsView.editorLineHeight);
     }
     function editorViewportYForDocumentY(documentY) {
-        const editorY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.editorTopInset : contentsView.editorTopInset;
+        const editorY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
         return editorY + documentY + contentsView.editorContentOffsetY;
     }
     function firstVisibleLogicalLine() {
@@ -267,7 +279,7 @@ Item {
         if (!flickable)
             return 1;
         const contentY = Math.max(0, Number(flickable.contentY) || 0);
-        const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorTopInset);
+        const firstVisibleDocumentY = Math.max(0, contentY - contentsView.effectiveEditorTopInset);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
     function lineDocumentY(lineNumber) {
@@ -333,7 +345,7 @@ Item {
         if (markerType === "current")
             return contentsView.currentCursorVisualLineY();
         if (!markerSpec)
-            return contentsView.editorTopInset;
+            return contentsView.effectiveEditorTopInset;
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
         return contentsView.lineY(startLine);
     }
@@ -349,7 +361,7 @@ Item {
         return Math.max(1, contentsView.editorOccupiedContentHeight());
     }
     function minimapContentYForLine(lineNumber) {
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.editorTopInset : contentsView.editorTopInset;
+        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
         return textStartY + contentsView.lineDocumentY(lineNumber);
     }
     function minimapCurrentLineHeight() {
@@ -364,7 +376,7 @@ Item {
     }
     function minimapCurrentVisualRow() {
         const rows = Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : [];
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.editorTopInset : contentsView.editorTopInset;
+        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
         const cursorRect = contentsView.currentCursorVisualRowRect();
         const cursorContentY = textStartY + (Number(cursorRect.y) || 0);
         for (let index = 0; index < rows.length; ++index) {
@@ -544,7 +556,11 @@ Item {
     }
     onHeightChanged: contentsView.scheduleGutterRefresh(2)
     onSelectedNoteBodyTextChanged: {
-        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, contentsView.selectedNoteBodyText)) {
+            editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        } else {
+            editorSession.scheduleEditorPersistence();
+        }
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
@@ -653,8 +669,8 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: contentsView.frameHorizontalInset
-                anchors.rightMargin: contentsView.frameHorizontalInset
+                anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
+                anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
                 spacing: 0
                 visible: contentsView.hasSelectedNote
 
@@ -662,7 +678,7 @@ Item {
                     id: gutterLayer
 
                     Layout.fillHeight: true
-                    Layout.preferredWidth: contentsView.gutterWidth
+                    Layout.preferredWidth: contentsView.effectiveGutterWidth
                     activeLineNumberColor: contentsView.activeLineNumberColor
                     currentCursorLineNumber: contentsView.currentCursorLineNumber
                     editorLineHeight: contentsView.editorLineHeight
@@ -673,8 +689,8 @@ Item {
                     gutterIconRailLeft: contentsView.gutterIconRailLeft
                     gutterIconRailWidth: contentsView.gutterIconRailWidth
                     lineNumberColor: contentsView.lineNumberColor
-                    lineNumberColumnLeft: contentsView.lineNumberColumnLeft
-                    lineNumberColumnTextWidth: contentsView.lineNumberColumnTextWidth
+                    lineNumberColumnLeft: contentsView.effectiveLineNumberColumnLeft
+                    lineNumberColumnTextWidth: contentsView.effectiveLineNumberColumnTextWidth
                     lineYResolver: function (lineNumber) {
                         return contentsView.lineY(lineNumber);
                     }
@@ -735,6 +751,7 @@ Item {
                                 contentsView.editorText = text;
                             if (contentsView.syncingEditorTextFromModel)
                                 return;
+                            editorSession.markLocalEditorAuthority();
                             editorSession.scheduleEditorPersistence();
                             contentsView.editorTextEdited(text);
                         }
@@ -742,13 +759,13 @@ Item {
                     Binding {
                         property: "y"
                         target: contentEditor.editorItem
-                        value: contentsView.editorTopInset
+                        value: contentsView.effectiveEditorTopInset
                     }
                     LV.Label {
                         anchors.left: parent.left
                         anchors.leftMargin: contentsView.editorHorizontalInset
                         anchors.top: parent.top
-                        anchors.topMargin: contentsView.editorTopInset
+                        anchors.topMargin: contentsView.effectiveEditorTopInset
                         color: LV.Theme.textTertiary
                         style: body
                         text: "Start typing here"
@@ -800,6 +817,7 @@ Item {
                     scrollToMinimapPositionHandler: function (localY) {
                         contentsView.scrollEditorViewportToMinimapPosition(localY);
                     }
+                    visible: contentsView.minimapVisible
                 }
             }
         }
@@ -814,6 +832,7 @@ Item {
             drawerHeight: contentsView.drawerHeight
             splitterColor: contentsView.splitterColor
             splitterHandleThickness: contentsView.splitterHandleThickness
+            visible: contentsView.drawerVisible
 
             onDrawerHeightDragRequested: function (value) {
                 contentsView.drawerHeightDragRequested(value);
@@ -825,6 +844,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: contentsView.clampDrawerHeight(contentsView.drawerHeight)
             color: contentsView.drawerColor
+            visible: contentsView.drawerVisible
         }
     }
 }

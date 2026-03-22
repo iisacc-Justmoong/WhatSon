@@ -8,6 +8,9 @@ import "../../panels" as PanelView
 Item {
     id: mobileHierarchyPage
 
+    readonly property var activeContentViewModel: mobileHierarchyPage.sidebarHierarchyViewModel
+        ? mobileHierarchyPage.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+        : null
     readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel
         ? mobileHierarchyPage.sidebarHierarchyViewModel.resolvedNoteListModel
         : null
@@ -21,6 +24,7 @@ Item {
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
+    readonly property string editorRoutePath: "/mobile/editor"
     property var editorViewModeViewModel: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
@@ -32,10 +36,17 @@ Item {
         {
             "path": mobileHierarchyPage.noteListRoutePath,
             "component": noteListBodyComponent
+        },
+        {
+            "path": mobileHierarchyPage.editorRoutePath,
+            "component": editorBodyComponent
         }
     ]
     property var navigationModeViewModel: null
     readonly property string noteListRoutePath: "/mobile/note-list"
+    readonly property bool editorPageActive: mobileScaffold.activePageRouter
+        ? String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.editorRoutePath
+        : false
     readonly property bool noteListPageActive: mobileScaffold.activePageRouter
         ? String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.noteListRoutePath
         : false
@@ -108,6 +119,15 @@ Item {
         mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
         mobileHierarchyPage.requestViewHook();
     }
+    function requestOpenEditor(noteId, index) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
+            return;
+        if (String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.editorRoutePath)
+            return;
+        mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);
+        mobileHierarchyPage.requestViewHook();
+    }
     function requestViewHook() {
         viewHookRequested();
     }
@@ -177,7 +197,7 @@ Item {
         bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath
         bodyRoutes: mobileHierarchyPage.mobileBodyRoutes
         canvasColor: mobileHierarchyPage.canvasColor
-        compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive
+        compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive
         compactLeadingActionVisible: false
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
         editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
@@ -282,6 +302,30 @@ Item {
             noteListModel: mobileHierarchyPage.activeNoteListModel
             panelColor: mobileHierarchyPage.canvasColor
             searchText: mobileHierarchyPage.statusSearchText
+
+            onNoteActivated: function (index, noteId) {
+                mobileHierarchyPage.requestOpenEditor(noteId, index);
+            }
+            onViewHookRequested: mobileHierarchyPage.requestViewHook()
+        }
+    }
+    Component {
+        id: editorBodyComponent
+
+        PanelView.ContentViewLayout {
+            contentViewModel: mobileHierarchyPage.activeContentViewModel
+            displayColor: mobileHierarchyPage.canvasColor
+            drawerVisible: false
+            editorTopInsetOverride: LV.Theme.gapNone
+            frameHorizontalInsetOverride: LV.Theme.gapNone
+            gutterWidthOverride: LV.Theme.gap20 * 2
+            libraryHierarchyViewModel: libraryHierarchyViewModel
+            lineNumberColumnLeftOverride: 14
+            lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
+            minimapVisible: false
+            noteListModel: mobileHierarchyPage.activeNoteListModel
+
+            onViewHookRequested: mobileHierarchyPage.requestViewHook()
         }
     }
 }

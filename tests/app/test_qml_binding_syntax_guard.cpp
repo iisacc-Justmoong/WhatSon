@@ -577,6 +577,12 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewSessionText.contains(QStringLiteral("function syncEditorTextFromSelection(noteId, text)")),
         "ContentsEditorSession.qml must resync selection changes through an explicit editor-sync helper.");
     QVERIFY2(
+        contentViewSessionText.contains(QStringLiteral("property bool localEditorAuthority: false")),
+        "ContentsEditorSession.qml must track whether the current note is locally authoritative.");
+    QVERIFY2(
+        contentViewSessionText.contains(QStringLiteral("function shouldAcceptModelBodyText(noteId, text)")),
+        "ContentsEditorSession.qml must gate incoming body syncs through a local-authority helper.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("editorSession.scheduleEditorPersistence();")),
         "ContentsDisplayView.qml must delegate save scheduling through the dedicated editor session.");
     QVERIFY2(
@@ -586,11 +592,20 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("onSelectedNoteBodyTextChanged: {")),
         "ContentViewLayout.qml must resync editor text when the selected note body changes.");
+    const QString selectedNoteBodyChangedBody = extractFunctionBody(
+        contentViewText, QStringLiteral("onSelectedNoteBodyTextChanged:"));
     QVERIFY2(
-        contentViewText.contains(
+        selectedNoteBodyChangedBody.contains(
+            QStringLiteral("editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, contentsView.selectedNoteBodyText)")),
+        "ContentsDisplayView.qml must gate same-note model reloads through the local-authority session helper.");
+    QVERIFY2(
+        selectedNoteBodyChangedBody.contains(
             QStringLiteral(
                 "editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);")),
         "ContentViewLayout.qml must sync incoming note bodies through the guarded editor session.");
+    QVERIFY2(
+        selectedNoteBodyChangedBody.contains(QStringLiteral("editorSession.scheduleEditorPersistence();")),
+        "ContentsDisplayView.qml must reassert the local editor body when storage pushes a divergent same-note payload.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("onSelectedNoteIdChanged: {")),
         "ContentViewLayout.qml must react explicitly when the selected note id changes.");
@@ -606,6 +621,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("editorSession.scheduleEditorPersistence();")),
         "ContentViewLayout.qml must debounce persistence for user edits through the dedicated editor session.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("editorSession.markLocalEditorAuthority();")),
+        "ContentsDisplayView.qml must mark user edits as locally authoritative before persisting them.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("contentsView.editorTextEdited(text);")),
         "ContentViewLayout.qml must emit editorTextEdited(text) from TextEditor edits.");
@@ -1207,6 +1225,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function activateNoteIndex(index, noteId)")),
         "ListBarLayout.qml must centralize immediate note activation through an explicit helper that also captures the visually focused note id.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("signal noteActivated(int index, string noteId)")),
+        "ListBarLayout.qml must expose an explicit noteActivated signal so routed mobile shells can react to note taps without forking the shared delegate.");
     const QString activateNoteIndexBody = extractFunctionBody(
         listBarLayoutText, QStringLiteral("function activateNoteIndex(index, noteId)"));
     QVERIFY2(
@@ -1218,6 +1239,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         activateNoteIndexBody.contains(QStringLiteral("noteDeletionBridge.focusedNoteId = normalizedNoteId;")),
         "ListBarLayout.qml immediate note activation helper must capture the tapped note id for low-latency keyboard deletion.");
+    QVERIFY2(
+        activateNoteIndexBody.contains(QStringLiteral("listBarLayout.noteActivated(targetIndex, normalizedNoteId);")),
+        "ListBarLayout.qml immediate note activation helper must emit the shared noteActivated signal after the authoritative selection update so mobile routing can follow the tapped note.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncCurrentIndexFromModel()")),
         "ListBarLayout.qml must pull currentIndex from the note model back into ListView state.");
@@ -1631,38 +1655,48 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
     const QString mobilePageText = QString::fromUtf8(mobilePageFile.readAll());
     QVERIFY2(
         mobilePageText.contains(
+            QStringLiteral("readonly property var activeContentViewModel: mobileHierarchyPage.sidebarHierarchyViewModel")) &&
+            mobilePageText.contains(QStringLiteral("resolvedHierarchyViewModel")),
+        "MobileHierarchyPage.qml must source the active editor content view-model directly from SidebarHierarchyViewModel so mobile editing follows the same hierarchy-backed model contract as desktop.");
+    QVERIFY2(
+        mobilePageText.contains(
             QStringLiteral("readonly property var activeNoteListModel: mobileHierarchyPage.sidebarHierarchyViewModel")) &&
             mobilePageText.contains(QStringLiteral("resolvedNoteListModel")),
         "MobileHierarchyPage.qml must source the active note-list model directly from SidebarHierarchyViewModel instead of resolving a separate mobile-only list pipeline.");
     QVERIFY2(
+        mobilePageText.contains(QStringLiteral("readonly property string editorRoutePath: \"/mobile/editor\"")) &&
         mobilePageText.contains(QStringLiteral("readonly property string hierarchyRoutePath: \"/mobile/hierarchy\"")) &&
             mobilePageText.contains(QStringLiteral("readonly property string noteListRoutePath: \"/mobile/note-list\"")) &&
             mobilePageText.contains(QStringLiteral("readonly property var mobileBodyRoutes: [")) &&
             mobilePageText.contains(QStringLiteral("\"component\": hierarchyBodyComponent")) &&
-            mobilePageText.contains(QStringLiteral("\"component\": noteListBodyComponent")),
-        "MobileHierarchyPage.qml must declare explicit LV.PageRouter route entries for the hierarchy body and note-list body.");
+            mobilePageText.contains(QStringLiteral("\"component\": noteListBodyComponent")) &&
+            mobilePageText.contains(QStringLiteral("\"component\": editorBodyComponent")),
+        "MobileHierarchyPage.qml must declare explicit LV.PageRouter route entries for the hierarchy body, note-list body, and editor body.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("property int backSwipeSessionId: -1")) &&
             mobilePageText.contains(
                 QStringLiteral("readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter")) &&
             mobilePageText.contains(QStringLiteral("readonly property int backSwipeEdgeWidth: LV.Theme.gap24")) &&
             mobilePageText.contains(
+                QStringLiteral("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.editorRoutePath")) &&
+            mobilePageText.contains(
                 QStringLiteral("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.noteListRoutePath")),
-        "MobileHierarchyPage.qml must derive mobile note-list state from the scaffold PageRouter instead of a private route-memory stack.");
+        "MobileHierarchyPage.qml must derive mobile note-list and editor state from the scaffold PageRouter instead of a private route-memory stack.");
     QVERIFY2(
         mobilePageText.contains(
             QStringLiteral("bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath")) &&
             mobilePageText.contains(QStringLiteral("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes")) &&
             mobilePageText.contains(
-                QStringLiteral("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive")) &&
+                QStringLiteral("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive")) &&
             mobilePageText.contains(QStringLiteral("compactLeadingActionVisible: false")),
-        "MobileHierarchyPage.qml must drive scaffold body routing from the shared mobile PageRouter state while suppressing the compact leading action on the note-list view.");
+        "MobileHierarchyPage.qml must drive scaffold body routing from the shared mobile PageRouter state while suppressing the compact folder affordance on routed note-list and editor views.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("function requestBackToHierarchy()")) &&
+            mobilePageText.contains(QStringLiteral("function requestOpenEditor(noteId, index)")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenNoteList(item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("function routeToHierarchyRoot()")) &&
             mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")),
-        "MobileHierarchyPage.qml must expose explicit open/back helpers and route the compact leading action into hierarchy-page return.");
+        "MobileHierarchyPage.qml must expose explicit hierarchy, note-list, and editor routing helpers while keeping the compact leading action wired to the shared back path.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("LV.PageTransitionController {")) &&
             mobilePageText.contains(QStringLiteral("router: mobileScaffold.activePageRouter")) &&
@@ -1684,6 +1718,21 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("noteListModel: mobileHierarchyPage.activeNoteListModel")) &&
             mobilePageText.contains(QStringLiteral("searchText: mobileHierarchyPage.statusSearchText")),
         "MobileHierarchyPage.qml must reuse ListBarLayout with the shared note-list model while hiding the desktop-only list header so the compact status bar owns mobile search.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("onNoteActivated: function (index, noteId) {")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenEditor(noteId, index);")) &&
+            mobilePageText.contains(QStringLiteral("mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);")),
+        "MobileHierarchyPage.qml must transition from the mobile note-list body into the mobile editor body when a shared note card is activated.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("id: editorBodyComponent")) &&
+            mobilePageText.contains(QStringLiteral("PanelView.ContentViewLayout {")) &&
+            mobilePageText.contains(QStringLiteral("contentViewModel: mobileHierarchyPage.activeContentViewModel")) &&
+            mobilePageText.contains(QStringLiteral("noteListModel: mobileHierarchyPage.activeNoteListModel")) &&
+            mobilePageText.contains(QStringLiteral("drawerVisible: false")) &&
+            mobilePageText.contains(QStringLiteral("minimapVisible: false")) &&
+            mobilePageText.contains(QStringLiteral("gutterWidthOverride: LV.Theme.gap20 * 2")) &&
+            mobilePageText.contains(QStringLiteral("editorTopInsetOverride: LV.Theme.gapNone")),
+        "MobileHierarchyPage.qml must reuse ContentViewLayout for mobile editing while overriding only the layout knobs needed to match the compact Figma editor body.");
     QVERIFY2(
             mobilePageText.contains(QStringLiteral("id: backSwipeEdgeZone")) &&
             mobilePageText.contains(QStringLiteral("visible: mobileHierarchyPage.backNavigationAvailable")) &&

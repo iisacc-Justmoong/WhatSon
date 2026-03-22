@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDateTime>
+#include <QDir>
 #include <QDirIterator>
 #include <QEvent>
 #include <QFileInfo>
@@ -24,6 +25,20 @@ namespace
                  info.isDir() ? QStringLiteral("dir") : QStringLiteral("file"),
                  QString::number(info.size()),
                  QString::number(info.lastModified().toMSecsSinceEpoch()));
+    }
+
+    QString normalizeObservedRelativePath(QString relativePath)
+    {
+        relativePath = QDir::cleanPath(relativePath.trimmed());
+        relativePath.replace(QLatin1Char('\\'), QLatin1Char('/'));
+        return relativePath;
+    }
+
+    bool shouldIgnoreObservedRelativePath(const QString& relativePath)
+    {
+        const QString normalizedRelativePath = normalizeObservedRelativePath(relativePath);
+        return normalizedRelativePath == QStringLiteral(".whatson")
+            || normalizedRelativePath == QStringLiteral(".whatson/write-lease.json");
     }
 }
 
@@ -247,7 +262,12 @@ QByteArray WhatSonHubSyncController::computeHubSignature(const QString& hubPath)
             continue;
         }
 
-        signatureRecords.push_back(signatureRecordForInfo(rootDirectory.relativeFilePath(info.absoluteFilePath()), info));
+        const QString relativePath = rootDirectory.relativeFilePath(info.absoluteFilePath());
+        if (shouldIgnoreObservedRelativePath(relativePath))
+        {
+            continue;
+        }
+        signatureRecords.push_back(signatureRecordForInfo(relativePath, info));
     }
 
     std::sort(signatureRecords.begin(), signatureRecords.end());
@@ -270,6 +290,7 @@ QStringList WhatSonHubSyncController::collectWatchPaths(const QString& hubPath) 
     }
 
     paths.push_back(rootInfo.absoluteFilePath());
+    const QDir rootDirectory(hubPath);
     QDirIterator iterator(
         hubPath,
         QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System,
@@ -279,6 +300,11 @@ QStringList WhatSonHubSyncController::collectWatchPaths(const QString& hubPath) 
         iterator.next();
         const QFileInfo info = iterator.fileInfo();
         if (!info.exists())
+        {
+            continue;
+        }
+        const QString relativePath = rootDirectory.relativeFilePath(info.absoluteFilePath());
+        if (shouldIgnoreObservedRelativePath(relativePath))
         {
             continue;
         }

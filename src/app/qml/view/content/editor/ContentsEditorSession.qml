@@ -5,6 +5,7 @@ Item {
 
     property string editorBoundNoteId: ""
     property string editorText: ""
+    property bool localEditorAuthority: false
     property bool pendingBodySave: false
     readonly property bool persistenceAvailable: selectionBridge && selectionBridge.contentPersistenceContractAvailable !== undefined ? !!selectionBridge.contentPersistenceContractAvailable : false
     property int saveDebounceMs: 300
@@ -40,18 +41,36 @@ Item {
             editorSession.syncingEditorTextFromModel = false;
         });
     }
+    function markLocalEditorAuthority() {
+        editorSession.localEditorAuthority = true;
+    }
     function scheduleEditorPersistence() {
         editorSession.pendingBodySave = true;
         bodySaveTimer.restart();
     }
+    function shouldAcceptModelBodyText(noteId, text) {
+        const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
+        const nextText = text === undefined || text === null ? "" : String(text);
+        const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
+        const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        if (nextNoteId !== currentNoteId)
+            return true;
+        if (currentText === nextText)
+            return true;
+        return !editorSession.localEditorAuthority;
+    }
     function syncEditorTextFromSelection(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
         const nextText = text === undefined || text === null ? "" : String(text);
+        const noteChanged = editorSession.editorBoundNoteId !== nextNoteId;
+        const textChanged = editorSession.editorText !== nextText;
         bodySaveTimer.stop();
         editorSession.pendingBodySave = false;
         editorSession.editorBoundNoteId = nextNoteId;
+        if (noteChanged || textChanged)
+            editorSession.localEditorAuthority = false;
         editorSession.syncingEditorTextFromModel = true;
-        if (editorSession.editorText !== nextText)
+        if (textChanged)
             editorSession.editorText = nextText;
         editorSession.releaseSyncGuard();
         editorSession.editorTextSynchronized();

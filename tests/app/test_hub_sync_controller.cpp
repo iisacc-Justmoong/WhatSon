@@ -26,6 +26,7 @@ class WhatSonHubSyncControllerTest final : public QObject
 
 private slots:
     void requestSyncHint_reloadsWhenHubSignatureChanges();
+    void requestSyncHint_ignoresAppOwnedWriteLeaseChanges();
     void acknowledgeLocalMutation_refreshesBaselineWithoutReload();
 };
 
@@ -66,6 +67,51 @@ void WhatSonHubSyncControllerTest::requestSyncHint_reloadsWhenHubSignatureChange
     QTRY_COMPARE(reloadCount, 1);
     QCOMPARE(syncReloadedSpy.count(), 1);
     QCOMPARE(syncFailedSpy.count(), 0);
+}
+
+void WhatSonHubSyncControllerTest::requestSyncHint_ignoresAppOwnedWriteLeaseChanges()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Lease.wshub"));
+    QVERIFY(QDir().mkpath(hubPath));
+    QVERIFY(writeUtf8File(QDir(hubPath).filePath(QStringLiteral("index.wsnindex")), QStringLiteral("alpha")));
+    QVERIFY(QDir().mkpath(QDir(hubPath).filePath(QStringLiteral(".whatson"))));
+    QVERIFY(
+        writeUtf8File(
+            QDir(hubPath).filePath(QStringLiteral(".whatson/write-lease.json")),
+            QStringLiteral("{\"owner\":\"bootstrap\"}")));
+
+    WhatSonHubSyncController controller;
+    controller.setDebounceIntervalMs(0);
+    controller.setPeriodicIntervalMs(60000);
+
+    QSignalSpy syncReloadedSpy(&controller, &WhatSonHubSyncController::syncReloaded);
+    int reloadCount = 0;
+    controller.setReloadCallback(
+        [&reloadCount](const QString& hubPathArg, QString* errorMessage) -> bool
+        {
+            Q_UNUSED(hubPathArg);
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            ++reloadCount;
+            return true;
+        });
+
+    controller.setCurrentHubPath(hubPath);
+    QVERIFY(
+        writeUtf8File(
+            QDir(hubPath).filePath(QStringLiteral(".whatson/write-lease.json")),
+            QStringLiteral("{\"owner\":\"heartbeat\"}")));
+
+    controller.requestSyncHint();
+
+    QTest::qWait(50);
+    QCOMPARE(reloadCount, 0);
+    QCOMPARE(syncReloadedSpy.count(), 0);
 }
 
 void WhatSonHubSyncControllerTest::acknowledgeLocalMutation_refreshesBaselineWithoutReload()

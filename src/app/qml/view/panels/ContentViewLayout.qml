@@ -9,11 +9,18 @@ Item {
 
     property var contentViewModel: null
     property color displayColor: LV.Theme.surfaceAlt
+    property bool drawerVisible: true
     property color drawerColor: LV.Theme.panelBackground08
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
+    property int editorTopInsetOverride: -1
+    property int frameHorizontalInsetOverride: -1
+    property int gutterWidthOverride: -1
     property var libraryHierarchyViewModel: null
+    property int lineNumberColumnLeftOverride: -1
+    property int lineNumberColumnTextWidthOverride: -1
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
+    property bool minimapVisible: true
     property var noteListModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
@@ -33,11 +40,18 @@ Item {
         anchors.fill: parent
         contentViewModel: contentViewLayout.resolvedContentViewModel
         displayColor: contentViewLayout.displayColor
+        drawerVisible: contentViewLayout.drawerVisible
         drawerColor: contentViewLayout.drawerColor
         drawerHeight: contentViewLayout.drawerHeight
+        editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
+        frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
+        gutterWidthOverride: contentViewLayout.gutterWidthOverride
         libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
+        lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
+        lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
         minDisplayHeight: contentViewLayout.minDisplayHeight
         minDrawerHeight: contentViewLayout.minDrawerHeight
+        minimapVisible: contentViewLayout.minimapVisible
         noteListModel: contentViewLayout.resolvedNoteListModel
         panelViewModel: contentViewLayout.panelViewModel
         splitterColor: contentViewLayout.splitterColor
