@@ -38,8 +38,3 @@ QString WhatSonNoteLinkManagerCreator::linksFileName() const
 {
     return QStringLiteral("links.wsnlink");
 }
-
-QString WhatSonNoteLinkManagerCreator::backlinksFileName() const
-{
-    return QStringLiteral("backlinks.wsnlink");
-}

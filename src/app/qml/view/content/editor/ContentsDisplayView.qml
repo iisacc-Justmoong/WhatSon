@@ -56,7 +56,7 @@ Item {
     readonly property int frameHorizontalInset: 2
     property int frameHorizontalInsetOverride: -1
     readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
-    readonly property color gutterColor: LV.Theme.subSurface
+    property color gutterColor: LV.Theme.subSurface
     readonly property int gutterCommentMarkerOffset: 2
     readonly property int gutterCommentRailLeft: 4
     readonly property int gutterCommentRailWidth: 10
@@ -107,7 +107,7 @@ Item {
     property var panelViewModel: null
     property string pendingEditorFocusNoteId: ""
     property alias pendingBodySave: editorSession.pendingBodySave
-    readonly property int saveDebounceMs: 300
+    readonly property int saveDebounceMs: 120
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused

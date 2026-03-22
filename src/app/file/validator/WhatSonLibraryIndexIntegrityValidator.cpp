@@ -1,52 +1,13 @@
 #include "WhatSonLibraryIndexIntegrityValidator.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
-#include "hub/WhatSonHubWriteLease.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
 
 #include <utility>
-
-namespace
-{
-    bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage)
-    {
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
-
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = file.errorString();
-            }
-            return false;
-        }
-
-        if (file.write(text.toUtf8()) < 0)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = file.errorString();
-            }
-            return false;
-        }
-
-        return true;
-    }
-}
 
 WhatSonLibraryIndexIntegrityValidator::WhatSonLibraryIndexIntegrityValidator() = default;
 
@@ -164,7 +125,7 @@ bool WhatSonLibraryIndexIntegrityValidator::rewriteIndexesFromRecords(
 
         WhatSonLibraryHierarchyCreator libraryCreator;
         QString writeError;
-        if (!writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &writeError))
+        if (!m_ioGateway.writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &writeError))
         {
             WhatSon::Debug::trace(
                 QStringLiteral("library.validator"),

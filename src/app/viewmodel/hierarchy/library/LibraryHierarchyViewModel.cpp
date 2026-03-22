@@ -1,8 +1,8 @@
 #include "LibraryHierarchyViewModel.hpp"
 
 #include "calendar/SystemCalendarStore.hpp"
+#include "file/IO/WhatSonSystemIoGateway.hpp"
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/hub/WhatSonHubWriteLease.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
@@ -615,27 +615,8 @@ namespace
             return false;
         }
 
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(directoryPath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
-
-        QDir directory;
-        if (directory.mkpath(directoryPath))
-        {
-            return true;
-        }
-
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = QStringLiteral("Failed to create directory: %1").arg(directoryPath);
-        }
-        return false;
+        WhatSonSystemIoGateway ioGateway;
+        return ioGateway.ensureDirectory(directoryPath, errorMessage);
     }
 
     QString createAttachmentManifestText(const QString& noteId)
@@ -662,35 +643,20 @@ namespace
 
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
+        WhatSonSystemIoGateway ioGateway;
+        return ioGateway.writeUtf8File(filePath, text, errorMessage);
+    }
 
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Failed to write file: %1").arg(filePath);
-            }
-            return false;
-        }
+    bool removeFilePath(const QString& filePath, QString* errorMessage = nullptr)
+    {
+        WhatSonSystemIoGateway ioGateway;
+        return ioGateway.removeFile(filePath, errorMessage);
+    }
 
-        if (file.write(text.toUtf8()) < 0)
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Failed to write file bytes: %1").arg(filePath);
-            }
-            return false;
-        }
-        return true;
+    bool removeDirectoryPath(const QString& directoryPath, QString* errorMessage = nullptr)
+    {
+        WhatSonSystemIoGateway ioGateway;
+        return ioGateway.removeDirectoryRecursively(directoryPath, errorMessage);
     }
 
     QString resolveNoteHeaderPath(const LibraryNoteRecord& note)
@@ -2600,7 +2566,6 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     const QString attachmentManifestPath = attachCreator.targetPathForNote(noteId);
     const QString linksPath = linkCreator.targetPathForNote(noteId);
     const QString noteDirectoryPath = QFileInfo(headerPath).absolutePath();
-    const QString backlinksPath = QDir(noteDirectoryPath).filePath(linkCreator.backlinksFileName());
 
     if (QFileInfo(noteDirectoryPath).exists())
     {
@@ -2626,7 +2591,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     {
         if (QFileInfo(noteDirectoryPath).exists())
         {
-            QDir(noteDirectoryPath).removeRecursively();
+            removeDirectoryPath(noteDirectoryPath, nullptr);
         }
     };
 
@@ -2691,21 +2656,8 @@ bool LibraryHierarchyViewModel::createEmptyNote()
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=writeLinks path=%1 error=%2").arg(
-                                      linksPath, createError));
-        return false;
-    }
-    if (!writeUtf8File(
-        backlinksPath,
-        createLinkManifestText(noteId, QStringLiteral("whatson.note.backlinks")),
-        &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=writeBacklinks path=%1 error=%2").arg(
-                                      backlinksPath, createError));
+                                      QStringLiteral("reason=writeLinks path=%1 error=%2").arg(
+                                          linksPath, createError));
         return false;
     }
 
@@ -2795,7 +2747,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
                 }
                 else
                 {
-                    QFile::remove(indexPath);
+                    removeFilePath(indexPath, nullptr);
                 }
                 rollbackNoteDirectory();
                 WhatSon::Debug::traceSelf(this,
@@ -2868,7 +2820,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
             }
             else
             {
-                QFile::remove(indexPath);
+                removeFilePath(indexPath, nullptr);
             }
             rollbackNoteDirectory();
             WhatSon::Debug::traceSelf(this,

@@ -6,10 +6,14 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QSaveFile>
 
 namespace
 {
     constexpr int kMaxEnsuredDirectoryCacheSize = 4096;
+    QRecursiveMutex g_systemIoMutationMutex;
 
     QString previewEntries(const QStringList& values, const int maxCount = 8)
     {
@@ -59,6 +63,8 @@ bool WhatSonSystemIoGateway::ensureDirectory(const QString& directoryPath, QStri
                                   QStringLiteral("reason=empty path"));
         return false;
     }
+
+    QMutexLocker<QRecursiveMutex> mutationLock(&g_systemIoMutationMutex);
 
     QString leaseError;
     if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
@@ -128,6 +134,8 @@ bool WhatSonSystemIoGateway::writeUtf8File(const QString& filePath, const QStrin
         return false;
     }
 
+    QMutexLocker<QRecursiveMutex> mutationLock(&g_systemIoMutationMutex);
+
     QString leaseError;
     if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
     {
@@ -157,7 +165,7 @@ bool WhatSonSystemIoGateway::writeUtf8File(const QString& filePath, const QStrin
         return false;
     }
 
-    QFile file(normalizedPath);
+    QSaveFile file(normalizedPath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
     {
         if (errorMessage != nullptr)
@@ -173,8 +181,9 @@ bool WhatSonSystemIoGateway::writeUtf8File(const QString& filePath, const QStrin
         return false;
     }
 
-    const qint64 bytesWritten = file.write(text.toUtf8());
-    if (bytesWritten < 0)
+    const QByteArray utf8Bytes = text.toUtf8();
+    const qint64 bytesWritten = file.write(utf8Bytes);
+    if (bytesWritten != utf8Bytes.size())
     {
         if (errorMessage != nullptr)
         {
@@ -185,6 +194,21 @@ bool WhatSonSystemIoGateway::writeUtf8File(const QString& filePath, const QStrin
                                   QStringLiteral("io.system.gateway"),
                                   QStringLiteral("writeUtf8File.failed"),
                                   QStringLiteral("path=%1 reason=write failed error=%2")
+                                  .arg(normalizedPath, file.errorString()));
+        return false;
+    }
+
+    if (!file.commit())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to commit UTF-8 file: %1 (%2)")
+                .arg(normalizedPath, file.errorString());
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("io.system.gateway"),
+                                  QStringLiteral("writeUtf8File.failed"),
+                                  QStringLiteral("path=%1 reason=commit failed error=%2")
                                   .arg(normalizedPath, file.errorString()));
         return false;
     }
@@ -215,6 +239,8 @@ bool WhatSonSystemIoGateway::appendUtf8File(const QString& filePath, const QStri
                                   QStringLiteral("reason=empty path"));
         return false;
     }
+
+    QMutexLocker<QRecursiveMutex> mutationLock(&g_systemIoMutationMutex);
 
     QString leaseError;
     if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
@@ -362,6 +388,8 @@ bool WhatSonSystemIoGateway::removeFile(const QString& filePath, QString* errorM
         return false;
     }
 
+    QMutexLocker<QRecursiveMutex> mutationLock(&g_systemIoMutationMutex);
+
     QString leaseError;
     if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
     {
@@ -427,6 +455,8 @@ bool WhatSonSystemIoGateway::removeDirectoryRecursively(const QString& directory
                                   QStringLiteral("reason=empty path"));
         return false;
     }
+
+    QMutexLocker<QRecursiveMutex> mutationLock(&g_systemIoMutationMutex);
 
     QString leaseError;
     if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))

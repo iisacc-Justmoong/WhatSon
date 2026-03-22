@@ -144,10 +144,21 @@ Defined in `CMakeLists.txt`:
 - `src/app/qml/view/content/editor/ContentsEditorSession.qml` now tracks per-note local editor authority. Once the
   user edits the selected note, divergent same-note model payloads are rejected and the local editor buffer is
   persisted back out, making the live editing session the source of truth for that note until selection changes.
+- That same editor session now keeps a repeating `120ms` save timer while unsaved text exists, so continuous typing
+  still issues real local `.wsnbody` writes during the active edit stream instead of waiting for a pure idle-only
+  debounce window.
 - Local note storage CRUD is centralized in `src/app/file/note/WhatSonLocalNoteFileStore.*`, with
-  `WhatSonLocalNoteDocument` carrying the local header/body snapshot. Library note creation, body saves, folder-drop
-  assignment, folder hierarchy remaps, and note deletion now all pass through that file-layer object so `.wsnhead` /
-  `.wsnbody` mutations are authored locally first and only then projected back into runtime view-model state.
+  `WhatSonLocalNoteDocument` carrying the local header/body/history/version snapshot. Library note creation, body
+  saves, folder-drop assignment, folder hierarchy remaps, and note deletion now all pass through that file-layer
+  object so `.wsnhead` / `.wsnbody` mutations, `.wsnhistory` diff logging, and `.wsnversion` manifest initialization
+  are authored locally first and only then projected back into runtime view-model state.
+- `src/app/file/note/WhatSonLocalNoteVersionStore.*` layers note-version semantics over that same local file boundary.
+  It persists full snapshot objects into `.wsnversion`, keeps detached-checkout style `currentSnapshotId` /
+  `headSnapshotId` pointers, computes compact header/body diffs between snapshots, and exposes explicit `capture`,
+  `checkout`, and `rollback` operations without moving note file ownership out of the local filesystem.
+- Process-local filesystem writes are serialized inside `src/app/file/IO/WhatSonSystemIoGateway.*`. Mutating
+  operations now share one gateway lock, and full-file UTF-8 rewrites commit through an atomic save path instead of
+  open-truncate-write helpers scattered across validators and view-model code.
 
 Dependency discovery baseline:
 
@@ -237,7 +248,7 @@ Important behavior:
 Responsibilities:
 
 - Parse and normalize workspace files (`*.wshub`, `*.wscontents`, `*.wsfolders`, `*.wstags`, `*.wsnhead`, `*.wsnbody`,
-  `index.wsnindex`)
+  manage append-only note history files (`*.wsnhistory`), and rewrite `index.wsnindex`)
 - Store normalized in-memory state
 - Generate output artifacts for persisted hierarchy structures
 
@@ -359,9 +370,11 @@ Domain-isolated support:
           now live under `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
           `NavigationPreferenceBar.qml` stay at the navigation root.
         - `navigation/control/NavigationApplicationControlBar.qml` compact mode is reduced to the collapsed menu button
-          only; that `LV.IconMenuButton` now uses the `generalsearch` glyph, and tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second mobile-only
-          control strip. The popup anchors from the trigger's bottom-right point, and action-only entries disable the
-          default LVRS shortcut placeholder column so label width matches the intended mobile control-menu layout.
+          only; that `LV.IconMenuButton` now uses the `generalprojectStructure` glyph plus the built-in LVRS chevron
+          indicator, and tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second
+          mobile-only control strip. The popup anchors from the trigger's bottom-right point, and action-only entries
+          disable the default LVRS shortcut placeholder column so label width matches the intended mobile control-menu
+          layout.
         - `navigation/control/NavigationApplicationControlBar.qml` preserves the Figma child order `Calendar -> AppControl -> Export ->
           AddNew -> Preference`, which keeps the create control on the right side of the control-mode application bar.
             - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`,
@@ -421,7 +434,7 @@ Domain-isolated support:
               `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used by desktop.
               Mobile-specific geometry only overrides layout knobs:
               `drawerVisible = false`, `minimapVisible = false`, `editorTopInsetOverride = 0`,
-              `frameHorizontalInsetOverride = 0`, `gutterWidthOverride = 40`, and
+              `frameHorizontalInsetOverride = 0`, `gutterColor = transparent`, `gutterWidthOverride = 40`, and
               `lineNumberColumnTextWidthOverride = 22`.
             - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
               header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
@@ -633,9 +646,9 @@ Library-specific modeling:
 - Accent depth-0 library headers are treated as protected structural roots for rename/delete/move targets even when
   they are not runtime-injected system buckets.
 - `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note scaffold inside the active `.wslibrary` using a
-  mixed-case alphanumeric `16-16` note ID, persists `.wsnhead`, `.wsnbody`, link/backlink manifests, and attachment
-  metadata through the existing note creator stack, then rewrites `index.wsnindex` plus hub stat metadata before
-  focusing the new note in the current folder scope.
+  mixed-case alphanumeric `16-16` note ID, persists `.wsnhead`, `.wsnbody`, an empty `.wsnhistory`, an empty
+  `.wsnversion`, a single `links.wsnlink` manifest, and attachment metadata through the existing note creator stack,
+  then rewrites `index.wsnindex` plus hub stat metadata before focusing the new note in the current folder scope.
 - `WhatSonHubNoteDeletionService` is the file-layer authority for destructive note removal. It deletes the focused
   `.wsnote`, rewrites `index.wsnindex`, updates hub stat metadata, and returns the remaining indexed notes plus updated
   stat state to the caller. Integrity-sensitive path resolution and repair now live under `src/app/file/validator/`:
@@ -649,8 +662,12 @@ Library-specific modeling:
   `noteDeleted(noteId)` so bookmark-only projections can drop the same note without owning file-system deletion
   themselves.
 - `LibraryHierarchyViewModel` no longer writes note headers/bodies through ad-hoc file helpers for note CRUD. It now
-  delegates local note creation and header/body persistence to `WhatSonLocalNoteFileStore`, including folder-drop
-  assignment and folder hierarchy move/rename header rewrites, keeping note file ownership inside one CRUD boundary.
+  delegates local note creation and header/body/history/version persistence to `WhatSonLocalNoteFileStore`, including
+  folder-drop assignment and folder hierarchy move/rename header rewrites, keeping note file ownership inside one CRUD
+  boundary.
+- The same library mutation path now routes companion-file writes (`index.wsnindex`, note attachment/link manifests,
+  stat rewrites, and rollback cleanup) through `WhatSonSystemIoGateway`, reducing intra-process save conflicts and
+  keeping filesystem writes serialized at the IO boundary.
 - `LibraryAll::indexFromWshub()` no longer keeps index-only ghost notes alive when `index.wsnindex` mentions ids whose
   `.wsnote` storage has disappeared. It now delegates that repair to `WhatSonLibraryIndexIntegrityValidator`, so
   orphan entries are pruned from the runtime note set and the library index is rewritten from the remaining
@@ -876,7 +893,11 @@ Hierarchy rendering pipeline:
   action, and suppresses the hierarchy add-folder action. That mobile page now routes through an
   internal `LV.PageRouter` stack and uses `LV.PageTransitionController` plus left-edge `LV.EventListener` touch hooks,
   so mobile-only page undo is committed by the patched LVRS routing runtime instead of replaying a private copied
-  route-memory stack.
+  route-memory stack. `MobileHierarchyPage.qml` also consumes the active touch session after commit or cancel, which
+  prevents a single editor edge-pan from reopening a second pop and jumping straight past the note-list route. The same
+  page also clears the active hierarchy selection whenever routing lands back on `/mobile/hierarchy`, so re-tapping the
+  same folder can reopen the note-list route even though LVRS only raises `listItemActivated(...)` when the active row
+  changes.
 - Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
@@ -924,7 +945,7 @@ Detected package conventions:
     - or dynamic `<HubName>.wscontents`
 - Core hub domains:
     - `Library.wslibrary`
-        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsndiff`, `*.wsnpaint`)
+        - Note storage domain (`*.wsnote`, `*.wsnhead`, `*.wsnbody`, `*.wsnhistory`, `*.wsnversion`, `*.wsnpaint`)
         - Global note index (`index.wsnindex`)
     - `<HubName>.wsresources`
         - Binary/resource storage domain for note attachments (image/video/audio/other payloads)

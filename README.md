@@ -377,10 +377,21 @@ App-owned note and folder mutations do not bounce the runtime through a full rel
 Within `ContentsDisplayView.qml`, a selected note's live editor buffer becomes the source of truth after the user edits
 it once; divergent same-note storage payloads are rejected and re-persisted so runtime reloads cannot steal the caret
 or overwrite the active mobile/desktop editing session.
+The editor save timer no longer waits for a full idle gap before touching disk. While a note body has pending local
+edits, `ContentsEditorSession.qml` now keeps a repeating `120ms` save cadence so continuous typing still commits the
+current buffer into the local filesystem regularly.
 Local note-file CRUD is now centralized under `src/app/file/note/WhatSonLocalNoteFileStore.*` and
 `src/app/file/note/WhatSonLocalNoteDocument.hpp`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
-operations for library note creation, body persistence, folder-drop header rewrites, folder hierarchy remaps, and note
-deletion, so the local filesystem remains the first writer of record before runtime projections or external sync react.
+operations plus per-note `.wsnhistory` append-only diff logging and `.wsnversion` manifest initialization for library
+note creation, body persistence, folder-drop header rewrites, folder hierarchy remaps, and note deletion, so the local
+filesystem remains the first writer of record before runtime projections or external sync react.
+- `src/app/file/note/WhatSonLocalNoteVersionStore.*` adds git-like note version primitives on top of that local file
+  boundary: it captures full working-tree snapshots into `.wsnversion`, tracks `currentSnapshotId` vs
+  `headSnapshotId`, computes compact header/body diffs between any two snapshots, supports detached checkout of an
+  existing snapshot, and appends a fresh rollback snapshot when the user restores an older state.
+App-owned filesystem mutations are also serialized through `src/app/file/IO/WhatSonSystemIoGateway.*`. UTF-8 file
+overwrites now commit through an atomic save path, and library index / note companion writes no longer bypass that
+gateway with ad-hoc `QFile` truncation helpers.
 
 On native desktop host builds, `whatson_export_binaries` now stages a self-contained install tree under `build/dist`
 via `cmake --install`. The same deployment path is used by:
@@ -564,7 +575,8 @@ for hub/note hierarchy payloads.
   desktop, so note-card taps open the real editor for the selected note instead of a mobile-only text surface.
 - The mobile editor route only overrides layout knobs that differ from desktop Figma: it keeps the shared LVRS editor
   session/persistence wiring, but hides the minimap and drawer, drops the top inset to `0`, removes the frame side
-  inset, and narrows the gutter to `40px` with a `22px` line-number column.
+  inset, clears the gutter fill back to transparent, and narrows the gutter to `40px` with a `22px` line-number
+  column.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
   and editor views match the Figma top bar and leave page undo to swipe navigation instead of a visible back button.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
@@ -572,7 +584,12 @@ for hub/note hierarchy payloads.
   enum plus route-memory copies.
 - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
   `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so mobile back
-  navigation follows the patched LVRS routing stack and gesture runtime instead of a local `DragHandler`.
+  navigation follows the patched LVRS routing stack and gesture runtime instead of a local `DragHandler`. The same
+  touch session is now consumed after commit or cancel so an editor back-swipe cannot immediately start a second pop
+  that skips the intermediate note-list route.
+- When the mobile route returns to `/mobile/hierarchy`, `MobileHierarchyPage.qml` now clears the active hierarchy
+  selection through the shared domain view-model, so tapping the same folder after backing out of the note-list or
+  editor reopens the routed note-list body instead of being swallowed by a stale LVRS active-row state.
 - `StatusBarLayout.qml` keeps the compact mobile search field on the LVRS cylinder style, while
   `SidebarHierarchyView.qml` overrides the shared `ListBarHeader.qml` search input back to LVRS `shapeRoundRect` so the
   hierarchy search field stays rounded instead of pill-shaped.
@@ -589,8 +606,9 @@ for hub/note hierarchy payloads.
 - `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
   existing context-menu button, while `NavigationBarLayout.qml` keeps the navigation mode combo on the shared
   `NavigationModeViewModel` without replacing the shared hierarchy footer actions. The compact control menu anchors
-  from the trigger's bottom-right corner, the compact navigation right group resolves in the Figma order `menu ->
-  new folder`, the compact control `LV.IconMenuButton` now uses the `generalsearch` glyph, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
+  from the trigger's bottom-right corner, the compact navigation right group resolves in the Figma order `new folder ->
+  menu`, the compact control `LV.IconMenuButton` now uses the `generalprojectStructure` glyph with the built-in LVRS
+  chevron indicator, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
   budget on mobile.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
@@ -711,8 +729,9 @@ Library runtime classification behavior:
   directory / hub root, and exposes that preview to the note-list card
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
 - `All`: `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note directly under the active `.wslibrary`
-  with a mixed-case alphanumeric `16-16` ID, persists the header/body/link/attachment scaffold through the existing
-  note creators, updates `index.wsnindex` plus hub stat metadata, and keeps the new note selected in the current scope
+  with a mixed-case alphanumeric `16-16` ID, persists the header/body, an empty `.wsnhistory`, an empty
+  `.wsnversion`, a single `links.wsnlink`, and attachment scaffold through the existing note creators, updates
+  `index.wsnindex` plus hub stat metadata, and keeps the new note selected in the current scope
 - `Draft`: filters notes only when the raw `.wsnhead` `<folders>...</folders>` block is present and contains no
   concrete folder text or `<folder>` entries, so stale `.wsnindex` folder values and literal `Draft` text do not
   qualify as draft membership

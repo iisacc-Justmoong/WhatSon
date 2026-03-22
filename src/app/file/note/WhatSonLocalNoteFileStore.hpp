@@ -3,6 +3,7 @@
 #include "WhatSonLocalNoteDocument.hpp"
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 
+#include <QJsonObject>
 #include <QString>
 
 class WhatSonLocalNoteFileStore final
@@ -54,9 +55,18 @@ private:
     QString resolveDirectoryPath(const QString& noteDirectoryPath, const QString& noteHeaderPath, const QString& noteBodyPath) const;
     QString headerPathForDirectory(const QString& noteId, const QString& noteDirectoryPath) const;
     QString bodyPathForDirectory(const QString& noteId, const QString& noteDirectoryPath) const;
+    QString historyPathForDirectory(const QString& noteId, const QString& noteDirectoryPath) const;
+    QString versionPathForDirectory(const QString& noteId, const QString& noteDirectoryPath) const;
     QString currentNoteTimestamp() const;
 
     bool loadHeaderStore(const QString& headerPath, WhatSonNoteHeaderStore* outHeaderStore, QString* errorMessage = nullptr) const;
+    bool appendBodyHistoryDiff(
+        const QString& historyPath,
+        const QString& noteId,
+        const QString& previousBodyText,
+        const QString& nextBodyText,
+        const QString& recordedAt,
+        QString* errorMessage = nullptr) const;
     void applyBodyDocumentText(const QString& bodyDocumentText, WhatSonLocalNoteDocument* document) const;
 
     WhatSonSystemIoGateway m_ioGateway;

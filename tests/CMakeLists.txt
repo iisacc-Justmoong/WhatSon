@@ -816,6 +816,32 @@ target_link_libraries(whatson_local_note_file_store_tests
 add_test(NAME whatson_local_note_file_store_tests COMMAND whatson_local_note_file_store_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_local_note_file_store_tests)
 
+add_executable(whatson_local_note_version_store_tests
+        app/test_whatson_local_note_version_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteVersionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+)
+set_target_properties(whatson_local_note_version_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_local_note_version_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/file/note
+)
+target_link_libraries(whatson_local_note_version_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_local_note_version_store_tests COMMAND whatson_local_note_version_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_local_note_version_store_tests)
+
 add_executable(whatson_hierarchy_io_tests
         app/test_whatson_hierarchy_io.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp

@@ -61,12 +61,16 @@ class EditorFocusTests(unittest.TestCase):
         self.assertIn("function markLocalEditorAuthority()", editor_session_text)
         self.assertIn("function shouldAcceptModelBodyText(noteId, text)", editor_session_text)
         self.assertIn("return !editorSession.localEditorAuthority;", editor_session_text)
+        self.assertIn("property int saveDebounceMs: 120", editor_session_text)
+        self.assertIn("if (!bodySaveTimer.running)", editor_session_text)
+        self.assertIn("repeat: true", editor_session_text)
         self.assertIn(
             "editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, contentsView.selectedNoteBodyText)",
             editor_view_text,
         )
         self.assertIn("editorSession.markLocalEditorAuthority();", editor_view_text)
         self.assertIn("editorSession.scheduleEditorPersistence();", editor_view_text)
+        self.assertIn("readonly property int saveDebounceMs: 120", editor_view_text)
         self.assertIn("live editor buffer becomes the source of truth", readme_text)
         self.assertIn("tracks per-note local editor authority", architecture_text)
         self.assertIn("source of truth for that note until selection changes", architecture_text)

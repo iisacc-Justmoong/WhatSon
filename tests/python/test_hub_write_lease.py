@@ -14,6 +14,9 @@ class HubWriteLeaseTests(unittest.TestCase):
         validator = (
             REPO_ROOT / "src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp"
         ).read_text(encoding="utf-8")
+        library_viewmodel = (
+            REPO_ROOT / "src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp"
+        ).read_text(encoding="utf-8")
         note_deletion = (
             REPO_ROOT / "src/app/file/note/WhatSonHubNoteDeletionService.cpp"
         ).read_text(encoding="utf-8")
@@ -34,7 +37,10 @@ class HubWriteLeaseTests(unittest.TestCase):
         self.assertIn("releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);", app_main)
 
         self.assertIn("ensureWriteLeaseForPath(normalizedPath, &leaseError)", io_gateway)
-        self.assertIn("ensureWriteLeaseForPath(filePath, &leaseError)", validator)
+        self.assertIn("QRecursiveMutex g_systemIoMutationMutex;", io_gateway)
+        self.assertIn("QSaveFile", io_gateway)
+        self.assertIn("m_ioGateway.writeUtf8File(", validator)
+        self.assertIn("WhatSonSystemIoGateway ioGateway;", library_viewmodel)
         self.assertIn("ensureWriteLeaseForPath(normalizedWshubPath, &leaseError)", note_deletion)
 
         self.assertIn(".whatson/write-lease.json", readme)

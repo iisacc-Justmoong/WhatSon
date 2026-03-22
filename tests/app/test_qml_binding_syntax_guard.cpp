@@ -255,6 +255,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("readonly property int gutterWidth: 74")),
         "ContentViewLayout.qml must keep the 74px line-number gutter width from the Figma frame.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("property color gutterColor: LV.Theme.subSurface")),
+        "ContentsDisplayView.qml must keep the desktop gutter default on the LVRS subSurface token while still allowing route-specific overrides.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int frameHorizontalInset: 2")),
         "ContentViewLayout.qml must preserve the Figma 2px horizontal frame inset around the gutter/editor stack.");
     QVERIFY2(
@@ -271,6 +274,10 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewLayoutText.contains(QStringLiteral("contentViewModel: contentViewLayout.resolvedContentViewModel")),
         "ContentViewLayout.qml must pass the resolved content view-model into ContentsDisplayView.");
+    QVERIFY2(
+        contentViewLayoutText.contains(QStringLiteral("property color gutterColor: LV.Theme.subSurface")) &&
+            contentViewLayoutText.contains(QStringLiteral("gutterColor: contentViewLayout.gutterColor")),
+        "ContentViewLayout.qml must expose the shared gutter-color contract so mobile editor routes can clear the gutter fill without forking the editor surface.");
     QVERIFY2(
         contentViewLayoutText.contains(QStringLiteral("noteListModel: contentViewLayout.resolvedNoteListModel")),
         "ContentViewLayout.qml must pass the resolved note-list model into ContentsDisplayView.");
@@ -463,6 +470,13 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewSessionText.contains(QStringLiteral("Timer {")),
         "ContentsEditorSession.qml must use a Timer-backed debounce for body persistence.");
+    QVERIFY2(
+        contentViewSessionText.contains(QStringLiteral("if (!bodySaveTimer.running)")) &&
+        contentViewSessionText.contains(QStringLiteral("bodySaveTimer.start();")),
+        "ContentsEditorSession.qml must keep a running save timer so continuous typing still flushes pending edits to disk.");
+    QVERIFY2(
+        contentViewSessionText.contains(QStringLiteral("repeat: true")),
+        "ContentsEditorSession.qml save timer must repeat so long typing sessions persist through the active edit stream.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("id: gutterRefreshTimer")),
         "ContentViewLayout.qml must use a dedicated timer to resample gutter layout after note changes and resurfacing.");
@@ -1673,6 +1687,7 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("\"component\": editorBodyComponent")),
         "MobileHierarchyPage.qml must declare explicit LV.PageRouter route entries for the hierarchy body, note-list body, and editor body.");
     QVERIFY2(
+        mobilePageText.contains(QStringLiteral("property int backSwipeConsumedSessionId: -1")) &&
         mobilePageText.contains(QStringLiteral("property int backSwipeSessionId: -1")) &&
             mobilePageText.contains(
                 QStringLiteral("readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter")) &&
@@ -1695,16 +1710,20 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("function requestOpenEditor(noteId, index)")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenNoteList(item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("function routeToHierarchyRoot()")) &&
+            mobilePageText.contains(QStringLiteral("function clearActiveHierarchySelection()")) &&
+            mobilePageText.contains(QStringLiteral("function syncRouteSelectionState()")) &&
             mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")),
-        "MobileHierarchyPage.qml must expose explicit hierarchy, note-list, and editor routing helpers while keeping the compact leading action wired to the shared back path.");
+        "MobileHierarchyPage.qml must expose explicit hierarchy, note-list, and editor routing helpers while keeping the compact leading action wired to the shared back path and a dedicated hierarchy-selection reset helper.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("LV.PageTransitionController {")) &&
             mobilePageText.contains(QStringLiteral("router: mobileScaffold.activePageRouter")) &&
             mobilePageText.contains(QStringLiteral("function beginBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("function updateBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("function finishBackSwipeGesture(eventData, cancelled)")) &&
+            mobilePageText.contains(QStringLiteral("sessionId === mobileHierarchyPage.backSwipeConsumedSessionId")) &&
+            !mobilePageText.contains(QStringLiteral("mobileHierarchyPage.backSwipeSessionId < 0 && !mobileHierarchyPage.beginBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("pageTransitionController.shouldCommit(")),
-        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController instead of mutating ad-hoc stack records.");
+        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController while preventing the same touch session from reopening a second back-swipe after a committed or cancelled pop.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("onHierarchyItemActivated: function (item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenNoteList(item, itemId, index);")) &&
@@ -1730,9 +1749,10 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("noteListModel: mobileHierarchyPage.activeNoteListModel")) &&
             mobilePageText.contains(QStringLiteral("drawerVisible: false")) &&
             mobilePageText.contains(QStringLiteral("minimapVisible: false")) &&
+            mobilePageText.contains(QStringLiteral("gutterColor: \"transparent\"")) &&
             mobilePageText.contains(QStringLiteral("gutterWidthOverride: LV.Theme.gap20 * 2")) &&
             mobilePageText.contains(QStringLiteral("editorTopInsetOverride: LV.Theme.gapNone")),
-        "MobileHierarchyPage.qml must reuse ContentViewLayout for mobile editing while overriding only the layout knobs needed to match the compact Figma editor body.");
+        "MobileHierarchyPage.qml must reuse ContentViewLayout for mobile editing while overriding only the layout knobs needed to match the compact Figma editor body, including removing the mobile gutter fill.");
     QVERIFY2(
             mobilePageText.contains(QStringLiteral("id: backSwipeEdgeZone")) &&
             mobilePageText.contains(QStringLiteral("visible: mobileHierarchyPage.backNavigationAvailable")) &&
@@ -1747,6 +1767,13 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
         mobilePageText.contains(QStringLiteral("onActiveNoteListModelChanged: {")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.routeToHierarchyRoot();")),
         "MobileHierarchyPage.qml must fall back to the hierarchy route when the resolved note-list model disappears.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("property string lastObservedRoutePath: hierarchyRoutePath")) &&
+            mobilePageText.contains(QStringLiteral("target: mobileScaffold.activePageRouter")) &&
+            mobilePageText.contains(QStringLiteral("function onCurrentPathChanged() {")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.syncRouteSelectionState();")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.activeContentViewModel.setSelectedIndex(-1);")),
+        "MobileHierarchyPage.qml must clear the active hierarchy selection whenever routing returns to the hierarchy root so tapping the same folder can reopen the note-list route after a mobile back gesture.");
 
     const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/ListBarLayout.qml"));

@@ -11,6 +11,8 @@ struct WhatSonLocalNoteDocument
     QString noteDirectoryPath;
     QString noteHeaderPath;
     QString noteBodyPath;
+    QString noteHistoryPath;
+    QString noteVersionPath;
     WhatSonNoteHeaderStore headerStore;
     QString bodyPlainText;
     QString bodyFirstLine;

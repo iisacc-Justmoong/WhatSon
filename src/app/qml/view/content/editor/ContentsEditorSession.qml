@@ -8,7 +8,7 @@ Item {
     property bool localEditorAuthority: false
     property bool pendingBodySave: false
     readonly property bool persistenceAvailable: selectionBridge && selectionBridge.contentPersistenceContractAvailable !== undefined ? !!selectionBridge.contentPersistenceContractAvailable : false
-    property int saveDebounceMs: 300
+    property int saveDebounceMs: 120
     property var selectionBridge: null
     property bool syncingEditorTextFromModel: false
 
@@ -24,7 +24,6 @@ Item {
             return false;
         }
         if (!editorSession.selectionBridge || editorSession.selectionBridge.persistEditorTextForNote === undefined || !editorSession.persistenceAvailable) {
-            bodySaveTimer.restart();
             return false;
         }
         const saved = editorSession.selectionBridge.persistEditorTextForNote(noteId, editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText));
@@ -33,7 +32,6 @@ Item {
             bodySaveTimer.stop();
             return true;
         }
-        bodySaveTimer.restart();
         return false;
     }
     function releaseSyncGuard() {
@@ -46,7 +44,8 @@ Item {
     }
     function scheduleEditorPersistence() {
         editorSession.pendingBodySave = true;
-        bodySaveTimer.restart();
+        if (!bodySaveTimer.running)
+            bodySaveTimer.start();
     }
     function shouldAcceptModelBodyText(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
@@ -82,8 +81,15 @@ Item {
         id: bodySaveTimer
 
         interval: editorSession.saveDebounceMs
-        repeat: false
+        repeat: true
 
-        onTriggered: editorSession.flushPendingEditorText()
+        onTriggered: {
+            if (!editorSession.pendingBodySave) {
+                stop();
+                return;
+            }
+            if (editorSession.flushPendingEditorText() || !editorSession.pendingBodySave)
+                stop();
+        }
     }
 }

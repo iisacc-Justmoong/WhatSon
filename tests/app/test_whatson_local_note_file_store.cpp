@@ -3,6 +3,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTemporaryDir>
 #include <QtTest/QtTest>
 
@@ -16,6 +18,21 @@ namespace
             return {};
         }
         return QString::fromUtf8(file.readAll());
+    }
+
+    QList<QJsonObject> readHistoryEntries(const QString& filePath)
+    {
+        QList<QJsonObject> entries;
+        const QStringList lines = readUtf8File(filePath).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+        for (const QString& line : lines)
+        {
+            const QJsonDocument document = QJsonDocument::fromJson(line.toUtf8());
+            if (document.isObject())
+            {
+                entries.push_back(document.object());
+            }
+        }
+        return entries;
     }
 }
 
@@ -61,7 +78,15 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QVERIFY2(store.createNote(std::move(createRequest), &createdDocument, &createError), qPrintable(createError));
     QVERIFY(QFileInfo(createdDocument.noteHeaderPath).isFile());
     QVERIFY(QFileInfo(createdDocument.noteBodyPath).isFile());
+    QVERIFY(QFileInfo(createdDocument.noteHistoryPath).isFile());
+    QVERIFY(QFileInfo(createdDocument.noteVersionPath).isFile());
     QVERIFY(QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral(".meta"))).isDir());
+
+    const QList<QJsonObject> initialHistoryEntries = readHistoryEntries(createdDocument.noteHistoryPath);
+    QCOMPARE(initialHistoryEntries.size(), 1);
+    QCOMPARE(initialHistoryEntries.constFirst().value(QStringLiteral("noteId")).toString(), QStringLiteral("Alpha"));
+    QCOMPARE(initialHistoryEntries.constFirst().value(QStringLiteral("removedText")).toString(), QString());
+    QCOMPARE(initialHistoryEntries.constFirst().value(QStringLiteral("insertedText")).toString(), QStringLiteral("alpha\nbeta"));
 
     WhatSonLocalNoteFileStore::ReadRequest readRequest;
     readRequest.noteDirectoryPath = noteDirectoryPath;
@@ -73,6 +98,8 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QCOMPARE(readDocument.headerStore.folders(), QStringList{QStringLiteral("Projects/One")});
     QCOMPARE(readDocument.bodyPlainText, QStringLiteral("alpha\nbeta"));
     QCOMPARE(readDocument.bodyFirstLine, QStringLiteral("alpha"));
+    QCOMPARE(readDocument.noteHistoryPath, createdDocument.noteHistoryPath);
+    QCOMPARE(readDocument.noteVersionPath, createdDocument.noteVersionPath);
     QVERIFY(readUtf8File(readDocument.noteHeaderPath).contains(QStringLiteral("<folder>Projects/One</folder>")));
 
     readDocument.bodyPlainText = QStringLiteral("gamma\ndelta");
@@ -91,6 +118,13 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QCOMPARE(updatedDocument.bodyFirstLine, QStringLiteral("gamma"));
     QCOMPARE(updatedDocument.headerStore.folders(), QStringList{QStringLiteral("Projects/Two")});
     QVERIFY(!updatedDocument.headerStore.lastModifiedAt().trimmed().isEmpty());
+
+    const QList<QJsonObject> updatedHistoryEntries = readHistoryEntries(updatedDocument.noteHistoryPath);
+    QCOMPARE(updatedHistoryEntries.size(), 2);
+    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("prefixLength")).toInt(), 0);
+    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("suffixLength")).toInt(), 2);
+    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("removedText")).toString(), QStringLiteral("alpha\nbe"));
+    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("insertedText")).toString(), QStringLiteral("gamma\ndel"));
 
     WhatSonLocalNoteDocument rereadDocument;
     QVERIFY2(store.readNote(readRequest, &rereadDocument, &readError), qPrintable(readError));
@@ -136,6 +170,7 @@ void WhatSonLocalNoteFileStoreTest::updateNote_headerOnlyRewrite_preservesExisti
     WhatSonLocalNoteDocument createdDocument;
     QString createError;
     QVERIFY2(store.createNote(std::move(createRequest), &createdDocument, &createError), qPrintable(createError));
+    QCOMPARE(readHistoryEntries(createdDocument.noteHistoryPath).size(), 1);
 
     createdDocument.headerStore.setFolders({QStringLiteral("Inbox/Sub")});
 
@@ -156,6 +191,7 @@ void WhatSonLocalNoteFileStoreTest::updateNote_headerOnlyRewrite_preservesExisti
     QVERIFY2(store.readNote(readRequest, &rereadDocument, &readError), qPrintable(readError));
     QCOMPARE(rereadDocument.bodyPlainText, QStringLiteral("body before"));
     QCOMPARE(rereadDocument.headerStore.folders(), QStringList{QStringLiteral("Inbox/Sub")});
+    QCOMPARE(readHistoryEntries(rereadDocument.noteHistoryPath).size(), 1);
 }
 
 QTEST_MAIN(WhatSonLocalNoteFileStoreTest)

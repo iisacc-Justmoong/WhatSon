@@ -152,6 +152,19 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: navigationBar.compactRightGroupSpacing
 
+                    LV.IconButton {
+                        enabled: navigationBar.compactAddFolderEnabled
+                        horizontalPadding: LV.Theme.gap2
+                        iconName: "nodesnewFolder"
+                        tone: LV.AbstractButton.Borderless
+                        verticalPadding: LV.Theme.gap2
+                        visible: navigationBar.compactAddFolderVisible
+
+                        onClicked: {
+                            navigationBar.requestViewHook("compact-create-folder");
+                            navigationBar.compactAddFolderRequested();
+                        }
+                    }
                     Loader {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.preferredHeight: LV.Theme.gap20
@@ -165,19 +178,6 @@ Rectangle {
                             default:
                                 return applicationControlBarComponent;
                             }
-                        }
-                    }
-                    LV.IconButton {
-                        enabled: navigationBar.compactAddFolderEnabled
-                        horizontalPadding: LV.Theme.gap2
-                        iconName: "nodesnewFolder"
-                        tone: LV.AbstractButton.Borderless
-                        verticalPadding: LV.Theme.gap2
-                        visible: navigationBar.compactAddFolderVisible
-
-                        onClicked: {
-                            navigationBar.requestViewHook("compact-create-folder");
-                            navigationBar.compactAddFolderRequested();
                         }
                     }
                 }

@@ -8,14 +8,76 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
 #include <QUrl>
 
+#include <algorithm>
 #include <utility>
 
 namespace
 {
     constexpr auto kNoteTimestampFormat = "yyyy-MM-dd-hh-mm-ss";
+    constexpr auto kNoteHistorySchema = "whatson.note.body.diff";
+    constexpr auto kNoteVersionSchema = "whatson.note.version.store";
+
+    QJsonObject createBodyHistoryDiffEntry(
+        const QString& noteId,
+        const QString& previousBodyText,
+        const QString& nextBodyText,
+        const QString& recordedAt)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        const int maxPrefixLength = std::min(previousBodyText.size(), nextBodyText.size());
+        int prefixLength = 0;
+        while (prefixLength < maxPrefixLength && previousBodyText.at(prefixLength) == nextBodyText.at(prefixLength))
+        {
+            ++prefixLength;
+        }
+
+        const int previousRemainingLength = previousBodyText.size() - prefixLength;
+        const int nextRemainingLength = nextBodyText.size() - prefixLength;
+        const int maxSuffixLength = std::min(previousRemainingLength, nextRemainingLength);
+        int suffixLength = 0;
+        while (suffixLength < maxSuffixLength
+               && previousBodyText.at(previousBodyText.size() - suffixLength - 1)
+                      == nextBodyText.at(nextBodyText.size() - suffixLength - 1))
+        {
+            ++suffixLength;
+        }
+
+        QJsonObject entry;
+        entry.insert(QStringLiteral("version"), 1);
+        entry.insert(QStringLiteral("schema"), QString::fromLatin1(kNoteHistorySchema));
+        entry.insert(QStringLiteral("noteId"), normalizedNoteId);
+        entry.insert(QStringLiteral("recordedAt"), recordedAt.trimmed());
+        entry.insert(QStringLiteral("kind"), QStringLiteral("bodyDiff"));
+        entry.insert(QStringLiteral("baseLength"), previousBodyText.size());
+        entry.insert(QStringLiteral("targetLength"), nextBodyText.size());
+        entry.insert(QStringLiteral("prefixLength"), prefixLength);
+        entry.insert(QStringLiteral("suffixLength"), suffixLength);
+        entry.insert(
+            QStringLiteral("removedText"),
+            previousBodyText.mid(prefixLength, previousRemainingLength - suffixLength));
+        entry.insert(
+            QStringLiteral("insertedText"),
+            nextBodyText.mid(prefixLength, nextRemainingLength - suffixLength));
+        return entry;
+    }
+
+    QString createEmptyVersionDocumentText(const QString& noteId)
+    {
+        QJsonObject root;
+        root.insert(QStringLiteral("version"), 1);
+        root.insert(QStringLiteral("schema"), QString::fromLatin1(kNoteVersionSchema));
+        root.insert(QStringLiteral("noteId"), noteId.trimmed());
+        root.insert(QStringLiteral("currentSnapshotId"), QString());
+        root.insert(QStringLiteral("headSnapshotId"), QString());
+        root.insert(QStringLiteral("snapshots"), QJsonArray{});
+        return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
 
     QString escapeXmlText(QString value)
     {
@@ -341,6 +403,28 @@ QString WhatSonLocalNoteFileStore::bodyPathForDirectory(const QString& noteId, c
     return QDir(normalizedDirectoryPath).filePath(resolveNoteStem(noteId, normalizedDirectoryPath) + QStringLiteral(".wsnbody"));
 }
 
+QString WhatSonLocalNoteFileStore::historyPathForDirectory(const QString& noteId, const QString& noteDirectoryPath) const
+{
+    const QString normalizedDirectoryPath = normalizePath(noteDirectoryPath);
+    if (normalizedDirectoryPath.isEmpty())
+    {
+        return {};
+    }
+    return QDir(normalizedDirectoryPath).filePath(
+        resolveNoteStem(noteId, normalizedDirectoryPath) + QStringLiteral(".wsnhistory"));
+}
+
+QString WhatSonLocalNoteFileStore::versionPathForDirectory(const QString& noteId, const QString& noteDirectoryPath) const
+{
+    const QString normalizedDirectoryPath = normalizePath(noteDirectoryPath);
+    if (normalizedDirectoryPath.isEmpty())
+    {
+        return {};
+    }
+    return QDir(normalizedDirectoryPath).filePath(
+        resolveNoteStem(noteId, normalizedDirectoryPath) + QStringLiteral(".wsnversion"));
+}
+
 QString WhatSonLocalNoteFileStore::currentNoteTimestamp() const
 {
     return QDateTime::currentDateTime().toString(QString::fromLatin1(kNoteTimestampFormat));
@@ -378,6 +462,58 @@ bool WhatSonLocalNoteFileStore::loadHeaderStore(
         if (errorMessage != nullptr)
         {
             *errorMessage = parseError;
+        }
+        return false;
+    }
+
+    return true;
+}
+
+bool WhatSonLocalNoteFileStore::appendBodyHistoryDiff(
+    const QString& historyPath,
+    const QString& noteId,
+    const QString& previousBodyText,
+    const QString& nextBodyText,
+    const QString& recordedAt,
+    QString* errorMessage) const
+{
+    const QString normalizedHistoryPath = normalizePath(historyPath);
+    if (normalizedHistoryPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to resolve local note history path.");
+        }
+        return false;
+    }
+
+    if (!m_ioGateway.exists(normalizedHistoryPath))
+    {
+        QString createError;
+        if (!m_ioGateway.writeUtf8File(normalizedHistoryPath, QString(), &createError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = createError;
+            }
+            return false;
+        }
+    }
+
+    if (previousBodyText == nextBodyText)
+    {
+        return true;
+    }
+
+    const QJsonObject entry = createBodyHistoryDiffEntry(noteId, previousBodyText, nextBodyText, recordedAt);
+    const QString serializedEntry = QString::fromUtf8(QJsonDocument(entry).toJson(QJsonDocument::Compact))
+                                    + QLatin1Char('\n');
+    QString appendError;
+    if (!m_ioGateway.appendUtf8File(normalizedHistoryPath, serializedEntry, &appendError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = appendError;
         }
         return false;
     }
@@ -497,7 +633,9 @@ bool WhatSonLocalNoteFileStore::createNote(
     const QString resolvedNoteId = resolveNoteId(request.noteId, noteDirectoryPath, &request.headerStore);
     const QString headerPath = headerPathForDirectory(resolvedNoteId, noteDirectoryPath);
     const QString bodyPath = bodyPathForDirectory(resolvedNoteId, noteDirectoryPath);
-    if (headerPath.isEmpty() || bodyPath.isEmpty())
+    const QString historyPath = historyPathForDirectory(resolvedNoteId, noteDirectoryPath);
+    const QString versionPath = versionPathForDirectory(resolvedNoteId, noteDirectoryPath);
+    if (headerPath.isEmpty() || bodyPath.isEmpty() || historyPath.isEmpty() || versionPath.isEmpty())
     {
         if (errorMessage != nullptr)
         {
@@ -506,7 +644,8 @@ bool WhatSonLocalNoteFileStore::createNote(
         return false;
     }
 
-    if (QFileInfo(headerPath).exists() || QFileInfo(bodyPath).exists())
+    if (QFileInfo(headerPath).exists() || QFileInfo(bodyPath).exists() || QFileInfo(historyPath).exists()
+        || QFileInfo(versionPath).exists())
     {
         if (errorMessage != nullptr)
         {
@@ -552,7 +691,28 @@ bool WhatSonLocalNoteFileStore::createNote(
         return false;
     }
 
+    const QString historyRecordedAt = request.headerStore.lastModifiedAt().trimmed().isEmpty()
+                                          ? currentNoteTimestamp()
+                                          : request.headerStore.lastModifiedAt().trimmed();
     if (!m_ioGateway.writeUtf8File(bodyPath, serializeBodyDocument(request.headerStore.noteId(), normalizedBodyText), &writeError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = writeError;
+        }
+        return false;
+    }
+
+    if (!appendBodyHistoryDiff(historyPath, request.headerStore.noteId(), QString(), normalizedBodyText, historyRecordedAt, &writeError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = writeError;
+        }
+        return false;
+    }
+
+    if (!m_ioGateway.writeUtf8File(versionPath, createEmptyVersionDocumentText(request.headerStore.noteId()), &writeError))
     {
         if (errorMessage != nullptr)
         {
@@ -566,6 +726,8 @@ bool WhatSonLocalNoteFileStore::createNote(
         outDocument->noteDirectoryPath = noteDirectoryPath;
         outDocument->noteHeaderPath = headerPath;
         outDocument->noteBodyPath = bodyPath;
+        outDocument->noteHistoryPath = historyPath;
+        outDocument->noteVersionPath = versionPath;
         outDocument->headerStore = request.headerStore;
         outDocument->bodyPlainText = normalizedBodyText;
         outDocument->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
@@ -624,7 +786,11 @@ bool WhatSonLocalNoteFileStore::readNote(
     const QString resolvedBodyPath = bodyCandidatePath.isEmpty()
                                          ? normalizePath(WhatSon::NoteBodyPersistence::resolveBodyPath(document.noteDirectoryPath))
                                          : bodyCandidatePath;
+    const QString resolvedHistoryPath = historyPathForDirectory(resolvedNoteId, document.noteDirectoryPath);
+    const QString resolvedVersionPath = versionPathForDirectory(resolvedNoteId, document.noteDirectoryPath);
     document.noteBodyPath = resolvedBodyPath;
+    document.noteHistoryPath = resolvedHistoryPath;
+    document.noteVersionPath = resolvedVersionPath;
 
     if (!resolvedBodyPath.isEmpty() && QFileInfo(resolvedBodyPath).isFile())
     {
@@ -698,6 +864,12 @@ bool WhatSonLocalNoteFileStore::updateNote(
     const QString bodyPath = normalizePath(request.document.noteBodyPath).isEmpty()
                                  ? normalizePath(WhatSon::NoteBodyPersistence::resolveBodyPath(noteDirectoryPath))
                                  : normalizePath(request.document.noteBodyPath);
+    const QString historyPath = normalizePath(request.document.noteHistoryPath).isEmpty()
+                                    ? historyPathForDirectory(resolvedNoteId, noteDirectoryPath)
+                                    : normalizePath(request.document.noteHistoryPath);
+    const QString versionPath = normalizePath(request.document.noteVersionPath).isEmpty()
+                                    ? versionPathForDirectory(resolvedNoteId, noteDirectoryPath)
+                                    : normalizePath(request.document.noteVersionPath);
 
     QString ensureError;
     if (!m_ioGateway.ensureDirectory(noteDirectoryPath, &ensureError))
@@ -712,6 +884,8 @@ bool WhatSonLocalNoteFileStore::updateNote(
     request.document.noteDirectoryPath = noteDirectoryPath;
     request.document.noteHeaderPath = headerPath;
     request.document.noteBodyPath = bodyPath;
+    request.document.noteHistoryPath = historyPath;
+    request.document.noteVersionPath = versionPath;
     if (request.document.headerStore.noteId().trimmed().isEmpty())
     {
         request.document.headerStore.setNoteId(resolvedNoteId);
@@ -719,17 +893,75 @@ bool WhatSonLocalNoteFileStore::updateNote(
     request.document.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodyPlainText);
     request.document.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(request.document.bodyPlainText);
 
+    QString previousBodyText;
+    if (persistBody && !bodyPath.isEmpty() && QFileInfo(bodyPath).isFile())
+    {
+        QString rawBodyText;
+        QString readError;
+        if (!m_ioGateway.readUtf8File(bodyPath, &rawBodyText, &readError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = readError;
+            }
+            return false;
+        }
+
+        WhatSonLocalNoteDocument persistedDocument;
+        persistedDocument.noteDirectoryPath = noteDirectoryPath;
+        persistedDocument.noteHeaderPath = headerPath;
+        persistedDocument.noteBodyPath = bodyPath;
+        applyBodyDocumentText(rawBodyText, &persistedDocument);
+        previousBodyText = persistedDocument.bodyPlainText;
+    }
+
     if (request.touchLastModified)
     {
         request.document.headerStore.setLastModifiedAt(currentNoteTimestamp());
     }
 
     QString writeError;
+    if (!versionPath.isEmpty() && !m_ioGateway.exists(versionPath))
+    {
+        if (!m_ioGateway.writeUtf8File(
+            versionPath,
+            createEmptyVersionDocumentText(request.document.headerStore.noteId()),
+            &writeError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+    }
+
     if (persistBody)
     {
         if (!m_ioGateway.writeUtf8File(
             bodyPath,
             serializeBodyDocument(request.document.headerStore.noteId(), request.document.bodyPlainText),
+            &writeError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+    }
+
+    if (persistBody)
+    {
+        const QString historyRecordedAt = request.document.headerStore.lastModifiedAt().trimmed().isEmpty()
+                                              ? currentNoteTimestamp()
+                                              : request.document.headerStore.lastModifiedAt().trimmed();
+        if (!appendBodyHistoryDiff(
+            historyPath,
+            request.document.headerStore.noteId(),
+            previousBodyText,
+            request.document.bodyPlainText,
+            historyRecordedAt,
             &writeError))
         {
             if (errorMessage != nullptr)

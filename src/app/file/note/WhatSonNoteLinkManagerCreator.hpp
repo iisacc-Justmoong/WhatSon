@@ -13,5 +13,4 @@ public:
     QStringList requiredRelativePaths() const override;
 
     QString linksFileName() const;
-    QString backlinksFileName() const;
 };

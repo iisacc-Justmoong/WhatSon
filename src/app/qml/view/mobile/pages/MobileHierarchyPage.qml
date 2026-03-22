@@ -21,6 +21,7 @@ Item {
         ? mobileScaffold.activePageRouter.canGoBack
         : false
     readonly property int backSwipeEdgeWidth: LV.Theme.gap24
+    property int backSwipeConsumedSessionId: -1
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
@@ -28,6 +29,7 @@ Item {
     property var editorViewModeViewModel: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
+    property string lastObservedRoutePath: hierarchyRoutePath
     readonly property var mobileBodyRoutes: [
         {
             "path": mobileHierarchyPage.hierarchyRoutePath,
@@ -61,12 +63,22 @@ Item {
     function backSwipeViewportWidth() {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
     }
+    function clearActiveHierarchySelection() {
+        if (!mobileHierarchyPage.activeContentViewModel
+                || mobileHierarchyPage.activeContentViewModel.setSelectedIndex === undefined)
+            return false;
+        mobileHierarchyPage.activeContentViewModel.setSelectedIndex(-1);
+        return true;
+    }
     function beginBackSwipeGesture(eventData) {
         if (!mobileHierarchyPage.backNavigationAvailable || !eventData || pageTransitionController.active)
             return false;
         const sessionId = Math.floor(Number(eventData.sessionId) || -1);
         const startGlobalX = Number(eventData.startGlobalX !== undefined ? eventData.startGlobalX : eventData.globalX);
-        if (sessionId < 0 || !isFinite(startGlobalX) || !mobileHierarchyPage.isWithinBackSwipeEdge(startGlobalX))
+        if (sessionId < 0
+                || sessionId === mobileHierarchyPage.backSwipeConsumedSessionId
+                || !isFinite(startGlobalX)
+                || !mobileHierarchyPage.isWithinBackSwipeEdge(startGlobalX))
             return false;
         if (!pageTransitionController.beginBack({
                     "sessionId": sessionId,
@@ -83,6 +95,8 @@ Item {
         if (sessionId >= 0 && sessionId !== mobileHierarchyPage.backSwipeSessionId)
             return false;
         mobileHierarchyPage.backSwipeSessionId = -1;
+        if (sessionId >= 0)
+            mobileHierarchyPage.backSwipeConsumedSessionId = sessionId;
         return pageTransitionController.cancel();
     }
     function isWithinBackSwipeEdge(globalX) {
@@ -94,6 +108,7 @@ Item {
             return;
         if (pageTransitionController.active)
             pageTransitionController.cancel();
+        mobileHierarchyPage.backSwipeConsumedSessionId = -1;
         mobileHierarchyPage.backSwipeSessionId = -1;
         if (mobileScaffold.activePageRouter.canGoBack) {
             mobileScaffold.activePageRouter.back();
@@ -136,6 +151,7 @@ Item {
             return false;
         if (pageTransitionController.active)
             pageTransitionController.cancel();
+        mobileHierarchyPage.backSwipeConsumedSessionId = -1;
         mobileHierarchyPage.backSwipeSessionId = -1;
         if (String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.hierarchyRoutePath
                 && !mobileScaffold.activePageRouter.canGoBack)
@@ -144,6 +160,17 @@ Item {
         mobileHierarchyPage.requestViewHook();
         return true;
     }
+    function syncRouteSelectionState() {
+        if (!mobileScaffold.activePageRouter)
+            return false;
+        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
+        const previousPath = mobileHierarchyPage.lastObservedRoutePath;
+        mobileHierarchyPage.lastObservedRoutePath = currentPath;
+        if (currentPath !== mobileHierarchyPage.hierarchyRoutePath
+                || previousPath === mobileHierarchyPage.hierarchyRoutePath)
+            return false;
+        return mobileHierarchyPage.clearActiveHierarchySelection();
+    }
     function finishBackSwipeGesture(eventData, cancelled) {
         const sessionId = Math.floor(Number(eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1) || -1);
         if (mobileHierarchyPage.backSwipeSessionId < 0)
@@ -151,6 +178,8 @@ Item {
         if (sessionId >= 0 && sessionId !== mobileHierarchyPage.backSwipeSessionId)
             return false;
         mobileHierarchyPage.backSwipeSessionId = -1;
+        if (sessionId >= 0)
+            mobileHierarchyPage.backSwipeConsumedSessionId = sessionId;
         if (!pageTransitionController.active)
             return false;
         if (cancelled)
@@ -166,9 +195,11 @@ Item {
     function updateBackSwipeGesture(eventData) {
         if (!eventData)
             return false;
-        if (mobileHierarchyPage.backSwipeSessionId < 0 && !mobileHierarchyPage.beginBackSwipeGesture(eventData))
-            return false;
         const sessionId = Math.floor(Number(eventData.sessionId) || -1);
+        if (sessionId < 0 || sessionId === mobileHierarchyPage.backSwipeConsumedSessionId)
+            return false;
+        if (mobileHierarchyPage.backSwipeSessionId < 0)
+            return false;
         if (sessionId !== mobileHierarchyPage.backSwipeSessionId || !pageTransitionController.active)
             return false;
         const absoluteDeltaX = Math.abs(Number(eventData.totalDeltaX) || 0);
@@ -188,6 +219,15 @@ Item {
         if (mobileHierarchyPage.activeNoteListModel)
             return;
         mobileHierarchyPage.routeToHierarchyRoot();
+    }
+
+    Connections {
+        target: mobileScaffold.activePageRouter
+        ignoreUnknownSignals: true
+
+        function onCurrentPathChanged() {
+            mobileHierarchyPage.syncRouteSelectionState();
+        }
     }
 
     MobileView.MobilePageScaffold {
@@ -318,6 +358,7 @@ Item {
             drawerVisible: false
             editorTopInsetOverride: LV.Theme.gapNone
             frameHorizontalInsetOverride: LV.Theme.gapNone
+            gutterColor: "transparent"
             gutterWidthOverride: LV.Theme.gap20 * 2
             libraryHierarchyViewModel: libraryHierarchyViewModel
             lineNumberColumnLeftOverride: 14
