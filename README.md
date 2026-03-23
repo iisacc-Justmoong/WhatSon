@@ -111,7 +111,8 @@ WhatSon is an LVRS-based Qt Quick application.
   LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
   instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
   `whatson.library.note` drops directly over hierarchy rows and routes accepted note-to-folder assignments back through
-  the bridge, rewriting the dropped note's `.wsnote` header `<folders>` value to the target hierarchy path.
+  the bridge, appending the dropped target hierarchy path into the note's `.wsnote` header `<folders>` list while
+  preserving every existing folder assignment already known in the runtime note record or persisted header.
 - `HierarchySidebarLayout.qml` and `SidebarHierarchyView.qml` no longer carry unused `frameName` / `frameNodeId`
   passthrough metadata, so the shared hierarchy surfaces expose only state that participates in runtime rendering or
   routing.
@@ -742,10 +743,11 @@ for hub/note hierarchy payloads.
   matching the Figma `HierarchyFooter` node (`134:3178`), with explicit `78x24` sizing, transparent button
   backgrounds, and concrete icon names (`generaladd`, `generaldelete`, `generalsettings`) instead of relying on a
   local custom footer wrapper.
-- Rename interaction policy: when the active hierarchy row is renameable, `SidebarHierarchyView.qml` enters an inline
-  `LV.InputField` overlay on `Enter` / `Return`, temporarily blanks the edited row label to avoid text overlap,
-  commits through the bound view-model `renameItem(...)` contract, and cancels cleanly on `Escape` or
-  selection/toolbar changes.
+- Rename interaction policy: when the selected hierarchy row is renameable, `SidebarHierarchyView.qml` enters an inline
+  `LV.InputField` overlay on `Enter` / `Return`, anchors that overlay to the edited row geometry instead of the current
+  LVRS active-item pointer, seeds the editor with the leaf folder name only, suppresses the edited row label and path
+  fallback while the overlay is active, commits through the bound view-model `renameItem(...)` contract, and cancels
+  cleanly on `Escape` or selection/toolbar changes.
 - The hierarchy toolbar keeps LVRS `Hierarchy` for the list surface, but `SidebarHierarchyView.qml` mounts a dedicated
   fixed `Row` of LVRS icon buttons over the header strip so the eight `20px` icons stay left-anchored on the Figma
   `200px` track with a stable `40 / 7` gap.
@@ -759,8 +761,9 @@ for hub/note hierarchy payloads.
   `renameItem`/`deleteSelectedFolder` targets.
 - Hierarchy list chevrons are derived from parsed depth relationships only (visible only when a direct child exists),
   and sidebar indentation uses a fixed `8px` step per depth level.
-- Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded`, and sidebar delegates follow
-  `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not reserve row space.
+- Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded` without re-activating the row, and
+  sidebar delegates follow `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not
+  reserve row space.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
 - `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`)
 - Projects hierarchy rows keep the runtime Figma `45:2750` contract without extending the persisted project schema:

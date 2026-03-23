@@ -23,6 +23,24 @@ Rectangle {
                 "y": Number(point.y) || 0
             });
     }
+    readonly property var editingHierarchyItem: sidebarHierarchyView.hierarchyItemForResolvedIndex(sidebarHierarchyView.editingHierarchyIndex)
+    readonly property var editingHierarchyItemRect: {
+        const item = sidebarHierarchyView.editingHierarchyItem;
+        if (!item || item.mapToItem === undefined)
+            return ({
+                    "height": 0,
+                    "width": 0,
+                    "x": 0,
+                    "y": 0
+                });
+        const point = item.mapToItem(sidebarHierarchyView, 0, 0);
+        return ({
+                "height": Number(item.height) || 0,
+                "width": Number(item.width) || 0,
+                "x": Number(point.x) || 0,
+                "y": Number(point.y) || 0
+            });
+    }
     property int activeToolbarIndex: defaultToolbarIndex
     readonly property bool createFolderEnabled: hierarchyViewModel ? Boolean(hierarchyViewModel.hierarchyCreateEnabled) : false
     property int defaultToolbarIndex: 0
@@ -63,32 +81,32 @@ Rectangle {
         return LV.Theme.radiusControl;
     }
     readonly property color hierarchyRenameFieldBackgroundColor: {
-        const item = sidebarHierarchyView.activeHierarchyItem;
+        const item = sidebarHierarchyView.editingHierarchyItem;
         if (item && item.rowBackgroundColor !== undefined)
             return item.rowBackgroundColor;
         return LV.Theme.accentBlueMuted;
     }
     readonly property real hierarchyRenameFieldHeight: {
-        const item = sidebarHierarchyView.activeHierarchyItem;
+        const item = sidebarHierarchyView.editingHierarchyItem;
         return Math.max(16, item ? (Number(item.rowHeight) || Number(item.height) || 20) : 20);
     }
     readonly property real hierarchyRenameFieldWidth: {
-        const item = sidebarHierarchyView.activeHierarchyItem;
+        const item = sidebarHierarchyView.editingHierarchyItem;
         if (!item)
             return 0;
         const chevronWidth = item.effectiveShowChevron ? (Number(item.chevronSize) || 0) + (Number(item.leadingSpacing) || 0) : 0;
         const usedWidth = (Number(item.leftPadding) || 0) + (Number(item.rightPadding) || 0) + (Number(item.iconSize) || 0) + (Number(item.leadingSpacing) || 0) + chevronWidth;
-        return Math.max(0, (Number(sidebarHierarchyView.activeHierarchyItemRect.width) || 0) - usedWidth);
+        return Math.max(0, (Number(sidebarHierarchyView.editingHierarchyItemRect.width) || 0) - usedWidth);
     }
     readonly property real hierarchyRenameFieldX: {
-        const item = sidebarHierarchyView.activeHierarchyItem;
+        const item = sidebarHierarchyView.editingHierarchyItem;
         if (!item)
             return 0;
-        return (Number(sidebarHierarchyView.activeHierarchyItemRect.x) || 0) + (Number(item.leftPadding) || 0) + (Number(item.iconSize) || 0) + (Number(item.leadingSpacing) || 0);
+        return (Number(sidebarHierarchyView.editingHierarchyItemRect.x) || 0) + (Number(item.leftPadding) || 0) + (Number(item.iconSize) || 0) + (Number(item.leadingSpacing) || 0);
     }
     readonly property real hierarchyRenameFieldY: {
-        const rectY = Number(sidebarHierarchyView.activeHierarchyItemRect.y) || 0;
-        const rectHeight = Number(sidebarHierarchyView.activeHierarchyItemRect.height) || 0;
+        const rectY = Number(sidebarHierarchyView.editingHierarchyItemRect.y) || 0;
+        const rectHeight = Number(sidebarHierarchyView.editingHierarchyItemRect.height) || 0;
         return rectY + Math.max(0, Math.floor((rectHeight - sidebarHierarchyView.hierarchyRenameFieldHeight) * 0.5));
     }
     property var hierarchyViewModel: null
@@ -136,7 +154,7 @@ Rectangle {
     signal viewHookRequested
 
     function beginRenameSelectedHierarchyItem() {
-        if (!sidebarHierarchyView.canRenameSelectedHierarchyItem() || !sidebarHierarchyView.activeHierarchyItem)
+        if (!sidebarHierarchyView.canRenameSelectedHierarchyItem())
             return false;
         sidebarHierarchyView.editingHierarchyIndex = sidebarHierarchyView.selectedFolderIndex;
         sidebarHierarchyView.editingHierarchyLabel = sidebarHierarchyView.selectedHierarchyItemLabel();
@@ -476,6 +494,18 @@ Rectangle {
         sidebarHierarchyView.noteDropHoverIndex = target.index;
         return true;
     }
+    function leafHierarchyItemLabel(rawLabel) {
+        const normalizedLabel = rawLabel === undefined || rawLabel === null ? "" : String(rawLabel).trim();
+        if (!normalizedLabel.length)
+            return "";
+        const segments = normalizedLabel.split("/");
+        for (let index = segments.length - 1; index >= 0; --index) {
+            const segment = String(segments[index]).trim();
+            if (segment.length)
+                return segment;
+        }
+        return normalizedLabel;
+    }
     function projectedHierarchyModel(modelValue) {
         const normalizedModel = sidebarHierarchyView.normalizeHierarchyModel(modelValue);
         if (!sidebarHierarchyView.renameEditingActive)
@@ -485,7 +515,9 @@ Rectangle {
             return normalizedModel;
         const projectedModel = normalizedModel.slice();
         const projectedItem = sidebarHierarchyView.cloneHierarchyItem(projectedModel[editingIndex]);
-        projectedItem.label = "";
+        projectedItem.label = " ";
+        projectedItem.key = "";
+        projectedItem.itemKey = "";
         projectedModel[editingIndex] = projectedItem;
         return projectedModel;
     }
@@ -528,14 +560,21 @@ Rectangle {
         const selectedIndex = Math.floor(Number(sidebarHierarchyView.selectedFolderIndex) || -1);
         if (selectedIndex < 0)
             return "";
-        if (sidebarHierarchyView.hierarchyViewModel)
-            return String(sidebarHierarchyView.hierarchyViewModel.hierarchyItemLabelAt(selectedIndex));
-        if (sidebarHierarchyView.activeHierarchyItem && sidebarHierarchyView.activeHierarchyItem.text !== undefined)
-            return String(sidebarHierarchyView.activeHierarchyItem.text);
         const item = sidebarHierarchyView.standardHierarchyModel[selectedIndex];
-        if (!item || item.label === undefined || item.label === null)
-            return "";
-        return String(item.label);
+        if (item && item.label !== undefined && item.label !== null) {
+            const projectedLabel = sidebarHierarchyView.leafHierarchyItemLabel(item.label);
+            if (projectedLabel.length)
+                return projectedLabel;
+        }
+        if (sidebarHierarchyView.hierarchyViewModel) {
+            const modelLabel = sidebarHierarchyView.leafHierarchyItemLabel(
+                        sidebarHierarchyView.hierarchyViewModel.hierarchyItemLabelAt(selectedIndex));
+            if (modelLabel.length)
+                return modelLabel;
+        }
+        if (sidebarHierarchyView.activeHierarchyItem && sidebarHierarchyView.activeHierarchyItem.text !== undefined)
+            return sidebarHierarchyView.leafHierarchyItemLabel(sidebarHierarchyView.activeHierarchyItem.text);
+        return "";
     }
     function syncSelectedHierarchyItem(focusView) {
         if (selectedFolderIndex < 0)
@@ -674,7 +713,7 @@ Rectangle {
         style: inlineStyle
         textColor: LV.Theme.bodyColor
         textColorDisabled: LV.Theme.disabledColor
-        visible: sidebarHierarchyView.renameEditingActive && !!sidebarHierarchyView.activeHierarchyItem && sidebarHierarchyView.hierarchyRenameFieldWidth > 0
+        visible: sidebarHierarchyView.renameEditingActive && !!sidebarHierarchyView.editingHierarchyItem && sidebarHierarchyView.hierarchyRenameFieldWidth > 0
         width: sidebarHierarchyView.hierarchyRenameFieldWidth
         x: sidebarHierarchyView.hierarchyRenameFieldX
         y: sidebarHierarchyView.hierarchyRenameFieldY

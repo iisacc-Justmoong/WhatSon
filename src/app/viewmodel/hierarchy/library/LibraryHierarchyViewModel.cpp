@@ -761,41 +761,87 @@ namespace
         return false;
     }
 
-    QStringList folderAssignmentForDrop(QStringList existingFolders, const QString& folderPath)
+    void appendDistinctFolderValue(
+        QStringList* targetFolders,
+        QSet<QString>* targetKeys,
+        const QString& folderValue,
+        bool preserveOriginalValue)
     {
-        QStringList assignedFolders;
-        assignedFolders.reserve(existingFolders.size() + 1);
-        QSet<QString> assignedFolderKeys;
-
-        auto appendFolder = [&assignedFolders, &assignedFolderKeys](
-                                const QString& folderValue,
-                                bool preserveOriginalValue)
+        if (targetFolders == nullptr || targetKeys == nullptr)
         {
-            const QString trimmedValue = folderValue.trimmed();
-            const QString normalizedFolderPath = normalizeFolderPath(trimmedValue);
-            const QString normalizedFolderKey = normalizeFolderLookupKey(trimmedValue);
-            if (normalizedFolderKey.isEmpty() || assignedFolderKeys.contains(normalizedFolderKey))
-            {
-                return;
-            }
-
-            assignedFolderKeys.insert(normalizedFolderKey);
-            assignedFolders.push_back(
-                preserveOriginalValue ? trimmedValue : normalizedFolderPath);
-        };
-
-        for (const QString& existingFolder : std::as_const(existingFolders))
-        {
-            appendFolder(existingFolder, true);
+            return;
         }
 
-        appendFolder(folderPath, false);
+        const QString trimmedValue = folderValue.trimmed();
+        const QString normalizedFolderPath = normalizeFolderPath(trimmedValue);
+        const QString normalizedFolderKey = normalizeFolderLookupKey(trimmedValue);
+        if (normalizedFolderKey.isEmpty() || targetKeys->contains(normalizedFolderKey))
+        {
+            return;
+        }
+
+        targetKeys->insert(normalizedFolderKey);
+        targetFolders->push_back(preserveOriginalValue ? trimmedValue : normalizedFolderPath);
+    }
+
+    QStringList mergeFolderAssignments(const QStringList& primaryFolders, const QStringList& secondaryFolders)
+    {
+        QStringList mergedFolders;
+        mergedFolders.reserve(primaryFolders.size() + secondaryFolders.size());
+        QSet<QString> mergedFolderKeys;
+
+        for (const QString& primaryFolder : primaryFolders)
+        {
+            appendDistinctFolderValue(&mergedFolders, &mergedFolderKeys, primaryFolder, true);
+        }
+
+        for (const QString& secondaryFolder : secondaryFolders)
+        {
+            appendDistinctFolderValue(&mergedFolders, &mergedFolderKeys, secondaryFolder, true);
+        }
+
+        return mergedFolders;
+    }
+
+    QStringList folderAssignmentForDrop(const QStringList& existingFolders, const QString& folderPath)
+    {
+        QStringList assignedFolders = mergeFolderAssignments(existingFolders, {});
+        QSet<QString> assignedFolderKeys;
+        assignedFolderKeys.reserve(assignedFolders.size());
+        for (const QString& assignedFolder : std::as_const(assignedFolders))
+        {
+            const QString assignedFolderKey = normalizeFolderLookupKey(assignedFolder);
+            if (!assignedFolderKey.isEmpty())
+            {
+                assignedFolderKeys.insert(assignedFolderKey);
+            }
+        }
+
+        appendDistinctFolderValue(&assignedFolders, &assignedFolderKeys, folderPath, false);
         if (assignedFolders.isEmpty())
         {
             return {};
         }
 
         return assignedFolders;
+    }
+
+    bool folderListsMatch(const QStringList& lhs, const QStringList& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            if (normalizeFolderLookupKey(lhs.at(index)) != normalizeFolderLookupKey(rhs.at(index)))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     QString rejectNoteDropReason(
@@ -2464,7 +2510,14 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    if (folderListContainsPath(noteDocument.headerStore.folders(), targetFolderPath))
+    const QStringList mergedExistingFolders = mergeFolderAssignments(
+        note.folders,
+        noteDocument.headerStore.folders());
+    const QStringList assignedFolders = folderAssignmentForDrop(mergedExistingFolders, targetFolderPath);
+    const bool targetAlreadyAssigned = folderListContainsPath(mergedExistingFolders, targetFolderPath);
+    const bool headerAlreadyMatchesAssignment = folderListsMatch(noteDocument.headerStore.folders(), assignedFolders);
+
+    if (targetAlreadyAssigned && headerAlreadyMatchesAssignment)
     {
         syncNoteRecordFromDocument(&note, noteDocument);
         m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
@@ -2474,14 +2527,15 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("assignNoteToFolder.noopAlreadyAssigned"),
-                                  QStringLiteral("index=%1 noteId=%2 folder=%3")
+                                  QStringLiteral("index=%1 noteId=%2 folder=%3 existingCount=%4")
                                   .arg(index)
                                   .arg(noteId)
-                                  .arg(targetFolderPath));
+                                  .arg(targetFolderPath)
+                                  .arg(assignedFolders.size()));
         return true;
     }
 
-    noteDocument.headerStore.setFolders(folderAssignmentForDrop(noteDocument.headerStore.folders(), targetFolderPath));
+    noteDocument.headerStore.setFolders(assignedFolders);
     noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
 
     WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
@@ -2509,9 +2563,11 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("assignNoteToFolder.success"),
-                              QStringLiteral("index=%1 noteId=%2 folder=%3")
+                              QStringLiteral("index=%1 noteId=%2 folder=%3 assignedCount=%4")
                               .arg(index)
-                              .arg(noteId, targetFolderPath));
+                              .arg(noteId)
+                              .arg(targetFolderPath)
+                              .arg(assignedFolders.size()));
     emit hubFilesystemMutated();
     return true;
 }

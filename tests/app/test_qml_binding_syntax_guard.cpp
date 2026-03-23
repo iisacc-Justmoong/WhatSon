@@ -834,15 +834,27 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("signal hierarchyItemActivated(var item, int itemId, int index)")) &&
             sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyItemActivated(item, itemId, index);")),
         "SidebarHierarchyView.qml must re-emit hierarchy row activation after syncing selection so mobile routing can subscribe without bypassing the bound view-model.");
+    const QString lvrsHierarchyItemPath =
+        QStringLiteral("/Users/ymy/.local/LVRS/src/LVRS/qml/components/navigation/HierarchyItem.qml");
+    QFile lvrsHierarchyItemFile(lvrsHierarchyItemPath);
+    QVERIFY2(lvrsHierarchyItemFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(lvrsHierarchyItemPath));
+    const QString lvrsHierarchyItemText = QString::fromUtf8(lvrsHierarchyItemFile.readAll());
+    QVERIFY2(
+        lvrsHierarchyItemText.contains(QStringLiteral("control.expanded = !control.expanded")) &&
+            !lvrsHierarchyItemText.contains(QStringLiteral(
+                "control.expanded = !control.expanded\n                        control.requestActivationFromInteraction(\"click\")")),
+        "LVRS HierarchyItem.qml chevron clicks must toggle expansion without re-requesting row activation, or folder chevrons will incorrectly route into note lists.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function normalizeHierarchyModel(modelValue)")),
         "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function projectedHierarchyModel(modelValue)")) &&
-        sidebarViewText.contains(QStringLiteral("projectedItem.label = \"\";")) &&
+        sidebarViewText.contains(QStringLiteral("projectedItem.label = \" \";")) &&
+        sidebarViewText.contains(QStringLiteral("projectedItem.key = \"\";")) &&
+        sidebarViewText.contains(QStringLiteral("projectedItem.itemKey = \"\";")) &&
         sidebarViewText.contains(QStringLiteral(
             "readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : [])")),
-        "SidebarHierarchyView.qml must project the direct hierarchy model through a rename-safe view that blanks the edited row label while inline rename is active.");
+        "SidebarHierarchyView.qml must project the direct hierarchy model through a rename-safe view that suppresses the edited row label and path-key fallback while inline rename is active.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property var hierarchyDragDropBridge: null")),
         "SidebarHierarchyView.qml must accept a dedicated hierarchy drag/drop bridge instead of embedding local reorder state.");
@@ -877,6 +889,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("property string editingHierarchyLabel: \"\"")),
         "SidebarHierarchyView.qml must store the transient rename text separately from the model snapshot.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral(
+            "readonly property var editingHierarchyItem: sidebarHierarchyView.hierarchyItemForResolvedIndex(sidebarHierarchyView.editingHierarchyIndex)")) &&
+            sidebarViewText.contains(QStringLiteral("readonly property var editingHierarchyItemRect: {")),
+        "SidebarHierarchyView.qml inline rename overlay must resolve geometry from the edited hierarchy row instead of the current active LVRS item.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function beginRenameSelectedHierarchyItem()")),
         "SidebarHierarchyView.qml must expose a keyboard-driven entrypoint for inline hierarchy rename.");
     QVERIFY2(
@@ -901,9 +918,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             QStringLiteral("backgroundColorFocused: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor")),
         "SidebarHierarchyView.qml inline rename field must inherit the active row background so the original label never bleeds through the overlay.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("const item = sidebarHierarchyView.editingHierarchyItem;")) &&
+            sidebarViewText.contains(QStringLiteral(
+                "visible: sidebarHierarchyView.renameEditingActive && !!sidebarHierarchyView.editingHierarchyItem && sidebarHierarchyView.hierarchyRenameFieldWidth > 0")),
+        "SidebarHierarchyView.qml inline rename field must mount and size itself from the edited hierarchy row instead of a stale active item.");
+    QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("sidebarHierarchyView.hierarchyViewModel.renameHierarchyItemAt(renameIndex, nextLabel)")),
         "SidebarHierarchyView.qml must commit inline rename through the shared hierarchy interface contract.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function leafHierarchyItemLabel(rawLabel)")) &&
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.leafHierarchyItemLabel(item.label)")) &&
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.hierarchyItemLabelAt(selectedIndex)")),
+        "SidebarHierarchyView.qml inline rename must normalize hierarchy labels to the final leaf segment before seeding the editor text.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(

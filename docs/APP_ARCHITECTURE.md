@@ -947,6 +947,8 @@ Hierarchy rendering pipeline:
   dismissal, resize render-quality policy, and global navigation shortcut policy.
 - Chevron fold/unfold is handled directly by LVRS `Hierarchy`/`HierarchyList` through the serialized
   `expanded`/`showChevron` roles emitted by each hierarchy view-model.
+- Chevron input policy: chevron/toggle input expands or collapses the subtree only. It must not emit an activation path
+  that changes the selected hierarchy row or triggers route transitions.
 - Row-activation policy: LVRS `Hierarchy.listItemActivated(...)` is authoritative. WhatSon mirrors the resulting
   `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays selection with
   `activateListItemById(...)` when the underlying model changes. The same activation is also re-emitted through
@@ -962,10 +964,11 @@ Hierarchy rendering pipeline:
   and explicit `generaladd` / `generaldelete` / `generalsettings` icon names. The hierarchy list reserves that footer
   height explicitly instead of routing footer actions through a local wrapper.
 - Inline-rename policy: `SidebarHierarchyView.qml` owns the transient rename session locally, opens an inline
-  `LV.InputField` over the active LVRS hierarchy row on `Enter` / `Return` only when the bound domain exposes
-  `canRenameItem(...)` and `renameItem(...)`, projects the edited row label to an empty string while the overlay is
-  active, commits via the domain view-model, and cancels on `Escape`, toolbar switches, or selection changes so rename
-  state never leaks across hierarchy contexts.
+  `LV.InputField` over the edited hierarchy row on `Enter` / `Return` only when the bound domain exposes
+  `canRenameItem(...)` and `renameItem(...)`, derives the editor seed text from the final leaf segment instead of a
+  canonical full path, suppresses the edited row label and path-key fallback while the overlay is active, commits via
+  the domain view-model, and cancels on `Escape`, toolbar switches, or selection changes so rename state never leaks
+  across hierarchy contexts.
 - Footer CRUD scope policy: only library, projects, and tags expose active hierarchy footer `createFolder()` /
   `deleteSelectedFolder()` contracts. Bookmarks, resources, progress, event, and preset keep those buttons disabled
   because their rows are runtime projections rather than user-created hierarchy nodes.
@@ -1019,9 +1022,11 @@ Hierarchy rendering pipeline:
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
   `HierarchyDragDropBridge::assignNoteToFolder(...)`, which appends the dropped hierarchy path into the note header
-  `<folders>` payload while preserving existing folder assignments. The same drop path resolves the dragged note id
-  from the drag event payload first via `application/x-whatson-note-id`, then `text/plain`, so folder assignment does
-  not depend on `drag.source` surviving every Qt drag backend. Desktop internal drags share the same validation and
+  `<folders>` payload while preserving existing folder assignments. The append source must be the union of the
+  persisted header folders plus the in-memory runtime note record folders, so a stale or truncated header can never
+  collapse a multi-folder note back to a single dropped folder. The same drop path resolves the dragged note id from
+  the drag event payload first via `application/x-whatson-note-id`, then `text/plain`, so folder assignment does not
+  depend on `drag.source` surviving every Qt drag backend. Desktop internal drags share the same validation and
   persistence path by mapping the release point into the LVRS hierarchy coordinate space and calling the same
   `assignNoteToFolder(...)` bridge directly, so the in-scene card preview no longer breaks folder assignment. The
   hovered folder row is now previewed with a pulsing active-style overlay whenever that same shared validation path
