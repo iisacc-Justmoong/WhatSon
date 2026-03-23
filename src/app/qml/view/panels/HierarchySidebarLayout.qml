@@ -6,13 +6,13 @@ Item {
     id: hierarchyView
 
     readonly property bool createFolderEnabled: sidebarView.createFolderEnabled
-    readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
+    readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0
     property bool footerVisible: true
     property int horizontalInset: LV.Theme.gap2
     readonly property var noteDropTargetView: sidebarView
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
-    readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+    readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null
     required property var sidebarHierarchyViewModel
     property bool searchFieldVisible: false
     property int searchHeaderHorizontalInset: LV.Theme.gap2
@@ -31,51 +31,9 @@ Item {
     signal searchTextEdited(string text)
     signal viewHookRequested
 
-    function frameNameForHierarchy(index) {
-        switch (index) {
-        case hierarchyEnum.library:
-            return "HierarchyView-Library";
-        case hierarchyEnum.projects:
-            return "HierarchyView-Projects";
-        case hierarchyEnum.bookmarks:
-            return "HierarchyView-Bookmarks";
-        case hierarchyEnum.tags:
-            return "HierarchyView-Tags";
-        case hierarchyEnum.resources:
-            return "HierarchyView-Resources";
-        case hierarchyEnum.progress:
-            return "HierarchyView-Progress";
-        case hierarchyEnum.event:
-            return "HierarchyView-Event";
-        case hierarchyEnum.preset:
-            return "HierarchyView-Preset";
-        default:
-            return "HierarchyView-Unknown";
-        }
-    }
-    function frameNodeIdForHierarchy(index) {
-        switch (index) {
-        case hierarchyEnum.library:
-            return "sidebar.hierarchy.library";
-        case hierarchyEnum.projects:
-            return "sidebar.hierarchy.projects";
-        case hierarchyEnum.bookmarks:
-            return "sidebar.hierarchy.bookmarks";
-        case hierarchyEnum.tags:
-            return "sidebar.hierarchy.tags";
-        case hierarchyEnum.resources:
-            return "sidebar.hierarchy.resources";
-        case hierarchyEnum.progress:
-            return "sidebar.hierarchy.progress";
-        case hierarchyEnum.event:
-            return "sidebar.hierarchy.event";
-        case hierarchyEnum.preset:
-            return "sidebar.hierarchy.preset";
-        default:
-            return "sidebar.hierarchy.unknown";
-        }
-    }
     function setActiveHierarchyIndex(index) {
+        if (!hierarchyView.sidebarHierarchyViewModel || hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex === undefined)
+            return;
         hierarchyView.sidebarHierarchyViewModel.setActiveHierarchyIndex(index);
         hierarchyView.activeToolbarIndexChangeRequested(hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex);
     }
@@ -107,8 +65,6 @@ Item {
         anchors.fill: parent
         defaultToolbarIndex: hierarchyEnum.library
         footerVisible: hierarchyView.footerVisible
-        frameName: hierarchyView.frameNameForHierarchy(hierarchyView.currentHierarchy)
-        frameNodeId: hierarchyView.frameNodeIdForHierarchy(hierarchyView.currentHierarchy)
         hierarchyDragDropBridge: hierarchyDragDropBridge
         hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable
         hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel

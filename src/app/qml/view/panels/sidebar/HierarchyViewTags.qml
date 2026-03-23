@@ -16,6 +16,4 @@ SidebarHierarchyView {
     }
 
     defaultToolbarIndex: 3
-    frameName: "HierarchyView-Tags"
-    frameNodeId: "sidebar.hierarchy.tags"
 }

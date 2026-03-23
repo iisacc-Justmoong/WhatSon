@@ -115,8 +115,10 @@ void NavigationQmlFramesTest::mainQml_mustBindNewShortcutForNoteCreation()
     QVERIFY(mainQml.contains(QStringLiteral("context: Qt.ApplicationShortcut")));
     QVERIFY(mainQml.contains(QStringLiteral("onActivated: windowInteractions.createNoteFromShortcut()")));
     QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex")));
-    QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyViewModel: applicationWindow.libraryHierarchyVm")));
-    QVERIFY(mainQml.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm")));
+    QVERIFY(mainQml.contains(QStringLiteral("readonly property var rootLibraryHierarchyViewModel: libraryHierarchyViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral("readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel")));
 }
 
 void NavigationQmlFramesTest::navigationBar_mustComposePropertiesFrame()

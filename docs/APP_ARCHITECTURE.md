@@ -147,6 +147,8 @@ Defined in `CMakeLists.txt`:
 - That same editor session now keeps a repeating `120ms` save timer while unsaved text exists, so continuous typing
   still issues real local `.wsnbody` writes during the active edit stream instead of waiting for a pure idle-only
   debounce window.
+- The same save path now short-circuits unchanged plain-text bodies, so a no-op editor flush does not rewrite
+  `.wsnbody` or strip pre-existing empty/custom body tags from markup the plain-text editor never changed.
 - Local note storage CRUD is centralized in `src/app/file/note/WhatSonLocalNoteFileStore.*`, with
   `WhatSonLocalNoteDocument` carrying the local header/body/history/version snapshot. Library note creation, body
   saves, folder-drop assignment, folder hierarchy remaps, and note deletion now all pass through that file-layer
@@ -391,6 +393,15 @@ Domain-isolated support:
             - `Main.qml` now keeps the desktop shell panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
               `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the
               root `ApplicationWindow` `panelBackground01` canvas remains the only broad desktop background surface.
+                - `Main.qml` keeps `desktopPanelSurfaceColor` as the single desktop panel-surface token and binds it
+                  directly into those child wrappers instead of repeating per-panel proxy color properties on the root
+                  shell.
+                - `Main.qml` must mirror context-owned QObjects through distinct root aliases before wiring child
+                  properties. Child bindings like `libraryHierarchyViewModel: libraryHierarchyViewModel` are forbidden
+                  because they self-reference the child property and can collapse the workspace into `null`
+                  view-models.
+                - `BodyLayout.qml` still draws a thin top border from the shared splitter token so the transparent
+                  content HStack remains visually separated from `NavigationBarLayout.qml`.
                 - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is
                   not a
                   text
@@ -522,9 +533,17 @@ Domain-isolated support:
                   `ListView` now stays scrollable while a note row is merely pressed, and only suspends viewport
                   dragging once an actual note-card drag becomes active; this keeps vertical list drags from
                   accidentally collapsing into immediate note activation while preserving the shared dragged-card
-                  preview path. The bound note-list models now keep `currentIndex = -1` until either the user taps a
-                  note card or a higher-level workflow explicitly selects one, so the shared `active` binding no
-                  longer paints row `0` as selected during the initial unselected workspace state.
+                  preview path. `ListBarLayout.qml` now keeps the transient drag-preview state and selection-replay
+                  state inside dedicated local `QtObject` blocks so the root list surface no longer exposes every
+                  short-lived implementation detail as a top-level property. The bound note-list models now keep
+                  `currentIndex = -1` until either the user taps a note card or a higher-level workflow explicitly
+                  selects one, so the shared `active` binding no
+                  longer paints row `0` as selected during the initial unselected workspace state. `ListBarLayout.qml`
+                  now treats the note-list model as the sole authoritative selection source and snaps `ListView`
+                  `currentIndex` back to that model value when the view tries to synthesize a default row during reset.
+                  The note card `active` state is also derived from that committed model selection rather than the
+                  transient `ListView.currentIndex`, so mobile touch press can still resolve into scrolling before row
+                  activation is shown.
                   `SidebarHierarchyView.qml`
                   now binds the higher-level LVRS `Hierarchy` surface directly to each domain view-model's standard
                   `hierarchyModel` property, normalizes that C++ `QVariantList` into a JS array before it reaches LVRS
@@ -858,6 +877,9 @@ Mobile composition:
 - `HierarchySidebarLayout.qml` / `SidebarHierarchyView.qml` expose optional `searchFieldVisible` and `footerVisible`
   switches so the mobile shell can reuse the hierarchy toolbar/list view-model pipeline while inserting the Figma
   search header and dropping the desktop footer controls.
+- The shared hierarchy wrappers no longer forward unused `frameName` / `frameNodeId` metadata; runtime composition now
+  passes only the hierarchy model, toolbar/search geometry, and drag/drop contracts that actually participate in the
+  mounted LVRS sidebar surface.
 - `BodyLayout.qml` opts the desktop hierarchy column into `searchFieldVisible: true`, preserving the shared search
   header on desktop while mobile pages decide that affordance explicitly.
 - `SidebarHierarchyView.qml` does not add the custom toolbar height twice when search is enabled: LVRS `Hierarchy`
@@ -956,6 +978,10 @@ Hierarchy rendering pipeline:
   not depend on `drag.source` surviving every Qt drag backend. Desktop internal drags share the same validation and
   persistence path by mapping the release point into the LVRS hierarchy coordinate space and calling the same
   `assignNoteToFolder(...)` bridge directly, so the in-scene card preview no longer breaks folder assignment. The
+  hovered folder row is now previewed with a pulsing active-style overlay whenever that same shared validation path
+  accepts the dragged note id, so users can see the exact destination folder before releasing the card. The grabbed
+  note row and the moving overlay preview both use `25%` opacity during that gesture so the destination highlight is
+  not obscured by the dragged card itself. The
   hierarchy drop gate no longer relies on a static `Drag.keys` filter alone; it now accepts desktop/native drag
   traffic by validating payloads at runtime, resolves hovered rows by scanning LVRS hierarchy descendants instead of
   `childAt()` so overlay helpers such as `WheelScrollGuard` cannot swallow the hit test, and falls back to LVRS

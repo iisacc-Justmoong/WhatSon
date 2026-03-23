@@ -49,6 +49,14 @@ WhatSon is an LVRS-based Qt Quick application.
   LVRS adaptive shell state (`adaptiveMobileLayout`) instead of a root-level ad-hoc loader branch.
 - `Main.qml` also registers the internal router as the global navigator so later shell-level route changes flow
   through LVRS `Navigator` / `PageRouter` semantics instead of bespoke root state.
+- `Main.qml` now keeps `desktopPanelSurfaceColor` as the single desktop panel-surface token and binds it directly into
+  desktop child panels instead of repeating one proxy color property per shell section.
+- `Main.qml` also mirrors context-owned view-models (`libraryHierarchyViewModel`, `navigationModeViewModel`,
+  `editorViewModeViewModel`, `sidebarHierarchyViewModel`, `panelViewModelRegistry`) through distinct root aliases
+  before passing them into child objects. This prevents QML self-binding loops like
+  `libraryHierarchyViewModel: libraryHierarchyViewModel` from collapsing the shell into `null` view-model state.
+- The desktop `BodyLayout.qml` now also paints a thin top border from the shared splitter token so the transparent
+  content HStack still reads as a separate surface below `NavigationBarLayout.qml`.
 - `src/app/qml/Main.qml` now lazy-loads the macOS-native menu bar via `Qt.resolvedUrl("window/MacNativeMenuBar.qml")`
   instead of holding a static `WindowView.MacNativeMenuBar` type reference in the root shell; this keeps the iOS
   static QML bundle from parsing the macOS-only `Qt.labs.platform` module while preserving the native `Onboarding`
@@ -99,6 +107,9 @@ WhatSon is an LVRS-based Qt Quick application.
   instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
   `whatson.library.note` drops directly over hierarchy rows and routes accepted note-to-folder assignments back through
   the bridge, rewriting the dropped note's `.wsnote` header `<folders>` value to the target hierarchy path.
+- `HierarchySidebarLayout.qml` and `SidebarHierarchyView.qml` no longer carry unused `frameName` / `frameNodeId`
+  passthrough metadata, so the shared hierarchy surfaces expose only state that participates in runtime rendering or
+  routing.
 - Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but press now only marks a transient
   visual candidate row; the authoritative note selection is committed on tap release and reasserted once on the next
   event turn so drag startup is not canceled by note-model refresh.
@@ -110,6 +121,19 @@ WhatSon is an LVRS-based Qt Quick application.
 - The same note delegates now use `Drag.Internal`, keep publishing `application/x-whatson-note-id` mime data, and
   mount an overlay-parented `NoteListItem` preview in the active visual state so the grabbed card itself follows the
   pointer instead of falling back to the platform note-id tooltip.
+- While a note card is dragged across hierarchy folders, `SidebarHierarchyView.qml` now previews the hovered drop row
+  with a pulsing active-style overlay before release, and desktop internal drags drive that same preview through the
+  shared position-based note-drop helper instead of relying only on native `DropArea` traffic.
+- The grabbed note card itself now drops to `25%` opacity, both for the moving overlay preview and the source row,
+  so the hovered-folder highlight stays readable instead of being visually buried under the dragged note surface.
+- `ListBarLayout.qml` now groups transient note-selection replay state and drag-preview state into dedicated local
+  `QtObject` blocks (`noteSelectionState`, `noteDragPreviewState`) so the shared note-list surface keeps a smaller
+  root property contract without changing the selection or drag behavior.
+- `ListBarLayout.qml` now treats the bound note-list model as the authoritative selection source and snaps
+  `ListView.currentIndex` back to the model value when reset-time view defaults try to synthesize row `0`, which keeps
+  the initial workspace note list visually unselected until the user or a higher-level workflow picks a note.
+- Note-card active styling is now bound only to that committed model selection, so touch press can still turn into a
+  list scroll gesture on mobile without painting the row active before release.
 - Library note-to-folder drop now treats a same-folder re-drop as an explicit no-op after reading the local
   `.wsnhead`, so debug traces can distinguish duplicate assignments from genuine routing failures without rewriting the
   header file unnecessarily.
@@ -189,6 +213,8 @@ WhatSon is an LVRS-based Qt Quick application.
   only editor-geometry sampling and render placement.
 - Body persistence still flows through the active hierarchy view-model's `saveBodyTextForNote(...)` contract with a
   short idle debounce, so `.wsnbody` rewrites and note-list refreshes no longer happen on every keystroke.
+- The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
+  rewrites `.wsnbody` or strips existing empty/custom body tags that the editor did not modify.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
   return a synthetic editor prompt. The center surface simply stays empty until a concrete note selection exists.
 - Full `bodyText` is preserved as normalized plain text rather than trimmed display text, so leading/trailing blank

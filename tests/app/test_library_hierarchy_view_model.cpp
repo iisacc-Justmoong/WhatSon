@@ -39,6 +39,7 @@ private
     void loadFromWshub_noteListModel_exposesImagePreviewFromWsnbodyResource();
     void applyRuntimeSnapshot_blankBody_keepsPreviewEmptyAndSearchIgnoresInternalId();
     void saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines();
+    void saveCurrentBodyText_unchangedPlainText_preservesExistingBodyMarkup();
     void loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview();
     void loadFromWshub_usesBodyFirstLineForPrimaryText();
     void loadFromWshub_usesFoldersFileForSidebarItems();
@@ -845,6 +846,36 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
     QCOMPARE(historyEntry.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-a"));
     QCOMPARE(historyEntry.value(QStringLiteral("removedText")).toString(), QStringLiteral("Alpha body summary."));
     QCOMPARE(historyEntry.value(QStringLiteral("insertedText")).toString(), editedBody);
+}
+
+void LibraryHierarchyViewModelTest::saveCurrentBodyText_unchangedPlainText_preservesExistingBodyMarkup()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QString bodyPath = QDir(hubPath).filePath(
+        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnbody"));
+    const QString headerPath = QDir(hubPath).filePath(
+        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnhead"));
+    const QString originalBodyXml = makeWsnBodyText(
+        QStringLiteral(
+            "    <paragraph>Alpha body summary.</paragraph>\n"
+            "    <Anchor></Anchor>\n"));
+    QVERIFY(writeUtf8File(bodyPath, originalBodyXml));
+    const QString originalHeaderXml = readUtf8File(headerPath);
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.noteListModel()->setCurrentIndex(0);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
+    QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Alpha body summary."));
+
+    QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-a"), viewModel.noteListModel()->currentBodyText()));
+
+    QCOMPARE(readUtf8File(bodyPath), originalBodyXml);
+    QCOMPARE(readUtf8File(headerPath), originalHeaderXml);
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySearchText_usingBodyPlainTextBeyondVisiblePreview()

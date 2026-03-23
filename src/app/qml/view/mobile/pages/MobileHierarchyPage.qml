@@ -567,7 +567,7 @@ Item {
             frameHorizontalInsetOverride: LV.Theme.gapNone
             gutterColor: "transparent"
             gutterWidthOverride: LV.Theme.gap20 * 2
-            libraryHierarchyViewModel: libraryHierarchyViewModel
+            libraryHierarchyViewModel: mobileHierarchyPage.libraryNoteCreationViewModel
             lineNumberColumnLeftOverride: 14
             lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
             minimapVisible: false

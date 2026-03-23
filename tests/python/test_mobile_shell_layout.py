@@ -319,8 +319,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertNotIn("activeMobilePage", mobile_page_text)
         self.assertNotIn("bodyComponent: hierarchyBodyComponent", mobile_page_text)
 
-        self.assertIn("navigationModeViewModel: applicationWindow.navigationModeVm", main_text)
-        self.assertIn("sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm", main_text)
+        self.assertIn("readonly property var rootNavigationModeViewModel: navigationModeViewModel", main_text)
+        self.assertIn("readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel", main_text)
+        self.assertIn("navigationModeViewModel: applicationWindow.rootNavigationModeViewModel", main_text)
+        self.assertIn("sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel", main_text)
         self.assertIn("toolbarIconNames: applicationWindow.hierarchyToolbarIconNames", main_text)
         self.assertIn("windowInteractions: windowInteractions", main_text)
         self.assertIn('import "view/mobile/pages" as MobilePageView', main_text)

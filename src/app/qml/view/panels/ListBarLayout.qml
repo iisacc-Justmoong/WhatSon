@@ -17,28 +17,40 @@ Rectangle {
     property var noteDeletionViewModel: null
     property bool noteDragActive: false
     property bool noteDragCanceled: false
-    property var noteDragPreviewDelegate: null
-    property real noteDragPreviewHotSpotX: 0
-    property real noteDragPreviewHotSpotY: 0
-    property real noteDragPreviewX: 0
-    property real noteDragPreviewY: 0
     property var noteDropTarget: null
-    property bool notePointerPressed: false
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
-    property int pendingSelectionIndex: -1
     property int pressedNoteIndex: -1
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
+    readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(
+                                                  listBarLayout.currentIndexFromModel())
+    readonly property real grabbedNoteOpacity: 0.25
     property string searchText: ""
-    property int selectionRequestRevision: 0
+    property bool syncingCurrentIndexFromModel: false
     readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget
 
     signal noteActivated(int index, string noteId)
     signal viewHookRequested
+
+    QtObject {
+        id: noteSelectionState
+
+        property int pendingIndex: -1
+        property int requestRevision: 0
+    }
+    QtObject {
+        id: noteDragPreviewState
+
+        property var delegateItem: null
+        property real hotSpotX: 0
+        property real hotSpotY: 0
+        property real x: 0
+        property real y: 0
+    }
 
     function activateNoteIndex(index, noteId) {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -49,18 +61,18 @@ Rectangle {
         const targetIndex = Math.max(-1, Math.floor(normalizedIndex));
         const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
         noteDeletionBridge.focusedNoteId = normalizedNoteId;
-        listBarLayout.pendingSelectionIndex = targetIndex;
-        listBarLayout.selectionRequestRevision += 1;
-        const requestRevision = listBarLayout.selectionRequestRevision;
+        noteSelectionState.pendingIndex = targetIndex;
+        noteSelectionState.requestRevision += 1;
+        const requestRevision = noteSelectionState.requestRevision;
         if (noteListView.currentIndex !== targetIndex)
             noteListView.currentIndex = targetIndex;
         listBarLayout.pushCurrentIndexToModel(targetIndex);
         noteListView.forceActiveFocus();
         listBarLayout.noteActivated(targetIndex, normalizedNoteId);
         Qt.callLater(function () {
-            if (listBarLayout.selectionRequestRevision !== requestRevision)
+            if (noteSelectionState.requestRevision !== requestRevision)
                 return;
-            if (listBarLayout.pendingSelectionIndex !== targetIndex)
+            if (noteSelectionState.pendingIndex !== targetIndex)
                 return;
             if (noteListView.currentIndex !== targetIndex)
                 noteListView.currentIndex = targetIndex;
@@ -68,7 +80,7 @@ Rectangle {
                 listBarLayout.pushCurrentIndexToModel(targetIndex);
             if (normalizedNoteId.length > 0)
                 noteDeletionBridge.focusedNoteId = normalizedNoteId;
-            listBarLayout.pendingSelectionIndex = -1;
+            noteSelectionState.pendingIndex = -1;
         });
     }
     function applySearchTextToModel() {
@@ -85,19 +97,19 @@ Rectangle {
     function beginNoteDragPreview(delegateItem, hotSpotX, hotSpotY) {
         if (!delegateItem)
             return;
-        listBarLayout.noteDragPreviewDelegate = delegateItem;
-        listBarLayout.noteDragPreviewHotSpotX = Math.max(0, Number(hotSpotX) || 0);
-        listBarLayout.noteDragPreviewHotSpotY = Math.max(0, Number(hotSpotY) || 0);
+        noteDragPreviewState.delegateItem = delegateItem;
+        noteDragPreviewState.hotSpotX = Math.max(0, Number(hotSpotX) || 0);
+        noteDragPreviewState.hotSpotY = Math.max(0, Number(hotSpotY) || 0);
         listBarLayout.updateNoteDragPreviewPosition(delegateItem, hotSpotX, hotSpotY);
     }
     function clearNoteDragPreview(delegateItem) {
-        if (delegateItem && listBarLayout.noteDragPreviewDelegate !== delegateItem)
+        if (delegateItem && noteDragPreviewState.delegateItem !== delegateItem)
             return;
-        listBarLayout.noteDragPreviewDelegate = null;
-        listBarLayout.noteDragPreviewHotSpotX = 0;
-        listBarLayout.noteDragPreviewHotSpotY = 0;
-        listBarLayout.noteDragPreviewX = 0;
-        listBarLayout.noteDragPreviewY = 0;
+        noteDragPreviewState.delegateItem = null;
+        noteDragPreviewState.hotSpotX = 0;
+        noteDragPreviewState.hotSpotY = 0;
+        noteDragPreviewState.x = 0;
+        noteDragPreviewState.y = 0;
     }
     function commitInternalNoteDrop(delegateItem, localX, localY) {
         if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
@@ -114,6 +126,11 @@ Rectangle {
                            noteId,
                            listBarLayout.noteDropTarget));
     }
+    function clearInternalNoteDropPreview() {
+        if (!listBarLayout.noteDropTarget || listBarLayout.noteDropTarget.clearNoteDropPreview === undefined)
+            return;
+        listBarLayout.noteDropTarget.clearNoteDropPreview();
+    }
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return -1;
@@ -129,6 +146,20 @@ Rectangle {
             noteListView.forceActiveFocus();
 
         return deleted;
+    }
+    function normalizeCurrentIndex(index) {
+        const numericIndex = Number(index);
+        if (!isFinite(numericIndex))
+            return -1;
+        return Math.max(-1, Math.floor(numericIndex));
+    }
+    function currentIndexChangeIsAuthoritative(index) {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        if (listBarLayout.syncingCurrentIndexFromModel)
+            return true;
+        if (noteSelectionState.pendingIndex === normalizedIndex)
+            return true;
+        return listBarLayout.currentIndexFromModel() === normalizedIndex;
     }
     function normalizeEntries(value) {
         if (value === undefined || value === null)
@@ -173,16 +204,13 @@ Rectangle {
         viewHookRequested();
     }
     function syncCurrentIndexFromModel() {
-        const modelIndex = listBarLayout.currentIndexFromModel();
-        if (!isFinite(modelIndex)) {
-            if (noteListView.currentIndex !== -1)
-                noteListView.currentIndex = -1;
-            return;
-        }
-
-        const normalizedIndex = Math.max(-1, Math.floor(modelIndex));
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(
+                    listBarLayout.currentIndexFromModel());
+        if (noteListView.currentIndex !== normalizedIndex)
+            listBarLayout.syncingCurrentIndexFromModel = true;
         if (noteListView.currentIndex !== normalizedIndex)
             noteListView.currentIndex = normalizedIndex;
+        listBarLayout.syncingCurrentIndexFromModel = false;
     }
     function syncFocusedNoteDeletionState() {
         if (noteListView.currentItem && noteListView.currentItem.noteId !== undefined) {
@@ -192,12 +220,27 @@ Rectangle {
         noteDeletionBridge.focusedNoteId = "";
     }
     function updateNoteDragPreviewPosition(delegateItem, localX, localY) {
-        if (!delegateItem || listBarLayout.noteDragPreviewDelegate !== delegateItem)
+        if (!delegateItem || noteDragPreviewState.delegateItem !== delegateItem)
             return;
         const previewParent = noteDragPreview.parent ? noteDragPreview.parent : listBarLayout;
         const mappedPoint = delegateItem.mapToItem(previewParent, Number(localX) || 0, Number(localY) || 0);
-        listBarLayout.noteDragPreviewX = Math.round((Number(mappedPoint.x) || 0) - listBarLayout.noteDragPreviewHotSpotX);
-        listBarLayout.noteDragPreviewY = Math.round((Number(mappedPoint.y) || 0) - listBarLayout.noteDragPreviewHotSpotY);
+        noteDragPreviewState.x = Math.round((Number(mappedPoint.x) || 0) - noteDragPreviewState.hotSpotX);
+        noteDragPreviewState.y = Math.round((Number(mappedPoint.y) || 0) - noteDragPreviewState.hotSpotY);
+    }
+    function updateInternalNoteDropPreview(delegateItem, localX, localY) {
+        if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
+            return false;
+        if (listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition === undefined)
+            return false;
+        const noteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
+        if (noteId.length === 0)
+            return false;
+        const mappedPoint = delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0);
+        return Boolean(listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition(
+                           mappedPoint.x,
+                           mappedPoint.y,
+                           noteId,
+                           listBarLayout.noteDropTarget));
     }
 
     color: panelColor
@@ -210,11 +253,11 @@ Rectangle {
     onNoteListModelChanged: {
         listBarLayout.noteDragCanceled = true;
         listBarLayout.noteDragActive = false;
+        listBarLayout.clearInternalNoteDropPreview();
         listBarLayout.clearNoteDragPreview(null);
-        listBarLayout.notePointerPressed = false;
-        listBarLayout.pendingSelectionIndex = -1;
+        noteSelectionState.pendingIndex = -1;
         listBarLayout.pressedNoteIndex = -1;
-        listBarLayout.selectionRequestRevision += 1;
+        noteSelectionState.requestRevision += 1;
         listBarLayout.applySearchTextToModel();
         listBarLayout.syncCurrentIndexFromModel();
         listBarLayout.syncFocusedNoteDeletionState();
@@ -231,23 +274,23 @@ Rectangle {
         id: noteDragPreview
 
         parent: Controls.Overlay.overlay ? Controls.Overlay.overlay : listBarLayout
-        visible: listBarLayout.noteDragActive && listBarLayout.noteDragPreviewDelegate !== null
+        visible: listBarLayout.noteDragActive && noteDragPreviewState.delegateItem !== null
         z: 1000
 
         active: true
-        bookmarkColor: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.bookmarkColor !== undefined && listBarLayout.noteDragPreviewDelegate.bookmarkColor !== null ? String(listBarLayout.noteDragPreviewDelegate.bookmarkColor) : ""
-        bookmarked: listBarLayout.noteDragPreviewDelegate ? Boolean(listBarLayout.noteDragPreviewDelegate.bookmarked) : false
-        displayDate: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.displayDate !== undefined && listBarLayout.noteDragPreviewDelegate.displayDate !== null ? String(listBarLayout.noteDragPreviewDelegate.displayDate) : ""
-        folders: listBarLayout.noteDragPreviewDelegate ? listBarLayout.normalizeEntries(listBarLayout.noteDragPreviewDelegate.folders) : []
-        image: listBarLayout.noteDragPreviewDelegate ? Boolean(listBarLayout.noteDragPreviewDelegate.image) : false
-        imageSource: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.imageSource !== undefined && listBarLayout.noteDragPreviewDelegate.imageSource !== null ? listBarLayout.noteDragPreviewDelegate.imageSource : ""
-        noteId: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.noteId !== undefined && listBarLayout.noteDragPreviewDelegate.noteId !== null ? String(listBarLayout.noteDragPreviewDelegate.noteId) : ""
-        opacity: 0.96
-        primaryText: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.primaryText !== undefined && listBarLayout.noteDragPreviewDelegate.primaryText !== null ? String(listBarLayout.noteDragPreviewDelegate.primaryText) : ""
-        tags: listBarLayout.noteDragPreviewDelegate ? listBarLayout.normalizeEntries(listBarLayout.noteDragPreviewDelegate.tags) : []
-        width: listBarLayout.noteDragPreviewDelegate && listBarLayout.noteDragPreviewDelegate.width !== undefined ? Number(listBarLayout.noteDragPreviewDelegate.width) || implicitWidth : implicitWidth
-        x: listBarLayout.noteDragPreviewX
-        y: listBarLayout.noteDragPreviewY
+        bookmarkColor: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.bookmarkColor !== undefined && noteDragPreviewState.delegateItem.bookmarkColor !== null ? String(noteDragPreviewState.delegateItem.bookmarkColor) : ""
+        bookmarked: noteDragPreviewState.delegateItem ? Boolean(noteDragPreviewState.delegateItem.bookmarked) : false
+        displayDate: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.displayDate !== undefined && noteDragPreviewState.delegateItem.displayDate !== null ? String(noteDragPreviewState.delegateItem.displayDate) : ""
+        folders: noteDragPreviewState.delegateItem ? listBarLayout.normalizeEntries(noteDragPreviewState.delegateItem.folders) : []
+        image: noteDragPreviewState.delegateItem ? Boolean(noteDragPreviewState.delegateItem.image) : false
+        imageSource: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.imageSource !== undefined && noteDragPreviewState.delegateItem.imageSource !== null ? noteDragPreviewState.delegateItem.imageSource : ""
+        noteId: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.noteId !== undefined && noteDragPreviewState.delegateItem.noteId !== null ? String(noteDragPreviewState.delegateItem.noteId) : ""
+        opacity: listBarLayout.grabbedNoteOpacity
+        primaryText: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.primaryText !== undefined && noteDragPreviewState.delegateItem.primaryText !== null ? String(noteDragPreviewState.delegateItem.primaryText) : ""
+        tags: noteDragPreviewState.delegateItem ? listBarLayout.normalizeEntries(noteDragPreviewState.delegateItem.tags) : []
+        width: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.width !== undefined ? Number(noteDragPreviewState.delegateItem.width) || implicitWidth : implicitWidth
+        x: noteDragPreviewState.x
+        y: noteDragPreviewState.y
     }
     Item {
         anchors.fill: parent
@@ -335,7 +378,7 @@ Rectangle {
                         NoteListItem {
                             id: noteCard
 
-                            active: noteListView.currentIndex === noteItemDelegate.index
+                            active: listBarLayout.committedNoteIndex === noteItemDelegate.index
                             anchors.fill: parent
                             bookmarkColor: noteItemDelegate.bookmarkColor === undefined || noteItemDelegate.bookmarkColor === null ? "" : String(noteItemDelegate.bookmarkColor)
                             bookmarked: noteItemDelegate.bookmarked === undefined ? false : Boolean(noteItemDelegate.bookmarked)
@@ -344,7 +387,7 @@ Rectangle {
                             image: noteItemDelegate.image === undefined ? false : Boolean(noteItemDelegate.image)
                             imageSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? "" : noteItemDelegate.imageSource
                             noteId: noteItemDelegate.noteId === undefined || noteItemDelegate.noteId === null ? "" : String(noteItemDelegate.noteId)
-                            opacity: noteDragHandler.active ? 0.72 : 1
+                            opacity: noteDragHandler.active ? listBarLayout.grabbedNoteOpacity : 1
                             pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active
                             primaryText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? "" : String(noteItemDelegate.primaryText)
                             tags: listBarLayout.normalizeEntries(noteItemDelegate.tags)
@@ -367,13 +410,17 @@ Rectangle {
                                                 noteItemDelegate,
                                                 noteItemDelegate.dragHotSpotX,
                                                 noteItemDelegate.dragHotSpotY);
-                                    listBarLayout.notePointerPressed = false;
+                                    listBarLayout.updateInternalNoteDropPreview(
+                                                noteItemDelegate,
+                                                noteDragHandler.centroid.position.x,
+                                                noteDragHandler.centroid.position.y);
                                 } else {
                                     if (!listBarLayout.noteDragCanceled)
                                         listBarLayout.commitInternalNoteDrop(
                                                     noteItemDelegate,
                                                     noteDragHandler.centroid.position.x,
                                                     noteDragHandler.centroid.position.y);
+                                    listBarLayout.clearInternalNoteDropPreview();
                                     listBarLayout.clearNoteDragPreview(noteItemDelegate);
                                     listBarLayout.noteDragCanceled = false;
                                 }
@@ -387,10 +434,15 @@ Rectangle {
                                             noteItemDelegate,
                                             noteDragHandler.centroid.position.x,
                                             noteDragHandler.centroid.position.y);
+                                listBarLayout.updateInternalNoteDropPreview(
+                                            noteItemDelegate,
+                                            noteDragHandler.centroid.position.x,
+                                            noteDragHandler.centroid.position.y);
                             }
                             onCanceled: {
                                 listBarLayout.noteDragCanceled = true;
                                 listBarLayout.noteDragActive = false;
+                                listBarLayout.clearInternalNoteDropPreview();
                                 listBarLayout.clearNoteDragPreview(noteItemDelegate);
                             }
                         }
@@ -401,18 +453,14 @@ Rectangle {
 
                             onPressedChanged: {
                                 if (!pressed) {
-                                    if (listBarLayout.notePointerPressed)
-                                        listBarLayout.notePointerPressed = false;
                                     if (listBarLayout.pressedNoteIndex === noteItemDelegate.index && !noteDragHandler.active)
                                         listBarLayout.pressedNoteIndex = -1;
                                     return;
                                 }
-                                listBarLayout.notePointerPressed = true;
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
                                 noteDeletionBridge.focusedNoteId = noteCard.noteId;
                             }
                             onTapped: {
-                                listBarLayout.notePointerPressed = false;
                                 listBarLayout.pressedNoteIndex = -1;
                                 listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);
                             }
@@ -421,6 +469,12 @@ Rectangle {
 
                     onCurrentIndexChanged: {
                         listBarLayout.pressedNoteIndex = -1;
+                        if (!listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex)) {
+                            Qt.callLater(function () {
+                                listBarLayout.syncCurrentIndexFromModel();
+                            });
+                            return;
+                        }
                         listBarLayout.pushCurrentIndexToModel(noteListView.currentIndex);
                         Qt.callLater(function () {
                             listBarLayout.syncFocusedNoteDeletionState();
@@ -446,6 +500,7 @@ Rectangle {
             listBarLayout.syncCurrentIndexFromModel();
         }
 
+        ignoreUnknownSignals: true
         target: listBarLayout.resolvedNoteListModel
     }
 }

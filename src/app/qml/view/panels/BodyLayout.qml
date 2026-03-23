@@ -5,9 +5,9 @@ import LVRS 1.0 as LV
 Item {
     id: hStack
 
-    readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
-    readonly property var activeHierarchyViewModel: hStack.sidebarHierarchyViewModel.resolvedHierarchyViewModel
-    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel.resolvedNoteListModel
+    readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0
+    readonly property var activeHierarchyViewModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null
+    readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedNoteListModel : null
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
@@ -15,6 +15,7 @@ Item {
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property color gutterColor: "transparent"
+    property var libraryHierarchyViewModel: null
     property color listViewColor: "transparent"
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property bool listVisible: hStack.listViewWidth > 0
@@ -91,6 +92,15 @@ Item {
     Item {
         anchors.fill: parent
         visible: !hStack.compactMode
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            color: hStack.splitterColor
+            height: Math.max(1, hStack.splitterThickness)
+            z: 2
+        }
 
         LV.HStack {
             anchors.fill: parent
@@ -172,7 +182,7 @@ Item {
                 drawerColor: hStack.drawerColor
                 drawerHeight: hStack.drawerHeight
                 gutterColor: hStack.gutterColor
-                libraryHierarchyViewModel: libraryHierarchyViewModel
+                libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight
                 noteListModel: hStack.activeNoteListModel

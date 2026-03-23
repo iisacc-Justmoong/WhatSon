@@ -608,6 +608,7 @@ void HierarchyViewModelsTest::bookmarksViewModel_saveCurrentBodyText_rewritesWsn
 
     viewModel.setSelectedIndex(6); // blue
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-blue"));
 
     const QString editedBody = QStringLiteral("\nBlue edited first line\nBlue edited second line\n");

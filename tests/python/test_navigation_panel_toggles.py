@@ -85,6 +85,8 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("Layout.minimumWidth: hStack.rightVisible ? hStack.minRightPanelWidth : 0", body_text)
         self.assertIn("Layout.preferredWidth: hStack.rightVisible ? hStack.rightPanelWidth : 0", body_text)
         self.assertIn("var width = hStack.sidebarVisible ? hStack.splitterThickness : 0;", body_text)
+        self.assertIn("height: Math.max(1, hStack.splitterThickness)", body_text)
+        self.assertIn("color: hStack.splitterColor", body_text)
 
     def test_navigation_panel_toggle_contract_is_documented(self) -> None:
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")

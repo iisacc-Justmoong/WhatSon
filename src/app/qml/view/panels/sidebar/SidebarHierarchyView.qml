@@ -32,10 +32,37 @@ Rectangle {
     property int editingHierarchyIndex: -1
     property string editingHierarchyLabel: ""
     property bool footerVisible: true
-    property string frameName: ""
-    property string frameNodeId: ""
     property var hierarchyDragDropBridge: null
     property bool hierarchyEditable: false
+    readonly property color hierarchyNoteDropHoverColor: {
+        const item = sidebarHierarchyView.noteDropHoverItem;
+        if (item && item.rowBackgroundColorActive !== undefined)
+            return item.rowBackgroundColorActive;
+        return LV.Theme.accentBlueMuted;
+    }
+    readonly property var hierarchyNoteDropHoverItemRect: {
+        const item = sidebarHierarchyView.noteDropHoverItem;
+        if (!item || item.mapToItem === undefined)
+            return ({
+                    "height": 0,
+                    "width": 0,
+                    "x": 0,
+                    "y": 0
+                });
+        const point = item.mapToItem(sidebarHierarchyView, 0, 0);
+        return ({
+                "height": Number(item.height) || 0,
+                "width": Number(item.width) || 0,
+                "x": Number(point.x) || 0,
+                "y": Number(point.y) || 0
+            });
+    }
+    readonly property real hierarchyNoteDropHoverRadius: {
+        const item = sidebarHierarchyView.noteDropHoverItem;
+        if (item && item.resolvedCornerRadius !== undefined)
+            return Number(item.resolvedCornerRadius) || 0;
+        return LV.Theme.radiusControl;
+    }
     readonly property color hierarchyRenameFieldBackgroundColor: {
         const item = sidebarHierarchyView.activeHierarchyItem;
         if (item && item.rowBackgroundColor !== undefined)
@@ -69,6 +96,9 @@ Rectangle {
     property int horizontalInset: LV.Theme.gap2
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
+    property int noteDropHoverIndex: -1
+    readonly property var noteDropHoverItem: sidebarHierarchyView.hierarchyItemForResolvedIndex(sidebarHierarchyView.noteDropHoverIndex)
+    readonly property bool noteDropHoverVisible: sidebarHierarchyView.noteDropHoverIndex >= 0 && !!sidebarHierarchyView.noteDropHoverItem
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
     property int searchHeaderHorizontalInset: LV.Theme.gap2
@@ -176,6 +206,9 @@ Rectangle {
         });
         return true;
     }
+    function clearNoteDropPreview() {
+        sidebarHierarchyView.noteDropHoverIndex = -1;
+    }
     function hierarchyItemContainsPoint(item, x, y) {
         if (!item || item.mapToItem === undefined)
             return false;
@@ -211,6 +244,36 @@ Rectangle {
         }
         return visitHierarchyDescendants(hierarchyTree);
     }
+    function hierarchyItemForResolvedIndex(itemId) {
+        const numericIndex = Number(itemId);
+        if (!isFinite(numericIndex))
+            return null;
+        const resolvedIndex = Math.max(-1, Math.floor(numericIndex));
+        if (resolvedIndex < 0)
+            return null;
+        function visitHierarchyDescendants(item) {
+            if (!item || item.children === undefined || item.children === null)
+                return null;
+            const children = item.children;
+            for (let i = children.length - 1; i >= 0; --i) {
+                const child = children[i];
+                if (!child || child.visible === false)
+                    continue;
+                const matchedDescendant = visitHierarchyDescendants(child);
+                if (matchedDescendant)
+                    return matchedDescendant;
+                if (child.__isHierarchyItem !== true)
+                    continue;
+                const rawItemId = child.itemId !== undefined && child.itemId !== null
+                    ? child.itemId
+                    : child.resolvedItemId;
+                if (Math.floor(Number(rawItemId) || -1) === resolvedIndex)
+                    return child;
+            }
+            return null;
+        }
+        return visitHierarchyDescendants(hierarchyTree);
+    }
     function normalizeHierarchyModel(modelValue) {
         if (modelValue === undefined || modelValue === null)
             return [];
@@ -220,7 +283,7 @@ Rectangle {
             return Array.from(modelValue);
         return [];
     }
-    function noteDropIndexAtPosition(x, y, referenceItem) {
+    function noteDropTargetAtPosition(x, y, referenceItem) {
         const localX = Number(x) || 0;
         const localY = Number(y) || 0;
         const hierarchyPoint = referenceItem && referenceItem !== hierarchyTree && hierarchyTree.mapFromItem !== undefined
@@ -231,29 +294,46 @@ Rectangle {
                 });
         const hierarchyItem = sidebarHierarchyView.hierarchyItemAtPosition(hierarchyPoint.x, hierarchyPoint.y);
         if (!hierarchyItem)
-            return -1;
+            return ({
+                    "index": -1,
+                    "item": null
+                });
         const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null
             ? hierarchyItem.itemId
             : hierarchyItem.resolvedItemId;
         const parsedIndex = Number(rawItemId);
         if (!isFinite(parsedIndex))
-            return -1;
-        return Math.max(-1, Math.floor(parsedIndex));
+            return ({
+                    "index": -1,
+                    "item": null
+                });
+        return ({
+                "index": Math.max(-1, Math.floor(parsedIndex)),
+                "item": hierarchyItem
+            });
+    }
+    function noteDropIndexAtPosition(x, y, referenceItem) {
+        return sidebarHierarchyView.noteDropTargetAtPosition(x, y, referenceItem).index;
     }
     function canAcceptNoteDropAtPosition(x, y, noteId, referenceItem) {
         const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
-        const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(x, y, referenceItem);
-        if (targetIndex < 0 || normalizedNoteId.length === 0 || !sidebarHierarchyView.hierarchyDragDropBridge)
+        const target = sidebarHierarchyView.noteDropTargetAtPosition(x, y, referenceItem);
+        if (target.index < 0 || normalizedNoteId.length === 0 || !sidebarHierarchyView.hierarchyDragDropBridge)
             return false;
-        return sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, normalizedNoteId);
+        return sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteId);
     }
     function commitNoteDropAtPosition(x, y, noteId, referenceItem) {
         const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
-        const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(x, y, referenceItem);
-        if (targetIndex < 0 || normalizedNoteId.length === 0)
+        const target = sidebarHierarchyView.noteDropTargetAtPosition(x, y, referenceItem);
+        if (target.index < 0 || normalizedNoteId.length === 0) {
+            sidebarHierarchyView.clearNoteDropPreview();
             return false;
-        if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(targetIndex, normalizedNoteId))
+        }
+        if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteId)) {
+            sidebarHierarchyView.clearNoteDropPreview();
             return false;
+        }
+        sidebarHierarchyView.clearNoteDropPreview();
         sidebarHierarchyView.requestViewHook("hierarchy.noteDrop");
         return true;
     }
@@ -275,6 +355,19 @@ Rectangle {
                 return plainTextNoteId;
         }
         return "";
+    }
+    function updateNoteDropPreviewAtPosition(x, y, noteId, referenceItem) {
+        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
+        const target = sidebarHierarchyView.noteDropTargetAtPosition(x, y, referenceItem);
+        if (target.index < 0
+                || normalizedNoteId.length === 0
+                || !sidebarHierarchyView.hierarchyDragDropBridge
+                || !sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteId)) {
+            sidebarHierarchyView.clearNoteDropPreview();
+            return false;
+        }
+        sidebarHierarchyView.noteDropHoverIndex = target.index;
+        return true;
     }
     function projectedHierarchyModel(modelValue) {
         const normalizedModel = sidebarHierarchyView.normalizeHierarchyModel(modelValue);
@@ -361,6 +454,7 @@ Rectangle {
     }
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelHierarchyRename();
+        sidebarHierarchyView.clearNoteDropPreview();
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
@@ -375,6 +469,7 @@ Rectangle {
         function onHierarchyModelChanged() {
             if (sidebarHierarchyView.renameEditingActive && !sidebarHierarchyView.canRenameIndex(sidebarHierarchyView.editingHierarchyIndex))
                 sidebarHierarchyView.cancelHierarchyRename();
+            sidebarHierarchyView.clearNoteDropPreview();
             Qt.callLater(function () {
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
             });
@@ -449,6 +544,38 @@ Rectangle {
         }
         onTextEdited: function (text) {
             sidebarHierarchyView.editingHierarchyLabel = text;
+        }
+    }
+    Rectangle {
+        id: noteDropHoverOverlay
+
+        visible: sidebarHierarchyView.noteDropHoverVisible
+        x: Number(sidebarHierarchyView.hierarchyNoteDropHoverItemRect.x) || 0
+        y: Number(sidebarHierarchyView.hierarchyNoteDropHoverItemRect.y) || 0
+        width: Number(sidebarHierarchyView.hierarchyNoteDropHoverItemRect.width) || 0
+        height: Number(sidebarHierarchyView.hierarchyNoteDropHoverItemRect.height) || 0
+        radius: sidebarHierarchyView.hierarchyNoteDropHoverRadius
+        color: Qt.alpha(sidebarHierarchyView.hierarchyNoteDropHoverColor, 0.34)
+        border.color: Qt.alpha(sidebarHierarchyView.hierarchyNoteDropHoverColor, 0.9)
+        border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
+        z: 1
+
+        SequentialAnimation on opacity {
+            loops: Animation.Infinite
+            running: noteDropHoverOverlay.visible
+
+            NumberAnimation {
+                duration: 110
+                easing.type: Easing.OutQuad
+                from: 0.78
+                to: 1.0
+            }
+            NumberAnimation {
+                duration: 180
+                easing.type: Easing.InOutQuad
+                from: 1.0
+                to: 0.84
+            }
         }
     }
     PanelView.ListBarHeader {
@@ -594,7 +721,7 @@ Rectangle {
 
         function updateAcceptance(drag) {
             const noteId = sidebarHierarchyView.noteIdFromDragPayload(drag);
-            const accepted = sidebarHierarchyView.canAcceptNoteDropAtPosition(
+            const accepted = sidebarHierarchyView.updateNoteDropPreviewAtPosition(
                         drag ? drag.x : 0,
                         drag ? drag.y : 0,
                         noteId,
@@ -617,6 +744,9 @@ Rectangle {
         }
         onEntered: function (drag) {
             updateAcceptance(drag);
+        }
+        onExited: {
+            sidebarHierarchyView.clearNoteDropPreview();
         }
         onPositionChanged: function (drag) {
             updateAcceptance(drag);

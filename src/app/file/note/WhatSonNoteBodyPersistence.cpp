@@ -196,7 +196,21 @@ namespace WhatSon::NoteBodyPersistence
             return false;
         }
 
-        document.bodyPlainText = normalizeBodyPlainText(bodyPlainText);
+        const QString normalizedBodyText = normalizeBodyPlainText(bodyPlainText);
+        if (normalizedBodyText == document.bodyPlainText)
+        {
+            if (outNormalizedBodyText != nullptr)
+            {
+                *outNormalizedBodyText = normalizedBodyText;
+            }
+            if (outLastModifiedAt != nullptr)
+            {
+                *outLastModifiedAt = document.headerStore.lastModifiedAt();
+            }
+            return true;
+        }
+
+        document.bodyPlainText = normalizedBodyText;
 
         WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
         updateRequest.document = document;

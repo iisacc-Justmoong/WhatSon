@@ -20,9 +20,7 @@ LV.ApplicationWindow {
     readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: LV.Theme.panelBackground10
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
-    readonly property var bookmarksHierarchyVm: bookmarksHierarchyViewModel
     readonly property color canvasColor: LV.Theme.panelBackground01
-    readonly property color contentsDisplayColor: desktopPanelSurfaceColor
     readonly property color desktopPanelSurfaceColor: "transparent"
     property bool desktopOnboardingWindowVisible: false
     readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth)
@@ -33,10 +31,7 @@ LV.ApplicationWindow {
                                                                                       + (hideListView ? 0 : 1)
                                                                                       + 1
                                                                                       + (hideRightPanel ? 0 : 1)) - 1)
-    readonly property color drawerColor: desktopPanelSurfaceColor
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
-    readonly property var editorViewModeVm: editorViewModeViewModel
-    readonly property var eventHierarchyVm: eventHierarchyViewModel
     readonly property bool hideListView: false
     property bool hideRightPanel: false
     property bool hideSidebar: false
@@ -48,25 +43,25 @@ LV.ApplicationWindow {
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
     // Fail-fast binding contract: these context properties must exist from main.cpp.
+    // Mirror context properties through distinct root aliases so child object bindings never self-reference.
+    readonly property var rootEditorViewModeViewModel: editorViewModeViewModel
     readonly property int libraryHierarchyIndex: 0
-    readonly property var libraryHierarchyVm: libraryHierarchyViewModel
-    readonly property color listViewColor: desktopPanelSurfaceColor
+    readonly property var rootLibraryHierarchyViewModel: libraryHierarchyViewModel
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minDisplayHeight: LV.Theme.gap20 * 8
     readonly property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     readonly property int minRightPanelWidth: 145
+    readonly property var rootNavigationModeViewModel: navigationModeViewModel
+    readonly property var rootPanelViewModelRegistry: panelViewModelRegistry
+    readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel
     readonly property int minSidebarWidth: {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return toolbarWidth;
     }
     readonly property color mobileSafeAreaBackdropColor: canvasColor
-    readonly property color navigationBarColor: desktopPanelSurfaceColor
     readonly property int navigationBarHeight: LV.Theme.gap24
-    readonly property var navigationModeVm: navigationModeViewModel
-    readonly property int onboardingDefaultHeight: onboardingMinHeight
-    readonly property int onboardingDefaultWidth: onboardingMinWidth
     readonly property var onboardingRoute: ({
             path: applicationWindow.onboardingRoutePath,
             component: onboardingPageComponent
@@ -80,20 +75,11 @@ LV.ApplicationWindow {
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
     property int preferredSidebarWidth: baseSidebarWidth
-    readonly property var presetHierarchyVm: presetHierarchyViewModel
-    readonly property var progressHierarchyVm: progressHierarchyViewModel
-    readonly property var projectsHierarchyVm: projectsHierarchyViewModel
-    readonly property var resourcesHierarchyVm: resourcesHierarchyViewModel
-    readonly property color rightPanelColor: desktopPanelSurfaceColor
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
-    readonly property color sidebarColor: desktopPanelSurfaceColor
-    readonly property var sidebarHierarchyVm: sidebarHierarchyViewModel
     readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
-    readonly property color statusBarColor: desktopPanelSurfaceColor
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
     readonly property string startupRoutePath: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath
-    readonly property var tagsHierarchyVm: tagsHierarchyViewModel
     readonly property bool useEmbeddedOnboardingRoute: adaptiveMobileLayout || isMobilePlatform
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
@@ -214,10 +200,10 @@ LV.ApplicationWindow {
         adaptiveNavigationMode: applicationWindow.adaptiveNavigationMode
         hostWindow: applicationWindow
         libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex
-        libraryHierarchyViewModel: applicationWindow.libraryHierarchyVm
-        navigationModeViewModel: applicationWindow.navigationModeVm
-        panelViewModelRegistry: panelViewModelRegistry
-        sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm
+        libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
+        navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
+        panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry
+        sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
     }
     Timer {
         id: resizeDebounceTimer
@@ -420,7 +406,7 @@ LV.ApplicationWindow {
 
                     Layout.preferredHeight: panelHeight
                     compactMode: false
-                    panelColor: applicationWindow.statusBarColor
+                    panelColor: applicationWindow.desktopPanelSurfaceColor
                     panelHeight: applicationWindow.statusBarHeight
 
                     onWindowMoveRequested: {
@@ -432,9 +418,9 @@ LV.ApplicationWindow {
 
                     compactMode: false
                     detailPanelCollapsed: applicationWindow.hideRightPanel
-                    editorViewModeViewModel: applicationWindow.editorViewModeVm
-                    navigationModeViewModel: applicationWindow.navigationModeVm
-                    panelColor: applicationWindow.navigationBarColor
+                    editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
+                    navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
+                    panelColor: applicationWindow.desktopPanelSurfaceColor
                     panelHeight: applicationWindow.navigationBarHeight
                     sidebarCollapsed: applicationWindow.hideSidebar
 
@@ -448,22 +434,23 @@ LV.ApplicationWindow {
                     Layout.fillWidth: true
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: false
-                    contentsDisplayColor: applicationWindow.contentsDisplayColor
-                    drawerColor: applicationWindow.drawerColor
+                    contentsDisplayColor: applicationWindow.desktopPanelSurfaceColor
+                    drawerColor: applicationWindow.desktopPanelSurfaceColor
                     drawerHeight: applicationWindow.drawerHeight
-                    listViewColor: applicationWindow.listViewColor
+                    listViewColor: applicationWindow.desktopPanelSurfaceColor
                     listViewWidth: applicationWindow.listViewWidth
+                    libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
                     minContentWidth: applicationWindow.minContentWidth
                     minDisplayHeight: applicationWindow.minDisplayHeight
                     minDrawerHeight: applicationWindow.minDrawerHeight
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
-                    noteDeletionViewModel: applicationWindow.libraryHierarchyVm
-                    rightPanelColor: applicationWindow.rightPanelColor
+                    noteDeletionViewModel: applicationWindow.rootLibraryHierarchyViewModel
+                    rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
-                    sidebarColor: applicationWindow.sidebarColor
-                    sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm
+                    sidebarColor: applicationWindow.desktopPanelSurfaceColor
+                    sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
                     sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
@@ -496,9 +483,9 @@ LV.ApplicationWindow {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
             controlSurfaceColor: LV.Theme.panelBackground10
-            editorViewModeViewModel: applicationWindow.editorViewModeVm
-            navigationModeViewModel: applicationWindow.navigationModeVm
-            sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm
+            editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
+            navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
+            sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
             windowInteractions: windowInteractions
@@ -507,8 +494,8 @@ LV.ApplicationWindow {
     WindowView.Onboarding {
         id: onboardingSubWindow
 
-        defaultHeight: applicationWindow.onboardingDefaultHeight
-        defaultWidth: applicationWindow.onboardingDefaultWidth
+        defaultHeight: applicationWindow.onboardingMinHeight
+        defaultWidth: applicationWindow.onboardingMinWidth
         hostWindow: applicationWindow
         hubSessionController: applicationWindow.onboardingHubController
         minHeight: applicationWindow.onboardingMinHeight

@@ -17,7 +17,8 @@ class MainShortcutTests(unittest.TestCase):
 
         self.assertIn("sequence: StandardKey.New", main_qml_text)
         self.assertIn("onActivated: windowInteractions.createNoteFromShortcut()", main_qml_text)
-        self.assertIn("panelViewModelRegistry: panelViewModelRegistry", main_qml_text)
+        self.assertIn("readonly property var rootPanelViewModelRegistry: panelViewModelRegistry", main_qml_text)
+        self.assertIn("panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry", main_qml_text)
         self.assertIn("property var panelViewModelRegistry: null", controller_text)
         self.assertIn('panelViewModelRegistry.panelViewModel("navigation.NavigationAddNewBar")', controller_text)
         self.assertIn('addNewPanelViewModel.requestViewModelHook("create-note");', controller_text)

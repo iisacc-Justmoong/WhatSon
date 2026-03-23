@@ -16,6 +16,4 @@ SidebarHierarchyView {
     }
 
     defaultToolbarIndex: 7
-    frameName: "HierarchyView-Preset"
-    frameNodeId: "sidebar.hierarchy.preset"
 }

@@ -16,6 +16,4 @@ SidebarHierarchyView {
     }
 
     defaultToolbarIndex: 5
-    frameName: "HierarchyView-Progress"
-    frameNodeId: "sidebar.hierarchy.progress"
 }
