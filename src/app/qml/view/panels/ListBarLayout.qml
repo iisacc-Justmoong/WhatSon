@@ -300,7 +300,7 @@ Rectangle {
                         property real dragHotSpotY: height * 0.5
 
                         Drag.active: noteDragHandler.active
-                        Drag.dragType: Drag.Internal
+                        Drag.dragType: Drag.Automatic
                         Drag.hotSpot.x: noteItemDelegate.dragHotSpotX
                         Drag.hotSpot.y: noteItemDelegate.dragHotSpotY
                         Drag.keys: ["whatson.library.note"]

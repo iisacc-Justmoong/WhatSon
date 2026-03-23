@@ -62,6 +62,7 @@ private
     void loadFromWshub_moveFolderBefore_rewritesFoldersFileAndHeaderAssignments();
     void loadFromWshub_applyHierarchyNodes_persistsLvrsEditableMove();
     void loadFromWshub_applyHierarchyNodes_preservesSystemBucketPrefix();
+    void loadFromWshub_applyHierarchyNodes_preservesDraggedFolderBetweenSystemBuckets_withoutExplicitSourceIndex();
     void moveFolder_reparentsSubtreeAndAllowsRootExtraction();
 };
 
@@ -2926,6 +2927,118 @@ void LibraryHierarchyViewModelTest::loadFromWshub_applyHierarchyNodes_preservesS
         viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("Brand"));
     QCOMPARE(viewModel.selectedIndex(), 2);
+}
+
+void LibraryHierarchyViewModelTest::loadFromWshub_applyHierarchyNodes_preservesDraggedFolderBetweenSystemBuckets_withoutExplicitSourceIndex()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"children\": [\n"
+        "        {\n"
+        "          \"id\": \"Research/Competitor\",\n"
+        "          \"label\": \"Competitor\"\n"
+        "        }\n"
+        "      ]\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QVariantList hierarchyNodes = viewModel.depthItems();
+    QVERIFY(hierarchyNodes.size() >= 6);
+
+    const auto takeNodeByKey = [&hierarchyNodes](const QString& itemKey) -> QVariantMap
+    {
+        for (int index = 0; index < hierarchyNodes.size(); ++index)
+        {
+            const QVariantMap entry = hierarchyNodes.at(index).toMap();
+            if (entry.value(QStringLiteral("key")).toString() == itemKey)
+            {
+                hierarchyNodes.removeAt(index);
+                return entry;
+            }
+        }
+        return {};
+    };
+
+    QVariantMap allNode = takeNodeByKey(QStringLiteral("bucket:all"));
+    QVariantMap draftNode = takeNodeByKey(QStringLiteral("bucket:draft"));
+    QVariantMap todayNode = takeNodeByKey(QStringLiteral("bucket:today"));
+    QVariantMap researchNode = takeNodeByKey(QStringLiteral("Research"));
+    QVariantMap competitorNode = takeNodeByKey(QStringLiteral("Research/Competitor"));
+    QVariantMap brandNode = takeNodeByKey(QStringLiteral("Brand"));
+
+    QVERIFY(!allNode.isEmpty());
+    QVERIFY(!draftNode.isEmpty());
+    QVERIFY(!todayNode.isEmpty());
+    QVERIFY(!researchNode.isEmpty());
+    QVERIFY(!competitorNode.isEmpty());
+    QVERIFY(!brandNode.isEmpty());
+    QVERIFY(!brandNode.contains(QStringLiteral("sourceIndex")));
+    QVERIFY(brandNode.value(QStringLiteral("itemId")).toInt() >= 0);
+
+    QVariantList reorderedNodes;
+    reorderedNodes.push_back(allNode);
+    reorderedNodes.push_back(draftNode);
+    reorderedNodes.push_back(brandNode);
+    reorderedNodes.push_back(todayNode);
+    reorderedNodes.push_back(researchNode);
+    reorderedNodes.push_back(competitorNode);
+
+    QVERIFY(viewModel.applyHierarchyNodes(reorderedNodes, QStringLiteral("Brand")));
+
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("All Library"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Draft"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Today"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Brand"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Research"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(5, 0), LibraryHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Competitor"));
+    QCOMPARE(viewModel.selectedIndex(), 3);
+
+    const QJsonObject foldersRoot = readJsonObjectFile(foldersFilePath);
+    QVERIFY(!foldersRoot.isEmpty());
+    const QJsonArray folderArray = foldersRoot.value(QStringLiteral("folders")).toArray();
+    QCOMPARE(folderArray.size(), 2);
+    QCOMPARE(folderArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Brand"));
+    QCOMPARE(folderArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
 }
 
 void LibraryHierarchyViewModelTest::moveFolder_reparentsSubtreeAndAllowsRootExtraction()

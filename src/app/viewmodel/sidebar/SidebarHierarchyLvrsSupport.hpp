@@ -52,6 +52,26 @@ namespace WhatSon::Sidebar::Lvrs
         return std::max(0, fallbackDepth);
     }
 
+    inline int normalizedSourceIndexValue(const QVariantMap& map, int fallbackIndex)
+    {
+        const QVariant explicitSourceIndex = map.value(QStringLiteral("sourceIndex"));
+        bool converted = false;
+        const int parsedSourceIndex = explicitSourceIndex.toInt(&converted);
+        if (converted)
+        {
+            return std::max(0, parsedSourceIndex);
+        }
+
+        const QVariant stableItemId = map.value(QStringLiteral("itemId"));
+        const int parsedItemId = stableItemId.toInt(&converted);
+        if (converted)
+        {
+            return std::max(0, parsedItemId);
+        }
+
+        return std::max(0, fallbackIndex);
+    }
+
     inline QString normalizedKeySegment(const QString& label, int sourceIndex)
     {
         QString segment = label.trimmed();
@@ -124,7 +144,7 @@ namespace WhatSon::Sidebar::Lvrs
                 map.insert(QStringLiteral("label"), primitiveLabel);
             }
 
-            const int sourceIndex = map.value(QStringLiteral("sourceIndex"), *visitIndex).toInt();
+            const int sourceIndex = normalizedSourceIndexValue(map, *visitIndex);
             const QString label = normalizedStringValue(map.value(QStringLiteral("label")));
             const QString explicitKey = normalizedStringValue(map.value(QStringLiteral("key")));
             const QString id = normalizedStringValue(map.value(QStringLiteral("id")));

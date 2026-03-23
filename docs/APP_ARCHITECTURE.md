@@ -437,9 +437,11 @@ Domain-isolated support:
               `drawerVisible = false`, `minimapVisible = false`, `editorTopInsetOverride = 0`,
               `frameHorizontalInsetOverride = 0`, `gutterColor = transparent`, `gutterWidthOverride = 40`, and
               `lineNumberColumnTextWidthOverride = 22`. Because `LV.TextEditor` vertically centers multi-line content by
-              default against its full editor height, the shared `ContentsDisplayView.qml` also clears the underlying
-              editor item's `topPadding` whenever that mobile override drives the effective top inset to `0`, preventing
-              the mobile editor body from slipping below a phantom top frame.
+              default against its full editor height, the shared `ContentsDisplayView.qml` now owns one merged desktop /
+              mobile editor-origin contract: it always clears the underlying editor item's `topPadding`, then drives the
+              document start position only through the shared `editorDocumentStartY` resolver (`48px` on desktop,
+              `0px` when the mobile route overrides the top inset). That removes the phantom top frame on both shells
+              without forking editor behavior per platform.
             - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
               header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
               search header to `shapeRoundRect`.
@@ -483,7 +485,8 @@ Domain-isolated support:
                   path
                   simple and avoids silent blank bindings when helper functions disappear. Note drags are also app-wired
                   rather than LVRS-blocked: delegates
-                  advertise `whatson.library.note` plus copy semantics, `Drag.Internal`, and explicit note-id mime data
+                  advertise `whatson.library.note` plus copy semantics, `Drag.Automatic`, and explicit note-id mime
+                  data
                   while forcing `DragHandler` pointer takeover, while the
                   note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
                   candidate row and selection is committed on tap release, then reasserted once through a short-lived
@@ -521,12 +524,12 @@ Domain-isolated support:
                   logical line start through `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not
                   change the line-number sequence. The editor surface itself keeps Fill height even when the current
                   body
-                  is empty, and the editable body block is top-left aligned with `48px` top inset plus `16px`
-                  horizontal / bottom inset, overriding the LVRS internal centered multi-line placement. When
-                  `editorTopInsetOverride` resolves to `0` for the mobile editor route, the same surface also clears the
-                  embedded `LV.TextEditor` top padding so the document starts at the first visible row instead of being
-                  vertically centered inside the available viewport. Figma node `155:5345` is treated as the source of
-                  truth for
+                  is empty, and the editable body block is top-left aligned through a merged `editorDocumentStartY`
+                  contract plus `16px` horizontal / bottom inset, overriding the LVRS internal centered multi-line
+                  placement. The shared surface always clears the embedded `LV.TextEditor` top padding, so desktop keeps
+                  the canonical `48px` body inset while the mobile editor route can drop the same document origin to the
+                  first visible row by overriding only `editorTopInsetOverride`. Figma node `155:5345` is treated as the
+                  source of truth for
                   the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
                   active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned
                   number
@@ -634,7 +637,10 @@ Library-specific modeling:
   note-list filtering from those buckets plus persisted library folders
 - The same system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked` in the serialized LVRS
   hierarchy payload, and `applyHierarchyNodes(...)` preserves the `All Library -> Draft -> Today` prefix even if an
-  incoming editable-drag payload tries to move user folders across that fixed boundary.
+  incoming editable-drag payload tries to move user folders across that fixed boundary. LVRS reorder normalization now
+  treats the serialized `itemId` as the stable source identity whenever an explicit `sourceIndex` field is absent, so a
+  user folder dragged between immutable smart buckets cannot be misclassified as a system bucket and dropped from the
+  persisted `Folders.wsfolders` tree.
 - Folder selection/filtering is path-based (`Folders.wsfolders.id` / normalized folder path), so nested folders and
   duplicate leaf labels do not alias each other. When note headers persist nested folder membership as split ancestor /
   leaf `<folder>` entries or leaf-only values such as `/Competitor`, the view-model rebuilds candidate full paths from
@@ -913,7 +919,9 @@ Hierarchy rendering pipeline:
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
   `HierarchyDragDropBridge::assignNoteToFolder(...)`, which appends the dropped hierarchy path into the note header
-  `<folders>` payload while preserving existing folder assignments.
+  `<folders>` payload while preserving existing folder assignments. The same drop path resolves the dragged note id
+  from the drag event payload first via `application/x-whatson-note-id`, then `text/plain`, so folder assignment does
+  not depend on `drag.source` surviving every Qt drag backend.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

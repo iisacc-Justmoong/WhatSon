@@ -23,6 +23,13 @@ Item {
             return 0;
         return Number(contentEditor.editorItem.parent.y) || 0;
     }
+    readonly property real editorDocumentStartY: {
+        if (!contentEditor.editorItem)
+            return contentsView.effectiveEditorTopInset;
+        const resolvedY = Number(contentEditor.editorItem.y);
+        return isFinite(resolvedY) ? resolvedY : contentsView.effectiveEditorTopInset;
+    }
+    readonly property int editorDocumentTopPadding: 0
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()
     readonly property int editorHorizontalInset: 16
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
@@ -116,9 +123,7 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property alias syncingEditorTextFromModel: editorSession.syncingEditorTextFromModel
     readonly property real textOriginY: {
-        if (!contentEditor.editorItem)
-            return contentsView.effectiveEditorTopInset;
-        return (Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset) + contentsView.editorContentOffsetY;
+        return contentsView.editorDocumentStartY + contentsView.editorContentOffsetY;
     }
     readonly property int visibleNoteCount: selectionBridge.visibleNoteCount
 
@@ -159,7 +164,7 @@ Item {
         const _editorWidth = Number(editorWidth) || 0;
         const _editorContentHeight = Number(editorContentHeight) || 0;
         const value = text === undefined || text === null ? "" : String(text);
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
+        const textStartY = contentsView.editorDocumentStartY;
         if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined || _editorWidth <= 0 || _editorContentHeight <= 0)
             return contentsView.buildFallbackMinimapVisualRows(textStartY);
 
@@ -266,11 +271,11 @@ Item {
         return Number(rect.y) || 0;
     }
     function editorOccupiedContentHeight() {
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
+        const textStartY = contentsView.editorDocumentStartY;
         return Math.max(textStartY + contentsView.documentOccupiedBottomY(), textStartY + contentsView.editorLineHeight);
     }
     function editorViewportYForDocumentY(documentY) {
-        const editorY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
+        const editorY = contentsView.editorDocumentStartY;
         return editorY + documentY + contentsView.editorContentOffsetY;
     }
     function firstVisibleLogicalLine() {
@@ -279,7 +284,7 @@ Item {
         if (!flickable)
             return 1;
         const contentY = Math.max(0, Number(flickable.contentY) || 0);
-        const firstVisibleDocumentY = Math.max(0, contentY - contentsView.effectiveEditorTopInset);
+        const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
     function lineDocumentY(lineNumber) {
@@ -345,7 +350,7 @@ Item {
         if (markerType === "current")
             return contentsView.currentCursorVisualLineY();
         if (!markerSpec)
-            return contentsView.effectiveEditorTopInset;
+            return contentsView.editorDocumentStartY;
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
         return contentsView.lineY(startLine);
     }
@@ -361,7 +366,7 @@ Item {
         return Math.max(1, contentsView.editorOccupiedContentHeight());
     }
     function minimapContentYForLine(lineNumber) {
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
+        const textStartY = contentsView.editorDocumentStartY;
         return textStartY + contentsView.lineDocumentY(lineNumber);
     }
     function minimapCurrentLineHeight() {
@@ -376,7 +381,7 @@ Item {
     }
     function minimapCurrentVisualRow() {
         const rows = Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : [];
-        const textStartY = contentEditor.editorItem ? Number(contentEditor.editorItem.y) || contentsView.effectiveEditorTopInset : contentsView.effectiveEditorTopInset;
+        const textStartY = contentsView.editorDocumentStartY;
         const cursorRect = contentsView.currentCursorVisualRowRect();
         const cursorContentY = textStartY + (Number(cursorRect.y) || 0);
         for (let index = 0; index < rows.length; ++index) {
@@ -759,20 +764,19 @@ Item {
                     Binding {
                         property: "y"
                         target: contentEditor.editorItem
-                        value: contentsView.effectiveEditorTopInset
+                        value: contentsView.editorDocumentStartY
                     }
-                    // Mobile editor routes remove LVRS vertical centering by explicitly clearing top padding.
+                    // Shared desktop/mobile contract: outer inset owns document origin, so LVRS top centering stays disabled.
                     Binding {
                         property: "topPadding"
                         target: contentEditor.editorItem
-                        when: contentsView.effectiveEditorTopInset === 0
-                        value: 0
+                        value: contentsView.editorDocumentTopPadding
                     }
                     LV.Label {
                         anchors.left: parent.left
                         anchors.leftMargin: contentsView.editorHorizontalInset
                         anchors.top: parent.top
-                        anchors.topMargin: contentsView.effectiveEditorTopInset
+                        anchors.topMargin: contentsView.editorDocumentStartY
                         color: LV.Theme.textTertiary
                         style: body
                         text: "Start typing here"

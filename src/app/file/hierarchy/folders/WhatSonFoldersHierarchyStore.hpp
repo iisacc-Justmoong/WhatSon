@@ -1,6 +1,6 @@
 #pragma once
 
-#include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
+#include "../WhatSonFolderDepthEntry.hpp"
 
 #include <QString>
 #include <QVector>

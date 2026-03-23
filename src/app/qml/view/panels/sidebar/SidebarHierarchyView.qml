@@ -213,10 +213,24 @@ Rectangle {
             return -1;
         return Math.max(-1, Math.floor(parsedIndex));
     }
-    function noteIdFromDragSource(source) {
-        if (!source || source.noteId === undefined || source.noteId === null)
+    function noteIdFromDragPayload(drag) {
+        if (!drag)
             return "";
-        return String(source.noteId).trim();
+        const source = drag.source;
+        if (source && source.noteId !== undefined && source.noteId !== null) {
+            const sourceNoteId = String(source.noteId).trim();
+            if (sourceNoteId.length > 0)
+                return sourceNoteId;
+        }
+        if (drag.getDataAsString !== undefined) {
+            const mimeNoteId = String(drag.getDataAsString("application/x-whatson-note-id") || "").trim();
+            if (mimeNoteId.length > 0)
+                return mimeNoteId;
+            const plainTextNoteId = String(drag.getDataAsString("text/plain") || "").trim();
+            if (plainTextNoteId.length > 0)
+                return plainTextNoteId;
+        }
+        return "";
     }
     function projectedHierarchyModel(modelValue) {
         const normalizedModel = sidebarHierarchyView.normalizeHierarchyModel(modelValue);
@@ -533,7 +547,7 @@ Rectangle {
     }
     DropArea {
         function updateAcceptance(drag) {
-            const noteId = sidebarHierarchyView.noteIdFromDragSource(drag ? drag.source : null);
+            const noteId = sidebarHierarchyView.noteIdFromDragPayload(drag);
             const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(drag ? drag.x : 0, drag ? drag.y : 0);
             const accepted = targetIndex >= 0 && noteId.length > 0 && sidebarHierarchyView.hierarchyDragDropBridge && sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, noteId);
             if (drag)
@@ -545,7 +559,7 @@ Rectangle {
         keys: ["whatson.library.note"]
 
         onDropped: function (drop) {
-            const noteId = sidebarHierarchyView.noteIdFromDragSource(drop ? drop.source : null);
+            const noteId = sidebarHierarchyView.noteIdFromDragPayload(drop);
             const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(drop ? drop.x : 0, drop ? drop.y : 0);
             if (targetIndex < 0 || noteId.length === 0)
                 return;

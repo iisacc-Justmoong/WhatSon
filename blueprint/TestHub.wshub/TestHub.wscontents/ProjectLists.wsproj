@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "schema": "whatson.projects.list",
+    "projects": [
+        {
+            "id": "Research",
+            "label": "Research",
+            "children": [
+                {
+                    "id": "Research/Pricing",
+                    "label": "Pricing"
+                }
+            ]
+        },
+        {
+            "id": "Launch",
+            "label": "Launch"
+        }
+    ]
+}

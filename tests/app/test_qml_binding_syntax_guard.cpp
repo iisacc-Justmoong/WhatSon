@@ -575,8 +575,24 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("property: \"y\"")),
         "ContentViewLayout.qml must override the internal TextEditor y-position for top-left body alignment.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("value: contentsView.editorTopInset")),
-        "ContentViewLayout.qml must anchor body text to the 48px top inset.");
+        contentViewText.contains(QStringLiteral("readonly property real editorDocumentStartY: {")),
+        "ContentsDisplayView.qml must centralize the document origin so desktop and mobile share the same editor geometry contract.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("value: contentsView.editorDocumentStartY")),
+        "ContentViewLayout.qml must drive body origin from the shared editorDocumentStartY resolver.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property int editorDocumentTopPadding: 0")),
+        "ContentsDisplayView.qml must neutralize LVRS internal top padding through a shared editorDocumentTopPadding contract.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property: \"topPadding\"")) &&
+            contentViewText.contains(QStringLiteral("value: contentsView.editorDocumentTopPadding")),
+        "ContentViewLayout.qml must clear TextEditor topPadding for both desktop and mobile instead of keeping a mobile-only special case.");
+    QVERIFY2(
+        !contentViewText.contains(QStringLiteral("when: contentsView.effectiveEditorTopInset === 0")),
+        "ContentsDisplayView.qml must not keep a mobile-only topPadding branch after the shared editor geometry merge.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("return contentsView.effectiveEditorTopInset;")),
+        "ContentsDisplayView.qml shared editor origin must still resolve from the desktop top inset unless a route override replaces it.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("text: contentsView.editorText")),
         "ContentViewLayout.qml must bind the editor and gutter to the same document text source.");
@@ -642,8 +658,8 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("contentsView.editorTextEdited(text);")),
         "ContentViewLayout.qml must emit editorTextEdited(text) from TextEditor edits.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorTopInset")),
-        "ContentViewLayout.qml placeholder label must also align to the top inset.");
+        contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorDocumentStartY")),
+        "ContentViewLayout.qml placeholder label must align to the shared document origin.");
 }
 
 void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarTarget()
@@ -1283,14 +1299,23 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")),
         "ListBarLayout.qml must bind ListView only to the resolved note-list model.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("Drag.dragType: Drag.Internal")),
-        "ListBarLayout.qml note delegates must use internal Qt drag dispatch so the app can keep a custom note-card drag preview instead of the platform text tooltip.");
+        listBarLayoutText.contains(QStringLiteral("Drag.dragType: Drag.Automatic")),
+        "ListBarLayout.qml note delegates must use automatic Qt drag dispatch so note drops publish mime data through the actual drag event.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("\"application/x-whatson-note-id\": noteItemDelegate.noteId")),
         "ListBarLayout.qml note delegates must publish noteId through drag mime data so the Qt drag operation has a concrete payload.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function noteIdFromDragPayload(drag)")),
+        "SidebarHierarchyView.qml must normalize note ids from the drag event itself rather than depending only on drag.source.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("drag.getDataAsString(\"application/x-whatson-note-id\")")),
+        "SidebarHierarchyView.qml must read note ids from the custom mime payload when DropArea source metadata is unavailable.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("drag.getDataAsString(\"text/plain\")")),
+        "SidebarHierarchyView.qml must fall back to text/plain note ids so note drops stay recoverable across Qt drag backends.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.supportedActions: Qt.CopyAction")),
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");

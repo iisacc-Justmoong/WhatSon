@@ -348,7 +348,7 @@ void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFolders
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const QString foldersFilePath = tempDir.filePath(QStringLiteral("Folders.wsfolders"));
+    const QString projectsFilePath = tempDir.filePath(QStringLiteral("ProjectLists.wsproj"));
 
     ProjectsHierarchyViewModel viewModel;
     viewModel.applyRuntimeSnapshot(
@@ -357,7 +357,7 @@ void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFolders
             {QStringLiteral("Research/Competitor"), QStringLiteral("Competitor"), 1},
             {QStringLiteral("Brand"), QStringLiteral("Brand"), 0}
         },
-        foldersFilePath,
+        projectsFilePath,
         true);
 
     QVERIFY(viewModel.canAcceptFolderDropBefore(2, 0));
@@ -377,12 +377,12 @@ void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFolders
     QVERIFY(viewModel.canAcceptFolderDrop(0, 1, true));
     QVERIFY(viewModel.moveFolder(0, 1, true));
 
-    const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
-    QVERIFY(foldersDocument.isObject());
-    const QJsonArray folderArray = foldersDocument.object().value(QStringLiteral("folders")).toArray();
-    QCOMPARE(folderArray.size(), 1);
+    const QJsonDocument projectsDocument = QJsonDocument::fromJson(readUtf8File(projectsFilePath).toUtf8());
+    QVERIFY(projectsDocument.isObject());
+    const QJsonArray projectArray = projectsDocument.object().value(QStringLiteral("projects")).toArray();
+    QCOMPARE(projectArray.size(), 1);
 
-    const QJsonObject researchObject = folderArray.at(0).toObject();
+    const QJsonObject researchObject = projectArray.at(0).toObject();
     QCOMPARE(researchObject.value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
     const QJsonArray childArray = researchObject.value(QStringLiteral("children")).toArray();
     QCOMPARE(childArray.size(), 2);
@@ -395,7 +395,7 @@ void HierarchyViewModelsTest::projectsViewModel_applyHierarchyNodes_persistsLvrs
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
 
-    const QString foldersFilePath = tempDir.filePath(QStringLiteral("Folders.wsfolders"));
+    const QString projectsFilePath = tempDir.filePath(QStringLiteral("ProjectLists.wsproj"));
 
     ProjectsHierarchyViewModel viewModel;
     viewModel.applyRuntimeSnapshot(
@@ -404,7 +404,7 @@ void HierarchyViewModelsTest::projectsViewModel_applyHierarchyNodes_persistsLvrs
             {QStringLiteral("Research/Competitor"), QStringLiteral("Competitor"), 1},
             {QStringLiteral("Brand"), QStringLiteral("Brand"), 0}
         },
-        foldersFilePath,
+        projectsFilePath,
         true);
 
     QVariantList hierarchyNodes = viewModel.depthItems();
@@ -437,12 +437,12 @@ void HierarchyViewModelsTest::projectsViewModel_applyHierarchyNodes_persistsLvrs
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::DepthRole).toInt(),
         1);
 
-    const QJsonDocument foldersDocument = QJsonDocument::fromJson(readUtf8File(foldersFilePath).toUtf8());
-    QVERIFY(foldersDocument.isObject());
-    const QJsonArray folderArray = foldersDocument.object().value(QStringLiteral("folders")).toArray();
-    QCOMPARE(folderArray.size(), 1);
+    const QJsonDocument projectsDocument = QJsonDocument::fromJson(readUtf8File(projectsFilePath).toUtf8());
+    QVERIFY(projectsDocument.isObject());
+    const QJsonArray projectArray = projectsDocument.object().value(QStringLiteral("projects")).toArray();
+    QCOMPARE(projectArray.size(), 1);
 
-    const QJsonObject researchObject = folderArray.at(0).toObject();
+    const QJsonObject researchObject = projectArray.at(0).toObject();
     QCOMPARE(researchObject.value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
     const QJsonArray childArray = researchObject.value(QStringLiteral("children")).toArray();
     QCOMPARE(childArray.size(), 2);

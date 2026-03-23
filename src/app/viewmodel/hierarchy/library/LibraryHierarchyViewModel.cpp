@@ -430,7 +430,8 @@ namespace
             return true;
         }
 
-        const QStringList resolvedFolderPathKeys = resolvedNoteFolderPathKeys(note, lookup);
+        const QStringList resolvedFolderPathKeys = canonicalLeafFolderPaths(
+            resolvedNoteFolderPathKeys(note, lookup));
         for (const QString& folderPathKey : resolvedFolderPathKeys)
         {
             if (folderPathKey == selectedPathKey)

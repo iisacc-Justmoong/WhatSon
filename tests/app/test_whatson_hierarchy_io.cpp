@@ -4,6 +4,9 @@
 #include "event/WhatSonEventHierarchyCreator.hpp"
 #include "event/WhatSonEventHierarchyParser.hpp"
 #include "event/WhatSonEventHierarchyStore.hpp"
+#include "folders/WhatSonFoldersHierarchyCreator.hpp"
+#include "folders/WhatSonFoldersHierarchyParser.hpp"
+#include "folders/WhatSonFoldersHierarchyStore.hpp"
 #include "library/WhatSonLibraryHierarchyCreator.hpp"
 #include "library/WhatSonLibraryHierarchyParser.hpp"
 #include "library/WhatSonLibraryHierarchyStore.hpp"
@@ -83,19 +86,37 @@ void WhatSonHierarchyIoTest::parse_blueprintFiles()
         qPrintable(errorMessage));
     QVERIFY(bookmarksStore.bookmarkIds().isEmpty());
 
+    WhatSonFoldersHierarchyStore foldersStore;
+    WhatSonFoldersHierarchyParser foldersParser;
+    QVERIFY2(
+        foldersParser.parse(
+            readUtf8File(QDir(contentsRoot).filePath(QStringLiteral("Folders.wsfolders"))),
+            &foldersStore,
+            &errorMessage),
+        qPrintable(errorMessage));
+    QCOMPARE(foldersStore.folderEntries().size(), 14);
+    QCOMPARE(foldersStore.folderEntries().at(0).label, QStringLiteral("Untitled"));
+    QCOMPARE(
+        foldersStore.folderEntries().at(4).id,
+        QStringLiteral("Untitled/Untitled/Untitled/이것도 이름 변경/Untitled"));
+    QCOMPARE(foldersStore.folderEntries().at(4).depth, 4);
+    QCOMPARE(
+        foldersStore.folderEntries().at(13).id,
+        QStringLiteral("Untitled/바뀐 이름이 영구적이어야 한다/Note2"));
+
     WhatSonProjectsHierarchyStore projectsStore;
     WhatSonProjectsHierarchyParser projectsParser;
     QVERIFY2(
         projectsParser.parse(
-            readUtf8File(QDir(contentsRoot).filePath(QStringLiteral("Folders.wsfolders"))),
+            readUtf8File(QDir(contentsRoot).filePath(QStringLiteral("ProjectLists.wsproj"))),
             &projectsStore,
             &errorMessage),
         qPrintable(errorMessage));
-    QCOMPARE(projectsStore.folderEntries().size(), 6);
+    QCOMPARE(projectsStore.folderEntries().size(), 3);
     QCOMPARE(projectsStore.folderEntries().at(0).label, QStringLiteral("Research"));
-    QCOMPARE(projectsStore.folderEntries().at(1).id, QStringLiteral("Research/Competitor"));
+    QCOMPARE(projectsStore.folderEntries().at(1).id, QStringLiteral("Research/Pricing"));
     QCOMPARE(projectsStore.folderEntries().at(1).depth, 1);
-    QCOMPARE(projectsStore.folderEntries().at(2).depth, 2);
+    QCOMPARE(projectsStore.folderEntries().at(2).label, QStringLiteral("Launch"));
     QVERIFY(projectsStore.projectNames().contains(QStringLiteral("Research")));
     QVERIFY(projectsStore.projectNames().contains(QStringLiteral("Pricing")));
 
@@ -179,6 +200,24 @@ void WhatSonHierarchyIoTest::creatorParser_roundTrip()
         QCOMPARE(decoded.folderEntries().at(1).id, QStringLiteral("Brand/Social"));
         QCOMPARE(decoded.folderEntries().at(2).depth, 2);
         QVERIFY(decoded.projectNames().contains(QStringLiteral("YouTube")));
+    }
+
+    {
+        WhatSonFoldersHierarchyStore store;
+        store.setFolderEntries({
+            {QStringLiteral("Research"), QStringLiteral("Research"), 0},
+            {QStringLiteral("Research/Competitor"), QStringLiteral("Competitor"), 1},
+            {QStringLiteral("Research/Competitor/Signals"), QStringLiteral("Signals"), 2}
+        });
+        WhatSonFoldersHierarchyCreator creator;
+        const QString text = creator.createText(store);
+
+        WhatSonFoldersHierarchyStore decoded;
+        WhatSonFoldersHierarchyParser parser;
+        QVERIFY2(parser.parse(text, &decoded, &errorMessage), qPrintable(errorMessage));
+        QCOMPARE(decoded.folderEntries().size(), 3);
+        QCOMPARE(decoded.folderEntries().at(1).id, QStringLiteral("Research/Competitor"));
+        QCOMPARE(decoded.folderEntries().at(2).depth, 2);
     }
 
     {
