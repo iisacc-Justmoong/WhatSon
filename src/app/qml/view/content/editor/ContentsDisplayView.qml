@@ -35,7 +35,7 @@ Item {
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
     property alias editorText: editorSession.editorText
     readonly property int editorTextLineBoxHeight: 12
-    readonly property int editorTopInset: 48
+    readonly property int editorTopInset: LV.Theme.gap4
     property int editorTopInsetOverride: -1
     readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
     readonly property var effectiveGutterMarkers: {

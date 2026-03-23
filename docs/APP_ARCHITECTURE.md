@@ -459,14 +459,14 @@ Domain-isolated support:
             - The mobile editor route reuses `ContentViewLayout.qml` with the same
               `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used by desktop.
               Mobile-specific geometry only overrides layout knobs:
-              `drawerVisible = false`, `minimapVisible = false`, `editorTopInsetOverride = 0`,
-              `frameHorizontalInsetOverride = 0`, `gutterColor = transparent`, `gutterWidthOverride = 40`, and
-              `lineNumberColumnTextWidthOverride = 22`. Because `LV.TextEditor` vertically centers multi-line content by
-              default against its full editor height, the shared `ContentsDisplayView.qml` now owns one merged desktop /
-              mobile editor-origin contract: it always clears the underlying editor item's `topPadding`, then drives the
-              document start position only through the shared `editorDocumentStartY` resolver (`48px` on desktop,
-              `0px` when the mobile route overrides the top inset). That removes the phantom top frame on both shells
-              without forking editor behavior per platform.
+              `drawerVisible = false`, `minimapVisible = false`, `frameHorizontalInsetOverride = 0`,
+              `gutterColor = transparent`, `gutterWidthOverride = 40`, and `lineNumberColumnTextWidthOverride = 22`.
+              Because `LV.TextEditor` vertically centers multi-line content by default against its full editor height,
+              the shared `ContentsDisplayView.qml` now owns one merged desktop / mobile editor-origin contract: it
+              always clears the underlying editor item's `topPadding`, then drives the document start position only
+              through the shared `editorDocumentStartY` resolver (`16px` on every platform unless a future route
+              override explicitly replaces it). That keeps the editor visually separated from the navigation bar on both
+              shells without forking editor behavior per platform.
             - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
               header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
               search header to `shapeRoundRect`.
@@ -517,9 +517,11 @@ Domain-isolated support:
                   advertise `whatson.library.note` plus copy semantics, `Drag.Automatic`, and explicit note-id mime
                   data
                   while forcing `DragHandler` pointer takeover, while the
-                  note-card tap handler stays on `TapHandler.DragThreshold`, but press now only marks a transient visual
-                  candidate row and selection is committed on tap release, then reasserted once through a short-lived
-                  pending-selection replay so drag startup is not canceled by note-model refresh. The surrounding
+                  note-card selection now commits only on release, but the pointer path splits by runtime profile:
+                  desktop keeps `TapHandler.DragThreshold` plus immediate `DragHandler` pickup, while mobile routes
+                  drag startup through a dedicated `MouseArea` `pressAndHoldInterval` of `1000ms` so scroll gestures
+                  can steal the touch before a note drag begins. Selection is then reasserted once through a
+                  short-lived pending-selection replay so drag startup is not canceled by note-model refresh. The surrounding
                   `NoteListItem.qml` surface keeps that contract split explicitly: persistent current-note highlight
                   flows
                   through a dedicated `active` binding from `ListView.currentIndex`, while transient pointer/drag
@@ -531,9 +533,12 @@ Domain-isolated support:
                   cursor instead of the platform text tooltip.
                   The surrounding
                   `ListView` now stays scrollable while a note row is merely pressed, and only suspends viewport
-                  dragging once an actual note-card drag becomes active; this keeps vertical list drags from
-                  accidentally collapsing into immediate note activation while preserving the shared dragged-card
-                  preview path. `ListBarLayout.qml` now keeps the transient drag-preview state and selection-replay
+                  dragging once an actual note-card drag becomes active; on mobile that means after the `1000ms`
+                  hold threshold has elapsed, while desktop still enters drag immediately. This keeps vertical list
+                  drags from accidentally collapsing into immediate note activation while preserving the shared
+                  dragged-card preview path. The same mobile long-press path also gates the note-card context menu:
+                  desktop keeps the immediate right-click handler, while mobile only opens the menu on release after
+                  that `1000ms` hold when the gesture never moved far enough to escalate into a drag. `ListBarLayout.qml` now keeps the transient drag-preview state and selection-replay
                   state inside dedicated local `QtObject` blocks so the root list surface no longer exposes every
                   short-lived implementation detail as a top-level property. The bound note-list models now keep
                   `currentIndex = -1` until either the user taps a note card or a higher-level workflow explicitly
@@ -561,16 +566,15 @@ Domain-isolated support:
                   and exposes shared calculations for those child modules through explicit resolver bindings. The gutter
                   computes visible line
                   numbers from the same `editorText` source, cursor line, and editor render metrics. `wrapMode:
-              TextEdit.Wrap` is enabled, but gutter numbering still stays on logical document lines by mapping each
+                  TextEdit.Wrap` is enabled, but gutter numbering still stays on logical document lines by mapping each
                   logical line start through `editorItem.positionToRectangle(...)`; wrapped visual rows therefore do not
                   change the line-number sequence. The editor surface itself keeps Fill height even when the current
                   body
                   is empty, and the editable body block is top-left aligned through a merged `editorDocumentStartY`
                   contract plus `16px` horizontal / bottom inset, overriding the LVRS internal centered multi-line
-                  placement. The shared surface always clears the embedded `LV.TextEditor` top padding, so desktop keeps
-                  the canonical `48px` body inset while the mobile editor route can drop the same document origin to the
-                  first visible row by overriding only `editorTopInsetOverride`. Figma node `155:5345` is treated as the
-                  source of truth for
+                  placement. The shared surface always clears the embedded `LV.TextEditor` top padding and now keeps a
+                  shared `16px` top inset for both desktop and mobile, so the editor no longer visually merges into the
+                  navigation bar on any platform. Figma node `155:5345` is treated as the source of truth for
                   the gutter desktop contract: transparent fill over the root `ApplicationWindow`
                   `panelBackground01` canvas, `#4E5157` inactive caption numbers, `#9DA0A8` active line number, `2px`
                   horizontal frame inset, `x=14` line-number column origin, right-aligned number text mirrored against
@@ -714,6 +718,10 @@ Library-specific modeling:
   / `Draft` / `Today` buckets from the returned note set, restores visible neighbor selection, and emits
   `noteDeleted(noteId)` so bookmark-only projections can drop the same note without owning file-system deletion
   themselves.
+- `LibraryHierarchyViewModel::clearNoteFoldersById()` now owns the inverse non-destructive header mutation for
+  note-card context actions: it resolves the materialized `.wsnhead`, clears every concrete `<folder>` entry from the
+  persisted header, rebuilds the indexed `All Library` / `Draft` / `Today` projections, refreshes the active note-list
+  filter, and emits `hubFilesystemMutated()` only when the header actually needs rewriting.
 - `LibraryHierarchyViewModel` no longer writes note headers/bodies through ad-hoc file helpers for note CRUD. It now
   delegates local note creation and header/body/history/version persistence to `WhatSonLocalNoteFileStore`, including
   folder-drop assignment and folder hierarchy move/rename header rewrites, keeping note file ownership inside one CRUD
@@ -986,6 +994,11 @@ Hierarchy rendering pipeline:
   traffic by validating payloads at runtime, resolves hovered rows by scanning LVRS hierarchy descendants instead of
   `childAt()` so overlay helpers such as `WheelScrollGuard` cannot swallow the hit test, and falls back to LVRS
   `resolvedItemId` when the hovered hierarchy row does not expose a raw `itemId`.
+- Library note-list context actions: `ListBarLayout.qml` now mounts an LVRS `ContextMenu` that opens from a desktop
+  right-click on a note card without forcing a committed note-selection change first. The shared menu currently exposes
+  `Delete note`, routed through `FocusedNoteDeletionBridge`, and `Clear all folders`, routed through
+  `LibraryHierarchyViewModel::clearNoteFoldersById(...)`, so note-level destructive and non-destructive actions share
+  one explicit menu contract.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

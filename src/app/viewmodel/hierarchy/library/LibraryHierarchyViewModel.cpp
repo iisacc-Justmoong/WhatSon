@@ -3083,6 +3083,100 @@ bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
     return true;
 }
 
+bool LibraryHierarchyViewModel::clearNoteFoldersById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    QVector<LibraryNoteRecord> allNotes = m_libraryAll.notes();
+    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
+    if (noteIndex < 0)
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("clearNoteFoldersById.rejected"),
+                                  QStringLiteral("noteId=%1 reason=noteNotFound").arg(normalizedNoteId));
+        return false;
+    }
+
+    LibraryNoteRecord& note = allNotes[noteIndex];
+    const QString headerPath = resolveNoteHeaderPath(note);
+    if (headerPath.isEmpty())
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("clearNoteFoldersById.rejected"),
+                                  QStringLiteral("noteId=%1 reason=missingNoteHeader").arg(normalizedNoteId));
+        return false;
+    }
+
+    WhatSonLocalNoteFileStore localNoteFileStore;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = note.noteId;
+    readRequest.noteDirectoryPath = note.noteDirectoryPath;
+    readRequest.noteHeaderPath = headerPath;
+
+    WhatSonLocalNoteDocument noteDocument;
+    QString ioError;
+    if (!localNoteFileStore.readNote(std::move(readRequest), &noteDocument, &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("clearNoteFoldersById.failed"),
+                                  QStringLiteral("reason=readLocalNote path=%1 error=%2").arg(headerPath, ioError));
+        return false;
+    }
+
+    if (noteDocument.headerStore.folders().isEmpty())
+    {
+        syncNoteRecordFromDocument(&note, noteDocument);
+        m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
+        m_libraryDraft.rebuild(m_libraryAll.notes());
+        m_libraryToday.rebuild(m_libraryAll.notes());
+        refreshNoteListForSelection();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("clearNoteFoldersById.noopAlreadyClear"),
+                                  QStringLiteral("noteId=%1").arg(normalizedNoteId));
+        return true;
+    }
+
+    noteDocument.headerStore.setFolders({});
+    noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
+
+    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+    updateRequest.document = noteDocument;
+    updateRequest.persistHeader = true;
+    updateRequest.persistBody = false;
+
+    QString writeError;
+    if (!localNoteFileStore.updateNote(std::move(updateRequest), &noteDocument, &writeError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("clearNoteFoldersById.failed"),
+                                  QStringLiteral("reason=writeHeader path=%1 error=%2").arg(headerPath, writeError));
+        return false;
+    }
+
+    syncNoteRecordFromDocument(&note, noteDocument);
+
+    m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
+    m_libraryDraft.rebuild(m_libraryAll.notes());
+    m_libraryToday.rebuild(m_libraryAll.notes());
+    refreshNoteListForSelection();
+
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.viewmodel"),
+                              QStringLiteral("clearNoteFoldersById.success"),
+                              QStringLiteral("noteId=%1").arg(normalizedNoteId));
+    emit hubFilesystemMutated();
+    return true;
+}
+
 bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const QString& text)
 {
     const QString normalizedNoteId = noteId.trimmed();

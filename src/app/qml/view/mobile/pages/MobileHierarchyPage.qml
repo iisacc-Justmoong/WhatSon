@@ -563,7 +563,6 @@ Item {
             contentViewModel: mobileHierarchyPage.activeContentViewModel
             displayColor: mobileHierarchyPage.canvasColor
             drawerVisible: false
-            editorTopInsetOverride: LV.Theme.gapNone
             frameHorizontalInsetOverride: LV.Theme.gapNone
             gutterColor: "transparent"
             gutterWidthOverride: LV.Theme.gap20 * 2

@@ -50,6 +50,7 @@ private
     void loadFromWshub_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void deleteSelectedFolder_reappliesSelectionToVisibleNeighborForNoteList();
     void deleteNoteById_removesScaffoldUpdatesIndexAndSelectsNeighbor();
+    void clearNoteFoldersById_rewritesHeaderAndRefreshesVisibleFolders();
     void loadFromWshub_prunesOrphanIndexEntriesAndRewritesIndex();
     void loadFromWshub_treatsUserFolderNamedAllAsRegularFolder();
     void loadFromWshub_treatsTodayAsReservedSmartFolderInsteadOfConcreteFolder();
@@ -2548,6 +2549,57 @@ void LibraryHierarchyViewModelTest::deleteNoteById_removesScaffoldUpdatesIndexAn
     const QJsonObject updatedStatRoot = readJsonObjectFile(statFilePath);
     QCOMPARE(updatedStatRoot.value(QStringLiteral("noteCount")).toInt(), 2);
     QVERIFY(!updatedStatRoot.value(QStringLiteral("lastModifiedAtUtc")).toString().isEmpty());
+}
+
+void LibraryHierarchyViewModelTest::clearNoteFoldersById_rewritesHeaderAndRefreshesVisibleFolders()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.noteListModel()->setCurrentIndex(1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(1, 0),
+                      LibraryNoteListModel::FoldersRole).
+                  toStringList(),
+        QStringList({QStringLiteral("Workspace")}));
+
+    QSignalSpy filesystemSpy(&viewModel, &LibraryHierarchyViewModel::hubFilesystemMutated);
+    QVERIFY(viewModel.clearNoteFoldersById(QStringLiteral("note-b")));
+    QCOMPARE(filesystemSpy.count(), 1);
+
+    QFile betaHeaderFile(QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/Beta.wsnote/Beta.wsnhead")));
+    QVERIFY(betaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(QString::fromUtf8(betaHeaderFile.readAll()), &headerStore, &parseError),
+             qPrintable(parseError));
+    QVERIFY(headerStore.folders().isEmpty());
+    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(1, 0),
+                      LibraryNoteListModel::FoldersRole).
+                  toStringList(),
+        QStringList());
+    QVERIFY(viewModel.clearNoteFoldersById(QStringLiteral("note-b")));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_prunesOrphanIndexEntriesAndRewritesIndex()

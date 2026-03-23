@@ -578,6 +578,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("readonly property real editorDocumentStartY: {")),
         "ContentsDisplayView.qml must centralize the document origin so desktop and mobile share the same editor geometry contract.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property int editorTopInset: LV.Theme.gap4")),
+        "ContentsDisplayView.qml must keep a shared 16px top inset through the LVRS gap4 token for every platform.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("value: contentsView.editorDocumentStartY")),
         "ContentViewLayout.qml must drive body origin from the shared editorDocumentStartY resolver.");
     QVERIFY2(
@@ -592,7 +595,7 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentsDisplayView.qml must not keep a mobile-only topPadding branch after the shared editor geometry merge.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("return contentsView.effectiveEditorTopInset;")),
-        "ContentsDisplayView.qml shared editor origin must still resolve from the desktop top inset unless a route override replaces it.");
+        "ContentsDisplayView.qml shared editor origin must still resolve from the shared top inset unless a route override replaces it.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("text: contentsView.editorText")),
         "ContentViewLayout.qml must bind the editor and gutter to the same document text source.");
@@ -1242,6 +1245,16 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             "readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable")),
         "ListBarLayout.qml must expose an explicit delete-note capability contract through FocusedNoteDeletionBridge instead of probing the destructive command inline.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property string contextMenuNoteId: \"\"")),
+        "ListBarLayout.qml must track the note id targeted by the note-card context menu independently from committed selection state.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null")),
+        "ListBarLayout.qml must expose an explicit clear-folder capability contract before invoking note folder removal from the shared context menu.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("readonly property var noteContextMenuItems: [")),
+        "ListBarLayout.qml must centralize note-card context menu entries at the root so delegates only forward the hovered note id and anchor position.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("FocusedNoteDeletionBridge {")),
         "ListBarLayout.qml must compose FocusedNoteDeletionBridge so delete-key handling tracks the visually focused note directly.");
     QVERIFY2(
@@ -1265,6 +1278,24 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("const deleted = noteDeletionBridge.deleteFocusedNote();")),
         "ListBarLayout.qml must route destructive note deletion through FocusedNoteDeletionBridge.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function clearContextMenuNoteFolders()")),
+        "ListBarLayout.qml must expose a helper that clears all folder assignments for the note targeted by the context menu.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("listBarLayout.noteDeletionViewModel.clearNoteFoldersById(normalizedNoteId)")),
+        "ListBarLayout.qml note context-menu folder clearing must call the explicit clearNoteFoldersById() contract on the injected library mutation view-model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function deleteContextMenuNote()")),
+        "ListBarLayout.qml must expose a helper that deletes the note targeted by the context menu without mutating selection first.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function openNoteContextMenu(delegateItem, localX, localY)")),
+        "ListBarLayout.qml must centralize note-card context-menu opening through a root helper so right-click delegates do not duplicate routing logic.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("noteContextMenu.openFor(delegateItem, Number(localX) || 0, Number(localY) || 0);")),
+        "ListBarLayout.qml note-card context menu must open from the clicked delegate's local pointer position.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("if (normalizedNoteId.length > 0 && noteDeletionBridge.focusedNoteId === normalizedNoteId)")),
+        "ListBarLayout.qml must release the temporary context-menu focus id when the note-card menu closes so later keyboard deletion still tracks the committed note selection.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),
         "ListBarLayout.qml must handle both Backspace and Delete when the note list owns keyboard focus.");
@@ -1294,7 +1325,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note delegates must bind persistent card activation only to the committed note-model selection.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
-            "pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteDragHandler.active")),
+            "pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteItemDelegate.pointerDragActive")),
         "ListBarLayout.qml note delegates must keep transient pressed styling separate from persistent active selection.");
     QVERIFY2(
         listBarLayoutText.
@@ -1380,8 +1411,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget")),
         "ListBarLayout.qml must resolve note drag dispatch per runtime profile so desktop keeps the in-scene card preview while mobile can still publish mime data.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("readonly property int mobileNoteDragHoldInterval: 1000")),
+        "ListBarLayout.qml must expose an explicit 1000ms mobile long-press interval before note dragging begins.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.dragType: listBarLayout.useInternalNoteDrag ? Drag.Internal : Drag.Automatic")),
         "ListBarLayout.qml note delegates must use internal drag on desktop and automatic mime-backed drag only on mobile targets.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("LV.ContextMenu {")) &&
+            listBarLayoutText.contains(QStringLiteral("id: noteContextMenu")),
+        "ListBarLayout.qml must mount an LVRS context menu dedicated to note-card actions.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onItemEventTriggered: function(eventName, payload, index, item) {")),
+        "ListBarLayout.qml note-card context menu must handle normalized LVRS menu events instead of binding delegate-local callbacks.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("eventName === \"note.delete\"")) &&
+            listBarLayoutText.contains(QStringLiteral("eventName === \"note.clearAllFolders\"")),
+        "ListBarLayout.qml note-card context menu must expose both delete-note and clear-all-folders actions.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
@@ -1413,8 +1458,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("opacity: listBarLayout.grabbedNoteOpacity")),
         "ListBarLayout.qml drag preview note card must stay translucent enough for hovered-folder feedback to remain visible underneath.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("opacity: noteDragHandler.active ? listBarLayout.grabbedNoteOpacity : 1")),
-        "ListBarLayout.qml grabbed source row must also dim to the shared dragged-note opacity while the note card is being carried.");
+        listBarLayoutText.contains(QStringLiteral("opacity: noteItemDelegate.pointerDragActive ? listBarLayout.grabbedNoteOpacity : 1")),
+        "ListBarLayout.qml grabbed source row must also dim to the shared dragged-note opacity while the note card is being carried, regardless of desktop immediate drag or mobile long-press drag.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function beginNoteDragPreview(delegateItem, hotSpotX, hotSpotY)")),
         "ListBarLayout.qml must expose an explicit helper that captures the dragged note-card preview state.");
@@ -1436,11 +1481,23 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             "imageSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? \"\" : noteItemDelegate.imageSource")),
         "ListBarLayout.qml must bind imageSource directly from the required note delegate role contract.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("readonly property bool pointerDragRequiresLongPress: LV.Theme.mobileTarget")) &&
+            listBarLayoutText.contains(QStringLiteral("readonly property bool immediatePointerDragEnabled: !noteItemDelegate.pointerDragRequiresLongPress")) &&
+            listBarLayoutText.contains(QStringLiteral("readonly property bool pointerDragActive: noteDragHandler.active || noteItemDelegate.mobilePointerDragging")),
+        "ListBarLayout.qml note delegates must split desktop immediate drag and mobile long-press drag through explicit pointer-drag state contracts.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property bool mobileLongPressPendingContextMenu: false")) &&
+            listBarLayoutText.contains(QStringLiteral("property bool mobileSuppressNextClick: false")),
+        "ListBarLayout.qml mobile note delegates must track whether a long press should open the context menu and suppress the follow-up tap activation.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")),
         "ListBarLayout.qml note drag handler must be able to take pointer ownership away from tap selection and list scrolling.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("dragThreshold: 4")),
-        "ListBarLayout.qml note drag handler should lower the drag threshold so note-to-folder drags start before vertical scrolling wins.");
+        "ListBarLayout.qml desktop note drag handler should keep a low drag threshold so pointer drags begin promptly on non-mobile targets.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("enabled: noteItemDelegate.immediatePointerDragEnabled")),
+        "ListBarLayout.qml must disable the immediate drag/tap handlers on mobile so note rows can wait for long-press before drag pickup.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("onCentroidChanged: {")),
         "ListBarLayout.qml note drag handler must update the floating note-card preview while the pointer moves.");
@@ -1458,7 +1515,23 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note drag teardown must clear any hovered hierarchy drop preview after desktop internal drags finish or cancel.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
-        "ListBarLayout.qml must keep note-card tap handling passive until drag threshold so note drags can start from the same surface.");
+        "ListBarLayout.qml must keep the desktop note-card tap handler passive until drag threshold so taps and immediate pointer drags can share the same surface.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("enabled: !noteItemDelegate.pointerDragRequiresLongPress")) &&
+            listBarLayoutText.contains(QStringLiteral("acceptedButtons: Qt.RightButton")) &&
+            listBarLayoutText.contains(QStringLiteral("listBarLayout.openNoteContextMenu(")),
+        "ListBarLayout.qml must keep the immediate context-menu TapHandler desktop-only so mobile touch taps do not synthesize the note-card context menu.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("acceptedButtons: Qt.RightButton")) &&
+            listBarLayoutText.contains(QStringLiteral("listBarLayout.openNoteContextMenu(")),
+        "ListBarLayout.qml note delegates must route right-click gestures into the shared note-card context menu helper.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onPressAndHold: function(mouse) {")) &&
+            listBarLayoutText.contains(QStringLiteral("noteItemDelegate.mobileLongPressPendingContextMenu = true;")) &&
+            listBarLayoutText.contains(QStringLiteral("noteItemDelegate.mobileSuppressNextClick = true;")) &&
+            listBarLayoutText.contains(QStringLiteral("const openContextMenu = noteItemDelegate.mobileLongPressPendingContextMenu && !dragging;")) &&
+            listBarLayoutText.contains(QStringLiteral("listBarLayout.openNoteContextMenu(")),
+        "ListBarLayout.qml mobile note cards must require the shared 1000ms hold before arming the context menu, then open it on release when the pointer never escalates into a drag.");
     QVERIFY2(
         !listBarLayoutText.contains(QStringLiteral("TapHandler.ReleaseWithinBounds")),
         "ListBarLayout.qml note tap handler must not take an exclusive press grab that blocks drag startup.");
@@ -1467,7 +1540,13 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml note tap handling must preserve a transient press preview before the drag threshold resolves.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("onTapped: {")),
-        "ListBarLayout.qml note-card selection must be committed on tap release so note drags can begin from the same surface.");
+        "ListBarLayout.qml note-card selection must be committed on tap release so note drags can coexist with scroll and press feedback.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("id: mobileLongPressDragArea")) &&
+            listBarLayoutText.contains(QStringLiteral("enabled: noteItemDelegate.pointerDragRequiresLongPress")) &&
+            listBarLayoutText.contains(QStringLiteral("pressAndHoldInterval: listBarLayout.mobileNoteDragHoldInterval")) &&
+            listBarLayoutText.contains(QStringLiteral("noteItemDelegate.mobilePointerDragging = true;")),
+        "ListBarLayout.qml mobile note cards must defer drag pickup to a dedicated long-press area with a 1000ms hold interval.");
     QVERIFY2(
         listBarLayoutText.contains(
             QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
@@ -1915,8 +1994,8 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("minimapVisible: false")) &&
             mobilePageText.contains(QStringLiteral("gutterColor: \"transparent\"")) &&
             mobilePageText.contains(QStringLiteral("gutterWidthOverride: LV.Theme.gap20 * 2")) &&
-            mobilePageText.contains(QStringLiteral("editorTopInsetOverride: LV.Theme.gapNone")),
-        "MobileHierarchyPage.qml must reuse ContentViewLayout for mobile editing while overriding only the layout knobs needed to match the compact Figma editor body, including removing the mobile gutter fill.");
+            !mobilePageText.contains(QStringLiteral("editorTopInsetOverride:")),
+        "MobileHierarchyPage.qml must reuse ContentViewLayout for mobile editing while inheriting the shared 16px editor top inset instead of overriding it away.");
     QVERIFY2(
             mobilePageText.contains(QStringLiteral("id: backSwipeEdgeZone")) &&
             mobilePageText.contains(QStringLiteral("visible: mobileHierarchyPage.backNavigationAvailable")) &&

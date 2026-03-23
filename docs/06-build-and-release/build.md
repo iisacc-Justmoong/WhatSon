@@ -41,6 +41,10 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=$HOME/.local/LVRS
 - `scripts/build_host.py` and `scripts/build_all.py` keep the packaged host artifact at `build/host-auto/WhatSon.app`, `build/host-auto/WhatSon.exe`, or `build/host-auto/WhatSon` even when a later aggregate host subtarget fails.
 - `scripts/build_android.py` stages the installable APK at `build/android-auto/WhatSon.apk`.
 - `scripts/build_ios.py` stages the device-ready app bundle at `build/ios-xcode-artifact/WhatSon.app`.
+- The host `WhatSon` target no longer depends on iOS Xcode project export, so stale simulator-side CMake cache entries
+  under `build/ios-xcode-artifact` cannot break unrelated macOS app builds.
+- The explicit root `whatson_export_xcodeproj` target now clears only the nested iOS cache/state files before
+  reconfiguring, instead of deleting the whole artifact directory.
 
 ## TODO
 

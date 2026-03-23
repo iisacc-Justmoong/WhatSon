@@ -110,14 +110,15 @@ WhatSon is an LVRS-based Qt Quick application.
 - `HierarchySidebarLayout.qml` and `SidebarHierarchyView.qml` no longer carry unused `frameName` / `frameNodeId`
   passthrough metadata, so the shared hierarchy surfaces expose only state that participates in runtime rendering or
   routing.
-- Note-card selection still uses `TapHandler.DragThreshold` for drag coexistence, but press now only marks a transient
-  visual candidate row; the authoritative note selection is committed on tap release and reasserted once on the next
-  event turn so drag startup is not canceled by note-model refresh.
+- Note-card selection still commits only on release, but pointer ownership now splits by platform: desktop keeps the
+  `TapHandler.DragThreshold` plus immediate drag path, while mobile defers drag pickup to a dedicated `1000ms`
+  long-press area so vertical list scrolling can win before the row starts a note drag.
 - The note-card visual state now keeps a dedicated persistent `active` contract separate from transient `pressed`, so
   the committed current note remains visibly highlighted after the pointer is released and while the editor is showing
   that note.
-- The note list now follows the same rule for pointer ownership: while a note row is pressed, `ListView` temporarily
-  stops drag-scrolling so the delegate `DragHandler` can win first and begin the `whatson.library.note` drag cleanly.
+- The note list now suspends viewport dragging only once a real note drag is active. A mere press keeps `ListView`
+  scrollable, and on mobile the row must survive a `1000ms` hold before it is promoted into the shared
+  `whatson.library.note` drag path.
 - The same note delegates now use `Drag.Internal`, keep publishing `application/x-whatson-note-id` mime data, and
   mount an overlay-parented `NoteListItem` preview in the active visual state so the grabbed card itself follows the
   pointer instead of falling back to the platform note-id tooltip.
@@ -134,6 +135,10 @@ WhatSon is an LVRS-based Qt Quick application.
   the initial workspace note list visually unselected until the user or a higher-level workflow picks a note.
 - Note-card active styling is now bound only to that committed model selection, so touch press can still turn into a
   list scroll gesture on mobile without painting the row active before release.
+- Mobile note-card drags now begin only after a `1000ms` hold, while desktop note drags stay immediate; `ListView`
+  therefore remains scrollable on mobile until the long-press actually promotes the row into a drag.
+- The note-card context menu now follows the same platform split: desktop still opens it immediately on right-click,
+  while mobile only arms it after the same `1000ms` hold and opens it on release if that hold never turns into a drag.
 - Library note-to-folder drop now treats a same-folder re-drop as an explicit no-op after reading the local
   `.wsnhead`, so debug traces can distinguish duplicate assignments from genuine routing failures without rewriting the
   header file unnecessarily.
@@ -164,7 +169,7 @@ WhatSon is an LVRS-based Qt Quick application.
 - The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
   anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
-  top-left aligned with `48px` top padding plus `16px` horizontal / bottom padding instead of vertical centering.
+  top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
 - `LV.TextEditor` disables rendered preview output and forced wrap defaults
   (`showRenderedOutput: false`, `enforceModeDefaults: false`) while enabling `wrapMode: TextEdit.Wrap`; the gutter
   still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
@@ -200,6 +205,10 @@ WhatSon is an LVRS-based Qt Quick application.
   the visible note set and the rewritten index, and the delete service also treats such entries as index-only cleanup
   instead of failing for a missing directory.
   `BookmarksHierarchyViewModel` only mirrors the deletion into its bookmarked subset.
+- `ListBarLayout.qml` now also mounts an LVRS note-card context menu for desktop right-click. It targets the hovered
+  note id without forcing a selection change first, and currently exposes `Delete note` plus `Clear all folders`.
+  The latter forwards into `LibraryHierarchyViewModel::clearNoteFoldersById(...)`, which rewrites only the note
+  header `<folders>` entries and refreshes the visible note metadata without deleting the note itself.
 - The note-card delegate now uses explicit required note roles (`noteId`, `primaryText`, `image`, `imageSource`,
   `displayDate`, `folders`, `tags`, `bookmarked`, `bookmarkColor`) instead of depending on a nullable runtime
   `model` object, which removes delegate startup `TypeError` churn during note-list refresh and keeps note drags
@@ -606,9 +615,9 @@ for hub/note hierarchy payloads.
   binds the same `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used on
   desktop, so note-card taps open the real editor for the selected note instead of a mobile-only text surface.
 - The mobile editor route only overrides layout knobs that differ from desktop Figma: it keeps the shared LVRS editor
-  session/persistence wiring, but hides the minimap and drawer, drops the top inset to `0`, removes the frame side
-  inset, clears the gutter fill back to transparent, and narrows the gutter to `40px` with a `22px` line-number
-  column.
+  session/persistence wiring, hides the minimap and drawer, keeps the same `16px` top inset as desktop, removes the
+  frame side inset, clears the gutter fill back to transparent, and narrows the gutter to `40px` with a `22px`
+  line-number column.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
   and editor views match the Figma top bar and leave page undo to swipe navigation instead of a visible back button.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
@@ -847,6 +856,11 @@ Default artifacts are generated at:
 The generated iOS configure path disables optional `Qt6GrpcQuick` / `Qt6ProtobufQuick`
 package discovery because WhatSon does not use those modules and cross-compiling may
 otherwise emit host `protoc` warnings.
+The host `WhatSon` target no longer depends on iOS Xcode project export, so macOS app
+builds are not blocked by stale cross-compile metadata under `build/ios-xcode-artifact`.
+The explicit `whatson_export_xcodeproj` target now clears only the nested iOS CMake
+cache/state files before reconfiguring, which keeps the export reproducible without
+deleting the entire artifact directory.
 
 You can override artifact locations:
 

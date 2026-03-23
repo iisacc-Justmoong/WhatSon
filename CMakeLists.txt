@@ -81,7 +81,7 @@ if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set(_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT ON)
 endif ()
 set(WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD "${_WHATSON_ENABLE_IOS_XCODEPROJ_DEFAULT}" CACHE BOOL
-        "Generate iOS Xcode project during host build on Apple hosts.")
+        "Enable the explicit iOS Xcode project export target on Apple hosts.")
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 qt_standard_project_setup(REQUIRES 6.5)
@@ -407,19 +407,21 @@ if (WHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD AND APPLE AND NOT CMAKE_SYSTEM_NAME ST
                         "-DLVRS_DIR=${WHATSON_LVRS_IOS_PREFIX}/lib/cmake/LVRS")
             endif ()
 
+            set(_whatson_prepare_ios_export_script
+                    "${CMAKE_BINARY_DIR}/CMakeFiles/PrepareWhatSonIosXcodeproj.cmake")
+            configure_file(
+                    "${CMAKE_SOURCE_DIR}/cmake/PrepareWhatSonIosXcodeproj.cmake.in"
+                    "${_whatson_prepare_ios_export_script}"
+                    @ONLY
+            )
+
             add_custom_target(whatson_generate_ios_xcodeproj
-                    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${WHATSON_IOS_XCODEPROJ_DIR}"
-                    COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_IOS_XCODEPROJ_DIR}"
+                    COMMAND "${CMAKE_COMMAND}" -P "${_whatson_prepare_ios_export_script}"
                     COMMAND ${_whatson_ios_configure_cmd}
                     BYPRODUCTS "${WHATSON_IOS_XCODEPROJ_DIR}/WhatSon.xcodeproj"
                     USES_TERMINAL
                     COMMENT "Generate iOS Xcode project from platform/Apple metadata"
             )
-
-            add_dependencies(WhatSon whatson_generate_ios_xcodeproj)
-            if (TARGET whatson_build_all)
-                add_dependencies(whatson_build_all whatson_generate_ios_xcodeproj)
-            endif ()
         endif ()
     endif ()
 endif ()

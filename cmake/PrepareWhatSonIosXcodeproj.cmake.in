@@ -1,0 +1,21 @@
+set(_whatson_ios_export_dir "@WHATSON_IOS_XCODEPROJ_DIR@")
+
+if (NOT EXISTS "${_whatson_ios_export_dir}")
+    file(MAKE_DIRECTORY "${_whatson_ios_export_dir}")
+endif ()
+
+set(_whatson_ios_stale_entries
+        "${_whatson_ios_export_dir}/CMakeCache.txt"
+        "${_whatson_ios_export_dir}/CMakeFiles"
+        "${_whatson_ios_export_dir}/WhatSon.xcodeproj"
+        "${_whatson_ios_export_dir}/CTestTestfile.cmake"
+        "${_whatson_ios_export_dir}/CTestConfiguration.ini"
+        "${_whatson_ios_export_dir}/DartConfiguration.tcl"
+        "${_whatson_ios_export_dir}/cmake_install.cmake"
+)
+
+foreach(_whatson_ios_entry IN LISTS _whatson_ios_stale_entries)
+    if (EXISTS "${_whatson_ios_entry}")
+        file(REMOVE_RECURSE "${_whatson_ios_entry}")
+    endif ()
+endforeach ()
