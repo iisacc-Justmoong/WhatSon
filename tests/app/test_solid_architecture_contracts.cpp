@@ -2,6 +2,7 @@
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
@@ -82,7 +83,7 @@ public:
     {
     }
 
-    QObject* hierarchyViewModel(int hierarchyIndex) const override
+    IHierarchyViewModel* hierarchyViewModel(int hierarchyIndex) const override
     {
         switch (hierarchyIndex)
         {
@@ -108,10 +109,63 @@ public:
         }
     }
 
-    QObject* m_libraryViewModel = nullptr;
+    IHierarchyViewModel* m_libraryViewModel = nullptr;
     QObject* m_libraryNoteListModel = nullptr;
-    QObject* m_bookmarksViewModel = nullptr;
+    IHierarchyViewModel* m_bookmarksViewModel = nullptr;
     QObject* m_bookmarksNoteListModel = nullptr;
+};
+
+class FakeHierarchyViewModel final : public IHierarchyViewModel
+{
+    Q_OBJECT
+
+public:
+    explicit FakeHierarchyViewModel(QObject* parent = nullptr)
+        : IHierarchyViewModel(parent)
+    {
+        initializeHierarchyInterfaceSignalBridge();
+    }
+
+    QObject* itemModel() noexcept override { return nullptr; }
+    QObject* noteListModel() noexcept override { return m_noteListModel; }
+    int selectedIndex() const noexcept override { return m_selectedIndex; }
+    void setSelectedIndex(int index) override
+    {
+        if (m_selectedIndex == index)
+        {
+            return;
+        }
+        m_selectedIndex = index;
+        emit selectedIndexChanged();
+    }
+    int itemCount() const noexcept override { return 0; }
+    bool loadSucceeded() const noexcept override { return true; }
+    QString lastLoadError() const override { return {}; }
+    QVariantList hierarchyModel() const override { return {}; }
+    QString itemLabel(int index) const override { Q_UNUSED(index); return {}; }
+    bool canRenameItem(int index) const override { Q_UNUSED(index); return false; }
+    bool renameItem(int index, const QString& displayName) override
+    {
+        Q_UNUSED(index);
+        Q_UNUSED(displayName);
+        return false;
+    }
+    void createFolder() override {}
+    void deleteSelectedFolder() override {}
+    bool renameEnabled() const noexcept override { return false; }
+    bool createFolderEnabled() const noexcept override { return false; }
+    bool deleteFolderEnabled() const noexcept override { return false; }
+
+    QObject* m_noteListModel = nullptr;
+
+signals:
+    void selectedIndexChanged();
+    void hierarchyModelChanged();
+    void itemCountChanged();
+    void loadStateChanged();
+
+private:
+    int m_selectedIndex = -1;
 };
 
 static_assert(std::is_base_of_v<IHierarchyViewModelProvider, HierarchyViewModelProvider>);
@@ -134,15 +188,17 @@ void SolidArchitectureContractsTest::sidebarState_mustStaySingleSourcedAndInterf
 {
     FakeSidebarSelectionStore selectionStore;
     FakeHierarchyViewModelProvider provider;
-    QObject libraryViewModel;
+    FakeHierarchyViewModel libraryViewModel;
     QObject libraryNoteListModel;
-    QObject bookmarksViewModel;
+    FakeHierarchyViewModel bookmarksViewModel;
     QObject bookmarksNoteListModel;
 
     provider.m_libraryViewModel = &libraryViewModel;
     provider.m_libraryNoteListModel = &libraryNoteListModel;
     provider.m_bookmarksViewModel = &bookmarksViewModel;
     provider.m_bookmarksNoteListModel = &bookmarksNoteListModel;
+    libraryViewModel.m_noteListModel = &libraryNoteListModel;
+    bookmarksViewModel.m_noteListModel = &bookmarksNoteListModel;
 
     SidebarHierarchyViewModel sidebarViewModel;
     sidebarViewModel.setSelectionStore(&selectionStore);
@@ -173,9 +229,9 @@ void SolidArchitectureContractsTest::sidebarState_mustStaySingleSourcedAndInterf
     QVERIFY(!hierarchySidebarLayout.contains(QStringLiteral("function resolveHierarchyViewModel")));
     QVERIFY(!hierarchySidebarLayout.contains(QStringLiteral("function resolveNoteListModel")));
     QVERIFY(bodyLayout.contains(QStringLiteral(
-        "readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex")));
+        "readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0")));
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral(
-        "readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel")));
+        "readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null")));
 }
 
 void SolidArchitectureContractsTest::editorAdapters_mustStayResponsibilitySeparated()

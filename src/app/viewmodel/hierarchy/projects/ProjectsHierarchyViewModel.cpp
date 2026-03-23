@@ -269,10 +269,11 @@ namespace
 }
 
 ProjectsHierarchyViewModel::ProjectsHierarchyViewModel(QObject* parent)
-    : QObject(parent)
+    : IHierarchyViewModel(parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
         &ProjectsHierarchyModel::itemCountChanged,
@@ -290,6 +291,11 @@ ProjectsHierarchyViewModel::~ProjectsHierarchyViewModel() = default;
 ProjectsHierarchyModel* ProjectsHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
+}
+
+bool ProjectsHierarchyViewModel::supportsHierarchyNodeReorder() const noexcept
+{
+    return true;
 }
 
 int ProjectsHierarchyViewModel::selectedIndex() const noexcept

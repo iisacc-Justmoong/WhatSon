@@ -92,6 +92,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `HierarchySidebarLayout.qml` no longer normalize or resolve hierarchy state locally; they consume
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that shared
   backend object before passing child bindings down into the sidebar, note list, and editor.
+- The sidebar hierarchy seam is now interface-first: every domain hierarchy view-model implements
+  `IHierarchyViewModel`, `HierarchyViewModelProvider` only accepts that interface, and note-list resolution no longer
+  relies on raw `QObject` property introspection.
 - Sidebar rendering now mounts LVRS `Hierarchy` directly. Each domain hierarchy view-model exposes a standard
   `hierarchyModel` property with LVRS-default roles
   (`itemId`, `key`, `label`, `depth`, `expanded`, `showChevron`, `draggable`), and keeps that payload as a flat
@@ -99,9 +102,11 @@ WhatSon is an LVRS-based Qt Quick application.
   and row-level drag gating from row order plus explicit `depth` / `draggable`. `SidebarHierarchyView.qml` binds that
   model without an intermediate adapter and now normalizes the incoming C++ `QVariantList` into a real JS array before
   it reaches LVRS editable drag logic.
-- Row activation now follows the LVRS `Hierarchy.listItemActivated(...)` contract directly. WhatSon mirrors the
-  resulting `itemId` back into the active hierarchy view-model through `setSelectedIndex(...)` and replays the
-  selection with `activateListItemById(...)` when the domain model changes.
+- `SidebarHierarchyView.qml` no longer probes concrete domain methods like `createFolder` / `renameItem` /
+  `viewOptionsEnabled`. It now consumes the shared interface-level contract
+  (`hierarchyNodes`, `hierarchySelectedIndex`, `hierarchyCreateEnabled`, `hierarchyDeleteEnabled`,
+  `hierarchyViewOptionsEnabled`) and calls the same interface action surface for row activation, rename, create,
+  delete, and expansion sync.
 - Sidebar drag-reorder is now reintroduced through a dedicated system-level `HierarchyDragDropBridge` wired into
   LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
   instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
@@ -217,7 +222,8 @@ WhatSon is an LVRS-based Qt Quick application.
   `model` object, which removes delegate startup `TypeError` churn during note-list refresh and keeps note drags
   stable while the bound list model changes.
 - `SidebarHierarchyView.qml` no longer composes a local hierarchy interaction engine or an LVRS adapter bridge. It
-  mounts `LV.Hierarchy` directly and consumes the active view-model's standard `hierarchyModel` property.
+  mounts `LV.Hierarchy` directly and consumes the active `IHierarchyViewModel` contract instead of runtime
+  `QObject` duck-typing.
 - `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
   `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
   `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,
@@ -838,8 +844,9 @@ Bookmarks runtime behavior:
   `#EF4444`, `#F97316`, `#F59E0B`, `#EAB308`, `#22C55E`, `#14B8A6`, `#3B82F6`, `#B589EC`, `#8B5CF6`, `#EC4899`
 - The full bookmarks hierarchy now renders title-cased color labels (`Red` ... `Pink`) and inserts `Indigo`
   between `Blue` and `Purple`; every hierarchy row uses the bookmark glyph, and both the glyph and label are tinted
-  from LVRS theme tokens instead of the default hierarchy placeholder/icon colors. The LVRS placeholder path is
-  explicitly suppressed so the bookmark glyph is the only visible icon layer.
+  from LVRS theme tokens instead of the default hierarchy placeholder/icon colors. Bookmark rows explicitly disable
+  the LVRS fallback placeholder through `HierarchyItem.iconPlaceholderVisible = false`, so the bookmark glyph is the
+  only visible icon layer.
 
 ## Unified Build And Launch Automation
 

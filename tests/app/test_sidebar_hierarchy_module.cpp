@@ -1,4 +1,5 @@
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 
@@ -7,18 +8,15 @@
 #include <QVariant>
 #include <QtTest/QtTest>
 
-class StubStandardHierarchyViewModel final : public QObject
+class StubStandardHierarchyViewModel final : public IHierarchyViewModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
-    Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
-    Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
-
 public:
     explicit StubStandardHierarchyViewModel(QObject* parent = nullptr)
-        : QObject(parent)
+        : IHierarchyViewModel(parent)
     {
+        initializeHierarchyInterfaceSignalBridge();
         m_hierarchyModel = QVariantList{
             QVariantMap{
                 {QStringLiteral("itemId"), 0},
@@ -33,6 +31,16 @@ public:
                 {QStringLiteral("depth"), 0}
             }
         };
+    }
+
+    QObject* itemModel() noexcept override
+    {
+        return nullptr;
+    }
+
+    QObject* noteListModel() noexcept override
+    {
+        return m_noteListModel;
     }
 
     QVariantList hierarchyModel() const
@@ -50,6 +58,16 @@ public:
         return m_hierarchyModel.size();
     }
 
+    bool loadSucceeded() const noexcept override
+    {
+        return true;
+    }
+
+    QString lastLoadError() const override
+    {
+        return {};
+    }
+
     void setHierarchyModel(QVariantList hierarchyModel)
     {
         if (m_hierarchyModel == hierarchyModel)
@@ -62,7 +80,7 @@ public:
         emit itemCountChanged();
     }
 
-    Q_INVOKABLE void setSelectedIndex(int index)
+    void setSelectedIndex(int index) override
     {
         if (m_selectedIndex == index)
         {
@@ -71,6 +89,56 @@ public:
 
         m_selectedIndex = index;
         emit selectedIndexChanged();
+    }
+
+    QString itemLabel(int index) const override
+    {
+        if (index < 0 || index >= m_hierarchyModel.size())
+        {
+            return {};
+        }
+        return m_hierarchyModel.at(index).toMap().value(QStringLiteral("label")).toString();
+    }
+
+    bool canRenameItem(int index) const override
+    {
+        Q_UNUSED(index);
+        return false;
+    }
+
+    bool renameItem(int index, const QString& displayName) override
+    {
+        Q_UNUSED(index);
+        Q_UNUSED(displayName);
+        return false;
+    }
+
+    void createFolder() override
+    {
+    }
+
+    void deleteSelectedFolder() override
+    {
+    }
+
+    bool renameEnabled() const noexcept override
+    {
+        return false;
+    }
+
+    bool createFolderEnabled() const noexcept override
+    {
+        return false;
+    }
+
+    bool deleteFolderEnabled() const noexcept override
+    {
+        return false;
+    }
+
+    void setNoteListModel(QObject* noteListModel)
+    {
+        m_noteListModel = noteListModel;
     }
 
     signals  :
@@ -83,6 +151,7 @@ public:
 private:
     QVariantList m_hierarchyModel;
     int m_selectedIndex = 0;
+    QObject* m_noteListModel = nullptr;
 };
 
 class SidebarHierarchyModuleTest final : public QObject
@@ -119,15 +188,13 @@ void SidebarHierarchyModuleTest::activeHierarchyIndex_mustRoundTripThroughSelect
 void SidebarHierarchyModuleTest::activeHierarchyBindings_mustResolveThroughProviderInterface()
 {
     StubStandardHierarchyViewModel libraryViewModel;
-    QObject projectsViewModel;
+    StubStandardHierarchyViewModel projectsViewModel;
     StubStandardHierarchyViewModel bookmarksViewModel;
     QObject libraryNoteListModel;
     QObject bookmarksNoteListModel;
 
-    libraryViewModel.setProperty("noteListModel", QVariant::fromValue(static_cast<QObject*>(&libraryNoteListModel)));
-    bookmarksViewModel.setProperty(
-        "noteListModel",
-        QVariant::fromValue(static_cast<QObject*>(&bookmarksNoteListModel)));
+    libraryViewModel.setNoteListModel(&libraryNoteListModel);
+    bookmarksViewModel.setNoteListModel(&bookmarksNoteListModel);
 
     HierarchyViewModelProvider provider;
     HierarchyViewModelProvider::Targets targets;
@@ -178,10 +245,10 @@ void SidebarHierarchyModuleTest::hierarchyViewModel_mustExposeStandardHierarchyM
 
     sidebarViewModel.setActiveHierarchyIndex(0);
 
-    QObject* activeViewModel = sidebarViewModel.activeHierarchyViewModel();
+    IHierarchyViewModel* activeViewModel = qobject_cast<IHierarchyViewModel*>(sidebarViewModel.activeHierarchyViewModel());
     QVERIFY(activeViewModel != nullptr);
 
-    const QVariantList hierarchyModel = activeViewModel->property("hierarchyModel").toList();
+    const QVariantList hierarchyModel = activeViewModel->hierarchyNodes();
     QCOMPARE(hierarchyModel.size(), 2);
 
     const QVariantMap firstNode = hierarchyModel.at(0).toMap();
@@ -189,7 +256,7 @@ void SidebarHierarchyModuleTest::hierarchyViewModel_mustExposeStandardHierarchyM
     QCOMPARE(firstNode.value(QStringLiteral("key")).toString(), QStringLiteral("bucket:all"));
     QCOMPARE(firstNode.value(QStringLiteral("label")).toString(), QStringLiteral("All Library"));
 
-    QSignalSpy modelSpy(&libraryViewModel, &StubStandardHierarchyViewModel::hierarchyModelChanged);
+    QSignalSpy modelSpy(activeViewModel, SIGNAL(hierarchyNodesChanged()));
     libraryViewModel.setHierarchyModel(QVariantList{
         QVariantMap{
             {QStringLiteral("itemId"), 0},
@@ -200,7 +267,7 @@ void SidebarHierarchyModuleTest::hierarchyViewModel_mustExposeStandardHierarchyM
     });
     QCOMPARE(modelSpy.count(), 1);
 
-    const QVariantList updatedModel = activeViewModel->property("hierarchyModel").toList();
+    const QVariantList updatedModel = activeViewModel->hierarchyNodes();
     QCOMPARE(updatedModel.size(), 1);
     QCOMPARE(updatedModel.at(0).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("library:reordered"));
 }

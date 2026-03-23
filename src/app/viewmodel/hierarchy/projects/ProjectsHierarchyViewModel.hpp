@@ -1,14 +1,14 @@
 #pragma once
 
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
 
-#include <QObject>
 #include <QStringList>
 #include <QVariantList>
 #include <QVector>
 
-class ProjectsHierarchyViewModel final : public QObject
+class ProjectsHierarchyViewModel final : public IHierarchyViewModel
 {
     Q_OBJECT
 
@@ -26,22 +26,22 @@ public:
     explicit ProjectsHierarchyViewModel(QObject* parent = nullptr);
     ~ProjectsHierarchyViewModel() override;
 
-    ProjectsHierarchyModel* itemModel() noexcept;
+    ProjectsHierarchyModel* itemModel() noexcept override;
 
-    int selectedIndex() const noexcept;
-    Q_INVOKABLE void setSelectedIndex(int index);
-    int itemCount() const noexcept;
-    bool loadSucceeded() const noexcept;
-    QString lastLoadError() const;
+    int selectedIndex() const noexcept override;
+    Q_INVOKABLE void setSelectedIndex(int index) override;
+    int itemCount() const noexcept override;
+    bool loadSucceeded() const noexcept override;
+    QString lastLoadError() const override;
 
     Q_INVOKABLE void setDepthItems(const QVariantList& depthItems);
-    QVariantList hierarchyModel() const;
+    QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
-    Q_INVOKABLE QString itemLabel(int index) const;
-    Q_INVOKABLE bool canRenameItem(int index) const;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
-    Q_INVOKABLE void createFolder();
-    Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE QString itemLabel(int index) const override;
+    Q_INVOKABLE bool canRenameItem(int index) const override;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
+    Q_INVOKABLE void createFolder() override;
+    Q_INVOKABLE void deleteSelectedFolder() override;
     Q_INVOKABLE bool canMoveFolder(int index) const;
     Q_INVOKABLE bool canAcceptFolderDropBefore(int sourceIndex, int targetIndex) const;
     Q_INVOKABLE bool moveFolderBefore(int sourceIndex, int targetIndex);
@@ -49,13 +49,14 @@ public:
     Q_INVOKABLE bool moveFolder(int sourceIndex, int targetIndex, bool asChild);
     Q_INVOKABLE bool canMoveFolderToRoot(int sourceIndex) const;
     Q_INVOKABLE bool moveFolderToRoot(int sourceIndex);
-    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey = QString());
+    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey = QString()) override;
+    bool supportsHierarchyNodeReorder() const noexcept override;
 
     void setProjectNames(QStringList projectNames);
     QStringList projectNames() const;
-    bool renameEnabled() const noexcept;
-    bool createFolderEnabled() const noexcept;
-    bool deleteFolderEnabled() const noexcept;
+    bool renameEnabled() const noexcept override;
+    bool createFolderEnabled() const noexcept override;
+    bool deleteFolderEnabled() const noexcept override;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(

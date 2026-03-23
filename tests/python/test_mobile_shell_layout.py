@@ -298,7 +298,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("target: mobileScaffold.activePageRouter", mobile_page_text)
         self.assertIn("function onCurrentPathChanged()", mobile_page_text)
         self.assertIn("mobileHierarchyPage.syncRouteSelectionState();", mobile_page_text)
-        self.assertIn("mobileHierarchyPage.activeContentViewModel.setSelectedIndex(-1);", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(-1);", mobile_page_text)
         self.assertIn("if (mobileHierarchyPage.routeSelectionSyncSuppressed)", mobile_page_text)
         self.assertIn("if (mobileScaffold.bodyItem && mobileScaffold.bodyItem.requestCreateFolder !== undefined)", mobile_page_text)
         self.assertIn("mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);", mobile_page_text)

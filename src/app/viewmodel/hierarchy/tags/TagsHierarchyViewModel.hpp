@@ -3,12 +3,12 @@
 #include "TagsHierarchyModel.hpp"
 #include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
-#include <QObject>
 #include <QVariantList>
 #include <QVector>
 
-class TagsHierarchyViewModel final : public QObject
+class TagsHierarchyViewModel final : public IHierarchyViewModel
 {
     Q_OBJECT
 
@@ -26,22 +26,22 @@ public:
     explicit TagsHierarchyViewModel(QObject* parent = nullptr);
     ~TagsHierarchyViewModel() override;
 
-    TagsHierarchyModel* itemModel() noexcept;
+    TagsHierarchyModel* itemModel() noexcept override;
 
-    int selectedIndex() const noexcept;
-    Q_INVOKABLE void setSelectedIndex(int index);
-    int itemCount() const noexcept;
-    bool loadSucceeded() const noexcept;
-    QString lastLoadError() const;
+    int selectedIndex() const noexcept override;
+    Q_INVOKABLE void setSelectedIndex(int index) override;
+    int itemCount() const noexcept override;
+    bool loadSucceeded() const noexcept override;
+    QString lastLoadError() const override;
 
     Q_INVOKABLE void setDepthItems(const QVariantList& depthItems);
-    QVariantList hierarchyModel() const;
+    QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
-    Q_INVOKABLE QString itemLabel(int index) const;
-    Q_INVOKABLE bool canRenameItem(int index) const;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
-    Q_INVOKABLE void createFolder();
-    Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE QString itemLabel(int index) const override;
+    Q_INVOKABLE bool canRenameItem(int index) const override;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
+    Q_INVOKABLE void createFolder() override;
+    Q_INVOKABLE void deleteSelectedFolder() override;
 
     void setTagDepthEntries(QVector<WhatSonTagDepthEntry> entries);
     QVector<WhatSonTagDepthEntry> tagDepthEntries() const;
@@ -51,9 +51,9 @@ public:
         QString tagsFilePath,
         bool loadSucceeded,
         QString errorMessage = QString());
-    bool renameEnabled() const noexcept;
-    bool createFolderEnabled() const noexcept;
-    bool deleteFolderEnabled() const noexcept;
+    bool renameEnabled() const noexcept override;
+    bool createFolderEnabled() const noexcept override;
+    bool deleteFolderEnabled() const noexcept override;
 
 public
     slots  :

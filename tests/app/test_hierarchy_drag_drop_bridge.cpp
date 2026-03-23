@@ -1,16 +1,23 @@
 #include "viewmodel/panel/HierarchyDragDropBridge.hpp"
 
-#include <QObject>
 #include <QtTest/QtTest>
 
-class FakeHierarchyDragDropViewModel final : public QObject
+class FakeHierarchyDragDropViewModel final : public IHierarchyViewModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel WRITE setHierarchyModel NOTIFY hierarchyModelChanged)
-    Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
-
 public:
+    FakeHierarchyDragDropViewModel()
+        : IHierarchyViewModel(nullptr)
+    {
+        initializeHierarchyInterfaceSignalBridge();
+    }
+
+    QObject* itemModel() noexcept override
+    {
+        return nullptr;
+    }
+
     QVariantList hierarchyModel() const
     {
         return m_hierarchyModel;
@@ -32,7 +39,7 @@ public:
         return m_selectedIndex;
     }
 
-    void setSelectedIndex(int index)
+    void setSelectedIndex(int index) override
     {
         if (m_selectedIndex == index)
         {
@@ -43,7 +50,67 @@ public:
         emit selectedIndexChanged();
     }
 
-    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey)
+    int itemCount() const noexcept override
+    {
+        return m_hierarchyModel.size();
+    }
+
+    bool loadSucceeded() const noexcept override
+    {
+        return true;
+    }
+
+    QString lastLoadError() const override
+    {
+        return {};
+    }
+
+    QString itemLabel(int index) const override
+    {
+        if (index < 0 || index >= m_hierarchyModel.size())
+        {
+            return {};
+        }
+        return m_hierarchyModel.at(index).toMap().value(QStringLiteral("label")).toString();
+    }
+
+    bool canRenameItem(int index) const override
+    {
+        Q_UNUSED(index);
+        return false;
+    }
+
+    bool renameItem(int index, const QString& displayName) override
+    {
+        Q_UNUSED(index);
+        Q_UNUSED(displayName);
+        return false;
+    }
+
+    void createFolder() override
+    {
+    }
+
+    void deleteSelectedFolder() override
+    {
+    }
+
+    bool renameEnabled() const noexcept override
+    {
+        return false;
+    }
+
+    bool createFolderEnabled() const noexcept override
+    {
+        return false;
+    }
+
+    bool deleteFolderEnabled() const noexcept override
+    {
+        return false;
+    }
+
+    bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey) override
     {
         lastHierarchyNodes = hierarchyNodes;
         lastActiveItemKey = activeItemKey;
@@ -51,7 +118,7 @@ public:
         return applyResult;
     }
 
-    Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId)
+    bool canAcceptNoteDrop(int index, const QString& noteId) const override
     {
         lastCanAcceptIndex = index;
         lastCanAcceptNoteId = noteId;
@@ -59,7 +126,7 @@ public:
         return canAcceptResult;
     }
 
-    Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId)
+    bool assignNoteToFolder(int index, const QString& noteId) override
     {
         lastAssignedIndex = index;
         lastAssignedNoteId = noteId;
@@ -67,14 +134,24 @@ public:
         return assignResult;
     }
 
+    bool supportsHierarchyNodeReorder() const noexcept override
+    {
+        return true;
+    }
+
+    bool supportsHierarchyNoteDrop() const noexcept override
+    {
+        return true;
+    }
+
     QVariantList lastHierarchyNodes;
     QString lastActiveItemKey;
     int applyCallCount = 0;
     bool applyResult = true;
 
-    int lastCanAcceptIndex = -1;
-    QString lastCanAcceptNoteId;
-    int canAcceptCallCount = 0;
+    mutable int lastCanAcceptIndex = -1;
+    mutable QString lastCanAcceptNoteId;
+    mutable int canAcceptCallCount = 0;
     bool canAcceptResult = true;
 
     int lastAssignedIndex = -1;

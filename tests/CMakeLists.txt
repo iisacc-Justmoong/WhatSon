@@ -284,6 +284,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_tags_depth_provider_tests)
 
 add_executable(whatson_hierarchy_viewmodels_tests
         app/test_hierarchy_viewmodels.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyModel.cpp
@@ -402,6 +403,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hub_note_deletion_service_tests)
 
 add_executable(whatson_library_hierarchy_tests
         app/test_library_hierarchy_view_model.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
@@ -476,6 +478,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_file_validator_tests)
 
 add_executable(whatson_tags_hierarchy_tests
         app/test_tags_hierarchy_view_model.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/tags/WhatSonTagsJsonParser.cpp
@@ -603,6 +606,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_navigation_qml_frames_tests)
 
 add_executable(whatson_architecture_policy_lock_tests
         app/test_architecture_policy_lock.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
@@ -625,6 +629,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_architecture_policy_lock_tests)
 
 add_executable(whatson_sidebar_hierarchy_module_tests
         app/test_sidebar_hierarchy_module.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
@@ -683,6 +688,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_note_deletion_bridge_tests)
 
 add_executable(whatson_hierarchy_drag_drop_bridge_tests
         app/test_hierarchy_drag_drop_bridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/HierarchyDragDropBridge.cpp
 )
 set_target_properties(whatson_hierarchy_drag_drop_bridge_tests PROPERTIES AUTOMOC ON)
@@ -700,6 +706,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_hierarchy_drag_drop_bridge_tests)
 
 add_executable(whatson_solid_architecture_contract_tests
         app/test_solid_architecture_contracts.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp

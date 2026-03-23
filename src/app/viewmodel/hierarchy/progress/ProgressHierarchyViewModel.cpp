@@ -17,10 +17,11 @@ namespace
 } // namespace
 
 ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
-    : QObject(parent)
+    : IHierarchyViewModel(parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::traceSelf(this, QString::fromLatin1(kScope), QStringLiteral("ctor"));
+    initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
         &ProgressHierarchyModel::itemCountChanged,

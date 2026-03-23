@@ -931,9 +931,16 @@ Hierarchy rendering pipeline:
   `resolvedActiveHierarchyIndex`, `resolvedHierarchyViewModel`, and `resolvedNoteListModel` directly from that
   backend object, and `HierarchySidebarLayout.qml` forwards the same resolved hierarchy state into
   `SidebarHierarchyView.qml` without re-normalizing indices or re-resolving per-domain view-models in QML.
-- `HierarchySidebarLayout.qml` now composes `HierarchyDragDropBridge`, which introspects the resolved hierarchy
-  view-model for `applyHierarchyNodes(...)` / note-drop contracts and feeds LVRS `Hierarchy.editable` plus reorder
-  persistence back into the active domain object.
+- Every domain hierarchy view-model now implements the shared `IHierarchyViewModel` interface, and
+  `HierarchyViewModelProvider` resolves only that interface instead of raw `QObject*` plus meta-object property
+  probing.
+- `SidebarHierarchyView.qml` now binds only to the interface-level hierarchy contract
+  (`hierarchyNodes`, `hierarchySelectedIndex`, `hierarchyCreateEnabled`, `hierarchyDeleteEnabled`,
+  `hierarchyViewOptionsEnabled`) and routes rename/create/delete/expand actions back through the same interface
+  surface instead of duck-typing per-domain methods in QML.
+- `HierarchySidebarLayout.qml` now composes `HierarchyDragDropBridge`, which consumes explicit
+  `IHierarchyViewModel` reorder/note-drop capabilities instead of introspecting the resolved hierarchy view-model for
+  method availability.
 - `BodyLayout.qml` keeps width clamp math plus panel arrangement, while `PanelEdgeSplitter.qml` owns the shared
   edge-drag interaction used by sidebar/list/right-panel splitters.
 - `Main.qml` keeps shell routing/window composition, while `MainWindowInteractionController.qml` owns focus
@@ -1047,8 +1054,8 @@ Hierarchy rendering pipeline:
     - Selecting a bookmark color folder filters right-panel note cards by that bookmark color.
     - The full bookmarks hierarchy now title-cases the folder labels, inserts `Indigo` between `Blue` and `Purple`,
       renders every row with the bookmark glyph, and tints both glyph and label from LVRS color tokens so the row
-      icon color matches the corresponding label color without patching LVRS itself. The default LVRS placeholder icon
-      path is suppressed, so no neutral placeholder remains behind the bookmark glyph.
+      icon color matches the corresponding label color. The neutral LVRS fallback placeholder is disabled through
+      `HierarchyItem.iconPlaceholderVisible = false`, so no extra placeholder remains behind the bookmark glyph.
 - Progress domain behavior is fixed-state driven:
     - Progress hierarchy labels are immutable constants at runtime.
     - Rename/create/delete actions are disabled in the progress hierarchy.
@@ -1254,7 +1261,7 @@ From `tests/app/**`, architecture is guarded by explicit tests:
       `LV.Hierarchy`, `ContentsEditorSelectionBridge`, `ContentsLogicalTextBridge`,
       `ContentsGutterMarkerBridge`, `ContentsEditorSession.qml`)
     - DIP/LSP guard for sidebar state: `SidebarHierarchyViewModel` must continue to work through
-      `ISidebarSelectionStore` and `IHierarchyViewModelProvider` substitutions
+      `ISidebarSelectionStore`, `IHierarchyViewModelProvider`, and `IHierarchyViewModel` substitutions
     - ISP guard for editor helpers: selection, logical-text, and gutter-marker adapters must keep distinct
       meta-object contracts and the removed `ContentsEditorBridge.*` must stay absent
 

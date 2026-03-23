@@ -1,5 +1,6 @@
 #pragma once
 
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
 
 class HierarchyViewModelProvider final : public IHierarchyViewModelProvider
@@ -9,14 +10,14 @@ class HierarchyViewModelProvider final : public IHierarchyViewModelProvider
 public:
     struct Targets final
     {
-        QObject* libraryViewModel = nullptr;
-        QObject* projectsViewModel = nullptr;
-        QObject* bookmarksViewModel = nullptr;
-        QObject* tagsViewModel = nullptr;
-        QObject* resourcesViewModel = nullptr;
-        QObject* progressViewModel = nullptr;
-        QObject* eventViewModel = nullptr;
-        QObject* presetViewModel = nullptr;
+        IHierarchyViewModel* libraryViewModel = nullptr;
+        IHierarchyViewModel* projectsViewModel = nullptr;
+        IHierarchyViewModel* bookmarksViewModel = nullptr;
+        IHierarchyViewModel* tagsViewModel = nullptr;
+        IHierarchyViewModel* resourcesViewModel = nullptr;
+        IHierarchyViewModel* progressViewModel = nullptr;
+        IHierarchyViewModel* eventViewModel = nullptr;
+        IHierarchyViewModel* presetViewModel = nullptr;
     };
 
     explicit HierarchyViewModelProvider(QObject* parent = nullptr);
@@ -25,12 +26,10 @@ public:
     void setTargets(Targets targets);
     Targets targets() const noexcept;
 
-    QObject* hierarchyViewModel(int hierarchyIndex) const override;
+    IHierarchyViewModel* hierarchyViewModel(int hierarchyIndex) const override;
     QObject* noteListModel(int hierarchyIndex) const override;
 
 private:
     static bool sameTargets(const Targets& lhs, const Targets& rhs) noexcept;
-    static QObject* noteListModelFromViewModel(QObject* viewModel);
-
     Targets m_targets;
 };

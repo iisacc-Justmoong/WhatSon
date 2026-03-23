@@ -1,5 +1,7 @@
 #pragma once
 
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+
 #include <QObject>
 
 class IHierarchyViewModelProvider : public QObject
@@ -14,7 +16,7 @@ public:
 
     ~IHierarchyViewModelProvider() override = default;
 
-    Q_INVOKABLE virtual QObject* hierarchyViewModel(int hierarchyIndex) const = 0;
+    Q_INVOKABLE virtual IHierarchyViewModel* hierarchyViewModel(int hierarchyIndex) const = 0;
     Q_INVOKABLE virtual QObject* noteListModel(int hierarchyIndex) const = 0;
 
     signals  :

@@ -4,8 +4,6 @@
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 
 #include <QDebug>
-#include <QMetaType>
-#include <QVariant>
 
 HierarchyViewModelProvider::HierarchyViewModelProvider(QObject* parent)
     : IHierarchyViewModelProvider(parent)
@@ -38,7 +36,7 @@ HierarchyViewModelProvider::Targets HierarchyViewModelProvider::targets() const 
     return m_targets;
 }
 
-QObject* HierarchyViewModelProvider::hierarchyViewModel(int hierarchyIndex) const
+IHierarchyViewModel* HierarchyViewModelProvider::hierarchyViewModel(int hierarchyIndex) const
 {
     const int normalizedIndex = WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex);
     switch (normalizedIndex)
@@ -67,7 +65,8 @@ QObject* HierarchyViewModelProvider::hierarchyViewModel(int hierarchyIndex) cons
 
 QObject* HierarchyViewModelProvider::noteListModel(int hierarchyIndex) const
 {
-    return noteListModelFromViewModel(hierarchyViewModel(hierarchyIndex));
+    IHierarchyViewModel* viewModel = hierarchyViewModel(hierarchyIndex);
+    return viewModel ? viewModel->hierarchyNoteListModel() : nullptr;
 }
 
 bool HierarchyViewModelProvider::sameTargets(const Targets& lhs, const Targets& rhs) noexcept
@@ -80,31 +79,4 @@ bool HierarchyViewModelProvider::sameTargets(const Targets& lhs, const Targets& 
         && lhs.progressViewModel == rhs.progressViewModel
         && lhs.eventViewModel == rhs.eventViewModel
         && lhs.presetViewModel == rhs.presetViewModel;
-}
-
-QObject* HierarchyViewModelProvider::noteListModelFromViewModel(QObject* viewModel)
-{
-    if (viewModel == nullptr)
-    {
-        return nullptr;
-    }
-
-    const QVariant noteListProperty = viewModel->property("noteListModel");
-    if (!noteListProperty.isValid() || noteListProperty.isNull())
-    {
-        return nullptr;
-    }
-
-    if (noteListProperty.metaType().id() == QMetaType::QObjectStar)
-    {
-        return noteListProperty.value<QObject*>();
-    }
-
-    QVariant converted = noteListProperty;
-    if (converted.convert(QMetaType::fromType<QObject*>()))
-    {
-        return converted.value<QObject*>();
-    }
-
-    return nullptr;
 }

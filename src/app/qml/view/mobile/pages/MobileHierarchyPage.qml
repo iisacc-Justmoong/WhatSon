@@ -87,16 +87,16 @@ Item {
     }
     function clearActiveHierarchySelection() {
         if (!mobileHierarchyPage.activeContentViewModel
-                || mobileHierarchyPage.activeContentViewModel.setSelectedIndex === undefined)
+                || mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex === undefined)
             return false;
-        mobileHierarchyPage.activeContentViewModel.setSelectedIndex(-1);
+        mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(-1);
         return true;
     }
     function currentHierarchySelectionIndex() {
         if (!mobileHierarchyPage.activeContentViewModel
-                || mobileHierarchyPage.activeContentViewModel.selectedIndex === undefined)
+                || mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex === undefined)
             return mobileHierarchyPage.preservedNoteListSelectionIndex;
-        return Math.floor(Number(mobileHierarchyPage.activeContentViewModel.selectedIndex) || -1);
+        return Math.floor(Number(mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex) || -1);
     }
     function displayedBodyRoutePath() {
         const bodyItem = mobileScaffold.bodyItem;
@@ -166,7 +166,7 @@ Item {
     }
     function restoreNoteListSelection(selectionIndex) {
         if (!mobileHierarchyPage.activeContentViewModel
-                || mobileHierarchyPage.activeContentViewModel.setSelectedIndex === undefined)
+                || mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex === undefined)
             return false;
         let targetSelectionIndex = -1;
         if (selectionIndex !== undefined && selectionIndex !== null) {
@@ -176,7 +176,7 @@ Item {
         }
         if (targetSelectionIndex < 0)
             targetSelectionIndex = mobileHierarchyPage.preservedNoteListSelectionIndex;
-        mobileHierarchyPage.activeContentViewModel.setSelectedIndex(targetSelectionIndex);
+        mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(targetSelectionIndex);
         return targetSelectionIndex >= 0;
     }
     function routeStackDepth() {

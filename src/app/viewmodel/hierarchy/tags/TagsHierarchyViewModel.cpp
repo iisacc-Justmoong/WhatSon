@@ -13,10 +13,11 @@
 #include <utility>
 
 TagsHierarchyViewModel::TagsHierarchyViewModel(QObject* parent)
-    : QObject(parent)
+    : IHierarchyViewModel(parent)
       , m_itemModel(this)
 {
     WhatSon::Debug::traceSelf(this, QStringLiteral("tags.viewmodel"), QStringLiteral("ctor"));
+    initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
         &TagsHierarchyModel::itemCountChanged,

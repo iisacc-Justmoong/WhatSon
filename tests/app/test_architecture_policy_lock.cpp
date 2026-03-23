@@ -1,10 +1,50 @@
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 
 #include <QObject>
 #include <QtTest/QtTest>
+
+class StubHierarchyViewModel final : public IHierarchyViewModel
+{
+    Q_OBJECT
+
+public:
+    explicit StubHierarchyViewModel(QObject* parent = nullptr)
+        : IHierarchyViewModel(parent)
+    {
+        initializeHierarchyInterfaceSignalBridge();
+    }
+
+    QObject* itemModel() noexcept override { return nullptr; }
+    int selectedIndex() const noexcept override { return -1; }
+    void setSelectedIndex(int index) override { Q_UNUSED(index); }
+    int itemCount() const noexcept override { return 0; }
+    bool loadSucceeded() const noexcept override { return true; }
+    QString lastLoadError() const override { return {}; }
+    QVariantList hierarchyModel() const override { return {}; }
+    QString itemLabel(int index) const override { Q_UNUSED(index); return {}; }
+    bool canRenameItem(int index) const override { Q_UNUSED(index); return false; }
+    bool renameItem(int index, const QString& displayName) override
+    {
+        Q_UNUSED(index);
+        Q_UNUSED(displayName);
+        return false;
+    }
+    void createFolder() override {}
+    void deleteSelectedFolder() override {}
+    bool renameEnabled() const noexcept override { return false; }
+    bool createFolderEnabled() const noexcept override { return false; }
+    bool deleteFolderEnabled() const noexcept override { return false; }
+
+signals:
+    void selectedIndexChanged();
+    void hierarchyModelChanged();
+    void itemCountChanged();
+    void loadStateChanged();
+};
 
 class ArchitecturePolicyLockTest final : public QObject
 {
@@ -38,8 +78,8 @@ void ArchitecturePolicyLockTest::dependencyMatrix_mustFollowFixedMvvmFilesystemP
 
 void ArchitecturePolicyLockTest::lock_mustRejectProviderAndSidebarRewiring()
 {
-    QObject libraryVmA;
-    QObject libraryVmB;
+    StubHierarchyViewModel libraryVmA;
+    StubHierarchyViewModel libraryVmB;
     HierarchyViewModelProvider providerA;
     HierarchyViewModelProvider providerB;
 

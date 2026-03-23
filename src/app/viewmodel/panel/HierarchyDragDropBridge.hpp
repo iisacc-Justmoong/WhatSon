@@ -1,5 +1,7 @@
 #pragma once
 
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
@@ -50,16 +52,13 @@ private
     void handleHierarchyViewModelDestroyed();
 
 private:
-    static bool hasReadableProperty(const QObject* object, const char* propertyName);
-    static bool hasInvokableMethod(const QObject* object, const char* methodSignature);
-
     QVariantList readHierarchyModel() const;
     QString resolvedActiveItemKey(const QString& preferredActiveItemKey) const;
     void refreshContractState();
     void refreshSelectedItemKey();
     void disconnectHierarchyViewModel();
 
-    QPointer<QObject> m_hierarchyViewModel;
+    QPointer<IHierarchyViewModel> m_hierarchyViewModel;
     QString m_selectedItemKey;
     bool m_reorderContractAvailable = false;
     bool m_noteDropContractAvailable = false;

@@ -1445,11 +1445,12 @@ namespace
 } // namespace
 
 LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
-    : QObject(parent)
+    : IHierarchyViewModel(parent)
       , m_itemModel(this)
       , m_noteListModel(this)
 {
     WhatSon::Debug::traceSelf(this, QStringLiteral("library.viewmodel"), QStringLiteral("ctor"));
+    initializeHierarchyInterfaceSignalBridge();
     QObject::connect(
         &m_itemModel,
         &LibraryHierarchyModel::itemCountChanged,
@@ -1481,6 +1482,16 @@ LibraryHierarchyModel* LibraryHierarchyViewModel::itemModel() noexcept
 LibraryNoteListModel* LibraryHierarchyViewModel::noteListModel() noexcept
 {
     return &m_noteListModel;
+}
+
+bool LibraryHierarchyViewModel::supportsHierarchyNodeReorder() const noexcept
+{
+    return true;
+}
+
+bool LibraryHierarchyViewModel::supportsHierarchyNoteDrop() const noexcept
+{
+    return true;
 }
 
 void LibraryHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* store)

@@ -3,15 +3,15 @@
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.hpp"
+#include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
-#include <QObject>
 #include <QPointer>
 #include <QVariantList>
 #include <QVector>
 
 class SystemCalendarStore;
 
-class BookmarksHierarchyViewModel final : public QObject
+class BookmarksHierarchyViewModel final : public IHierarchyViewModel
 {
     Q_OBJECT
 
@@ -32,34 +32,34 @@ public:
     explicit BookmarksHierarchyViewModel(QObject* parent = nullptr);
     ~BookmarksHierarchyViewModel() override;
 
-    BookmarksHierarchyModel* itemModel() noexcept;
-    BookmarksNoteListModel* noteListModel() noexcept;
+    BookmarksHierarchyModel* itemModel() noexcept override;
+    BookmarksNoteListModel* noteListModel() noexcept override;
 
-    int selectedIndex() const noexcept;
-    Q_INVOKABLE void setSelectedIndex(int index);
-    int itemCount() const noexcept;
+    int selectedIndex() const noexcept override;
+    Q_INVOKABLE void setSelectedIndex(int index) override;
+    int itemCount() const noexcept override;
     int noteItemCount() const noexcept;
-    bool loadSucceeded() const noexcept;
-    QString lastLoadError() const;
+    bool loadSucceeded() const noexcept override;
+    QString lastLoadError() const override;
 
     Q_INVOKABLE void setDepthItems(const QVariantList& depthItems);
-    QVariantList hierarchyModel() const;
+    QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
-    Q_INVOKABLE QString itemLabel(int index) const;
-    Q_INVOKABLE bool canRenameItem(int index) const;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
-    Q_INVOKABLE void createFolder();
-    Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE QString itemLabel(int index) const override;
+    Q_INVOKABLE bool canRenameItem(int index) const override;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
+    Q_INVOKABLE void createFolder() override;
+    Q_INVOKABLE void deleteSelectedFolder() override;
     bool removeNoteById(const QString& noteId);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
 
     void setSystemCalendarStore(SystemCalendarStore* store);
     SystemCalendarStore* systemCalendarStore() const noexcept;
-    bool renameEnabled() const noexcept;
-    bool createFolderEnabled() const noexcept;
-    bool deleteFolderEnabled() const noexcept;
-    bool viewOptionsEnabled() const noexcept;
+    bool renameEnabled() const noexcept override;
+    bool createFolderEnabled() const noexcept override;
+    bool deleteFolderEnabled() const noexcept override;
+    bool viewOptionsEnabled() const noexcept override;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(
