@@ -280,17 +280,12 @@ bool EventHierarchyViewModel::renameEnabled() const noexcept
 
 bool EventHierarchyViewModel::createFolderEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool EventHierarchyViewModel::deleteFolderEnabled() const noexcept
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
-    {
-        return false;
-    }
-
-    return !WhatSon::Hierarchy::EventSupport::isBucketHeaderItem(m_items.at(m_selectedIndex));
+    return false;
 }
 
 bool EventHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)

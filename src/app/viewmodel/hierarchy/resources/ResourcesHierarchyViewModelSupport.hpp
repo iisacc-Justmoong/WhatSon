@@ -263,7 +263,8 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 {QStringLiteral("depth"), item.depth},
                 {QStringLiteral("accent"), item.accent},
                 {QStringLiteral("expanded"), item.expanded},
-                {QStringLiteral("showChevron"), item.showChevron}
+                {QStringLiteral("showChevron"), item.showChevron},
+                {QStringLiteral("iconName"), resourcesHierarchyIconName(item)}
             });
         }
 
@@ -300,6 +301,67 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             items[index].showChevron = hasChild;
         }
 
+        return items;
+    }
+
+    inline QVector<ResourcesHierarchyItem> buildSupportedTypeItems()
+    {
+        QVector<ResourcesHierarchyItem> items;
+
+        const auto appendCategory = [&items](const QString& label, std::initializer_list<const char*> extensions)
+        {
+            ResourcesHierarchyItem parent;
+            parent.depth = 0;
+            parent.accent = false;
+            parent.expanded = false;
+            parent.label = label;
+            parent.showChevron = true;
+            items.push_back(std::move(parent));
+
+            for (const char* extension : extensions)
+            {
+                ResourcesHierarchyItem child;
+                child.depth = 1;
+                child.accent = false;
+                child.expanded = false;
+                child.label = QString::fromLatin1(extension);
+                child.showChevron = false;
+                items.push_back(std::move(child));
+            }
+        };
+
+        appendCategory(
+            QStringLiteral("Image"),
+            {".png", ".jpeg", ".jpg", ".tiff", ".webp", ".gif", ".bmp", ".svg", ".heic", ".avif"});
+        appendCategory(
+            QStringLiteral("Video"),
+            {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"});
+        appendCategory(
+            QStringLiteral("Document"),
+            {".pdf", ".docx", ".txt", ".md", ".rtf", ".pptx", ".xlsx"});
+        appendCategory(
+            QStringLiteral("3D Model"),
+            {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usdz", ".blend", ".stl"});
+        appendCategory(
+            QStringLiteral("Web page"),
+            {".html", ".htm", ".mhtml", ".webloc"});
+        appendCategory(
+            QStringLiteral("Music"),
+            {".mp3", ".aac", ".m4a", ".flac", ".alac", ".aiff"});
+        appendCategory(
+            QStringLiteral("Audio"),
+            {".wav", ".ogg", ".opus", ".caf", ".wma", ".amr"});
+        appendCategory(
+            QStringLiteral("ZIP"),
+            {".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"});
+
+        ResourcesHierarchyItem other;
+        other.depth = 0;
+        other.accent = false;
+        other.expanded = false;
+        other.label = QStringLiteral("Other");
+        other.showChevron = false;
+        items.push_back(std::move(other));
         return items;
     }
 

@@ -57,6 +57,8 @@ QVariant ResourcesHierarchyModel::data(const QModelIndex& index, int role) const
                 && m_items.at(nextIndex).depth > item.depth;
             return hasChild;
         }
+    case IconNameRole:
+        return resourcesHierarchyIconName(item);
     default:
         return {};
     }
@@ -70,7 +72,8 @@ QHash<int, QByteArray> ResourcesHierarchyModel::roleNames() const
         {IndentLevelRole, "indentLevel"},
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
-        {ShowChevronRole, "showChevron"}
+        {ShowChevronRole, "showChevron"},
+        {IconNameRole, "iconName"}
     };
 }
 

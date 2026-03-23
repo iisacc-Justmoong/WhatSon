@@ -14,6 +14,11 @@ struct ResourcesHierarchyItem
     bool showChevron = true;
 };
 
+inline QString resourcesHierarchyIconName(const ResourcesHierarchyItem&)
+{
+    return QStringLiteral("virtualFolder");
+}
+
 class ResourcesHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -31,7 +36,8 @@ public:
         IndentLevelRole,
         AccentRole,
         ExpandedRole,
-        ShowChevronRole
+        ShowChevronRole,
+        IconNameRole
     };
 
     Q_ENUM(Role)

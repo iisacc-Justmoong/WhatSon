@@ -120,12 +120,8 @@ QString ResourcesHierarchyViewModel::itemLabel(int index) const
 
 bool ResourcesHierarchyViewModel::canRenameItem(int index) const
 {
-    if (index < 0 || index >= m_items.size())
-    {
-        return false;
-    }
-
-    return !WhatSon::Hierarchy::ResourcesSupport::isBucketHeaderItem(m_items.at(index));
+    Q_UNUSED(index);
+    return false;
 }
 
 bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayName)
@@ -134,55 +130,11 @@ bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayNa
                               QString::fromLatin1(kScope),
                               QStringLiteral("renameItem.begin"),
                               QStringLiteral("index=%1 label=%2").arg(index).arg(displayName));
-    if (!canRenameItem(index))
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("renameItem.rejected"),
-                                  QStringLiteral("reason=canRenameItem false index=%1").arg(index));
-        return false;
-    }
-
-    QVector<ResourcesHierarchyItem> stagedItems = m_items;
-    if (!WhatSon::Hierarchy::ResourcesSupport::renameHierarchyItem(&stagedItems, index, displayName))
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("renameItem.rejected"),
-                                  QStringLiteral("reason=support rejected index=%1 label=%2").arg(index).arg(
-                                      displayName));
-        return false;
-    }
-
-    const QStringList stagedResourcePaths =
-        WhatSon::Hierarchy::ResourcesSupport::extractDomainLabelsFromItems(stagedItems);
-    WhatSonResourcesHierarchyStore stagedStore = m_store;
-    stagedStore.setResourcePaths(stagedResourcePaths);
-
-    if (!m_resourcesFilePath.trimmed().isEmpty())
-    {
-        QString writeError;
-        if (!stagedStore.writeToFile(m_resourcesFilePath, &writeError))
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QString::fromLatin1(kScope),
-                                      QStringLiteral("renameItem.writeFailed"),
-                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
-                                          m_resourcesFilePath, writeError));
-            return false;
-        }
-    }
-
-    m_items = std::move(stagedItems);
-    m_store = std::move(stagedStore);
-    m_resourcePaths = m_store.resourcePaths();
-    syncModel();
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
-                              QStringLiteral("renameItem.success"),
-                              QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(displayName).arg(
-                                  m_items.size()));
-    return true;
+                              QStringLiteral("renameItem.rejected"),
+                              QStringLiteral("reason=resources taxonomy is read-only index=%1").arg(index));
+    return false;
 }
 
 void ResourcesHierarchyViewModel::createFolder()
@@ -191,33 +143,10 @@ void ResourcesHierarchyViewModel::createFolder()
                               QString::fromLatin1(kScope),
                               QStringLiteral("createFolder.begin"),
                               QStringLiteral("selectedIndex=%1 itemCount=%2").arg(m_selectedIndex).arg(m_items.size()));
-    if (!createFolderEnabled())
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("createFolder.rejected"),
-                                  QStringLiteral("reason=createFolderEnabled false"));
-        return;
-    }
-
-    const int insertIndex = WhatSon::Hierarchy::ResourcesSupport::createHierarchyFolder(
-        &m_items, m_selectedIndex, &m_createdFolderSequence);
-    if (insertIndex < 0)
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("createFolder.rejected"),
-                                  QStringLiteral("reason=insertIndex invalid"));
-        return;
-    }
-
-    syncDomainStoreFromItems();
-    syncModel();
-    setSelectedIndex(insertIndex);
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
-                              QStringLiteral("createFolder.success"),
-                              QStringLiteral("insertIndex=%1 itemCount=%2").arg(insertIndex).arg(m_items.size()));
+                              QStringLiteral("createFolder.rejected"),
+                              QStringLiteral("reason=resources taxonomy is read-only"));
 }
 
 void ResourcesHierarchyViewModel::deleteSelectedFolder()
@@ -227,25 +156,11 @@ void ResourcesHierarchyViewModel::deleteSelectedFolder()
                               QString::fromLatin1(kScope),
                               QStringLiteral("deleteSelectedFolder.begin"),
                               QStringLiteral("selectedIndex=%1 itemCount=%2").arg(startIndex).arg(m_items.size()));
-    if (!deleteFolderEnabled())
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QString::fromLatin1(kScope),
-                                  QStringLiteral("deleteSelectedFolder.rejected"),
-                                  QStringLiteral("reason=deleteFolderEnabled false selectedIndex=%1").arg(startIndex));
-        return;
-    }
-
-    const int nextSelectedIndex = WhatSon::Hierarchy::ResourcesSupport::deleteHierarchySubtree(
-        &m_items, m_selectedIndex);
-    syncDomainStoreFromItems();
-    syncModel();
-    setSelectedIndex(nextSelectedIndex);
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
-                              QStringLiteral("deleteSelectedFolder.success"),
-                              QStringLiteral("startIndex=%1 nextIndex=%2 itemCount=%3").arg(startIndex).arg(
-                                  nextSelectedIndex).arg(m_items.size()));
+                              QStringLiteral("deleteSelectedFolder.rejected"),
+                              QStringLiteral("reason=resources taxonomy is read-only selectedIndex=%1").arg(
+                                  startIndex));
 }
 
 void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
@@ -256,10 +171,7 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
                               QStringLiteral("rawCount=%1").arg(resourcePaths.size()));
     m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(resourcePaths));
     m_store.setResourcePaths(m_resourcePaths);
-    m_items = WhatSon::Hierarchy::ResourcesSupport::buildBucketItems(
-        QStringLiteral("Resources"),
-        m_resourcePaths,
-        QStringLiteral("Resource"));
+    m_items = WhatSon::Hierarchy::ResourcesSupport::buildSupportedTypeItems();
     m_createdFolderSequence = WhatSon::Hierarchy::ResourcesSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     setSelectedIndex(-1);
@@ -277,22 +189,17 @@ QStringList ResourcesHierarchyViewModel::resourcePaths() const
 
 bool ResourcesHierarchyViewModel::renameEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool ResourcesHierarchyViewModel::createFolderEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool ResourcesHierarchyViewModel::deleteFolderEnabled() const noexcept
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
-    {
-        return false;
-    }
-
-    return !WhatSon::Hierarchy::ResourcesSupport::isBucketHeaderItem(m_items.at(m_selectedIndex));
+    return false;
 }
 
 bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)

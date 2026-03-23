@@ -14,16 +14,6 @@
 namespace
 {
     constexpr auto kScope = "progress.viewmodel";
-
-    QString progressHeaderLabel(int progressValue, const QStringList& progressStates)
-    {
-        if (progressValue >= 0 && progressValue < progressStates.size())
-        {
-            return QStringLiteral("Progress (%1)").arg(progressStates.at(progressValue));
-        }
-
-        return QStringLiteral("Progress (%1)").arg(progressValue);
-    }
 } // namespace
 
 ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
@@ -363,29 +353,7 @@ void ProgressHierarchyViewModel::updateLoadState(bool succeeded, QString errorMe
 
 void ProgressHierarchyViewModel::rebuildItems()
 {
-    QVector<ProgressHierarchyItem> rebuilt;
-    rebuilt.reserve(m_progressStates.size() + 1);
-
-    ProgressHierarchyItem bucket;
-    bucket.depth = 0;
-    bucket.accent = true;
-    bucket.expanded = true;
-    bucket.label = progressHeaderLabel(m_progressValue, m_progressStates);
-    bucket.showChevron = !m_progressStates.isEmpty();
-    rebuilt.push_back(std::move(bucket));
-
-    for (int index = 0; index < m_progressStates.size(); ++index)
-    {
-        ProgressHierarchyItem state;
-        state.depth = 1;
-        state.accent = index == m_progressValue;
-        state.expanded = false;
-        state.label = m_progressStates.at(index);
-        state.showChevron = false;
-        rebuilt.push_back(std::move(state));
-    }
-
-    m_items = std::move(rebuilt);
+    m_items = WhatSon::Hierarchy::ProgressSupport::buildSupportedTypeItems();
 }
 
 void ProgressHierarchyViewModel::syncProgressStore()

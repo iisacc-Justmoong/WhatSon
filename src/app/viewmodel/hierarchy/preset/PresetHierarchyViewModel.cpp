@@ -280,17 +280,12 @@ bool PresetHierarchyViewModel::renameEnabled() const noexcept
 
 bool PresetHierarchyViewModel::createFolderEnabled() const noexcept
 {
-    return true;
+    return false;
 }
 
 bool PresetHierarchyViewModel::deleteFolderEnabled() const noexcept
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
-    {
-        return false;
-    }
-
-    return !WhatSon::Hierarchy::PresetSupport::isBucketHeaderItem(m_items.at(m_selectedIndex));
+    return false;
 }
 
 bool PresetHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)

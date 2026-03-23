@@ -14,6 +14,52 @@ struct ProgressHierarchyItem
     bool showChevron = true;
 };
 
+inline QString progressHierarchyIconName(const ProgressHierarchyItem& item)
+{
+    const QString normalizedLabel = item.label.trimmed().toLower();
+    if (normalizedLabel == QStringLiteral("first draft"))
+    {
+        return QStringLiteral("inlineinlineEdit");
+    }
+    if (normalizedLabel == QStringLiteral("modified draft"))
+    {
+        return QStringLiteral("rendererKit");
+    }
+    if (normalizedLabel == QStringLiteral("in progress"))
+    {
+        return QStringLiteral("progressresume");
+    }
+    if (normalizedLabel == QStringLiteral("pending"))
+    {
+        return QStringLiteral("pending");
+    }
+    if (normalizedLabel == QStringLiteral("reviewing"))
+    {
+        return QStringLiteral("showLogs");
+    }
+    if (normalizedLabel == QStringLiteral("waiting for approval"))
+    {
+        return QStringLiteral("toolWindowTimer");
+    }
+    if (normalizedLabel == QStringLiteral("done"))
+    {
+        return QStringLiteral("validator");
+    }
+    if (normalizedLabel == QStringLiteral("lagacy") || normalizedLabel == QStringLiteral("legacy"))
+    {
+        return QStringLiteral("nodesexcludeRoot");
+    }
+    if (normalizedLabel == QStringLiteral("archived"))
+    {
+        return QStringLiteral("projectModels");
+    }
+    if (normalizedLabel == QStringLiteral("delete review"))
+    {
+        return QStringLiteral("gutterCheckBoxIndeterminate@14x14");
+    }
+    return QString();
+}
+
 class ProgressHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -31,7 +77,8 @@ public:
         IndentLevelRole,
         AccentRole,
         ExpandedRole,
-        ShowChevronRole
+        ShowChevronRole,
+        IconNameRole
     };
 
     Q_ENUM(Role)
