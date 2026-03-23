@@ -180,11 +180,10 @@ Item {
                 || !mobileHierarchyPage.activeNoteListModel)
             return false;
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
-        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
-        if (currentPath === mobileHierarchyPage.noteListRoutePath
-                && displayedPath === mobileHierarchyPage.noteListRoutePath)
+        const depth = mobileHierarchyPage.routeStackDepth();
+        if (currentPath === mobileHierarchyPage.noteListRoutePath && depth >= 2)
             return true;
-        if (attemptsRemaining > 0 && currentPath === mobileHierarchyPage.noteListRoutePath) {
+        if (attemptsRemaining > 0) {
             Qt.callLater(function () {
                 mobileHierarchyPage.verifyCommittedEditorPopState(requestId, attemptsRemaining - 1);
             });

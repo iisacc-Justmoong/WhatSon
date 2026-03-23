@@ -970,9 +970,10 @@ Hierarchy rendering pipeline:
   past the note-list route. The same page now resolves the active mobile body route from both `PageRouter.currentPath`
   and the mounted `currentPageItem` type, then normalizes any inconsistent stack back to the canonical
   `hierarchy -> note-list -> editor` progression before opening the next screen. After an editor pop commits, the same
-  page now gives the shared routed note-list body a small settle window before verifying visibility; only if the body
-  still is not the note-list page after that deferred check does it rebuild the canonical `hierarchy -> note-list`
-  stack. This keeps the user-driven back-swipe animation as the only visible transition on the normal editor -> note
+  page now gives the shared router a small deferred repair window, but it treats the pop as successful as soon as the
+  router itself lands on `/mobile/note-list` with stack depth `>= 2`; only if that canonical router state still fails
+  after the deferred checks does it rebuild the canonical `hierarchy -> note-list` stack. This keeps the
+  user-driven back-swipe animation as the only visible transition on the normal editor -> note
   list path while still repairing corrupted stacks that strand the shell on the hierarchy body with a stale
   `/mobile/note-list` route token. The same page also clears the active hierarchy selection whenever routing
   lands back on `/mobile/hierarchy`, so re-tapping the same folder can reopen the note-list route even though LVRS only

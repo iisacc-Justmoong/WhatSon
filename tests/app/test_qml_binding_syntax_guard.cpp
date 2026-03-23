@@ -1953,10 +1953,12 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("function updateBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("function finishBackSwipeGesture(eventData, cancelled)")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);")) &&
+            mobilePageText.contains(QStringLiteral("const depth = mobileHierarchyPage.routeStackDepth();")) &&
+            mobilePageText.contains(QStringLiteral("if (currentPath === mobileHierarchyPage.noteListRoutePath && depth >= 2)")) &&
             mobilePageText.contains(QStringLiteral("sessionId === mobileHierarchyPage.backSwipeConsumedSessionId")) &&
             !mobilePageText.contains(QStringLiteral("mobileHierarchyPage.backSwipeSessionId < 0 && !mobileHierarchyPage.beginBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("pageTransitionController.shouldCommit(")),
-        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController while preventing the same touch session from reopening a second back-swipe after a committed or cancelled pop and delaying editor-pop stack repair until the shared note-list body has a chance to settle.");
+        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController while preventing the same touch session from reopening a second back-swipe after a committed or cancelled pop and only rebuilding the canonical note-list stack when the router itself fails to land on the note-list route after the deferred repair window.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("onHierarchyItemActivated: function (item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenNoteList(item, itemId, index);")) &&
