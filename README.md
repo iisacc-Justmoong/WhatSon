@@ -110,6 +110,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - The same note delegates now use `Drag.Internal`, keep publishing `application/x-whatson-note-id` mime data, and
   mount an overlay-parented `NoteListItem` preview in the active visual state so the grabbed card itself follows the
   pointer instead of falling back to the platform note-id tooltip.
+- Library note-to-folder drop now treats a same-folder re-drop as an explicit no-op after reading the local
+  `.wsnhead`, so debug traces can distinguish duplicate assignments from genuine routing failures without rewriting the
+  header file unnecessarily.
 - Newly created folders now start with the placeholder label `Untitled` instead of sequence-based labels such as
   `Folder1`.
 

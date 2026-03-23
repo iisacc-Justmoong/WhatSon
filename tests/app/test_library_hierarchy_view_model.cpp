@@ -2192,7 +2192,7 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
 
     QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-a")));
     QVERIFY(!viewModel.canAcceptNoteDrop(competitorIndex, QStringLiteral("note-a")));
-    QVERIFY(!viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-a")));
+    QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-a")));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
@@ -2280,6 +2280,7 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_preservesExistingFolderVa
 
     QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-b")));
     QVERIFY(!viewModel.canAcceptNoteDrop(competitorIndex, QStringLiteral("note-b")));
+    QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-b")));
 
     QFile betaHeaderFile(QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/Beta.wsnote/Beta.wsnhead")));
     QVERIFY(betaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));

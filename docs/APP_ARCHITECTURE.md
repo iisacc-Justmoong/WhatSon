@@ -712,7 +712,9 @@ Library-specific modeling:
   in-scene drag so the grabbed `NoteListItem` card remains the visible preview, then commits the drop on release by
   mapping the pointer into `SidebarHierarchyView.qml` and calling the shared folder-assignment bridge directly.
   Mobile-target runs still use automatic Qt drag dispatch so mime payloads can be recovered from the drag event when
-  `drag.source` is not preserved.
+  `drag.source` is not preserved. If the target folder is already present in the local `.wsnhead`, the same drop path
+  now resolves that duplicate from the header document and returns an explicit no-op instead of logging a generic
+  rejection.
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.

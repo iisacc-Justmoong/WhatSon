@@ -742,6 +742,25 @@ namespace
         return -1;
     }
 
+    bool folderListContainsPath(const QStringList& folders, const QString& folderPath)
+    {
+        const QString targetFolderKey = normalizeFolderLookupKey(folderPath);
+        if (targetFolderKey.isEmpty())
+        {
+            return false;
+        }
+
+        for (const QString& folder : folders)
+        {
+            if (normalizeFolderLookupKey(folder) == targetFolderKey)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     QStringList folderAssignmentForDrop(QStringList existingFolders, const QString& folderPath)
     {
         QStringList assignedFolders;
@@ -777,6 +796,102 @@ namespace
         }
 
         return assignedFolders;
+    }
+
+    QString rejectNoteDropReason(
+        const QVector<LibraryHierarchyItem>& items,
+        const QVector<LibraryNoteRecord>& notes,
+        bool runtimeIndexLoaded,
+        int index,
+        const QString& noteId,
+        QString* outTargetFolderPath = nullptr,
+        int* outNoteIndex = nullptr,
+        QString* outHeaderPath = nullptr)
+    {
+        if (outTargetFolderPath != nullptr)
+        {
+            outTargetFolderPath->clear();
+        }
+        if (outNoteIndex != nullptr)
+        {
+            *outNoteIndex = -1;
+        }
+        if (outHeaderPath != nullptr)
+        {
+            outHeaderPath->clear();
+        }
+
+        if (!runtimeIndexLoaded)
+        {
+            return QStringLiteral("runtimeIndexNotLoaded");
+        }
+        if (index < 0 || index >= items.size())
+        {
+            return QStringLiteral("indexOutOfRange");
+        }
+        if (isProtectedRootItem(items.at(index)))
+        {
+            return QStringLiteral("protectedRootItem");
+        }
+
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            return QStringLiteral("emptyNoteId");
+        }
+
+        const QString targetFolderPath = normalizeFolderPath(items.at(index).folderPath);
+        if (outTargetFolderPath != nullptr)
+        {
+            *outTargetFolderPath = targetFolderPath;
+        }
+        if (targetFolderPath.isEmpty())
+        {
+            return QStringLiteral("emptyTargetFolderPath");
+        }
+        if (usesReservedTodayFolderToken(targetFolderPath))
+        {
+            return QStringLiteral("reservedTodayFolder");
+        }
+
+        const int noteIndex = indexOfNoteRecordById(notes, normalizedNoteId);
+        if (outNoteIndex != nullptr)
+        {
+            *outNoteIndex = noteIndex;
+        }
+        if (noteIndex < 0)
+        {
+            return QStringLiteral("noteNotFound");
+        }
+
+        const QString headerPath = resolveNoteHeaderPath(notes.at(noteIndex));
+        if (outHeaderPath != nullptr)
+        {
+            *outHeaderPath = headerPath;
+        }
+        if (headerPath.isEmpty())
+        {
+            return QStringLiteral("missingNoteHeader");
+        }
+
+        return {};
+    }
+
+    void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
+    {
+        if (note == nullptr)
+        {
+            return;
+        }
+
+        const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
+        note->folders = updatedRecord.folders;
+        note->lastModifiedAt = updatedRecord.lastModifiedAt;
+        note->noteHeaderPath = updatedRecord.noteHeaderPath;
+        if (note->noteDirectoryPath.isEmpty())
+        {
+            note->noteDirectoryPath = updatedRecord.noteDirectoryPath;
+        }
     }
 
     void applyChevronByDepth(QVector<LibraryHierarchyItem>* items)
@@ -2252,55 +2367,28 @@ bool LibraryHierarchyViewModel::moveFolderToRoot(int sourceIndex)
 
 bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& noteId) const
 {
-    if (!m_runtimeIndexLoaded)
+    QString targetFolderPath;
+    int noteIndex = -1;
+    const QString rejectReason = rejectNoteDropReason(
+        m_items,
+        m_libraryAll.notes(),
+        m_runtimeIndexLoaded,
+        index,
+        noteId,
+        &targetFolderPath,
+        &noteIndex,
+        nullptr);
+    if (!rejectReason.isEmpty())
     {
         return false;
     }
 
-    if (index < 0 || index >= m_items.size())
-    {
-        return false;
-    }
-
-    if (isProtectedRootItem(m_items.at(index)))
-    {
-        return false;
-    }
-
-    const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty())
-    {
-        return false;
-    }
-
-    const QString targetFolderPath = normalizeFolderPath(folderPathForIndex(index));
-    if (targetFolderPath.isEmpty() || usesReservedTodayFolderToken(targetFolderPath))
-    {
-        return false;
-    }
-
-    const int noteIndex = indexOfNoteRecordById(m_libraryAll.notes(), normalizedNoteId);
     if (noteIndex < 0)
     {
         return false;
     }
 
-    const LibraryNoteRecord& note = m_libraryAll.notes().at(noteIndex);
-    if (resolveNoteHeaderPath(note).isEmpty())
-    {
-        return false;
-    }
-
-    const QString targetFolderKey = normalizeFolderLookupKey(targetFolderPath);
-    for (const QString& folder : note.folders)
-    {
-        if (normalizeFolderLookupKey(folder) == targetFolderKey)
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return !folderListContainsPath(m_libraryAll.notes().at(noteIndex).folders, targetFolderPath);
 }
 
 bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& noteId)
@@ -2310,25 +2398,38 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                               QStringLiteral("assignNoteToFolder.begin"),
                               QStringLiteral("index=%1 noteId=%2").arg(index).arg(noteId));
 
-    if (!canAcceptNoteDrop(index, noteId))
+    QString targetFolderPath;
+    QString headerPath;
+    int noteIndex = -1;
+    const QString rejectReason = rejectNoteDropReason(
+        m_items,
+        m_libraryAll.notes(),
+        m_runtimeIndexLoaded,
+        index,
+        noteId,
+        &targetFolderPath,
+        &noteIndex,
+        &headerPath);
+    if (!rejectReason.isEmpty())
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("assignNoteToFolder.rejected"),
-                                  QStringLiteral("index=%1 noteId=%2").arg(index).arg(noteId));
+                                  QStringLiteral("index=%1 noteId=%2 reason=%3 folder=%4")
+                                  .arg(index)
+                                  .arg(noteId)
+                                  .arg(rejectReason)
+                                  .arg(targetFolderPath));
         return false;
     }
 
     QVector<LibraryNoteRecord> allNotes = m_libraryAll.notes();
-    const int noteIndex = indexOfNoteRecordById(allNotes, noteId);
     if (noteIndex < 0)
     {
         return false;
     }
 
     LibraryNoteRecord& note = allNotes[noteIndex];
-    const QString targetFolderPath = normalizeFolderPath(folderPathForIndex(index));
-    const QString headerPath = resolveNoteHeaderPath(note);
     if (targetFolderPath.isEmpty() || headerPath.isEmpty())
     {
         return false;
@@ -2351,6 +2452,23 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
+    if (folderListContainsPath(noteDocument.headerStore.folders(), targetFolderPath))
+    {
+        syncNoteRecordFromDocument(&note, noteDocument);
+        m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
+        m_libraryDraft.rebuild(m_libraryAll.notes());
+        m_libraryToday.rebuild(m_libraryAll.notes());
+        refreshNoteListForSelection();
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("assignNoteToFolder.noopAlreadyAssigned"),
+                                  QStringLiteral("index=%1 noteId=%2 folder=%3")
+                                  .arg(index)
+                                  .arg(noteId)
+                                  .arg(targetFolderPath));
+        return true;
+    }
+
     noteDocument.headerStore.setFolders(folderAssignmentForDrop(noteDocument.headerStore.folders(), targetFolderPath));
     noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
 
@@ -2369,14 +2487,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    const LibraryNoteRecord updatedRecord = noteDocument.toLibraryNoteRecord();
-    note.folders = updatedRecord.folders;
-    note.lastModifiedAt = updatedRecord.lastModifiedAt;
-    note.noteHeaderPath = updatedRecord.noteHeaderPath;
-    if (note.noteDirectoryPath.isEmpty())
-    {
-        note.noteDirectoryPath = updatedRecord.noteDirectoryPath;
-    }
+    syncNoteRecordFromDocument(&note, noteDocument);
 
     m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
     m_libraryDraft.rebuild(m_libraryAll.notes());
