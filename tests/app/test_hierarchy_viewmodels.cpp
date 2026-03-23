@@ -242,7 +242,7 @@ private
     void bookmarksViewModel_saveCurrentBodyText_rewritesWsnbody();
     void bookmarksViewModel_removeNoteById_reselectsVisibleNeighbor();
     void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
-    void resourcesViewModel_supportsCrudContract();
+    void resourcesViewModel_exposesSupportedTypeTree();
     void progressViewModel_supportsCrudContract();
     void eventViewModel_supportsCrudContract();
     void presetViewModel_supportsCrudContract();
@@ -302,6 +302,13 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     QVERIFY(viewModel.renameEnabled());
     QVERIFY(viewModel.createFolderEnabled());
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProjectsHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("customFolder"));
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Alpha"));
+    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(), QStringLiteral("customFolder"));
     viewModel.setSelectedIndex(0);
     QVERIFY(viewModel.deleteFolderEnabled());
     QVERIFY(viewModel.renameItem(0, QStringLiteral("Alpha-Renamed")));
@@ -309,11 +316,11 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 3);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProjectsHierarchyModel::ExpandedRole).toBool(),
-        true);
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Untitled"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ProjectsHierarchyModel::DepthRole).toInt(),
-        1);
+        0);
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
@@ -372,22 +379,18 @@ void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFolders
         QStringLiteral("Research"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::DepthRole).toInt(),
-        1);
+        0);
 
-    QVERIFY(viewModel.canAcceptFolderDrop(0, 1, true));
-    QVERIFY(viewModel.moveFolder(0, 1, true));
+    QVERIFY(!viewModel.canAcceptFolderDrop(0, 1, true));
+    QVERIFY(!viewModel.moveFolder(0, 1, true));
 
     const QJsonDocument projectsDocument = QJsonDocument::fromJson(readUtf8File(projectsFilePath).toUtf8());
     QVERIFY(projectsDocument.isObject());
     const QJsonArray projectArray = projectsDocument.object().value(QStringLiteral("projects")).toArray();
-    QCOMPARE(projectArray.size(), 1);
-
-    const QJsonObject researchObject = projectArray.at(0).toObject();
-    QCOMPARE(researchObject.value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
-    const QJsonArray childArray = researchObject.value(QStringLiteral("children")).toArray();
-    QCOMPARE(childArray.size(), 2);
-    QCOMPARE(childArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Competitor"));
-    QCOMPARE(childArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Brand"));
+    QCOMPARE(projectArray.size(), 3);
+    QCOMPARE(projectArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Brand"));
+    QCOMPARE(projectArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
+    QCOMPARE(projectArray.at(2).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Competitor"));
 }
 
 void HierarchyViewModelsTest::projectsViewModel_applyHierarchyNodes_persistsLvrsEditableMove()
@@ -435,19 +438,15 @@ void HierarchyViewModelsTest::projectsViewModel_applyHierarchyNodes_persistsLvrs
         QStringLiteral("Brand"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::DepthRole).toInt(),
-        1);
+        0);
 
     const QJsonDocument projectsDocument = QJsonDocument::fromJson(readUtf8File(projectsFilePath).toUtf8());
     QVERIFY(projectsDocument.isObject());
     const QJsonArray projectArray = projectsDocument.object().value(QStringLiteral("projects")).toArray();
-    QCOMPARE(projectArray.size(), 1);
-
-    const QJsonObject researchObject = projectArray.at(0).toObject();
-    QCOMPARE(researchObject.value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
-    const QJsonArray childArray = researchObject.value(QStringLiteral("children")).toArray();
-    QCOMPARE(childArray.size(), 2);
-    QCOMPARE(childArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Competitor"));
-    QCOMPARE(childArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research/Brand"));
+    QCOMPARE(projectArray.size(), 3);
+    QCOMPARE(projectArray.at(0).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Research"));
+    QCOMPARE(projectArray.at(1).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Competitor"));
+    QCOMPARE(projectArray.at(2).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("Brand"));
 }
 
 void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
@@ -456,14 +455,14 @@ void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
     QVERIFY(!viewModel.renameEnabled());
     QVERIFY(!viewModel.createFolderEnabled());
     QVERIFY(!viewModel.viewOptionsEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 9);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("Bookmarks-Header")));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 9);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     viewModel.deleteSelectedFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 9);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
 }
 
 void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarkedNotesAndMapsHexColor()
@@ -476,16 +475,19 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
     QVERIFY(qobject_cast<BookmarksNoteListModel*>(viewModel.noteListModel()) != nullptr);
 
-    QCOMPARE(viewModel.itemModel()->rowCount(), 9);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), BookmarksHierarchyModel::LabelRole).toString(),
-        QStringLiteral("red"));
+        QStringLiteral("Red"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(6, 0), BookmarksHierarchyModel::LabelRole).toString(),
-        QStringLiteral("blue"));
+        QStringLiteral("Blue"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(8, 0), BookmarksHierarchyModel::LabelRole).toString(),
-        QStringLiteral("pink"));
+        viewModel.itemModel()->data(viewModel.itemModel()->index(7, 0), BookmarksHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Indigo"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(9, 0), BookmarksHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Pink"));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
     QCOMPARE(viewModel.noteListModel()->roleNames().value(BookmarksNoteListModel::NoteIdRole), QByteArray("noteId"));
@@ -549,7 +551,7 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             BookmarksNoteListModel::FoldersRole).toStringList(),
         QStringList({QStringLiteral("Draft")}));
 
-    viewModel.setSelectedIndex(8); // pink
+    viewModel.setSelectedIndex(9); // pink
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
         viewModel.noteListModel()->data(
@@ -669,34 +671,84 @@ void HierarchyViewModelsTest::bookmarksViewModel_formatsDisplayDateWithSystemCal
         calendarStore.formatNoteDate(note.lastModifiedAt, note.createdAt));
 }
 
-void HierarchyViewModelsTest::resourcesViewModel_supportsCrudContract()
+void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
 {
     ResourcesHierarchyViewModel viewModel;
     viewModel.setResourcePaths({QStringLiteral("assets/logo.png")});
-    QVERIFY(viewModel.renameEnabled());
-    QVERIFY(viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
-    viewModel.setSelectedIndex(0);
-    QVERIFY(viewModel.deleteFolderEnabled());
-    QVERIFY(viewModel.renameItem(0, QStringLiteral("assets/logo-renamed.png")));
-    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("assets/logo-renamed.png"));
-    viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QVERIFY(!viewModel.renameEnabled());
+    QVERIFY(!viewModel.createFolderEnabled());
+    QCOMPARE(viewModel.resourcePaths(), QStringList{QStringLiteral("assets/logo.png")});
+    QVERIFY(viewModel.itemModel()->rowCount() > 9);
+
     QCOMPARE(
-        viewModel.itemModel()->data(
-                     viewModel.itemModel()->index(0, 0),
-                     ResourcesHierarchyModel::ExpandedRole)
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Image"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::DepthRole).toInt(),
+        0);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::ShowChevronRole)
                  .toBool(),
         true);
     QCOMPARE(
-        viewModel.itemModel()->data(
-                     viewModel.itemModel()->index(1, 0),
-                     ResourcesHierarchyModel::DepthRole)
-                 .toInt(),
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("virtualFolder"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::LabelRole).toString(),
+        QStringLiteral(".png"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::DepthRole).toInt(),
         1);
-    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("virtualFolder"));
+
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Image"));
+    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
+    QCOMPARE(hierarchyModel.at(1).toMap().value(QStringLiteral("label")).toString(), QStringLiteral(".png"));
+
+    bool foundWebPage = false;
+    bool foundZip = false;
+    bool foundOther = false;
+    int otherIndex = -1;
+    for (const QVariant& entry : hierarchyModel)
+    {
+        const QVariantMap entryMap = entry.toMap();
+        const QString label = entryMap.value(QStringLiteral("label")).toString();
+        foundWebPage = foundWebPage || label == QStringLiteral("Web page");
+        foundZip = foundZip || label == QStringLiteral("ZIP");
+        if (label == QStringLiteral("Other"))
+        {
+            foundOther = true;
+            otherIndex = hierarchyModel.indexOf(entry);
+            QCOMPARE(entryMap.value(QStringLiteral("depth")).toInt(), 0);
+            QCOMPARE(entryMap.value(QStringLiteral("showChevron")).toBool(), false);
+        }
+    }
+    QVERIFY(foundWebPage);
+    QVERIFY(foundZip);
+    QVERIFY(foundOther);
+    QVERIFY(otherIndex >= 0);
+    QCOMPARE(otherIndex, hierarchyModel.size() - 1);
+
+    viewModel.setSelectedIndex(0);
+    QVERIFY(!viewModel.deleteFolderEnabled());
+    QVERIFY(!viewModel.canRenameItem(0));
+    QVERIFY(!viewModel.renameItem(0, QStringLiteral("Image-Renamed")));
+    viewModel.createFolder();
+    QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
+    viewModel.setSelectedIndex(1);
+    QVERIFY(!viewModel.canRenameItem(1));
+    QVERIFY(!viewModel.renameItem(1, QStringLiteral(".png-renamed")));
     viewModel.deleteSelectedFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
+    QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
 }
 
 void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
@@ -705,7 +757,61 @@ void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
     viewModel.setProgressState(0, {QStringLiteral("Ready"), QStringLiteral("Done")});
     QVERIFY(!viewModel.renameEnabled());
     QVERIFY(!viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("First draft"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("inlineinlineEdit"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("In Progress"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProgressHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProgressHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("progressresume"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Reviewing"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), ProgressHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), ProgressHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("showLogs"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(7, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Lagacy"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(7, 0), ProgressHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("nodesexcludeRoot"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(9, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Delete review"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(9, 0), ProgressHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("gutterCheckBoxIndeterminate@14x14"));
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    QCOMPARE(hierarchyModel.size(), 10);
+    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(), QStringLiteral("inlineinlineEdit"));
+    QCOMPARE(hierarchyModel.at(7).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Lagacy"));
+    QCOMPARE(
+        hierarchyModel.at(9).toMap().value(QStringLiteral("iconName")).toString(),
+        QStringLiteral("gutterCheckBoxIndeterminate@14x14"));
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(!viewModel.canRenameItem(0));
@@ -714,11 +820,11 @@ void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
     viewModel.setSelectedIndex(1);
     QVERIFY(!viewModel.canRenameItem(1));
     QVERIFY(!viewModel.renameItem(1, QStringLiteral("Ready-Renamed")));
-    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Ready"));
+    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Modified draft"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     viewModel.deleteSelectedFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
 }
 
 void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
@@ -726,21 +832,14 @@ void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
     EventHierarchyViewModel viewModel;
     viewModel.setEventNames({QStringLiteral("Kickoff")});
     QVERIFY(viewModel.renameEnabled());
-    QVERIFY(viewModel.createFolderEnabled());
+    QVERIFY(!viewModel.createFolderEnabled());
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.setSelectedIndex(0);
-    QVERIFY(viewModel.deleteFolderEnabled());
+    QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(viewModel.renameItem(0, QStringLiteral("Kickoff-Renamed")));
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Kickoff-Renamed"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
-    QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), EventHierarchyModel::ExpandedRole).toBool(),
-        true);
-    QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), EventHierarchyModel::DepthRole).toInt(),
-        1);
-    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
@@ -750,21 +849,14 @@ void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
     PresetHierarchyViewModel viewModel;
     viewModel.setPresetNames({QStringLiteral("Executive Summary")});
     QVERIFY(viewModel.renameEnabled());
-    QVERIFY(viewModel.createFolderEnabled());
+    QVERIFY(!viewModel.createFolderEnabled());
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.setSelectedIndex(0);
-    QVERIFY(viewModel.deleteFolderEnabled());
+    QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(viewModel.renameItem(0, QStringLiteral("Executive-Summary-Renamed")));
     QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Executive-Summary-Renamed"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
-    QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), PresetHierarchyModel::ExpandedRole).toBool(),
-        true);
-    QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), PresetHierarchyModel::DepthRole).toInt(),
-        1);
-    QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
@@ -872,6 +964,9 @@ void HierarchyViewModelsTest::projectsModel_recomputesChevronByDepth()
         model.data(model.index(1, 0), ProjectsHierarchyModel::ItemKeyRole).toString(),
         QStringLiteral("Parent/Child"));
     QCOMPARE(model.data(model.index(2, 0), ProjectsHierarchyModel::ItemKeyRole).toString(), QStringLiteral("Leaf"));
+    QCOMPARE(model.data(model.index(0, 0), ProjectsHierarchyModel::IconNameRole).toString(), QStringLiteral("customFolder"));
+    QCOMPARE(model.data(model.index(1, 0), ProjectsHierarchyModel::IconNameRole).toString(), QStringLiteral("customFolder"));
+    QCOMPARE(model.data(model.index(2, 0), ProjectsHierarchyModel::IconNameRole).toString(), QStringLiteral("customFolder"));
     QCOMPARE(model.data(model.index(0, 0), ProjectsHierarchyModel::ShowChevronRole).toBool(), true);
     QCOMPARE(model.data(model.index(1, 0), ProjectsHierarchyModel::ShowChevronRole).toBool(), false);
     QCOMPARE(model.data(model.index(2, 0), ProjectsHierarchyModel::ShowChevronRole).toBool(), false);

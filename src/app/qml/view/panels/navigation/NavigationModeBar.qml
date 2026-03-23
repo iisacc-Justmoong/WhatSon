@@ -9,16 +9,19 @@ LV.HStack {
     readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
     readonly property var modeMenuItems: [
         {
+            iconName: "generalshow",
             label: "View",
             keyVisible: false,
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 0
         },
         {
+            iconName: "renameColumn",
             label: "Edit",
             keyVisible: false,
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 1
         },
         {
+            iconName: "abstractClass",
             label: "Control",
             keyVisible: false,
             selected: navigationModeViewModel && navigationModeViewModel.activeMode === 2

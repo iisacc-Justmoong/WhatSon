@@ -29,6 +29,7 @@ Rectangle {
     property int defaultToolbarIndex: 0
     readonly property bool deleteFolderContractAvailable: hierarchyViewModel && hierarchyViewModel.deleteSelectedFolder !== undefined
     readonly property bool deleteFolderEnabled: sidebarHierarchyView.deleteFolderContractAvailable && hierarchyViewModel.deleteFolderEnabled !== undefined && Boolean(hierarchyViewModel.deleteFolderEnabled)
+    property bool bookmarkPaletteVisualsEnabled: false
     property int editingHierarchyIndex: -1
     property string editingHierarchyLabel: ""
     property bool footerVisible: true
@@ -101,7 +102,6 @@ Rectangle {
     readonly property bool noteDropHoverVisible: sidebarHierarchyView.noteDropHoverIndex >= 0 && !!sidebarHierarchyView.noteDropHoverItem
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
-    property int searchHeaderHorizontalInset: LV.Theme.gap2
     property int searchHeaderMinHeight: LV.Theme.gap24
     property int searchHeaderTopGap: LV.Theme.gap4
     property int searchListGap: LV.Theme.gapNone
@@ -208,6 +208,115 @@ Rectangle {
     }
     function clearNoteDropPreview() {
         sidebarHierarchyView.noteDropHoverIndex = -1;
+    }
+    function collectHierarchyItems() {
+        const items = [];
+        function visitHierarchyDescendants(item) {
+            if (!item || item.children === undefined || item.children === null)
+                return;
+            const children = item.children;
+            for (let i = 0; i < children.length; ++i) {
+                const child = children[i];
+                if (!child || child.visible === false)
+                    continue;
+                if (child.__isHierarchyItem === true)
+                    items.push(child);
+                visitHierarchyDescendants(child);
+            }
+        }
+        visitHierarchyDescendants(hierarchyTree);
+        return items;
+    }
+    function resolveThemeColorToken(tokenName) {
+        const normalizedToken = tokenName === undefined || tokenName === null ? "" : String(tokenName).trim();
+        if (!normalizedToken.length)
+            return LV.Theme.bodyColor;
+        if (LV.Theme[normalizedToken] !== undefined)
+            return LV.Theme[normalizedToken];
+        const accentTokens = LV.Theme.accentPaletteTokens !== undefined && LV.Theme.accentPaletteTokens !== null
+            ? LV.Theme.accentPaletteTokens
+            : [];
+        for (let index = 0; index < accentTokens.length; ++index) {
+            const token = accentTokens[index];
+            if (!token || token.name === undefined || token.color === undefined)
+                continue;
+            if (String(token.name) === normalizedToken)
+                return token.color;
+        }
+        return LV.Theme.bodyColor;
+    }
+    function bookmarkPaletteColorTokenForLabel(label) {
+        const normalizedLabel = label === undefined || label === null ? "" : String(label).trim().toLowerCase();
+        switch (normalizedLabel) {
+        case "red":
+            return "accentRed";
+        case "orange":
+            return "accentLightOrangeVivid";
+        case "amber":
+            return "accentLightAmberVivid";
+        case "yellow":
+            return "accentYellow";
+        case "green":
+            return "accentGreen";
+        case "teal":
+            return "accentDimTeal";
+        case "blue":
+            return "accentBlue";
+        case "indigo":
+            return "accentLighterIndigo";
+        case "purple":
+            return "accentPurple";
+        case "pink":
+            return "accentLightRose";
+        default:
+            return "";
+        }
+    }
+    function bookmarkPaletteColorForLabel(label) {
+        const colorToken = sidebarHierarchyView.bookmarkPaletteColorTokenForLabel(label);
+        return colorToken.length ? sidebarHierarchyView.resolveThemeColorToken(colorToken) : LV.Theme.bodyColor;
+    }
+    function applyBookmarkPaletteVisuals() {
+        if (!sidebarHierarchyView.bookmarkPaletteVisualsEnabled)
+            return;
+        const hierarchyItems = sidebarHierarchyView.collectHierarchyItems();
+        for (let index = 0; index < hierarchyItems.length; ++index) {
+            const item = hierarchyItems[index];
+            if (!item)
+                continue;
+            const bookmarkColor = sidebarHierarchyView.bookmarkPaletteColorForLabel(item.text);
+            item.textColorNormal = bookmarkColor;
+            item.textColorDisabled = bookmarkColor;
+            item.iconName = "";
+            item.iconSource = "";
+            item.iconGlyph = " ";
+            item.iconPlaceholderColor = "transparent";
+        }
+    }
+    function drawBookmarkGlyph(context, x, y, size, color) {
+        const left = x + size * 0.25;
+        const right = x + size * 0.75;
+        const top = y + size * 0.09375;
+        const bottom = y + size * 0.875;
+        const notchY = y + size * 0.65625;
+        const centerX = x + size * 0.5;
+        context.beginPath();
+        context.moveTo(left, top);
+        context.lineTo(right, top);
+        context.lineTo(right, bottom);
+        context.lineTo(centerX, notchY);
+        context.lineTo(left, bottom);
+        context.closePath();
+        context.fillStyle = color;
+        context.fill();
+    }
+    function scheduleBookmarkPaletteVisualRefresh() {
+        Qt.callLater(function () {
+            Qt.callLater(function () {
+                sidebarHierarchyView.applyBookmarkPaletteVisuals();
+                bookmarkPaletteIconOverlay.requestPaint();
+            });
+        });
     }
     function hierarchyItemContainsPoint(item, x, y) {
         if (!item || item.mapToItem === undefined)
@@ -458,11 +567,18 @@ Rectangle {
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
+        sidebarHierarchyView.scheduleBookmarkPaletteVisualRefresh();
+    }
+    onBookmarkPaletteVisualsEnabledChanged: {
+        sidebarHierarchyView.scheduleBookmarkPaletteVisualRefresh();
     }
     onSelectedFolderIndexChanged: {
         if (sidebarHierarchyView.renameEditingActive && sidebarHierarchyView.selectedFolderIndex !== sidebarHierarchyView.editingHierarchyIndex)
             sidebarHierarchyView.cancelHierarchyRename();
         syncSelectedHierarchyItem(true);
+    }
+    Component.onCompleted: {
+        sidebarHierarchyView.scheduleBookmarkPaletteVisualRefresh();
     }
 
     Connections {
@@ -473,6 +589,7 @@ Rectangle {
             Qt.callLater(function () {
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
             });
+            sidebarHierarchyView.scheduleBookmarkPaletteVisualRefresh();
         }
 
         ignoreUnknownSignals: true
@@ -509,6 +626,34 @@ Rectangle {
             if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey))
                 return;
             sidebarHierarchyView.requestViewHook("hierarchy.reorder");
+        }
+    }
+    Canvas {
+        id: bookmarkPaletteIconOverlay
+
+        anchors.fill: hierarchyTree
+        visible: sidebarHierarchyView.bookmarkPaletteVisualsEnabled
+        z: 1
+
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.clearRect(0, 0, width, height);
+            if (!sidebarHierarchyView.bookmarkPaletteVisualsEnabled)
+                return;
+            const hierarchyItems = sidebarHierarchyView.collectHierarchyItems();
+            for (let index = 0; index < hierarchyItems.length; ++index) {
+                const item = hierarchyItems[index];
+                if (!item || item.mapToItem === undefined)
+                    continue;
+                const bookmarkColor = sidebarHierarchyView.bookmarkPaletteColorForLabel(item.text);
+                const point = item.mapToItem(bookmarkPaletteIconOverlay, 0, 0);
+                const iconSize = Math.max(0, Number(item.iconSize) || 0);
+                const itemHeight = Math.max(0, Number(item.height) || 0);
+                const leftPadding = Math.max(0, Number(item.leftPadding) || 0);
+                const iconX = (Number(point.x) || 0) + leftPadding;
+                const iconY = (Number(point.y) || 0) + Math.max(0, Math.floor((itemHeight - iconSize) * 0.5));
+                sidebarHierarchyView.drawBookmarkGlyph(ctx, iconX, iconY, iconSize, bookmarkColor);
+            }
         }
     }
     LV.InputField {
@@ -589,7 +734,7 @@ Rectangle {
         anchors.topMargin: sidebarHierarchyView.searchHeaderTopGap
         frameMinHeight: sidebarHierarchyView.searchHeaderMinHeight
         inlineFieldBackgroundColor: sidebarHierarchyView.searchFieldBackgroundColor
-        outerHorizontalInset: sidebarHierarchyView.searchHeaderHorizontalInset
+        outerHorizontalInset: LV.Theme.gapNone
         outerVerticalInset: sidebarHierarchyView.searchHeaderVerticalInset
         searchFieldShapeStyle: hierarchySearchHeader.shapeRoundRect
         searchText: sidebarHierarchyView.searchText

@@ -14,6 +14,11 @@ struct ProjectsHierarchyItem
     bool showChevron = true;
 };
 
+inline QString projectsHierarchyIconName(const ProjectsHierarchyItem&)
+{
+    return QStringLiteral("customFolder");
+}
+
 class ProjectsHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -32,7 +37,8 @@ public:
         AccentRole,
         ExpandedRole,
         ShowChevronRole,
-        ItemKeyRole
+        ItemKeyRole,
+        IconNameRole
     };
 
     Q_ENUM(Role)

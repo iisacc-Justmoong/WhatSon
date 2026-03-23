@@ -210,7 +210,7 @@ namespace
             item.depth = 0;
             item.accent = false;
             item.expanded = false;
-            item.label = QString::fromLatin1(colorDef.name);
+            item.label = QString::fromLatin1(colorDef.displayName);
             item.showChevron = false;
             items.push_back(std::move(item));
         }

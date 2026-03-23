@@ -10,20 +10,22 @@ namespace WhatSon::Bookmarks
     struct BookmarkColorDefinition final
     {
         const char* name;
+        const char* displayName;
         const char* hex;
     };
 
-    inline constexpr std::array<BookmarkColorDefinition, 9> kBookmarkColorDefinitions{
+    inline constexpr std::array<BookmarkColorDefinition, 10> kBookmarkColorDefinitions{
         {
-            {"red", "#EF4444"},
-            {"orange", "#F97316"},
-            {"amber", "#F59E0B"},
-            {"yellow", "#EAB308"},
-            {"green", "#22C55E"},
-            {"teal", "#14B8A6"},
-            {"blue", "#3B82F6"},
-            {"purple", "#8B5CF6"},
-            {"pink", "#EC4899"}
+            {"red", "Red", "#EF4444"},
+            {"orange", "Orange", "#F97316"},
+            {"amber", "Amber", "#F59E0B"},
+            {"yellow", "Yellow", "#EAB308"},
+            {"green", "Green", "#22C55E"},
+            {"teal", "Teal", "#14B8A6"},
+            {"blue", "Blue", "#3B82F6"},
+            {"indigo", "Indigo", "#B589EC"},
+            {"purple", "Purple", "#8B5CF6"},
+            {"pink", "Pink", "#EC4899"}
         }
     };
 
@@ -94,6 +96,19 @@ namespace WhatSon::Bookmarks
             if (normalized == QString::fromLatin1(definition.name))
             {
                 return QString::fromLatin1(definition.hex);
+            }
+        }
+        return {};
+    }
+
+    inline QString bookmarkDisplayNameForName(const QString& value)
+    {
+        const QString normalized = normalizeBookmarkColorName(value);
+        for (const BookmarkColorDefinition& definition : kBookmarkColorDefinitions)
+        {
+            if (normalized == QString::fromLatin1(definition.name))
+            {
+                return QString::fromLatin1(definition.displayName);
             }
         }
         return {};

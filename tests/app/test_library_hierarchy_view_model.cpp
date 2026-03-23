@@ -26,6 +26,7 @@ private
     void defaultState_isEmptyAndCreatable();
     void setDepthItems_parsesDepthAndDpethKeys();
     void setDepthItems_setsChevronOnlyWhenChildExists();
+    void setDepthItems_derivesFolderIconsFromLibraryItemKind();
     void renameItem_updatesDisplayName();
     void createFolder_insertsAsChildOfSelectedSubtree();
     void createFolder_whenSystemBucketSelected_insertsAfterSystemFolders();
@@ -382,6 +383,38 @@ void LibraryHierarchyViewModelTest::setDepthItems_setsChevronOnlyWhenChildExists
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::ShowChevronRole).
                   toBool(),
         false);
+}
+
+void LibraryHierarchyViewModelTest::setDepthItems_derivesFolderIconsFromLibraryItemKind()
+{
+    LibraryHierarchyViewModel viewModel;
+    viewModel.setDepthItems(QVariantList{
+        QVariantMap{
+            {"label", QStringLiteral("Smart Folder")},
+            {"depth", 0},
+            {"accent", true}
+        },
+        QVariantMap{
+            {"label", QStringLiteral("Regular Folder")},
+            {"depth", 0}
+        }
+    });
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("controllerFolder"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("objectGroup"));
+
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(),
+             QStringLiteral("controllerFolder"));
+    QCOMPARE(hierarchyModel.at(1).toMap().value(QStringLiteral("iconName")).toString(),
+             QStringLiteral("objectGroup"));
 }
 
 void LibraryHierarchyViewModelTest::renameItem_updatesDisplayName()
@@ -1024,13 +1057,37 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
                  .toBool(),
         false);
     QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("database"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("generaledit"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("generalhistory"));
+    QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::ShowChevronRole)
                  .toBool(),
         true);
     QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("objectGroup"));
+    QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::ShowChevronRole)
                  .toBool(),
         false);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("objectGroup"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(5, 0), LibraryHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("objectGroup"));
 
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
     QCOMPARE(hierarchyModel.size(), 6);
@@ -1041,6 +1098,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
     QCOMPARE(allBucketNode.value(QStringLiteral("dragAllowed")).toBool(), false);
     QCOMPARE(allBucketNode.value(QStringLiteral("movable")).toBool(), false);
     QCOMPARE(allBucketNode.value(QStringLiteral("dragLocked")).toBool(), true);
+    QCOMPARE(allBucketNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("database"));
 
     const QVariantMap draftBucketNode = hierarchyModel.at(1).toMap();
     QCOMPARE(draftBucketNode.value(QStringLiteral("key")).toString(), QStringLiteral("bucket:draft"));
@@ -1048,6 +1106,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
     QCOMPARE(draftBucketNode.value(QStringLiteral("dragAllowed")).toBool(), false);
     QCOMPARE(draftBucketNode.value(QStringLiteral("movable")).toBool(), false);
     QCOMPARE(draftBucketNode.value(QStringLiteral("dragLocked")).toBool(), true);
+    QCOMPARE(draftBucketNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("generaledit"));
 
     const QVariantMap todayBucketNode = hierarchyModel.at(2).toMap();
     QCOMPARE(todayBucketNode.value(QStringLiteral("key")).toString(), QStringLiteral("bucket:today"));
@@ -1055,6 +1114,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
     QCOMPARE(todayBucketNode.value(QStringLiteral("dragAllowed")).toBool(), false);
     QCOMPARE(todayBucketNode.value(QStringLiteral("movable")).toBool(), false);
     QCOMPARE(todayBucketNode.value(QStringLiteral("dragLocked")).toBool(), true);
+    QCOMPARE(todayBucketNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("generalhistory"));
 
     const QVariantMap researchNode = hierarchyModel.at(3).toMap();
     QCOMPARE(researchNode.value(QStringLiteral("itemId")).toInt(), 3);
@@ -1065,6 +1125,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
     QCOMPARE(researchNode.value(QStringLiteral("movable")).toBool(), true);
     QCOMPARE(researchNode.value(QStringLiteral("dragLocked")).toBool(), false);
     QCOMPARE(researchNode.value(QStringLiteral("showChevron")).toBool(), true);
+    QCOMPARE(researchNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("objectGroup"));
     QVERIFY(!researchNode.contains(QStringLiteral("children")));
 
     const QVariantMap competitorNode = hierarchyModel.at(4).toMap();
@@ -1073,10 +1134,12 @@ void LibraryHierarchyViewModelTest::loadFromWshub_usesFoldersFileForSidebarItems
              QStringLiteral("Research/Competitor"));
     QCOMPARE(competitorNode.value(QStringLiteral("depth")).toInt(), 1);
     QCOMPARE(competitorNode.value(QStringLiteral("showChevron")).toBool(), false);
+    QCOMPARE(competitorNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("objectGroup"));
     QVERIFY(!competitorNode.contains(QStringLiteral("children")));
 
     const QVariantMap brandNode = hierarchyModel.at(5).toMap();
     QCOMPARE(brandNode.value(QStringLiteral("key")).toString(), QStringLiteral("Brand"));
+    QCOMPARE(brandNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("objectGroup"));
     QVERIFY(!brandNode.contains(QStringLiteral("children")));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);

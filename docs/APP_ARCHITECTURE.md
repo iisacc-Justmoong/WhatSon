@@ -267,6 +267,18 @@ Examples:
 - Bookmarks: `WhatSonBookmarksHierarchyStore/Parser/Creator`
 - Resources/Progress/Event/Preset: same structure
 - Tags: parser + flattener + path resolver + depth provider
+- Resources sidebar rendering is intentionally decoupled from the persisted `Resources.wsresources` file shape for now:
+  `ResourcesHierarchyViewModel` exposes a read-only runtime taxonomy (`Image`, `Video`, `Document`, `3D Model`,
+  `Web page`, `Music`, `Audio`, `ZIP`, `Other`) with `iconName: "virtualFolder"` on every row. All categories except
+  `Other` expose extension children; `Other` is a leaf catch-all bucket for resources whose format is not yet
+  classified. The flat persisted resource-path list remains untouched until the future file-support layer lands.
+- Progress sidebar rendering is also intentionally decoupled from the persisted `Progress.wsprogress` file shape:
+  `ProgressHierarchyViewModel` exposes the fixed Figma `45:3409` read-only runtime taxonomy
+  (`First draft`, `Modified draft`, `In Progress`, `Pending`, `Reviewing`, `Waiting for approval`, `Done`, `Lagacy`,
+  `Archived`, `Delete review`) with icon names `inlineinlineEdit`, `rendererKit`, `progressresume`, `pending`,
+  `showLogs`, `toolWindowTimer`, `validator`, `nodesexcludeRoot`, `projectModels`, and
+  `gutterCheckBoxIndeterminate@14x14`. The first four rows retain visible chevrons per the design metadata, but the
+  underlying progress persistence layer remains unchanged until a future detail/runtime expansion layer is introduced.
 
 ## 4.2 Runtime Hub State Layer
 
@@ -367,12 +379,14 @@ Domain-isolated support:
         - `NavigationBarLayout.qml` compact mode is now the mobile node `174:4986` top-bar contract: the shared frame
           stays `24px` high on `panelBackground10`, uses `8px/2px` internal padding from LVRS tokens, keeps a `4px`
           settings-to-mode gap on the left, and a `12px` menu-to-new-folder gap on the right while still resolving the
-          application surface through the active navigation mode.
+          application surface through the active navigation mode. Route state can now suppress the compact settings
+          button and swap in a note-list-specific trailing control cluster without forking the shared top-bar shell.
         - Control-only child bars (`NavigationAppControlBar.qml`, `NavigationExportBar.qml`) now live under
           `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
           `NavigationPreferenceBar.qml` stay at the navigation root.
         - `navigation/control/NavigationApplicationControlBar.qml` compact mode is reduced to the collapsed menu button
-          only; that `LV.IconMenuButton` now uses the `generalprojectStructure` glyph plus the built-in LVRS chevron
+          only on the default mobile control route; that `LV.IconMenuButton` now uses the `generalprojectStructure`
+          glyph plus the built-in LVRS chevron
           indicator, and tapping it reuses a control-menu item set that mirrors the desktop Control bar order
           `generalprojectStructure -> pin -> toolwindownotifications -> startTimer -> generalupload ->
           generalprint -> mailer -> addFile -> audioToAudio -> columnIndex` instead of the older calendar/todo-based
@@ -409,7 +423,9 @@ Domain-isolated support:
             - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` render the current `Control` / `Plain` design
               case
               through those active state objects, but click selection is menu-driven through `LV.ComboBox` +
-              `LV.ContextMenu`, not direct next-state cycling.
+              `LV.ContextMenu`, not direct next-state cycling. The navigation-mode menu follows the Figma `191:5519`
+              item-icon contract `generalshow`, `renameColumn`, `abstractClass`, and its trailing shortcut column stays
+              hidden because each entry keeps `keyVisible: false`.
             - `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileHierarchyPage.qml` all forward
               the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
             - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
@@ -435,9 +451,8 @@ Domain-isolated support:
               settings glyph.
             - `HierarchySidebarLayout.qml` still exposes search/inset geometry inputs for shared use, and the routed
               `MobileHierarchyPage.qml` now applies the node `174:5026` geometry explicitly with LVRS tokens:
-              `horizontalInset = 0`, `verticalInset = 0`, `searchHeaderHorizontalInset = 0`,
-              `searchHeaderMinHeight = 18`, `searchHeaderVerticalInset = 0`, `searchHeaderTopGap = 2`, and
-              `searchListGap = 2`.
+              `horizontalInset = 0`, `verticalInset = 0`, `searchHeaderMinHeight = 18`,
+              `searchHeaderVerticalInset = 0`, `searchHeaderTopGap = 2`, and `searchListGap = 2`.
             - `MobileHierarchyPage.qml` disables `usePlatformSafeMargin`, keeps the hierarchy on the root
               `panelBackground01` canvas, composes token-only page paddings (`16 / 48 / 16` via LVRS gap
               composition), while the scaffold keeps a reduced `gap2` VStack spacing between the compact
@@ -448,7 +463,9 @@ Domain-isolated support:
               history.
             - `MobileHierarchyPage.qml` now suppresses the compact leading action on the note-list and editor routes,
               so the mobile top bar matches the Figma frames and leaves page undo to swipe navigation instead of a
-              visible back button.
+              visible back button. The same note-list route now hides the compact settings button and swaps the shared
+              compact control cluster to the Figma node `174:5171` order `sortByType`, `cwmPermissionView`, then the
+              `toolwindowtodo` `LV.IconMenuButton`.
             - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and a
               left-edge touch `DragHandler`, so the shell keeps interactive back-swipe local to the edge hit zone
               instead of subscribing to global LVRS gesture runtime events that would pre-empt native mobile editor
@@ -465,11 +482,14 @@ Domain-isolated support:
               the shared `ContentsDisplayView.qml` now owns one merged desktop / mobile editor-origin contract: it
               always clears the underlying editor item's `topPadding`, then drives the document start position only
               through the shared `editorDocumentStartY` resolver (`16px` on every platform unless a future route
-              override explicitly replaces it). That keeps the editor visually separated from the navigation bar on both
+              override explicitly replaces it), with that origin resolved directly from the shared inset token instead
+              of introspecting `TextEditor.editorItem.y`. That keeps the editor visually separated from the navigation bar on both
               shells without forking editor behavior per platform.
             - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
               header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
-              search header to `shapeRoundRect`.
+              search header to `shapeRoundRect`. The hierarchy search field wrapper now removes its own horizontal
+              chrome inset and instead reuses the list body's `horizontalInset` anchor contract as the single source of
+              truth, so the search frame and hierarchy rows stay visually aligned.
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
@@ -680,6 +700,9 @@ Library-specific modeling:
 - `LibraryHierarchyViewModel` exposes `All Library`, `Draft`, and `Today` as immutable depth-0 system folders and
   synchronizes
   note-list filtering from those buckets plus persisted library folders
+- Library hierarchy rows follow the Figma `32:500` icon contract: system buckets emit `database`, `generaledit`, and
+  `generalhistory`; regular persisted folders emit `objectGroup`; accent non-system smart-folder roots emit
+  `controllerFolder`.
 - The same system buckets now emit `draggable`, `dragAllowed`, `movable`, and `dragLocked` in the serialized LVRS
   hierarchy payload, and `applyHierarchyNodes(...)` preserves the `All Library -> Draft -> Today` prefix even if an
   incoming editable-drag payload tries to move user folders across that fixed boundary. LVRS reorder normalization now
@@ -936,12 +959,16 @@ Hierarchy rendering pipeline:
   `canRenameItem(...)` and `renameItem(...)`, projects the edited row label to an empty string while the overlay is
   active, commits via the domain view-model, and cancels on `Escape`, toolbar switches, or selection changes so rename
   state never leaks across hierarchy contexts.
+- Footer CRUD scope policy: only library, projects, and tags expose active hierarchy footer `createFolder()` /
+  `deleteSelectedFolder()` contracts. Bookmarks, resources, progress, event, and preset keep those buttons disabled
+  because their rows are runtime projections rather than user-created hierarchy nodes.
 - Expansion-state protection policy: user-triggered expand/collapse changes must flow into the bound hierarchy
   view-model through a narrow `setItemExpanded(itemId, expanded)` hook. `createFolder()` and other point mutations must
   not rebuild untouched hierarchy rows from stale expansion defaults, because that collapses unrelated UI state.
 - Create-folder visibility policy: `SidebarHierarchyView.qml` must resolve the active LVRS row before calling
-  `createFolder()`, and the receiving hierarchy view-model must expand that parent row before syncing the new child so
-  footer-created folders appear immediately under the visually active item.
+  `createFolder()`. Library and tags expand the active parent row before syncing the new child so footer-created
+  folders appear immediately under the visually active item. Projects stay flat: creation inserts a depth-0 sibling,
+  child drops are rejected, and LVRS editable payload depths are normalized back to `0`.
 - Folder identity policy: library note-folder payloads should resolve to canonical full paths before they enter
   note-list view data. The UI may display only the terminal folder segment, but hierarchy filtering must use the exact
   canonical full path so duplicate leaf labels, including repeated labels along one ancestor chain, never resolve to
@@ -972,7 +999,10 @@ Hierarchy rendering pipeline:
   `hierarchy -> note-list -> editor` progression before opening the next screen. After an editor pop commits, the same
   page now gives the shared router a small deferred repair window, but it treats the pop as successful as soon as the
   router itself lands on `/mobile/note-list` with stack depth `>= 2`; only if that canonical router state still fails
-  after the deferred checks does it rebuild the canonical `hierarchy -> note-list` stack. This keeps the
+  after the deferred checks does it rebuild the canonical `hierarchy -> note-list` stack. Those rebuild helpers now
+  snapshot the active hierarchy `selectedIndex` and temporarily suppress the route-driven hierarchy deselection pass
+  while `setRoot(hierarchy)` runs, so a folder-scoped note list such as `Untitled` does not collapse back to the
+  default `All Library` projection during repair. This keeps the
   user-driven back-swipe animation as the only visible transition on the normal editor -> note
   list path while still repairing corrupted stacks that strand the shell on the hierarchy body with a stale
   `/mobile/note-list` route token. The same page also clears the active hierarchy selection whenever routing
@@ -1004,14 +1034,21 @@ Hierarchy rendering pipeline:
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.
 - Projects folder move persistence: `ProjectsHierarchyViewModel::applyHierarchyNodes(...)` still owns
-  `Folders.wsfolders` rewrites when LVRS drag-reorder commits a new depth ordering.
+  `ProjectLists.wsproj` rewrites when LVRS drag-reorder commits a new depth ordering. The same project hierarchy keeps
+  the Figma `45:2750` row contract entirely at runtime: every serialized/generated row emits
+  `iconName: "customFolder"`, while the text label continues to come from the bound project-name string without
+  requiring extra parser/store metadata.
 - Rename commit policy for hub-loaded hierarchies: the view-model updates staged in-memory data, applies it to the
   domain store, then calls store-driven file sync (`writeToFile`) for `*.wsfolders`, `*.wsresources`, `*.wsevent`,
   `*.wspreset`, `*.wstags`. Model commit occurs only after successful store sync.
 - Bookmarks domain behavior is color-folder driven:
-    - Uses fixed 9 bookmark color folders from `WhatSonBookmarkColorPalette`.
+    - Uses fixed 10 bookmark color folders from `WhatSonBookmarkColorPalette`.
     - Folder CRUD and view-options footer actions are disabled for the bookmarks hierarchy.
     - Selecting a bookmark color folder filters right-panel note cards by that bookmark color.
+    - The full bookmarks hierarchy now title-cases the folder labels, inserts `Indigo` between `Blue` and `Purple`,
+      renders every row with the bookmark glyph, and tints both glyph and label from LVRS color tokens so the row
+      icon color matches the corresponding label color without patching LVRS itself. The default LVRS placeholder icon
+      path is suppressed, so no neutral placeholder remains behind the bookmark glyph.
 - Progress domain behavior is fixed-state driven:
     - Progress hierarchy labels are immutable constants at runtime.
     - Rename/create/delete actions are disabled in the progress hierarchy.

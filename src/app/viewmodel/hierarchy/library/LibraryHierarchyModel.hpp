@@ -25,6 +25,28 @@ struct LibraryHierarchyItem
     bool showChevron = true;
 };
 
+inline QString libraryHierarchyIconName(const LibraryHierarchyItem& item)
+{
+    switch (item.systemBucket)
+    {
+    case LibraryHierarchyItem::SystemBucket::All:
+        return QStringLiteral("database");
+    case LibraryHierarchyItem::SystemBucket::Draft:
+        return QStringLiteral("generaledit");
+    case LibraryHierarchyItem::SystemBucket::Today:
+        return QStringLiteral("generalhistory");
+    case LibraryHierarchyItem::SystemBucket::None:
+        break;
+    }
+
+    if (item.accent && item.depth == 0)
+    {
+        return QStringLiteral("controllerFolder");
+    }
+
+    return QStringLiteral("objectGroup");
+}
+
 class LibraryHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -43,7 +65,8 @@ public:
         AccentRole,
         ExpandedRole,
         ShowChevronRole,
-        ItemKeyRole
+        ItemKeyRole,
+        IconNameRole
     };
 
     Q_ENUM(Role)

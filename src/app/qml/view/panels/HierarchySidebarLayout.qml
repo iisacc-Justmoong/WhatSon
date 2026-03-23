@@ -15,7 +15,6 @@ Item {
     readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null
     required property var sidebarHierarchyViewModel
     property bool searchFieldVisible: false
-    property int searchHeaderHorizontalInset: LV.Theme.gap2
     property int searchHeaderMinHeight: LV.Theme.gap24
     property int searchHeaderTopGap: LV.Theme.gap4
     property int searchListGap: LV.Theme.gapNone
@@ -69,9 +68,9 @@ Item {
         hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable
         hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel
         horizontalInset: hierarchyView.horizontalInset
+        bookmarkPaletteVisualsEnabled: hierarchyView.currentHierarchy === hierarchyEnum.bookmarks
         panelColor: hierarchyView.panelColor
         searchFieldVisible: hierarchyView.searchFieldVisible
-        searchHeaderHorizontalInset: hierarchyView.searchHeaderHorizontalInset
         searchHeaderMinHeight: hierarchyView.searchHeaderMinHeight
         searchHeaderTopGap: hierarchyView.searchHeaderTopGap
         searchListGap: hierarchyView.searchListGap

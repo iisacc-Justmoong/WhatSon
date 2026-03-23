@@ -7,6 +7,26 @@ import ".." as NavigationShared
 Item {
     id: applicationControlBar
 
+    readonly property var compactNoteListMenuItems: [
+        {
+            "label": "Show Structure",
+            "iconName": "toolwindowtodo",
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "label": "Sort",
+            "iconName": "sortByType",
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "label": "Visibility",
+            "iconName": "cwmPermissionView",
+            "keyVisible": false,
+            "showChevron": false
+        }
+    ]
     property var applicationControlMenuItems: [
         {
             "label": "Show Structure",
@@ -87,6 +107,7 @@ Item {
         }
     ]
     property bool compactMode: false
+    property bool compactNoteListControlsVisible: false
     property int menuItemWidth: 176
     property int menuYOffset: 2
     property bool detailPanelCollapsed: false
@@ -115,7 +136,13 @@ Item {
             id: applicationControlLoader
 
             Layout.alignment: Qt.AlignVCenter
-            sourceComponent: applicationControlBar.compactMode ? compactApplicationControlComponent : fullApplicationControlComponent
+            sourceComponent: {
+                if (!applicationControlBar.compactMode)
+                    return fullApplicationControlComponent;
+                if (applicationControlBar.compactNoteListControlsVisible)
+                    return compactNoteListApplicationControlComponent;
+                return compactApplicationControlComponent;
+            }
         }
     }
     Component {
@@ -177,6 +204,45 @@ Item {
             }
         }
     }
+    Component {
+        id: compactNoteListApplicationControlComponent
+
+        LV.HStack {
+            id: compactNoteListApplicationControlBar
+
+            spacing: LV.Theme.gap12
+
+            LV.IconButton {
+                iconName: "sortByType"
+                tone: LV.AbstractButton.Borderless
+
+                onClicked: applicationControlBar.requestViewHook("compact-note-list-sort")
+            }
+            LV.IconButton {
+                iconName: "cwmPermissionView"
+                tone: LV.AbstractButton.Borderless
+
+                onClicked: applicationControlBar.requestViewHook("compact-note-list-visibility")
+            }
+            LV.IconMenuButton {
+                id: noteListApplicationControlMenuButton
+
+                iconName: "toolwindowtodo"
+                tone: LV.AbstractButton.Borderless
+
+                onClicked: {
+                    if (noteListApplicationControlContextMenu.opened) {
+                        noteListApplicationControlContextMenu.close();
+                        return;
+                    }
+                    noteListApplicationControlContextMenu.openFor(
+                        noteListApplicationControlMenuButton,
+                        noteListApplicationControlMenuButton.width,
+                        noteListApplicationControlMenuButton.height + applicationControlBar.menuYOffset);
+                }
+            }
+        }
+    }
     LV.ContextMenu {
         id: applicationControlContextMenu
 
@@ -184,6 +250,16 @@ Item {
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
         itemWidth: applicationControlBar.menuItemWidth
         items: applicationControlBar.applicationControlMenuItems
+        modal: false
+        parent: Controls.Overlay.overlay
+    }
+    LV.ContextMenu {
+        id: noteListApplicationControlContextMenu
+
+        autoCloseOnTrigger: true
+        closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
+        itemWidth: applicationControlBar.menuItemWidth
+        items: applicationControlBar.compactNoteListMenuItems
         modal: false
         parent: Controls.Overlay.overlay
     }

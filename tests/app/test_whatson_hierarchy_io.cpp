@@ -43,7 +43,7 @@ private
     void parse_blueprintFiles();
     void creatorParser_roundTrip();
     void libraryParser_parsesObjectStyleNotes();
-    void bookmarksStore_hasNineHexCriteriaAndNormalizesInput();
+    void bookmarksStore_hasTenHexCriteriaAndNormalizesInput();
 };
 
 namespace
@@ -357,12 +357,12 @@ void WhatSonHierarchyIoTest::libraryParser_parsesObjectStyleNotes()
     QCOMPARE(store.noteIds(), expectedObjectStyleIds);
 }
 
-void WhatSonHierarchyIoTest::bookmarksStore_hasNineHexCriteriaAndNormalizesInput()
+void WhatSonHierarchyIoTest::bookmarksStore_hasTenHexCriteriaAndNormalizesInput()
 {
     WhatSonBookmarksHierarchyStore store;
 
     const QStringList defaultCriteria = store.bookmarkColorCriteriaHex();
-    QCOMPARE(defaultCriteria.size(), 9);
+    QCOMPARE(defaultCriteria.size(), 10);
     for (const QString& hex : defaultCriteria)
     {
         QVERIFY2(hex.startsWith(QLatin1Char('#')), qPrintable(hex));
@@ -377,7 +377,7 @@ void WhatSonHierarchyIoTest::bookmarksStore_hasNineHexCriteriaAndNormalizesInput
     });
 
     const QStringList normalized = store.bookmarkColorCriteriaHex();
-    QCOMPARE(normalized.size(), 9);
+    QCOMPARE(normalized.size(), 10);
     QCOMPARE(normalized.at(0), QStringLiteral("#3B82F6"));
     QCOMPARE(normalized.at(1), QStringLiteral("#EC4899"));
     QCOMPARE(normalized.at(2), QStringLiteral("#F59E0B"));
@@ -390,6 +390,7 @@ void WhatSonHierarchyIoTest::bookmarksStore_hasNineHexCriteriaAndNormalizesInput
         QStringLiteral("#22C55E"),
         QStringLiteral("#14B8A6"),
         QStringLiteral("#3B82F6"),
+        QStringLiteral("#B589EC"),
         QStringLiteral("#8B5CF6"),
         QStringLiteral("#EC4899")
     };

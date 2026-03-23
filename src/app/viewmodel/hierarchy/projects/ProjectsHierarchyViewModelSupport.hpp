@@ -260,6 +260,7 @@ namespace WhatSon::Hierarchy::ProjectsSupport
         {
             serialized.push_back(QVariantMap{
                 {QStringLiteral("label"), item.label},
+                {QStringLiteral("iconName"), projectsHierarchyIconName(item)},
                 {QStringLiteral("depth"), item.depth},
                 {QStringLiteral("accent"), item.accent},
                 {QStringLiteral("expanded"), item.expanded},
@@ -377,28 +378,19 @@ namespace WhatSon::Hierarchy::ProjectsSupport
         }
 
         int insertIndex = items->size();
-        int folderDepth = 0;
 
         if (selectedIndex >= 0 && selectedIndex < items->size())
         {
-            (*items)[selectedIndex].expanded = true;
-            const int selectedDepth = items->at(selectedIndex).depth;
-            folderDepth = selectedDepth + 1;
-
             insertIndex = selectedIndex + 1;
-            while (insertIndex < items->size() && items->at(insertIndex).depth > selectedDepth)
-            {
-                ++insertIndex;
-            }
         }
 
         ProjectsHierarchyItem newItem;
-        newItem.depth = folderDepth;
+        newItem.depth = 0;
         newItem.label = QStringLiteral("Untitled");
         ++(*ioFolderSequence);
         newItem.accent = false;
         newItem.expanded = false;
-        newItem.showChevron = true;
+        newItem.showChevron = false;
 
         items->insert(insertIndex, std::move(newItem));
         applyChevronByDepth(items);

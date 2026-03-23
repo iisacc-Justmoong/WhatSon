@@ -170,6 +170,9 @@ WhatSon is an LVRS-based Qt Quick application.
   anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
   top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
+- That shared top inset is now applied directly as the editor document origin instead of being inferred back from the
+  internal `TextEditor.editorItem.y`, so the 16px separation from the navigation bar survives after the LVRS editor
+  item mounts on both desktop and mobile.
 - `LV.TextEditor` disables rendered preview output and forced wrap defaults
   (`showRenderedOutput: false`, `enforceModeDefaults: false`) while enabling `wrapMode: TextEdit.Wrap`; the gutter
   still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
@@ -620,6 +623,9 @@ for hub/note hierarchy payloads.
   line-number column.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
   and editor views match the Figma top bar and leave page undo to swipe navigation instead of a visible back button.
+- The same mobile note-list route now also swaps the shared `NavigationBarLayout.qml` compact trailing controls to the
+  Figma node `174:5171` order `sortByType -> cwmPermissionView -> toolwindowtodo`, and hides the compact settings
+  button so the note-list top bar no longer reuses the hierarchy-route chrome.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
   drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
   enum plus route-memory copies.
@@ -627,6 +633,11 @@ for hub/note hierarchy payloads.
   `DragHandler`, so mobile back navigation stays local to the edge hit zone instead of subscribing the whole window to
   global LVRS gesture runtime events. The same touch session is now consumed after commit or cancel so an editor
   back-swipe cannot immediately start a second pop that skips the intermediate note-list route.
+- The same mobile route shell now snapshots the active hierarchy `selectedIndex` before opening or repairing the
+  note-list/editor stack, and it suppresses the temporary hierarchy-route deselection pass while canonical
+  `setRoot(hierarchy) -> push(note-list)` rebuilds run. This keeps folder-specific note lists such as `Untitled`
+  from falling back to `All Library` during editor back-swipe repair, which also removes the extra post-pop entrance
+  animation that came from rebuilding the wrong list context.
 - When the mobile route returns to `/mobile/hierarchy`, `MobileHierarchyPage.qml` now clears the active hierarchy
   selection through the shared domain view-model, so tapping the same folder after backing out of the note-list or
   editor reopens the routed note-list body instead of being swallowed by a stale LVRS active-row state.
@@ -643,6 +654,9 @@ for hub/note hierarchy payloads.
   only adds the explicit `searchHeaderTopGap + searchHeaderMinHeight + searchListGap` when the shared search header is
   visible, removing the duplicated toolbar-height gap that previously appeared under the search bar on both desktop and
   mobile.
+- The hierarchy search field no longer keeps a second horizontal wrapper inset; its frame alignment now comes directly
+  from the same `horizontalInset` that anchors the list body, so the search bar and hierarchy rows share one padding
+  source.
 - `NavigationApplicationControlBar.qml` compact mode is now the collapsed mobile control surface: it exposes only the
   existing context-menu button, while `NavigationBarLayout.qml` keeps the navigation mode combo on the shared
   `NavigationModeViewModel` without replacing the shared hierarchy footer actions. The compact control menu anchors
@@ -650,6 +664,9 @@ for hub/note hierarchy payloads.
   menu`, the compact control `LV.IconMenuButton` now uses the `generalprojectStructure` glyph with the built-in LVRS
   chevron indicator, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
   budget on mobile.
+- When the routed mobile note-list page is active, `NavigationApplicationControlBar.qml` now switches to a dedicated
+  compact variant that renders `sortByType`, `cwmPermissionView`, and a `toolwindowtodo` `LV.IconMenuButton` in the
+  same order as the Figma note-list bar instead of reusing the hierarchy/control compact menu button.
 - Navigation mode state is centralized in `src/app/viewmodel/navigationbar/NavigationModeViewModel.*`:
   `main.cpp` injects `navigationModeViewModel`, and the navigation bar mode combo binds to the dedicated enum-backed
   `View/Edit/Control/Presentation` state plus its per-mode QObject viewmodels.
@@ -685,6 +702,9 @@ for hub/note hierarchy payloads.
   an empty background/container surface instead of an interactive control.
 - `NavigationModeBar.qml` and `NavigationEditorViewBar.qml` use `LV.ComboBox` as the trigger surface and open
   `LV.ContextMenu` enumerations on click instead of cycling state directly.
+- The `NavigationModeBar.qml` context menu now follows the Figma `191:5519` icon contract with
+  `generalshow -> renameColumn -> abstractClass`, and it keeps the trailing `Key` column hidden by leaving each
+  entry `keyVisible: false`.
 - All QML view files under `src/app/qml/view` and root `Main.qml` expose a common hook pair
   (`viewHookRequested`, `requestViewHook()`).
 - Main runtime wires hierarchy selection changes and note-list model resets into `backendBridge.publish(...)`
@@ -699,12 +719,15 @@ for hub/note hierarchy payloads.
   is provided, preventing accidental overwrite of runtime-loaded models.
 - Hierarchy viewmodels expose a common CRUD-facing surface (`renameEnabled`, `createFolderEnabled`,
   `deleteFolderEnabled`, `itemLabel`, `renameItem`, `createFolder`, `deleteSelectedFolder`).
+- Footer CRUD scope policy: only `LibraryHierarchyViewModel`, `ProjectsHierarchyViewModel`, and
+  `TagsHierarchyViewModel` expose active hierarchy `+/-` footer behavior. Bookmarks, resources, progress, event,
+  and preset keep those actions disabled because their rows are runtime/view-model projections.
 - Expansion-state protection policy: `SidebarHierarchyView.qml` must only push user-touched expansion changes back into
   a hierarchy view-model through a targeted `setItemExpanded(...)` hook. Bulk hierarchy rewrites are not allowed for
   create-folder flows because they mutate untouched rows and destabilize the rendered LVRS tree.
-- Create-folder targeting policy: footer-triggered folder creation must snapshot the currently active LVRS hierarchy
-  row, insert the new folder as that row's child, and force the parent into the expanded state so the inserted row is
-  visible immediately.
+- Create-folder targeting policy: library and tags insert the new row as a child of the active hierarchy item and
+  expand that parent so the inserted child becomes visible immediately. Projects are flat, so project creation always
+  inserts a new root-level sibling row and never creates child items.
 - Folder-identity policy: library note-folder assignments are stored and propagated as canonical full paths whenever
   hierarchy context exists (`Parent/Child/Leaf`). UI rendering may collapse those paths to the leaf label for display,
   but selection/filtering must use the exact canonical path and must never fan a note out across different folders that
@@ -733,11 +756,28 @@ for hub/note hierarchy payloads.
 - Chevron click now toggles fold/unfold through LVRS `HierarchyItem.expanded`, and sidebar delegates follow
   `HierarchyItem.rowVisible` for effective height/visibility so collapsed descendants do not reserve row space.
 - `library`: `WhatSonLibraryHierarchy{Store,Parser,Creator}` (`Library.wslibrary/index.wsnindex`)
-- `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`Folders.wsfolders`)
+- `projects`: `WhatSonProjectsHierarchy{Store,Parser,Creator}` (`ProjectLists.wsproj`)
+- Projects hierarchy rows keep the runtime Figma `45:2750` contract without extending the persisted project schema:
+  every row emits `iconName: "customFolder"`, while the visible label is still sourced directly from the bound
+  project-name/view-model string.
 - `bookmarks`: `WhatSonBookmarksHierarchy{Store,Parser,Creator}` (`Bookmarks.wsbookmarks`)
 - `tags`: `WhatSonTagsHierarchy{Store,Parser,Creator}` (`Tags.wstags`, tree/flat JSON with preserved hierarchy depth)
 - `resources`: `WhatSonResourcesHierarchy{Store,Parser,Creator}` (`Resources.wsresources`)
+- Resources hierarchy now renders a runtime-only read-only taxonomy tree for the Figma `45:3244` sidebar contract:
+  every row emits `iconName: "virtualFolder"`, top-level parents are `Image`, `Video`, `Document`, `3D Model`,
+  `Web page`, `Music`, `Audio`, `ZIP`, and `Other`. All categories except `Other` expand into concrete extension
+  children (for example `Image -> .png/.jpeg/.jpg/.tiff/.webp`); `Other` is a leaf catch-all bucket for unclassified
+  files. The persisted `Resources.wsresources` flat path list is preserved for the future file-support layer and is
+  not rewritten by the current sidebar taxonomy view.
 - `progress`: `WhatSonProgressHierarchy{Store,Parser,Creator}` (`Progress.wsprogress`)
+- Progress hierarchy now renders a runtime-only read-only Figma `45:3409` taxonomy instead of exposing the persisted
+  `Progress.wsprogress` state array directly. The sidebar rows are fixed to `First draft`, `Modified draft`,
+  `In Progress`, `Pending`, `Reviewing`, `Waiting for approval`, `Done`, `Lagacy`, `Archived`, and
+  `Delete review`, with exact LVRS icon names `inlineinlineEdit`, `rendererKit`, `progressresume`, `pending`,
+  `showLogs`, `toolWindowTimer`, `validator`, `nodesexcludeRoot`, `projectModels`, and
+  `gutterCheckBoxIndeterminate@14x14`. The first four rows keep visible chevrons per Figma metadata even though the
+  current runtime layer does not yet materialize child nodes behind them. The persisted `Progress.wsprogress` file is
+  preserved unchanged for the future progress-detail layer.
 - `event`: `WhatSonEventHierarchy{Store,Parser,Creator}` (`Event.wsevent`)
 - `preset`: `WhatSonPresetHierarchy{Store,Parser,Creator}` (`Preset.wspreset`)
 
@@ -751,6 +791,9 @@ Folders hierarchy file behavior (Library sidebar):
 - Runtime-injected `All Library`, `Draft`, and `Today` are explicit system buckets; user-created folders such as
   `All` remain regular editable folders, but any concrete folder segment named `Today` is treated as the reserved
   smart-folder token and is dropped from library folder trees / note header assignments.
+- Library sidebar rows now follow the Figma `32:500` icon contract: `All Library -> database`, `Draft ->
+  generaledit`, `Today -> generalhistory`, regular folders -> `objectGroup`, and accent non-system smart folders ->
+  `controllerFolder`.
 - Library system buckets emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)
   and stay pinned as the immutable `All Library -> Draft -> Today` depth-0 prefix even when LVRS editable reorder
   payloads are committed back into the library hierarchy view-model.
@@ -790,9 +833,13 @@ Bookmarks runtime behavior:
 - `.wsnhead` `<bookmarks state="...">` is parsed into bookmark state (`bool`) and bookmark colors (`string list`)
 - Bookmark colors support name tokens and hex tokens; both are normalized to hex for note-list rendering
 - Bookmarks hierarchy list is derived from runtime note records and includes only notes where `bookmarked == true`
-- `WhatSonBookmarksHierarchyStore` maintains a canonical 9-color hex criteria set that matches `.wsnhead` bookmark color
+- `WhatSonBookmarksHierarchyStore` maintains a canonical 10-color hex criteria set that matches `.wsnhead` bookmark color
   tokens:
-  `#EF4444`, `#F97316`, `#F59E0B`, `#EAB308`, `#22C55E`, `#14B8A6`, `#3B82F6`, `#8B5CF6`, `#EC4899`
+  `#EF4444`, `#F97316`, `#F59E0B`, `#EAB308`, `#22C55E`, `#14B8A6`, `#3B82F6`, `#B589EC`, `#8B5CF6`, `#EC4899`
+- The full bookmarks hierarchy now renders title-cased color labels (`Red` ... `Pink`) and inserts `Indigo`
+  between `Blue` and `Purple`; every hierarchy row uses the bookmark glyph, and both the glyph and label are tinted
+  from LVRS theme tokens instead of the default hierarchy placeholder/icon colors. The LVRS placeholder path is
+  explicitly suppressed so the bookmark glyph is the only visible icon layer.
 
 ## Unified Build And Launch Automation
 

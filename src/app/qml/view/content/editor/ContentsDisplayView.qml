@@ -24,10 +24,7 @@ Item {
         return Number(contentEditor.editorItem.parent.y) || 0;
     }
     readonly property real editorDocumentStartY: {
-        if (!contentEditor.editorItem)
-            return contentsView.effectiveEditorTopInset;
-        const resolvedY = Number(contentEditor.editorItem.y);
-        return isFinite(resolvedY) ? resolvedY : contentsView.effectiveEditorTopInset;
+        return contentsView.effectiveEditorTopInset;
     }
     readonly property int editorDocumentTopPadding: 0
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()

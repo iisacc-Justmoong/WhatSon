@@ -13,6 +13,8 @@ Rectangle {
     readonly property int bottomInset: LV.Theme.gap2
     readonly property int compactHorizontalInset: LV.Theme.gapNone
     readonly property int compactLeftGroupSpacing: LV.Theme.gap4
+    property bool compactNoteListControlsVisible: false
+    property bool compactSettingsVisible: true
     readonly property int compactRightGroupSpacing: LV.Theme.gap12
     property bool compactAddFolderEnabled: true
     property bool compactAddFolderVisible: false
@@ -131,6 +133,7 @@ Rectangle {
                         onClicked: navigationBar.compactLeadingActionRequested()
                     }
                     LV.IconButton {
+                        visible: navigationBar.compactSettingsVisible
                         iconName: "settings"
                         horizontalPadding: LV.Theme.gap2
                         tone: LV.AbstractButton.Borderless
@@ -209,6 +212,7 @@ Rectangle {
 
         NavigationControlMode.NavigationApplicationControlBar {
             compactMode: navigationBar.compactMode
+            compactNoteListControlsVisible: navigationBar.compactNoteListControlsVisible
             detailPanelCollapsed: navigationBar.detailPanelCollapsed
 
             onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()

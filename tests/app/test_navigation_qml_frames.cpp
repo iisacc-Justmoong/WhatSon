@@ -211,6 +211,9 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
     QVERIFY(modeBar.contains(QStringLiteral("text: modeBar.activeModeText")));
     QVERIFY(modeBar.contains(QStringLiteral("LV.ContextMenu {")));
     QVERIFY(modeBar.contains(QStringLiteral("requestModeChange(index)")));
+    QVERIFY(modeBar.contains(QStringLiteral("iconName: \"generalshow\"")));
+    QVERIFY(modeBar.contains(QStringLiteral("iconName: \"renameColumn\"")));
+    QVERIFY(modeBar.contains(QStringLiteral("iconName: \"abstractClass\"")));
     QVERIFY(modeBar.contains(QStringLiteral("keyVisible: false")));
     QVERIFY(!modeBar.contains(QStringLiteral("requestNextMode();")));
     QVERIFY(!modeBar.contains(QStringLiteral("comboLabelRightInset")));
@@ -248,8 +251,15 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(exportIndex < addNewIndex);
     QVERIFY(addNewIndex < preferenceIndex);
     QVERIFY(applicationControlBar.contains(QStringLiteral("LV.IconMenuButton {")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("property bool compactNoteListControlsVisible: false")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"generalprojectStructure\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"toolwindowtodo\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"sortByType\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"cwmPermissionView\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"generalprojectStructure\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"toolwindowtodo\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"sortByType\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"cwmPermissionView\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"pin\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"toolwindownotifications\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"startTimer\"")));
@@ -268,6 +278,9 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Mail\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"New File\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Preferences\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("compact-note-list-sort")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("compact-note-list-visibility")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("if (applicationControlBar.compactNoteListControlsVisible)")));
     QVERIFY(applicationControlBar.contains(
         QStringLiteral("applicationControlBar.detailPanelCollapsed ? \"Show Detail Panel\" : \"Hide Detail Panel\"")));
     QVERIFY(!applicationControlBar.contains(QStringLiteral("iconName: \"generalsearch\"")));
@@ -283,6 +296,8 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
         QStringLiteral("applicationControlMenuButton.width")));
     QVERIFY(applicationControlBar.contains(
         QStringLiteral("applicationControlMenuButton.height + applicationControlBar.menuYOffset")));
+    QVERIFY(applicationControlBar.contains(
+        QStringLiteral("noteListApplicationControlMenuButton.height + applicationControlBar.menuYOffset")));
     QVERIFY(!applicationControlBar.contains(QStringLiteral("openFor(applicationControlMenuButton, 0,")));
 }
 

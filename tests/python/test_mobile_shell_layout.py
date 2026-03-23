@@ -87,7 +87,6 @@ class MobileShellLayoutTests(unittest.TestCase):
 
         self.assertIn("property bool footerVisible: true", hierarchy_layout_text)
         self.assertIn("property bool searchFieldVisible: false", hierarchy_layout_text)
-        self.assertIn("property int searchHeaderHorizontalInset: LV.Theme.gap2", hierarchy_layout_text)
         self.assertIn("property int searchHeaderMinHeight: LV.Theme.gap24", hierarchy_layout_text)
         self.assertIn("property int searchHeaderTopGap: LV.Theme.gap4", hierarchy_layout_text)
         self.assertIn("property int searchListGap: LV.Theme.gapNone", hierarchy_layout_text)
@@ -104,7 +103,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property bool footerVisible: true", hierarchy_view_text)
         self.assertIn("property bool hierarchyEditable: false", hierarchy_view_text)
         self.assertIn("property bool searchFieldVisible: false", hierarchy_view_text)
-        self.assertIn("property int searchHeaderHorizontalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("property int searchHeaderMinHeight: LV.Theme.gap24", hierarchy_view_text)
         self.assertIn("property int searchHeaderTopGap: LV.Theme.gap4", hierarchy_view_text)
         self.assertIn("property int searchListGap: LV.Theme.gapNone", hierarchy_view_text)
@@ -113,7 +111,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_view_text)
         self.assertIn("PanelView.ListBarHeader", hierarchy_view_text)
         self.assertIn("frameMinHeight: sidebarHierarchyView.searchHeaderMinHeight", hierarchy_view_text)
-        self.assertIn("outerHorizontalInset: sidebarHierarchyView.searchHeaderHorizontalInset", hierarchy_view_text)
+        self.assertIn("outerHorizontalInset: LV.Theme.gapNone", hierarchy_view_text)
         self.assertIn("outerVerticalInset: sidebarHierarchyView.searchHeaderVerticalInset", hierarchy_view_text)
         self.assertIn("searchFieldShapeStyle: hierarchySearchHeader.shapeRoundRect", hierarchy_view_text)
         self.assertIn("visibilityActionVisible: false", hierarchy_view_text)
@@ -202,6 +200,8 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter", mobile_page_text)
         self.assertIn("property int backSwipeConsumedSessionId: -1", mobile_page_text)
         self.assertIn("property int backSwipeSessionId: -1", mobile_page_text)
+        self.assertIn("property int preservedNoteListSelectionIndex: -1", mobile_page_text)
+        self.assertIn("property bool routeSelectionSyncSuppressed: false", mobile_page_text)
         self.assertIn("readonly property int backSwipeEdgeWidth: LV.Theme.gap24", mobile_page_text)
         self.assertIn(
             "readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()",
@@ -225,10 +225,13 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("function beginBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("function cancelBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("function clearActiveHierarchySelection()", mobile_page_text)
+        self.assertIn("function currentHierarchySelectionIndex()", mobile_page_text)
         self.assertIn("function finishBackSwipeGesture(eventData, cancelled)", mobile_page_text)
+        self.assertIn("function rememberNoteListSelection(selectionIndex)", mobile_page_text)
         self.assertIn("function requestBackToHierarchy()", mobile_page_text)
         self.assertIn("function requestOpenEditor(noteId, index)", mobile_page_text)
         self.assertIn("function requestOpenNoteList(item, itemId, index)", mobile_page_text)
+        self.assertIn("function restoreNoteListSelection(selectionIndex)", mobile_page_text)
         self.assertIn("function routeToHierarchyRoot()", mobile_page_text)
         self.assertIn("function syncRouteSelectionState()", mobile_page_text)
         self.assertIn("function updateBackSwipeGesture(eventData)", mobile_page_text)
@@ -242,7 +245,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("horizontalInset: LV.Theme.gapNone", mobile_page_text)
         self.assertIn("verticalInset: LV.Theme.gapNone", mobile_page_text)
         self.assertIn("searchFieldVisible: true", mobile_page_text)
-        self.assertIn("searchHeaderHorizontalInset: LV.Theme.gapNone", mobile_page_text)
         self.assertIn("searchHeaderMinHeight: LV.Theme.gap18", mobile_page_text)
         self.assertIn("searchHeaderVerticalInset: LV.Theme.gapNone", mobile_page_text)
         self.assertIn("searchHeaderTopGap: LV.Theme.gap2", mobile_page_text)
@@ -273,16 +275,19 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("contentViewModel: mobileHierarchyPage.activeContentViewModel", mobile_page_text)
         self.assertIn("displayColor: mobileHierarchyPage.canvasColor", mobile_page_text)
         self.assertIn("drawerVisible: false", mobile_page_text)
-        self.assertIn("editorTopInsetOverride: LV.Theme.gapNone", mobile_page_text)
         self.assertIn("frameHorizontalInsetOverride: LV.Theme.gapNone", mobile_page_text)
         self.assertIn('gutterColor: "transparent"', mobile_page_text)
         self.assertIn("gutterWidthOverride: LV.Theme.gap20 * 2", mobile_page_text)
         self.assertIn("lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2", mobile_page_text)
         self.assertIn("minimapVisible: false", mobile_page_text)
+        self.assertNotIn("editorTopInsetOverride:", mobile_page_text)
         self.assertIn("pageTransitionController.beginBack({", mobile_page_text)
         self.assertIn("pageTransitionController.shouldCommit(", mobile_page_text)
         self.assertIn("pageTransitionController.finish(shouldCommit);", mobile_page_text)
         self.assertIn("pageTransitionController.update(progress, {", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.rememberNoteListSelection();", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.routeSelectionSyncSuppressed = true;", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);", mobile_page_text)
         self.assertIn("id: noteListBodyComponent", mobile_page_text)
         self.assertIn("activeToolbarIndex: mobileHierarchyPage.activeToolbarIndex", mobile_page_text)
         self.assertIn("headerVisible: false", mobile_page_text)
@@ -294,10 +299,15 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("function onCurrentPathChanged()", mobile_page_text)
         self.assertIn("mobileHierarchyPage.syncRouteSelectionState();", mobile_page_text)
         self.assertIn("mobileHierarchyPage.activeContentViewModel.setSelectedIndex(-1);", mobile_page_text)
+        self.assertIn("if (mobileHierarchyPage.routeSelectionSyncSuppressed)", mobile_page_text)
         self.assertIn("if (mobileScaffold.bodyItem && mobileScaffold.bodyItem.requestCreateFolder !== undefined)", mobile_page_text)
         self.assertIn("mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);", mobile_page_text)
         self.assertIn("mobileScaffold.activePageRouter.back();", mobile_page_text)
         self.assertIn("mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);", mobile_page_text)
+        self.assertIn("const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(itemId);", mobile_page_text)
+        self.assertIn("const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);", mobile_page_text)
+        self.assertIn("mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);", mobile_page_text)
         self.assertIn("windowInteractions.createNoteFromShortcut();", mobile_page_text)
         self.assertIn(
             "function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId)",
@@ -348,12 +358,27 @@ class MobileShellLayoutTests(unittest.TestCase):
             "applicationControlContextMenu.openFor(",
             control_bar_text,
         )
+        self.assertIn('iconName: "toolwindowtodo"', control_bar_text)
+        self.assertIn('iconName: "sortByType"', control_bar_text)
+        self.assertIn('iconName: "cwmPermissionView"', control_bar_text)
+        self.assertIn(
+            "noteListApplicationControlContextMenu.openFor(",
+            control_bar_text,
+        )
         self.assertIn(
             "applicationControlMenuButton.width,",
             control_bar_text,
         )
         self.assertIn(
             "applicationControlMenuButton.height + applicationControlBar.menuYOffset",
+            control_bar_text,
+        )
+        self.assertIn(
+            "noteListApplicationControlMenuButton.width,",
+            control_bar_text,
+        )
+        self.assertIn(
+            "noteListApplicationControlMenuButton.height + applicationControlBar.menuYOffset",
             control_bar_text,
         )
 

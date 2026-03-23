@@ -51,12 +51,7 @@ QVariant BookmarksHierarchyModel::data(const QModelIndex& index, int role) const
     case ExpandedRole:
         return item.expanded;
     case ShowChevronRole:
-        {
-            const int nextIndex = index.row() + 1;
-            const bool hasChild = nextIndex < m_items.size()
-                && m_items.at(nextIndex).depth > item.depth;
-            return hasChild;
-        }
+        return item.showChevron;
     default:
         return {};
     }

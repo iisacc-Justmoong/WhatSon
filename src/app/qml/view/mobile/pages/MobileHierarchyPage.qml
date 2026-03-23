@@ -33,6 +33,8 @@ Item {
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
     property string lastObservedRoutePath: hierarchyRoutePath
+    property int preservedNoteListSelectionIndex: -1
+    property bool routeSelectionSyncSuppressed: false
     readonly property var libraryNoteCreationViewModel: mobileHierarchyPage.windowInteractions
         && mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel !== undefined
         ? mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel
@@ -90,6 +92,12 @@ Item {
         mobileHierarchyPage.activeContentViewModel.setSelectedIndex(-1);
         return true;
     }
+    function currentHierarchySelectionIndex() {
+        if (!mobileHierarchyPage.activeContentViewModel
+                || mobileHierarchyPage.activeContentViewModel.selectedIndex === undefined)
+            return mobileHierarchyPage.preservedNoteListSelectionIndex;
+        return Math.floor(Number(mobileHierarchyPage.activeContentViewModel.selectedIndex) || -1);
+    }
     function displayedBodyRoutePath() {
         const bodyItem = mobileScaffold.bodyItem;
         if (bodyItem) {
@@ -144,33 +152,72 @@ Item {
     function cancelPendingEditorPopRepair() {
         mobileHierarchyPage.editorPopRepairRequestId += 1;
     }
+    function rememberNoteListSelection(selectionIndex) {
+        let nextSelectionIndex = -1;
+        if (selectionIndex !== undefined && selectionIndex !== null) {
+            const normalizedSelectionIndex = Math.floor(Number(selectionIndex));
+            if (isFinite(normalizedSelectionIndex))
+                nextSelectionIndex = normalizedSelectionIndex;
+        }
+        if (nextSelectionIndex < 0)
+            nextSelectionIndex = mobileHierarchyPage.currentHierarchySelectionIndex();
+        mobileHierarchyPage.preservedNoteListSelectionIndex = nextSelectionIndex;
+        return nextSelectionIndex;
+    }
+    function restoreNoteListSelection(selectionIndex) {
+        if (!mobileHierarchyPage.activeContentViewModel
+                || mobileHierarchyPage.activeContentViewModel.setSelectedIndex === undefined)
+            return false;
+        let targetSelectionIndex = -1;
+        if (selectionIndex !== undefined && selectionIndex !== null) {
+            const normalizedSelectionIndex = Math.floor(Number(selectionIndex));
+            if (isFinite(normalizedSelectionIndex))
+                targetSelectionIndex = normalizedSelectionIndex;
+        }
+        if (targetSelectionIndex < 0)
+            targetSelectionIndex = mobileHierarchyPage.preservedNoteListSelectionIndex;
+        mobileHierarchyPage.activeContentViewModel.setSelectedIndex(targetSelectionIndex);
+        return targetSelectionIndex >= 0;
+    }
     function routeStackDepth() {
         if (!mobileScaffold.activePageRouter || mobileScaffold.activePageRouter.depth === undefined)
             return 0;
         return Math.max(0, Math.floor(Number(mobileScaffold.activePageRouter.depth) || 0));
     }
-    function routeToCanonicalNoteList() {
+    function routeToCanonicalNoteList(selectionIndex) {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
+        const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
+        mobileHierarchyPage.routeSelectionSyncSuppressed = true;
         mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
+        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
         mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
+        Qt.callLater(function () {
+            mobileHierarchyPage.routeSelectionSyncSuppressed = false;
+        });
         mobileHierarchyPage.requestViewHook();
         return true;
     }
-    function routeToCanonicalEditor() {
+    function routeToCanonicalEditor(selectionIndex) {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
+        const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(selectionIndex);
+        mobileHierarchyPage.routeSelectionSyncSuppressed = true;
         mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);
+        mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
         mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
         mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);
+        Qt.callLater(function () {
+            mobileHierarchyPage.routeSelectionSyncSuppressed = false;
+        });
         mobileHierarchyPage.requestViewHook();
         return true;
     }
@@ -197,16 +244,12 @@ Item {
         const transitionState = state || ({});
         const operation = transitionState.operation !== undefined ? String(transitionState.operation) : "";
         const fromPath = transitionState.fromPath !== undefined ? String(transitionState.fromPath) : "";
-        const toPath = transitionState.toPath !== undefined ? String(transitionState.toPath) : "";
         if (operation !== "pop" || fromPath !== mobileHierarchyPage.editorRoutePath || !mobileHierarchyPage.activeNoteListModel)
             return;
+        mobileHierarchyPage.rememberNoteListSelection();
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         const repairRequestId = mobileHierarchyPage.editorPopRepairRequestId;
         Qt.callLater(function () {
-            if (toPath.length > 0 && toPath !== mobileHierarchyPage.noteListRoutePath) {
-                mobileHierarchyPage.routeToCanonicalNoteList();
-                return;
-            }
             mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);
         });
     }
@@ -260,6 +303,7 @@ Item {
         if (!mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(itemId);
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
         const depth = mobileHierarchyPage.routeStackDepth();
@@ -271,17 +315,19 @@ Item {
                 && displayedPath === mobileHierarchyPage.hierarchyRoutePath
                 && depth <= 1) {
             mobileHierarchyPage.resetBackSwipeState();
+            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
             mobileScaffold.activePageRouter.push(mobileHierarchyPage.noteListRoutePath);
             mobileHierarchyPage.requestViewHook();
             return;
         }
-        mobileHierarchyPage.routeToCanonicalNoteList();
+        mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
     function requestOpenEditor(noteId, index) {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
         if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
         const depth = mobileHierarchyPage.routeStackDepth();
@@ -293,11 +339,12 @@ Item {
                 && displayedPath === mobileHierarchyPage.noteListRoutePath
                 && depth >= 2) {
             mobileHierarchyPage.resetBackSwipeState();
+            mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);
             mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);
             mobileHierarchyPage.requestViewHook();
             return;
         }
-        mobileHierarchyPage.routeToCanonicalEditor();
+        mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);
     }
     function requestViewHook() {
         viewHookRequested();
@@ -322,6 +369,8 @@ Item {
         const currentPath = mobileHierarchyPage.displayedBodyRoutePath();
         const previousPath = mobileHierarchyPage.lastObservedRoutePath;
         mobileHierarchyPage.lastObservedRoutePath = currentPath;
+        if (mobileHierarchyPage.routeSelectionSyncSuppressed)
+            return false;
         if (currentPath !== mobileHierarchyPage.hierarchyRoutePath
                 || previousPath === mobileHierarchyPage.hierarchyRoutePath)
             return false;
@@ -406,6 +455,8 @@ Item {
         canvasColor: mobileHierarchyPage.canvasColor
         compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive
         compactLeadingActionVisible: false
+        compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive
+        compactSettingsVisible: !mobileHierarchyPage.noteListPageActive
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
         editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
         navigationModeViewModel: mobileHierarchyPage.navigationModeViewModel
@@ -517,7 +568,6 @@ Item {
             horizontalInset: LV.Theme.gapNone
             panelColor: mobileHierarchyPage.canvasColor
             searchFieldVisible: true
-            searchHeaderHorizontalInset: LV.Theme.gapNone
             searchHeaderMinHeight: LV.Theme.gap18
             searchHeaderTopGap: LV.Theme.gap2
             searchHeaderVerticalInset: LV.Theme.gapNone

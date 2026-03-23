@@ -97,6 +97,8 @@ QVariant ProjectsHierarchyModel::data(const QModelIndex& index, int role) const
         }
     case ItemKeyRole:
         return projectsHierarchyItemKey(m_items, index.row());
+    case IconNameRole:
+        return projectsHierarchyIconName(item);
     default:
         return {};
     }
@@ -111,7 +113,8 @@ QHash<int, QByteArray> ProjectsHierarchyModel::roleNames() const
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
         {ShowChevronRole, "showChevron"},
-        {ItemKeyRole, "itemKey"}
+        {ItemKeyRole, "itemKey"},
+        {IconNameRole, "iconName"}
     };
 }
 

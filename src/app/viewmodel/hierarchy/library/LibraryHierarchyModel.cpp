@@ -88,6 +88,8 @@ QVariant LibraryHierarchyModel::data(const QModelIndex& index, int role) const
         }
     case ItemKeyRole:
         return libraryHierarchyItemKey(item, index.row());
+    case IconNameRole:
+        return libraryHierarchyIconName(item);
     default:
         return {};
     }
@@ -102,7 +104,8 @@ QHash<int, QByteArray> LibraryHierarchyModel::roleNames() const
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
         {ShowChevronRole, "showChevron"},
-        {ItemKeyRole, "itemKey"}
+        {ItemKeyRole, "itemKey"},
+        {IconNameRole, "iconName"}
     };
 }
 

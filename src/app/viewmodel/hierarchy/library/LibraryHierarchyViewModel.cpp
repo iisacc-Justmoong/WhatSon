@@ -1858,6 +1858,7 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
             {"id", item.folderPath},
             {"itemId", index},
             {"key", hierarchyItemKey(item, index)},
+            {"iconName", libraryHierarchyIconName(item)},
             {"depth", item.depth},
             {"accent", item.accent},
             {"expanded", item.expanded},

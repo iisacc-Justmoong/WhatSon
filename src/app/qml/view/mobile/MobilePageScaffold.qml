@@ -19,6 +19,8 @@ Rectangle {
     property bool compactAddFolderVisible: true
     property string compactLeadingActionIconName: "generalchevronLeft"
     property bool compactLeadingActionVisible: false
+    property bool compactNoteListControlsVisible: false
+    property bool compactSettingsVisible: true
     property color controlSurfaceColor: LV.Theme.panelBackground10
     property var editorViewModeViewModel: null
     property var navigationModeViewModel: null
@@ -52,6 +54,8 @@ Rectangle {
             compactLeadingActionIconName: mobilePageScaffold.compactLeadingActionIconName
             compactLeadingActionVisible: mobilePageScaffold.compactLeadingActionVisible
             compactMode: true
+            compactNoteListControlsVisible: mobilePageScaffold.compactNoteListControlsVisible
+            compactSettingsVisible: mobilePageScaffold.compactSettingsVisible
             compactSurfaceColor: mobilePageScaffold.controlSurfaceColor
             editorViewModeViewModel: mobilePageScaffold.editorViewModeViewModel
             navigationModeViewModel: mobilePageScaffold.navigationModeViewModel
