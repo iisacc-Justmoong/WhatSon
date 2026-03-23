@@ -395,19 +395,25 @@ Domain-isolated support:
               the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
             - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
               `create-note` hook path instead of duplicating note-creation policy in a second shortcut-only code path.
-            - `StatusBarLayout.qml` compact mode is now the node `174:4986` mobile bottom bar: it resolves to a `20px`
+            - `StatusBarLayout.qml` compact mode is now the node `174:4995` mobile bottom bar: it resolves to a `20px`
               frame, keeps the field flush with the shared `370px` content span, reserves the trailing
               `controlHeightMd` slot for the add-note affordance, and still emits `createNoteRequested`, which
               `MobileHierarchyPage.qml` forwards into `MainWindowInteractionController::createNoteFromShortcut()` so the
               bottom add-note affordance stays on the same shared creation path as desktop navigation controls. The
-              compact search input itself now lets `LV.InputField` render the LVRS `shapeCylinder` frame directly and
-              binds the scaffold placeholder through `placeholderText`, so the mobile bottom bar keeps the shared
-              pill-shaped search affordance without a wrapped custom field shell.
+              compact search input itself now lets `LV.InputField` render the LVRS `shapeCylinder` frame directly,
+              binds the scaffold placeholder through `placeholderText`, and keeps the field on the shared
+              `panelBackground10` surface from the Figma `174:4995` status bar instead of a transparent override, so
+              the mobile bottom bar preserves the dark pill-shaped search affordance without a wrapped custom field
+              shell.
             - `MobilePageScaffold.qml` keeps the compact navigation bar and compact status bar mounted around every
               routed mobile workspace page, so those top/bottom controls are not re-declared per page.
             - `MobilePageScaffold.qml` follows the Figma `174:4987` VStack contract directly:
               `left/right = 16`, `top = 48`, `bottom = 16`, and a shared `gap2` VStack spacing between navigation,
-              body, and status sections.
+              body, and status sections. The compact navigation pill (`174:4988`) and compact search/status field
+              (`174:4995`) both keep the shared `panelBackground10` control surface on mobile, while
+              `NavigationBarLayout.qml` maps the top-bar icon frames directly to LVRS icon names
+              (`settings`, `nodesnewFolder`, `generalprojectStructure`) instead of falling back to the older generic
+              settings glyph.
             - `HierarchySidebarLayout.qml` still exposes search/inset geometry inputs for shared use, and the routed
               `MobileHierarchyPage.qml` now applies the node `174:5026` geometry explicitly with LVRS tokens:
               `horizontalInset = 0`, `verticalInset = 0`, `searchHeaderHorizontalInset = 0`,
@@ -448,6 +454,10 @@ Domain-isolated support:
             - `LibraryHierarchyViewModel::createEmptyNote()` emits `emptyNoteCreated(noteId)`, and
               `ContentsDisplayView.qml` keeps a pending focus token until the selected note changes to that id, then
               transfers keyboard focus into `LV.TextEditor` so immediate body typing works after creation.
+            - `MobileHierarchyPage.qml` also listens to that same `emptyNoteCreated(noteId)` signal through the shared
+              library ViewModel binding, keeps a temporary `pendingCreatedNoteId`, and routes straight into
+              `/mobile/editor` once the shared mobile note-list/content models resolve, so the bottom add-note action
+              opens the created note immediately instead of leaving the user on the hierarchy or note-list body.
             - If the current note-list search filter would hide the new note, `LibraryHierarchyViewModel` clears that
               search before selecting the created note so the editor focus handoff still succeeds.
             - `NavigationModeBar.qml`, `NavigationEditorViewBar.qml`, `ListBarLayout.qml`, and `MobileHierarchyPage.qml`
@@ -502,7 +512,10 @@ Domain-isolated support:
                   cursor instead of the platform text tooltip.
                   The surrounding
                   `ListView` also yields drag-scrolling while a note row is pressed, so the delegate `DragHandler` can
-                  start the `whatson.library.note` drag before the viewport steals the pointer.
+                  start the `whatson.library.note` drag before the viewport steals the pointer. The bound note-list
+                  models now keep `currentIndex = -1` until either the user taps a note card or a higher-level
+                  workflow explicitly selects one, so the shared `active` binding no longer paints row `0` as selected
+                  during the initial unselected workspace state.
                   `SidebarHierarchyView.qml`
                   now binds the higher-level LVRS `Hierarchy` surface directly to each domain view-model's standard
                   `hierarchyModel` property, normalizes that C++ `QVariantList` into a JS array before it reaches LVRS
@@ -718,7 +731,7 @@ Library-specific modeling:
         - `bookmarked` (bool)
         - `bookmarkColor` (hex string, bookmark icon tint)
 - `LibraryNoteListModel` also exposes current note selection state to QML:
-    - `currentIndex` (selected visible row)
+    - `currentIndex` (selected visible row, or `-1` while no note has been chosen yet)
     - `currentNoteId` (selected note id)
     - `currentBodyText` (selected note full plain-text body)
 - Note-list `bodyText` values are newline-normalized but not trimmed, so editor round-trips preserve leading/trailing
@@ -910,9 +923,11 @@ Hierarchy rendering pipeline:
   page now resolves the active mobile body route from both `PageRouter.currentPath` and the mounted `currentPageItem`
   type, then normalizes any inconsistent stack back to the canonical
   `hierarchy -> note-list -> editor` progression before opening the next screen. After an editor pop commits, the same
-  page verifies that the visible page really is the note-list body and, if not, rebuilds the canonical
-  `hierarchy -> note-list` stack immediately so edge-swipe undo cannot strand the shell on the hierarchy body with a
-  stale `/mobile/note-list` route token. The same page also clears the active hierarchy selection whenever routing
+  page now gives the shared routed note-list body a small settle window before verifying visibility; only if the body
+  still is not the note-list page after that deferred check does it rebuild the canonical `hierarchy -> note-list`
+  stack. This keeps the user-driven back-swipe animation as the only visible transition on the normal editor -> note
+  list path while still repairing corrupted stacks that strand the shell on the hierarchy body with a stale
+  `/mobile/note-list` route token. The same page also clears the active hierarchy selection whenever routing
   lands back on `/mobile/hierarchy`, so re-tapping the same folder can reopen the note-list route even though LVRS only
   raises `listItemActivated(...)` when the active row changes.
 - Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,

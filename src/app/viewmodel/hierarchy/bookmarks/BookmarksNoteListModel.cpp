@@ -591,9 +591,9 @@ void BookmarksNoteListModel::applySearchFilter()
     endResetModel();
 
     int nextCurrentIndex = indexOfItemById(m_items, previousNoteId);
-    if (nextCurrentIndex < 0 && !m_items.isEmpty())
+    if (nextCurrentIndex < 0 && previousIndex >= 0 && !m_items.isEmpty())
     {
-        nextCurrentIndex = 0;
+        nextCurrentIndex = std::clamp(previousIndex, 0, static_cast<int>(m_items.size()) - 1);
     }
     m_currentIndex = nextCurrentIndex;
 

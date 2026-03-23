@@ -715,10 +715,14 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesCurrentBo
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
+    QCOMPARE(viewModel.noteListModel()->currentIndex(), -1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QString());
+    QCOMPARE(viewModel.noteListModel()->currentBodyText(), QString());
+
+    viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentIndex(), 0);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Alpha body summary."));
-
     viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Beta body summary."));
@@ -808,6 +812,9 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
+    QCOMPARE(viewModel.noteListModel()->currentIndex(), -1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QString());
+    viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
 
     const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");

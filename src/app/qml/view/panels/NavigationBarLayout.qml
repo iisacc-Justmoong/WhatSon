@@ -131,7 +131,7 @@ Rectangle {
                         onClicked: navigationBar.compactLeadingActionRequested()
                     }
                     LV.IconButton {
-                        iconName: "generalsettings"
+                        iconName: "settings"
                         horizontalPadding: LV.Theme.gap2
                         tone: LV.AbstractButton.Borderless
                         verticalPadding: LV.Theme.gap2

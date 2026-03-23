@@ -22,14 +22,19 @@ Item {
         : false
     readonly property int backSwipeEdgeWidth: LV.Theme.gap24
     property int backSwipeConsumedSessionId: -1
+    property int editorPopRepairRequestId: 0
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
-    property color controlSurfaceColor: "transparent"
+    property color controlSurfaceColor: LV.Theme.panelBackground10
     readonly property string editorRoutePath: "/mobile/editor"
     property var editorViewModeViewModel: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
     property string hierarchySearchText: ""
     property string lastObservedRoutePath: hierarchyRoutePath
+    readonly property var libraryNoteCreationViewModel: mobileHierarchyPage.windowInteractions
+        && mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel !== undefined
+        ? mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel
+        : null
     readonly property var mobileBodyRoutes: [
         {
             "path": mobileHierarchyPage.hierarchyRoutePath,
@@ -49,6 +54,7 @@ Item {
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
     readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
+    property string pendingCreatedNoteId: ""
     required property var sidebarHierarchyViewModel
     property string statusPlaceholderText: ""
     property string statusSearchText: ""
@@ -118,6 +124,9 @@ Item {
         mobileHierarchyPage.backSwipeConsumedSessionId = -1;
         mobileHierarchyPage.backSwipeSessionId = -1;
     }
+    function cancelPendingEditorPopRepair() {
+        mobileHierarchyPage.editorPopRepairRequestId += 1;
+    }
     function routeStackDepth() {
         if (!mobileScaffold.activePageRouter || mobileScaffold.activePageRouter.depth === undefined)
             return 0;
@@ -126,6 +135,7 @@ Item {
     function routeToCanonicalNoteList() {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -137,6 +147,7 @@ Item {
     function routeToCanonicalEditor() {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -146,22 +157,47 @@ Item {
         mobileHierarchyPage.requestViewHook();
         return true;
     }
+    function verifyCommittedEditorPopState(requestId, attemptsRemaining) {
+        if (requestId !== mobileHierarchyPage.editorPopRepairRequestId
+                || !mobileScaffold.activePageRouter
+                || !mobileHierarchyPage.activeNoteListModel)
+            return false;
+        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
+        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
+        if (currentPath === mobileHierarchyPage.noteListRoutePath
+                && displayedPath === mobileHierarchyPage.noteListRoutePath)
+            return true;
+        if (attemptsRemaining > 0 && currentPath === mobileHierarchyPage.noteListRoutePath) {
+            Qt.callLater(function () {
+                mobileHierarchyPage.verifyCommittedEditorPopState(requestId, attemptsRemaining - 1);
+            });
+            return false;
+        }
+        mobileHierarchyPage.routeToCanonicalNoteList();
+        return false;
+    }
     function handleCommittedRouteTransition(state) {
         mobileHierarchyPage.requestViewHook();
         const transitionState = state || ({});
         const operation = transitionState.operation !== undefined ? String(transitionState.operation) : "";
         const fromPath = transitionState.fromPath !== undefined ? String(transitionState.fromPath) : "";
+        const toPath = transitionState.toPath !== undefined ? String(transitionState.toPath) : "";
         if (operation !== "pop" || fromPath !== mobileHierarchyPage.editorRoutePath || !mobileHierarchyPage.activeNoteListModel)
             return;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
+        const repairRequestId = mobileHierarchyPage.editorPopRepairRequestId;
         Qt.callLater(function () {
-            if (mobileHierarchyPage.displayedBodyRoutePath() === mobileHierarchyPage.noteListRoutePath)
+            if (toPath.length > 0 && toPath !== mobileHierarchyPage.noteListRoutePath) {
+                mobileHierarchyPage.routeToCanonicalNoteList();
                 return;
-            mobileHierarchyPage.routeToCanonicalNoteList();
+            }
+            mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);
         });
     }
     function requestBackToHierarchy() {
         if (!mobileScaffold.activePageRouter)
             return;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -181,9 +217,33 @@ Item {
         if (mobileHierarchyPage.windowInteractions && mobileHierarchyPage.windowInteractions.createNoteFromShortcut !== undefined)
             mobileHierarchyPage.windowInteractions.createNoteFromShortcut();
     }
+    function routePendingCreatedNoteToEditor() {
+        const pendingNoteId = mobileHierarchyPage.pendingCreatedNoteId === undefined || mobileHierarchyPage.pendingCreatedNoteId === null
+                ? ""
+                : String(mobileHierarchyPage.pendingCreatedNoteId).trim();
+        if (pendingNoteId.length === 0
+                || !mobileHierarchyPage.activeContentViewModel
+                || !mobileHierarchyPage.activeNoteListModel
+                || !mobileScaffold.activePageRouter)
+            return false;
+        mobileHierarchyPage.pendingCreatedNoteId = "";
+        mobileHierarchyPage.requestOpenEditor(pendingNoteId, -1);
+        return true;
+    }
+    function scheduleCreatedNoteEditorRoute(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length === 0)
+            return false;
+        mobileHierarchyPage.pendingCreatedNoteId = normalizedNoteId;
+        Qt.callLater(function () {
+            mobileHierarchyPage.routePendingCreatedNoteToEditor();
+        });
+        return true;
+    }
     function requestOpenNoteList(item, itemId, index) {
         if (!mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
         const depth = mobileHierarchyPage.routeStackDepth();
@@ -205,6 +265,7 @@ Item {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
         if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
         const depth = mobileHierarchyPage.routeStackDepth();
@@ -228,6 +289,7 @@ Item {
     function routeToHierarchyRoot() {
         if (!mobileScaffold.activePageRouter)
             return false;
+        mobileHierarchyPage.cancelPendingEditorPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -293,12 +355,23 @@ Item {
                 });
     }
 
+    onActiveContentViewModelChanged: mobileHierarchyPage.routePendingCreatedNoteToEditor()
     onActiveNoteListModelChanged: {
-        if (mobileHierarchyPage.activeNoteListModel)
+        if (mobileHierarchyPage.activeNoteListModel) {
+            mobileHierarchyPage.routePendingCreatedNoteToEditor();
             return;
+        }
         mobileHierarchyPage.routeToHierarchyRoot();
     }
 
+    Connections {
+        target: mobileHierarchyPage.libraryNoteCreationViewModel
+        ignoreUnknownSignals: true
+
+        function onEmptyNoteCreated(noteId) {
+            mobileHierarchyPage.scheduleCreatedNoteEditorRoute(noteId);
+        }
+    }
     Connections {
         target: mobileScaffold.activePageRouter
         ignoreUnknownSignals: true

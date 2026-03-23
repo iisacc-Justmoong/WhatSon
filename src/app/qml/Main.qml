@@ -494,7 +494,7 @@ LV.ApplicationWindow {
         MobilePageView.MobileHierarchyPage {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
-            controlSurfaceColor: "transparent"
+            controlSurfaceColor: LV.Theme.panelBackground10
             editorViewModeViewModel: applicationWindow.editorViewModeVm
             navigationModeViewModel: applicationWindow.navigationModeVm
             sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm

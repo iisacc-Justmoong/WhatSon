@@ -489,6 +489,9 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
     QCOMPARE(viewModel.noteListModel()->roleNames().value(BookmarksNoteListModel::NoteIdRole), QByteArray("noteId"));
+    QCOMPARE(viewModel.noteListModel()->currentIndex(), -1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QString());
+    QCOMPARE(viewModel.noteListModel()->currentBodyText(), QString());
 
     QStringList primaryTextAndColorPairs;
     QStringList noteIds;
@@ -947,11 +950,16 @@ void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
 
     model.setItems({alpha, beta});
 
+    QCOMPARE(model.currentIndex(), -1);
+    QCOMPARE(model.currentNoteId(), QString());
+    QCOMPARE(model.currentBodyText(), QString());
+    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::BodyTextRole).toString(),
+             QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
+
+    model.setCurrentIndex(0);
     QCOMPARE(model.currentIndex(), 0);
     QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
     QCOMPARE(model.currentBodyText(), QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
-    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::BodyTextRole).toString(),
-             QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
 
     model.setCurrentIndex(1);
     QCOMPARE(model.currentIndex(), 1);

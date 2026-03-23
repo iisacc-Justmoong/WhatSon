@@ -1733,22 +1733,27 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("function requestBackToHierarchy()")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenEditor(noteId, index)")) &&
+            mobilePageText.contains(QStringLiteral("function cancelPendingEditorPopRepair()")) &&
+            mobilePageText.contains(QStringLiteral("function routePendingCreatedNoteToEditor()")) &&
+            mobilePageText.contains(QStringLiteral("function scheduleCreatedNoteEditorRoute(noteId)")) &&
+            mobilePageText.contains(QStringLiteral("function verifyCommittedEditorPopState(requestId, attemptsRemaining)")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenNoteList(item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("function routeToHierarchyRoot()")) &&
             mobilePageText.contains(QStringLiteral("function clearActiveHierarchySelection()")) &&
             mobilePageText.contains(QStringLiteral("function syncRouteSelectionState()")) &&
             mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")),
-        "MobileHierarchyPage.qml must expose explicit hierarchy, note-list, and editor routing helpers while keeping the compact leading action wired to the shared back path and a dedicated hierarchy-selection reset helper.");
+        "MobileHierarchyPage.qml must expose explicit hierarchy, note-list, editor, created-note, and editor-pop repair helpers while keeping the compact leading action wired to the shared back path and a dedicated hierarchy-selection reset helper.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("LV.PageTransitionController {")) &&
             mobilePageText.contains(QStringLiteral("router: mobileScaffold.activePageRouter")) &&
             mobilePageText.contains(QStringLiteral("function beginBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("function updateBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("function finishBackSwipeGesture(eventData, cancelled)")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);")) &&
             mobilePageText.contains(QStringLiteral("sessionId === mobileHierarchyPage.backSwipeConsumedSessionId")) &&
             !mobilePageText.contains(QStringLiteral("mobileHierarchyPage.backSwipeSessionId < 0 && !mobileHierarchyPage.beginBackSwipeGesture(eventData)")) &&
             mobilePageText.contains(QStringLiteral("pageTransitionController.shouldCommit(")),
-        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController while preventing the same touch session from reopening a second back-swipe after a committed or cancelled pop.");
+        "MobileHierarchyPage.qml must centralize mobile back-swipe state through LV.PageTransitionController while preventing the same touch session from reopening a second back-swipe after a committed or cancelled pop and delaying editor-pop stack repair until the shared note-list body has a chance to settle.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("onHierarchyItemActivated: function (item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenNoteList(item, itemId, index);")) &&
@@ -1767,6 +1772,16 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenEditor(noteId, index);")) &&
             mobilePageText.contains(QStringLiteral("mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);")),
         "MobileHierarchyPage.qml must transition from the mobile note-list body into the mobile editor body when a shared note card is activated.");
+    QVERIFY2(
+        mobilePageText.contains(QStringLiteral("readonly property var libraryNoteCreationViewModel: mobileHierarchyPage.windowInteractions")) &&
+            mobilePageText.contains(QStringLiteral("property string pendingCreatedNoteId: \"\"")) &&
+            mobilePageText.contains(QStringLiteral("target: mobileHierarchyPage.libraryNoteCreationViewModel")) &&
+            mobilePageText.contains(QStringLiteral("function onEmptyNoteCreated(noteId) {")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.scheduleCreatedNoteEditorRoute(noteId);")) &&
+            mobilePageText.contains(QStringLiteral("onActiveContentViewModelChanged: mobileHierarchyPage.routePendingCreatedNoteToEditor()")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.routePendingCreatedNoteToEditor();")) &&
+            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenEditor(pendingNoteId, -1);")),
+        "MobileHierarchyPage.qml must capture LibraryHierarchyViewModel.emptyNoteCreated(noteId) and promote the created note into the mobile editor route once the shared library models resolve.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("id: editorBodyComponent")) &&
             mobilePageText.contains(QStringLiteral("PanelView.ContentViewLayout {")) &&
