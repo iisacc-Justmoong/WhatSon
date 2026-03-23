@@ -60,6 +60,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - The desktop navigation bar's left/right edge buttons now toggle the hierarchy sidebar and detail panel directly.
   Collapse only zeros the live panel width; the last preferred widths are preserved so expanding restores the previous
   splitter geometry instead of resetting panel sizes.
+- The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
+  `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
+  `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.
 
 ## Search Input Behavior
 
@@ -126,8 +129,9 @@ WhatSon is an LVRS-based Qt Quick application.
   silently propagates `undefined`, and that can blank the gutter while leaving the rest of the editor visible.
 - The same rule now applies to MVVM-fed bindings: views should not scatter direct `viewModel.foo !== undefined` checks
   across delegates. Normalize the incoming model/view-model once, then bind children only to the resolved contract.
-- The gutter now follows the Figma `ContentsDisplayView` token contract directly: LVRS `subSurface`
-  (`panelBackground04`) background, `#4E5157` inactive caption line numbers and `#9DA0A8` active line number.
+- The desktop editor panel, gutter fill, and lower drawer now stay transparent so the same root
+  `LV.ApplicationWindow` `panelBackground01` canvas shows through, while the gutter still keeps `#4E5157` inactive
+  caption line numbers and `#9DA0A8` active line numbers from the Figma frame.
 - The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
   terminate on the same vertical edge that the editable text begins from.
 - The gutter/editor stack also preserves the Figma internal geometry: `2px` horizontal frame inset, line-number column
@@ -197,10 +201,9 @@ WhatSon is an LVRS-based Qt Quick application.
   previous note/session.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
   through the whole remaining editor height when the cursor sits on the last logical line.
-- `ContentsDisplayView.qml` now consumes the semantic LVRS surface aliases from the shell without a second redundant
-  panel-color layer: the editor surface and embedded `LV.TextEditor` stay on `LV.Theme.surfaceAlt`
-  (`panelBackground06`), the gutter stays on `LV.Theme.subSurface` (`panelBackground04`), and the lower drawer stays on
-  `LV.Theme.panelBackground08`.
+- `ContentsDisplayView.qml` no longer reintroduces a second desktop panel fill inside the editor stack: the editor
+  surface, gutter fill, and lower drawer stay transparent and let the root `LV.ApplicationWindow` canvas read through
+  the whole desktop content column.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
   offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
@@ -582,11 +585,10 @@ for hub/note hierarchy payloads.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
   drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
   enum plus route-memory copies.
-- `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
-  `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so mobile back
-  navigation follows the patched LVRS routing stack and gesture runtime instead of a local `DragHandler`. The same
-  touch session is now consumed after commit or cancel so an editor back-swipe cannot immediately start a second pop
-  that skips the intermediate note-list route.
+- `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and a left-edge touch
+  `DragHandler`, so mobile back navigation stays local to the edge hit zone instead of subscribing the whole window to
+  global LVRS gesture runtime events. The same touch session is now consumed after commit or cancel so an editor
+  back-swipe cannot immediately start a second pop that skips the intermediate note-list route.
 - When the mobile route returns to `/mobile/hierarchy`, `MobileHierarchyPage.qml` now clears the active hierarchy
   selection through the shared domain view-model, so tapping the same folder after backing out of the note-list or
   editor reopens the routed note-list body instead of being swallowed by a stale LVRS active-row state.

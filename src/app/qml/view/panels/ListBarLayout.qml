@@ -28,7 +28,7 @@ Rectangle {
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
     property var noteListModel: null
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
-    property color panelColor: LV.Theme.panelBackground02
+    property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property int pendingSelectionIndex: -1
     property int pressedNoteIndex: -1

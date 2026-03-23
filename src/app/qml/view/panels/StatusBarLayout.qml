@@ -16,7 +16,7 @@ Rectangle {
     property int compactToolbarHeight: LV.Theme.gap20
     property string compactToolbarText: ""
     readonly property int effectivePanelHeight: compactMode ? compactToolbarHeight : panelHeight
-    property color panelColor: LV.Theme.panelBackground01
+    property color panelColor: "transparent"
     property int panelHeight: LV.Theme.controlHeightMd
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("StatusBarLayout") : null
     readonly property color searchFieldColor: LV.Theme.panelBackground10

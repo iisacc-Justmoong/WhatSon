@@ -12,9 +12,9 @@ Item {
     property var contentViewModel: null
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
-    property color displayColor: LV.Theme.panelBackground01
+    property color displayColor: "transparent"
     property bool drawerVisible: true
-    property color drawerColor: LV.Theme.panelBackground04
+    property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
@@ -63,7 +63,7 @@ Item {
     readonly property int frameHorizontalInset: 2
     property int frameHorizontalInsetOverride: -1
     readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
-    property color gutterColor: LV.Theme.panelBackground02
+    property color gutterColor: "transparent"
     readonly property int gutterCommentMarkerOffset: 2
     readonly property int gutterCommentRailLeft: 4
     readonly property int gutterCommentRailWidth: 10

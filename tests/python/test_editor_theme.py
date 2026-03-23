@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -11,6 +12,27 @@ class EditorThemeTests(unittest.TestCase):
         main_text = (REPO_ROOT / "src/app/qml/Main.qml").read_text(encoding="utf-8")
         body_layout_text = (REPO_ROOT / "src/app/qml/view/panels/BodyLayout.qml").read_text(encoding="utf-8")
         content_layout_text = (REPO_ROOT / "src/app/qml/view/panels/ContentViewLayout.qml").read_text(encoding="utf-8")
+        navigation_bar_text = (
+            REPO_ROOT / "src/app/qml/view/panels/NavigationBarLayout.qml"
+        ).read_text(encoding="utf-8")
+        status_bar_text = (
+            REPO_ROOT / "src/app/qml/view/panels/StatusBarLayout.qml"
+        ).read_text(encoding="utf-8")
+        list_bar_text = (
+            REPO_ROOT / "src/app/qml/view/panels/ListBarLayout.qml"
+        ).read_text(encoding="utf-8")
+        hierarchy_layout_text = (
+            REPO_ROOT / "src/app/qml/view/panels/HierarchySidebarLayout.qml"
+        ).read_text(encoding="utf-8")
+        hierarchy_view_text = (
+            REPO_ROOT / "src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"
+        ).read_text(encoding="utf-8")
+        detail_layout_text = (
+            REPO_ROOT / "src/app/qml/view/panels/DetailPanelLayout.qml"
+        ).read_text(encoding="utf-8")
+        right_panel_text = (
+            REPO_ROOT / "src/app/qml/view/panels/detail/RightPanel.qml"
+        ).read_text(encoding="utf-8")
         display_view_text = (
             REPO_ROOT / "src/app/qml/view/content/editor/ContentsDisplayView.qml"
         ).read_text(encoding="utf-8")
@@ -18,39 +40,72 @@ class EditorThemeTests(unittest.TestCase):
             REPO_ROOT / "src/app/qml/view/content/editor/ContentsGutterLayer.qml"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("readonly property color contentsDisplayColor: LV.Theme.surfaceAlt", main_text)
-        self.assertIn("readonly property color drawerColor: LV.Theme.panelBackground08", main_text)
+        self.assertIn('readonly property color desktopPanelSurfaceColor: "transparent"', main_text)
+        self.assertIn("readonly property color contentsDisplayColor: desktopPanelSurfaceColor", main_text)
+        self.assertIn("readonly property color drawerColor: desktopPanelSurfaceColor", main_text)
+        self.assertIn("readonly property color listViewColor: desktopPanelSurfaceColor", main_text)
+        self.assertIn("readonly property color navigationBarColor: desktopPanelSurfaceColor", main_text)
+        self.assertIn("readonly property color rightPanelColor: desktopPanelSurfaceColor", main_text)
+        self.assertIn("readonly property color sidebarColor: desktopPanelSurfaceColor", main_text)
+        self.assertIn("readonly property color statusBarColor: desktopPanelSurfaceColor", main_text)
         self.assertNotIn("readonly property color contentPanelColor", main_text)
 
-        self.assertIn("property color contentsDisplayColor: LV.Theme.surfaceAlt", body_layout_text)
-        self.assertIn("property color drawerColor: LV.Theme.panelBackground08", body_layout_text)
+        self.assertIn('property color contentsDisplayColor: "transparent"', body_layout_text)
+        self.assertIn('property color drawerColor: "transparent"', body_layout_text)
+        self.assertIn('property color gutterColor: "transparent"', body_layout_text)
+        self.assertIn('property color listViewColor: "transparent"', body_layout_text)
+        self.assertIn('property color rightPanelColor: "transparent"', body_layout_text)
+        self.assertIn('property color sidebarColor: "transparent"', body_layout_text)
         self.assertNotIn("property color contentPanelColor", body_layout_text)
 
-        self.assertIn("property color displayColor: LV.Theme.surfaceAlt", content_layout_text)
-        self.assertIn("property color drawerColor: LV.Theme.panelBackground08", content_layout_text)
+        self.assertIn('property color displayColor: "transparent"', content_layout_text)
+        self.assertIn('property color drawerColor: "transparent"', content_layout_text)
+        self.assertIn('property color gutterColor: "transparent"', content_layout_text)
         self.assertNotIn("property color panelColor", content_layout_text)
         self.assertNotIn("panelColor: contentViewLayout.panelColor", content_layout_text)
 
-        self.assertIn("property color displayColor: LV.Theme.surfaceAlt", display_view_text)
-        self.assertIn("readonly property color gutterColor: LV.Theme.subSurface", display_view_text)
+        self.assertIn('property color displayColor: "transparent"', display_view_text)
+        self.assertIn('property color drawerColor: "transparent"', display_view_text)
+        self.assertIn('property color gutterColor: "transparent"', display_view_text)
         self.assertIn("textColor: LV.Theme.bodyColor", display_view_text)
         self.assertIn('readonly property color lineNumberColor: "#4E5157"', display_view_text)
         self.assertIn('readonly property color activeLineNumberColor: "#9DA0A8"', display_view_text)
         self.assertNotIn("property color panelColor", display_view_text)
         self.assertNotIn("color: contentsView.panelColor", display_view_text)
 
-        self.assertIn("property color gutterColor: LV.Theme.subSurface", gutter_text)
+        self.assertIn('property color gutterColor: "transparent"', gutter_text)
+        self.assertIn('property color panelColor: "transparent"', navigation_bar_text)
+        self.assertIn('property color panelColor: "transparent"', status_bar_text)
+        self.assertIn('property color panelColor: "transparent"', list_bar_text)
+        self.assertIn('property color panelColor: "transparent"', hierarchy_layout_text)
+        self.assertIn('property color panelColor: "transparent"', hierarchy_view_text)
+        self.assertIn('property color panelColor: "transparent"', detail_layout_text)
+        self.assertIn('property color panelColor: "transparent"', right_panel_text)
 
     def test_editor_theme_contract_is_documented(self) -> None:
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
 
-        self.assertIn("LVRS `subSurface`", readme_text)
-        self.assertIn("LV.Theme.surfaceAlt", readme_text)
+        self.assertRegex(
+            readme_text,
+            re.compile(r"root\s+`LV\.ApplicationWindow`\s+`panelBackground01`\s+canvas"),
+        )
+        self.assertRegex(
+            readme_text,
+            re.compile(r"gutter fill, and lower drawer now stay transparent"),
+        )
         self.assertIn("LV.Theme.bodyColor", readme_text)
-        self.assertIn("The editor theme contract follows the Figma `ContentsDisplayView` tokens through LVRS aliases", architecture_text)
-        self.assertIn("`surfaceAlt` (`panelBackground06`) for the single main editor surface", architecture_text)
-        self.assertIn("`panelBackground08`", architecture_text)
+        self.assertRegex(
+            architecture_text,
+            re.compile(
+                r"root\s+`ApplicationWindow`\s+`panelBackground01`\s+canvas remains the only broad desktop background surface"
+            ),
+        )
+        self.assertRegex(
+            architecture_text,
+            re.compile(r"editor theme contract now keeps the broad desktop editor surfaces transparent"),
+        )
+        self.assertIn("line-number colors", architecture_text)
 
 
 if __name__ == "__main__":

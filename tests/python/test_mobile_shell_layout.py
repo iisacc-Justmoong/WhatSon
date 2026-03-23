@@ -53,7 +53,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("readonly property int compactLeftGroupSpacing: LV.Theme.gap4", navigation_bar_text)
         self.assertIn("readonly property int compactRightGroupSpacing: LV.Theme.gap12", navigation_bar_text)
         self.assertIn("iconName: navigationBar.compactLeadingActionIconName", navigation_bar_text)
-        self.assertIn('iconName: "generalsettings"', navigation_bar_text)
+        self.assertIn('iconName: "settings"', navigation_bar_text)
         self.assertIn("showLabel: false", navigation_bar_text)
         self.assertIn('iconName: "nodesnewFolder"', navigation_bar_text)
         self.assertIn("navigationBar.compactLeadingActionRequested()", navigation_bar_text)
@@ -203,10 +203,18 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int backSwipeConsumedSessionId: -1", mobile_page_text)
         self.assertIn("property int backSwipeSessionId: -1", mobile_page_text)
         self.assertIn("readonly property int backSwipeEdgeWidth: LV.Theme.gap24", mobile_page_text)
-        self.assertIn("readonly property bool editorPageActive: mobileScaffold.activePageRouter", mobile_page_text)
-        self.assertIn("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.editorRoutePath", mobile_page_text)
-        self.assertIn("readonly property bool noteListPageActive: mobileScaffold.activePageRouter", mobile_page_text)
-        self.assertIn("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.noteListRoutePath", mobile_page_text)
+        self.assertIn(
+            "readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()",
+            mobile_page_text,
+        )
+        self.assertIn(
+            "readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath",
+            mobile_page_text,
+        )
+        self.assertIn(
+            "readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath",
+            mobile_page_text,
+        )
         self.assertIn("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive", mobile_page_text)
         self.assertIn("compactLeadingActionVisible: false", mobile_page_text)
         self.assertIn("bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath", mobile_page_text)
@@ -244,14 +252,17 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("mobileHierarchyPage.requestOpenNoteList(item, itemId, index);", mobile_page_text)
         self.assertIn("LV.PageTransitionController {", mobile_page_text)
         self.assertIn("router: mobileScaffold.activePageRouter", mobile_page_text)
-        self.assertIn("onCommitted: mobileHierarchyPage.requestViewHook()", mobile_page_text)
+        self.assertIn("onCommitted: function (state) {", mobile_page_text)
+        self.assertIn(
+            "mobileHierarchyPage.handleCommittedRouteTransition(state);",
+            mobile_page_text,
+        )
         self.assertIn("id: backSwipeEdgeZone", mobile_page_text)
         self.assertIn("visible: mobileHierarchyPage.backNavigationAvailable", mobile_page_text)
         self.assertIn("width: visible ? mobileHierarchyPage.backSwipeEdgeWidth : 0", mobile_page_text)
-        self.assertIn('trigger: "touchStarted"', mobile_page_text)
-        self.assertIn('trigger: "touchUpdated"', mobile_page_text)
-        self.assertIn('trigger: "touchEnded"', mobile_page_text)
-        self.assertIn('trigger: "touchCancelled"', mobile_page_text)
+        self.assertIn("id: backSwipeDragHandler", mobile_page_text)
+        self.assertIn("DragHandler {", mobile_page_text)
+        self.assertIn("acceptedDevices: PointerDevice.TouchScreen", mobile_page_text)
         self.assertIn("signal noteActivated(int index, string noteId)", (REPO_ROOT / "src/app/qml/view/panels/ListBarLayout.qml").read_text(encoding="utf-8"))
         self.assertIn("listBarLayout.noteActivated(targetIndex, normalizedNoteId);", (REPO_ROOT / "src/app/qml/view/panels/ListBarLayout.qml").read_text(encoding="utf-8"))
         self.assertIn("onNoteActivated: function (index, noteId) {", mobile_page_text)
@@ -288,9 +299,24 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("mobileScaffold.activePageRouter.back();", mobile_page_text)
         self.assertIn("mobileScaffold.activePageRouter.setRoot(mobileHierarchyPage.hierarchyRoutePath);", mobile_page_text)
         self.assertIn("windowInteractions.createNoteFromShortcut();", mobile_page_text)
+        self.assertIn(
+            "function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId)",
+            mobile_page_text,
+        )
+        self.assertIn("id: backSwipeDragHandler", mobile_page_text)
+        self.assertIn("DragHandler {", mobile_page_text)
+        self.assertIn("acceptedDevices: PointerDevice.TouchScreen", mobile_page_text)
+        self.assertIn(
+            "grabPermissions: PointerHandler.CanTakeOverFromAnything",
+            mobile_page_text,
+        )
+        self.assertNotIn('trigger: "touchStarted"', mobile_page_text)
+        self.assertNotIn('trigger: "touchUpdated"', mobile_page_text)
+        self.assertNotIn('trigger: "touchEnded"', mobile_page_text)
+        self.assertNotIn('trigger: "touchCancelled"', mobile_page_text)
+        self.assertNotIn("LV.EventListener {", mobile_page_text)
         self.assertNotIn("routeMemoryStack", mobile_page_text)
         self.assertNotIn("activeMobilePage", mobile_page_text)
-        self.assertNotIn("DragHandler {", mobile_page_text)
         self.assertNotIn("bodyComponent: hierarchyBodyComponent", mobile_page_text)
 
         self.assertIn("navigationModeViewModel: applicationWindow.navigationModeVm", main_text)
@@ -347,7 +373,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("note-list body", readme_text)
         self.assertIn("`LV.PageRouter`", readme_text)
         self.assertIn("`LV.PageTransitionController`", readme_text)
-        self.assertIn("`LV.EventListener` touch events", readme_text)
+        self.assertRegex(readme_text, re.compile(r"left-edge touch\s+`DragHandler`"))
         self.assertIn("hides the shared hierarchy footer on mobile", readme_text)
         self.assertIn("emit LVRS-compatible row drag roles (`draggable`, `dragAllowed`, `movable`, `dragLocked`)", readme_text)
         self.assertIn("disables LVRS `usePlatformSafeMargin`", readme_text)
@@ -382,7 +408,9 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("note-list body", architecture_text)
         self.assertIn("`LV.PageRouter`", architecture_text)
         self.assertIn("`LV.PageTransitionController`", architecture_text)
-        self.assertIn("`LV.EventListener`", architecture_text)
+        self.assertRegex(
+            architecture_text, re.compile(r"left-edge touch\s+`DragHandler`")
+        )
         self.assertIn("disables `usePlatformSafeMargin`", architecture_text)
         self.assertRegex(
             architecture_text,

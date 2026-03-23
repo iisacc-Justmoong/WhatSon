@@ -67,7 +67,7 @@ Rectangle {
     }
     property var hierarchyViewModel: null
     property int horizontalInset: LV.Theme.gap2
-    property color panelColor: LV.Theme.panelBackground01
+    property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
@@ -176,24 +176,40 @@ Rectangle {
         });
         return true;
     }
-    function deepestChildAt(item, x, y) {
-        if (!item || item.childAt === undefined)
-            return item;
-        const child = item.childAt(x, y);
-        if (!child)
-            return item;
-        const localPoint = child.mapFromItem(item, x, y);
-        return sidebarHierarchyView.deepestChildAt(child, localPoint.x, localPoint.y);
+    function hierarchyItemContainsPoint(item, x, y) {
+        if (!item || item.mapToItem === undefined)
+            return false;
+        const mappedPoint = item.mapToItem(hierarchyTree, 0, 0);
+        const itemX = Number(mappedPoint.x) || 0;
+        const itemY = Number(mappedPoint.y) || 0;
+        const itemWidth = Number(item.width) || 0;
+        const itemHeight = Number(item.height) || 0;
+        if (itemWidth <= 0 || itemHeight <= 0)
+            return false;
+        if (item.rowVisible !== undefined && !Boolean(item.rowVisible))
+            return false;
+        return x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight;
     }
     function hierarchyItemAtPosition(x, y) {
-        const deepest = sidebarHierarchyView.deepestChildAt(hierarchyTree, x, y);
-        let candidate = deepest;
-        while (candidate) {
-            if (candidate.__isHierarchyItem === true)
-                return candidate;
-            candidate = candidate.parent;
+        const targetX = Number(x) || 0;
+        const targetY = Number(y) || 0;
+        function visitHierarchyDescendants(item) {
+            if (!item || item.children === undefined || item.children === null)
+                return null;
+            const children = item.children;
+            for (let i = children.length - 1; i >= 0; --i) {
+                const child = children[i];
+                if (!child || child.visible === false)
+                    continue;
+                const matchedDescendant = visitHierarchyDescendants(child);
+                if (matchedDescendant)
+                    return matchedDescendant;
+                if (child.__isHierarchyItem === true && sidebarHierarchyView.hierarchyItemContainsPoint(child, targetX, targetY))
+                    return child;
+            }
+            return null;
         }
-        return null;
+        return visitHierarchyDescendants(hierarchyTree);
     }
     function normalizeHierarchyModel(modelValue) {
         if (modelValue === undefined || modelValue === null)

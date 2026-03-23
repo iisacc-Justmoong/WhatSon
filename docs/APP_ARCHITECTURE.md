@@ -388,6 +388,9 @@ Domain-isolated support:
               left-edge column icon.
             - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.
                 - Current Figma contract: `200px` toolbar track + `2px` left/right insets => `204px` sidebar base width.
+            - `Main.qml` now keeps the desktop shell panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
+              `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the
+              root `ApplicationWindow` `panelBackground01` canvas remains the only broad desktop background surface.
                 - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is
                   not a
                   text
@@ -435,10 +438,10 @@ Domain-isolated support:
             - `MobileHierarchyPage.qml` now suppresses the compact leading action on the note-list and editor routes,
               so the mobile top bar matches the Figma frames and leaves page undo to swipe navigation instead of a
               visible back button.
-            - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and
-              `LV.EventListener` touch events (`touchStarted`, `touchUpdated`, `touchEnded`, `touchCancelled`), so
-              back-swipe policy follows the patched LVRS routing stack and gesture runtime instead of a local
-              `DragHandler`.
+            - `MobileHierarchyPage.qml` now drives left-edge page undo through `LV.PageTransitionController` and a
+              left-edge touch `DragHandler`, so the shell keeps interactive back-swipe local to the edge hit zone
+              instead of subscribing to global LVRS gesture runtime events that would pre-empt native mobile editor
+              text-selection gestures.
             - The mobile note-list route still reuses `ListBarLayout.qml`; that shared list surface now emits
               `noteActivated(index, noteId)` after its authoritative selection update, which lets the mobile shell push
               the editor route without forking the note card delegate.
@@ -549,10 +552,10 @@ Domain-isolated support:
                   the canonical `48px` body inset while the mobile editor route can drop the same document origin to the
                   first visible row by overriding only `editorTopInsetOverride`. Figma node `155:5345` is treated as the
                   source of truth for
-                  the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
-                  active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned
-                  number
-                  text mirrored against the editor's `16px` left inset, and the fixed `18px` icon-rail anchor at `x=40`.
+                  the gutter desktop contract: transparent fill over the root `ApplicationWindow`
+                  `panelBackground01` canvas, `#4E5157` inactive caption numbers, `#9DA0A8` active line number, `2px`
+                  horizontal frame inset, `x=14` line-number column origin, right-aligned number text mirrored against
+                  the editor's `16px` left inset, and the fixed `18px` icon-rail anchor at `x=40`.
                   Figma node `155:5352` is treated as the source of truth for body typography (`LV.Theme.fontBody`,
                   `12px`,
                   medium, zero letter spacing) while the text selection highlight intentionally reuses the standard LVRS
@@ -564,8 +567,9 @@ Domain-isolated support:
                   active hierarchy view-model's `saveBodyTextForNote(...)` after a short debounce so typing does not
                   force
                   a full `.wsnbody` rewrite and note-list refresh on every keystroke.
-                  The surrounding editor panel and the embedded `LV.TextEditor` fill both use
-                  `LV.Theme.panelBackground06`, while the lower drawer keeps `LV.Theme.panelBackground08`.
+                  The surrounding editor panel, gutter fill, embedded `LV.TextEditor` surface, and lower drawer now all
+                  stay transparent, so the desktop content column reads as one continuous `ApplicationWindow`
+                  `panelBackground01` canvas instead of stacking brighter intermediate panel fills.
                   If no concrete note is selected, the editor surface must not fabricate a fresh unsaved draft or a
                   helper
                   prompt. Instead, the whole center surface stays blank until selection resolves to a real note.
@@ -602,11 +606,10 @@ Domain-isolated support:
                   rather
                   than the whole trailing fill area of the editor, otherwise the blue marker can incorrectly extend from
                   the last logical line to the bottom of the panel.
-                  The editor theme contract follows the Figma `ContentsDisplayView` tokens through LVRS aliases:
-                  `subSurface`
-                  (`panelBackground04`) for the gutter, `surfaceAlt` (`panelBackground06`) for the single main editor surface,
-                  explicit `Body` typography via `LV.Theme.bodyColor` plus `12px` medium text, and the lower drawer on
-                  `panelBackground08`.
+                  The editor theme contract now keeps the broad desktop editor surfaces transparent so the root
+                  `ApplicationWindow` `panelBackground01` canvas shows through the gutter, editor body, and lower
+                  drawer, while preserving explicit `Body` typography via `LV.Theme.bodyColor` plus `12px` medium text
+                  and the existing line-number colors.
                   A right-side Xcode-style minimap is also attached to the same editor document. It resolves the
                   internal
                   `TextEditor` flickable, draws a compressed body-text silhouette on `Canvas`, and maps each bar through
@@ -848,8 +851,8 @@ Mobile composition:
     - `HierarchySidebarLayout.qml` with the same `SidebarHierarchyViewModel`
     - a note-list body that reuses `ListBarLayout.qml` with `headerVisible: false` and the same
       `SidebarHierarchyViewModel.resolvedNoteListModel`
-    - `LV.PageTransitionController` bound to the scaffold router plus left-edge `LV.EventListener` touch hooks for
-      interactive back navigation
+    - `LV.PageTransitionController` bound to the scaffold router plus a left-edge touch `DragHandler` for interactive
+      back navigation
 - `HierarchySidebarLayout.qml` / `SidebarHierarchyView.qml` expose optional `searchFieldVisible` and `footerVisible`
   switches so the mobile shell can reuse the hierarchy toolbar/list view-model pipeline while inserting the Figma
   search header and dropping the desktop footer controls.
@@ -927,12 +930,13 @@ Hierarchy rendering pipeline:
   hierarchy row, the same mobile page swaps its body to a note-list body backed by
   `SidebarHierarchyViewModel::resolvedNoteListModel`, hides the desktop list header, suppresses the compact leading
   action, and suppresses the hierarchy add-folder action. That mobile page now routes through an
-  internal `LV.PageRouter` stack and uses `LV.PageTransitionController` plus left-edge `LV.EventListener` touch hooks,
-  so mobile-only page undo is committed by the patched LVRS routing runtime instead of replaying a private copied
-  route-memory stack. `MobileHierarchyPage.qml` also consumes the active touch session after commit or cancel, which
-  prevents a single editor edge-pan from reopening a second pop and jumping straight past the note-list route. The same
-  page now resolves the active mobile body route from both `PageRouter.currentPath` and the mounted `currentPageItem`
-  type, then normalizes any inconsistent stack back to the canonical
+  internal `LV.PageRouter` stack and uses `LV.PageTransitionController` plus a left-edge touch `DragHandler`, so
+  mobile-only page undo is committed by the patched LVRS routing runtime without subscribing the whole window to
+  global LVRS gesture events. This keeps native mobile editor text selection, word selection, and selection-handle
+  gestures available away from the edge hit zone. `MobileHierarchyPage.qml` also consumes the active touch session
+  after commit or cancel, which prevents a single editor edge-pan from reopening a second pop and jumping straight
+  past the note-list route. The same page now resolves the active mobile body route from both `PageRouter.currentPath`
+  and the mounted `currentPageItem` type, then normalizes any inconsistent stack back to the canonical
   `hierarchy -> note-list -> editor` progression before opening the next screen. After an editor pop commits, the same
   page now gives the shared routed note-list body a small settle window before verifying visibility; only if the body
   still is not the note-list page after that deferred check does it rebuild the canonical `hierarchy -> note-list`
@@ -951,8 +955,9 @@ Hierarchy rendering pipeline:
   persistence path by mapping the release point into the LVRS hierarchy coordinate space and calling the same
   `assignNoteToFolder(...)` bridge directly, so the in-scene card preview no longer breaks folder assignment. The
   hierarchy drop gate no longer relies on a static `Drag.keys` filter alone; it now accepts desktop/native drag
-  traffic by validating payloads at runtime and falls back to LVRS `resolvedItemId` when the hovered hierarchy row
-  does not expose a raw `itemId`.
+  traffic by validating payloads at runtime, resolves hovered rows by scanning LVRS hierarchy descendants instead of
+  `childAt()` so overlay helpers such as `WheelScrollGuard` cannot swallow the hit test, and falls back to LVRS
+  `resolvedItemId` when the hovered hierarchy row does not expose a raw `itemId`.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

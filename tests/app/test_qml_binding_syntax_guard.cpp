@@ -246,17 +246,17 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     const QString contentViewSessionText = QString::fromUtf8(contentViewSessionFile.readAll());
 
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("property color displayColor: LV.Theme.panelBackground06")),
-        "ContentsDisplayView.qml must keep the editor surface on the LVRS panelBackground06 token.");
+        contentViewText.contains(QStringLiteral("property color displayColor: \"transparent\"")),
+        "ContentsDisplayView.qml must keep the desktop editor surface transparent so the ApplicationWindow canvas shows through.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("property color panelColor: LV.Theme.panelBackground06")),
-        "ContentsDisplayView.qml must keep the overall editor panel background on the LVRS panelBackground06 token.");
+        !contentViewText.contains(QStringLiteral("property color panelColor:")),
+        "ContentsDisplayView.qml must not reintroduce a second panel-color wrapper contract inside the editor surface.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int gutterWidth: 74")),
         "ContentViewLayout.qml must keep the 74px line-number gutter width from the Figma frame.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("property color gutterColor: LV.Theme.subSurface")),
-        "ContentsDisplayView.qml must keep the desktop gutter default on the LVRS subSurface token while still allowing route-specific overrides.");
+        contentViewText.contains(QStringLiteral("property color gutterColor: \"transparent\"")),
+        "ContentsDisplayView.qml must keep the desktop gutter fill transparent while still allowing route-specific overrides.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int frameHorizontalInset: 2")),
         "ContentViewLayout.qml must preserve the Figma 2px horizontal frame inset around the gutter/editor stack.");
@@ -275,9 +275,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewLayoutText.contains(QStringLiteral("contentViewModel: contentViewLayout.resolvedContentViewModel")),
         "ContentViewLayout.qml must pass the resolved content view-model into ContentsDisplayView.");
     QVERIFY2(
-        contentViewLayoutText.contains(QStringLiteral("property color gutterColor: LV.Theme.subSurface")) &&
+        contentViewLayoutText.contains(QStringLiteral("property color gutterColor: \"transparent\"")) &&
             contentViewLayoutText.contains(QStringLiteral("gutterColor: contentViewLayout.gutterColor")),
-        "ContentViewLayout.qml must expose the shared gutter-color contract so mobile editor routes can clear the gutter fill without forking the editor surface.");
+        "ContentViewLayout.qml must expose the shared gutter-color contract so desktop can stay transparent and mobile routes can still override editor gutter fill without forking the surface.");
     QVERIFY2(
         contentViewLayoutText.contains(QStringLiteral("noteListModel: contentViewLayout.resolvedNoteListModel")),
         "ContentViewLayout.qml must pass the resolved note-list model into ContentsDisplayView.");
@@ -1016,6 +1016,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function commitNoteDropAtPosition(x, y, noteId, referenceItem)")),
         "SidebarHierarchyView.qml must expose a position-based note-drop commit helper so desktop internal drags can persist folder assignment without relying on native drop delivery.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function hierarchyItemContainsPoint(item, x, y)")),
+        "SidebarHierarchyView.qml note-drop hit testing must use explicit hierarchy-row bounds instead of relying on LVRS childAt traversal through overlay guards.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("const children = item.children;")),
+        "SidebarHierarchyView.qml note-drop hit testing must traverse LVRS hierarchy descendants directly so overlay helpers do not swallow folder hit tests.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("hierarchyItem.resolvedItemId")),
         "SidebarHierarchyView.qml note-drop hit testing must fall back to LVRS resolvedItemId when the raw itemId is absent on the hovered hierarchy row.");
@@ -1763,10 +1769,12 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
                 QStringLiteral("readonly property bool backNavigationAvailable: mobileScaffold.activePageRouter")) &&
             mobilePageText.contains(QStringLiteral("readonly property int backSwipeEdgeWidth: LV.Theme.gap24")) &&
             mobilePageText.contains(
-                QStringLiteral("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.editorRoutePath")) &&
+                QStringLiteral("readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()")) &&
             mobilePageText.contains(
-                QStringLiteral("String(mobileScaffold.activePageRouter.currentPath) === mobileHierarchyPage.noteListRoutePath")),
-        "MobileHierarchyPage.qml must derive mobile note-list and editor state from the scaffold PageRouter instead of a private route-memory stack.");
+                QStringLiteral("readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath")) &&
+            mobilePageText.contains(
+                QStringLiteral("readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath")),
+        "MobileHierarchyPage.qml must derive mobile note-list and editor state from the routed scaffold body contract instead of a private route-memory stack or a stale currentPath-only check.");
     QVERIFY2(
         mobilePageText.contains(
             QStringLiteral("bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath")) &&
@@ -1842,12 +1850,17 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("id: backSwipeEdgeZone")) &&
             mobilePageText.contains(QStringLiteral("visible: mobileHierarchyPage.backNavigationAvailable")) &&
             mobilePageText.contains(QStringLiteral("width: visible ? mobileHierarchyPage.backSwipeEdgeWidth : 0")) &&
-            mobilePageText.contains(QStringLiteral("trigger: \"touchStarted\"")) &&
-            mobilePageText.contains(QStringLiteral("trigger: \"touchUpdated\"")) &&
-            mobilePageText.contains(QStringLiteral("trigger: \"touchEnded\"")) &&
-            mobilePageText.contains(QStringLiteral("trigger: \"touchCancelled\"")) &&
-            !mobilePageText.contains(QStringLiteral("DragHandler {")),
-        "MobileHierarchyPage.qml must expose left-edge LV.EventListener touch hooks so the mobile back swipe drives the LVRS gesture runtime instead of a local DragHandler.");
+            mobilePageText.contains(QStringLiteral("function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId)")) &&
+            mobilePageText.contains(QStringLiteral("id: backSwipeDragHandler")) &&
+            mobilePageText.contains(QStringLiteral("DragHandler {")) &&
+            mobilePageText.contains(QStringLiteral("acceptedDevices: PointerDevice.TouchScreen")) &&
+            mobilePageText.contains(QStringLiteral("grabPermissions: PointerHandler.CanTakeOverFromAnything")) &&
+            !mobilePageText.contains(QStringLiteral("trigger: \"touchStarted\"")) &&
+            !mobilePageText.contains(QStringLiteral("trigger: \"touchUpdated\"")) &&
+            !mobilePageText.contains(QStringLiteral("trigger: \"touchEnded\"")) &&
+            !mobilePageText.contains(QStringLiteral("trigger: \"touchCancelled\"")) &&
+            !mobilePageText.contains(QStringLiteral("LV.EventListener {")),
+        "MobileHierarchyPage.qml must keep mobile back swipe edge-local through a touch DragHandler so the shell does not subscribe to global LVRS gesture runtime events that would pre-empt native editor text-selection gestures.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("onActiveNoteListModelChanged: {")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.routeToHierarchyRoot();")),

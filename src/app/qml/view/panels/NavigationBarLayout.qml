@@ -26,7 +26,7 @@ Rectangle {
     property var editorViewModeViewModel: null
     readonly property int effectivePanelHeight: panelHeight
     property var navigationModeViewModel: null
-    property color panelColor: LV.Theme.panelBackground01
+    property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NavigationBarLayout") : null
     property int panelHeight: LV.Theme.gap24
     property bool sidebarCollapsed: false

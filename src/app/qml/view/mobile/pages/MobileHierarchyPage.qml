@@ -22,6 +22,8 @@ Item {
         : false
     readonly property int backSwipeEdgeWidth: LV.Theme.gap24
     property int backSwipeConsumedSessionId: -1
+    property bool backSwipeDragCanceled: false
+    property int backSwipeGeneratedSessionId: 0
     property int editorPopRepairRequestId: 0
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
@@ -65,6 +67,21 @@ Item {
 
     function backSwipeViewportWidth() {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
+    }
+    function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId) {
+        const localPoint = Qt.point(Number(localX) || 0, Number(localY) || 0);
+        const globalPoint = backSwipeEdgeZone.mapToGlobal(localPoint);
+        return {
+            "globalX": globalPoint.x,
+            "globalY": globalPoint.y,
+            "sessionId": Math.floor(Number(sessionId) || -1),
+            "startGlobalX": globalPoint.x - (Number(totalDeltaX) || 0),
+            "startGlobalY": globalPoint.y - (Number(totalDeltaY) || 0),
+            "totalDeltaX": Number(totalDeltaX) || 0,
+            "totalDeltaY": Number(totalDeltaY) || 0,
+            "velocityX": 0,
+            "velocityY": 0
+        };
     }
     function clearActiveHierarchySelection() {
         if (!mobileHierarchyPage.activeContentViewModel
@@ -427,32 +444,69 @@ Item {
         width: visible ? mobileHierarchyPage.backSwipeEdgeWidth : 0
         z: 3
 
-        LV.EventListener {
+        DragHandler {
+            id: backSwipeDragHandler
+
+            acceptedDevices: PointerDevice.TouchScreen
+            dragThreshold: 4
             enabled: backSwipeEdgeZone.visible
-            trigger: "touchStarted"
-            action: function (eventData) {
-                mobileHierarchyPage.beginBackSwipeGesture(eventData);
+            grabPermissions: PointerHandler.CanTakeOverFromAnything
+            target: null
+
+            onActiveChanged: {
+                if (active) {
+                    mobileHierarchyPage.backSwipeDragCanceled = false;
+                    mobileHierarchyPage.backSwipeGeneratedSessionId += 1;
+                    const beginEventData = mobileHierarchyPage.backSwipeGestureEventData(
+                                backSwipeDragHandler.centroid.pressPosition.x,
+                                backSwipeDragHandler.centroid.pressPosition.y,
+                                0,
+                                0,
+                                mobileHierarchyPage.backSwipeGeneratedSessionId);
+                    if (!mobileHierarchyPage.beginBackSwipeGesture(beginEventData))
+                        return;
+                    mobileHierarchyPage.updateBackSwipeGesture(
+                                mobileHierarchyPage.backSwipeGestureEventData(
+                                    backSwipeDragHandler.centroid.position.x,
+                                    backSwipeDragHandler.centroid.position.y,
+                                    Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
+                                    Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
+                                    mobileHierarchyPage.backSwipeSessionId));
+                    return;
+                }
+                if (mobileHierarchyPage.backSwipeSessionId < 0)
+                    return;
+                mobileHierarchyPage.finishBackSwipeGesture(
+                            mobileHierarchyPage.backSwipeGestureEventData(
+                                backSwipeDragHandler.centroid.position.x,
+                                backSwipeDragHandler.centroid.position.y,
+                                Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
+                                Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
+                                mobileHierarchyPage.backSwipeSessionId),
+                            mobileHierarchyPage.backSwipeDragCanceled);
+                mobileHierarchyPage.backSwipeDragCanceled = false;
             }
-        }
-        LV.EventListener {
-            enabled: backSwipeEdgeZone.visible
-            trigger: "touchUpdated"
-            action: function (eventData) {
-                mobileHierarchyPage.updateBackSwipeGesture(eventData);
+            onCentroidChanged: {
+                if (!active)
+                    return;
+                mobileHierarchyPage.updateBackSwipeGesture(
+                            mobileHierarchyPage.backSwipeGestureEventData(
+                                backSwipeDragHandler.centroid.position.x,
+                                backSwipeDragHandler.centroid.position.y,
+                                Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
+                                Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
+                                mobileHierarchyPage.backSwipeSessionId));
             }
-        }
-        LV.EventListener {
-            enabled: backSwipeEdgeZone.visible
-            trigger: "touchEnded"
-            action: function (eventData) {
-                mobileHierarchyPage.finishBackSwipeGesture(eventData, false);
-            }
-        }
-        LV.EventListener {
-            enabled: backSwipeEdgeZone.visible
-            trigger: "touchCancelled"
-            action: function (eventData) {
-                mobileHierarchyPage.finishBackSwipeGesture(eventData, true);
+            onCanceled: {
+                mobileHierarchyPage.backSwipeDragCanceled = true;
+                mobileHierarchyPage.finishBackSwipeGesture(
+                            mobileHierarchyPage.backSwipeGestureEventData(
+                                backSwipeDragHandler.centroid.position.x,
+                                backSwipeDragHandler.centroid.position.y,
+                                Number(backSwipeDragHandler.centroid.position.x) - Number(backSwipeDragHandler.centroid.pressPosition.x),
+                                Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
+                                mobileHierarchyPage.backSwipeSessionId),
+                            true);
             }
         }
     }

@@ -10,11 +10,12 @@ Item {
     readonly property var activeNoteListModel: hStack.sidebarHierarchyViewModel.resolvedNoteListModel
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
-    property color contentsDisplayColor: LV.Theme.panelBackground01
-    property color drawerColor: LV.Theme.panelBackground04
+    property color contentsDisplayColor: "transparent"
+    property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
-    property color listViewColor: LV.Theme.panelBackground02
+    property color gutterColor: "transparent"
+    property color listViewColor: "transparent"
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property bool listVisible: hStack.listViewWidth > 0
     property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
@@ -25,10 +26,10 @@ Item {
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
-    property color rightPanelColor: LV.Theme.panelBackground01
+    property color rightPanelColor: "transparent"
     property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
-    property color sidebarColor: LV.Theme.panelBackground01
+    property color sidebarColor: "transparent"
     required property var sidebarHierarchyViewModel
     readonly property bool sidebarVisible: hStack.sidebarWidth > 0
     property int sidebarHorizontalInset: 2
@@ -170,6 +171,7 @@ Item {
                 displayColor: hStack.contentsDisplayColor
                 drawerColor: hStack.drawerColor
                 drawerHeight: hStack.drawerHeight
+                gutterColor: hStack.gutterColor
                 libraryHierarchyViewModel: libraryHierarchyViewModel
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight

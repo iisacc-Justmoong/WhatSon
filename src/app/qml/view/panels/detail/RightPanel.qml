@@ -6,7 +6,7 @@ Rectangle {
 
     property int detailPanelDefaultWidth: 194
     property int detailPanelMinWidth: 145
-    property color panelColor: LV.Theme.panelBackground01
+    property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.RightPanel") : null
 
     signal viewHookRequested

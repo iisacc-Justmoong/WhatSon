@@ -5,7 +5,7 @@ import "detail" as DetailView
 Rectangle {
     id: detailPanel
 
-    property color panelColor: LV.Theme.panelBackground01
+    property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("DetailPanelLayout") : null
 
     signal viewHookRequested
