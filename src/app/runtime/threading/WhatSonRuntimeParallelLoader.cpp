@@ -382,8 +382,8 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     if (hasProjectsTask)
     {
         targets.projectsViewModel->applyRuntimeSnapshot(
-            std::move(projectsSnapshot.folderEntries),
-            std::move(projectsSnapshot.foldersFilePath),
+            std::move(projectsSnapshot.projectEntries),
+            std::move(projectsSnapshot.projectsFilePath),
             projectsSnapshot.succeeded,
             std::move(projectsSnapshot.error));
     }

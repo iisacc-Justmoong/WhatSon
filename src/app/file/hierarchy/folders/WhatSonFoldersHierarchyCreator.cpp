@@ -1,7 +1,7 @@
-#include "WhatSonProjectsHierarchyCreator.hpp"
+#include "WhatSonFoldersHierarchyCreator.hpp"
 
-#include "WhatSonProjectsHierarchyStore.hpp"
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonFoldersHierarchyStore.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -11,14 +11,14 @@
 
 namespace
 {
-    struct ProjectNode final
+    struct FolderNode final
     {
         QString id;
         QString label;
-        QVector<ProjectNode> children;
+        QVector<FolderNode> children;
     };
 
-    QJsonObject serializeNode(const ProjectNode& node)
+    QJsonObject serializeNode(const FolderNode& node)
     {
         QJsonObject object;
         object.insert(QStringLiteral("id"), node.id);
@@ -27,7 +27,7 @@ namespace
         if (!node.children.isEmpty())
         {
             QJsonArray childArray;
-            for (const ProjectNode& child : node.children)
+            for (const FolderNode& child : node.children)
             {
                 childArray.push_back(serializeNode(child));
             }
@@ -38,21 +38,21 @@ namespace
     }
 } // namespace
 
-WhatSonProjectsHierarchyCreator::WhatSonProjectsHierarchyCreator() = default;
+WhatSonFoldersHierarchyCreator::WhatSonFoldersHierarchyCreator() = default;
 
-WhatSonProjectsHierarchyCreator::~WhatSonProjectsHierarchyCreator() = default;
+WhatSonFoldersHierarchyCreator::~WhatSonFoldersHierarchyCreator() = default;
 
-QString WhatSonProjectsHierarchyCreator::targetRelativePath() const
+QString WhatSonFoldersHierarchyCreator::targetRelativePath() const
 {
-    return QStringLiteral("ProjectLists.wsproj");
+    return QStringLiteral("Folders.wsfolders");
 }
 
-QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarchyStore& store) const
+QString WhatSonFoldersHierarchyCreator::createText(const WhatSonFoldersHierarchyStore& store) const
 {
     const QVector<WhatSonFolderDepthEntry> entries = store.folderEntries();
-    QVector<ProjectNode> roots;
+    QVector<FolderNode> roots;
     roots.reserve(entries.size());
-    QVector<ProjectNode*> stack;
+    QVector<FolderNode*> stack;
     stack.reserve(entries.size());
 
     for (const WhatSonFolderDepthEntry& entry : entries)
@@ -74,11 +74,11 @@ QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarc
             stack.removeLast();
         }
 
-        ProjectNode node;
+        FolderNode node;
         node.id = id;
         node.label = label;
 
-        ProjectNode* insertedNode = nullptr;
+        FolderNode* insertedNode = nullptr;
         if (depth == 0)
         {
             roots.push_back(std::move(node));
@@ -86,7 +86,7 @@ QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarc
         }
         else
         {
-            ProjectNode* parent = stack.at(depth - 1);
+            FolderNode* parent = stack.at(depth - 1);
             parent->children.push_back(std::move(node));
             insertedNode = &parent->children.last();
         }
@@ -103,19 +103,19 @@ QString WhatSonProjectsHierarchyCreator::createText(const WhatSonProjectsHierarc
     }
 
     QJsonArray values;
-    for (const ProjectNode& node : roots)
+    for (const FolderNode& node : roots)
     {
         values.push_back(serializeNode(node));
     }
 
     QJsonObject root;
     root.insert(QStringLiteral("version"), 1);
-    root.insert(QStringLiteral("schema"), QStringLiteral("whatson.projects.list"));
-    root.insert(QStringLiteral("projects"), values);
+    root.insert(QStringLiteral("schema"), QStringLiteral("whatson.folders.tree"));
+    root.insert(QStringLiteral("folders"), values);
 
     const QString text = QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
     WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("hierarchy.projects.creator"),
+                              QStringLiteral("hierarchy.folders.creator"),
                               QStringLiteral("createText"),
                               QStringLiteral("count=%1 bytes=%2")
                               .arg(entries.size())

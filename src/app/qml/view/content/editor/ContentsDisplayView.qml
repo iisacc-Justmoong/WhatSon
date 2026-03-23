@@ -12,9 +12,9 @@ Item {
     property var contentViewModel: null
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
-    property color displayColor: LV.Theme.surfaceAlt
+    property color displayColor: LV.Theme.panelBackground01
     property bool drawerVisible: true
-    property color drawerColor: LV.Theme.panelBackground08
+    property color drawerColor: LV.Theme.panelBackground04
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
@@ -56,7 +56,7 @@ Item {
     readonly property int frameHorizontalInset: 2
     property int frameHorizontalInsetOverride: -1
     readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
-    property color gutterColor: LV.Theme.subSurface
+    property color gutterColor: LV.Theme.panelBackground02
     readonly property int gutterCommentMarkerOffset: 2
     readonly property int gutterCommentRailLeft: 4
     readonly property int gutterCommentRailWidth: 10
@@ -760,6 +760,13 @@ Item {
                         property: "y"
                         target: contentEditor.editorItem
                         value: contentsView.effectiveEditorTopInset
+                    }
+                    // Mobile editor routes remove LVRS vertical centering by explicitly clearing top padding.
+                    Binding {
+                        property: "topPadding"
+                        target: contentEditor.editorItem
+                        when: contentsView.effectiveEditorTopInset === 0
+                        value: 0
                     }
                     LV.Label {
                         anchors.left: parent.left

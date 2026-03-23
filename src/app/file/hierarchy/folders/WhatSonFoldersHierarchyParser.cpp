@@ -1,13 +1,15 @@
-#include "WhatSonProjectsHierarchyParser.hpp"
+#include "WhatSonFoldersHierarchyParser.hpp"
 
-#include "WhatSonProjectsHierarchyStore.hpp"
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonFoldersHierarchyStore.hpp"
 
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QRegularExpression>
+
+#include <algorithm>
 
 namespace
 {
@@ -132,6 +134,29 @@ namespace
         *entries = std::move(normalized);
     }
 
+    QVector<WhatSonFolderDepthEntry> buildFlatEntries(const QStringList& values)
+    {
+        QVector<WhatSonFolderDepthEntry> entries;
+        entries.reserve(values.size());
+
+        for (const QString& value : values)
+        {
+            const QString trimmedValue = value.trimmed();
+            if (trimmedValue.isEmpty())
+            {
+                continue;
+            }
+
+            WhatSonFolderDepthEntry entry;
+            entry.id = trimmedValue;
+            entry.label = trimmedValue;
+            entry.depth = 0;
+            entries.push_back(std::move(entry));
+        }
+
+        return entries;
+    }
+
     int parseDepthValue(const QJsonObject& object, int fallbackDepth)
     {
         auto parseIntField = [&object](const QString& key, int* outValue) -> bool
@@ -175,8 +200,8 @@ namespace
         const QStringList keys{
             QStringLiteral("children"),
             QStringLiteral("items"),
-            QStringLiteral("projects"),
-            QStringLiteral("folders")
+            QStringLiteral("folders"),
+            QStringLiteral("projects")
         };
         for (const QString& key : keys)
         {
@@ -343,8 +368,8 @@ namespace
         outEntries->clear();
 
         const QStringList listKeys{
-            QStringLiteral("projects"),
-            QStringLiteral("folders")
+            QStringLiteral("folders"),
+            QStringLiteral("projects")
         };
         for (const QString& key : listKeys)
         {
@@ -392,17 +417,17 @@ namespace
     }
 } // namespace
 
-WhatSonProjectsHierarchyParser::WhatSonProjectsHierarchyParser() = default;
+WhatSonFoldersHierarchyParser::WhatSonFoldersHierarchyParser() = default;
 
-WhatSonProjectsHierarchyParser::~WhatSonProjectsHierarchyParser() = default;
+WhatSonFoldersHierarchyParser::~WhatSonFoldersHierarchyParser() = default;
 
-bool WhatSonProjectsHierarchyParser::parse(
+bool WhatSonFoldersHierarchyParser::parse(
     const QString& rawText,
-    WhatSonProjectsHierarchyStore* outStore,
+    WhatSonFoldersHierarchyStore* outStore,
     QString* errorMessage) const
 {
     WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("hierarchy.projects.parser"),
+                              QStringLiteral("hierarchy.folders.parser"),
                               QStringLiteral("parse.begin"),
                               QStringLiteral("bytes=%1").arg(rawText.toUtf8().size()));
 
@@ -421,7 +446,7 @@ bool WhatSonProjectsHierarchyParser::parse(
     {
         outStore->setFolderEntries({});
         WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("hierarchy.projects.parser"),
+                                  QStringLiteral("hierarchy.folders.parser"),
                                   QStringLiteral("parse.empty"));
         return true;
     }
@@ -456,10 +481,10 @@ bool WhatSonProjectsHierarchyParser::parse(
         }
     }
 
-    outStore->setProjectNames(sanitizeLines(rawText));
+    outStore->setFolderEntries(buildFlatEntries(sanitizeLines(rawText)));
     WhatSon::Debug::traceSelf(this,
-                              QStringLiteral("hierarchy.projects.parser"),
+                              QStringLiteral("hierarchy.folders.parser"),
                               QStringLiteral("parse.fallbackLines"),
-                              QStringLiteral("count=%1").arg(outStore->projectNames().size()));
+                              QStringLiteral("count=%1").arg(outStore->folderEntries().size()));
     return true;
 }

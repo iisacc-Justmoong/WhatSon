@@ -59,8 +59,8 @@ public:
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(
-        QVector<WhatSonFolderDepthEntry> folderEntries,
-        QString foldersFilePath,
+        QVector<WhatSonFolderDepthEntry> projectEntries,
+        QString projectsFilePath,
         bool loadSucceeded,
         QString errorMessage = QString());
 
@@ -101,5 +101,5 @@ private:
     int m_itemCount = 0;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
-    QString m_foldersFilePath;
+    QString m_projectsFilePath;
 };

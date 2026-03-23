@@ -18,7 +18,7 @@ Item {
     readonly property color folderLabelColor: LV.Theme.captionColor
     property var folders: []
     readonly property int horizontalPadding: 12
-    readonly property color hoverCardColor: LV.Theme.panelBackground06
+    readonly property color hoverCardColor: LV.Theme.panelBackground08
     readonly property bool hovered: noteHoverHandler.hovered
     property bool image: false
     readonly property color imageBoxPlaceholderColor: "#D9D9D9"

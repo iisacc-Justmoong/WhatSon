@@ -6,6 +6,8 @@
 #include "hierarchy/bookmarks/WhatSonBookmarksHierarchyStore.hpp"
 #include "hierarchy/event/WhatSonEventHierarchyParser.hpp"
 #include "hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "hierarchy/library/WhatSonLibraryHierarchyParser.hpp"
 #include "hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 #include "hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
@@ -24,6 +26,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QSet>
 
 #include <algorithm>
 
@@ -59,6 +62,27 @@ namespace
             }
         }
         return sanitized;
+    }
+
+    QStringList folderLabelsFromEntries(const QVector<WhatSonFolderDepthEntry>& entries)
+    {
+        QStringList labels;
+        labels.reserve(entries.size());
+
+        QSet<QString> seen;
+        for (const WhatSonFolderDepthEntry& entry : entries)
+        {
+            const QString label = entry.label.trimmed();
+            if (label.isEmpty() || seen.contains(label))
+            {
+                continue;
+            }
+
+            seen.insert(label);
+            labels.push_back(label);
+        }
+
+        return labels;
     }
 } // namespace
 
@@ -581,13 +605,13 @@ QVariantMap WhatSonHubParser::buildDomainPayload(
     QString rawText;
     QString parseError;
 
-    WhatSonProjectsHierarchyStore foldersStore;
-    WhatSonProjectsHierarchyParser projectsParser;
+    WhatSonFoldersHierarchyStore foldersStore;
+    WhatSonFoldersHierarchyParser foldersParser;
     if (!readUtf8File(foldersPath, &rawText, errorMessage))
     {
         return {};
     }
-    if (!projectsParser.parse(rawText, &foldersStore, &parseError))
+    if (!foldersParser.parse(rawText, &foldersStore, &parseError))
     {
         if (errorMessage != nullptr)
         {
@@ -595,10 +619,11 @@ QVariantMap WhatSonHubParser::buildDomainPayload(
         }
         return {};
     }
-    payload.insert(QStringLiteral("folders"), foldersStore.projectNames());
+    payload.insert(QStringLiteral("folders"), folderLabelsFromEntries(foldersStore.folderEntries()));
     payload.insert(QStringLiteral("folderEntries"), toFolderEntryList(foldersStore.folderEntries()));
 
     WhatSonProjectsHierarchyStore projectsStore;
+    WhatSonProjectsHierarchyParser projectsParser;
     if (!readUtf8File(projectListsPath, &rawText, errorMessage))
     {
         return {};

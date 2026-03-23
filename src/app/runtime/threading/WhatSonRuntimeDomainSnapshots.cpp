@@ -2,6 +2,8 @@
 
 #include "file/hierarchy/event/WhatSonEventHierarchyParser.hpp"
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/hierarchy/library/LibraryDraft.hpp"
 #include "file/hierarchy/library/LibraryToday.hpp"
@@ -71,7 +73,7 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
         return snapshot;
     }
 
-    WhatSonProjectsHierarchyParser foldersParser;
+    WhatSonFoldersHierarchyParser foldersParser;
 
     for (const QString& contentsDirectory : contentsDirectories)
     {
@@ -96,7 +98,7 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
             return snapshot;
         }
 
-        WhatSonProjectsHierarchyStore foldersStore;
+        WhatSonFoldersHierarchyStore foldersStore;
         QString parseError;
         if (!foldersParser.parse(rawText, &foldersStore, &parseError))
         {
@@ -166,16 +168,16 @@ WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::l
     WhatSonProjectsHierarchyParser parser;
     for (const QString& contentsDirectory : contentsDirectories)
     {
-        const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Folders.wsfolders"));
+        const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("ProjectLists.wsproj"));
         if (!QFileInfo(filePath).isFile())
         {
             continue;
         }
 
         snapshot.fileFound = true;
-        if (snapshot.foldersFilePath.isEmpty())
+        if (snapshot.projectsFilePath.isEmpty())
         {
-            snapshot.foldersFilePath = filePath;
+            snapshot.projectsFilePath = filePath;
         }
 
         QString rawText;
@@ -199,13 +201,13 @@ WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::l
         const QVector<WhatSonFolderDepthEntry> parsedEntries = parsedStore.folderEntries();
         for (const WhatSonFolderDepthEntry& entry : parsedEntries)
         {
-            snapshot.folderEntries.push_back(entry);
+            snapshot.projectEntries.push_back(entry);
         }
     }
 
-    if (snapshot.foldersFilePath.isEmpty())
+    if (snapshot.projectsFilePath.isEmpty())
     {
-        snapshot.foldersFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("Folders.wsfolders"));
+        snapshot.projectsFilePath = defaultSourceFilePath(contentsDirectories, QStringLiteral("ProjectLists.wsproj"));
     }
 
     snapshot.succeeded = true;

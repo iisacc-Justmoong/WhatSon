@@ -2,10 +2,10 @@
 
 #include "LibraryHierarchyModel.hpp"
 #include "LibraryNoteListModel.hpp"
+#include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/hierarchy/library/LibraryDraft.hpp"
 #include "file/hierarchy/library/LibraryToday.hpp"
-#include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/hub/WhatSonHubStore.hpp"
 
 #include <QObject>

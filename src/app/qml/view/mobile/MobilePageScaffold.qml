@@ -19,7 +19,7 @@ Rectangle {
     property bool compactAddFolderVisible: true
     property string compactLeadingActionIconName: "generalchevronLeft"
     property bool compactLeadingActionVisible: false
-    property color controlSurfaceColor: LV.Theme.panelBackground10
+    property color controlSurfaceColor: "transparent"
     property var editorViewModeViewModel: null
     property var navigationModeViewModel: null
     property string statusPlaceholderText: ""

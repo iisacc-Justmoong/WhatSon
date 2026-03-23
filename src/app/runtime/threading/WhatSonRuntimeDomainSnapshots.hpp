@@ -1,7 +1,7 @@
 #pragma once
 
+#include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
 
 #include <QString>
@@ -36,9 +36,9 @@ public:
     {
         bool succeeded = false;
         QString error;
-        QString foldersFilePath;
+        QString projectsFilePath;
         bool fileFound = false;
-        QVector<WhatSonFolderDepthEntry> folderEntries;
+        QVector<WhatSonFolderDepthEntry> projectEntries;
     };
 
     struct StringListSnapshot

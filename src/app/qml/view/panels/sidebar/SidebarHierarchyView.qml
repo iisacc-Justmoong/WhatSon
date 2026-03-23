@@ -67,7 +67,7 @@ Rectangle {
     }
     property var hierarchyViewModel: null
     property int horizontalInset: LV.Theme.gap2
-    property color panelColor: LV.Theme.panelBackground04
+    property color panelColor: LV.Theme.panelBackground01
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("sidebar.SidebarHierarchyView") : null
     readonly property bool renameContractAvailable: hierarchyViewModel && hierarchyViewModel.canRenameItem !== undefined && hierarchyViewModel.renameItem !== undefined
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0

@@ -3,10 +3,10 @@
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
-#include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
-#include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
 #include "file/note/WhatSonNoteAttachManagerCreator.hpp"
@@ -1580,7 +1580,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
         return false;
     }
 
-    WhatSonProjectsHierarchyParser foldersParser;
+    WhatSonFoldersHierarchyParser foldersParser;
     QVector<WhatSonFolderDepthEntry> folderEntries;
     bool foldersFileFound = false;
 
@@ -1610,7 +1610,7 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
             return false;
         }
 
-        WhatSonProjectsHierarchyStore foldersStore;
+        WhatSonFoldersHierarchyStore foldersStore;
         QString parseError;
         if (!foldersParser.parse(rawText, &foldersStore, &parseError))
         {
@@ -1840,7 +1840,7 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
     stagedItems[index].label = trimmedName;
     finalizeFolderItems(&stagedItems, false);
 
-    WhatSonProjectsHierarchyStore stagedStore;
+    WhatSonFoldersHierarchyStore stagedStore;
     stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
 
     if (!m_foldersFilePath.trimmed().isEmpty())
@@ -1966,7 +1966,7 @@ void LibraryHierarchyViewModel::createFolder()
     }
     finalizeFolderItems(&stagedItems, false);
 
-    WhatSonProjectsHierarchyStore stagedStore;
+    WhatSonFoldersHierarchyStore stagedStore;
     stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
     if (!m_foldersFilePath.trimmed().isEmpty())
     {
@@ -2035,7 +2035,7 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     stagedItems.remove(startIndex, removeCount);
     finalizeFolderItems(&stagedItems, false);
 
-    WhatSonProjectsHierarchyStore stagedStore;
+    WhatSonFoldersHierarchyStore stagedStore;
     stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
     if (!m_foldersFilePath.trimmed().isEmpty())
     {
@@ -3254,7 +3254,7 @@ bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
     int selectedIndex,
     const QHash<QString, QString>& movedFolderPathMap)
 {
-    WhatSonProjectsHierarchyStore stagedStore;
+    WhatSonFoldersHierarchyStore stagedStore;
     stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
 
     struct PendingNoteFolderRewrite final

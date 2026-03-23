@@ -8,13 +8,13 @@ Item {
     id: contentViewLayout
 
     property var contentViewModel: null
-    property color displayColor: LV.Theme.surfaceAlt
+    property color displayColor: LV.Theme.panelBackground01
     property bool drawerVisible: true
-    property color drawerColor: LV.Theme.panelBackground08
+    property color drawerColor: LV.Theme.panelBackground04
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
-    property color gutterColor: LV.Theme.subSurface
+    property color gutterColor: LV.Theme.panelBackground02
     property int gutterWidthOverride: -1
     property var libraryHierarchyViewModel: null
     property int lineNumberColumnLeftOverride: -1

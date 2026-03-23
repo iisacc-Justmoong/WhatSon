@@ -260,6 +260,7 @@ Main pattern repeated by domain modules:
 
 Examples:
 
+- Folders: `WhatSonFoldersHierarchyStore/Parser/Creator`
 - Projects: `WhatSonProjectsHierarchyStore/Parser/Creator`
 - Bookmarks: `WhatSonBookmarksHierarchyStore/Parser/Creator`
 - Resources/Progress/Event/Preset: same structure
@@ -435,7 +436,10 @@ Domain-isolated support:
               Mobile-specific geometry only overrides layout knobs:
               `drawerVisible = false`, `minimapVisible = false`, `editorTopInsetOverride = 0`,
               `frameHorizontalInsetOverride = 0`, `gutterColor = transparent`, `gutterWidthOverride = 40`, and
-              `lineNumberColumnTextWidthOverride = 22`.
+              `lineNumberColumnTextWidthOverride = 22`. Because `LV.TextEditor` vertically centers multi-line content by
+              default against its full editor height, the shared `ContentsDisplayView.qml` also clears the underlying
+              editor item's `topPadding` whenever that mobile override drives the effective top inset to `0`, preventing
+              the mobile editor body from slipping below a phantom top frame.
             - `ListBarHeader.qml` now exposes LVRS `shapeCylinder` and `shapeRoundRect` search-field styles. The list
               header still defaults to the cylindrical pill, while `SidebarHierarchyView.qml` overrides the hierarchy
               search header to `shapeRoundRect`.
@@ -518,9 +522,11 @@ Domain-isolated support:
                   change the line-number sequence. The editor surface itself keeps Fill height even when the current
                   body
                   is empty, and the editable body block is top-left aligned with `48px` top inset plus `16px`
-                  horizontal /
-                  bottom inset, overriding the LVRS internal centered multi-line placement. Figma node `155:5345` is
-                  treated as the source of truth for
+                  horizontal / bottom inset, overriding the LVRS internal centered multi-line placement. When
+                  `editorTopInsetOverride` resolves to `0` for the mobile editor route, the same surface also clears the
+                  embedded `LV.TextEditor` top padding so the document starts at the first visible row instead of being
+                  vertically centered inside the available viewport. Figma node `155:5345` is treated as the source of
+                  truth for
                   the gutter token contract: `panelBackground04` surface, `#4E5157` inactive caption numbers, `#9DA0A8`
                   active line number, `2px` horizontal frame inset, `x=14` line-number column origin, right-aligned
                   number
@@ -895,9 +901,14 @@ Hierarchy rendering pipeline:
   so mobile-only page undo is committed by the patched LVRS routing runtime instead of replaying a private copied
   route-memory stack. `MobileHierarchyPage.qml` also consumes the active touch session after commit or cancel, which
   prevents a single editor edge-pan from reopening a second pop and jumping straight past the note-list route. The same
-  page also clears the active hierarchy selection whenever routing lands back on `/mobile/hierarchy`, so re-tapping the
-  same folder can reopen the note-list route even though LVRS only raises `listItemActivated(...)` when the active row
-  changes.
+  page now resolves the active mobile body route from both `PageRouter.currentPath` and the mounted `currentPageItem`
+  type, then normalizes any inconsistent stack back to the canonical
+  `hierarchy -> note-list -> editor` progression before opening the next screen. After an editor pop commits, the same
+  page verifies that the visible page really is the note-list body and, if not, rebuilds the canonical
+  `hierarchy -> note-list` stack immediately so edge-swipe undo cannot strand the shell on the hierarchy body with a
+  stale `/mobile/note-list` route token. The same page also clears the active hierarchy selection whenever routing
+  lands back on `/mobile/hierarchy`, so re-tapping the same folder can reopen the note-list route even though LVRS only
+  raises `listItemActivated(...)` when the active row changes.
 - Library note-drop policy: `SidebarHierarchyView.qml` now mounts a narrow `DropArea` over the LVRS hierarchy surface,
   resolves the underlying LVRS `HierarchyItem` from the drop position, validates the target through
   `HierarchyDragDropBridge::canAcceptNoteDrop(...)`, and persists accepted note drops through
@@ -956,10 +967,14 @@ Detected package conventions:
 - Hierarchy/auxiliary files (typically under `*.wscontents`):
     - `Folders.wsfolders` (hierarchical folder tree JSON for user folders; runtime prepends immutable library system
       roots `All Library`, `Draft`, and `Today` ahead of this tree)
+      - Parsed and persisted only by the folders domain (`WhatSonFoldersHierarchy*`); project runtime state must not
+        reuse this file.
     - `Tags.wstags` (tag tree or flat list)
     - `Bookmarks.wsbookmarks` (bookmark hierarchy source)
     - `Progress.wsprogress` (progress state domain)
     - `ProjectLists.wsproj` (project hierarchy domain)
+      - Parsed and persisted only by the projects domain (`WhatSonProjectsHierarchy*`); creating library folders must
+        not mutate project state.
     - `Preset.wspreset` (preset hierarchy domain)
 - Placement manifest:
     - `.whatson/hub.json`

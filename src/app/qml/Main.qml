@@ -22,7 +22,7 @@ LV.ApplicationWindow {
     readonly property int bodySplitterThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property var bookmarksHierarchyVm: bookmarksHierarchyViewModel
     readonly property color canvasColor: LV.Theme.panelBackground01
-    readonly property color contentsDisplayColor: LV.Theme.surfaceAlt
+    readonly property color contentsDisplayColor: canvasColor
     property bool desktopOnboardingWindowVisible: false
     readonly property int desktopMinimumBodyWidth: (hideSidebar ? 0 : minSidebarWidth)
                                                + (hideListView ? 0 : minListViewWidth)
@@ -32,7 +32,7 @@ LV.ApplicationWindow {
                                                                                       + (hideListView ? 0 : 1)
                                                                                       + 1
                                                                                       + (hideRightPanel ? 0 : 1)) - 1)
-    readonly property color drawerColor: LV.Theme.panelBackground08
+    readonly property color drawerColor: LV.Theme.panelBackground04
     readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property var editorViewModeVm: editorViewModeViewModel
     readonly property var eventHierarchyVm: eventHierarchyViewModel
@@ -49,7 +49,7 @@ LV.ApplicationWindow {
     // Fail-fast binding contract: these context properties must exist from main.cpp.
     readonly property int libraryHierarchyIndex: 0
     readonly property var libraryHierarchyVm: libraryHierarchyViewModel
-    readonly property color listViewColor: LV.Theme.panelBackground08
+    readonly property color listViewColor: LV.Theme.panelBackground02
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minDisplayHeight: LV.Theme.gap20 * 8
@@ -61,7 +61,7 @@ LV.ApplicationWindow {
         return toolbarWidth;
     }
     readonly property color mobileSafeAreaBackdropColor: canvasColor
-    readonly property color navigationBarColor: LV.Theme.panelBackground06
+    readonly property color navigationBarColor: canvasColor
     readonly property int navigationBarHeight: LV.Theme.gap24
     readonly property var navigationModeVm: navigationModeViewModel
     readonly property int onboardingDefaultHeight: onboardingMinHeight
@@ -83,12 +83,12 @@ LV.ApplicationWindow {
     readonly property var progressHierarchyVm: progressHierarchyViewModel
     readonly property var projectsHierarchyVm: projectsHierarchyViewModel
     readonly property var resourcesHierarchyVm: resourcesHierarchyViewModel
-    readonly property color rightPanelColor: LV.Theme.panelBackground06
+    readonly property color rightPanelColor: canvasColor
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
-    readonly property color sidebarColor: LV.Theme.panelBackground04
+    readonly property color sidebarColor: canvasColor
     readonly property var sidebarHierarchyVm: sidebarHierarchyViewModel
     readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
-    readonly property color statusBarColor: LV.Theme.panelBackground06
+    readonly property color statusBarColor: canvasColor
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
     readonly property string startupRoutePath: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath
@@ -494,7 +494,7 @@ LV.ApplicationWindow {
         MobilePageView.MobileHierarchyPage {
             anchors.fill: parent
             canvasColor: applicationWindow.canvasColor
-            controlSurfaceColor: LV.Theme.panelBackground10
+            controlSurfaceColor: "transparent"
             editorViewModeViewModel: applicationWindow.editorViewModeVm
             navigationModeViewModel: applicationWindow.navigationModeVm
             sidebarHierarchyViewModel: applicationWindow.sidebarHierarchyVm

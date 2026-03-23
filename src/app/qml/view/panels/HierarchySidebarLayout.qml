@@ -9,7 +9,7 @@ Item {
     readonly property int currentHierarchy: hierarchyView.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex
     property bool footerVisible: true
     property int horizontalInset: LV.Theme.gap2
-    property color panelColor: LV.Theme.panelBackground04
+    property color panelColor: LV.Theme.panelBackground01
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
     readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
     required property var sidebarHierarchyViewModel

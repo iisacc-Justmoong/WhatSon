@@ -15,7 +15,7 @@ namespace
 {
     constexpr auto kScope = "projects.viewmodel";
 
-    QVector<WhatSonFolderDepthEntry> folderEntriesFromItems(const QVector<ProjectsHierarchyItem>& items)
+    QVector<WhatSonFolderDepthEntry> projectEntriesFromItems(const QVector<ProjectsHierarchyItem>& items)
     {
         QVector<WhatSonFolderDepthEntry> entries;
         entries.reserve(items.size());
@@ -68,7 +68,7 @@ namespace
         return entries;
     }
 
-    QVector<ProjectsHierarchyItem> itemsFromFolderEntries(const QVector<WhatSonFolderDepthEntry>& entries)
+    QVector<ProjectsHierarchyItem> itemsFromProjectEntries(const QVector<WhatSonFolderDepthEntry>& entries)
     {
         QVector<ProjectsHierarchyItem> items;
         items.reserve(entries.size());
@@ -447,18 +447,18 @@ bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayNam
     }
 
     WhatSonProjectsHierarchyStore stagedStore = m_store;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+    stagedStore.setFolderEntries(projectEntriesFromItems(stagedItems));
 
-    if (!m_foldersFilePath.trimmed().isEmpty())
+    if (!m_projectsFilePath.trimmed().isEmpty())
     {
         QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        if (!stagedStore.writeToFile(m_projectsFilePath, &writeError))
         {
             WhatSon::Debug::traceSelf(this,
                                       QString::fromLatin1(kScope),
                                       QStringLiteral("renameItem.writeFailed"),
                                       QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
-                                          m_foldersFilePath, writeError));
+                                          m_projectsFilePath, writeError));
             return false;
         }
     }
@@ -749,7 +749,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub.begin"),
                               QStringLiteral("path=%1").arg(wshubPath));
-    m_foldersFilePath.clear();
+    m_projectsFilePath.clear();
 
     QStringList contentsDirectories;
     QString resolveError;
@@ -774,16 +774,16 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
     WhatSonProjectsHierarchyParser parser;
     for (const QString& contentsDirectory : contentsDirectories)
     {
-        const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("Folders.wsfolders"));
+        const QString filePath = QDir(contentsDirectory).filePath(QStringLiteral("ProjectLists.wsproj"));
         if (!QFileInfo(filePath).isFile())
         {
             continue;
         }
 
         fileFound = true;
-        if (m_foldersFilePath.isEmpty())
+        if (m_projectsFilePath.isEmpty())
         {
-            m_foldersFilePath = filePath;
+            m_projectsFilePath = filePath;
         }
 
         QString rawText;
@@ -825,9 +825,9 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         }
     }
 
-    if (m_foldersFilePath.isEmpty() && !contentsDirectories.isEmpty())
+    if (m_projectsFilePath.isEmpty() && !contentsDirectories.isEmpty())
     {
-        m_foldersFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Folders.wsfolders"));
+        m_projectsFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("ProjectLists.wsproj"));
     }
 
     if (aggregatedEntries.isEmpty())
@@ -838,7 +838,7 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
     {
         m_store.setFolderEntries(std::move(aggregatedEntries));
         m_projectNames = m_store.projectNames();
-        m_items = itemsFromFolderEntries(m_store.folderEntries());
+        m_items = itemsFromProjectEntries(m_store.folderEntries());
         m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
         syncModel();
         setSelectedIndex(-1);
@@ -867,12 +867,12 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 }
 
 void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
-    QVector<WhatSonFolderDepthEntry> folderEntries,
-    QString foldersFilePath,
+    QVector<WhatSonFolderDepthEntry> projectEntries,
+    QString projectsFilePath,
     bool loadSucceeded,
     QString errorMessage)
 {
-    m_foldersFilePath = foldersFilePath.trimmed();
+    m_projectsFilePath = projectsFilePath.trimmed();
 
     if (!loadSucceeded)
     {
@@ -880,15 +880,15 @@ void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
-    if (folderEntries.isEmpty())
+    if (projectEntries.isEmpty())
     {
         setProjectNames({});
     }
     else
     {
-        m_store.setFolderEntries(std::move(folderEntries));
+        m_store.setFolderEntries(std::move(projectEntries));
         m_projectNames = m_store.projectNames();
-        m_items = itemsFromFolderEntries(m_store.folderEntries());
+        m_items = itemsFromProjectEntries(m_store.folderEntries());
         m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
         syncModel();
         setSelectedIndex(-1);
@@ -931,17 +931,17 @@ void ProjectsHierarchyViewModel::syncModel()
 bool ProjectsHierarchyViewModel::commitHierarchyUpdate(QVector<ProjectsHierarchyItem> stagedItems, int selectedIndex)
 {
     WhatSonProjectsHierarchyStore stagedStore = m_store;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+    stagedStore.setFolderEntries(projectEntriesFromItems(stagedItems));
 
-    if (!m_foldersFilePath.trimmed().isEmpty())
+    if (!m_projectsFilePath.trimmed().isEmpty())
     {
         QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
+        if (!stagedStore.writeToFile(m_projectsFilePath, &writeError))
         {
             WhatSon::Debug::traceSelf(this,
                                       QString::fromLatin1(kScope),
                                       QStringLiteral("commitHierarchyUpdate.writeFailed"),
-                                      QStringLiteral("path=%1 reason=%2").arg(m_foldersFilePath, writeError));
+                                      QStringLiteral("path=%1 reason=%2").arg(m_projectsFilePath, writeError));
             return false;
         }
     }
@@ -957,6 +957,6 @@ bool ProjectsHierarchyViewModel::commitHierarchyUpdate(QVector<ProjectsHierarchy
 
 void ProjectsHierarchyViewModel::syncDomainStoreFromItems()
 {
-    m_store.setFolderEntries(folderEntriesFromItems(m_items));
+    m_store.setFolderEntries(projectEntriesFromItems(m_items));
     m_projectNames = m_store.projectNames();
 }

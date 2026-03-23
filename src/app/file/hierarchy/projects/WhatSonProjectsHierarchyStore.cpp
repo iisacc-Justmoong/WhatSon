@@ -179,7 +179,7 @@ bool WhatSonProjectsHierarchyStore::writeToFile(const QString& filePath, QString
     {
         if (errorMessage != nullptr)
         {
-            *errorMessage = QStringLiteral("Folders.wsfolders path is empty.");
+            *errorMessage = QStringLiteral("ProjectLists.wsproj path is empty.");
         }
         return false;
     }
