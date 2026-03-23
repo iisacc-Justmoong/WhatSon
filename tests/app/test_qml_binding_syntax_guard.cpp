@@ -687,6 +687,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
                 "readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel")),
         "HierarchySidebarLayout.qml must source the active hierarchy view-model directly from SidebarHierarchyViewModel.");
     QVERIFY2(
+        sidebarLayoutText.contains(QStringLiteral("readonly property var noteDropTargetView: sidebarView")),
+        "HierarchySidebarLayout.qml must expose the composed SidebarHierarchyView as the canonical cross-panel note-drop target.");
+    QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("function setActiveHierarchyIndex(index)")),
         "HierarchySidebarLayout.qml must centralize toolbar-driven hierarchy activation through one setter helper.");
     QVERIFY2(
@@ -1005,15 +1008,27 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("DropArea {")),
         "SidebarHierarchyView.qml must expose a note-drop target surface over the LVRS hierarchy.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("keys: [\"whatson.library.note\"]")),
-        "SidebarHierarchyView.qml note-drop surface must listen only to note drag payloads.");
+        sidebarViewText.contains(QStringLiteral("function updateAcceptance(drag)")),
+        "SidebarHierarchyView.qml note-drop surface must gate acceptance through a dedicated payload-validation helper instead of static drag-key filtering.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function canAcceptNoteDropAtPosition(x, y, noteId, referenceItem)")),
+        "SidebarHierarchyView.qml must expose a position-based note-drop acceptance helper so both DropArea traffic and desktop internal drags share one validation path.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function commitNoteDropAtPosition(x, y, noteId, referenceItem)")),
+        "SidebarHierarchyView.qml must expose a position-based note-drop commit helper so desktop internal drags can persist folder assignment without relying on native drop delivery.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("hierarchyItem.resolvedItemId")),
+        "SidebarHierarchyView.qml note-drop hit testing must fall back to LVRS resolvedItemId when the raw itemId is absent on the hovered hierarchy row.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("hierarchyTree.mapFromItem(referenceItem, localX, localY)")),
+        "SidebarHierarchyView.qml note-drop hit testing must normalize foreign-panel pointer coordinates into the LVRS hierarchy coordinate space.");
     QVERIFY2(
         sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, noteId)")),
+            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, normalizedNoteId)")),
         "SidebarHierarchyView.qml must validate note drops through the shared hierarchy drag/drop bridge.");
     QVERIFY2(
         sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(targetIndex, noteId)")),
+            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(targetIndex, normalizedNoteId)")),
         "SidebarHierarchyView.qml must persist accepted note drops through the shared hierarchy drag/drop bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function onHierarchyModelChanged()")),
@@ -1098,8 +1113,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "NoteListItem.qml must expose a dedicated persistent active-state contract separate from transient pointer press.");
     QVERIFY2(
         noteListItemText.contains(
-            QStringLiteral("readonly property bool activeState: noteListItem.active || noteListItem.pressed")),
-        "NoteListItem.qml visual active state must remain true for the committed current note even after pointer press ends.");
+            QStringLiteral("readonly property bool activeState: noteListItem.active")),
+        "NoteListItem.qml must treat active state as the committed selection only, so note rows do not look selected before release commits the tap.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("readonly property color pressedCardColor: noteListItem.hoverCardColor")),
+        "NoteListItem.qml must keep transient press feedback on a non-active surface so pointer press does not masquerade as committed selection.");
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral(": noteListItem.pressed")),
+        "NoteListItem.qml background resolution must still keep a dedicated pressed branch after the active branch.");
     QVERIFY2(
         noteListItemText.contains(QStringLiteral("text: noteListItem.resolvedDisplayDate")),
         "NoteListItem.qml date label must render the resolved display date.");
@@ -1279,19 +1300,25 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("property bool noteDragActive: false")),
         "ListBarLayout.qml must track whether a note-card drag is active so the parent ListView can stop treating the gesture as scrolling.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property bool noteDragCanceled: false")),
+        "ListBarLayout.qml must track canceled note drags separately so desktop drop commits do not fire during teardown paths.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("property var noteDragPreviewDelegate: null")),
         "ListBarLayout.qml must track the actively dragged delegate so a live note-card preview can follow the pointer.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("property var noteDropTarget: null")),
+        "ListBarLayout.qml must accept an explicit hierarchy drop target so desktop internal note drags can resolve folder assignment across panels.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("property bool notePointerPressed: false")),
-        "ListBarLayout.qml must track row-press ownership so ListView flicking cannot swallow note drags before the delegate DragHandler activates.");
+        "ListBarLayout.qml must track transient row-press state separately from committed note selection while tap-versus-drag resolution is still pending.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("property int pressedNoteIndex: -1")),
         "ListBarLayout.qml must track a transient pressed note row separately from the committed currentIndex so drag startup does not mutate selection too early.");
     QVERIFY2(
         listBarLayoutText.contains(
             QStringLiteral(
-                "interactive: contentHeight > height && !listBarLayout.noteDragActive && !listBarLayout.notePointerPressed")),
-        "ListBarLayout.qml must disable ListView scrolling while a note row press is deciding between click and drag.");
+                "interactive: contentHeight > height && !listBarLayout.noteDragActive")),
+        "ListBarLayout.qml must keep ListView scrolling available during note-row press handling and only suspend viewport dragging while an actual note drag is active.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.ApprovesTakeOverByAnything")),
         "ListBarLayout.qml tap handlers must approve drag takeover so note-card drags can start from the same pointer press as row selection.");
@@ -1299,8 +1326,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("model: listBarLayout.resolvedNoteListModel")),
         "ListBarLayout.qml must bind ListView only to the resolved note-list model.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("Drag.dragType: Drag.Automatic")),
-        "ListBarLayout.qml note delegates must use automatic Qt drag dispatch so note drops publish mime data through the actual drag event.");
+        listBarLayoutText.contains(QStringLiteral("readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget")),
+        "ListBarLayout.qml must resolve note drag dispatch per runtime profile so desktop keeps the in-scene card preview while mobile can still publish mime data.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("Drag.dragType: listBarLayout.useInternalNoteDrag ? Drag.Internal : Drag.Automatic")),
+        "ListBarLayout.qml note delegates must use internal drag on desktop and automatic mime-backed drag only on mobile targets.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.keys: [\"whatson.library.note\"]")),
         "ListBarLayout.qml note delegates must advertise whatson.library.note drag keys.");
@@ -1332,6 +1362,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("function updateNoteDragPreviewPosition(delegateItem, localX, localY)")),
         "ListBarLayout.qml must expose an explicit helper that moves the dragged note-card preview with the pointer.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function commitInternalNoteDrop(delegateItem, localX, localY)")),
+        "ListBarLayout.qml must expose an explicit helper that commits desktop internal note drags into the shared hierarchy drop target on release.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0)")),
+        "ListBarLayout.qml desktop note-drop commit must map the release point into the shared sidebar hierarchy coordinate space.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "image: noteItemDelegate.image === undefined ? false : Boolean(noteItemDelegate.image)")),
         "ListBarLayout.qml must bind the image flag directly from the required note delegate role contract.");
@@ -1348,6 +1384,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("onCentroidChanged: {")),
         "ListBarLayout.qml note drag handler must update the floating note-card preview while the pointer moves.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("if (!listBarLayout.noteDragCanceled)")),
+        "ListBarLayout.qml note drag handler must only commit desktop folder drops on normal release, not on canceled drag teardown.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("listBarLayout.commitInternalNoteDrop(")),
+        "ListBarLayout.qml note drag handler must attempt the shared desktop folder-drop commit when an internal drag ends.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("gesturePolicy: TapHandler.DragThreshold")),
         "ListBarLayout.qml must keep note-card tap handling passive until drag threshold so note drags can start from the same surface.");
@@ -1490,6 +1532,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("noteDeletionViewModel: hStack.noteDeletionViewModel")),
         "BodyLayout.qml must forward the centralized delete-note command source into ListBarLayout.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("noteDropTarget: sideBar.noteDropTargetView")),
+        "BodyLayout.qml must forward the shared sidebar hierarchy view into ListBarLayout so desktop internal note drags can commit folder drops.");
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("contentViewModel: hStack.activeHierarchyViewModel")),
         "BodyLayout.qml must pass the resolved active hierarchy view-model into the content surface.");

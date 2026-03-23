@@ -10,76 +10,25 @@ Item {
     property var applicationControlMenuItems: [
         {
             "label": "Show Structure",
-            "iconName": "columnIndex",
+            "iconName": "generalprojectStructure",
             "keyVisible": false,
             "showChevron": false
         },
         {
-            "label": "Sync Files",
-            "iconName": "syncFiles",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "Todo List",
-            "iconName": "toolWindowCheckDetails",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Daily",
-            "iconName": "newUIlightThemeSelected",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Weekly",
-            "iconName": "table",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Monthly",
-            "iconName": "pnpm",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Yearly",
-            "iconName": "runshowCurrentFrame",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "Add File",
-            "iconName": "addFile",
-            "onTriggered": function () {
-                applicationControlBar.requestViewHook("create-note");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Pin",
+            "label": "Pin Window",
             "iconName": "pin",
             "keyVisible": false,
             "showChevron": false
         },
         {
-            "label": "Notifications",
+            "label": "Alerts",
             "iconName": "toolwindownotifications",
             "keyVisible": false,
             "showChevron": false
         },
         {
-            "label": "Timer",
             "iconName": "startTimer",
+            "label": "Timer",
             "keyVisible": false,
             "showChevron": false
         },
@@ -101,6 +50,38 @@ Item {
         {
             "label": "Mail",
             "iconName": "mailer",
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "label": "New File",
+            "iconName": "addFile",
+            "onTriggered": function () {
+                applicationControlBar.requestViewHook("create-note");
+            },
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "label": "Preferences",
+            "iconName": "audioToAudio",
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "label": applicationControlBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
+            "iconName": "columnIndex",
+            "onTriggered": function () {
+                applicationControlBar.requestViewHook(
+                    applicationControlBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                applicationControlBar.toggleDetailPanelRequested();
+            },
             "keyVisible": false,
             "showChevron": false
         }
@@ -145,11 +126,6 @@ Item {
 
             spacing: 12
 
-            NavigationCalendarBar {
-                id: calendarBar
-
-                Layout.alignment: Qt.AlignVCenter
-            }
             NavigationAppControlBar {
                 id: appControlBar
 

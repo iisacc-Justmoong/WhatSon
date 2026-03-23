@@ -204,14 +204,42 @@ Rectangle {
             return Array.from(modelValue);
         return [];
     }
-    function noteDropIndexAtPosition(x, y) {
-        const hierarchyItem = sidebarHierarchyView.hierarchyItemAtPosition(x, y);
-        if (!hierarchyItem || hierarchyItem.itemId === undefined || hierarchyItem.itemId === null)
+    function noteDropIndexAtPosition(x, y, referenceItem) {
+        const localX = Number(x) || 0;
+        const localY = Number(y) || 0;
+        const hierarchyPoint = referenceItem && referenceItem !== hierarchyTree && hierarchyTree.mapFromItem !== undefined
+            ? hierarchyTree.mapFromItem(referenceItem, localX, localY)
+            : ({
+                    "x": localX,
+                    "y": localY
+                });
+        const hierarchyItem = sidebarHierarchyView.hierarchyItemAtPosition(hierarchyPoint.x, hierarchyPoint.y);
+        if (!hierarchyItem)
             return -1;
-        const parsedIndex = Number(hierarchyItem.itemId);
+        const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null
+            ? hierarchyItem.itemId
+            : hierarchyItem.resolvedItemId;
+        const parsedIndex = Number(rawItemId);
         if (!isFinite(parsedIndex))
             return -1;
         return Math.max(-1, Math.floor(parsedIndex));
+    }
+    function canAcceptNoteDropAtPosition(x, y, noteId, referenceItem) {
+        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
+        const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(x, y, referenceItem);
+        if (targetIndex < 0 || normalizedNoteId.length === 0 || !sidebarHierarchyView.hierarchyDragDropBridge)
+            return false;
+        return sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, normalizedNoteId);
+    }
+    function commitNoteDropAtPosition(x, y, noteId, referenceItem) {
+        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
+        const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(x, y, referenceItem);
+        if (targetIndex < 0 || normalizedNoteId.length === 0)
+            return false;
+        if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(targetIndex, normalizedNoteId))
+            return false;
+        sidebarHierarchyView.requestViewHook("hierarchy.noteDrop");
+        return true;
     }
     function noteIdFromDragPayload(drag) {
         if (!drag)
@@ -546,26 +574,30 @@ Rectangle {
         z: 2
     }
     DropArea {
+        id: noteDropSurface
+
         function updateAcceptance(drag) {
             const noteId = sidebarHierarchyView.noteIdFromDragPayload(drag);
-            const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(drag ? drag.x : 0, drag ? drag.y : 0);
-            const accepted = targetIndex >= 0 && noteId.length > 0 && sidebarHierarchyView.hierarchyDragDropBridge && sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(targetIndex, noteId);
+            const accepted = sidebarHierarchyView.canAcceptNoteDropAtPosition(
+                        drag ? drag.x : 0,
+                        drag ? drag.y : 0,
+                        noteId,
+                        noteDropSurface);
             if (drag)
                 drag.accepted = accepted;
         }
 
         anchors.fill: hierarchyTree
         enabled: sidebarHierarchyView.hierarchyDragDropBridge && sidebarHierarchyView.hierarchyDragDropBridge.noteDropContractAvailable
-        keys: ["whatson.library.note"]
 
         onDropped: function (drop) {
             const noteId = sidebarHierarchyView.noteIdFromDragPayload(drop);
-            const targetIndex = sidebarHierarchyView.noteDropIndexAtPosition(drop ? drop.x : 0, drop ? drop.y : 0);
-            if (targetIndex < 0 || noteId.length === 0)
+            if (!sidebarHierarchyView.commitNoteDropAtPosition(
+                        drop ? drop.x : 0,
+                        drop ? drop.y : 0,
+                        noteId,
+                        noteDropSurface))
                 return;
-            if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(targetIndex, noteId))
-                return;
-            sidebarHierarchyView.requestViewHook("hierarchy.noteDrop");
         }
         onEntered: function (drag) {
             updateAcceptance(drag);

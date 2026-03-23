@@ -16,11 +16,13 @@ Rectangle {
     readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable
     property var noteDeletionViewModel: null
     property bool noteDragActive: false
+    property bool noteDragCanceled: false
     property var noteDragPreviewDelegate: null
     property real noteDragPreviewHotSpotX: 0
     property real noteDragPreviewHotSpotY: 0
     property real noteDragPreviewX: 0
     property real noteDragPreviewY: 0
+    property var noteDropTarget: null
     property bool notePointerPressed: false
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
@@ -33,6 +35,7 @@ Rectangle {
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
     property string searchText: ""
     property int selectionRequestRevision: 0
+    readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget
 
     signal noteActivated(int index, string noteId)
     signal viewHookRequested
@@ -95,6 +98,21 @@ Rectangle {
         listBarLayout.noteDragPreviewHotSpotY = 0;
         listBarLayout.noteDragPreviewX = 0;
         listBarLayout.noteDragPreviewY = 0;
+    }
+    function commitInternalNoteDrop(delegateItem, localX, localY) {
+        if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
+            return false;
+        if (listBarLayout.noteDropTarget.commitNoteDropAtPosition === undefined)
+            return false;
+        const noteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
+        if (noteId.length === 0)
+            return false;
+        const mappedPoint = delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0);
+        return Boolean(listBarLayout.noteDropTarget.commitNoteDropAtPosition(
+                           mappedPoint.x,
+                           mappedPoint.y,
+                           noteId,
+                           listBarLayout.noteDropTarget));
     }
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -190,6 +208,7 @@ Rectangle {
     }
     onNoteListModeChanged: applySearchTextToModel()
     onNoteListModelChanged: {
+        listBarLayout.noteDragCanceled = true;
         listBarLayout.noteDragActive = false;
         listBarLayout.clearNoteDragPreview(null);
         listBarLayout.notePointerPressed = false;
@@ -270,7 +289,7 @@ Rectangle {
                     anchors.margins: 2
                     boundsBehavior: Flickable.StopAtBounds
                     clip: true
-                    interactive: contentHeight > height && !listBarLayout.noteDragActive && !listBarLayout.notePointerPressed
+                    interactive: contentHeight > height && !listBarLayout.noteDragActive
                     model: listBarLayout.resolvedNoteListModel
                     spacing: 2
                     visible: listBarLayout.noteListMode
@@ -300,7 +319,7 @@ Rectangle {
                         property real dragHotSpotY: height * 0.5
 
                         Drag.active: noteDragHandler.active
-                        Drag.dragType: Drag.Automatic
+                        Drag.dragType: listBarLayout.useInternalNoteDrag ? Drag.Internal : Drag.Automatic
                         Drag.hotSpot.x: noteItemDelegate.dragHotSpotX
                         Drag.hotSpot.y: noteItemDelegate.dragHotSpotY
                         Drag.keys: ["whatson.library.note"]
@@ -341,6 +360,7 @@ Rectangle {
                             onActiveChanged: {
                                 listBarLayout.noteDragActive = active;
                                 if (active) {
+                                    listBarLayout.noteDragCanceled = false;
                                     noteItemDelegate.dragHotSpotX = Number(noteDragHandler.centroid.pressPosition.x) || width * 0.5;
                                     noteItemDelegate.dragHotSpotY = Number(noteDragHandler.centroid.pressPosition.y) || height * 0.5;
                                     listBarLayout.beginNoteDragPreview(
@@ -349,7 +369,13 @@ Rectangle {
                                                 noteItemDelegate.dragHotSpotY);
                                     listBarLayout.notePointerPressed = false;
                                 } else {
+                                    if (!listBarLayout.noteDragCanceled)
+                                        listBarLayout.commitInternalNoteDrop(
+                                                    noteItemDelegate,
+                                                    noteDragHandler.centroid.position.x,
+                                                    noteDragHandler.centroid.position.y);
                                     listBarLayout.clearNoteDragPreview(noteItemDelegate);
+                                    listBarLayout.noteDragCanceled = false;
                                 }
                                 if (active && listBarLayout.pressedNoteIndex === noteItemDelegate.index)
                                     listBarLayout.pressedNoteIndex = -1;
@@ -363,6 +389,7 @@ Rectangle {
                                             noteDragHandler.centroid.position.y);
                             }
                             onCanceled: {
+                                listBarLayout.noteDragCanceled = true;
                                 listBarLayout.noteDragActive = false;
                                 listBarLayout.clearNoteDragPreview(noteItemDelegate);
                             }

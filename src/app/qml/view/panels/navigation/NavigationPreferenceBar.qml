@@ -28,6 +28,8 @@ LV.HStack {
         id: detailPanelControlButton
 
         iconName: "columnIndex"
+        rotation: 180
+        transformOrigin: Item.Center
 
         onClicked: {
             preferenceBar.requestViewHook(preferenceBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");

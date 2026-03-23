@@ -366,21 +366,26 @@ Domain-isolated support:
           stays `24px` high on `panelBackground10`, uses `8px/2px` internal padding from LVRS tokens, keeps a `4px`
           settings-to-mode gap on the left, and a `12px` menu-to-new-folder gap on the right while still resolving the
           application surface through the active navigation mode.
-        - Control-only child bars (`NavigationCalendarBar.qml`, `NavigationAppControlBar.qml`,
-          `NavigationExportBar.qml`)
-          now live under `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
+        - Control-only child bars (`NavigationAppControlBar.qml`, `NavigationExportBar.qml`) now live under
+          `navigation/control/`, while shared bars such as `NavigationAddNewBar.qml` and
           `NavigationPreferenceBar.qml` stay at the navigation root.
         - `navigation/control/NavigationApplicationControlBar.qml` compact mode is reduced to the collapsed menu button
           only; that `LV.IconMenuButton` now uses the `generalprojectStructure` glyph plus the built-in LVRS chevron
-          indicator, and tapping it reuses the existing `LV.ContextMenu` item set instead of introducing a second
-          mobile-only control strip. The popup anchors from the trigger's bottom-right point, and action-only entries
-          disable the default LVRS shortcut placeholder column so label width matches the intended mobile control-menu
-          layout.
-        - `navigation/control/NavigationApplicationControlBar.qml` preserves the Figma child order `Calendar -> AppControl -> Export ->
-          AddNew -> Preference`, which keeps the create control on the right side of the control-mode application bar.
+          indicator, and tapping it reuses a control-menu item set that mirrors the desktop Control bar order
+          `generalprojectStructure -> pin -> toolwindownotifications -> startTimer -> generalupload ->
+          generalprint -> mailer -> addFile -> audioToAudio -> columnIndex` instead of the older calendar/todo-based
+          legacy entries. The popup anchors from the trigger's bottom-right point, action-only entries disable the
+          default LVRS shortcut placeholder column, and the final `columnIndex` entry forwards the same
+          detail-panel toggle hook as the desktop button.
+        - `navigation/control/NavigationApplicationControlBar.qml` preserves the Figma node `148:3898` child order
+          `AppControl -> Export -> AddNew -> Preference`, which keeps the create control on the right side of the
+          control-mode application bar without the removed legacy calendar segment.
             - The non-control application bars currently provide the shared baseline `NavigationPreferenceBar.qml`,
               matching
-              the default preference controls shown in the view/edit mode layouts.
+              the default preference controls shown in the view/edit mode layouts. Its `DetailPanelControlButton`
+              keeps the `columnIndex` glyph but rotates the borderless `LV.IconButton` by `180deg` around
+              `Item.Center`, so the affordance reads as a right-edge detail sidebar toggle instead of the default
+              left-edge column icon.
             - `Main.qml` derives the desktop sidebar initial width from the effective hierarchy-toolbar width.
                 - Current Figma contract: `200px` toolbar track + `2px` left/right insets => `204px` sidebar base width.
                 - `Main.qml` owns the global `Tab` shortcut and cycles navigation mode only when the focused object is
@@ -505,17 +510,18 @@ Domain-isolated support:
                   flows
                   through a dedicated `active` binding from `ListView.currentIndex`, while transient pointer/drag
                   feedback
-                  stays in `pressed`, preventing the active card from dropping its highlight as soon as the pointer is
-                  released.
+                  stays in `pressed` on a non-active surface, so note rows do not look selected until the release-time
+                  tap commit actually updates the current index.
                   A dedicated overlay-parented `NoteListItem` preview mirrors the dragged row in the forced active
                   state, using the pointer press position as the drag hot spot so the actual card component follows the
                   cursor instead of the platform text tooltip.
                   The surrounding
-                  `ListView` also yields drag-scrolling while a note row is pressed, so the delegate `DragHandler` can
-                  start the `whatson.library.note` drag before the viewport steals the pointer. The bound note-list
-                  models now keep `currentIndex = -1` until either the user taps a note card or a higher-level
-                  workflow explicitly selects one, so the shared `active` binding no longer paints row `0` as selected
-                  during the initial unselected workspace state.
+                  `ListView` now stays scrollable while a note row is merely pressed, and only suspends viewport
+                  dragging once an actual note-card drag becomes active; this keeps vertical list drags from
+                  accidentally collapsing into immediate note activation while preserving the shared dragged-card
+                  preview path. The bound note-list models now keep `currentIndex = -1` until either the user taps a
+                  note card or a higher-level workflow explicitly selects one, so the shared `active` binding no
+                  longer paints row `0` as selected during the initial unselected workspace state.
                   `SidebarHierarchyView.qml`
                   now binds the higher-level LVRS `Hierarchy` surface directly to each domain view-model's standard
                   `hierarchyModel` property, normalizes that C++ `QVariantList` into a JS array before it reaches LVRS
@@ -699,7 +705,11 @@ Library-specific modeling:
   materialized note directories, keeping note-list counts aligned with the actual filesystem.
 - Library note cards can be dragged from the list pane onto editable library folders; a successful drop appends the
   resolved folder path to the note header `<folders>` list, updates `lastModified`, and rebuilds the `All Library` /
-  `Draft` / `Today` bucket snapshots.
+  `Draft` / `Today` bucket snapshots. The drag transport is now split by runtime profile: desktop keeps an internal
+  in-scene drag so the grabbed `NoteListItem` card remains the visible preview, then commits the drop on release by
+  mapping the pointer into `SidebarHierarchyView.qml` and calling the shared folder-assignment bridge directly.
+  Mobile-target runs still use automatic Qt drag dispatch so mime payloads can be recovered from the drag event when
+  `drag.source` is not preserved.
 - `LibraryAll` body parser extracts `bodyPlainText` and `bodyFirstLine` from `.wsnbody` `<body>` content, strips inline
   tags
   (including custom tags such as `<Bold>`), and decodes XML entities before view-model consumption.
@@ -738,7 +748,8 @@ Library-specific modeling:
   blank lines when serializing `.wsnbody` `<paragraph>` nodes.
 - `NoteListItem.qml` resolves note-card visuals from LVRS theme tokens:
     - active background: `LV.Theme.accentBlueMuted`
-    - hover background: `LV.Theme.panelBackground06`
+    - hover background: `LV.Theme.panelBackground08`
+    - pressed background: `LV.Theme.panelBackground08`
     - Figma node `119:3028` frame contract: outer frame `194x102`, with `12px` horizontal padding, `8px` vertical
       padding,
       and an inner `86px` top/middle/bottom content stack separated by `8px` vertical gaps
@@ -936,7 +947,12 @@ Hierarchy rendering pipeline:
   `HierarchyDragDropBridge::assignNoteToFolder(...)`, which appends the dropped hierarchy path into the note header
   `<folders>` payload while preserving existing folder assignments. The same drop path resolves the dragged note id
   from the drag event payload first via `application/x-whatson-note-id`, then `text/plain`, so folder assignment does
-  not depend on `drag.source` surviving every Qt drag backend.
+  not depend on `drag.source` surviving every Qt drag backend. Desktop internal drags share the same validation and
+  persistence path by mapping the release point into the LVRS hierarchy coordinate space and calling the same
+  `assignNoteToFolder(...)` bridge directly, so the in-scene card preview no longer breaks folder assignment. The
+  hierarchy drop gate no longer relies on a static `Drag.keys` filter alone; it now accepts desktop/native drag
+  traffic by validating payloads at runtime and falls back to LVRS `resolvedItemId` when the hovered hierarchy row
+  does not expose a raw `itemId`.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

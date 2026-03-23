@@ -168,6 +168,7 @@ void NavigationQmlFramesTest::navigationChildFrames_mustBindPanelViewModelContra
     const QString informationBar = readQml(QStringLiteral("view/panels/navigation/NavigationInformationBar.qml"));
     const QString modeBar = readQml(QStringLiteral("view/panels/navigation/NavigationModeBar.qml"));
     const QString editorViewBar = readQml(QStringLiteral("view/panels/navigation/NavigationEditorViewBar.qml"));
+    const QString preferenceBar = readQml(QStringLiteral("view/panels/navigation/NavigationPreferenceBar.qml"));
     const QString applicationViewBar = readQml(
         QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
     const QString applicationEditBar = readQml(
@@ -183,12 +184,17 @@ void NavigationQmlFramesTest::navigationChildFrames_mustBindPanelViewModelContra
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationModeBar\")")));
     QVERIFY(editorViewBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationEditorViewBar\")")));
+    QVERIFY(preferenceBar.contains(QStringLiteral(
+        "panelViewModelRegistry.panelViewModel(\"navigation.NavigationPreferenceBar\")")));
     QVERIFY(applicationViewBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationViewBar\")")));
     QVERIFY(applicationEditBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationEditBar\")")));
     QVERIFY(applicationControlBar.contains(QStringLiteral(
         "panelViewModelRegistry.panelViewModel(\"navigation.NavigationApplicationControlBar\")")));
+    QVERIFY(preferenceBar.contains(QStringLiteral("iconName: \"columnIndex\"")));
+    QVERIFY(preferenceBar.contains(QStringLiteral("rotation: 180")));
+    QVERIFY(preferenceBar.contains(QStringLiteral("transformOrigin: Item.Center")));
 }
 
 void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
@@ -226,25 +232,50 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
 
     QVERIFY(!applicationControlBar.isEmpty());
 
-    const int calendarIndex = applicationControlBar.indexOf(QStringLiteral("NavigationCalendarBar {"));
     const int appControlIndex = applicationControlBar.indexOf(QStringLiteral("NavigationAppControlBar {"));
     const int exportIndex = applicationControlBar.indexOf(QStringLiteral("NavigationExportBar {"));
     const int addNewIndex = applicationControlBar.indexOf(QStringLiteral("NavigationAddNewBar {"));
     const int preferenceIndex = applicationControlBar.indexOf(QStringLiteral("NavigationPreferenceBar {"));
 
-    QVERIFY(calendarIndex >= 0);
     QVERIFY(appControlIndex >= 0);
     QVERIFY(exportIndex >= 0);
     QVERIFY(addNewIndex >= 0);
     QVERIFY(preferenceIndex >= 0);
 
-    QVERIFY(calendarIndex < appControlIndex);
     QVERIFY(appControlIndex < exportIndex);
     QVERIFY(exportIndex < addNewIndex);
     QVERIFY(addNewIndex < preferenceIndex);
     QVERIFY(applicationControlBar.contains(QStringLiteral("LV.IconMenuButton {")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"generalprojectStructure\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"generalprojectStructure\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"pin\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"toolwindownotifications\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"startTimer\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"generalupload\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"generalprint\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"mailer\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"addFile\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"audioToAudio\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"columnIndex\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Show Structure\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Pin Window\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Alerts\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Timer\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Export\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Print\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Mail\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"New File\"")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("\"label\": \"Preferences\"")));
+    QVERIFY(applicationControlBar.contains(
+        QStringLiteral("applicationControlBar.detailPanelCollapsed ? \"Show Detail Panel\" : \"Hide Detail Panel\"")));
     QVERIFY(!applicationControlBar.contains(QStringLiteral("iconName: \"generalsearch\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("NavigationCalendarBar {")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Sync Files\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Todo List\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Daily\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Weekly\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Monthly\"")));
+    QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Yearly\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"keyVisible\": false")));
     QVERIFY(applicationControlBar.contains(
         QStringLiteral("applicationControlMenuButton.width")));

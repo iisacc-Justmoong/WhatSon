@@ -139,6 +139,7 @@ Item {
                     anchors.fill: parent
                     noteDeletionViewModel: hStack.noteDeletionViewModel
                     noteListModel: hStack.activeNoteListModel
+                    noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
                 }
             }

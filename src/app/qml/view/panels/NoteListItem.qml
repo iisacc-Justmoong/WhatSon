@@ -6,7 +6,7 @@ Item {
     id: noteListItem
 
     property bool active: false
-    readonly property bool activeState: noteListItem.active || noteListItem.pressed
+    readonly property bool activeState: noteListItem.active
     property color bookmarkColor: LV.Theme.accentYellow
     property bool bookmarked: false
     readonly property var calendarStore: typeof systemCalendarStore !== "undefined" ? systemCalendarStore : null
@@ -19,6 +19,7 @@ Item {
     property var folders: []
     readonly property int horizontalPadding: 12
     readonly property color hoverCardColor: LV.Theme.panelBackground08
+    readonly property color pressedCardColor: noteListItem.hoverCardColor
     readonly property bool hovered: noteHoverHandler.hovered
     property bool image: false
     readonly property color imageBoxPlaceholderColor: "#D9D9D9"
@@ -96,7 +97,13 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: noteListItem.activeState ? noteListItem.cardColor : noteListItem.hovered ? noteListItem.hoverCardColor : LV.Theme.accentTransparent
+        color: noteListItem.activeState
+            ? noteListItem.cardColor
+            : noteListItem.pressed
+                ? noteListItem.pressedCardColor
+                : noteListItem.hovered
+                    ? noteListItem.hoverCardColor
+                    : LV.Theme.accentTransparent
     }
     HoverHandler {
         id: noteHoverHandler
