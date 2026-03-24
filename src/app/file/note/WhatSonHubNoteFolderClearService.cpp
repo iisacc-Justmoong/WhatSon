@@ -1,5 +1,7 @@
 #include "WhatSonHubNoteFolderClearService.hpp"
 
+#include "WhatSonNoteFolderBindingService.hpp"
+
 #include <utility>
 
 WhatSonHubNoteFolderClearService::WhatSonHubNoteFolderClearService() = default;
@@ -42,14 +44,14 @@ bool WhatSonHubNoteFolderClearService::clearFolders(
         return false;
     }
 
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = note.noteId;
-    readRequest.noteDirectoryPath = note.noteDirectoryPath;
-    readRequest.noteHeaderPath = headerPath;
-
     WhatSonLocalNoteDocument noteDocument;
     QString ioError;
-    if (!m_localNoteFileStore.readNote(std::move(readRequest), &noteDocument, &ioError))
+    if (!m_noteFolderBindingRepository.readDocument(
+        note.noteId,
+        note.noteDirectoryPath,
+        headerPath,
+        &noteDocument,
+        &ioError))
     {
         if (errorMessage != nullptr)
         {
@@ -61,16 +63,14 @@ bool WhatSonHubNoteFolderClearService::clearFolders(
     bool foldersCleared = false;
     if (!noteDocument.headerStore.folders().isEmpty())
     {
-        noteDocument.headerStore.setFolders({});
-        noteDocument.headerStore.setLastModifiedAt(WhatSon::NoteMutationSupport::currentNoteTimestamp());
-
-        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-        updateRequest.document = noteDocument;
-        updateRequest.persistHeader = true;
-        updateRequest.persistBody = false;
-
+        const WhatSonNoteFolderBindingService noteFolderBindingService;
         QString writeError;
-        if (!m_localNoteFileStore.updateNote(std::move(updateRequest), &noteDocument, &writeError))
+        if (!m_noteFolderBindingRepository.writeFolderBindings(
+            std::move(noteDocument),
+            noteFolderBindingService.bindings({}, {}),
+            WhatSon::NoteMutationSupport::currentNoteTimestamp(),
+            &noteDocument,
+            &writeError))
         {
             if (errorMessage != nullptr)
             {

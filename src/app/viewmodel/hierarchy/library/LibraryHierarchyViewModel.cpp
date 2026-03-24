@@ -15,10 +15,9 @@
 #include "file/note/WhatSonHubNoteFolderClearService.hpp"
 #include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
+#include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
-#include "file/note/WhatSonNoteHeaderCreator.hpp"
-#include "file/note/WhatSonNoteHeaderStore.hpp"
-#include "file/note/WhatSonLocalNoteFileStore.hpp"
 #include "file/note/WhatSonNoteLinkManagerCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
@@ -795,195 +794,6 @@ namespace
         }
 
         return false;
-    }
-
-    struct FolderBindingList final
-    {
-        QStringList folders;
-        QStringList folderUuids;
-    };
-
-    void appendDistinctFolderBinding(
-        FolderBindingList* targetBindings,
-        QSet<QString>* targetKeys,
-        const QString& folderValue,
-        const QString& folderUuid,
-        bool preserveOriginalValue)
-    {
-        if (targetBindings == nullptr || targetKeys == nullptr)
-        {
-            return;
-        }
-
-        const QString trimmedValue = folderValue.trimmed();
-        const QString normalizedFolderPath = normalizeFolderPath(trimmedValue);
-        const QString normalizedFolderKey = normalizeFolderLookupKey(trimmedValue);
-        const QString normalizedFolderUuid = normalizeFolderUuid(folderUuid);
-        const QString bindingKey = !normalizedFolderUuid.isEmpty()
-                                       ? QStringLiteral("uuid:%1").arg(normalizedFolderUuid)
-                                       : QStringLiteral("path:%1").arg(normalizedFolderKey);
-        if ((normalizedFolderUuid.isEmpty() && normalizedFolderKey.isEmpty())
-            || targetKeys->contains(bindingKey))
-        {
-            return;
-        }
-
-        targetKeys->insert(bindingKey);
-        targetBindings->folders.push_back(preserveOriginalValue ? trimmedValue : normalizedFolderPath);
-        targetBindings->folderUuids.push_back(normalizedFolderUuid);
-    }
-
-    FolderBindingList mergeFolderAssignments(
-        const QStringList& primaryFolders,
-        const QStringList& primaryFolderUuids,
-        const QStringList& secondaryFolders,
-        const QStringList& secondaryFolderUuids)
-    {
-        FolderBindingList mergedBindings;
-        mergedBindings.folders.reserve(primaryFolders.size() + secondaryFolders.size());
-        mergedBindings.folderUuids.reserve(primaryFolders.size() + secondaryFolders.size());
-        QSet<QString> mergedBindingKeys;
-
-        for (int index = 0; index < primaryFolders.size(); ++index)
-        {
-            appendDistinctFolderBinding(
-                &mergedBindings,
-                &mergedBindingKeys,
-                primaryFolders.at(index),
-                index < primaryFolderUuids.size() ? primaryFolderUuids.at(index) : QString(),
-                true);
-        }
-
-        for (int index = 0; index < secondaryFolders.size(); ++index)
-        {
-            appendDistinctFolderBinding(
-                &mergedBindings,
-                &mergedBindingKeys,
-                secondaryFolders.at(index),
-                index < secondaryFolderUuids.size() ? secondaryFolderUuids.at(index) : QString(),
-                true);
-        }
-
-        return mergedBindings;
-    }
-
-    FolderBindingList folderAssignmentForDrop(
-        const FolderBindingList& existingBindings,
-        const QString& folderPath,
-        const QString& folderUuid)
-    {
-        FolderBindingList assignedBindings = existingBindings;
-        const QString normalizedTargetFolderPath = normalizeFolderPath(folderPath);
-        const QString normalizedTargetFolderUuid = normalizeFolderUuid(folderUuid);
-        if (!normalizedTargetFolderUuid.isEmpty() && !normalizedTargetFolderPath.isEmpty())
-        {
-            while (assignedBindings.folderUuids.size() < assignedBindings.folders.size())
-            {
-                assignedBindings.folderUuids.push_back(QString());
-            }
-
-            for (int index = 0; index < assignedBindings.folders.size(); ++index)
-            {
-                const QString existingUuid = index < assignedBindings.folderUuids.size()
-                                                 ? normalizeFolderUuid(assignedBindings.folderUuids.at(index))
-                                                 : QString();
-                if (existingUuid != normalizedTargetFolderUuid)
-                {
-                    continue;
-                }
-
-                assignedBindings.folders[index] = normalizedTargetFolderPath;
-                assignedBindings.folderUuids[index] = normalizedTargetFolderUuid;
-                return assignedBindings;
-            }
-        }
-
-        QSet<QString> assignedBindingKeys;
-        for (int index = 0; index < assignedBindings.folders.size(); ++index)
-        {
-            const QString normalizedFolderUuid = index < assignedBindings.folderUuids.size()
-                                                     ? normalizeFolderUuid(assignedBindings.folderUuids.at(index))
-                                                     : QString();
-            const QString normalizedFolderKey = normalizeFolderLookupKey(assignedBindings.folders.at(index));
-            const QString bindingKey = !normalizedFolderUuid.isEmpty()
-                                           ? QStringLiteral("uuid:%1").arg(normalizedFolderUuid)
-                                           : QStringLiteral("path:%1").arg(normalizedFolderKey);
-            if (!bindingKey.endsWith(QLatin1Char(':')))
-            {
-                assignedBindingKeys.insert(bindingKey);
-            }
-        }
-
-        appendDistinctFolderBinding(
-            &assignedBindings,
-            &assignedBindingKeys,
-            folderPath,
-            folderUuid,
-            false);
-        return assignedBindings;
-    }
-
-    bool folderBindingsContain(
-        const FolderBindingList& bindings,
-        const QString& folderPath,
-        const QString& folderUuid)
-    {
-        const QString normalizedFolderUuid = normalizeFolderUuid(folderUuid);
-        const QString normalizedFolderKey = normalizeFolderLookupKey(folderPath);
-
-        for (int index = 0; index < bindings.folders.size(); ++index)
-        {
-            const QString existingUuid = index < bindings.folderUuids.size()
-                                             ? normalizeFolderUuid(bindings.folderUuids.at(index))
-                                             : QString();
-            if (!normalizedFolderUuid.isEmpty() && existingUuid == normalizedFolderUuid)
-            {
-                return true;
-            }
-            if (normalizedFolderUuid.isEmpty()
-                && normalizeFolderLookupKey(bindings.folders.at(index)) == normalizedFolderKey)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    bool folderBindingsMatch(
-        const QStringList& lhsFolders,
-        const QStringList& lhsFolderUuids,
-        const QStringList& rhsFolders,
-        const QStringList& rhsFolderUuids)
-    {
-        if (lhsFolders.size() != rhsFolders.size())
-        {
-            return false;
-        }
-
-        for (int index = 0; index < lhsFolders.size(); ++index)
-        {
-            const QString lhsUuid = index < lhsFolderUuids.size()
-                                        ? normalizeFolderUuid(lhsFolderUuids.at(index))
-                                        : QString();
-            const QString rhsUuid = index < rhsFolderUuids.size()
-                                        ? normalizeFolderUuid(rhsFolderUuids.at(index))
-                                        : QString();
-            if (!lhsUuid.isEmpty() || !rhsUuid.isEmpty())
-            {
-                if (lhsUuid != rhsUuid)
-                {
-                    return false;
-                }
-            }
-
-            if (normalizeFolderLookupKey(lhsFolders.at(index)) != normalizeFolderLookupKey(rhsFolders.at(index)))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     QString rejectNoteDropReason(
@@ -2674,6 +2484,7 @@ bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& note
 {
     QString targetFolderPath;
     QString targetFolderUuid;
+    QString headerPath;
     int noteIndex = -1;
     const QString rejectReason = rejectNoteDropReason(
         m_items,
@@ -2684,7 +2495,7 @@ bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& note
         &targetFolderPath,
         &targetFolderUuid,
         &noteIndex,
-        nullptr);
+        &headerPath);
     if (!rejectReason.isEmpty())
     {
         return false;
@@ -2695,12 +2506,37 @@ bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& note
         return false;
     }
 
-    const FolderBindingList existingBindings = mergeFolderAssignments(
-        m_libraryAll.notes().at(noteIndex).folders,
-        m_libraryAll.notes().at(noteIndex).folderUuids,
-        {},
-        {});
-    return !folderBindingsContain(existingBindings, targetFolderPath, targetFolderUuid);
+    const LibraryNoteRecord& note = m_libraryAll.notes().at(noteIndex);
+    const WhatSonNoteFolderBindingService noteFolderBindingService;
+    const WhatSonNoteFolderBindingService::Bindings runtimeBindings =
+        noteFolderBindingService.bindings(note.folders, note.folderUuids);
+    const WhatSonNoteFolderBindingRepository noteFolderBindingRepository;
+
+    WhatSonLocalNoteDocument noteDocument;
+    QString ioError;
+    if (!noteFolderBindingRepository.readDocument(
+        note.noteId,
+        note.noteDirectoryPath,
+        headerPath,
+        &noteDocument,
+        &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("canAcceptNoteDrop.readFallback"),
+                                  QStringLiteral("index=%1 noteId=%2 error=%3")
+                                      .arg(index)
+                                      .arg(noteId, ioError));
+        return !noteFolderBindingService.contains(runtimeBindings, targetFolderPath, targetFolderUuid);
+    }
+
+    const WhatSonNoteFolderBindingService::Bindings persistedBindings = noteFolderBindingService.bindings(
+        noteDocument.headerStore.folders(),
+        noteDocument.headerStore.folderUuids());
+    const WhatSonNoteFolderBindingService::Bindings existingBindings = noteFolderBindingService.mergeBindings(
+        persistedBindings,
+        runtimeBindings);
+    return !noteFolderBindingService.contains(existingBindings, targetFolderPath, targetFolderUuid);
 }
 
 bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& noteId)
@@ -2749,15 +2585,15 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    WhatSonLocalNoteFileStore localNoteFileStore;
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = note.noteId;
-    readRequest.noteDirectoryPath = note.noteDirectoryPath;
-    readRequest.noteHeaderPath = headerPath;
-
+    const WhatSonNoteFolderBindingRepository noteFolderBindingRepository;
     WhatSonLocalNoteDocument noteDocument;
     QString ioError;
-    if (!localNoteFileStore.readNote(std::move(readRequest), &noteDocument, &ioError))
+    if (!noteFolderBindingRepository.readDocument(
+        note.noteId,
+        note.noteDirectoryPath,
+        headerPath,
+        &noteDocument,
+        &ioError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
@@ -2766,24 +2602,25 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    const FolderBindingList mergedExistingBindings = mergeFolderAssignments(
-        note.folders,
-        note.folderUuids,
-        noteDocument.headerStore.folders(),
-        noteDocument.headerStore.folderUuids());
-    const FolderBindingList assignedBindings = folderAssignmentForDrop(
-        mergedExistingBindings,
-        targetFolderPath,
-        targetFolderUuid);
-    const bool targetAlreadyAssigned = folderBindingsContain(
-        mergedExistingBindings,
-        targetFolderPath,
-        targetFolderUuid);
-    const bool headerAlreadyMatchesAssignment = folderBindingsMatch(
+    const WhatSonNoteFolderBindingService noteFolderBindingService;
+    const WhatSonNoteFolderBindingService::Bindings mergedExistingBindings = noteFolderBindingService.mergeBindings(
         noteDocument.headerStore.folders(),
         noteDocument.headerStore.folderUuids(),
-        assignedBindings.folders,
-        assignedBindings.folderUuids);
+        note.folders,
+        note.folderUuids);
+    const WhatSonNoteFolderBindingService::Bindings assignedBindings = noteFolderBindingService.assignFolder(
+        mergedExistingBindings,
+        targetFolderPath,
+        targetFolderUuid);
+    const bool targetAlreadyAssigned = noteFolderBindingService.contains(
+        mergedExistingBindings,
+        targetFolderPath,
+        targetFolderUuid);
+    const bool headerAlreadyMatchesAssignment = noteFolderBindingService.matches(
+        noteFolderBindingService.bindings(
+            noteDocument.headerStore.folders(),
+            noteDocument.headerStore.folderUuids()),
+        assignedBindings);
 
     if (targetAlreadyAssigned && headerAlreadyMatchesAssignment)
     {
@@ -2803,16 +2640,13 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return true;
     }
 
-    noteDocument.headerStore.setFolderBindings(assignedBindings.folders, assignedBindings.folderUuids);
-    noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
-
-    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-    updateRequest.document = noteDocument;
-    updateRequest.persistHeader = true;
-    updateRequest.persistBody = false;
-
     QString writeError;
-    if (!localNoteFileStore.updateNote(std::move(updateRequest), &noteDocument, &writeError))
+    if (!noteFolderBindingRepository.writeFolderBindings(
+        std::move(noteDocument),
+        assignedBindings,
+        currentNoteTimestamp(),
+        &noteDocument,
+        &writeError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),

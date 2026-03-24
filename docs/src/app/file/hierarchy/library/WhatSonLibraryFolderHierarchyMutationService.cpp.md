@@ -20,7 +20,9 @@ the semantic folder identity.
 
 ## Header Rewrite Logic
 
-- Stored note headers are read through `WhatSonNoteHeaderStore`.
+- Stored note headers are read and written through `WhatSonNoteFolderBindingRepository`.
+- Binding comparison is delegated to `WhatSonNoteFolderBindingService` so drag/drop and hierarchy
+  rename use the same equality rules.
 - Existing `<folder uuid="...">path</folder>` bindings are preserved when they still resolve.
 - Legacy headers without UUIDs still work through a path fallback during migration.
 - Redundant ancestor assignments are removed before the note is rewritten so headers keep only the
@@ -31,7 +33,7 @@ the semantic folder identity.
 ## Persistence Order
 
 1. Calculate staged header rewrites from original-tree UUIDs to staged-tree UUID targets.
-2. Persist header-only note updates through `WhatSonLocalNoteFileStore`.
+2. Persist header-only note updates through `WhatSonNoteFolderBindingRepository`.
 3. Write the staged folder tree file.
 4. Synchronize returned `LibraryNoteRecord` values from the rewritten documents.
 

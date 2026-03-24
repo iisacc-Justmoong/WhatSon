@@ -63,6 +63,7 @@ private
     void applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection();
     void assignNoteToFolder_preservesExistingFolderValuesAndAppendsDroppedTarget();
+    void assignNoteToFolder_preservesMultipleExistingFolderValuesAndAppendsDroppedTarget();
     void assignNoteToFolder_mergesRuntimeFoldersWhenPersistedHeaderWasTruncated();
     void assignNoteToFolder_rewritesStaleFolderPathWhenUuidAlreadyAssigned();
     void loadFromWshub_renameItem_rewritesDescendantHeaderAssignments();
@@ -2577,6 +2578,92 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_preservesExistingFolderVa
                       LibraryNoteListModel::IdRole).
                   toString(),
         QStringLiteral("note-b"));
+}
+
+void LibraryHierarchyViewModelTest::assignNoteToFolder_preservesMultipleExistingFolderValuesAndAppendsDroppedTarget()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"children\": [\n"
+        "        {\n"
+        "          \"id\": \"Research/Competitor\",\n"
+        "          \"label\": \"Competitor\"\n"
+        "        }\n"
+        "      ]\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    const QString betaHeaderPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/Beta.wsnote/Beta.wsnhead"));
+    QVERIFY(writeUtf8File(
+        betaHeaderPath,
+        makeWsnHeadText(
+            QStringLiteral("note-b"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {QStringLiteral("Workspace"), QStringLiteral("Brand")})));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole).
+                          toString()
+                == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
+    QVERIFY(competitorIndex >= 0);
+    QVERIFY(viewModel.canAcceptNoteDrop(competitorIndex, QStringLiteral("note-b")));
+    QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-b")));
+
+    QFile betaHeaderFile(betaHeaderPath);
+    QVERIFY(betaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(QString::fromUtf8(betaHeaderFile.readAll()), &headerStore, &parseError),
+             qPrintable(parseError));
+    QCOMPARE(
+        headerStore.folders(),
+        QStringList({
+            QStringLiteral("Workspace"),
+            QStringLiteral("Brand"),
+            QStringLiteral("Research/Competitor")
+        }));
 }
 
 void LibraryHierarchyViewModelTest::assignNoteToFolder_mergesRuntimeFoldersWhenPersistedHeaderWasTruncated()

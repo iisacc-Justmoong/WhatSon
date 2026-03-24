@@ -1,7 +1,7 @@
 #pragma once
 
 #include "WhatSonHubNoteMutationSupport.hpp"
-#include "WhatSonLocalNoteFileStore.hpp"
+#include "WhatSonNoteFolderBindingRepository.hpp"
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
 
 #include <QString>
@@ -29,5 +29,5 @@ public:
     bool clearFolders(Request request, Result* outResult = nullptr, QString* errorMessage = nullptr) const;
 
 private:
-    WhatSonLocalNoteFileStore m_localNoteFileStore;
+    WhatSonNoteFolderBindingRepository m_noteFolderBindingRepository;
 };

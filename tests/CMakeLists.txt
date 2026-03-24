@@ -312,6 +312,8 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingRepository.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteMutationSupport.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteCreationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
@@ -434,6 +436,8 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingRepository.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteMutationSupport.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteCreationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp

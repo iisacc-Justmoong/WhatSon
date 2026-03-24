@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/note`
 - Child directories: 0
-- Child files: 31
+- Child files: 35
 
 ## Child Directories
 - No child directories.
@@ -35,6 +35,10 @@
 - `WhatSonNoteBodyPersistence.hpp`
 - `WhatSonNoteCreator.cpp`
 - `WhatSonNoteCreator.hpp`
+- `WhatSonNoteFolderBindingRepository.cpp`
+- `WhatSonNoteFolderBindingRepository.hpp`
+- `WhatSonNoteFolderBindingService.cpp`
+- `WhatSonNoteFolderBindingService.hpp`
 - `WhatSonNoteFolderSemantics.hpp`
 - `WhatSonNoteHeaderCreator.cpp`
 - `WhatSonNoteHeaderCreator.hpp`

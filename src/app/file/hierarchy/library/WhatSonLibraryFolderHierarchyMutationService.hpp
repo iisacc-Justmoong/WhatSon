@@ -2,7 +2,7 @@
 
 #include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
 #include "file/hierarchy/library/LibraryNoteRecord.hpp"
-#include "file/note/WhatSonLocalNoteFileStore.hpp"
+#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QHash>
 #include <QString>
@@ -32,5 +32,5 @@ public:
     bool commitMutation(Request request, Result* outResult = nullptr, QString* errorMessage = nullptr) const;
 
 private:
-    WhatSonLocalNoteFileStore m_localNoteFileStore;
+    WhatSonNoteFolderBindingRepository m_noteFolderBindingRepository;
 };

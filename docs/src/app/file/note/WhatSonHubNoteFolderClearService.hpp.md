@@ -1,39 +1,16 @@
 # `src/app/file/note/WhatSonHubNoteFolderClearService.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonHubNoteFolderClearService.hpp`
-- Source kind: C++ header
-- File name: `WhatSonHubNoteFolderClearService.hpp`
-- Approximate line count: 33
+This header declares the service that removes all folder bindings from one indexed note.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Collaborators
 
-### Classes and Structs
-- `WhatSonHubNoteFolderClearService`
-- `Request`
-- `Result`
+- The service resolves note IDs and header paths through `WhatSonHubNoteMutationSupport`.
+- It reads and writes `.wsnhead` data through `WhatSonNoteFolderBindingRepository`.
+- It returns the updated `LibraryNoteRecord` vector so the caller can refresh runtime state.
 
-### Enums
-- None detected during scaffold generation.
+## Mutation Contract
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+Clearing folders is defined as writing an explicitly empty `<folders>` array. The service does not
+delete the note, rewrite the body, or mutate unrelated header metadata.

@@ -20,7 +20,8 @@ The current implementation treats folder UUID as the canonical identity:
 
 - path changes are allowed,
 - UUIDs remain stable,
-- note headers are rewritten by UUID lookup against the staged hierarchy.
+- note headers are rewritten by UUID lookup against the staged hierarchy,
+- persisted header I/O is delegated to `WhatSonNoteFolderBindingRepository`.
 
 This solves the earlier failure mode where renaming a parent folder invalidated every descendant note
 binding because the stored path no longer matched the runtime tree.

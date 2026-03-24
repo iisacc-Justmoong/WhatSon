@@ -1,37 +1,17 @@
 # `src/app/file/note/WhatSonHubNoteFolderClearService.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonHubNoteFolderClearService.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonHubNoteFolderClearService.cpp`
-- Approximate line count: 94
+This file clears a note's folder membership without touching body content.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Execution Flow
 
-### Classes and Structs
-- None detected during scaffold generation.
+1. Resolve the indexed note by `noteId`.
+2. Read the `.wsnhead` document through `WhatSonNoteFolderBindingRepository`.
+3. Persist an empty binding set through the same repository.
+4. Synchronize the updated `LibraryNoteRecord` back into the returned vector.
 
-### Enums
-- None detected during scaffold generation.
+## Why The Repository Matters
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+The clear-folder path now uses the same note-folder I/O boundary as drag/drop assignment and folder
+tree mutation. That keeps all folder metadata writes on one code path.

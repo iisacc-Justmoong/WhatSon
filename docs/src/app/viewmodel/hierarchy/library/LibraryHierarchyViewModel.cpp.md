@@ -40,8 +40,12 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - `resolvedNoteFolderUuids(...)` reconstructs a note's effective folder membership.
 - `canonicalLeafFolderUuids(...)` removes redundant ancestor assignments before comparison.
 - `noteMatchesFolderScope(...)` checks the selected folder by UUID rather than by the current path.
-- `assignNoteToFolder(...)` merges existing bindings and writes them through
-  `WhatSonNoteHeaderStore::setFolderBindings(...)`.
+- `canAcceptNoteDrop(...)` and `assignNoteToFolder(...)` now read persisted header bindings through
+  `WhatSonNoteFolderBindingRepository` instead of trusting runtime arrays alone.
+- `assignNoteToFolder(...)` merges header bindings first, then supplements them with runtime state,
+  before persisting through `WhatSonNoteFolderBindingRepository`.
+- A note can belong to multiple folders at once, so drag-and-drop must append the dropped target
+  instead of replacing the existing `<folders>` array.
 - A drop onto a folder now repairs stale serialized folder text when the note already has the same
   UUID but an outdated path string.
 

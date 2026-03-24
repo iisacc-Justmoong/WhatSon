@@ -3,6 +3,7 @@
 #include "file/hierarchy/WhatSonFolderIdentity.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/note/WhatSonHubNoteMutationSupport.hpp"
+#include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
 
 #include <QSet>
@@ -318,41 +319,6 @@ namespace
         return normalizedParent + QLatin1Char('/') + normalizedLabel;
     }
 
-    bool folderBindingsMatch(
-        const QStringList& lhsFolders,
-        const QStringList& lhsFolderUuids,
-        const QStringList& rhsFolders,
-        const QStringList& rhsFolderUuids)
-    {
-        if (lhsFolders.size() != rhsFolders.size())
-        {
-            return false;
-        }
-
-        for (int index = 0; index < lhsFolders.size(); ++index)
-        {
-            const QString lhsUuid = index < lhsFolderUuids.size()
-                                        ? normalizeFolderUuid(lhsFolderUuids.at(index))
-                                        : QString();
-            const QString rhsUuid = index < rhsFolderUuids.size()
-                                        ? normalizeFolderUuid(rhsFolderUuids.at(index))
-                                        : QString();
-            if (!lhsUuid.isEmpty() || !rhsUuid.isEmpty())
-            {
-                if (lhsUuid != rhsUuid)
-                {
-                    return false;
-                }
-            }
-
-            if (normalizeFolderLookupKey(lhsFolders.at(index)) != normalizeFolderLookupKey(rhsFolders.at(index)))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 } // namespace
 
 WhatSonLibraryFolderHierarchyMutationService::WhatSonLibraryFolderHierarchyMutationService() = default;
@@ -371,6 +337,7 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
         WhatSonLocalNoteDocument nextDocument;
     };
 
+    const WhatSonNoteFolderBindingService noteFolderBindingService;
     QVector<PendingNoteFolderRewrite> pendingNoteWrites;
     pendingNoteWrites.reserve(request.notes.size());
 
@@ -415,14 +382,9 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
                 remappedFolderUuids.push_back(remappedFolderUuid);
             }
 
-            WhatSonLocalNoteFileStore::ReadRequest readRequest;
-            readRequest.noteId = note.noteId;
-            readRequest.noteDirectoryPath = note.noteDirectoryPath;
-            readRequest.noteHeaderPath = WhatSon::NoteMutationSupport::resolveNoteHeaderPath(note);
-
             WhatSonLocalNoteDocument previousDocument;
             QString readError;
-            if (!m_localNoteFileStore.readNote(std::move(readRequest), &previousDocument, &readError))
+            if (!m_noteFolderBindingRepository.readDocument(note, &previousDocument, &readError))
             {
                 if (errorMessage != nullptr)
                 {
@@ -431,17 +393,19 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
                 return false;
             }
 
-            if (folderBindingsMatch(
+            const WhatSonNoteFolderBindingService::Bindings previousBindings = noteFolderBindingService.bindings(
                 previousDocument.headerStore.folders(),
-                previousDocument.headerStore.folderUuids(),
+                previousDocument.headerStore.folderUuids());
+            const WhatSonNoteFolderBindingService::Bindings remappedBindings = noteFolderBindingService.bindings(
                 remappedFolders,
-                remappedFolderUuids))
+                remappedFolderUuids);
+            if (noteFolderBindingService.matches(previousBindings, remappedBindings))
             {
                 continue;
             }
 
             WhatSonLocalNoteDocument nextDocument = previousDocument;
-            nextDocument.headerStore.setFolderBindings(remappedFolders, remappedFolderUuids);
+            nextDocument.headerStore.setFolderBindings(remappedBindings.folders, remappedBindings.folderUuids);
             nextDocument.headerStore.setLastModifiedAt(rewriteTimestamp);
 
             PendingNoteFolderRewrite rewrite;
@@ -457,11 +421,7 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
         for (int index = writes.size() - 1; index >= 0; --index)
         {
             const PendingNoteFolderRewrite& rewrite = writes.at(index);
-            WhatSonLocalNoteFileStore::UpdateRequest rollbackRequest;
-            rollbackRequest.document = rewrite.previousDocument;
-            rollbackRequest.persistHeader = true;
-            rollbackRequest.persistBody = false;
-            m_localNoteFileStore.updateNote(std::move(rollbackRequest), nullptr, nullptr);
+            m_noteFolderBindingRepository.writeDocument(rewrite.previousDocument, nullptr, nullptr);
         }
     };
 
@@ -469,14 +429,9 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
     appliedNoteWrites.reserve(pendingNoteWrites.size());
     for (const PendingNoteFolderRewrite& rewrite : pendingNoteWrites)
     {
-        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-        updateRequest.document = rewrite.nextDocument;
-        updateRequest.persistHeader = true;
-        updateRequest.persistBody = false;
-
         WhatSonLocalNoteDocument updatedDocument;
         QString writeError;
-        if (!m_localNoteFileStore.updateNote(std::move(updateRequest), &updatedDocument, &writeError))
+        if (!m_noteFolderBindingRepository.writeDocument(rewrite.nextDocument, &updatedDocument, &writeError))
         {
             rollbackNoteWrites(appliedNoteWrites);
             if (errorMessage != nullptr)
