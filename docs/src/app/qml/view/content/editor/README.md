@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 5
+- Child files: 8
 
 ## Child Directories
 - No child directories.
@@ -18,6 +18,16 @@
 - `ContentsEditorSession.qml`
 - `ContentsGutterLayer.qml`
 - `ContentsMinimapLayer.qml`
+- `DrawerContents.qml`
+- `DrawerMenuBar.qml`
+- `DrawerToolbar.qml`
+
+## Current Notes
+
+- The lower editor drawer is now decomposed into three dedicated sibling QML files that mirror the Figma frames:
+  `DrawerMenuBar.qml` (`155:4565`), `DrawerContents.qml` (`174:6352`), and `DrawerToolbar.qml` (`155:4570`).
+- `ContentsDisplayView.qml` remains the integration point and keeps local draft state plus panel-view-model hook routing
+  for the new drawer modules.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

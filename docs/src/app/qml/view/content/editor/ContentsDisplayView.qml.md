@@ -23,6 +23,8 @@ positions from the same document origin.
 - `ContentsGutterMarkerBridge`: normalizes external marker specifications into a gutter-friendly model.
 - `ContentsEditorSession`: owns local-authority tracking, debounced saves, and note-switch synchronization.
 - `ContentsGutterLayer` and `ContentsMinimapLayer`: render against the shared geometry helpers exported by this file.
+- `DrawerMenuBar`, `DrawerContents`, and `DrawerToolbar`: compose the lower drawer as separate Figma-aligned modules
+  instead of an inline placeholder rectangle.
 
 ## Interaction and Persistence
 
@@ -30,6 +32,8 @@ positions from the same document origin.
 - Model-driven note swaps call `editorSession.syncEditorTextFromSelection(...)` and flush pending edits when the bound
   note changes.
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
+- `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
+  mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.
 
 ## Scroll and Minimap Rules
 
@@ -41,4 +45,4 @@ positions from the same document origin.
 ## Tests
 
 - `tests/app/test_qml_binding_syntax_guard.cpp` guards the shared top inset, zero top padding, Fill-height contract,
-  and editor-session wiring.
+  editor-session wiring, and the three-part quick-note drawer composition.

@@ -54,6 +54,7 @@ private
     void qmlFiles_mustNotContainStandaloneDottedExpression();
     void criticalViewHelpers_mustReturnExplicitValues();
     void contentView_mustComposeTextEditorGutter();
+    void contentDrawer_mustComposeQuickNoteFrames();
     void hierarchySidebarWiring_mustBindLoaderAndToolbarTarget();
     void mobileHierarchyPage_mustRouteHierarchyActivationIntoNoteListBody();
     void noteListDeleteShortcutWiring_mustStayCentralized();
@@ -685,6 +686,110 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorDocumentStartY")),
         "ContentViewLayout.qml placeholder label must align to the shared document origin.");
+}
+
+void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+
+    const QString contentViewPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsDisplayView.qml"));
+    QFile contentViewFile(contentViewPath);
+    QVERIFY2(contentViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewPath));
+    const QString contentViewText = QString::fromUtf8(contentViewFile.readAll());
+
+    const QString drawerMenuBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/DrawerMenuBar.qml"));
+    QFile drawerMenuBarFile(drawerMenuBarPath);
+    QVERIFY2(drawerMenuBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(drawerMenuBarPath));
+    const QString drawerMenuBarText = QString::fromUtf8(drawerMenuBarFile.readAll());
+
+    const QString drawerContentsPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/DrawerContents.qml"));
+    QFile drawerContentsFile(drawerContentsPath);
+    QVERIFY2(drawerContentsFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(drawerContentsPath));
+    const QString drawerContentsText = QString::fromUtf8(drawerContentsFile.readAll());
+
+    const QString drawerToolbarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/DrawerToolbar.qml"));
+    QFile drawerToolbarFile(drawerToolbarPath);
+    QVERIFY2(drawerToolbarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(drawerToolbarPath));
+    const QString drawerToolbarText = QString::fromUtf8(drawerToolbarFile.readAll());
+
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property string drawerQuickNoteText: \"\"")),
+        "ContentsDisplayView.qml must keep a dedicated local draft state for the drawer quick-note page.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property string drawerModeQuickNote: \"QuickNote\"")),
+        "ContentsDisplayView.qml must declare the QuickNote drawer mode explicitly.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("DrawerMenuBar {")) &&
+            contentViewText.contains(QStringLiteral("DrawerContents {")) &&
+            contentViewText.contains(QStringLiteral("DrawerToolbar {")),
+        "ContentsDisplayView.qml must compose the drawer as three dedicated sibling modules instead of keeping the lower panel as a placeholder rectangle.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("quickNoteText: contentsView.drawerQuickNoteText")),
+        "ContentsDisplayView.qml must bind the drawer contents page to the local quick-note draft state.");
+
+    QVERIFY2(
+        drawerMenuBarText.contains(QStringLiteral("objectName: \"DrawerMenubar\"")) &&
+            drawerMenuBarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4565\"")),
+        "DrawerMenuBar.qml must preserve the Figma DrawerMenubar frame identity.");
+    QVERIFY2(
+        drawerMenuBarText.contains(QStringLiteral("LV.IconSegmentedControl {")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: QuickNote")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: ItemBox")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: DataSearch")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: GraphView")),
+        "DrawerMenuBar.qml must expose the four Figma drawer mode segments as dedicated icon buttons.");
+    QVERIFY2(
+        drawerMenuBarText.contains(QStringLiteral("id: TextAlign")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: ViewOptions")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: editorPreviewVertical")),
+        "DrawerMenuBar.qml must keep the three right-side drawer configuration controls from the Figma frame.");
+    QVERIFY2(
+        drawerMenuBarText.contains(QStringLiteral("iconName: \"textToImage\"")) &&
+            drawerMenuBarText.contains(QStringLiteral("iconName: \"swiftPackage\"")) &&
+            drawerMenuBarText.contains(QStringLiteral("iconName: \"shortcutFilter\"")) &&
+            drawerMenuBarText.contains(QStringLiteral("iconName: \"graphMachineLearning\"")),
+        "DrawerMenuBar.qml must keep the Figma-specified icon names for each drawer mode segment.");
+
+    QVERIFY2(
+        drawerContentsText.contains(QStringLiteral("objectName: \"DrawerContents\"")) &&
+            drawerContentsText.contains(QStringLiteral("readonly property string figmaNodeId: \"174:6352\"")),
+        "DrawerContents.qml must preserve the Figma DrawerContents frame identity.");
+    QVERIFY2(
+        drawerContentsText.contains(QStringLiteral("id: QuickNotePage")) &&
+            drawerContentsText.contains(QStringLiteral("objectName: \"QuickNotePage\"")),
+        "DrawerContents.qml must render the drawer quick-note body as an inline page surface, not as a separate window.");
+    QVERIFY2(
+        !drawerContentsText.contains(QStringLiteral("import QtQuick.Window")) &&
+            !drawerContentsText.contains(QStringLiteral("Window {")),
+        "DrawerContents.qml must keep QuickNote inside the drawer page stack instead of reusing the standalone QuickNote window.");
+    QVERIFY2(
+        drawerContentsText.contains(QStringLiteral("LV.TextEditor {")) &&
+            drawerContentsText.contains(QStringLiteral("property alias quickNoteText: quickNoteEditor.text")) &&
+            drawerContentsText.contains(QStringLiteral("backgroundColor: \"transparent\"")),
+        "DrawerContents.qml must expose an editable LVRS quick-note page with a transparent surface over the drawer canvas.");
+    QVERIFY2(
+        drawerContentsText.contains(QStringLiteral("property: \"topPadding\"")) &&
+            drawerContentsText.contains(QStringLiteral("value: 0")),
+        "DrawerContents.qml must neutralize LVRS top padding so the quick-note page starts at the Figma top edge instead of vertically centering the text block.");
+
+    QVERIFY2(
+        drawerToolbarText.contains(QStringLiteral("objectName: \"DrawerToolbar\"")) &&
+            drawerToolbarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4570\"")),
+        "DrawerToolbar.qml must preserve the Figma DrawerToolbar frame identity.");
+    QVERIFY2(
+        drawerToolbarText.contains(QStringLiteral("id: Sumit")) &&
+            drawerToolbarText.contains(QStringLiteral("id: ShowQuickNoteWindow")) &&
+            drawerToolbarText.contains(QStringLiteral("id: NewDraft")),
+        "DrawerToolbar.qml must keep the Figma toolbar group and both action controls with stable ids.");
+    QVERIFY2(
+        drawerToolbarText.contains(QStringLiteral("text: \"New Draft\"")) &&
+            drawerToolbarText.contains(QStringLiteral("iconName: \"jpaConsoleToolWindow\"")),
+        "DrawerToolbar.qml must keep the QuickNote pop-out button and the filled New Draft action from the Figma design.");
 }
 
 void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarTarget()

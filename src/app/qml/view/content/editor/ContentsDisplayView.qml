@@ -13,9 +13,12 @@ Item {
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
     property color displayColor: "transparent"
+    property string drawerQuickNoteText: ""
     property bool drawerVisible: true
     property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
+    readonly property string drawerModeQuickNote: "QuickNote"
+    property string activeDrawerMode: contentsView.drawerModeQuickNote
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
@@ -849,8 +852,51 @@ Item {
 
             Layout.fillWidth: true
             Layout.preferredHeight: contentsView.clampDrawerHeight(contentsView.drawerHeight)
+            clip: true
             color: contentsView.drawerColor
             visible: contentsView.drawerVisible
+
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: LV.Theme.gapNone
+
+                DrawerMenuBar {
+                    Layout.fillWidth: true
+                    activeDrawerMode: contentsView.activeDrawerMode
+
+                    onDrawerModeRequested: function (modeName) {
+                        if (modeName !== contentsView.drawerModeQuickNote)
+                            return;
+                        if (contentsView.activeDrawerMode !== modeName)
+                            contentsView.activeDrawerMode = modeName;
+                    }
+                    onViewHookRequested: function (reason) {
+                        contentsView.requestViewHook(reason);
+                    }
+                }
+                DrawerContents {
+                    id: drawerContents
+
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    activeDrawerMode: contentsView.activeDrawerMode
+                    quickNoteText: contentsView.drawerQuickNoteText
+
+                    onQuickNoteTextEdited: function (text) {
+                        contentsView.drawerQuickNoteText = text;
+                    }
+                    onViewHookRequested: function (reason) {
+                        contentsView.requestViewHook(reason);
+                    }
+                }
+                DrawerToolbar {
+                    Layout.fillWidth: true
+
+                    onViewHookRequested: function (reason) {
+                        contentsView.requestViewHook(reason);
+                    }
+                }
+            }
         }
     }
 }
