@@ -903,6 +903,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             lvrsHierarchyItemText.contains(QStringLiteral("anchors.rightMargin: control.chevronInteractionWidth")),
         "LVRS HierarchyItem.qml must reserve an activation-free chevron slot and suppress row activation while the chevron interaction is in progress, or mobile folder chevron taps will still open the note list.");
     QVERIFY2(
+        lvrsHierarchyItemText.contains(QStringLiteral("property color rowBackgroundColorInactive: \"transparent\"")),
+        "LVRS HierarchyItem.qml must keep inactive hierarchy rows transparent so desktop sidebar panels inherit the ApplicationWindow canvas instead of repainting a brighter inactive row fill under every folder item.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function normalizeHierarchyModel(modelValue)")),
         "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
     QVERIFY2(
@@ -930,6 +933,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             QStringLiteral(
                 "readonly property bool createFolderEnabled: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.createFolderEnabled) : false")),
         "SidebarHierarchyView.qml must source create-folder availability from the dedicated hierarchy interaction bridge.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property color searchFieldBackgroundColor: \"transparent\"")),
+        "SidebarHierarchyView.qml desktop search header must keep its inline field background transparent so the sidebar inherits the shared ApplicationWindow canvas.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
@@ -2024,6 +2030,10 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             statusBarText.contains(QStringLiteral("shapeStyle: shapeCylinder")) &&
             !statusBarText.contains(QStringLiteral("id: compactSearchTextField")),
         "StatusBarLayout.qml compact search input must let LVRS InputField render the cylindrical frame directly so the mobile bottom bar keeps the shared pill-shaped search affordance instead of a wrapped round-rect shell.");
+    QVERIFY2(
+        statusBarText.contains(QStringLiteral("readonly property color searchFieldColor: \"transparent\"")) &&
+            statusBarText.contains(QStringLiteral("color: statusBar.searchFieldColor")),
+        "StatusBarLayout.qml desktop search bar shell must stay transparent so the status strip inherits the ApplicationWindow canvas instead of repainting a separate panel surface.");
 
     const QString mobilePagePath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/mobile/pages/MobileHierarchyPage.qml"));

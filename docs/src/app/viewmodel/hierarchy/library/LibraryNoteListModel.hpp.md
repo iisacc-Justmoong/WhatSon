@@ -1,8 +1,24 @@
 # `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+`LibraryNoteListModel` is the concrete list-model contract that feeds the library note-list view.
+It exposes only UI-facing roles such as `noteId`, `primaryText`, `bodyText`, `displayDate`,
+folders, tags, and bookmark state, but each `LibraryNoteListItem` now also carries internal
+`createdAt` and `lastModifiedAt` timestamps.
+
+Those timestamps are not exported as QML roles. They exist so the model can keep the visible note
+rows sorted by most recently modified note first while preserving the rest of the public delegate
+contract.
+
+## Ordering Contract
+
+- `lastModifiedAt` is the primary ordering key.
+- `createdAt` is the fallback ordering key when `lastModifiedAt` is empty or invalid.
+- Items with no valid timestamp stay in their original relative order after timestamped items.
+
+This means the library note list no longer depends on index-file append order or creation-time
+insertion order when presenting the visible rows.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.hpp`
@@ -21,18 +37,8 @@
 ### Enums
 - `Role`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Runtime Notes
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Selection is still exposed by visible row index because the QML surface is index-driven.
+- Refresh-time selection recovery is performed by note id in the implementation, so resorting after
+  a save keeps the same logical note selected even when its row moves.

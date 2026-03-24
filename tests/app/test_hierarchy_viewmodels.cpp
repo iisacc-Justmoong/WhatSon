@@ -258,6 +258,7 @@ private
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
     void noteListModel_correctsColorAndTextFields();
+    void noteListModel_sortsNewestModifiedItemFirst();
     void noteListModel_currentSelection_exposesBodyText();
     void noteListModel_searchText_filtersAgainstSearchableBodyContent();
     void noteListModel_searchText_mustIgnoreInternalIdFallback();
@@ -1174,6 +1175,38 @@ void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()
     QVERIFY(model.correctionCount() >= 1);
 }
 
+void HierarchyViewModelsTest::noteListModel_sortsNewestModifiedItemFirst()
+{
+    LibraryNoteListModel model;
+
+    LibraryNoteListItem oldest;
+    oldest.id = QStringLiteral("note-oldest");
+    oldest.primaryText = QStringLiteral("Oldest");
+    oldest.createdAt = QStringLiteral("2026-03-01-00-00-00");
+    oldest.lastModifiedAt = QStringLiteral("2026-03-01-00-00-00");
+
+    LibraryNoteListItem newest;
+    newest.id = QStringLiteral("note-newest");
+    newest.primaryText = QStringLiteral("Newest");
+    newest.createdAt = QStringLiteral("2026-03-02-00-00-00");
+    newest.lastModifiedAt = QStringLiteral("2026-03-03-00-00-00");
+
+    LibraryNoteListItem fallbackCreated;
+    fallbackCreated.id = QStringLiteral("note-created-fallback");
+    fallbackCreated.primaryText = QStringLiteral("Created fallback");
+    fallbackCreated.createdAt = QStringLiteral("2026-03-02-12-00-00");
+    fallbackCreated.lastModifiedAt = QString();
+
+    model.setItems({oldest, newest, fallbackCreated});
+
+    QCOMPARE(model.rowCount(), 3);
+    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::IdRole).toString(), QStringLiteral("note-newest"));
+    QCOMPARE(
+        model.data(model.index(1, 0), LibraryNoteListModel::IdRole).toString(),
+        QStringLiteral("note-created-fallback"));
+    QCOMPARE(model.data(model.index(2, 0), LibraryNoteListModel::IdRole).toString(), QStringLiteral("note-oldest"));
+}
+
 void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
 {
     LibraryNoteListModel model;
@@ -1184,30 +1217,35 @@ void HierarchyViewModelsTest::noteListModel_currentSelection_exposesBodyText()
     alpha.primaryText = QStringLiteral("Alpha preview");
     alpha.bodyText = QStringLiteral("\nAlpha body first line\nAlpha body second line\n");
     alpha.searchableText = alpha.bodyText;
+    alpha.createdAt = QStringLiteral("2026-03-01-00-00-00");
+    alpha.lastModifiedAt = QStringLiteral("2026-03-01-00-00-00");
 
     LibraryNoteListItem beta;
     beta.id = QStringLiteral("note-beta");
     beta.primaryText = QStringLiteral("Beta preview");
     beta.bodyText = QStringLiteral("Beta body summary");
     beta.searchableText = beta.bodyText;
+    beta.createdAt = QStringLiteral("2026-03-02-00-00-00");
+    beta.lastModifiedAt = QStringLiteral("2026-03-03-00-00-00");
 
     model.setItems({alpha, beta});
 
     QCOMPARE(model.currentIndex(), -1);
     QCOMPARE(model.currentNoteId(), QString());
     QCOMPARE(model.currentBodyText(), QString());
-    QCOMPARE(model.data(model.index(0, 0), LibraryNoteListModel::BodyTextRole).toString(),
-             QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
+    QCOMPARE(
+        model.data(model.index(0, 0), LibraryNoteListModel::BodyTextRole).toString(),
+        QStringLiteral("Beta body summary"));
 
     model.setCurrentIndex(0);
     QCOMPARE(model.currentIndex(), 0);
-    QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
-    QCOMPARE(model.currentBodyText(), QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
+    QCOMPARE(model.currentNoteId(), QStringLiteral("note-beta"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("Beta body summary"));
 
     model.setCurrentIndex(1);
     QCOMPARE(model.currentIndex(), 1);
-    QCOMPARE(model.currentNoteId(), QStringLiteral("note-beta"));
-    QCOMPARE(model.currentBodyText(), QStringLiteral("Beta body summary"));
+    QCOMPARE(model.currentNoteId(), QStringLiteral("note-alpha"));
+    QCOMPARE(model.currentBodyText(), QStringLiteral("\nAlpha body first line\nAlpha body second line\n"));
 
     model.setSearchText(QStringLiteral("alpha"));
     QCOMPARE(model.rowCount(), 1);
@@ -1225,11 +1263,15 @@ void HierarchyViewModelsTest::noteListModel_searchText_filtersAgainstSearchableB
     alpha.id = QStringLiteral("note-alpha");
     alpha.primaryText = QStringLiteral("Alpha preview");
     alpha.searchableText = QStringLiteral("Alpha preview\nBody keyword moonshot launch plan");
+    alpha.createdAt = QStringLiteral("2026-03-01-00-00-00");
+    alpha.lastModifiedAt = QStringLiteral("2026-03-01-00-00-00");
 
     LibraryNoteListItem beta;
     beta.id = QStringLiteral("note-beta");
     beta.primaryText = QStringLiteral("Beta preview");
     beta.searchableText = QStringLiteral("Beta preview\nBody keyword release checklist");
+    beta.createdAt = QStringLiteral("2026-03-02-00-00-00");
+    beta.lastModifiedAt = QStringLiteral("2026-03-03-00-00-00");
 
     model.setItems({alpha, beta});
     QCOMPARE(model.rowCount(), 2);

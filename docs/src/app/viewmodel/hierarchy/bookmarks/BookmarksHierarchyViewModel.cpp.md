@@ -1,8 +1,18 @@
 # `src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+`BookmarksHierarchyViewModel.cpp` projects bookmarked `LibraryNoteRecord` entries into bookmark
+color folders plus the bookmark note-list model.
+
+## Note List Projection
+
+`buildBookmarksListItem(...)` now forwards `createdAt` and `lastModifiedAt` into
+`BookmarksNoteListItem` in addition to the already-visible preview, folder, tag, image, and
+bookmark-color roles.
+
+That keeps the bookmark note-list model able to apply the same latest-modified-first ordering rule
+used by the library list without inventing sort order from the localized `displayDate` string.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp`
@@ -20,18 +30,7 @@
 ### Enums
 - None detected during scaffold generation.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Verification
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+Bookmark note-list ordering and selection behavior are covered by
+`tests/app/test_hierarchy_viewmodels.cpp`.

@@ -1,8 +1,21 @@
 # `src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+This implementation mirrors the library note-list model behavior for the bookmark domain: sanitize
+incoming rows, derive fallback searchable text, filter by search text, preserve selection by note
+id, and sort the visible source cache by newest modification time first.
+
+## Sorting Pipeline
+
+The bookmark note list uses the same stable descending ordering as the library note list:
+
+1. `lastModifiedAt`
+2. `createdAt`
+3. original relative order for ties
+
+That keeps the bookmark list deterministic while still promoting the note that was modified most
+recently.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp`
@@ -20,18 +33,6 @@
 ### Enums
 - None detected during scaffold generation.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Verification
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+The direct model regression coverage remains in `tests/app/test_hierarchy_viewmodels.cpp`.

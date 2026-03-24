@@ -94,6 +94,13 @@ class EditorThemeTests(unittest.TestCase):
         self.assertIn('property color panelColor: "transparent"', hierarchy_view_text)
         self.assertIn('property color panelColor: "transparent"', detail_layout_text)
         self.assertIn('property color panelColor: "transparent"', right_panel_text)
+        self.assertIn('property color searchFieldBackgroundColor: "transparent"', hierarchy_view_text)
+        self.assertIn('readonly property color searchFieldColor: "transparent"', status_bar_text)
+
+        lvrs_hierarchy_item_text = Path(
+            "/Users/ymy/.local/LVRS/src/LVRS/qml/components/navigation/HierarchyItem.qml"
+        ).read_text(encoding="utf-8")
+        self.assertIn('property color rowBackgroundColorInactive: "transparent"', lvrs_hierarchy_item_text)
 
     def test_editor_theme_contract_is_documented(self) -> None:
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
@@ -105,6 +112,7 @@ class EditorThemeTests(unittest.TestCase):
         )
         self.assertIn("`windowAlt -> panelBackground01`", readme_text)
         self.assertIn("`subSurface -> panelBackground02`", readme_text)
+        self.assertIn("desktop status and sidebar search shells now stay transparent", readme_text)
         self.assertRegex(
             readme_text,
             re.compile(r"gutter fill, and lower drawer now stay transparent"),
@@ -122,6 +130,7 @@ class EditorThemeTests(unittest.TestCase):
         )
         self.assertIn("`windowAlt -> panelBackground01`", architecture_text)
         self.assertIn("`surfaceAlt -> panelBackground04`", architecture_text)
+        self.assertIn("inactive hierarchy rows and desktop search shells stay transparent", architecture_text)
         self.assertIn("line-number colors", architecture_text)
 
 

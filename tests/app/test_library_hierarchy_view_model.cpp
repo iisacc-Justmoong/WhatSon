@@ -754,30 +754,30 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
         viewModel.noteListModel()
                  ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::PrimaryTextRole)
                  .toString(),
-        QStringLiteral("Alpha body summary."));
+        QStringLiteral("Beta body summary."));
     QCOMPARE(
         viewModel.noteListModel()
                  ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
                  .toStringList(),
-        QStringList({QStringLiteral("Draft")}));
+        QStringList({QStringLiteral("Workspace")}));
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkedRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::BookmarkedRole)
                  .toBool(),
         true);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::BookmarkColorRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::BookmarkColorRole)
                  .toString(),
         QStringLiteral("#3B82F6"));
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::DisplayDateRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::DisplayDateRole)
                  .toString(),
         QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")));
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::TagsRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::TagsRole)
                  .toStringList(),
         QStringList({QStringLiteral("Only"), QStringLiteral("1 Line")}));
 
@@ -802,7 +802,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_populatesNoteListModelAndSwitc
         viewModel.noteListModel()
                  ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::PrimaryTextRole)
                  .toString(),
-        QStringLiteral("Beta body summary."));
+        QStringLiteral("Alpha body summary."));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesCurrentBodyTextFromWsnbody()
@@ -820,11 +820,11 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesCurrentBo
 
     viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentIndex(), 0);
-    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
-    QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Alpha body summary."));
-    viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Beta body summary."));
+    viewModel.noteListModel()->setCurrentIndex(1);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
+    QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Alpha body summary."));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePreviewFromWsnbodyResource()
@@ -854,12 +854,12 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePrev
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::ImageRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::ImageRole)
                  .toBool(),
         true);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(1, 0), LibraryNoteListModel::ImageSourceRole)
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::ImageSourceRole)
                  .toString(),
         QUrl::fromLocalFile(resourceFilePath).toString());
 }
@@ -913,7 +913,7 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
 
     QCOMPARE(viewModel.noteListModel()->currentIndex(), -1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QString());
-    viewModel.noteListModel()->setCurrentIndex(0);
+    viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
 
     const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");
@@ -966,7 +966,7 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_unchangedPlainText_prese
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    viewModel.noteListModel()->setCurrentIndex(0);
+    viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Alpha body summary."));
 
@@ -996,7 +996,7 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_unchangedPlainText_prese
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    viewModel.noteListModel()->setCurrentIndex(0);
+    viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
     QCOMPARE(
         viewModel.noteListModel()->currentBodyText(),
@@ -3705,7 +3705,7 @@ void LibraryHierarchyViewModelTest::deleteNoteById_removesScaffoldUpdatesIndexAn
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    viewModel.noteListModel()->setCurrentIndex(1);
+    viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
 
     QSignalSpy noteDeletedSpy(&viewModel, &LibraryHierarchyViewModel::noteDeleted);
@@ -3714,8 +3714,8 @@ void LibraryHierarchyViewModelTest::deleteNoteById_removesScaffoldUpdatesIndexAn
     QCOMPARE(noteDeletedSpy.count(), 1);
     QCOMPARE(noteDeletedSpy.takeFirst().at(0).toString(), QStringLiteral("note-b"));
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
-    QCOMPARE(viewModel.noteListModel()->currentIndex(), 1);
-    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-c"));
+    QCOMPARE(viewModel.noteListModel()->currentIndex(), 0);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
     QVERIFY(!QFileInfo(QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"))).exists());
 
     const QJsonObject indexRoot = readJsonObjectFile(QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")));
@@ -3744,11 +3744,11 @@ void LibraryHierarchyViewModelTest::clearNoteFoldersById_rewritesHeaderAndRefres
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
-    viewModel.noteListModel()->setCurrentIndex(1);
+    viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(
         viewModel.noteListModel()->data(
-                      viewModel.noteListModel()->index(1, 0),
+                      viewModel.noteListModel()->index(0, 0),
                       LibraryNoteListModel::FoldersRole).
                   toStringList(),
         QStringList({QStringLiteral("Workspace")}));
@@ -3771,7 +3771,7 @@ void LibraryHierarchyViewModelTest::clearNoteFoldersById_rewritesHeaderAndRefres
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(
         viewModel.noteListModel()->data(
-                      viewModel.noteListModel()->index(1, 0),
+                      viewModel.noteListModel()->index(0, 0),
                       LibraryNoteListModel::FoldersRole).
                   toStringList(),
         QStringList({QStringLiteral("Draft")}));

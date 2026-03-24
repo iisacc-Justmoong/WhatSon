@@ -3,10 +3,12 @@
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QDir>
+#include <QDateTime>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QUrl>
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -72,6 +74,68 @@ namespace
         value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
         return value;
+    }
+
+    QString normalizeTimestamp(QString value)
+    {
+        return value.trimmed();
+    }
+
+    QDateTime parseNoteTimestamp(const QString& value)
+    {
+        const QString trimmed = value.trimmed();
+        if (trimmed.isEmpty())
+        {
+            return {};
+        }
+
+        static const QStringList kFormats = {
+            QStringLiteral("yyyy-MM-dd-HH-mm-ss"),
+            QStringLiteral("yyyy-MM-dd-hh-mm-ss"),
+            QStringLiteral("yyyy-MM-ddTHH:mm:ss"),
+            QStringLiteral("yyyy-MM-ddTHH:mm:ssZ"),
+            QStringLiteral("yyyy-MM-dd")
+        };
+
+        for (const QString& format : kFormats)
+        {
+            const QDateTime parsed = QDateTime::fromString(trimmed, format);
+            if (parsed.isValid())
+            {
+                return parsed;
+            }
+        }
+
+        const QDateTime isoWithMs = QDateTime::fromString(trimmed, Qt::ISODateWithMs);
+        if (isoWithMs.isValid())
+        {
+            return isoWithMs;
+        }
+
+        const QDateTime iso = QDateTime::fromString(trimmed, Qt::ISODate);
+        if (iso.isValid())
+        {
+            return iso;
+        }
+
+        return {};
+    }
+
+    qint64 effectiveSortTimestamp(const BookmarksNoteListItem& item)
+    {
+        const QDateTime lastModified = parseNoteTimestamp(item.lastModifiedAt);
+        if (lastModified.isValid())
+        {
+            return lastModified.toMSecsSinceEpoch();
+        }
+
+        const QDateTime created = parseNoteTimestamp(item.createdAt);
+        if (created.isValid())
+        {
+            return created.toMSecsSinceEpoch();
+        }
+
+        return std::numeric_limits<qint64>::min();
     }
 
     QString normalizeImageSource(QString value)
@@ -410,6 +474,8 @@ void BookmarksNoteListModel::setItems(QVector<BookmarksNoteListItem> items)
         item.primaryText = normalizePrimaryText(std::move(item.primaryText));
         item.searchableText = normalizeSearchableText(std::move(item.searchableText));
         item.bodyText = normalizeBodyText(std::move(item.bodyText));
+        item.createdAt = normalizeTimestamp(std::move(item.createdAt));
+        item.lastModifiedAt = normalizeTimestamp(std::move(item.lastModifiedAt));
         item.imageSource = normalizeImageSource(std::move(item.imageSource));
         item.displayDate = item.displayDate.trimmed();
         item.bookmarkColor = item.bookmarkColor.trimmed();
@@ -526,6 +592,20 @@ void BookmarksNoteListModel::setItems(QVector<BookmarksNoteListItem> items)
 
         sanitized.push_back(std::move(item));
     }
+
+    std::stable_sort(
+        sanitized.begin(),
+        sanitized.end(),
+        [](const BookmarksNoteListItem& lhs, const BookmarksNoteListItem& rhs)
+        {
+            const qint64 lhsTimestamp = effectiveSortTimestamp(lhs);
+            const qint64 rhsTimestamp = effectiveSortTimestamp(rhs);
+            if (lhsTimestamp == rhsTimestamp)
+            {
+                return false;
+            }
+            return lhsTimestamp > rhsTimestamp;
+        });
 
     if (m_strictValidation && !issues.isEmpty())
     {

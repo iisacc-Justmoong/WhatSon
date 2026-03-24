@@ -19,7 +19,7 @@ Rectangle {
     property color panelColor: "transparent"
     property int panelHeight: LV.Theme.controlHeightMd
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("StatusBarLayout") : null
-    readonly property color searchFieldColor: LV.Theme.panelBackground10
+    readonly property color searchFieldColor: "transparent"
     readonly property int searchFieldHeight: LV.Theme.gap18
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
     readonly property int searchFieldMaxWidth: 541

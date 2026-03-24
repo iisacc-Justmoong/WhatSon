@@ -1,8 +1,20 @@
 # `src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+`BookmarksNoteListModel` is the bookmark-domain peer of `LibraryNoteListModel`. It exposes the same
+delegate-facing row roles, and it now carries internal `createdAt` / `lastModifiedAt` fields on
+each `BookmarksNoteListItem` so the bookmark list can follow the same most-recently-modified-first
+ordering policy as the main library list.
+
+## Ordering Contract
+
+- Rows are ordered by `lastModifiedAt` descending.
+- `createdAt` is used when `lastModifiedAt` is missing.
+- Ties preserve incoming relative order.
+
+The bookmark sidebar therefore does not depend on hub parse order when multiple bookmarked notes are
+visible together.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.hpp`
@@ -21,18 +33,7 @@
 ### Enums
 - `Role`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Runtime Notes
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+Selection is still public as a visible row index, but the implementation restores selection by note
+id after filter or resort operations.

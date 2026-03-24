@@ -143,7 +143,7 @@ Rectangle {
     property int searchHeaderTopGap: LV.Theme.gap4
     property int searchListGap: LV.Theme.gapNone
     property int searchHeaderVerticalInset: LV.Theme.gap2
-    property color searchFieldBackgroundColor: LV.Theme.panelBackground10
+    property color searchFieldBackgroundColor: "transparent"
     property bool searchFieldVisible: false
     property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1

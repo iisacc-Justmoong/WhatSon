@@ -19,6 +19,13 @@ The root file still exposes wrapper functions for these helpers so callers and t
 - `hierarchyDragDropBridge`: reorder and note-drop bridge.
 - appearance controls such as panel color, insets, toolbar icon names, and search configuration.
 
+## Surface Contract
+- `panelColor` is transparent on desktop so the sidebar inherits the shared `ApplicationWindow` canvas.
+- `searchFieldBackgroundColor` is also transparent on desktop; only the inline text affordance remains, without a
+  second search-panel slab.
+- The LVRS row primitive used underneath this view keeps inactive hierarchy rows transparent, so only active, hover,
+  pressed, and drag states paint explicit fills.
+
 ## Important Outputs
 - `searchSubmitted(...)`
 - `searchTextEdited(...)`

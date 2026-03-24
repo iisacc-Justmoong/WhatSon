@@ -3328,6 +3328,8 @@ QVector<LibraryNoteListItem> LibraryHierarchyViewModel::buildNoteListItems(
         item.primaryText = notePrimaryText(note);
         item.searchableText = noteSearchableText(note, folderLabels);
         item.bodyText = note.bodyPlainText;
+        item.createdAt = note.createdAt;
+        item.lastModifiedAt = note.lastModifiedAt;
         item.image = note.bodyHasResource;
         item.imageSource = note.bodyFirstResourceThumbnailUrl;
         item.displayDate = m_systemCalendarStore

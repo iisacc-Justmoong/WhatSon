@@ -12,6 +12,8 @@ struct BookmarksNoteListItem
     QString primaryText;
     QString searchableText;
     QString bodyText;
+    QString createdAt;
+    QString lastModifiedAt;
     bool image = false;
     QString imageSource;
     QString displayDate;

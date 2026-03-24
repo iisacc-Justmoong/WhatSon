@@ -10,6 +10,9 @@ does not render a brighter shell than the Figma `ApplicationWindow` reference.
 The editor theme contract now keeps the broad desktop editor surfaces transparent, while line-number colors stay on the
 dedicated `#4E5157` / `#9DA0A8` contrast pair instead of inheriting the body text tone.
 
+inactive hierarchy rows and desktop search shells stay transparent as well, so sidebar and status chrome do not
+repaint brighter panel slabs over the root `ApplicationWindow` canvas.
+
 ## Mobile Shell
 `MobilePageScaffold.qml` is the persistent mobile shell wrapper. It keeps the compact navigation bar and compact status bar mounted while the routed body swaps between hierarchy, note-list, and editor content.
 

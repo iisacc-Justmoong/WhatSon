@@ -71,6 +71,15 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - A note that is explicitly assigned to both a parent folder and one of its descendants remains
   visible in both folder scopes and keeps both serialized bindings.
 
+## Note List Ordering
+
+`buildNoteListItems(...)` now forwards raw `createdAt` and `lastModifiedAt` values into
+`LibraryNoteListItem`.
+
+The actual sort is still performed inside `LibraryNoteListModel`, but the viewmodel is now
+responsible for supplying the timestamp keys required to keep the visible note list ordered by the
+most recently modified note first after load, refresh, and save.
+
 ## Why This Matters
 
 Before this change, renaming a parent folder changed every descendant full path and could make child

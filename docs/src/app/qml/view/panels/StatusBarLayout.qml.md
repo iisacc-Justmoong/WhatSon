@@ -13,6 +13,11 @@
 ## QML Surface Snapshot
 - Root type: `Rectangle`
 
+## Current Theme Contract
+- Desktop `searchFieldColor` is intentionally transparent so the status strip inherits the root `ApplicationWindow`
+  canvas instead of painting a second panel slab behind the search affordance.
+- Mobile compact search keeps its own filled field token; only the broad desktop strip is transparentized.
+
 ### Object IDs
 - `statusBar`
 - `searchBarTextField`

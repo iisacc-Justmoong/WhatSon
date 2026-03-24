@@ -1,8 +1,30 @@
 # `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+This implementation sanitizes incoming note-list items, derives searchable text fallbacks, applies
+search filtering, preserves the selected note by id across resets, and now performs the canonical
+latest-modified-first sort for library notes.
+
+## Sorting Pipeline
+
+`setItems(...)` now normalizes `createdAt` and `lastModifiedAt` before the filtered source cache is
+stored.
+
+The model then performs a stable descending sort using:
+
+1. `lastModifiedAt`
+2. `createdAt`
+3. original relative order for ties or invalid timestamps
+
+The stable-sort requirement is important because notes with equal timestamps must not jitter between
+refreshes.
+
+## Selection Stability
+
+`applySearchFilter()` still restores `m_currentIndex` by previously selected note id after every
+reset. This keeps the same note active when a save updates `lastModifiedAt` and pushes that note to
+the top of the list.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp`
@@ -20,18 +42,8 @@
 ### Enums
 - None detected during scaffold generation.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Verification
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+The current regression coverage lives in `tests/app/test_hierarchy_viewmodels.cpp` and
+`tests/app/test_library_hierarchy_view_model.cpp`, including direct model sorting and runtime
+library-viewmodel ordering checks.
