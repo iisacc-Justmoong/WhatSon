@@ -12,7 +12,7 @@ The service no longer depends on path remapping alone.
 
 1. Build a lookup from the original tree keyed by folder UUID.
 2. Build a second lookup from the staged tree keyed by the same UUIDs.
-3. Resolve each note's assigned folders to canonical leaf UUIDs.
+3. Resolve each note's assigned folders to effective UUID bindings.
 4. Rehydrate the note header with the staged folder paths that correspond to those UUIDs.
 
 This means a rename or reparent mutation changes the path shown in the note header while preserving
@@ -25,8 +25,9 @@ the semantic folder identity.
   rename use the same equality rules.
 - Existing `<folder uuid="...">path</folder>` bindings are preserved when they still resolve.
 - Legacy headers without UUIDs still work through a path fallback during migration.
-- Redundant ancestor assignments are removed before the note is rewritten so headers keep only the
-  canonical leaf folders.
+- Explicit UUID/full-path bindings are preserved even when one bound folder is the ancestor of
+  another. Only legacy leaf-only context tokens are collapsed when they simply identify a nested
+  descendant folder.
 - UUID equality alone is not treated as “already synchronized”. The serialized folder path must also
   match the staged tree, otherwise the header is rewritten.
 

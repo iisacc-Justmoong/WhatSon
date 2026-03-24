@@ -243,7 +243,11 @@ namespace
 
     QStringList canonicalLeafFolderPaths(const QStringList& folderPaths);
 
-    QStringList canonicalLeafFolderUuids(const QStringList& folderUuids, const FolderHierarchyLookup& lookup);
+    struct ResolvedFolderBinding final
+    {
+        QString folderUuid;
+        bool sourceWasLeafOnlyWithoutUuid = false;
+    };
 
     QStringList folderPathSegments(const QString& folderPath)
     {
@@ -310,7 +314,7 @@ namespace
         return lookup;
     }
 
-    QStringList resolvedNoteFolderUuids(
+    QVector<ResolvedFolderBinding> resolvedNoteFolderBindings(
         const LibraryNoteRecord& note,
         const FolderHierarchyLookup& lookup)
     {
@@ -349,23 +353,38 @@ namespace
             });
         }
 
-        QStringList resolved;
-        QSet<QString> resolvedSet;
-        auto appendResolved = [&resolved, &resolvedSet](const QString& folderUuid)
+        QVector<ResolvedFolderBinding> resolved;
+        QHash<QString, int> resolvedIndexByFolderUuid;
+        auto appendResolved = [&resolved, &resolvedIndexByFolderUuid](const QString& folderUuid,
+                                                                      const NoteFolderToken& token)
         {
-            if (folderUuid.isEmpty() || resolvedSet.contains(folderUuid))
+            const QString normalizedFolderUuid = normalizeFolderUuid(folderUuid);
+            if (normalizedFolderUuid.isEmpty())
             {
                 return;
             }
-            resolvedSet.insert(folderUuid);
-            resolved.push_back(folderUuid);
+
+            const bool sourceWasLeafOnlyWithoutUuid = token.folderUuid.isEmpty() && !token.hierarchical;
+            const auto existingIt = resolvedIndexByFolderUuid.constFind(normalizedFolderUuid);
+            if (existingIt != resolvedIndexByFolderUuid.constEnd())
+            {
+                resolved[existingIt.value()].sourceWasLeafOnlyWithoutUuid =
+                    resolved.at(existingIt.value()).sourceWasLeafOnlyWithoutUuid && sourceWasLeafOnlyWithoutUuid;
+                return;
+            }
+
+            resolvedIndexByFolderUuid.insert(normalizedFolderUuid, resolved.size());
+            resolved.push_back(ResolvedFolderBinding{
+                normalizedFolderUuid,
+                sourceWasLeafOnlyWithoutUuid,
+            });
         };
 
         for (const NoteFolderToken& token : tokens)
         {
             if (!token.folderUuid.isEmpty())
             {
-                appendResolved(token.folderUuid);
+                appendResolved(token.folderUuid, token);
             }
         }
 
@@ -373,7 +392,7 @@ namespace
         {
             if (token.hierarchical)
             {
-                appendResolved(lookup.folderUuidByPathKey.value(token.pathKey));
+                appendResolved(lookup.folderUuidByPathKey.value(token.pathKey), token);
             }
         }
 
@@ -412,17 +431,66 @@ namespace
 
             if (contextualMatches.size() == 1)
             {
-                appendResolved(contextualMatches.constFirst());
+                appendResolved(contextualMatches.constFirst(), token);
                 continue;
             }
 
             if (contextualMatches.isEmpty() && candidates.size() == 1)
             {
-                appendResolved(candidates.constFirst());
+                appendResolved(candidates.constFirst(), token);
             }
         }
 
         return resolved;
+    }
+
+    QStringList effectiveNoteFolderUuids(
+        const LibraryNoteRecord& note,
+        const FolderHierarchyLookup& lookup)
+    {
+        const QVector<ResolvedFolderBinding> resolvedBindings = resolvedNoteFolderBindings(note, lookup);
+        QStringList effectiveFolderUuids;
+        effectiveFolderUuids.reserve(resolvedBindings.size());
+
+        for (const ResolvedFolderBinding& binding : resolvedBindings)
+        {
+            const QString folderUuid = normalizeFolderUuid(binding.folderUuid);
+            const QString folderPath = normalizeFolderPath(lookup.displayPathByFolderUuid.value(folderUuid));
+            if (folderUuid.isEmpty() || folderPath.isEmpty())
+            {
+                continue;
+            }
+
+            bool suppressAsLegacyContextOnlyAncestor = false;
+            if (binding.sourceWasLeafOnlyWithoutUuid)
+            {
+                for (const ResolvedFolderBinding& otherBinding : resolvedBindings)
+                {
+                    const QString otherFolderUuid = normalizeFolderUuid(otherBinding.folderUuid);
+                    const QString otherFolderPath = normalizeFolderPath(
+                        lookup.displayPathByFolderUuid.value(otherFolderUuid));
+                    if (otherFolderUuid.isEmpty()
+                        || otherFolderPath.isEmpty()
+                        || otherFolderUuid == folderUuid
+                        || !otherBinding.sourceWasLeafOnlyWithoutUuid)
+                    {
+                        continue;
+                    }
+                    if (otherFolderPath.startsWith(folderPath + QLatin1Char('/')))
+                    {
+                        suppressAsLegacyContextOnlyAncestor = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!suppressAsLegacyContextOnlyAncestor && !effectiveFolderUuids.contains(folderUuid))
+            {
+                effectiveFolderUuids.push_back(folderUuid);
+            }
+        }
+
+        return effectiveFolderUuids;
     }
 
     QStringList canonicalNoteFolderLabels(
@@ -432,9 +500,7 @@ namespace
         QStringList folders;
         if (lookup != nullptr)
         {
-            const QStringList resolvedFolderUuids = canonicalLeafFolderUuids(
-                resolvedNoteFolderUuids(note, *lookup),
-                *lookup);
+            const QStringList resolvedFolderUuids = effectiveNoteFolderUuids(note, *lookup);
             folders.reserve(resolvedFolderUuids.size());
             for (const QString& folderUuid : resolvedFolderUuids)
             {
@@ -464,9 +530,7 @@ namespace
             return true;
         }
 
-        const QStringList resolvedFolderUuids = canonicalLeafFolderUuids(
-            resolvedNoteFolderUuids(note, lookup),
-            lookup);
+        const QStringList resolvedFolderUuids = effectiveNoteFolderUuids(note, lookup);
         for (const QString& folderUuid : resolvedFolderUuids)
         {
             if (folderUuid == selectedFolderUuid)
@@ -1032,6 +1096,27 @@ namespace
         return -1;
     }
 
+    int selectedHierarchyIndexForFolderPath(
+        const QVector<LibraryHierarchyItem>& items,
+        const QString& folderPath)
+    {
+        const QString normalizedFolderPath = normalizeFolderPath(folderPath);
+        if (normalizedFolderPath.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (normalizeFolderPath(items.at(index).folderPath) == normalizedFolderPath)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
     void finalizeFolderItems(QVector<LibraryHierarchyItem>* items, bool preserveExistingPaths);
 
     QVector<LibraryHierarchyItem> buildFolderItems(const QVector<WhatSonFolderDepthEntry>& entries)
@@ -1500,47 +1585,6 @@ namespace
         return canonicalPaths;
     }
 
-    QStringList canonicalLeafFolderUuids(const QStringList& folderUuids, const FolderHierarchyLookup& lookup)
-    {
-        QStringList canonicalUuids;
-        canonicalUuids.reserve(folderUuids.size());
-
-        for (const QString& rawFolderUuid : folderUuids)
-        {
-            const QString folderUuid = normalizeFolderUuid(rawFolderUuid);
-            const QString folderPath = normalizeFolderPath(lookup.displayPathByFolderUuid.value(folderUuid));
-            if (folderUuid.isEmpty() || folderPath.isEmpty())
-            {
-                continue;
-            }
-
-            bool hasDescendant = false;
-            for (const QString& compareRawFolderUuid : folderUuids)
-            {
-                const QString compareFolderUuid = normalizeFolderUuid(compareRawFolderUuid);
-                const QString compareFolderPath = normalizeFolderPath(
-                    lookup.displayPathByFolderUuid.value(compareFolderUuid));
-                if (compareFolderUuid.isEmpty()
-                    || compareFolderPath.isEmpty()
-                    || compareFolderUuid == folderUuid)
-                {
-                    continue;
-                }
-                if (compareFolderPath.startsWith(folderPath + QLatin1Char('/')))
-                {
-                    hasDescendant = true;
-                    break;
-                }
-            }
-
-            if (!hasDescendant && !canonicalUuids.contains(folderUuid))
-            {
-                canonicalUuids.push_back(folderUuid);
-            }
-        }
-
-        return canonicalUuids;
-    }
 } // namespace
 
 LibraryHierarchyViewModel::LibraryHierarchyViewModel(QObject* parent)
@@ -1943,6 +1987,12 @@ void LibraryHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
+    const QString preservedSelectionKey =
+        (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
+            ? hierarchyItemKey(m_items.at(m_selectedIndex), m_selectedIndex)
+            : QString();
+    const QString preservedSelectionFolderPath = folderPathForIndex(m_selectedIndex);
+
     m_libraryAll.setIndexedNotes(wshubPath, std::move(allNotes));
     m_libraryDraft.setNotes(std::move(draftNotes));
     m_libraryToday.setNotes(std::move(todayNotes));
@@ -1957,14 +2007,18 @@ void LibraryHierarchyViewModel::applyRuntimeSnapshot(
         rebuildBucketRanges();
         m_createdFolderSequence = nextFolderSequence(m_items);
         syncModel();
-        setSelectedIndex(-1);
-        refreshNoteListForSelection();
     }
     else
     {
         applyIndexedBuckets();
-        setSelectedIndex(-1);
     }
+
+    int restoredSelectionIndex = selectedHierarchyIndexForKey(m_items, preservedSelectionKey);
+    if (restoredSelectionIndex < 0 && !preservedSelectionFolderPath.isEmpty())
+    {
+        restoredSelectionIndex = selectedHierarchyIndexForFolderPath(m_items, preservedSelectionFolderPath);
+    }
+    applySelectedIndex(restoredSelectionIndex, true);
 
     updateLoadState(true);
 }

@@ -35,10 +35,25 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - `applyHierarchyNodes(...)` preserves existing UUIDs across LVRS reordering and can recover identity
   from a `folder:<uuid>` node key when no source index is supplied.
 
+## Runtime Refresh Contract
+
+- `applyRuntimeSnapshot(...)` now preserves the current hierarchy selection by serialized item key
+  and falls back to the previous folder path when a legacy snapshot rebuild changes transient UUIDs,
+  instead of resetting to the implicit All Library fallback on every successful reload.
+- This matters because hub file watchers reload the runtime after note saves and header/body updates.
+  A folder-scoped note list must remain bound to the previously selected `folder:<uuid>` key across
+  those refreshes.
+- If the previously selected key no longer exists after reload, the viewmodel falls back to the
+  unselected state, which still resolves to the All Library bucket.
+
 ## Note Filtering And Assignment
 
-- `resolvedNoteFolderUuids(...)` reconstructs a note's effective folder membership.
-- `canonicalLeafFolderUuids(...)` removes redundant ancestor assignments before comparison.
+- `resolvedNoteFolderBindings(...)` reconstructs a note's effective folder membership and tracks
+  whether each binding came from an explicit UUID/full-path assignment or from a legacy leaf-only
+  token.
+- `effectiveNoteFolderUuids(...)` keeps explicit UUID/full-path bindings even when one folder is an
+  ancestor of another. Only legacy leaf-only context tokens are collapsed when they merely exist to
+  disambiguate a nested descendant such as `Research` + `/Competitor`.
 - `noteMatchesFolderScope(...)` checks the selected folder by UUID rather than by the current path.
 - `canAcceptNoteDrop(...)` and `assignNoteToFolder(...)` now read persisted header bindings through
   `WhatSonNoteFolderBindingRepository` instead of trusting runtime arrays alone.
@@ -48,6 +63,8 @@ next launch, and note-folder matching would quietly fall back to path recovery a
   instead of replacing the existing `<folders>` array.
 - A drop onto a folder now repairs stale serialized folder text when the note already has the same
   UUID but an outdated path string.
+- A note that is explicitly assigned to both a parent folder and one of its descendants remains
+  visible in both folder scopes and keeps both serialized bindings.
 
 ## Why This Matters
 
