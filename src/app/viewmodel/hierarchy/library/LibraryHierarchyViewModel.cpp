@@ -2385,27 +2385,18 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
     QVector<LibraryHierarchyItem> stagedItems = m_items;
     stagedItems.remove(startIndex, removeCount);
     finalizeFolderItems(&stagedItems, false);
-
-    WhatSonFoldersHierarchyStore stagedStore;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
-    if (!m_foldersFilePath.trimmed().isEmpty())
+    const int nextSelectedIndex = stagedItems.isEmpty()
+                                      ? -1
+                                      : std::min(startIndex, static_cast<int>(stagedItems.size() - 1));
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), nextSelectedIndex, {}))
     {
-        QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("deleteSelectedFolder.writeFailed"),
-                                      QStringLiteral("startIndex=%1 path=%2 reason=%3").arg(startIndex).arg(
-                                          m_foldersFilePath, writeError));
-            return;
-        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("deleteSelectedFolder.writeFailed"),
+                                  QStringLiteral("startIndex=%1 path=%2").arg(startIndex).arg(m_foldersFilePath));
+        return;
     }
 
-    m_items = std::move(stagedItems);
-    m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
-    rebuildBucketRanges();
-    syncModel();
     emit hubFilesystemMutated();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
@@ -2414,14 +2405,6 @@ void LibraryHierarchyViewModel::deleteSelectedFolder()
                               .arg(startIndex)
                               .arg(removeCount)
                               .arg(m_items.size()));
-
-    if (m_items.isEmpty())
-    {
-        setSelectedIndex(-1);
-        return;
-    }
-
-    applySelectedIndex(std::min(startIndex, static_cast<int>(m_items.size() - 1)), true);
 }
 
 bool LibraryHierarchyViewModel::canMoveFolder(int index) const

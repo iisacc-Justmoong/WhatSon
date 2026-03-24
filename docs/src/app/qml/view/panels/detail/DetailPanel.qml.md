@@ -27,6 +27,10 @@ Current metadata mapping:
 - `155:4580` -> `FileHistory` -> `toolWindowClock`
 - `155:4581` -> `Help` -> `featureAnswer`
 
+The `Properties` button keeps the canonical Figma icon name `config`, but it renders through an explicit
+`configuration` icon source so the toolbar shows the gear-shaped properties symbol instead of the unrelated
+composite `config.svg` asset.
+
 ## Behavior
 - Toolbar clicks forward to `detailPanelViewModel.requestStateChange(stateValue)`.
 - The contents area always receives both the resolved state name and the resolved active content view-model.

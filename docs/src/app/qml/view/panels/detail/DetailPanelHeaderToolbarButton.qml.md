@@ -13,6 +13,7 @@ It adapts toolbar spec data into an `LV.IconButton` while preserving the Figma o
 
 ## Data Inputs
 - `buttonSpec.iconName`
+- `buttonSpec.iconSource`
 - `buttonSpec.objectName`
 - `buttonSpec.figmaNodeId`
 - `buttonSpec.selected`

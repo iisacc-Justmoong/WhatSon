@@ -8,6 +8,7 @@ Item {
         {
             "figmaNodeId": "155:4576",
             "iconName": "config",
+            "iconSource": LV.Theme.iconPath("configuration"),
             "objectName": "Properties",
             "selected": true,
             "stateValue": 0
@@ -121,6 +122,7 @@ Item {
             resolvedItems.push({
                                    "figmaNodeId": metadata.figmaNodeId,
                                    "iconName": metadata.iconName,
+                                   "iconSource": metadata.iconSource,
                                    "objectName": metadata.objectName,
                                    "selected": sourceItem && sourceItem.selected === true,
                                    "stateValue": isFinite(stateValue) ? stateValue : metadata.stateValue

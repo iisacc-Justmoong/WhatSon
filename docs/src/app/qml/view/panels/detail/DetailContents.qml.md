@@ -27,10 +27,29 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 4. `TagsList` (`155:4590`, text `155:4591`, list `155:4592`)
 5. `Progress` combo (`178:5501`, text `178:5502`, combo `178:5503`)
 
+## Selector Wiring
+- The `Projects`, `Bookmark`, and `Progress` selectors do not own ad-hoc option lists.
+- `Projects` resolves `projectsHierarchyViewModel` from the LVRS view-model registry.
+- `Bookmark` resolves `bookmarksHierarchyViewModel` from the LVRS view-model registry.
+- `Progress` resolves `progressHierarchyViewModel` from the LVRS view-model registry.
+- Each selector builds its popup entries from the matched hierarchy view-model's `hierarchyModel`.
+- Each visible combo label mirrors the matched hierarchy view-model's `selectedIndex` through `itemLabel(...)`.
+- Selecting a popup entry writes the chosen index back through that same hierarchy view-model's `setSelectedIndex(...)`.
+- Empty selection copy is explicit instead of using Figma template placeholders:
+  - `Projects`: `No project`
+  - `Bookmark`: `No bookmark`
+  - `Progress`: `No progress`
+- This keeps the detail panel aligned with the canonical hierarchy sources instead of duplicating selector state locally.
+
 ## LVRS Reuse
 - Uses `LV.ComboBox` for all compact selectors.
+- Uses `LV.ContextMenu` to present all three selector popups from shared hierarchy view-model data.
 - Uses `LV.ListFooter` for the `addFile` / `trash` / `settings` footer controls in the Figma small lists.
+- The `trash` control keeps the Figma logical name but pins its rendered icon source to `generaldelete`, because that is the shipped trash-can asset in LVRS.
 - Uses LVRS typography and panel tokens instead of introducing ad-hoc colors or fonts.
+
+## Label Tokens
+The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text token color (`LV.Theme.captionColor`).
 
 ## Non-Properties States
 For `fileStat`, `insert`, `fileHistory`, `layer`, and `help`, the file renders a distinct placeholder form with state-specific titles and summaries.

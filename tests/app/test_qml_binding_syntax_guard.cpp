@@ -2032,6 +2032,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailPanelText.contains(QStringLiteral("readonly property var defaultToolbarItems: [")) &&
             detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4576\"")) &&
             detailPanelText.contains(QStringLiteral("\"iconName\": \"config\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconSource\": LV.Theme.iconPath(\"configuration\")")) &&
             detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4577\"")) &&
             detailPanelText.contains(QStringLiteral("\"iconName\": \"chartBar\"")) &&
             detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4578\"")) &&
@@ -2046,8 +2047,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             detailPanelText.contains(QStringLiteral("\"iconName\": \"featureAnswer\"")),
         "DetailPanel.qml must define the full Figma-scoped toolbar icon mapping from metadata.");
     QVERIFY2(
-        detailPanelText.contains(QStringLiteral("\"iconName\": metadata.iconName")),
-        "DetailPanel.qml must keep Figma metadata as the canonical icon source when it normalizes toolbar items.");
+        detailPanelText.contains(QStringLiteral("\"iconName\": metadata.iconName")) &&
+            detailPanelText.contains(QStringLiteral("\"iconSource\": metadata.iconSource")),
+        "DetailPanel.qml must keep Figma metadata as the canonical toolbar icon contract when it normalizes toolbar items.");
 
     const QString detailToolbarPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailPanelHeaderToolbar.qml"));
@@ -2121,6 +2123,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailToolbarButtonText.contains(QStringLiteral("readonly property string figmaNodeId: buttonSpec && buttonSpec.figmaNodeId !== undefined ? String(buttonSpec.figmaNodeId) : \"\"")),
         "DetailPanelHeaderToolbarButton.qml must preserve the Figma node id on each toolbar button delegate.");
+    QVERIFY2(
+        detailToolbarButtonText.contains(QStringLiteral("iconSource: buttonSpec && buttonSpec.iconSource !== undefined ? buttonSpec.iconSource : \"\"")),
+        "DetailPanelHeaderToolbarButton.qml must honor an explicit iconSource override from toolbar metadata.");
 
     const QString detailContentsPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailContents.qml"));
@@ -2158,10 +2163,33 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             detailContentsText.contains(QStringLiteral("labelText: \"Progress\"")),
         "DetailContents.qml must render the Properties form sections in the Figma order.");
     QVERIFY2(
+        detailContentsText.contains(QStringLiteral("valueText: \"No project\"")) &&
+            detailContentsText.contains(QStringLiteral("valueText: \"No bookmark\"")) &&
+            detailContentsText.contains(QStringLiteral("valueText: \"No progress\"")),
+        "DetailContents.qml must replace the Figma placeholder template strings with explicit empty-state copy for all three selectors.");
+    QVERIFY2(
         detailContentsText.contains(QStringLiteral("iconName: \"addFile\"")) &&
             detailContentsText.contains(QStringLiteral("iconName: \"trash\"")) &&
+            detailContentsText.contains(QStringLiteral("iconSource: LV.Theme.iconPath(\"generaldelete\")")) &&
             detailContentsText.contains(QStringLiteral("iconName: \"settings\"")),
         "DetailContents.qml list footers must use the add/trash/settings control set.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("labelColor: LV.Theme.captionColor")),
+        "DetailContents.qml combo section labels must use the caption token color.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("return LV.ViewModels.get(\"projectsHierarchyViewModel\");")) &&
+            detailContentsText.contains(QStringLiteral("return LV.ViewModels.get(\"bookmarksHierarchyViewModel\");")) &&
+            detailContentsText.contains(QStringLiteral("return LV.ViewModels.get(\"progressHierarchyViewModel\");")) &&
+            detailContentsText.contains(QStringLiteral("function resolveHierarchyMenuItems(hierarchyViewModel)")) &&
+            detailContentsText.contains(QStringLiteral("function resolveHierarchySelectionText(hierarchyViewModel, emptyText)")) &&
+            detailContentsText.contains(QStringLiteral("hierarchyViewModel.setSelectedIndex(normalizedIndex);")) &&
+            detailContentsText.contains(QStringLiteral("menuItems: detailContents.projectMenuItems")) &&
+            detailContentsText.contains(QStringLiteral("menuItems: detailContents.bookmarkMenuItems")) &&
+            detailContentsText.contains(QStringLiteral("menuItems: detailContents.progressMenuItems")) &&
+            detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedProjectSelectionText")) &&
+            detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedBookmarkSelectionText")) &&
+            detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedProgressSelectionText")),
+        "DetailContents.qml must source Projects, Bookmark, and Progress combo popups from their matching hierarchy view-models and push selection back through the same view-models.");
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("frameNodeId: \"155:4587\"")) &&
             detailContentsText.contains(QStringLiteral("frameNodeId: \"155:4590\"")),

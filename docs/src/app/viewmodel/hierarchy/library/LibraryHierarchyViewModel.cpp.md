@@ -34,6 +34,9 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - `folderEntriesFromItems(...)` persists those UUIDs back into `Folders.wsfolders`.
 - `applyHierarchyNodes(...)` preserves existing UUIDs across LVRS reordering and can recover identity
   from a `folder:<uuid>` node key when no source index is supplied.
+- `deleteSelectedFolder()` must not write `Folders.wsfolders` directly. It routes through the same
+  mutation service so notes that pointed at the deleted folder subtree have those `<folders>`
+  bindings pruned from `.wsnhead` instead of keeping ghost assignments.
 
 ## Runtime Refresh Contract
 

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
 
 Item {
@@ -11,6 +12,28 @@ Item {
     property string activeStateName: "properties"
     readonly property var folderItems: ["Label", "Label", "Label", "Label", "Label"]
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
+    readonly property var registeredViewModelKeys: LV.ViewModels.keys
+    readonly property var projectsHierarchyViewModel: {
+        const _ = detailContents.registeredViewModelKeys;
+        return LV.ViewModels.get("projectsHierarchyViewModel");
+    }
+    readonly property var bookmarksHierarchyViewModel: {
+        const _ = detailContents.registeredViewModelKeys;
+        return LV.ViewModels.get("bookmarksHierarchyViewModel");
+    }
+    readonly property var progressHierarchyViewModel: {
+        const _ = detailContents.registeredViewModelKeys;
+        return LV.ViewModels.get("progressHierarchyViewModel");
+    }
+    readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectsHierarchyViewModel)
+    readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectsHierarchyViewModel)
+    readonly property string resolvedProjectSelectionText: detailContents.resolveHierarchySelectionText(detailContents.projectsHierarchyViewModel, "No project")
+    readonly property var bookmarkMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.bookmarksHierarchyViewModel)
+    readonly property int bookmarkMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.bookmarksHierarchyViewModel)
+    readonly property string resolvedBookmarkSelectionText: detailContents.resolveHierarchySelectionText(detailContents.bookmarksHierarchyViewModel, "No bookmark")
+    readonly property var progressMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.progressHierarchyViewModel)
+    readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressHierarchyViewModel)
+    readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressHierarchyViewModel, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
     readonly property var tagItems: ["Label", "Label", "Label", "Label"]
 
@@ -67,11 +90,66 @@ Item {
             return "Properties content remains the default detail panel form.";
         }
     }
+    function hierarchyEntries(hierarchyViewModel) {
+        if (!hierarchyViewModel || hierarchyViewModel.hierarchyModel === undefined || hierarchyViewModel.hierarchyModel === null)
+            return [];
+        const sourceEntries = hierarchyViewModel.hierarchyModel;
+        if (Array.isArray(sourceEntries))
+            return sourceEntries;
+        if (sourceEntries.length !== undefined)
+            return Array.prototype.slice.call(sourceEntries);
+        return [];
+    }
+    function resolveHierarchyMenuItems(hierarchyViewModel) {
+        const sourceEntries = detailContents.hierarchyEntries(hierarchyViewModel);
+        const selectedIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);
+        const resolvedItems = [];
+        for (let index = 0; index < sourceEntries.length; ++index) {
+            const entry = sourceEntries[index];
+            const label = entry && entry.label !== undefined && entry.label !== null ? String(entry.label).trim() : "";
+            if (label.length === 0)
+                continue;
+            resolvedItems.push({
+                                   label: label,
+                                   keyVisible: false,
+                                   selected: index === selectedIndex
+                               });
+        }
+        return resolvedItems;
+    }
+    function resolveHierarchyMenuSelectedIndex(hierarchyViewModel) {
+        if (!hierarchyViewModel || hierarchyViewModel.selectedIndex === undefined)
+            return -1;
+        const selectedIndex = Number(hierarchyViewModel.selectedIndex);
+        return isFinite(selectedIndex) ? selectedIndex : -1;
+    }
+    function resolveHierarchySelectionText(hierarchyViewModel, emptyText) {
+        const fallbackText = emptyText !== undefined && emptyText !== null ? String(emptyText) : "";
+        if (!hierarchyViewModel || hierarchyViewModel.itemLabel === undefined)
+            return fallbackText;
+        const selectedIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);
+        if (selectedIndex < 0)
+            return fallbackText;
+        const label = String(hierarchyViewModel.itemLabel(selectedIndex) || "").trim();
+        return label.length > 0 ? label : fallbackText;
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
+    }
+    function applyHierarchySelection(hierarchyViewModel, index, hookReason) {
+        if (!hierarchyViewModel)
+            return;
+        const normalizedIndex = Number(index);
+        if (!isFinite(normalizedIndex) || normalizedIndex < 0)
+            return;
+        if (hierarchyViewModel.setSelectedIndex !== undefined)
+            hierarchyViewModel.setSelectedIndex(normalizedIndex);
+        else if (hierarchyViewModel.selectedIndex !== undefined)
+            hierarchyViewModel.selectedIndex = normalizedIndex;
+        detailContents.requestViewHook(hookReason);
     }
 
     objectName: "DetailContents"
@@ -126,16 +204,41 @@ Item {
     component DetailComboSection: Item {
         id: comboSection
         required property string comboNodeId
+        property string comboText: valueText
         required property string fieldObjectName
         required property string frameNodeId
         required property string labelNodeId
         required property string labelText
+        property var menuItems: []
+        property int menuSelectedIndex: -1
         required property string valueText
+        readonly property bool menuAvailable: {
+            if (!menuItems)
+                return false;
+            if (menuItems.length !== undefined)
+                return Number(menuItems.length) > 0;
+            if (menuItems.count !== undefined)
+                return Number(menuItems.count) > 0;
+            return false;
+        }
 
         readonly property string figmaNodeId: frameNodeId
         implicitHeight: 33
         implicitWidth: 178
         objectName: fieldObjectName
+
+        signal menuItemTriggered(int index)
+
+        function toggleContextMenu() {
+            if (!comboSection.menuAvailable)
+                return;
+            if (comboContextMenu.opened) {
+                comboContextMenu.close();
+                return;
+            }
+            comboContextMenu.openFor(comboField, 0, comboField.height + 2);
+            detailContents.requestViewHook(comboSection.fieldObjectName + ".comboMenu");
+        }
 
         Column {
             anchors.fill: parent
@@ -143,19 +246,40 @@ Item {
 
             DetailSectionTitle {
                 figmaTextNodeId: comboSection.labelNodeId
-                labelColor: LV.Theme.accentWhite
+                labelColor: LV.Theme.captionColor
                 objectName: comboSection.fieldObjectName + "Label"
                 text: comboSection.labelText
                 width: parent.width
             }
             LV.ComboBox {
+                id: comboField
+
                 readonly property string figmaNodeId: comboSection.comboNodeId
 
                 objectName: comboSection.fieldObjectName + "ComboBox"
-                text: comboSection.valueText
+                text: comboSection.comboText
                 width: parent.width
 
-                onClicked: detailContents.requestViewHook(comboSection.fieldObjectName + ".combo")
+                onClicked: {
+                    if (comboSection.menuAvailable)
+                        comboSection.toggleContextMenu();
+                    else
+                        detailContents.requestViewHook(comboSection.fieldObjectName + ".combo");
+                }
+            }
+            LV.ContextMenu {
+                id: comboContextMenu
+
+                autoCloseOnTrigger: true
+                closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
+                items: comboSection.menuItems
+                modal: false
+                parent: Controls.Overlay.overlay
+                selectedIndex: comboSection.menuSelectedIndex
+
+                onItemTriggered: function (index) {
+                    comboSection.menuItemTriggered(index);
+                }
             }
         }
     }
@@ -240,6 +364,7 @@ Item {
                     button2: ({
                             type: "icon",
                             iconName: "trash",
+                            iconSource: LV.Theme.iconPath("generaldelete"),
                             backgroundColor: "transparent",
                             backgroundColorDisabled: "transparent",
                             backgroundColorHover: "transparent",
@@ -346,21 +471,35 @@ Item {
 
             DetailComboSection {
                 comboNodeId: "178:5496"
+                comboText: detailContents.resolvedProjectSelectionText
                 fieldObjectName: "Projects"
                 frameNodeId: "178:5494"
                 labelNodeId: "178:5495"
                 labelText: "Projects"
-                valueText: "${project}"
+                menuItems: detailContents.projectMenuItems
+                menuSelectedIndex: detailContents.projectMenuSelectedIndex
+                valueText: "No project"
                 width: parent.width
+
+                onMenuItemTriggered: function(index) {
+                    detailContents.applyHierarchySelection(detailContents.projectsHierarchyViewModel, index, "projects.comboSelect");
+                }
             }
             DetailComboSection {
                 comboNodeId: "155:4586"
+                comboText: detailContents.resolvedBookmarkSelectionText
                 fieldObjectName: "Bookmark"
                 frameNodeId: "155:4584"
                 labelNodeId: "155:4585"
                 labelText: "Bookmark"
-                valueText: "${bookmark}"
+                menuItems: detailContents.bookmarkMenuItems
+                menuSelectedIndex: detailContents.bookmarkMenuSelectedIndex
+                valueText: "No bookmark"
                 width: parent.width
+
+                onMenuItemTriggered: function(index) {
+                    detailContents.applyHierarchySelection(detailContents.bookmarksHierarchyViewModel, index, "bookmark.comboSelect");
+                }
             }
             DetailListSection {
                 footerActionPrefix: "folders"
@@ -386,12 +525,19 @@ Item {
             }
             DetailComboSection {
                 comboNodeId: "178:5503"
+                comboText: detailContents.resolvedProgressSelectionText
                 fieldObjectName: "Progress"
                 frameNodeId: "178:5501"
                 labelNodeId: "178:5502"
                 labelText: "Progress"
-                valueText: "${progress}"
+                menuItems: detailContents.progressMenuItems
+                menuSelectedIndex: detailContents.progressMenuSelectedIndex
+                valueText: "No progress"
                 width: parent.width
+
+                onMenuItemTriggered: function(index) {
+                    detailContents.applyHierarchySelection(detailContents.progressHierarchyViewModel, index, "progress.comboSelect");
+                }
             }
         }
     }

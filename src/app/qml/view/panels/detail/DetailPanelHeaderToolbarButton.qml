@@ -23,6 +23,7 @@ LV.IconButton {
     objectName: detailPanelHeaderToolbarButton.resolvedObjectName
     height: 20
     iconName: buttonSpec && buttonSpec.iconName !== undefined ? buttonSpec.iconName : ""
+    iconSource: buttonSpec && buttonSpec.iconSource !== undefined ? buttonSpec.iconSource : ""
     iconSize: 16
     implicitWidth: 20
     width: 20

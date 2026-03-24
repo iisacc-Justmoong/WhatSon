@@ -33,6 +33,7 @@ private
     void createFolder_preservesExpandedParentWhenExpansionCameFromUi();
     void createFolder_expandsCollapsedParentToRevealNewChild();
     void deleteSelectedFolder_removesDescendantSubtree();
+    void deleteSelectedFolder_clearsDeletedFolderBindingsFromAssignedNotes();
     void loadFromWshub_buildsAllDraftTodayBuckets();
     void loadFromWshub_protectsAllDraftTodaySystemFolders();
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
@@ -660,6 +661,113 @@ void LibraryHierarchyViewModelTest::deleteSelectedFolder_removesDescendantSubtre
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), LibraryHierarchyModel::LabelRole).toString(),
         QStringLiteral("Sibling"));
+}
+
+void LibraryHierarchyViewModelTest::deleteSelectedFolder_clearsDeletedFolderBindingsFromAssignedNotes()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QDir hubDir(hubPath);
+    const QStringList contentsDirs = hubDir.entryList(
+        QStringList{QStringLiteral("*.wscontents")},
+        QDir::Dirs | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QVERIFY(!contentsDirs.isEmpty());
+    const QString contentsPath = hubDir.filePath(contentsDirs.first());
+
+    const QString researchUuid = makeFolderUuid(QLatin1Char('a'));
+    const QString brandUuid = makeFolderUuid(QLatin1Char('b'));
+    const QString foldersFilePath = QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString foldersJson = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.folders.tree\",\n"
+        "  \"folders\": [\n"
+        "    {\n"
+        "      \"id\": \"Research\",\n"
+        "      \"label\": \"Research\",\n"
+        "      \"uuid\": \"%1\"\n"
+        "    },\n"
+        "    {\n"
+        "      \"id\": \"Brand\",\n"
+        "      \"label\": \"Brand\",\n"
+        "      \"uuid\": \"%2\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n").arg(researchUuid, brandUuid);
+    QVERIFY(writeUtf8File(foldersFilePath, foldersJson));
+
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote/Alpha.wsnhead")),
+        makeWsnHeadTextWithFolderBindings(
+            QStringLiteral("note-a"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {{QStringLiteral("Research"), researchUuid}})));
+    QVERIFY(writeUtf8File(
+        QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote/Beta.wsnhead")),
+        makeWsnHeadTextWithFolderBindings(
+            QStringLiteral("note-b"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            QStringLiteral("2024-01-01-00-00-00"),
+            {{QStringLiteral("Brand"), brandUuid}})));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole).
+                          toString()
+                == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int researchIndex = findIndexByLabel(QStringLiteral("Research"));
+    QVERIFY(researchIndex >= 0);
+
+    viewModel.setSelectedIndex(researchIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-a"));
+
+    QSignalSpy filesystemSpy(&viewModel, &LibraryHierarchyViewModel::hubFilesystemMutated);
+    viewModel.deleteSelectedFolder();
+    QCOMPARE(filesystemSpy.count(), 1);
+
+    QFile alphaHeaderFile(QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/Alpha.wsnote/Alpha.wsnhead")));
+    QVERIFY(alphaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));
+
+    WhatSonNoteHeaderStore headerStore;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(QString::fromUtf8(alphaHeaderFile.readAll()), &headerStore, &parseError),
+             qPrintable(parseError));
+    QVERIFY(headerStore.folders().isEmpty());
+    QVERIFY(headerStore.folderUuids().isEmpty());
+    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+
+    QCOMPARE(viewModel.selectedIndex(), researchIndex);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(researchIndex, 0), LibraryHierarchyModel::LabelRole)
+                 .toString(),
+        QStringLiteral("Brand"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
+                 .toString(),
+        QStringLiteral("note-b"));
 }
 
 void LibraryHierarchyViewModelTest::loadFromWshub_buildsAllDraftTodayBuckets()
