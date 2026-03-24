@@ -1,38 +1,34 @@
 # `src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `ProjectsHierarchyViewModel.cpp`
-- Approximate line count: 948
+This file implements the dedicated projects hierarchy viewmodel. It parses and mutates
+`Projects.wsprojects`, builds the project sidebar rows, and keeps project selection stable across
+runtime snapshot updates.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Runtime Refresh Contract
 
-### Classes and Structs
-- `FolderDropPlacement`
-- `FolderMoveOperation`
+`applyRuntimeSnapshot(...)` now treats watcher-driven updates conservatively.
 
-### Enums
-- `FolderDropPlacement`
+- The current selection is captured by a stable project row key before any mutation.
+- The incoming folder-depth entries are compared with the currently rendered project hierarchy.
+- If the project hierarchy source is unchanged, the function updates only load-state metadata and
+  returns.
+- If the source changed, the viewmodel rebuilds the project rows and restores the previous
+  selection by key instead of dropping the user back to the implicit default state.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+Projects does not currently use expandable folder rows in the same way as library or tags, so the
+refresh fix focuses on avoiding unnecessary rebuilds and preserving selection.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Mutation Flow
+
+- `loadFromWshub(...)` parses `Projects.wsprojects` into `WhatSonProjectsHierarchyStore`.
+- `renameItem(...)`, `createFolder()`, `deleteSelectedFolder()`, and reorder/move helpers mutate the
+  store-backed folder entries and then rebuild the model.
+- `itemsFromProjectEntries(...)` is the translation boundary from persisted folder-depth records to
+  sidebar rows.
+
+## Invariants
+
+- Selection is semantic and should survive runtime snapshot churn.
+- A project snapshot that does not change the rendered hierarchy must not reset the sidebar state.

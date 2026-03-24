@@ -1,37 +1,35 @@
 # `src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `PresetHierarchyViewModel.cpp`
-- Approximate line count: 438
+This file implements preset hierarchy loading, row-model reconstruction, persistence synchronization,
+and state preservation across runtime snapshot refreshes.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Runtime Refresh Contract
 
-### Classes and Structs
-- None detected during scaffold generation.
+`applyRuntimeSnapshot(...)` now mirrors the event hierarchy behavior.
 
-### Enums
-- None detected during scaffold generation.
+- It sanitizes the incoming preset names before any comparison.
+- If the sanitized list matches `m_presetNames`, it only updates load-state metadata.
+- If the list changed, it rebuilds the preset bucket rows, restores expanded branches, restores the
+  previous selection by stable key, and syncs the model.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+This stops note-save related runtime refreshes from collapsing the preset sidebar tree.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Expansion Ownership
+
+- `setItemExpanded(...)` mutates the stored row state for valid expandable items.
+- Expansion is serialized only in memory; it is intentionally treated as user session state rather
+  than as part of `Preset.wspreset`.
+
+## Mutation Flow
+
+- `setPresetNames(...)` is the imperative setter used by initial loads.
+- `renameItem(...)`, `createFolder()`, and `deleteSelectedFolder()` transform the current item set,
+  then rewrite the preset store from those items.
+- `syncModel()` is the only path that republishes row vectors to QML.
+
+## Invariants
+
+- Preset hierarchy rows are keyed semantically, not by current row position.
+- Rebuilds are allowed only when the preset source materially changed.

@@ -1,37 +1,32 @@
 # `src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `ResourcesHierarchyViewModel.cpp`
-- Approximate line count: 353
+This implementation exposes the resources taxonomy to the sidebar. Unlike mutable folder-based
+hierarchies, the resource bucket tree is static and the runtime payload only changes the attached
+resource path list.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Static-Tree Refresh Contract
 
-### Classes and Structs
-- None detected during scaffold generation.
+`setResourcePaths(...)` now separates data refresh from tree reconstruction.
 
-### Enums
-- None detected during scaffold generation.
+- The incoming path list is sanitized and stored in `m_resourcePaths`.
+- The store is updated on every call.
+- The hierarchy rows are built only once, when `m_items` is still empty.
+- Later runtime refreshes keep the existing row vector intact, which preserves LVRS expansion state
+  and selection instead of resetting the tree.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+`applyRuntimeSnapshot(...)` delegates to `setResourcePaths(...)`, so note-save triggered runtime
+reloads no longer collapse the resources tree.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Interaction Semantics
+
+- `setItemExpanded(...)` is now a real state mutation entry point.
+- Rename/create/delete remain rejected because the resources taxonomy is intentionally read-only.
+- `loadFromWshub(...)` parses `Resources.wsresources` when present, or falls back to an empty payload
+  while keeping the static supported-type tree available to QML.
+
+## Invariants
+
+- The resource path list may change frequently.
+- The resource category tree should not change as a side effect of those path updates.

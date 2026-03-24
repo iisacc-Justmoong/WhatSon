@@ -138,6 +138,28 @@ bool ResourcesHierarchyViewModel::renameItem(int index, const QString& displayNa
     return false;
 }
 
+bool ResourcesHierarchyViewModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (!m_items.at(index).showChevron)
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    syncModel();
+    return true;
+}
+
 void ResourcesHierarchyViewModel::createFolder()
 {
     WhatSon::Debug::traceSelf(this,
@@ -172,10 +194,13 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
                               QStringLiteral("rawCount=%1").arg(resourcePaths.size()));
     m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(resourcePaths));
     m_store.setResourcePaths(m_resourcePaths);
-    m_items = WhatSon::Hierarchy::ResourcesSupport::buildSupportedTypeItems();
-    m_createdFolderSequence = WhatSon::Hierarchy::ResourcesSupport::nextGeneratedFolderSequence(m_items);
-    syncModel();
-    setSelectedIndex(-1);
+    if (m_items.isEmpty())
+    {
+        m_items = WhatSon::Hierarchy::ResourcesSupport::buildSupportedTypeItems();
+        m_createdFolderSequence = WhatSon::Hierarchy::ResourcesSupport::nextGeneratedFolderSequence(m_items);
+        syncModel();
+        setSelectedIndex(-1);
+    }
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setResourcePaths.success"),

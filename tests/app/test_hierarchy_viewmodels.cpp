@@ -234,6 +234,7 @@ private
     void libraryViewModel_supportsCrudContract();
     void projectsViewModel_supportsCrudContract();
     void projectsViewModel_reactsToModelMutation();
+    void projectsViewModel_applyRuntimeSnapshot_preservesSelectionAcrossUnchangedSnapshot();
     void projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth();
     void projectsViewModel_applyHierarchyNodes_persistsLvrsEditableMove();
     void bookmarksViewModel_supportsCrudContract();
@@ -243,10 +244,15 @@ private
     void bookmarksViewModel_removeNoteById_reselectsVisibleNeighbor();
     void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
     void resourcesViewModel_exposesSupportedTypeTree();
+    void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void progressViewModel_supportsCrudContract();
+    void progressViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void eventViewModel_supportsCrudContract();
+    void eventViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void presetViewModel_supportsCrudContract();
+    void presetViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void tagsViewModel_supportsCrudContract();
+    void tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh();
     void libraryViewModel_reactsToNoteListModelMutation();
     void projectsModel_appliesCorrectionAndRaisesHookSignal();
     void projectsModel_recomputesChevronByDepth();
@@ -348,6 +354,34 @@ void HierarchyViewModelsTest::projectsViewModel_reactsToModelMutation()
     QCOMPARE(viewModel.itemCount(), 1);
     QCOMPARE(viewModel.selectedIndex(), 0);
     QVERIFY(itemCountSpy.count() > 0);
+}
+
+void HierarchyViewModelsTest::projectsViewModel_applyRuntimeSnapshot_preservesSelectionAcrossUnchangedSnapshot()
+{
+    ProjectsHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("Research"), QStringLiteral("Research"), 0},
+            {QStringLiteral("Brand"), QStringLiteral("Brand"), 0}
+        },
+        QStringLiteral("/tmp/ProjectLists.wsproj"),
+        true);
+
+    viewModel.setSelectedIndex(1);
+    QCOMPARE(viewModel.selectedIndex(), 1);
+
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("Research"), QStringLiteral("Research"), 0},
+            {QStringLiteral("Brand"), QStringLiteral("Brand"), 0}
+        },
+        QStringLiteral("/tmp/ProjectLists.wsproj"),
+        true);
+
+    QCOMPARE(viewModel.selectedIndex(), 1);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Brand"));
 }
 
 void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth()
@@ -751,6 +785,28 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
     QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
 }
 
+void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()
+{
+    ResourcesHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot({QStringLiteral("assets/logo.png")}, QStringLiteral("/tmp/Resources.wsresources"), true);
+
+    QVERIFY(viewModel.setItemExpanded(0, true));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::ExpandedRole)
+            .toBool(),
+        true);
+
+    viewModel.applyRuntimeSnapshot(
+        {QStringLiteral("assets/logo.png"), QStringLiteral("docs/readme.pdf")},
+        QStringLiteral("/tmp/Resources.wsresources"),
+        true);
+
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::ExpandedRole)
+            .toBool(),
+        true);
+}
+
 void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
 {
     ProgressHierarchyViewModel viewModel;
@@ -827,6 +883,27 @@ void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemModel()->rowCount(), 10);
 }
 
+void HierarchyViewModelsTest::progressViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()
+{
+    ProgressHierarchyViewModel viewModel;
+    QVERIFY(viewModel.setItemExpanded(0, true));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::ExpandedRole)
+            .toBool(),
+        true);
+
+    viewModel.applyRuntimeSnapshot(
+        1,
+        {QStringLiteral("Ready"), QStringLiteral("Pending"), QStringLiteral("Done"), QStringLiteral("Archived")},
+        QStringLiteral("/tmp/Progress.wsprogress"),
+        true);
+
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::ExpandedRole)
+            .toBool(),
+        true);
+}
+
 void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
 {
     EventHierarchyViewModel viewModel;
@@ -844,6 +921,26 @@ void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
 }
 
+void HierarchyViewModelsTest::eventViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()
+{
+    EventHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot({QStringLiteral("Launch")}, QStringLiteral("/tmp/Event.wsevent"), true);
+
+    viewModel.setSelectedIndex(0);
+    QCOMPARE(viewModel.selectedIndex(), 0);
+
+    viewModel.applyRuntimeSnapshot(
+        {QStringLiteral("Launch"), QStringLiteral("Workshop")},
+        QStringLiteral("/tmp/Event.wsevent"),
+        true);
+
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(viewModel.selectedIndex(), 0),
+            EventHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Launch"));
+}
+
 void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
 {
     PresetHierarchyViewModel viewModel;
@@ -859,6 +956,26 @@ void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 1);
+}
+
+void HierarchyViewModelsTest::presetViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()
+{
+    PresetHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot({QStringLiteral("Classic")}, QStringLiteral("/tmp/Preset.wspreset"), true);
+
+    viewModel.setSelectedIndex(0);
+    QCOMPARE(viewModel.selectedIndex(), 0);
+
+    viewModel.applyRuntimeSnapshot(
+        {QStringLiteral("Classic"), QStringLiteral("Minimal")},
+        QStringLiteral("/tmp/Preset.wspreset"),
+        true);
+
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(viewModel.selectedIndex(), 0),
+            PresetHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Classic"));
 }
 
 void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
@@ -886,6 +1003,36 @@ void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+}
+
+void HierarchyViewModelsTest::tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh()
+{
+    TagsHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("brand"), QStringLiteral("Brand"), 0},
+            {QStringLiteral("campaign"), QStringLiteral("Campaign"), 1}
+        },
+        QStringLiteral("/tmp/Tags.wstags"),
+        true);
+
+    QVERIFY(viewModel.setItemExpanded(0, true));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), TagsHierarchyModel::ExpandedRole).toBool(),
+        true);
+
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("brand"), QStringLiteral("Brand"), 0},
+            {QStringLiteral("campaign"), QStringLiteral("Campaign"), 1},
+            {QStringLiteral("launch"), QStringLiteral("Launch"), 1}
+        },
+        QStringLiteral("/tmp/Tags.wstags"),
+        true);
+
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), TagsHierarchyModel::ExpandedRole).toBool(),
+        true);
 }
 
 void HierarchyViewModelsTest::libraryViewModel_reactsToNoteListModelMutation()

@@ -137,6 +137,28 @@ bool ProgressHierarchyViewModel::renameItem(int index, const QString& displayNam
     return false;
 }
 
+bool ProgressHierarchyViewModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (!m_items.at(index).showChevron)
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    syncModel();
+    return true;
+}
+
 void ProgressHierarchyViewModel::createFolder()
 {
     WhatSon::Debug::traceSelf(this,
@@ -163,11 +185,14 @@ void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList
                               QStringLiteral("value=%1 rawCount=%2").arg(progressValue).arg(progressStates.size()));
     m_progressValue = progressValue;
     m_progressStates = WhatSon::Hierarchy::ProgressSupport::sanitizeStringList(std::move(progressStates));
-    rebuildItems();
     syncProgressStore();
-    m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
-    syncModel();
-    setSelectedIndex(-1);
+    if (m_items.isEmpty())
+    {
+        rebuildItems();
+        m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
+        syncModel();
+        setSelectedIndex(-1);
+    }
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setProgressState.success"),

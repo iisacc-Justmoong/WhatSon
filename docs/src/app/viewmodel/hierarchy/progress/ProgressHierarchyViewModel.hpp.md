@@ -1,37 +1,28 @@
 # `src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp`
-- Source kind: C++ header
-- File name: `ProgressHierarchyViewModel.hpp`
-- Approximate line count: 105
+This header declares the progress hierarchy viewmodel. It presents the progress buckets defined by
+`Progress.wsprogress` while exposing selection, load state, and expansion control to QML.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public Contract
 
-### Classes and Structs
-- `ProgressHierarchyViewModel`
+- Publishes the row model and the usual hierarchy-facing observable properties.
+- Implements rename/create/delete/expansion capability interfaces on top of the shared hierarchy
+  base interface.
+- Exposes `setProgressState(int, QStringList)` for imperative input and `applyRuntimeSnapshot(...)`
+  for runtime-loader refreshes.
+- Exposes `setItemExpanded(int, bool)` so the viewmodel, not the delegate tree, owns fold state.
 
-### Enums
-- None detected during scaffold generation.
+## Refresh Rules
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- The progress bucket taxonomy is effectively static after first construction.
+- Snapshot updates may refresh progress value and state labels without rebuilding existing rows when
+  the row tree is already initialized.
+- Expansion state must therefore survive repeated runtime updates.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Internal State
+
+- `m_progressValue` and `m_progressStates` hold the current domain payload.
+- `m_items` stores the rendered row tree and expansion state.
+- `m_progressFilePath` points to the active `Progress.wsprogress` file used for loading.

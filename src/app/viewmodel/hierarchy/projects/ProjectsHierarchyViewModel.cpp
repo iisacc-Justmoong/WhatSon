@@ -104,6 +104,50 @@ namespace
         return pathSegments.join(QLatin1Char('/'));
     }
 
+    int selectedProjectIndexForKey(const QVector<ProjectsHierarchyItem>& items, const QString& key)
+    {
+        const QString normalizedKey = key.trimmed();
+        if (normalizedKey.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (projectsHierarchyItemKey(items, index) == normalizedKey)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    bool folderDepthEntriesEqual(
+        const QVector<WhatSonFolderDepthEntry>& lhs,
+        const QVector<WhatSonFolderDepthEntry>& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            const WhatSonFolderDepthEntry& left = lhs.at(index);
+            const WhatSonFolderDepthEntry& right = rhs.at(index);
+            if (left.id.trimmed() != right.id.trimmed()
+                || left.label.trimmed() != right.label.trimmed()
+                || std::max(0, left.depth) != std::max(0, right.depth)
+                || left.uuid.trimmed() != right.uuid.trimmed())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     enum class FolderDropPlacement
     {
         Before,
@@ -858,6 +902,10 @@ void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
     bool loadSucceeded,
     QString errorMessage)
 {
+    const QString preservedSelectionKey =
+        (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
+            ? projectsHierarchyItemKey(m_items, m_selectedIndex)
+            : QString();
     m_projectsFilePath = projectsFilePath.trimmed();
 
     if (!loadSucceeded)
@@ -866,18 +914,29 @@ void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
+    if (folderDepthEntriesEqual(projectEntriesFromItems(m_items), projectEntries))
+    {
+        updateLoadState(true);
+        return;
+    }
+
     if (projectEntries.isEmpty())
     {
-        setProjectNames({});
+        m_projectNames.clear();
+        m_store.setFolderEntries({});
+        m_items.clear();
+        m_createdFolderSequence = 1;
+        syncModel();
+        setSelectedIndex(-1);
     }
     else
     {
-        m_store.setFolderEntries(std::move(projectEntries));
+        m_store.setFolderEntries(projectEntries);
         m_projectNames = m_store.projectNames();
         m_items = itemsFromProjectEntries(m_store.folderEntries());
         m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
         syncModel();
-        setSelectedIndex(-1);
+        setSelectedIndex(selectedProjectIndexForKey(m_items, preservedSelectionKey));
     }
 
     updateLoadState(true);

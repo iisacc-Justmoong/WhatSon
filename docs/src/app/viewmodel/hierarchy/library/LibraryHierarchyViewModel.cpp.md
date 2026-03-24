@@ -40,6 +40,11 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - `applyRuntimeSnapshot(...)` now preserves the current hierarchy selection by serialized item key
   and falls back to the previous folder path when a legacy snapshot rebuild changes transient UUIDs,
   instead of resetting to the implicit All Library fallback on every successful reload.
+- `applyRuntimeSnapshot(...)` also preserves the set of expanded folder keys before any rebuild and
+  restores those openings after the folder rows are reconstructed.
+- If the incoming `folderEntries` are identical to the currently rendered hierarchy source, the
+  function must not rebuild `m_items` at all. It refreshes only the note collections and the current
+  note list binding for the existing selection.
 - This matters because hub file watchers reload the runtime after note saves and header/body updates.
   A folder-scoped note list must remain bound to the previously selected `folder:<uuid>` key across
   those refreshes.

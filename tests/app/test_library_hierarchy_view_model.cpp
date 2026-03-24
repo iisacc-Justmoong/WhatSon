@@ -62,6 +62,7 @@ private
     void setDepthItems_emptyInput_preservesIndexedBuckets();
     void applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolders();
     void applyRuntimeSnapshot_preservesSelectedFolderScopeAcrossRefresh();
+    void applyRuntimeSnapshot_preservesExpandedFolderStateAcrossHierarchyRefresh();
     void assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection();
     void assignNoteToFolder_preservesExistingFolderValuesAndAppendsDroppedTarget();
     void assignNoteToFolder_preservesMultipleExistingFolderValuesAndAppendsDroppedTarget();
@@ -2004,6 +2005,92 @@ void LibraryHierarchyViewModelTest::applyRuntimeSnapshot_preservesSelectedFolder
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Alpha body summary updated."));
+}
+
+void LibraryHierarchyViewModelTest::applyRuntimeSnapshot_preservesExpandedFolderStateAcrossHierarchyRefresh()
+{
+    LibraryHierarchyViewModel viewModel;
+    const QString researchUuid = makeFolderUuid(QLatin1Char('R'));
+    const QString competitorUuid = makeFolderUuid(QLatin1Char('C'));
+    const QString ideasUuid = makeFolderUuid(QLatin1Char('I'));
+
+    LibraryNoteRecord researchNote;
+    researchNote.noteId = QStringLiteral("note-a");
+    researchNote.bodyPlainText = QStringLiteral("Alpha body summary.");
+    researchNote.bodyFirstLine = QStringLiteral("Alpha body summary.");
+    researchNote.folders = {QStringLiteral("Research/Competitor")};
+    researchNote.folderUuids = {competitorUuid};
+
+    QVector<WhatSonFolderDepthEntry> initialFolderEntries;
+    initialFolderEntries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("Research"),
+        QStringLiteral("Research"),
+        0,
+        researchUuid
+    });
+    initialFolderEntries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("Research/Competitor"),
+        QStringLiteral("Competitor"),
+        1,
+        competitorUuid
+    });
+
+    viewModel.applyRuntimeSnapshot(
+        QStringLiteral("/tmp/TestRuntime.wshub"),
+        {researchNote},
+        {},
+        {},
+        initialFolderEntries,
+        QStringLiteral("/tmp/Folders.wsfolders"),
+        true,
+        {});
+
+    auto findIndexByLabel = [&viewModel](const QString& label) -> int
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            const QString rowLabel = viewModel.itemModel()
+                                         ->data(viewModel.itemModel()->index(row, 0), LibraryHierarchyModel::LabelRole)
+                                         .toString();
+            if (rowLabel == label)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int researchIndex = findIndexByLabel(QStringLiteral("Research"));
+    QVERIFY(researchIndex >= 0);
+    QVERIFY(viewModel.setItemExpanded(researchIndex, true));
+    QVERIFY(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(researchIndex, 0),
+            LibraryHierarchyModel::ExpandedRole).toBool());
+
+    QVector<WhatSonFolderDepthEntry> refreshedFolderEntries = initialFolderEntries;
+    refreshedFolderEntries.push_back(WhatSonFolderDepthEntry{
+        QStringLiteral("Research/Ideas"),
+        QStringLiteral("Ideas"),
+        1,
+        ideasUuid
+    });
+
+    viewModel.applyRuntimeSnapshot(
+        QStringLiteral("/tmp/TestRuntime.wshub"),
+        {researchNote},
+        {},
+        {},
+        refreshedFolderEntries,
+        QStringLiteral("/tmp/Folders.wsfolders"),
+        true,
+        {});
+
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(researchIndex, 0),
+            LibraryHierarchyModel::ExpandedRole).toBool(),
+        true);
 }
 
 void LibraryHierarchyViewModelTest::deleteSelectedFolder_reappliesSelectionToVisibleNeighborForNoteList()

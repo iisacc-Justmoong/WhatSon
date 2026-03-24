@@ -11,10 +11,11 @@
 
 class ProgressHierarchyViewModel final : public IHierarchyViewModel,
                                          public IHierarchyRenameCapability,
-                                         public IHierarchyCrudCapability
+                                         public IHierarchyCrudCapability,
+                                         public IHierarchyExpansionCapability
 {
     Q_OBJECT
-    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
     Q_PROPERTY(ProgressHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
@@ -44,6 +45,7 @@ public:
     Q_INVOKABLE QString itemLabel(int index) const override;
     Q_INVOKABLE bool canRenameItem(int index) const;
     Q_INVOKABLE bool renameItem(int index, const QString& displayName);
+    Q_INVOKABLE bool setItemExpanded(int index, bool expanded);
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
 

@@ -1,37 +1,27 @@
 # `src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp`
-- Source kind: C++ header
-- File name: `PresetHierarchyViewModel.hpp`
-- Approximate line count: 100
+This header defines the preset hierarchy viewmodel used by the sidebar. It exposes the preset
+taxonomy as a QML-friendly item model and declares the mutation and expansion hooks required by the
+LVRS hierarchy view.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public Contract
 
-### Classes and Structs
-- `PresetHierarchyViewModel`
+- Publishes `itemModel`, `hierarchyModel`, `selectedIndex`, `itemCount`, and load-state properties.
+- Implements rename, create, delete, and expansion interfaces in addition to the base hierarchy
+  viewmodel contract.
+- Accepts direct preset-name updates through `setPresetNames(...)`.
+- Accepts runtime-loader updates through `applyRuntimeSnapshot(...)`.
 
-### Enums
-- None detected during scaffold generation.
+## State Rules
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- `m_presetNames` is the canonical preset list.
+- `m_items` contains the rendered hierarchy rows and stores `expanded` state.
+- `m_presetFilePath` points to the `Preset.wspreset` file used for persistence mutations.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Refresh Constraints
+
+- Unchanged runtime snapshots must not rebuild the hierarchy rows.
+- Changed snapshots must preserve both selection and expansion by stable preset row key.
+- Load failures must surface as load-state changes without discarding the current visible rows.

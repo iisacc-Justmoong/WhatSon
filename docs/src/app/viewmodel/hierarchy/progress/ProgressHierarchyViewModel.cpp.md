@@ -1,37 +1,32 @@
 # `src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `ProgressHierarchyViewModel.cpp`
-- Approximate line count: 389
+This implementation translates the progress hierarchy store into LVRS rows and keeps the progress
+sidebar stable across runtime refreshes.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Static-Tree Refresh Contract
 
-### Classes and Structs
-- None detected during scaffold generation.
+`setProgressState(...)` now updates the domain payload without rebuilding the row tree after the
+first initialization.
 
-### Enums
-- None detected during scaffold generation.
+- The progress value and sanitized state labels are always refreshed.
+- The backing store is always synchronized.
+- `rebuildItems()` is called only when `m_items` is empty.
+- As a result, watcher-driven runtime refreshes keep the user's current expansion state intact.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+`applyRuntimeSnapshot(...)` delegates to that logic, so runtime reloads caused by note writes do not
+collapse the progress buckets.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Interaction Semantics
+
+- `setItemExpanded(...)` persists open/closed state inside `m_items`.
+- Rename/create/delete remain unavailable in practice because the progress taxonomy is treated as a
+  fixed support structure.
+- `loadFromWshub(...)` parses `Progress.wsprogress` when it exists and falls back to parser defaults
+  when it does not.
+
+## Invariants
+
+- Progress payload changes are allowed.
+- Progress bucket topology should remain stable once the initial row tree has been created.

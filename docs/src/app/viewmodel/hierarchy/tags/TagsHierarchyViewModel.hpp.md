@@ -1,37 +1,40 @@
 # `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp`
-- Source kind: C++ header
-- File name: `TagsHierarchyViewModel.hpp`
-- Approximate line count: 102
+This header defines the dedicated MVVM boundary for the tags hierarchy. The viewmodel owns the
+UI-facing row model, selection state, CRUD entry points, and LVRS expansion hooks for the tag tree.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public Contract
 
-### Classes and Structs
-- `TagsHierarchyViewModel`
+- Exposes `itemModel`, `hierarchyModel`, `selectedIndex`, `itemCount`, and load-state properties to
+  QML.
+- Implements `IHierarchyViewModel`, `IHierarchyRenameCapability`, `IHierarchyCrudCapability`, and
+  `IHierarchyExpansionCapability`.
+- Provides `setItemExpanded(int, bool)` so LVRS hierarchy rows can persist user-driven fold state
+  back into the viewmodel instead of treating expansion as transient view-only state.
+- Accepts both imperative `setDepthItems(...)` input and runtime loader input through
+  `applyRuntimeSnapshot(...)`.
 
-### Enums
-- None detected during scaffold generation.
+## State And Persistence Rules
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- `m_entries` is the canonical parsed tag tree payload.
+- `m_items` is the rendered LVRS row state, including `expanded`.
+- `m_tagsFilePath` tracks the writable `Tags.wstags` target for rename/create/delete mutations.
+- `m_createdFolderSequence` is derived from the current data so generated labels do not collide with
+  existing tag folders after reload.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Refresh Semantics
+
+`applyRuntimeSnapshot(...)` is expected to behave conservatively.
+
+- A load failure updates the error state without mutating the current visible hierarchy.
+- An unchanged tag snapshot must not rebuild the hierarchy rows.
+- A changed snapshot may rebuild rows, but it must preserve both selection and expansion by stable
+  tag keys so watcher-driven reloads do not collapse the tree.
+
+## QML Integration
+
+QML callers should treat `selectedIndex` and `setItemExpanded(...)` as the only supported mutable
+view-state entry points. Direct row reconstruction in QML would bypass the viewmodel's persistence
+and refresh constraints.

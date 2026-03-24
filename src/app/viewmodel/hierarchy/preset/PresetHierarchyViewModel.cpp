@@ -7,11 +7,96 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSet>
 #include <utility>
+
+#include <algorithm>
 
 namespace
 {
     constexpr auto kScope = "preset.viewmodel";
+
+    QString normalizedPresetKeySegment(const PresetHierarchyItem& item, int index)
+    {
+        const QString normalizedLabel = item.label.trimmed();
+        if (!normalizedLabel.isEmpty())
+        {
+            return normalizedLabel;
+        }
+        return QStringLiteral("preset:%1").arg(index);
+    }
+
+    QString presetHierarchyItemKey(const QVector<PresetHierarchyItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+
+        QStringList pathSegments;
+        pathSegments.reserve(std::max(1, items.at(index).depth + 1));
+        pathSegments.push_front(normalizedPresetKeySegment(items.at(index), index));
+
+        int expectedDepth = std::max(0, items.at(index).depth);
+        for (int cursor = index - 1; cursor >= 0 && expectedDepth > 0; --cursor)
+        {
+            const PresetHierarchyItem& candidate = items.at(cursor);
+            if (std::max(0, candidate.depth) != expectedDepth - 1)
+            {
+                continue;
+            }
+            pathSegments.push_front(normalizedPresetKeySegment(candidate, cursor));
+            expectedDepth = std::max(0, candidate.depth);
+        }
+
+        return pathSegments.join(QLatin1Char('/'));
+    }
+
+    QSet<QString> expandedPresetItemKeys(const QVector<PresetHierarchyItem>& items)
+    {
+        QSet<QString> expandedKeys;
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (!items.at(index).expanded)
+            {
+                continue;
+            }
+            expandedKeys.insert(presetHierarchyItemKey(items, index));
+        }
+        return expandedKeys;
+    }
+
+    void restoreExpandedPresetItemKeys(QVector<PresetHierarchyItem>* items, const QSet<QString>& expandedKeys)
+    {
+        if (items == nullptr)
+        {
+            return;
+        }
+
+        for (int index = 0; index < items->size(); ++index)
+        {
+            (*items)[index].expanded = expandedKeys.contains(presetHierarchyItemKey(*items, index));
+        }
+    }
+
+    int selectedPresetIndexForKey(const QVector<PresetHierarchyItem>& items, const QString& key)
+    {
+        const QString normalizedKey = key.trimmed();
+        if (normalizedKey.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < items.size(); ++index)
+        {
+            if (presetHierarchyItemKey(items, index) == normalizedKey)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
 }
 
 PresetHierarchyViewModel::PresetHierarchyViewModel(QObject* parent)
@@ -182,6 +267,28 @@ bool PresetHierarchyViewModel::renameItem(int index, const QString& displayName)
                               QStringLiteral("renameItem.success"),
                               QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(displayName).arg(
                                   m_items.size()));
+    return true;
+}
+
+bool PresetHierarchyViewModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (!m_items.at(index).showChevron)
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    syncModel();
     return true;
 }
 
@@ -389,6 +496,11 @@ void PresetHierarchyViewModel::applyRuntimeSnapshot(
     bool loadSucceeded,
     QString errorMessage)
 {
+    const QString preservedSelectionKey =
+        (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
+            ? presetHierarchyItemKey(m_items, m_selectedIndex)
+            : QString();
+    const QSet<QString> preservedExpandedKeys = expandedPresetItemKeys(m_items);
     m_presetFilePath = presetFilePath.trimmed();
     if (!loadSucceeded)
     {
@@ -396,7 +508,24 @@ void PresetHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
-    setPresetNames(std::move(presetNames));
+    const QStringList sanitizedPresetNames = WhatSon::Hierarchy::PresetSupport::sanitizeStringList(std::move(
+        presetNames));
+    if (m_presetNames == sanitizedPresetNames)
+    {
+        updateLoadState(true);
+        return;
+    }
+
+    m_presetNames = sanitizedPresetNames;
+    m_store.setPresetNames(m_presetNames);
+    m_items = WhatSon::Hierarchy::PresetSupport::buildBucketItems(
+        QStringLiteral("Preset"),
+        m_presetNames,
+        QStringLiteral("Preset"));
+    restoreExpandedPresetItemKeys(&m_items, preservedExpandedKeys);
+    m_createdFolderSequence = WhatSon::Hierarchy::PresetSupport::nextGeneratedFolderSequence(m_items);
+    syncModel();
+    setSelectedIndex(selectedPresetIndexForKey(m_items, preservedSelectionKey));
     updateLoadState(true);
 }
 

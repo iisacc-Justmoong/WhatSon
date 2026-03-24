@@ -1,37 +1,32 @@
 # `src/app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/event/EventHierarchyViewModel.hpp`
-- Source kind: C++ header
-- File name: `EventHierarchyViewModel.hpp`
-- Approximate line count: 100
+This header declares the dedicated event hierarchy viewmodel. It presents the `Event.wsevent`
+taxonomy as an LVRS-compatible hierarchy model and exposes the mutable hooks required by sidebar
+views.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public Contract
 
-### Classes and Structs
-- `EventHierarchyViewModel`
+- Publishes the row model, selection index, item count, and load-state properties.
+- Implements rename, create, delete, and expansion capabilities on top of
+  `IHierarchyViewModel`.
+- Exposes `setEventNames(...)` for direct data injection and `applyRuntimeSnapshot(...)` for
+  runtime-loader driven refreshes.
+- Exposes `setItemExpanded(int, bool)` so fold state belongs to the viewmodel instead of to a
+  transient delegate instance.
 
-### Enums
-- None detected during scaffold generation.
+## Refresh Rules
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- Snapshot application must preserve the current selection and expansion state when the event
+  hierarchy is rebuilt.
+- Snapshot application must skip the rebuild entirely when the sanitized event-name list is
+  unchanged.
+- Load failures update the error surface without destroying the currently visible hierarchy.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Internal State
+
+- `m_eventNames` is the current canonical event-name payload.
+- `m_items` is the rendered bucket/item hierarchy consumed by `EventHierarchyModel`.
+- `m_store` remains the serializer/parser-facing domain store for `Event.wsevent`.
+- `m_eventFilePath` identifies the mutation target used by rename/create/delete operations.

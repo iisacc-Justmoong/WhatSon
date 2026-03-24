@@ -1117,6 +1117,35 @@ namespace
         return -1;
     }
 
+    QSet<QString> expandedHierarchyItemKeys(const QVector<LibraryHierarchyItem>& items)
+    {
+        QSet<QString> expandedKeys;
+        for (int index = 0; index < items.size(); ++index)
+        {
+            const LibraryHierarchyItem& item = items.at(index);
+            if (!item.expanded)
+            {
+                continue;
+            }
+            expandedKeys.insert(hierarchyItemKey(item, index));
+        }
+        return expandedKeys;
+    }
+
+    void restoreExpandedHierarchyItemKeys(QVector<LibraryHierarchyItem>* items, const QSet<QString>& expandedKeys)
+    {
+        if (items == nullptr)
+        {
+            return;
+        }
+
+        for (int index = 0; index < items->size(); ++index)
+        {
+            LibraryHierarchyItem& item = (*items)[index];
+            item.expanded = expandedKeys.contains(hierarchyItemKey(item, index));
+        }
+    }
+
     void finalizeFolderItems(QVector<LibraryHierarchyItem>* items, bool preserveExistingPaths);
 
     QVector<LibraryHierarchyItem> buildFolderItems(const QVector<WhatSonFolderDepthEntry>& entries)
@@ -1292,6 +1321,31 @@ namespace
         }
 
         return entries;
+    }
+
+    bool folderDepthEntriesEqual(
+        const QVector<WhatSonFolderDepthEntry>& lhs,
+        const QVector<WhatSonFolderDepthEntry>& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            const WhatSonFolderDepthEntry& left = lhs.at(index);
+            const WhatSonFolderDepthEntry& right = rhs.at(index);
+            if (normalizeFolderPath(left.id) != normalizeFolderPath(right.id)
+                || left.label.trimmed() != right.label.trimmed()
+                || std::max(0, left.depth) != std::max(0, right.depth)
+                || normalizeFolderUuid(left.uuid) != normalizeFolderUuid(right.uuid))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     int subtreeEndIndexExclusive(const QVector<LibraryHierarchyItem>& items, int startIndex)
@@ -1992,17 +2046,29 @@ void LibraryHierarchyViewModel::applyRuntimeSnapshot(
             ? hierarchyItemKey(m_items.at(m_selectedIndex), m_selectedIndex)
             : QString();
     const QString preservedSelectionFolderPath = folderPathForIndex(m_selectedIndex);
+    const QSet<QString> preservedExpandedKeys = expandedHierarchyItemKeys(m_items);
 
     m_libraryAll.setIndexedNotes(wshubPath, std::move(allNotes));
     m_libraryDraft.setNotes(std::move(draftNotes));
     m_libraryToday.setNotes(std::move(todayNotes));
     m_runtimeIndexLoaded = true;
 
+    const QVector<WhatSonFolderDepthEntry> currentFolderEntries = folderEntriesFromItems(m_items);
+    const bool hierarchySourceChanged = !folderDepthEntriesEqual(currentFolderEntries, folderEntries);
+
+    if (!hierarchySourceChanged)
+    {
+        refreshNoteListForSelection();
+        updateLoadState(true);
+        return;
+    }
+
     if (!folderEntries.isEmpty())
     {
         m_items = prependSystemBuckets(buildFolderItems(folderEntries));
         finalizeFolderItems(&m_items, true);
         dropReservedTodayFolderItems(&m_items);
+        restoreExpandedHierarchyItemKeys(&m_items, preservedExpandedKeys);
         m_foldersHierarchyLoaded = true;
         rebuildBucketRanges();
         m_createdFolderSequence = nextFolderSequence(m_items);

@@ -6,11 +6,133 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSet>
 #include <QRegularExpression>
 #include <QVariantMap>
 
 #include <algorithm>
 #include <utility>
+
+namespace
+{
+    QString normalizedTagKeySegment(const WhatSonTagDepthEntry& entry, int index)
+    {
+        const QString normalizedId = entry.id.trimmed();
+        if (!normalizedId.isEmpty())
+        {
+            return normalizedId;
+        }
+
+        const QString normalizedLabel = entry.label.trimmed();
+        if (!normalizedLabel.isEmpty())
+        {
+            return normalizedLabel;
+        }
+
+        return QStringLiteral("tag:%1").arg(index);
+    }
+
+    QString tagHierarchyItemKey(const QVector<WhatSonTagDepthEntry>& entries, int index)
+    {
+        if (index < 0 || index >= entries.size())
+        {
+            return {};
+        }
+
+        QStringList pathSegments;
+        pathSegments.reserve(std::max(1, entries.at(index).depth + 1));
+        pathSegments.push_front(normalizedTagKeySegment(entries.at(index), index));
+
+        int expectedDepth = std::max(0, entries.at(index).depth);
+        for (int cursor = index - 1; cursor >= 0 && expectedDepth > 0; --cursor)
+        {
+            const WhatSonTagDepthEntry& candidate = entries.at(cursor);
+            if (std::max(0, candidate.depth) != expectedDepth - 1)
+            {
+                continue;
+            }
+            pathSegments.push_front(normalizedTagKeySegment(candidate, cursor));
+            expectedDepth = std::max(0, candidate.depth);
+        }
+
+        return pathSegments.join(QLatin1Char('/'));
+    }
+
+    int selectedTagIndexForKey(const QVector<WhatSonTagDepthEntry>& entries, const QString& activeItemKey)
+    {
+        const QString normalizedActiveKey = activeItemKey.trimmed();
+        if (normalizedActiveKey.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < entries.size(); ++index)
+        {
+            if (tagHierarchyItemKey(entries, index) == normalizedActiveKey)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    QSet<QString> expandedTagItemKeys(
+        const QVector<WhatSonTagDepthEntry>& entries,
+        const QVector<TagsHierarchyItem>& items)
+    {
+        QSet<QString> expandedKeys;
+        const int count = std::min(entries.size(), items.size());
+        for (int index = 0; index < count; ++index)
+        {
+            if (!items.at(index).expanded)
+            {
+                continue;
+            }
+            expandedKeys.insert(tagHierarchyItemKey(entries, index));
+        }
+        return expandedKeys;
+    }
+
+    void restoreExpandedTagItemKeys(
+        QVector<TagsHierarchyItem>* items,
+        const QVector<WhatSonTagDepthEntry>& entries,
+        const QSet<QString>& expandedKeys)
+    {
+        if (items == nullptr)
+        {
+            return;
+        }
+
+        const int count = std::min(items->size(), entries.size());
+        for (int index = 0; index < count; ++index)
+        {
+            (*items)[index].expanded = expandedKeys.contains(tagHierarchyItemKey(entries, index));
+        }
+    }
+
+    bool tagDepthEntriesEqual(const QVector<WhatSonTagDepthEntry>& lhs, const QVector<WhatSonTagDepthEntry>& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            const WhatSonTagDepthEntry& left = lhs.at(index);
+            const WhatSonTagDepthEntry& right = rhs.at(index);
+            if (left.id.trimmed() != right.id.trimmed()
+                || left.label.trimmed() != right.label.trimmed()
+                || std::max(0, left.depth) != std::max(0, right.depth))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
 
 TagsHierarchyViewModel::TagsHierarchyViewModel(QObject* parent)
     : IHierarchyViewModel(parent)
@@ -235,6 +357,28 @@ bool TagsHierarchyViewModel::renameItem(int index, const QString& displayName)
                               QStringLiteral("renameItem.success"),
                               QStringLiteral("index=%1 label=%2 itemCount=%3").arg(index).arg(trimmed).arg(
                                   m_items.size()));
+    return true;
+}
+
+bool TagsHierarchyViewModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (!m_items.at(index).showChevron)
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    syncModel();
     return true;
 }
 
@@ -480,6 +624,11 @@ void TagsHierarchyViewModel::applyRuntimeSnapshot(
     bool loadSucceeded,
     QString errorMessage)
 {
+    const QString preservedSelectionKey =
+        (m_selectedIndex >= 0 && m_selectedIndex < m_entries.size())
+            ? tagHierarchyItemKey(m_entries, m_selectedIndex)
+            : QString();
+    const QSet<QString> preservedExpandedKeys = expandedTagItemKeys(m_entries, m_items);
     m_tagsFilePath = tagsFilePath.trimmed();
     if (!loadSucceeded)
     {
@@ -487,7 +636,29 @@ void TagsHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
-    setTagDepthEntries(std::move(entries));
+    if (tagDepthEntriesEqual(m_entries, entries))
+    {
+        updateLoadState(true);
+        return;
+    }
+
+    QVector<WhatSonTagDepthEntry> sanitized;
+    sanitized.reserve(entries.size());
+    for (WhatSonTagDepthEntry& entry : entries)
+    {
+        entry.id = entry.id.trimmed();
+        entry.label = entry.label.trimmed();
+        entry.depth = std::max(0, entry.depth);
+        sanitized.push_back(std::move(entry));
+    }
+
+    m_entries = std::move(sanitized);
+    m_items = buildItems(m_entries);
+    restoreExpandedTagItemKeys(&m_items, m_entries, preservedExpandedKeys);
+    syncStore();
+    m_createdFolderSequence = nextFolderSequence(m_entries);
+    syncModel();
+    setSelectedIndex(selectedTagIndexForKey(m_entries, preservedSelectionKey));
     updateLoadState(true);
 }
 

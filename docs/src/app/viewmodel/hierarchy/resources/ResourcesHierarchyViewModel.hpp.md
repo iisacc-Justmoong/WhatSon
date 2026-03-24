@@ -1,37 +1,29 @@
 # `src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp`
-- Source kind: C++ header
-- File name: `ResourcesHierarchyViewModel.hpp`
-- Approximate line count: 100
+This header declares the read-mostly resources hierarchy viewmodel. It presents the supported
+resource categories as a stable LVRS tree while tracking the current resource-path payload loaded
+from `Resources.wsresources`.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public Contract
 
-### Classes and Structs
-- `ResourcesHierarchyViewModel`
+- Publishes the usual hierarchy row model, selection, count, and load-state properties.
+- Implements `IHierarchyExpansionCapability` so open/closed state is owned by the viewmodel.
+- Exposes `setResourcePaths(...)` for direct input and `applyRuntimeSnapshot(...)` for runtime
+  snapshot loads.
+- Still exposes rename/create/delete entry points because it conforms to the shared hierarchy
+  surface, but resources remains functionally read-only.
 
-### Enums
-- None detected during scaffold generation.
+## Refresh Rules
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- The supported type taxonomy is structurally constant.
+- Runtime updates are therefore allowed to replace `m_resourcePaths` without rebuilding `m_items`
+  once the static tree has been initialized.
+- Expansion state must survive `setResourcePaths(...)` and `applyRuntimeSnapshot(...)`.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Internal State
+
+- `m_resourcePaths` stores the latest parsed file list.
+- `m_items` stores the constant supported-type tree plus UI expansion state.
+- `m_resourcesFilePath` identifies the source `Resources.wsresources` file.
