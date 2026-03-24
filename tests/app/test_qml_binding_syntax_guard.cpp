@@ -1639,6 +1639,34 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
                 "interactive: contentHeight > height && !listBarLayout.noteDragActive")),
         "ListBarLayout.qml must keep ListView scrolling available during note-row press handling and only suspend viewport dragging while an actual note drag is active.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("readonly property int noteListScrollTick: LV.Theme.gap2")) &&
+            listBarLayoutText.contains(QStringLiteral("readonly property int noteListFlickDeceleration: 1000000")) &&
+            listBarLayoutText.contains(QStringLiteral("property bool syncingNoteListViewport: false")),
+        "ListBarLayout.qml must expose explicit note-list viewport contracts for wheel-sized scroll ticks and quantized non-inertial drag settling.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("function noteListMaxContentY()")) &&
+            listBarLayoutText.contains(QStringLiteral("function quantizedNoteListContentY(value)")) &&
+            listBarLayoutText.contains(QStringLiteral("function applyNoteListViewportStep(contentY)")) &&
+            listBarLayoutText.contains(QStringLiteral("function settleNoteListViewport()")),
+        "ListBarLayout.qml must centralize note-list viewport clamping and quantized scroll-step settlement through explicit helpers.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("boundsMovement: Flickable.StopAtBounds")) &&
+            listBarLayoutText.contains(QStringLiteral("flickDeceleration: listBarLayout.noteListFlickDeceleration")) &&
+            listBarLayoutText.contains(QStringLiteral("maximumFlickVelocity: listBarLayout.noteListScrollTick")) &&
+            listBarLayoutText.contains(QStringLiteral("pixelAligned: true")) &&
+            listBarLayoutText.contains(QStringLiteral("synchronousDrag: true")),
+        "ListBarLayout.qml note ListView must disable rebound-style motion and keep drag scrolling synchronous and pixel-aligned.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("onFlickStarted: noteListView.cancelFlick()")) &&
+            listBarLayoutText.contains(QStringLiteral("onMovementEnded: listBarLayout.settleNoteListViewport()")) &&
+            listBarLayoutText.contains(QStringLiteral("listBarLayout.applyNoteListViewportStep(noteListView.contentY);")),
+        "ListBarLayout.qml must cancel inertial note-list flicks and resettle viewport offsets onto explicit scroll ticks.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("LV.WheelScrollGuard {")) &&
+            listBarLayoutText.contains(QStringLiteral("targetFlickable: noteListView")) &&
+            listBarLayoutText.contains(QStringLiteral("fallbackStep: listBarLayout.noteListScrollTick")),
+        "ListBarLayout.qml must route wheel scrolling through LVRS WheelScrollGuard so note-list scrolling follows the same small-step contract as drag scrolling.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("grabPermissions: PointerHandler.ApprovesTakeOverByAnything")),
         "ListBarLayout.qml tap handlers must approve drag takeover so note-card drags can start from the same pointer press as row selection.");
     QVERIFY2(

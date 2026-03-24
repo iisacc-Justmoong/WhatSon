@@ -47,7 +47,10 @@ Rectangle {
     readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(
                                                   listBarLayout.currentIndexFromModel())
     readonly property real grabbedNoteOpacity: 0.25
+    readonly property int noteListFlickDeceleration: 1000000
+    readonly property int noteListScrollTick: LV.Theme.gap2
     property string searchText: ""
+    property bool syncingNoteListViewport: false
     property bool syncingCurrentIndexFromModel: false
     readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget
 
@@ -225,6 +228,40 @@ Rectangle {
                 return entry.length > 0;
             });
         return [];
+    }
+    function noteListMaxContentY() {
+        return Math.max(
+                    0,
+                    (Number(noteListView.contentHeight) || 0)
+                    - (Number(noteListView.height) || 0));
+    }
+    function clampNoteListContentY(value) {
+        const numericValue = Number(value);
+        if (!isFinite(numericValue))
+            return 0;
+        return Math.max(0, Math.min(listBarLayout.noteListMaxContentY(), numericValue));
+    }
+    function quantizedNoteListContentY(value) {
+        const clampedValue = listBarLayout.clampNoteListContentY(value);
+        const tick = Math.max(1, Number(listBarLayout.noteListScrollTick) || 1);
+        const maxContentY = listBarLayout.noteListMaxContentY();
+        if (clampedValue <= 0)
+            return 0;
+        if (clampedValue >= maxContentY - tick)
+            return maxContentY;
+        return Math.max(0, Math.min(maxContentY, Math.round(clampedValue / tick) * tick));
+    }
+    function applyNoteListViewportStep(contentY) {
+        const targetY = listBarLayout.quantizedNoteListContentY(contentY);
+        const previousY = Number(noteListView.contentY) || 0;
+        if (Math.abs(targetY - previousY) <= 0.001)
+            return;
+        listBarLayout.syncingNoteListViewport = true;
+        noteListView.contentY = targetY;
+        listBarLayout.syncingNoteListViewport = false;
+    }
+    function settleNoteListViewport() {
+        listBarLayout.applyNoteListViewportStep(noteListView.contentY);
     }
     function pushCurrentIndexToModel(index) {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -407,11 +444,26 @@ Rectangle {
                     anchors.fill: parent
                     anchors.margins: 2
                     boundsBehavior: Flickable.StopAtBounds
+                    boundsMovement: Flickable.StopAtBounds
                     clip: true
+                    flickDeceleration: listBarLayout.noteListFlickDeceleration
                     interactive: contentHeight > height && !listBarLayout.noteDragActive
+                    maximumFlickVelocity: listBarLayout.noteListScrollTick
                     model: listBarLayout.resolvedNoteListModel
+                    pixelAligned: true
                     spacing: 2
+                    synchronousDrag: true
                     visible: listBarLayout.noteListMode
+
+                    onContentHeightChanged: listBarLayout.settleNoteListViewport()
+                    onContentYChanged: {
+                        if (listBarLayout.syncingNoteListViewport)
+                            return;
+                        listBarLayout.applyNoteListViewportStep(noteListView.contentY);
+                    }
+                    onFlickStarted: noteListView.cancelFlick()
+                    onHeightChanged: listBarLayout.settleNoteListViewport()
+                    onMovementEnded: listBarLayout.settleNoteListViewport()
 
                     Keys.onPressed: function (event) {
                         if (event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete)
@@ -681,6 +733,13 @@ Rectangle {
                             listBarLayout.syncFocusedNoteDeletionState();
                         });
                     }
+                }
+                LV.WheelScrollGuard {
+                    anchors.fill: parent
+                    consumeInside: true
+                    fallbackStep: listBarLayout.noteListScrollTick
+                    targetFlickable: noteListView
+                    visible: noteListView.visible
                 }
                 Item {
                     anchors.fill: parent

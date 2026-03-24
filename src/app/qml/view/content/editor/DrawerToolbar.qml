@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Rectangle {
-    id: DrawerToolbar
+    id: drawerToolbar
 
     readonly property string figmaNodeId: "155:4570"
 
@@ -37,7 +37,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             LV.HStack {
-                id: Sumit
+                id: sumit
 
                 readonly property string figmaNodeId: "155:4571"
                 objectName: "Sumit"
@@ -45,7 +45,7 @@ Rectangle {
                 spacing: LV.Theme.gap2
 
                 LV.IconButton {
-                    id: ShowQuickNoteWindow
+                    id: showQuickNoteWindow
 
                     readonly property string figmaNodeId: "155:4572"
                     objectName: "ShowQuickNoteWindow"
@@ -60,7 +60,7 @@ Rectangle {
                     }
                 }
                 LV.LabelButton {
-                    id: NewDraft
+                    id: newDraft
 
                     readonly property string figmaNodeId: "155:4573"
                     objectName: "NewDraft"

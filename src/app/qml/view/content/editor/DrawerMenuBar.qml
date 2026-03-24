@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Rectangle {
-    id: DrawerMenubar
+    id: drawerMenubar
 
     readonly property string figmaNodeId: "155:4565"
     readonly property string quickNoteModeName: "QuickNote"
@@ -39,7 +39,7 @@ Rectangle {
             spacing: LV.Theme.gapNone
 
             LV.IconSegmentedControl {
-                id: DrawerModes
+                id: drawerModes
 
                 readonly property string figmaNodeId: "155:4566"
                 objectName: "DrawerModes"
@@ -54,7 +54,7 @@ Rectangle {
                 verticalPadding: LV.Theme.gap4
 
                 LV.IconButton {
-                    id: QuickNote
+                    id: quickNote
 
                     readonly property string figmaNodeId: "I155:4566;206:4189"
                     objectName: "QuickNote"
@@ -71,7 +71,7 @@ Rectangle {
                     }
                 }
                 LV.IconButton {
-                    id: ItemBox
+                    id: itemBox
 
                     readonly property string figmaNodeId: "I155:4566;206:4190"
                     objectName: "ItemBox"
@@ -88,7 +88,7 @@ Rectangle {
                     }
                 }
                 LV.IconButton {
-                    id: DataSearch
+                    id: dataSearch
 
                     readonly property string figmaNodeId: "I155:4566;206:4194"
                     objectName: "DataSearch"
@@ -105,7 +105,7 @@ Rectangle {
                     }
                 }
                 LV.IconButton {
-                    id: GraphView
+                    id: graphView
 
                     readonly property string figmaNodeId: "I155:4566;206:4231"
                     objectName: "GraphView"
@@ -126,7 +126,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             LV.HStack {
-                id: DrawerViewConfig
+                id: drawerViewConfig
 
                 readonly property string figmaNodeId: "155:4567"
                 objectName: "DrawerViewConfig"
@@ -134,7 +134,7 @@ Rectangle {
                 spacing: LV.Theme.gap2
 
                 LV.IconButton {
-                    id: TextAlign
+                    id: textAlign
 
                     readonly property string figmaNodeId: "155:4568"
                     objectName: "TextAlign"
@@ -149,7 +149,7 @@ Rectangle {
                     }
                 }
                 LV.IconMenuButton {
-                    id: ViewOptions
+                    id: viewOptions
 
                     readonly property string figmaNodeId: "155:4569"
                     objectName: "ViewOptions"

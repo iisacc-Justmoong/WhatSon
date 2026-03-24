@@ -1,8 +1,10 @@
 # `src/app/qml/view/panels/ListBarLayout.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+`ListBarLayout.qml` is the shared note-list surface for desktop and mobile routes. It owns note selection authority,
+search propagation, context-menu targeting, internal note drag preview, and the viewport behavior of the note list
+itself.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
@@ -43,18 +45,35 @@
 - `noteActivated`
 - `viewHookRequested`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Viewport Contract
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- The note list keeps `boundsBehavior` and `boundsMovement` on `Flickable.StopAtBounds` so the viewport does not
+  overshoot and rebound when the user hits the first or last row.
+- `flickDeceleration` is forced to `1000000` and `onFlickStarted: noteListView.cancelFlick()` cancels inertial carry,
+  so the list behaves like immediate drag scrolling instead of a kinetic panel.
+- `noteListScrollTick` is fixed to `LV.Theme.gap2`, and all viewport motion is quantized through
+  `noteListMaxContentY()`, `quantizedNoteListContentY(value)`, `applyNoteListViewportStep(contentY)`, and
+  `settleNoteListViewport()`.
+- `LV.WheelScrollGuard` is mounted over the list viewport so wheel input follows the same small-step contract as drag
+  scrolling.
+
+## Interaction Contract
+
+- `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
+  authoritative selection back into the bound note-list model, captures `focusedNoteId` for keyboard deletion, and
+  reasserts the pending user choice after the current event turn.
+- `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
+- `FocusedNoteDeletionBridge` keeps keyboard delete behavior aligned with whichever note card is visually focused.
+
+## Drag And Context Menu
+
+- Desktop uses immediate internal drag for note-to-folder assignment; mobile defers drag pickup to a `1000ms`
+  long-press surface.
+- The drag preview is reparented into the overlay layer so the carried note card can cross panel boundaries.
+- Note-card context menus are centralized at the root through `contextMenuNoteId` and `openNoteContextMenu(...)`,
+  which keeps delegates free of per-row popup wiring.
+
+## Tests
+
+- `tests/app/test_qml_binding_syntax_guard.cpp` guards selection authority, drag wiring, delete shortcuts, and the
+  non-inertial quantized note-list scroll contract.
