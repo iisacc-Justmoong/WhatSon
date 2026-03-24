@@ -2,6 +2,7 @@
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
@@ -115,9 +116,12 @@ public:
     QObject* m_bookmarksNoteListModel = nullptr;
 };
 
-class FakeHierarchyViewModel final : public IHierarchyViewModel
+class FakeHierarchyViewModel final : public IHierarchyViewModel,
+                                     public IHierarchyRenameCapability,
+                                     public IHierarchyCrudCapability
 {
     Q_OBJECT
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
 
 public:
     explicit FakeHierarchyViewModel(QObject* parent = nullptr)
@@ -231,7 +235,8 @@ void SolidArchitectureContractsTest::sidebarState_mustStaySingleSourcedAndInterf
     QVERIFY(bodyLayout.contains(QStringLiteral(
         "readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0")));
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral(
-        "readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null")));
+        "readonly property string resolvedHierarchyViewModelKey: hierarchyView.hierarchyViewModelKeyForIndex(hierarchyView.currentHierarchy)")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("LV.ViewModels.getForView(hierarchyView.hierarchyViewId)")));
 }
 
 void SolidArchitectureContractsTest::editorAdapters_mustStayResponsibilitySeparated()
@@ -283,8 +288,12 @@ void SolidArchitectureContractsTest::qmlAssembly_mustKeepDedicatedResponsibility
     QVERIFY(mainQml.contains(QStringLiteral("MainWindowInteractionController {")));
     QVERIFY(bodyLayout.contains(QStringLiteral("PanelEdgeSplitter {")));
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("HierarchyDragDropBridge {")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("HierarchyInteractionBridge {")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.Hierarchy {")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("onListItemMoved: function")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyRenameController {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyNoteDropController {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyBookmarkPaletteController {")));
     QVERIFY(!sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyLvrsAdapter {")));
     QVERIFY(!sidebarHierarchyView.contains(QStringLiteral("SidebarHierarchyInteractionController {")));
     QVERIFY(contentsDisplayView.contains(QStringLiteral("ContentsEditorSelectionBridge {")));

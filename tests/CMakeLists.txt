@@ -698,6 +698,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_note_deletion_bridge_tests)
 add_executable(whatson_hierarchy_drag_drop_bridge_tests
         app/test_hierarchy_drag_drop_bridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/HierarchyDragDropBridge.cpp
 )
 set_target_properties(whatson_hierarchy_drag_drop_bridge_tests PROPERTIES AUTOMOC ON)

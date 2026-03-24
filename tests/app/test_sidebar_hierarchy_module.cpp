@@ -1,4 +1,5 @@
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
@@ -8,9 +9,12 @@
 #include <QVariant>
 #include <QtTest/QtTest>
 
-class StubStandardHierarchyViewModel final : public IHierarchyViewModel
+class StubStandardHierarchyViewModel final : public IHierarchyViewModel,
+                                             public IHierarchyRenameCapability,
+                                             public IHierarchyCrudCapability
 {
     Q_OBJECT
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
 
 public:
     explicit StubStandardHierarchyViewModel(QObject* parent = nullptr)

@@ -14,13 +14,16 @@ QtObject {
     property int libraryHierarchyIndex: 0
     property var libraryHierarchyViewModel: null
     property var libraryNoteMutationViewModel: null
+    property string libraryNoteMutationViewId: ""
     property var navigationModeViewModel: null
+    property string navigationModeViewId: ""
     property var panelViewModelRegistry: null
     property bool resizeDrWasSuspended: false
     property bool resizeInProgress: false
     property int resizeRenderGuardDebounceMs: 220
     property bool resizeRenderGuardEnabled: true
     property var sidebarHierarchyViewModel: null
+    property string sidebarHierarchyViewId: ""
 
     function applyRenderQualityPolicy(source) {
         if (!interactionController.hostWindow || (!interactionController.hostWindow.isDesktopPlatform && !interactionController.hostWindow.isMobilePlatform))
@@ -48,21 +51,50 @@ QtObject {
             addNewPanelViewModel.requestViewModelHook("create-note");
             return true;
         }
-        const noteMutationViewModel = interactionController.libraryNoteMutationViewModel !== null
-                && interactionController.libraryNoteMutationViewModel !== undefined
-                ? interactionController.libraryNoteMutationViewModel
-                : interactionController.libraryHierarchyViewModel;
+        const ownedNoteMutationViewModel = interactionController.libraryNoteMutationViewId.length > 0
+                ? LV.ViewModels.getForView(interactionController.libraryNoteMutationViewId)
+                : null;
+        if (interactionController.libraryNoteMutationViewId.length > 0
+                && !LV.ViewModels.canWrite(interactionController.libraryNoteMutationViewId))
+            return false;
+        const noteMutationViewModel = ownedNoteMutationViewModel !== null
+                && ownedNoteMutationViewModel !== undefined
+                ? ownedNoteMutationViewModel
+                : (interactionController.libraryNoteMutationViewModel !== null
+                       && interactionController.libraryNoteMutationViewModel !== undefined
+                       ? interactionController.libraryNoteMutationViewModel
+                       : interactionController.libraryHierarchyViewModel);
         if (!noteMutationViewModel || noteMutationViewModel.createEmptyNote === undefined)
             return false;
-        if (interactionController.sidebarHierarchyViewModel && interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
-            interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
+        const ownedSidebarHierarchyViewModel = interactionController.sidebarHierarchyViewId.length > 0
+                ? LV.ViewModels.getForView(interactionController.sidebarHierarchyViewId)
+                : null;
+        if (interactionController.sidebarHierarchyViewId.length > 0
+                && !LV.ViewModels.canWrite(interactionController.sidebarHierarchyViewId))
+            return false;
+        const sidebarHierarchyViewModel = ownedSidebarHierarchyViewModel !== null
+                && ownedSidebarHierarchyViewModel !== undefined
+                ? ownedSidebarHierarchyViewModel
+                : interactionController.sidebarHierarchyViewModel;
+        if (sidebarHierarchyViewModel && sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
+            sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
         return Boolean(noteMutationViewModel.createEmptyNote());
     }
     function cycleNavigationModeFromShortcut() {
         if (interactionController.hasFocusedTextInput())
             return;
-        if (interactionController.navigationModeViewModel && interactionController.navigationModeViewModel.requestNextMode !== undefined)
-            interactionController.navigationModeViewModel.requestNextMode();
+        const ownedNavigationModeViewModel = interactionController.navigationModeViewId.length > 0
+                ? LV.ViewModels.getForView(interactionController.navigationModeViewId)
+                : null;
+        if (interactionController.navigationModeViewId.length > 0
+                && !LV.ViewModels.canWrite(interactionController.navigationModeViewId))
+            return;
+        const navigationModeViewModel = ownedNavigationModeViewModel !== null
+                && ownedNavigationModeViewModel !== undefined
+                ? ownedNavigationModeViewModel
+                : interactionController.navigationModeViewModel;
+        if (navigationModeViewModel && navigationModeViewModel.requestNextMode !== undefined)
+            navigationModeViewModel.requestNextMode();
     }
     function finalizeResizeRenderQualityPolicy() {
         if (!interactionController.resizeRenderGuardEnabled || !interactionController.hostWindow || (!interactionController.hostWindow.isMobilePlatform && !interactionController.hostWindow.isDesktopPlatform))

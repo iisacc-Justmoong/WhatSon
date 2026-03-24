@@ -42,21 +42,38 @@ LV.ApplicationWindow {
     readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? 40 / (hierarchyToolbarCount - 1) : 0
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
-    // Fail-fast binding contract: these context properties must exist from main.cpp.
-    // Mirror context properties through distinct root aliases so child object bindings never self-reference.
-    readonly property var rootEditorViewModeViewModel: editorViewModeViewModel
+    readonly property var registeredViewModelKeys: LV.ViewModels.keys
+    readonly property string libraryNoteMutationViewId: "windowInteractions.libraryNoteMutation"
+    readonly property string navigationModeViewId: "windowInteractions.navigationMode"
+    readonly property string sidebarHierarchyViewId: "windowInteractions.sidebarHierarchy"
+    readonly property var rootEditorViewModeViewModel: {
+        const _ = applicationWindow.registeredViewModelKeys;
+        return LV.ViewModels.get("editorViewModeViewModel");
+    }
     readonly property int libraryHierarchyIndex: 0
-    readonly property var rootLibraryHierarchyViewModel: libraryHierarchyViewModel
-    readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel
+    readonly property var rootLibraryHierarchyViewModel: {
+        const _ = applicationWindow.registeredViewModelKeys;
+        return LV.ViewModels.get("libraryHierarchyViewModel");
+    }
+    readonly property var rootLibraryNoteMutationViewModel: {
+        const _ = applicationWindow.registeredViewModelKeys;
+        return LV.ViewModels.get("libraryNoteMutationViewModel");
+    }
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minDisplayHeight: LV.Theme.gap20 * 8
     readonly property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     readonly property int minRightPanelWidth: 145
-    readonly property var rootNavigationModeViewModel: navigationModeViewModel
+    readonly property var rootNavigationModeViewModel: {
+        const _ = applicationWindow.registeredViewModelKeys;
+        return LV.ViewModels.get("navigationModeViewModel");
+    }
     readonly property var rootPanelViewModelRegistry: panelViewModelRegistry
-    readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel
+    readonly property var rootSidebarHierarchyViewModel: {
+        const _ = applicationWindow.registeredViewModelKeys;
+        return LV.ViewModels.get("sidebarHierarchyViewModel");
+    }
     readonly property int minSidebarWidth: {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return toolbarWidth;
@@ -93,6 +110,31 @@ LV.ApplicationWindow {
         })
 
     signal viewHookRequested
+
+    function bindOwnedViewModel(viewId, key) {
+        if (!LV.ViewModels.bindView(viewId, key, true))
+            console.warn("[whatson:mvvm][bind] viewId=" + viewId + " key=" + key + " error=" + LV.ViewModels.lastError);
+    }
+    function registerRootViewModels() {
+        LV.ViewModels.set("libraryHierarchyViewModel", libraryHierarchyViewModel);
+        LV.ViewModels.set("libraryNoteMutationViewModel", libraryNoteMutationViewModel);
+        LV.ViewModels.set("projectsHierarchyViewModel", projectsHierarchyViewModel);
+        LV.ViewModels.set("bookmarksHierarchyViewModel", bookmarksHierarchyViewModel);
+        LV.ViewModels.set("tagsHierarchyViewModel", tagsHierarchyViewModel);
+        LV.ViewModels.set("resourcesHierarchyViewModel", resourcesHierarchyViewModel);
+        LV.ViewModels.set("progressHierarchyViewModel", progressHierarchyViewModel);
+        LV.ViewModels.set("eventHierarchyViewModel", eventHierarchyViewModel);
+        LV.ViewModels.set("presetHierarchyViewModel", presetHierarchyViewModel);
+        LV.ViewModels.set("detailPanelViewModel", detailPanelViewModel);
+        LV.ViewModels.set("editorViewModeViewModel", editorViewModeViewModel);
+        LV.ViewModels.set("navigationModeViewModel", navigationModeViewModel);
+        LV.ViewModels.set("sidebarHierarchyViewModel", sidebarHierarchyViewModel);
+    }
+    function unbindOwnedViewModels() {
+        LV.ViewModels.unbindView(applicationWindow.libraryNoteMutationViewId);
+        LV.ViewModels.unbindView(applicationWindow.navigationModeViewId);
+        LV.ViewModels.unbindView(applicationWindow.sidebarHierarchyViewId);
+    }
 
     function clampPreferredSizes() {
         preferredSidebarWidth = Math.max(minSidebarWidth, preferredSidebarWidth);
@@ -159,6 +201,10 @@ LV.ApplicationWindow {
     windowDragHandleTopMargin: statusBarHeight
 
     Component.onCompleted: {
+        registerRootViewModels();
+        bindOwnedViewModel(applicationWindow.libraryNoteMutationViewId, "libraryNoteMutationViewModel");
+        bindOwnedViewModel(applicationWindow.navigationModeViewId, "navigationModeViewModel");
+        bindOwnedViewModel(applicationWindow.sidebarHierarchyViewId, "sidebarHierarchyViewModel");
         clampPreferredSizes();
         windowInteractions.applyRenderQualityPolicy("completed");
         windowInteractions.reportLayoutBranch("completed");
@@ -169,6 +215,9 @@ LV.ApplicationWindow {
         } else if (applicationWindow.desktopOnboardingWindowVisible) {
             onboardingSubWindow.show();
         }
+    }
+    Component.onDestruction: {
+        unbindOwnedViewModels();
     }
     onAdaptiveLayoutStateChanged: windowInteractions.reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
@@ -203,9 +252,12 @@ LV.ApplicationWindow {
         libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex
         libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
         libraryNoteMutationViewModel: applicationWindow.rootLibraryNoteMutationViewModel
+        libraryNoteMutationViewId: applicationWindow.libraryNoteMutationViewId
         navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
+        navigationModeViewId: applicationWindow.navigationModeViewId
         panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry
         sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
+        sidebarHierarchyViewId: applicationWindow.sidebarHierarchyViewId
     }
     Timer {
         id: resizeDebounceTimer

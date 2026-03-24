@@ -18,6 +18,7 @@
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 #include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
 #include "viewmodel/panel/HierarchyDragDropBridge.hpp"
+#include "viewmodel/panel/HierarchyInteractionBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -405,6 +406,8 @@ int main(int argc, char* argv[])
         "WhatSon.App.Internal", 1, 0, "FocusedNoteDeletionBridge");
     qmlRegisterType<HierarchyDragDropBridge>(
         "WhatSon.App.Internal", 1, 0, "HierarchyDragDropBridge");
+    qmlRegisterType<HierarchyInteractionBridge>(
+        "WhatSon.App.Internal", 1, 0, "HierarchyInteractionBridge");
 #if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif

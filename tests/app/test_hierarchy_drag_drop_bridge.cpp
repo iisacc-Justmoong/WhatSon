@@ -1,10 +1,20 @@
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/panel/HierarchyDragDropBridge.hpp"
 
 #include <QtTest/QtTest>
 
-class FakeHierarchyDragDropViewModel final : public IHierarchyViewModel
+class FakeHierarchyDragDropViewModel final : public IHierarchyViewModel,
+                                             public IHierarchyRenameCapability,
+                                             public IHierarchyCrudCapability,
+                                             public IHierarchyReorderCapability,
+                                             public IHierarchyNoteDropCapability
 {
     Q_OBJECT
+    Q_INTERFACES(
+        IHierarchyRenameCapability
+        IHierarchyCrudCapability
+        IHierarchyReorderCapability
+        IHierarchyNoteDropCapability)
 
 public:
     FakeHierarchyDragDropViewModel()

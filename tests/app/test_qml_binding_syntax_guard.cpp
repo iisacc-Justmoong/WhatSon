@@ -690,8 +690,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarLayoutText.contains(
             QStringLiteral(
-                "readonly property var resolvedHierarchyViewModel: hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null")),
-        "HierarchySidebarLayout.qml must source the active hierarchy view-model directly from SidebarHierarchyViewModel.");
+                "readonly property string resolvedHierarchyViewModelKey: hierarchyView.hierarchyViewModelKeyForIndex(hierarchyView.currentHierarchy)")) &&
+            sidebarLayoutText.contains(QStringLiteral("LV.ViewModels.getForView(hierarchyView.hierarchyViewId)")),
+        "HierarchySidebarLayout.qml must bind the active hierarchy view-model through LVRS ViewModels ownership instead of reading it only from SidebarHierarchyViewModel.");
     QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("readonly property var noteDropTargetView: sidebarView")),
         "HierarchySidebarLayout.qml must expose the composed SidebarHierarchyView as the canonical cross-panel note-drop target.");
@@ -753,13 +754,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         !mainQmlText.contains(QStringLiteral("id: mainLayoutLoader")),
         "Main.qml must not bypass the routed shell through a root-level mainLayoutLoader.");
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel")) &&
+        mainQmlText.contains(QStringLiteral("readonly property var registeredViewModelKeys: LV.ViewModels.keys")) &&
+            mainQmlText.contains(QStringLiteral("return LV.ViewModels.get(\"sidebarHierarchyViewModel\");")) &&
             mainQmlText.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel")),
-        "Main.qml must forward sidebarHierarchyViewModel to BodyLayout through a distinct root alias.");
+        "Main.qml must resolve sidebarHierarchyViewModel through LVRS ViewModels before forwarding it to BodyLayout.");
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel")) &&
+        mainQmlText.contains(QStringLiteral("return LV.ViewModels.get(\"libraryNoteMutationViewModel\");")) &&
             mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel")),
-        "Main.qml must inject the dedicated library note-mutation view-model into BodyLayout through a distinct root alias.");
+        "Main.qml must inject the dedicated library note-mutation view-model into BodyLayout through the LVRS ViewModels registry.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("MainWindowInteractionController {")),
         "Main.qml must delegate root interaction policy to a dedicated MainWindowInteractionController.");
@@ -789,6 +791,28 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QFile sidebarViewFile(sidebarViewPath);
     QVERIFY2(sidebarViewFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(sidebarViewPath));
     const QString sidebarViewText = QString::fromUtf8(sidebarViewFile.readAll());
+    const QString sidebarRenameControllerPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/sidebar/SidebarHierarchyRenameController.qml"));
+    QFile sidebarRenameControllerFile(sidebarRenameControllerPath);
+    QVERIFY2(
+        sidebarRenameControllerFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(sidebarRenameControllerPath));
+    const QString sidebarRenameControllerText = QString::fromUtf8(sidebarRenameControllerFile.readAll());
+    const QString sidebarNoteDropControllerPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/sidebar/SidebarHierarchyNoteDropController.qml"));
+    QFile sidebarNoteDropControllerFile(sidebarNoteDropControllerPath);
+    QVERIFY2(
+        sidebarNoteDropControllerFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(sidebarNoteDropControllerPath));
+    const QString sidebarNoteDropControllerText = QString::fromUtf8(sidebarNoteDropControllerFile.readAll());
+    const QString sidebarBookmarkPaletteControllerPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/sidebar/SidebarHierarchyBookmarkPaletteController.qml"));
+    QFile sidebarBookmarkPaletteControllerFile(sidebarBookmarkPaletteControllerPath);
+    QVERIFY2(
+        sidebarBookmarkPaletteControllerFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(sidebarBookmarkPaletteControllerPath));
+    const QString sidebarBookmarkPaletteControllerText =
+        QString::fromUtf8(sidebarBookmarkPaletteControllerFile.readAll());
     const QString hierarchySidebarLayoutPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/HierarchySidebarLayout.qml"));
     QFile hierarchySidebarLayoutFile(hierarchySidebarLayoutPath);
@@ -849,9 +873,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function projectedHierarchyModel(modelValue)")) &&
-        sidebarViewText.contains(QStringLiteral("projectedItem.label = \" \";")) &&
-        sidebarViewText.contains(QStringLiteral("projectedItem.key = \"\";")) &&
-        sidebarViewText.contains(QStringLiteral("projectedItem.itemKey = \"\";")) &&
+        sidebarRenameControllerText.contains(QStringLiteral("projectedItem.label = \" \";")) &&
+        sidebarRenameControllerText.contains(QStringLiteral("projectedItem.key = \"\";")) &&
+        sidebarRenameControllerText.contains(QStringLiteral("projectedItem.itemKey = \"\";")) &&
         sidebarViewText.contains(QStringLiteral(
             "readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : [])")),
         "SidebarHierarchyView.qml must project the direct hierarchy model through a rename-safe view that suppresses the edited row label and path-key fallback while inline rename is active.");
@@ -859,13 +883,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("property var hierarchyDragDropBridge: null")),
         "SidebarHierarchyView.qml must accept a dedicated hierarchy drag/drop bridge instead of embedding local reorder state.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property var hierarchyInteractionBridge: null")) &&
+            sidebarViewText.contains(QStringLiteral("SidebarHierarchyRenameController {")) &&
+            sidebarViewText.contains(QStringLiteral("SidebarHierarchyNoteDropController {")) &&
+            sidebarViewText.contains(QStringLiteral("SidebarHierarchyBookmarkPaletteController {")),
+        "SidebarHierarchyView.qml must compose dedicated rename, note-drop, and bookmark-palette helpers instead of keeping every interaction in the root view.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property bool hierarchyEditable: false")),
         "SidebarHierarchyView.qml must expose an explicit editability contract for the LVRS hierarchy surface.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
-                "readonly property bool createFolderEnabled: hierarchyViewModel ? Boolean(hierarchyViewModel.hierarchyCreateEnabled) : false")),
-        "SidebarHierarchyView.qml must source create-folder availability from the shared hierarchy interface instead of probing concrete view-model methods.");
+                "readonly property bool createFolderEnabled: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.createFolderEnabled) : false")),
+        "SidebarHierarchyView.qml must source create-folder availability from the dedicated hierarchy interaction bridge.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
@@ -879,9 +909,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
-                "readonly property bool deleteFolderEnabled: hierarchyViewModel ? Boolean(hierarchyViewModel.hierarchyDeleteEnabled) : false")) &&
-            sidebarViewText.contains(QStringLiteral("readonly property bool renameContractAvailable: !!hierarchyViewModel")),
-        "SidebarHierarchyView.qml must source delete/rename capability from the shared hierarchy interface instead of duck-typing concrete domain methods.");
+                "readonly property bool deleteFolderEnabled: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.deleteFolderEnabled) : false")) &&
+            sidebarViewText.contains(QStringLiteral(
+                "readonly property bool renameContractAvailable: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.renameContractAvailable) : false")),
+        "SidebarHierarchyView.qml must source delete/rename capability from the dedicated hierarchy interaction bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property int editingHierarchyIndex: -1")),
         "SidebarHierarchyView.qml must keep explicit inline-rename state for the currently edited hierarchy row.");
@@ -924,18 +955,19 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "SidebarHierarchyView.qml inline rename field must mount and size itself from the edited hierarchy row instead of a stale active item.");
     QVERIFY2(
         sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.renameHierarchyItemAt(renameIndex, nextLabel)")),
-        "SidebarHierarchyView.qml must commit inline rename through the shared hierarchy interface contract.");
+            QStringLiteral("return renameController.commitHierarchyRename();")) &&
+            sidebarRenameControllerText.contains(QStringLiteral("hierarchyInteractionBridge.renameItem(renameIndex, nextLabel)")),
+        "SidebarHierarchyView.qml inline rename must delegate commits through the dedicated rename controller and bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function leafHierarchyItemLabel(rawLabel)")) &&
-            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.leafHierarchyItemLabel(item.label)")) &&
-            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.hierarchyItemLabelAt(selectedIndex)")),
+            sidebarRenameControllerText.contains(QStringLiteral("function selectedHierarchyItemLabel()")) &&
+            sidebarRenameControllerText.contains(QStringLiteral("hierarchyViewModel.hierarchyItemLabelAt(selectedIndex)")),
         "SidebarHierarchyView.qml inline rename must normalize hierarchy labels to the final leaf segment before seeding the editor text.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(
-                "readonly property bool viewOptionsEnabled: hierarchyViewModel ? Boolean(hierarchyViewModel.hierarchyViewOptionsEnabled) : true")),
-        "SidebarHierarchyView.qml must expose the footer view-options capability through the shared hierarchy interface.");
+                "readonly property bool viewOptionsEnabled: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.viewOptionsEnabled) : true")),
+        "SidebarHierarchyView.qml must expose the footer view-options capability through the dedicated hierarchy interaction bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property int toolbarFrameWidth: 200")),
         "SidebarHierarchyView.qml hierarchy toolbar must keep the 200px Figma track width.");
@@ -1033,8 +1065,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("onListItemExpanded: function (item, itemId, index, expanded)")) &&
         sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setHierarchyItemExpandedState(itemId, expanded);")),
-        "SidebarHierarchyView.qml must sync user-triggered expansion changes through the shared hierarchy interface instead of rebuilding unrelated hierarchy state.");
+            QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(itemId, expanded);")),
+        "SidebarHierarchyView.qml must sync user-triggered expansion changes through the dedicated hierarchy interaction bridge instead of rebuilding unrelated hierarchy state.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sequence: \"Escape\"")) &&
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.cancelHierarchyRename();")),
@@ -1060,15 +1092,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property bool bookmarkPaletteVisualsEnabled: false")) &&
             sidebarViewText.contains(QStringLiteral("function bookmarkPaletteColorTokenForLabel(label)")) &&
-            sidebarViewText.contains(QStringLiteral("function applyBookmarkPaletteVisuals()")),
-        "SidebarHierarchyView.qml must expose a bookmark-specific color/icon override path for the full bookmarks hierarchy.");
+            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("function applyBookmarkPaletteVisuals()")),
+        "SidebarHierarchyView.qml must expose a bookmark-specific color/icon override path through the dedicated bookmark-palette controller.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("id: bookmarkPaletteIconOverlay")) &&
             sidebarViewText.contains(QStringLiteral("function drawBookmarkGlyph(context, x, y, size, color)")) &&
-            sidebarViewText.contains(QStringLiteral("item.iconGlyph = \"\"")) &&
-            sidebarViewText.contains(QStringLiteral("item.iconPlaceholderVisible = false")) &&
-            sidebarViewText.contains(QStringLiteral("item.iconPlaceholderColor = \"transparent\"")),
-        "SidebarHierarchyView.qml must draw bookmark icons through the overlay canvas and clear the default placeholder when the bookmarks palette is active.");
+            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.iconGlyph = \"\"")) &&
+            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.iconPlaceholderVisible = false")) &&
+            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.iconPlaceholderColor = \"transparent\"")),
+        "SidebarHierarchyView.qml must draw bookmark icons through the overlay canvas while the bookmark-palette controller clears the default placeholder.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function clearNoteDropPreview()")) &&
             sidebarViewText.contains(QStringLiteral("function updateNoteDropPreviewAtPosition(x, y, noteId, referenceItem)")),
@@ -1087,25 +1119,26 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("function noteDropTargetAtPosition(x, y, referenceItem)")),
         "SidebarHierarchyView.qml must normalize hovered note-drop targets through a shared descriptor helper so preview and commit stay on the same hierarchy row.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("function hierarchyItemContainsPoint(item, x, y)")),
-        "SidebarHierarchyView.qml note-drop hit testing must use explicit hierarchy-row bounds instead of relying on LVRS childAt traversal through overlay guards.");
+        sidebarViewText.contains(QStringLiteral("function hierarchyItemContainsPoint(item, x, y)")) &&
+            sidebarNoteDropControllerText.contains(QStringLiteral("function hierarchyItemContainsPoint(item, x, y)")),
+        "SidebarHierarchyView.qml note-drop hit testing must expose an explicit hierarchy-row bounds helper through the note-drop controller.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("const children = item.children;")),
-        "SidebarHierarchyView.qml note-drop hit testing must traverse LVRS hierarchy descendants directly so overlay helpers do not swallow folder hit tests.");
+        sidebarNoteDropControllerText.contains(QStringLiteral("const children = item.children;")),
+        "SidebarHierarchyNoteDropController.qml must traverse LVRS hierarchy descendants directly so overlay helpers do not swallow folder hit tests.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("hierarchyItem.resolvedItemId")),
-        "SidebarHierarchyView.qml note-drop hit testing must fall back to LVRS resolvedItemId when the raw itemId is absent on the hovered hierarchy row.");
+        sidebarNoteDropControllerText.contains(QStringLiteral("hierarchyItem.resolvedItemId")),
+        "SidebarHierarchyNoteDropController.qml must fall back to LVRS resolvedItemId when the raw itemId is absent on the hovered hierarchy row.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("hierarchyTree.mapFromItem(referenceItem, localX, localY)")),
-        "SidebarHierarchyView.qml note-drop hit testing must normalize foreign-panel pointer coordinates into the LVRS hierarchy coordinate space.");
+        sidebarNoteDropControllerText.contains(QStringLiteral("hierarchyTree.mapFromItem(referenceItem, localX, localY)")),
+        "SidebarHierarchyNoteDropController.qml must normalize foreign-panel pointer coordinates into the LVRS hierarchy coordinate space.");
     QVERIFY2(
-        sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteId)")),
-        "SidebarHierarchyView.qml must validate note drops through the shared hierarchy drag/drop bridge.");
+        sidebarNoteDropControllerText.contains(
+            QStringLiteral("hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteId)")),
+        "SidebarHierarchyNoteDropController.qml must validate note drops through the shared hierarchy drag/drop bridge.");
     QVERIFY2(
-        sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteId)")),
-        "SidebarHierarchyView.qml must persist accepted note drops through the shared hierarchy drag/drop bridge.");
+        sidebarNoteDropControllerText.contains(
+            QStringLiteral("hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteId)")),
+        "SidebarHierarchyNoteDropController.qml must persist accepted note drops through the shared hierarchy drag/drop bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("onExited: {")) &&
             sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.clearNoteDropPreview();")),
@@ -1115,7 +1148,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "SidebarHierarchyView.qml must resync LVRS activation when the shared hierarchy interface publishes a new hierarchy model.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("SidebarHierarchyInteractionController {")),
-        "SidebarHierarchyView.qml must no longer rely on a local interaction-controller hierarchy engine.");
+        "SidebarHierarchyView.qml must not reintroduce the old monolithic interaction controller.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("HierarchyListCompat")),
         "SidebarHierarchyView.qml must no longer route hierarchy rendering through the local compat list wrapper.");
@@ -1137,6 +1170,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         hierarchySidebarLayoutText.contains(QStringLiteral("HierarchyDragDropBridge {")),
         "HierarchySidebarLayout.qml must compose the dedicated system-level hierarchy drag/drop bridge.");
+    QVERIFY2(
+        hierarchySidebarLayoutText.contains(QStringLiteral("HierarchyInteractionBridge {")) &&
+            hierarchySidebarLayoutText.contains(QStringLiteral("hierarchyInteractionBridge: hierarchyInteractionBridge")),
+        "HierarchySidebarLayout.qml must compose and forward the dedicated hierarchy interaction bridge.");
     QVERIFY2(
         hierarchySidebarLayoutText.contains(
             QStringLiteral("hierarchyViewModel: hierarchyView.resolvedHierarchyViewModel")),
@@ -1481,14 +1518,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("\"application/x-whatson-note-id\": noteItemDelegate.noteId")),
         "ListBarLayout.qml note delegates must publish noteId through drag mime data so the Qt drag operation has a concrete payload.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("function noteIdFromDragPayload(drag)")),
-        "SidebarHierarchyView.qml must normalize note ids from the drag event itself rather than depending only on drag.source.");
+        sidebarViewText.contains(QStringLiteral("function noteIdFromDragPayload(drag)"))
+            || sidebarNoteDropControllerText.contains(QStringLiteral("function noteIdFromDragPayload(drag)")),
+        "Sidebar hierarchy note-drop wiring must normalize note ids from the drag event itself rather than depending only on drag.source.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("drag.getDataAsString(\"application/x-whatson-note-id\")")),
-        "SidebarHierarchyView.qml must read note ids from the custom mime payload when DropArea source metadata is unavailable.");
+        sidebarNoteDropControllerText.contains(QStringLiteral("drag.getDataAsString(\"application/x-whatson-note-id\")")),
+        "SidebarHierarchyNoteDropController.qml must read note ids from the custom mime payload when DropArea source metadata is unavailable.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("drag.getDataAsString(\"text/plain\")")),
-        "SidebarHierarchyView.qml must fall back to text/plain note ids so note drops stay recoverable across Qt drag backends.");
+        sidebarNoteDropControllerText.contains(QStringLiteral("drag.getDataAsString(\"text/plain\")")),
+        "SidebarHierarchyNoteDropController.qml must fall back to text/plain note ids so note drops stay recoverable across Qt drag backends.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("Drag.supportedActions: Qt.CopyAction")),
         "ListBarLayout.qml note delegates must advertise additive note-to-folder drag semantics.");
@@ -1754,8 +1792,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(detailPanelFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(detailPanelPath));
     const QString detailPanelText = QString::fromUtf8(detailPanelFile.readAll());
     QVERIFY2(
-        detailPanelText.contains(QStringLiteral("readonly property var detailPanelVm: detailPanelViewModel")),
-        "DetailPanel.qml must bind detailPanelVm from detailPanelViewModel context.");
+        detailPanelText.contains(QStringLiteral("readonly property var registeredViewModelKeys: LV.ViewModels.keys")) &&
+            detailPanelText.contains(QStringLiteral("return LV.ViewModels.get(\"detailPanelViewModel\");")),
+        "DetailPanel.qml must bind detailPanelVm from the LVRS ViewModels registry.");
     QVERIFY2(
         detailPanelText.contains(QStringLiteral(
             "readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()")),

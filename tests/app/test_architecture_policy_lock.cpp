@@ -1,5 +1,6 @@
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
@@ -7,9 +8,12 @@
 #include <QObject>
 #include <QtTest/QtTest>
 
-class StubHierarchyViewModel final : public IHierarchyViewModel
+class StubHierarchyViewModel final : public IHierarchyViewModel,
+                                     public IHierarchyRenameCapability,
+                                     public IHierarchyCrudCapability
 {
     Q_OBJECT
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
 
 public:
     explicit StubHierarchyViewModel(QObject* parent = nullptr)

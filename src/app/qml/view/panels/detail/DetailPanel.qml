@@ -1,11 +1,16 @@
 import QtQuick
+import LVRS 1.0 as LV
 
 Item {
     id: detailPanel
 
     readonly property int detailContentsHeight: Math.max(0, detailPanel.height - detailPanel.headerToolbarHeight - detailPanel.panelSpacing)
     readonly property int detailContentsWidth: detailPanel.width
-    readonly property var detailPanelVm: detailPanelViewModel
+    readonly property var registeredViewModelKeys: LV.ViewModels.keys
+    readonly property var detailPanelVm: {
+        const _ = detailPanel.registeredViewModelKeys;
+        return LV.ViewModels.get("detailPanelViewModel");
+    }
     property int headerToolbarHeight: 20
     property int headerToolbarWidth: 145
     property int panelSpacing: 10

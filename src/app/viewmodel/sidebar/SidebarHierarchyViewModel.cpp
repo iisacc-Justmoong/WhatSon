@@ -74,6 +74,15 @@ ISidebarSelectionStore* SidebarHierarchyViewModel::selectionStore() const noexce
 
 void SidebarHierarchyViewModel::setSelectionStore(ISidebarSelectionStore* store)
 {
+    if (store != nullptr
+        && !WhatSon::Policy::verifyDependencyAllowed(
+            WhatSon::Policy::Layer::ViewModel,
+            WhatSon::Policy::Layer::Store,
+            QStringLiteral("SidebarHierarchyViewModel::setSelectionStore")))
+    {
+        return;
+    }
+
     if (WhatSon::Policy::ArchitecturePolicyLock::isLocked())
     {
         qWarning().noquote()

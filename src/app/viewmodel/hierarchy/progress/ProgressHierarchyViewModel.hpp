@@ -1,6 +1,7 @@
 #pragma once
 
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyModel.hpp"
 
@@ -8,9 +9,12 @@
 #include <QVariantList>
 #include <QVector>
 
-class ProgressHierarchyViewModel final : public IHierarchyViewModel
+class ProgressHierarchyViewModel final : public IHierarchyViewModel,
+                                         public IHierarchyRenameCapability,
+                                         public IHierarchyCrudCapability
 {
     Q_OBJECT
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
 
     Q_PROPERTY(ProgressHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
@@ -38,17 +42,17 @@ public:
     QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const override;
-    Q_INVOKABLE bool canRenameItem(int index) const override;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
-    Q_INVOKABLE void createFolder() override;
-    Q_INVOKABLE void deleteSelectedFolder() override;
+    Q_INVOKABLE bool canRenameItem(int index) const;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
+    Q_INVOKABLE void createFolder();
+    Q_INVOKABLE void deleteSelectedFolder();
 
     void setProgressState(int progressValue, QStringList progressStates);
     int progressValue() const noexcept;
     QStringList progressStates() const;
-    bool renameEnabled() const noexcept override;
-    bool createFolderEnabled() const noexcept override;
-    bool deleteFolderEnabled() const noexcept override;
+    bool renameEnabled() const noexcept;
+    bool createFolderEnabled() const noexcept;
+    bool deleteFolderEnabled() const noexcept;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(

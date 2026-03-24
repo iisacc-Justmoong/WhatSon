@@ -51,10 +51,10 @@ WhatSon is an LVRS-based Qt Quick application.
   through LVRS `Navigator` / `PageRouter` semantics instead of bespoke root state.
 - `Main.qml` now keeps `desktopPanelSurfaceColor` as the single desktop panel-surface token and binds it directly into
   desktop child panels instead of repeating one proxy color property per shell section.
-- `Main.qml` also mirrors context-owned view-models (`libraryHierarchyViewModel`, `navigationModeViewModel`,
-  `editorViewModeViewModel`, `sidebarHierarchyViewModel`, `panelViewModelRegistry`) through distinct root aliases
-  before passing them into child objects. This prevents QML self-binding loops like
-  `libraryHierarchyViewModel: libraryHierarchyViewModel` from collapsing the shell into `null` view-model state.
+- `Main.qml` now registers the mutable app-facing view-model objects with LVRS `ViewModels` and resolves its root
+  aliases back through `LV.ViewModels.get(...)` before passing them into child objects. Shortcut writers also bind
+  dedicated writable view ids (`windowInteractions.libraryNoteMutation`, `windowInteractions.navigationMode`,
+  `windowInteractions.sidebarHierarchy`) so shortcut mutations no longer bypass the LVRS ownership registry.
 - The desktop `BodyLayout.qml` now also paints a thin top border from the shared splitter token so the transparent
   content HStack still reads as a separate surface below `NavigationBarLayout.qml`.
 - `src/app/qml/Main.qml` now lazy-loads the macOS-native menu bar via `Qt.resolvedUrl("window/MacNativeMenuBar.qml")`
@@ -102,11 +102,13 @@ WhatSon is an LVRS-based Qt Quick application.
   and row-level drag gating from row order plus explicit `depth` / `draggable`. `SidebarHierarchyView.qml` binds that
   model without an intermediate adapter and now normalizes the incoming C++ `QVariantList` into a real JS array before
   it reaches LVRS editable drag logic.
-- `SidebarHierarchyView.qml` no longer probes concrete domain methods like `createFolder` / `renameItem` /
-  `viewOptionsEnabled`. It now consumes the shared interface-level contract
-  (`hierarchyNodes`, `hierarchySelectedIndex`, `hierarchyCreateEnabled`, `hierarchyDeleteEnabled`,
-  `hierarchyViewOptionsEnabled`) and calls the same interface action surface for row activation, rename, create,
-  delete, and expansion sync.
+- `IHierarchyViewModel` is now a read-oriented shared contract. Rename/create/delete/expand/reorder/note-drop moved
+  behind dedicated capability interfaces, and QML consumes those write paths through `HierarchyInteractionBridge` plus
+  `HierarchyDragDropBridge` instead of depending on one fat interface for every hierarchy screen.
+- `SidebarHierarchyView.qml` no longer keeps rename, bookmark-palette, and note-drop controller logic in one root
+  object. The mounted LVRS surface now composes `SidebarHierarchyRenameController.qml`,
+  `SidebarHierarchyNoteDropController.qml`, and `SidebarHierarchyBookmarkPaletteController.qml` as sibling helpers
+  while the root view stays focused on layout, shell state, and LVRS event wiring.
 - Sidebar drag-reorder is now reintroduced through a dedicated system-level `HierarchyDragDropBridge` wired into
   LVRS `Hierarchy.editable` plus `listItemMoved(...)`, so folder tree mutation stays on the direct LVRS event path
   instead of reviving the old local interaction controller. The same mounted sidebar now also accepts
@@ -227,6 +229,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - `SidebarHierarchyView.qml` no longer composes a local hierarchy interaction engine or an LVRS adapter bridge. It
   mounts `LV.Hierarchy` directly and consumes the active `IHierarchyViewModel` contract instead of runtime
   `QObject` duck-typing.
+- `DetailPanel.qml` now resolves its `detailPanelViewModel` through LVRS `ViewModels` instead of reading the mutable
+  view-model directly from the root QML context.
 - `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
   `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
   `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,

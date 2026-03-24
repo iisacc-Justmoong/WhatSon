@@ -1,5 +1,8 @@
 #include "HierarchyDragDropBridge.hpp"
 
+#include "policy/ArchitecturePolicyLock.hpp"
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+
 HierarchyDragDropBridge::HierarchyDragDropBridge(QObject* parent)
     : QObject(parent)
 {
@@ -14,6 +17,15 @@ QObject* HierarchyDragDropBridge::hierarchyViewModel() const noexcept
 
 void HierarchyDragDropBridge::setHierarchyViewModel(QObject* viewModel)
 {
+    if (viewModel != nullptr
+        && !WhatSon::Policy::verifyDependencyAllowed(
+            WhatSon::Policy::Layer::View,
+            WhatSon::Policy::Layer::ViewModel,
+            QStringLiteral("HierarchyDragDropBridge::setHierarchyViewModel")))
+    {
+        return;
+    }
+
     IHierarchyViewModel* interfaceViewModel = qobject_cast<IHierarchyViewModel*>(viewModel);
     if (m_hierarchyViewModel == interfaceViewModel)
     {
@@ -66,17 +78,19 @@ bool HierarchyDragDropBridge::applyHierarchyReorder(
     const QVariantList& hierarchyNodes,
     const QString& activeItemKey)
 {
-    if (m_hierarchyViewModel == nullptr || !m_reorderContractAvailable || hierarchyNodes.isEmpty())
+    auto* reorderCapability = qobject_cast<IHierarchyReorderCapability*>(m_hierarchyViewModel);
+    if (reorderCapability == nullptr || !m_reorderContractAvailable || hierarchyNodes.isEmpty())
     {
         return false;
     }
 
-    return m_hierarchyViewModel->applyHierarchyNodeReorder(hierarchyNodes, resolvedActiveItemKey(activeItemKey));
+    return reorderCapability->applyHierarchyNodes(hierarchyNodes, resolvedActiveItemKey(activeItemKey));
 }
 
 bool HierarchyDragDropBridge::canAcceptNoteDrop(int index, const QString& noteId) const
 {
-    if (m_hierarchyViewModel == nullptr || !m_noteDropContractAvailable)
+    const auto* noteDropCapability = qobject_cast<IHierarchyNoteDropCapability*>(m_hierarchyViewModel);
+    if (noteDropCapability == nullptr || !m_noteDropContractAvailable)
     {
         return false;
     }
@@ -87,12 +101,13 @@ bool HierarchyDragDropBridge::canAcceptNoteDrop(int index, const QString& noteId
         return false;
     }
 
-    return m_hierarchyViewModel->canAcceptHierarchyNoteDropAt(index, normalizedNoteId);
+    return noteDropCapability->canAcceptNoteDrop(index, normalizedNoteId);
 }
 
 bool HierarchyDragDropBridge::assignNoteToFolder(int index, const QString& noteId)
 {
-    if (m_hierarchyViewModel == nullptr || !m_noteDropContractAvailable)
+    auto* noteDropCapability = qobject_cast<IHierarchyNoteDropCapability*>(m_hierarchyViewModel);
+    if (noteDropCapability == nullptr || !m_noteDropContractAvailable)
     {
         return false;
     }
@@ -103,7 +118,7 @@ bool HierarchyDragDropBridge::assignNoteToFolder(int index, const QString& noteI
         return false;
     }
 
-    return m_hierarchyViewModel->assignHierarchyNoteToFolderAt(index, normalizedNoteId);
+    return noteDropCapability->assignNoteToFolder(index, normalizedNoteId);
 }
 
 void HierarchyDragDropBridge::handleHierarchyModelChanged()
@@ -143,16 +158,18 @@ QString HierarchyDragDropBridge::resolvedActiveItemKey(const QString& preferredA
 
 void HierarchyDragDropBridge::refreshContractState()
 {
+    const auto* reorderCapability = qobject_cast<IHierarchyReorderCapability*>(m_hierarchyViewModel);
     const bool nextReorderContractAvailable =
-        m_hierarchyViewModel != nullptr && m_hierarchyViewModel->supportsHierarchyNodeReorder();
+        reorderCapability != nullptr && reorderCapability->supportsHierarchyNodeReorder();
     if (m_reorderContractAvailable != nextReorderContractAvailable)
     {
         m_reorderContractAvailable = nextReorderContractAvailable;
         emit reorderContractAvailableChanged();
     }
 
+    const auto* noteDropCapability = qobject_cast<IHierarchyNoteDropCapability*>(m_hierarchyViewModel);
     const bool nextNoteDropContractAvailable =
-        m_hierarchyViewModel != nullptr && m_hierarchyViewModel->supportsHierarchyNoteDrop();
+        noteDropCapability != nullptr && noteDropCapability->supportsHierarchyNoteDrop();
     if (m_noteDropContractAvailable != nextNoteDropContractAvailable)
     {
         m_noteDropContractAvailable = nextNoteDropContractAvailable;

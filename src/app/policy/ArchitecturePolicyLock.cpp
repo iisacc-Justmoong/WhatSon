@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <QDebug>
 
 namespace
 {
@@ -103,6 +104,33 @@ namespace WhatSon::Policy
             *errorMessage = QStringLiteral("architecture policy violation: %1 -> %2 is not allowed")
                 .arg(QString::fromLatin1(layerName(from)),
                      QString::fromLatin1(layerName(to)));
+        }
+        return false;
+    }
+
+    bool verifyDependencyAllowed(
+        Layer from,
+        Layer to,
+        const QString& context,
+        QString* errorMessage)
+    {
+        QString violationMessage;
+        if (assertDependencyAllowed(from, to, &violationMessage))
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        }
+
+        const QString formattedMessage = context.trimmed().isEmpty()
+            ? violationMessage
+            : QStringLiteral("%1 (%2)").arg(violationMessage, context.trimmed());
+        qWarning().noquote() << QStringLiteral("[whatson:policy][dependency] %1").arg(formattedMessage);
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = formattedMessage;
         }
         return false;
     }

@@ -7,6 +7,7 @@
 #include "file/hierarchy/library/LibraryDraft.hpp"
 #include "file/hierarchy/library/LibraryToday.hpp"
 #include "file/hub/WhatSonHubStore.hpp"
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
 #include <QPointer>
@@ -16,9 +17,20 @@
 
 class SystemCalendarStore;
 
-class LibraryHierarchyViewModel final : public IHierarchyViewModel
+class LibraryHierarchyViewModel final : public IHierarchyViewModel,
+                                        public IHierarchyRenameCapability,
+                                        public IHierarchyCrudCapability,
+                                        public IHierarchyExpansionCapability,
+                                        public IHierarchyReorderCapability,
+                                        public IHierarchyNoteDropCapability
 {
     Q_OBJECT
+    Q_INTERFACES(
+        IHierarchyRenameCapability
+        IHierarchyCrudCapability
+        IHierarchyExpansionCapability
+        IHierarchyReorderCapability
+        IHierarchyNoteDropCapability)
 
     Q_PROPERTY(LibraryHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
@@ -50,12 +62,12 @@ public:
     QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const override;
-    Q_INVOKABLE bool canRenameItem(int index) const override;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
-    Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;
-    bool renameEnabled() const noexcept override;
-    bool createFolderEnabled() const noexcept override;
-    bool deleteFolderEnabled() const noexcept override;
+    Q_INVOKABLE bool canRenameItem(int index) const;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
+    Q_INVOKABLE bool setItemExpanded(int index, bool expanded);
+    bool renameEnabled() const noexcept;
+    bool createFolderEnabled() const noexcept;
+    bool deleteFolderEnabled() const noexcept;
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(
         const QString& wshubPath,
@@ -67,8 +79,8 @@ public:
         bool loadSucceeded,
         QString errorMessage = QString());
 
-    Q_INVOKABLE void createFolder() override;
-    Q_INVOKABLE void deleteSelectedFolder() override;
+    Q_INVOKABLE void createFolder();
+    Q_INVOKABLE void deleteSelectedFolder();
     Q_INVOKABLE bool canMoveFolder(int index) const;
     Q_INVOKABLE bool canAcceptFolderDropBefore(int sourceIndex, int targetIndex) const;
     Q_INVOKABLE bool moveFolderBefore(int sourceIndex, int targetIndex);
@@ -76,16 +88,16 @@ public:
     Q_INVOKABLE bool moveFolder(int sourceIndex, int targetIndex, bool asChild);
     Q_INVOKABLE bool canMoveFolderToRoot(int sourceIndex) const;
     Q_INVOKABLE bool moveFolderToRoot(int sourceIndex);
-    Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const override;
-    Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId) override;
-    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey = QString()) override;
+    Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
+    Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);
+    Q_INVOKABLE bool applyHierarchyNodes(const QVariantList& hierarchyNodes, const QString& activeItemKey = QString());
     Q_INVOKABLE bool createEmptyNote();
     Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId);
     Q_INVOKABLE bool deleteNoteById(const QString& noteId);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
-    bool supportsHierarchyNodeReorder() const noexcept override;
-    bool supportsHierarchyNoteDrop() const noexcept override;
+    bool supportsHierarchyNodeReorder() const noexcept;
+    bool supportsHierarchyNoteDrop() const noexcept;
 
     void setSystemCalendarStore(SystemCalendarStore* store);
     SystemCalendarStore* systemCalendarStore() const noexcept;
