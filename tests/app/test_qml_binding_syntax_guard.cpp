@@ -244,6 +244,11 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QFile contentViewSessionFile(contentViewSessionPath);
     QVERIFY2(contentViewSessionFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewSessionPath));
     const QString contentViewSessionText = QString::fromUtf8(contentViewSessionFile.readAll());
+    const QString lvrsTextEditorPath =
+        QStringLiteral("/Users/ymy/.local/LVRS/src/LVRS/qml/components/control/input/TextEditor.qml");
+    QFile lvrsTextEditorFile(lvrsTextEditorPath);
+    QVERIFY2(lvrsTextEditorFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(lvrsTextEditorPath));
+    const QString lvrsTextEditorText = QString::fromUtf8(lvrsTextEditorFile.readAll());
 
     QVERIFY2(
         contentViewText.contains(QStringLiteral("property color displayColor: \"transparent\"")),
@@ -567,6 +572,16 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("selectionColor: LV.Theme.accent")),
         "ContentViewLayout.qml must keep the editor selection highlight aligned with the LVRS input accent color.");
+    QVERIFY2(
+        lvrsTextEditorText.contains(QStringLiteral(
+            "interactive: contentHeight > height && (!control.preferNativeGestures || !control.focused)")),
+        "LVRS TextEditor.qml must suspend viewport flicking as soon as the editor surface is focused, or the initial mobile tap-to-focus transition will still pre-empt native text-selection gestures.");
+    QVERIFY2(
+        lvrsTextEditorText.contains(QStringLiteral("enabled: control.enabled")) &&
+            lvrsTextEditorText.contains(QStringLiteral("if (control.autoFocusOnPress)")) &&
+            lvrsTextEditorText.contains(QStringLiteral("control.forceEditorFocus()")) &&
+            lvrsTextEditorText.contains(QStringLiteral("mouse.accepted = false")),
+        "LVRS TextEditor.qml must keep the transparent focus-assist press layer active without consuming the touch, or iOS-native word/line selection gestures will be blocked before the editor can focus.");
     QVERIFY2(
         contentViewText.contains(
             QStringLiteral("fieldMinHeight: Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)")),

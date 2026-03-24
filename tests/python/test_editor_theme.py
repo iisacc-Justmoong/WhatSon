@@ -8,6 +8,20 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class EditorThemeTests(unittest.TestCase):
+    def test_lvrs_surface_aliases_follow_low_luminance_figma_scale(self) -> None:
+        lvrs_theme_text = Path("/Users/ymy/.local/LVRS/src/LVRS/qml/Theme.qml").read_text(encoding="utf-8")
+        lvrs_theme_doc_text = Path("/Users/ymy/.local/LVRS/src/LVRS/docs/theme.md").read_text(encoding="utf-8")
+
+        self.assertIn("readonly property color panelBackground01: \"#1B1B1C\"", lvrs_theme_text)
+        self.assertIn("readonly property color windowAlt: panelBackground01", lvrs_theme_text)
+        self.assertIn("readonly property color subSurface: panelBackground02", lvrs_theme_text)
+        self.assertIn("readonly property color surfaceSolid: panelBackground03", lvrs_theme_text)
+        self.assertIn("readonly property color surfaceAlt: panelBackground04", lvrs_theme_text)
+        self.assertIn("- `windowAlt -> panelBackground01`", lvrs_theme_doc_text)
+        self.assertIn("- `subSurface -> panelBackground02`", lvrs_theme_doc_text)
+        self.assertIn("- `surfaceSolid -> panelBackground03`", lvrs_theme_doc_text)
+        self.assertIn("- `surfaceAlt -> panelBackground04`", lvrs_theme_doc_text)
+
     def test_editor_surface_tokens_match_figma_contract(self) -> None:
         main_text = (REPO_ROOT / "src/app/qml/Main.qml").read_text(encoding="utf-8")
         body_layout_text = (REPO_ROOT / "src/app/qml/view/panels/BodyLayout.qml").read_text(encoding="utf-8")
@@ -89,6 +103,8 @@ class EditorThemeTests(unittest.TestCase):
             readme_text,
             re.compile(r"root\s+`LV\.ApplicationWindow`\s+`panelBackground01`\s+canvas"),
         )
+        self.assertIn("`windowAlt -> panelBackground01`", readme_text)
+        self.assertIn("`subSurface -> panelBackground02`", readme_text)
         self.assertRegex(
             readme_text,
             re.compile(r"gutter fill, and lower drawer now stay transparent"),
@@ -104,6 +120,8 @@ class EditorThemeTests(unittest.TestCase):
             architecture_text,
             re.compile(r"editor theme contract now keeps the broad desktop editor surfaces transparent"),
         )
+        self.assertIn("`windowAlt -> panelBackground01`", architecture_text)
+        self.assertIn("`surfaceAlt -> panelBackground04`", architecture_text)
         self.assertIn("line-number colors", architecture_text)
 
 

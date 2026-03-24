@@ -71,6 +71,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
   `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
   `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.
+- The LVRS derived surface aliases now stay on the lower-luminance Figma scale (`windowAlt -> panelBackground01`,
+  `subSurface -> panelBackground02`, `surfaceSolid -> panelBackground03`, `surfaceAlt -> panelBackground04`) so
+  editor, toolbar, and card defaults do not drift brighter than the `panelBackground01` desktop canvas.
 
 ## Search Input Behavior
 

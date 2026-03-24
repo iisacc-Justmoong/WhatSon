@@ -1,5 +1,15 @@
 # App Architecture
 
+## Desktop Workspace
+The root `ApplicationWindow` `panelBackground01` canvas remains the only broad desktop background surface.
+
+Desktop and shared LVRS control surfaces stay on the lower-luminance alias ladder (`windowAlt -> panelBackground01`,
+`subSurface -> panelBackground02`, `surfaceSolid -> panelBackground03`, `surfaceAlt -> panelBackground04`) so the app
+does not render a brighter shell than the Figma `ApplicationWindow` reference.
+
+The editor theme contract now keeps the broad desktop editor surfaces transparent, while line-number colors stay on the
+dedicated `#4E5157` / `#9DA0A8` contrast pair instead of inheriting the body text tone.
+
 ## Mobile Shell
 `MobilePageScaffold.qml` is the persistent mobile shell wrapper. It keeps the compact navigation bar and compact status bar mounted while the routed body swaps between hierarchy, note-list, and editor content.
 
