@@ -24,6 +24,10 @@ The important rule is that the route stack is only canonicalized when the visibl
 
 `hierarchyPageActive`, `noteListPageActive`, and `editorPageActive` are all derived from that resolved body path. The compact `settings` affordance is bound to `hierarchyPageActive`, which means the shared navigation bar only shows that button on `/mobile/hierarchy`.
 
+`requestOpenNoteList(...)` is subscribed only to `HierarchySidebarLayout.hierarchyItemActivated(...)`.
+Chevron-only expansion in `SidebarHierarchyView.qml` is intentionally suppressed before that signal is
+re-emitted, so tapping a folder chevron on mobile does not push `/mobile/note-list`.
+
 ## Selection Preservation
 `preservedNoteListSelectionIndex` caches the active hierarchy selection that produced the current note list.
 
@@ -35,10 +39,20 @@ This is used by:
 
 The cache prevents a canonical rebuild from collapsing back to the implicit "All Library" list when the user actually came from a folder-specific list.
 
+`syncRouteSelectionState()` now clears the active hierarchy selection only when the routed body and
+the router have both settled on `/mobile/hierarchy`, and only when the router stack depth is `<= 1`.
+This prevents transient editor-pop states from writing `-1` back into the shared hierarchy
+selection while the app is actually returning to a folder-scoped note list.
+
 ## Editor Pop Repair
 Interactive back navigation from the editor can temporarily leave `currentPath` and the rendered body out of sync.
 
 `handleCommittedRouteTransition(...)` and `verifyCommittedEditorPopState(...)` therefore use `displayedBodyRoutePath()` before forcing a canonical note-list rebuild. If the rendered body is already the note-list page, the repair path is skipped. This keeps the previous folder-scoped note list on screen instead of rebuilding the stack back through the generic root state.
+
+The page re-runs `syncRouteSelectionState()` from both router-path changes and
+`resolvedBodyRoutePath` changes. That dual trigger is intentional because the router can update
+before the rendered body catches up, and the hierarchy-selection clear must wait until both layers
+agree that the user is truly back on the hierarchy root.
 
 ## Back Swipe
 The left-edge gesture is implemented with a local `DragHandler` instead of a global gesture listener.

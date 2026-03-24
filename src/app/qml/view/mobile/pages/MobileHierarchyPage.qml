@@ -377,13 +377,17 @@ Item {
     function syncRouteSelectionState() {
         if (!mobileScaffold.activePageRouter)
             return false;
-        const currentPath = mobileHierarchyPage.displayedBodyRoutePath();
+        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
+        const routerCurrentPath = String(mobileScaffold.activePageRouter.currentPath);
+        const depth = mobileHierarchyPage.routeStackDepth();
         const previousPath = mobileHierarchyPage.lastObservedRoutePath;
-        mobileHierarchyPage.lastObservedRoutePath = currentPath;
+        mobileHierarchyPage.lastObservedRoutePath = displayedPath;
         if (mobileHierarchyPage.routeSelectionSyncSuppressed)
             return false;
-        if (currentPath !== mobileHierarchyPage.hierarchyRoutePath
+        if (displayedPath !== mobileHierarchyPage.hierarchyRoutePath
                 || previousPath === mobileHierarchyPage.hierarchyRoutePath)
+            return false;
+        if (routerCurrentPath !== mobileHierarchyPage.hierarchyRoutePath || depth > 1)
             return false;
         return mobileHierarchyPage.clearActiveHierarchySelection();
     }
@@ -439,6 +443,7 @@ Item {
         }
         mobileHierarchyPage.routeToHierarchyRoot();
     }
+    onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()
 
     Connections {
         target: mobileHierarchyPage.libraryNoteCreationViewModel

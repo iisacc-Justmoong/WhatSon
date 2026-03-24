@@ -109,6 +109,8 @@ class MobileShellLayoutTests(unittest.TestCase):
         )
         self.assertIn("property bool footerVisible: true", hierarchy_view_text)
         self.assertIn("property bool hierarchyEditable: false", hierarchy_view_text)
+        self.assertIn("property bool hierarchyExpansionActivationSuppressed: false", hierarchy_view_text)
+        self.assertIn("function armHierarchyExpansionActivationSuppression()", hierarchy_view_text)
         self.assertIn("property bool searchFieldVisible: false", hierarchy_view_text)
         self.assertIn("property int searchHeaderMinHeight: LV.Theme.gap24", hierarchy_view_text)
         self.assertIn("property int searchHeaderTopGap: LV.Theme.gap4", hierarchy_view_text)
@@ -116,6 +118,11 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int searchHeaderVerticalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("property int verticalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_view_text)
+        self.assertIn("if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)", hierarchy_view_text)
+        self.assertIn(
+            "sidebarHierarchyView.armHierarchyExpansionActivationSuppression();",
+            hierarchy_view_text,
+        )
         self.assertIn("PanelView.ListBarHeader", hierarchy_view_text)
         self.assertIn("frameMinHeight: sidebarHierarchyView.searchHeaderMinHeight", hierarchy_view_text)
         self.assertIn("outerHorizontalInset: LV.Theme.gapNone", hierarchy_view_text)
@@ -249,6 +256,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("function syncRouteSelectionState()", mobile_page_text)
         self.assertIn("function updateBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("property string lastObservedRoutePath: hierarchyRoutePath", mobile_page_text)
+        self.assertIn(
+            "onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()",
+            mobile_page_text,
+        )
         self.assertIn("sessionId === mobileHierarchyPage.backSwipeConsumedSessionId", mobile_page_text)
         self.assertNotIn("mobileHierarchyPage.backSwipeSessionId < 0 && !mobileHierarchyPage.beginBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("Component {", mobile_page_text)
@@ -313,6 +324,15 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("target: mobileScaffold.activePageRouter", mobile_page_text)
         self.assertIn("function onCurrentPathChanged()", mobile_page_text)
         self.assertIn("mobileHierarchyPage.syncRouteSelectionState();", mobile_page_text)
+        self.assertIn(
+            "const routerCurrentPath = String(mobileScaffold.activePageRouter.currentPath);",
+            mobile_page_text,
+        )
+        self.assertIn("const depth = mobileHierarchyPage.routeStackDepth();", mobile_page_text)
+        self.assertIn(
+            "if (routerCurrentPath !== mobileHierarchyPage.hierarchyRoutePath || depth > 1)",
+            mobile_page_text,
+        )
         self.assertIn("mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(-1);", mobile_page_text)
         self.assertIn("if (mobileHierarchyPage.routeSelectionSyncSuppressed)", mobile_page_text)
         self.assertIn("if (mobileScaffold.bodyItem && mobileScaffold.bodyItem.requestCreateFolder !== undefined)", mobile_page_text)

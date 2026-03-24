@@ -28,6 +28,14 @@ The root file still exposes wrapper functions for these helpers so callers and t
 
 These signals make the file a reusable visual surface instead of a hard-coded one-off sidebar.
 
+## Expansion Routing Guard
+
+- Chevron-driven expansion now arms a one-turn suppression fence before the LVRS expansion callback
+  is forwarded to the interaction bridge.
+- While that fence is active, `onListItemActivated` does not re-emit `hierarchyItemActivated(...)`.
+- This is specifically required for mobile routing, where `hierarchyItemActivated(...)` is treated as
+  "open the note-list page for this folder". A chevron tap must only fold or unfold the hierarchy.
+
 ## Drag and Rename Behavior
 - Rename state is represented by `editingHierarchyIndex` and `editingHierarchyLabel`.
 - Inline rename geometry is no longer derived only from the live LVRS row object. The view now keeps an

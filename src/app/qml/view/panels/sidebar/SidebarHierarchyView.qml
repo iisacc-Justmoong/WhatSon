@@ -148,6 +148,8 @@ Rectangle {
     property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1
     readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : [])
+    property bool hierarchyExpansionActivationSuppressed: false
+    property int hierarchyExpansionActivationSuppressionSerial: 0
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
     property int toolbarFrameWidth: 200
@@ -204,6 +206,17 @@ Rectangle {
 
     function hierarchyItemContainsPoint(item, x, y) {
         return noteDropController.hierarchyItemContainsPoint(item, x, y);
+    }
+
+    function armHierarchyExpansionActivationSuppression() {
+        const nextSerial = sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial + 1;
+        sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial = nextSerial;
+        sidebarHierarchyView.hierarchyExpansionActivationSuppressed = true;
+        Qt.callLater(function () {
+            if (sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial !== nextSerial)
+                return;
+            sidebarHierarchyView.hierarchyExpansionActivationSuppressed = false;
+        });
     }
 
     function hierarchyItemAtPosition(x, y) {
@@ -494,10 +507,13 @@ Rectangle {
         onListItemActivated: function (item, itemId, index) {
             if (!sidebarHierarchyView.hierarchyViewModel)
                 return;
+            if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)
+                return;
             sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(itemId);
             sidebarHierarchyView.hierarchyItemActivated(item, itemId, index);
         }
         onListItemExpanded: function (item, itemId, index, expanded) {
+            sidebarHierarchyView.armHierarchyExpansionActivationSuppression();
             if (!sidebarHierarchyView.hierarchyInteractionBridge)
                 return;
             sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(itemId, expanded);

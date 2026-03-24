@@ -856,6 +856,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("onListItemActivated: function (item, itemId, index)")),
         "SidebarHierarchyView.qml must sync hierarchy selection from the LVRS listItemActivated callback.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("property bool hierarchyExpansionActivationSuppressed: false")) &&
+            sidebarViewText.contains(QStringLiteral("function armHierarchyExpansionActivationSuppression()")) &&
+            sidebarViewText.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)")) &&
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.armHierarchyExpansionActivationSuppression();")),
+        "SidebarHierarchyView.qml must suppress expansion-driven LVRS activation re-emission so mobile chevron taps only fold or unfold folders instead of routing into note lists.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(itemId);")),
         "SidebarHierarchyView.qml must mirror LVRS item activation into the shared hierarchy interface by stable itemId.");
     QVERIFY2(
@@ -2156,11 +2162,15 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
         "MobileHierarchyPage.qml must fall back to the hierarchy route when the resolved note-list model disappears.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("property string lastObservedRoutePath: hierarchyRoutePath")) &&
+            mobilePageText.contains(QStringLiteral("onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()")) &&
             mobilePageText.contains(QStringLiteral("target: mobileScaffold.activePageRouter")) &&
             mobilePageText.contains(QStringLiteral("function onCurrentPathChanged() {")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.syncRouteSelectionState();")) &&
+            mobilePageText.contains(QStringLiteral("const routerCurrentPath = String(mobileScaffold.activePageRouter.currentPath);")) &&
+            mobilePageText.contains(QStringLiteral("const depth = mobileHierarchyPage.routeStackDepth();")) &&
+            mobilePageText.contains(QStringLiteral("if (routerCurrentPath !== mobileHierarchyPage.hierarchyRoutePath || depth > 1)")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(-1);")),
-        "MobileHierarchyPage.qml must clear the active hierarchy selection whenever routing returns to the hierarchy root so tapping the same folder can reopen the note-list route after a mobile back gesture.");
+        "MobileHierarchyPage.qml must clear the active hierarchy selection only after both the router and the rendered body have genuinely settled on the hierarchy root, so editor-pop transitions do not collapse the previous folder-scoped note-list back to All Library.");
 
     const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/ListBarLayout.qml"));
