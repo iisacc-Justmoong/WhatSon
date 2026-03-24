@@ -869,6 +869,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
                 "control.expanded = !control.expanded\n                        control.requestActivationFromInteraction(\"click\")")),
         "LVRS HierarchyItem.qml chevron clicks must toggle expansion without re-requesting row activation, or folder chevrons will incorrectly route into note lists.");
     QVERIFY2(
+        lvrsHierarchyItemText.contains(
+            QStringLiteral("readonly property int chevronInteractionWidth: effectiveShowChevron ? chevronSize + leadingSpacing : 0")) &&
+            lvrsHierarchyItemText.contains(QStringLiteral("property bool _chevronInteractionActive: false")) &&
+            lvrsHierarchyItemText.contains(
+                QStringLiteral("if (!control.pointerDragRequiresLongPress && !control._chevronInteractionActive)")) &&
+            lvrsHierarchyItemText.contains(QStringLiteral("control._chevronInteractionActive = true")) &&
+            lvrsHierarchyItemText.contains(QStringLiteral("anchors.rightMargin: control.chevronInteractionWidth")),
+        "LVRS HierarchyItem.qml must reserve an activation-free chevron slot and suppress row activation while the chevron interaction is in progress, or mobile folder chevron taps will still open the note list.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function normalizeHierarchyModel(modelValue)")),
         "SidebarHierarchyView.qml must normalize C++ hierarchy QVariantList payloads into a real JS array before handing them to LVRS editable drag logic.");
     QVERIFY2(
@@ -2020,6 +2029,8 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(
                 QStringLiteral("readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath")) &&
             mobilePageText.contains(
+                QStringLiteral("readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath")) &&
+            mobilePageText.contains(
                 QStringLiteral("readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath")),
         "MobileHierarchyPage.qml must derive mobile note-list and editor state from the routed scaffold body contract instead of a private route-memory stack or a stale currentPath-only check.");
     QVERIFY2(
@@ -2029,9 +2040,9 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(
                 QStringLiteral("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive")) &&
             mobilePageText.contains(QStringLiteral("compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive")) &&
-            mobilePageText.contains(QStringLiteral("compactSettingsVisible: !mobileHierarchyPage.noteListPageActive")) &&
+            mobilePageText.contains(QStringLiteral("compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive")) &&
             mobilePageText.contains(QStringLiteral("compactLeadingActionVisible: false")),
-        "MobileHierarchyPage.qml must drive scaffold body routing from the shared mobile PageRouter state while suppressing the compact folder affordance on routed note-list and editor views and swapping the compact control cluster to the note-list variant when the routed note-list page is active.");
+        "MobileHierarchyPage.qml must drive scaffold body routing from the shared mobile PageRouter state while suppressing the compact folder affordance on routed note-list and editor views, keeping settings exclusive to the hierarchy route, and swapping the compact control cluster to the note-list variant when the routed note-list page is active.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("function requestBackToHierarchy()")) &&
             mobilePageText.contains(QStringLiteral("function currentHierarchySelectionIndex()")) &&
@@ -2056,6 +2067,8 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("function finishBackSwipeGesture(eventData, cancelled)")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.rememberNoteListSelection();")) &&
             mobilePageText.contains(QStringLiteral("mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);")) &&
+            mobilePageText.contains(QStringLiteral("const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();")) &&
+            mobilePageText.contains(QStringLiteral("if (displayedPath === mobileHierarchyPage.noteListRoutePath)")) &&
             mobilePageText.contains(QStringLiteral("const depth = mobileHierarchyPage.routeStackDepth();")) &&
             mobilePageText.contains(QStringLiteral("if (currentPath === mobileHierarchyPage.noteListRoutePath && depth >= 2)")) &&
             mobilePageText.contains(QStringLiteral("sessionId === mobileHierarchyPage.backSwipeConsumedSessionId")) &&

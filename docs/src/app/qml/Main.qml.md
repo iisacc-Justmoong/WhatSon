@@ -1,0 +1,46 @@
+# `src/app/qml/Main.qml`
+
+## Role
+`Main.qml` is the root LVRS shell. It owns route composition, adaptive layout selection, top-level geometry policy, and QML-side registration of root viewmodels into `LV.ViewModels`.
+
+## Root Responsibilities
+- Instantiate the `LV.ApplicationWindow`.
+- Define root sizing, panel widths, and adaptive layout defaults.
+- Register runtime viewmodels into the LVRS `ViewModels` registry.
+- Claim writable ownership for selected interaction surfaces.
+- Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
+- Switch between onboarding and workspace routes.
+
+## ViewModel Ownership
+The important architectural work in this file is not the layout math. It is the ownership hand-off.
+
+`registerRootViewModels()` copies context-property objects into `LV.ViewModels` under stable keys such as:
+- `libraryHierarchyViewModel`
+- `libraryNoteMutationViewModel`
+- `navigationModeViewModel`
+- `sidebarHierarchyViewModel`
+- `detailPanelViewModel`
+
+`bindOwnedViewModel(...)` then claims write ownership for concrete view IDs:
+- `windowInteractions.libraryNoteMutation`
+- `windowInteractions.navigationMode`
+- `windowInteractions.sidebarHierarchy`
+
+This means the root scene stops behaving like a bag of globally mutable QObjects and starts behaving more like explicit LVRS-owned writable surfaces.
+
+## Layout Composition
+The file keeps both desktop and mobile layout branches alive.
+- Desktop uses the status bar, navigation bar, sidebar, list, content, and detail panel composition.
+- Mobile uses routed workspace pages and a scaffold tuned for compact navigation.
+- Onboarding can be embedded into the route stack or opened as a separate window depending on platform and adaptive mode.
+
+## Important Signals and Hooks
+- `viewHookRequested` is the root forwarding signal used by nested components that want to bubble interaction intent upward.
+- `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
+- `Component.onDestruction` releases owned view bindings so the registry does not retain stale writable handles.
+
+## Practical Reading
+Read this file with:
+- `src/app/main.cpp` for object lifetime and context-property creation.
+- `src/app/qml/MainWindowInteractionController.qml` for shortcut behavior.
+- `src/app/qml/view/panels/HierarchySidebarLayout.qml` for active hierarchy binding into the sidebar.

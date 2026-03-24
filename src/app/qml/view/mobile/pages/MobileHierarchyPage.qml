@@ -61,6 +61,7 @@ Item {
     readonly property string noteListRoutePath: "/mobile/note-list"
     readonly property string resolvedBodyRoutePath: mobileHierarchyPage.displayedBodyRoutePath()
     readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath
+    readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
     property string pendingCreatedNoteId: ""
     required property var sidebarHierarchyViewModel
@@ -230,8 +231,11 @@ Item {
                 || !mobileScaffold.activePageRouter
                 || !mobileHierarchyPage.activeNoteListModel)
             return false;
+        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const depth = mobileHierarchyPage.routeStackDepth();
+        if (displayedPath === mobileHierarchyPage.noteListRoutePath)
+            return true;
         if (currentPath === mobileHierarchyPage.noteListRoutePath && depth >= 2)
             return true;
         if (attemptsRemaining > 0) {
@@ -252,6 +256,9 @@ Item {
             return;
         mobileHierarchyPage.rememberNoteListSelection();
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
+        if (displayedPath === mobileHierarchyPage.noteListRoutePath)
+            return;
         const repairRequestId = mobileHierarchyPage.editorPopRepairRequestId;
         Qt.callLater(function () {
             mobileHierarchyPage.verifyCommittedEditorPopState(repairRequestId, 2);
@@ -460,7 +467,7 @@ Item {
         compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive
         compactLeadingActionVisible: false
         compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive
-        compactSettingsVisible: !mobileHierarchyPage.noteListPageActive
+        compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
         editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
         navigationModeViewModel: mobileHierarchyPage.navigationModeViewModel

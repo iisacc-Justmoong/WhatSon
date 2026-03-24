@@ -1,0 +1,36 @@
+# `src/app/policy/ArchitecturePolicyLock.cpp`
+
+## Role
+This file contains the concrete architectural contract matrix and the one-way runtime lock used by the application startup path.
+
+## Dependency Matrix
+The matrix is hard-coded and intentionally simple.
+- `View` may depend on `ViewModel`.
+- `ViewModel` may depend on `DataModel`, `Store`, `Parser`, and `Creator`.
+- `Store` may depend on `DataModel`, `Parser`, `Creator`, and `FileSystem`.
+- `Parser` and `Creator` may depend on `DataModel`.
+- `DataModel` and `FileSystem` do not gain outgoing dependencies through this policy.
+
+This is not a general-purpose DI framework. It is a repository-specific guardrail.
+
+## Runtime Lock
+`g_architecturePolicyLocked` is a process-wide atomic flag.
+- It starts unlocked.
+- Startup code performs dependency injection.
+- `ArchitecturePolicyLock::lock()` flips the flag.
+- Late wiring attempts can then reject mutation and emit warnings.
+
+The lock is intentionally one-way. There is no public unlock because application composition is expected to be complete before the first QML scene is fully active.
+
+## Verification Helpers
+- `assertDependencyAllowed(...)` is the pure diagnostic helper.
+- `verifyDependencyAllowed(...)` adds a production-facing warning path using `[whatson:policy][dependency] ...`.
+
+The newer bridge code uses `verifyDependencyAllowed(...)` so the policy is not only tested in unit tests but also exercised in real wiring paths.
+
+## Practical Reading
+Read this file together with:
+- `src/app/main.cpp` for lock timing.
+- `src/app/viewmodel/panel/HierarchyInteractionBridge.cpp` for view-to-viewmodel verification.
+- `src/app/viewmodel/panel/HierarchyDragDropBridge.cpp` for drag/drop contract verification.
+- `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp` for viewmodel-to-store verification.

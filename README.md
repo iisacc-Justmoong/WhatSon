@@ -639,6 +639,9 @@ for hub/note hierarchy payloads.
 - The same mobile note-list route now also swaps the shared `NavigationBarLayout.qml` compact trailing controls to the
   Figma node `174:5171` order `sortByType -> cwmPermissionView -> toolwindowtodo`, and hides the compact settings
   button so the note-list top bar no longer reuses the hierarchy-route chrome.
+- The shared compact `settings` button is now exclusive to the `/mobile/hierarchy` route. Both the routed note-list
+  view and the routed editor view suppress it, so the mobile hierarchy chrome no longer bleeds into the other routed
+  bodies.
 - `MobilePageScaffold.qml` now owns the mobile routed body through `LV.PageRouter`, and `MobileHierarchyPage.qml`
   drives that stack with explicit `/mobile/hierarchy` and `/mobile/note-list` routes instead of a private page-state
   enum plus route-memory copies.
@@ -674,9 +677,9 @@ for hub/note hierarchy payloads.
   existing context-menu button, while `NavigationBarLayout.qml` keeps the navigation mode combo on the shared
   `NavigationModeViewModel` without replacing the shared hierarchy footer actions. The compact control menu anchors
   from the trigger's bottom-right corner, the compact navigation right group resolves in the Figma order `new folder ->
-  menu`, the compact control `LV.IconMenuButton` now uses the `generalprojectStructure` glyph with the built-in LVRS
-  chevron indicator, and action-only control entries suppress the LVRS shortcut column so labels keep their full width
-  budget on mobile.
+  menu`, the hierarchy-route compact control `LV.IconMenuButton` now uses the `toolwindowtodo` glyph with the built-in
+  LVRS chevron indicator plus the Figma `2 / 4 / 2 / 2` padding contract, and action-only control entries suppress the LVRS shortcut column so
+  labels keep their full width budget on mobile.
 - When the routed mobile note-list page is active, `NavigationApplicationControlBar.qml` now switches to a dedicated
   compact variant that renders `sortByType`, `cwmPermissionView`, and a `toolwindowtodo` `LV.IconMenuButton` in the
   same order as the Figma note-list bar instead of reusing the hierarchy/control compact menu button.

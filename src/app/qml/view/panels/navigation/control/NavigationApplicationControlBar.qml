@@ -189,7 +189,13 @@ Item {
             LV.IconMenuButton {
                 id: applicationControlMenuButton
 
-                iconName: "generalprojectStructure"
+                bottomPadding: LV.Theme.gap2
+                iconName: "toolwindowtodo"
+                leftPadding: LV.Theme.gap2
+                rightPadding: LV.Theme.gap4
+                spacing: LV.Theme.gapNone
+                tone: LV.AbstractButton.Borderless
+                topPadding: LV.Theme.gap2
 
                 onClicked: {
                     if (applicationControlContextMenu.opened) {
@@ -227,8 +233,13 @@ Item {
             LV.IconMenuButton {
                 id: noteListApplicationControlMenuButton
 
+                bottomPadding: LV.Theme.gap2
                 iconName: "toolwindowtodo"
+                leftPadding: LV.Theme.gap2
+                rightPadding: LV.Theme.gap4
+                spacing: LV.Theme.gapNone
                 tone: LV.AbstractButton.Borderless
+                topPadding: LV.Theme.gap2
 
                 onClicked: {
                     if (noteListApplicationControlContextMenu.opened) {

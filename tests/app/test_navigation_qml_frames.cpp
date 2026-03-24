@@ -262,11 +262,9 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(addNewIndex < preferenceIndex);
     QVERIFY(applicationControlBar.contains(QStringLiteral("LV.IconMenuButton {")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("property bool compactNoteListControlsVisible: false")));
-    QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"generalprojectStructure\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"toolwindowtodo\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"sortByType\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("iconName: \"cwmPermissionView\"")));
-    QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"generalprojectStructure\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"toolwindowtodo\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"sortByType\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"iconName\": \"cwmPermissionView\"")));
@@ -302,6 +300,9 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Monthly\"")));
     QVERIFY(!applicationControlBar.contains(QStringLiteral("\"label\": \"Yearly\"")));
     QVERIFY(applicationControlBar.contains(QStringLiteral("\"keyVisible\": false")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("leftPadding: LV.Theme.gap2")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("rightPadding: LV.Theme.gap4")));
+    QVERIFY(applicationControlBar.contains(QStringLiteral("spacing: LV.Theme.gapNone")));
     QVERIFY(applicationControlBar.contains(
         QStringLiteral("applicationControlMenuButton.width")));
     QVERIFY(applicationControlBar.contains(

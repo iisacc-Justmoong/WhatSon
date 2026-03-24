@@ -1,0 +1,64 @@
+# `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`
+
+## Role
+`MobileHierarchyPage.qml` is the routed mobile workspace shell for hierarchy browsing, folder-scoped note lists, and note editing.
+
+It does not own the domain data itself. Its job is to keep the mobile `LV.PageRouter` stack aligned with the already-bound hierarchy and note-list viewmodels that come from the desktop-style application root.
+
+## Primary Responsibilities
+- Mount the three mobile body routes: hierarchy, note list, and editor.
+- Preserve the selected hierarchy folder while the user moves between note list and editor pages.
+- Drive left-edge back-swipe gestures through `LV.PageTransitionController`.
+- Promote newly created library notes into the editor route once the shared models are ready.
+- Keep compact navigation chrome route-aware so hierarchy-only controls do not leak into note-list or editor pages.
+
+## Routing Model
+The file defines three route constants:
+- `/mobile/hierarchy`
+- `/mobile/note-list`
+- `/mobile/editor`
+
+`mobileBodyRoutes` maps these paths to `HierarchySidebarLayout`, `ListBarLayout`, and `ContentViewLayout`.
+
+The important rule is that the route stack is only canonicalized when the visible body and the router state have genuinely diverged. The helper `displayedBodyRoutePath()` reads the currently mounted scaffold body first and only falls back to `activePageRouter.currentPath` when the body has not resolved yet.
+
+`hierarchyPageActive`, `noteListPageActive`, and `editorPageActive` are all derived from that resolved body path. The compact `settings` affordance is bound to `hierarchyPageActive`, which means the shared navigation bar only shows that button on `/mobile/hierarchy`.
+
+## Selection Preservation
+`preservedNoteListSelectionIndex` caches the active hierarchy selection that produced the current note list.
+
+This is used by:
+- `requestOpenNoteList(...)`
+- `requestOpenEditor(...)`
+- `routeToCanonicalNoteList(...)`
+- `routeToCanonicalEditor(...)`
+
+The cache prevents a canonical rebuild from collapsing back to the implicit "All Library" list when the user actually came from a folder-specific list.
+
+## Editor Pop Repair
+Interactive back navigation from the editor can temporarily leave `currentPath` and the rendered body out of sync.
+
+`handleCommittedRouteTransition(...)` and `verifyCommittedEditorPopState(...)` therefore use `displayedBodyRoutePath()` before forcing a canonical note-list rebuild. If the rendered body is already the note-list page, the repair path is skipped. This keeps the previous folder-scoped note list on screen instead of rebuilding the stack back through the generic root state.
+
+## Back Swipe
+The left-edge gesture is implemented with a local `DragHandler` instead of a global gesture listener.
+
+The flow is:
+1. `beginBackSwipeGesture(...)` validates the edge hit and begins `LV.PageTransitionController`.
+2. `updateBackSwipeGesture(...)` feeds progress and cancels when the motion turns vertical.
+3. `finishBackSwipeGesture(...)` commits or cancels based on controller heuristics.
+
+This keeps mobile back navigation local to the page and avoids stealing editor text-selection gestures from the content view.
+
+## Collaborators
+- `MobilePageScaffold.qml`: owns the shared compact navigation and status chrome.
+- `HierarchySidebarLayout.qml`: renders the hierarchy route body.
+- `ListBarLayout.qml`: renders the folder-scoped note list route body.
+- `ContentViewLayout.qml`: renders the editor route body.
+- `SidebarHierarchyViewModel`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
+- `windowInteractions`: routes create-note shortcuts and exposes the library note mutation viewmodel.
+
+## Known Invariants
+- A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.
+- Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
+- Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.

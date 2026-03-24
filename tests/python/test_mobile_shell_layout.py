@@ -37,6 +37,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         hierarchy_view_text = (
             REPO_ROOT / "src/app/qml/view/panels/sidebar/SidebarHierarchyView.qml"
         ).read_text(encoding="utf-8")
+        rename_controller_text = (
+            REPO_ROOT
+            / "src/app/qml/view/panels/sidebar/SidebarHierarchyRenameController.qml"
+        ).read_text(encoding="utf-8")
         mode_bar_text = (
             REPO_ROOT / "src/app/qml/view/panels/navigation/NavigationModeBar.qml"
         ).read_text(encoding="utf-8")
@@ -68,7 +72,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property bool showLabel: true", mode_bar_text)
         self.assertIn("visible: modeBar.showLabel", mode_bar_text)
         self.assertIn("LV.IconMenuButton {", control_bar_text)
-        self.assertIn('iconName: "generalprojectStructure"', control_bar_text)
+        self.assertIn('iconName: "toolwindowtodo"', control_bar_text)
+        self.assertIn("leftPadding: LV.Theme.gap2", control_bar_text)
+        self.assertIn("rightPadding: LV.Theme.gap4", control_bar_text)
+        self.assertIn("spacing: LV.Theme.gapNone", control_bar_text)
         self.assertNotIn('iconName: "generalsearch"', control_bar_text)
 
         self.assertIn("signal createNoteRequested", status_bar_text)
@@ -116,8 +123,8 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("searchFieldShapeStyle: hierarchySearchHeader.shapeRoundRect", hierarchy_view_text)
         self.assertIn("visibilityActionVisible: false", hierarchy_view_text)
         self.assertIn("sortActionVisible: false", hierarchy_view_text)
-        self.assertIn("return clone;", hierarchy_view_text)
-        self.assertIn("return projectedModel;", hierarchy_view_text)
+        self.assertIn("return clone;", rename_controller_text)
+        self.assertIn("return projectedModel;", rename_controller_text)
         self.assertIn("hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap", hierarchy_view_text)
         self.assertIn(
             "anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap : 0)",
@@ -212,10 +219,16 @@ class MobileShellLayoutTests(unittest.TestCase):
             mobile_page_text,
         )
         self.assertIn(
+            "readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath",
+            mobile_page_text,
+        )
+        self.assertIn(
             "readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath",
             mobile_page_text,
         )
         self.assertIn("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive", mobile_page_text)
+        self.assertIn("compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive", mobile_page_text)
+        self.assertIn("compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive", mobile_page_text)
         self.assertIn("compactLeadingActionVisible: false", mobile_page_text)
         self.assertIn("bodyInitialPath: mobileHierarchyPage.hierarchyRoutePath", mobile_page_text)
         self.assertIn("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes", mobile_page_text)
@@ -286,6 +299,8 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("pageTransitionController.finish(shouldCommit);", mobile_page_text)
         self.assertIn("pageTransitionController.update(progress, {", mobile_page_text)
         self.assertIn("mobileHierarchyPage.rememberNoteListSelection();", mobile_page_text)
+        self.assertIn("const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();", mobile_page_text)
+        self.assertIn("if (displayedPath === mobileHierarchyPage.noteListRoutePath)", mobile_page_text)
         self.assertIn("mobileHierarchyPage.routeSelectionSyncSuppressed = true;", mobile_page_text)
         self.assertIn("mobileHierarchyPage.restoreNoteListSelection(preservedSelectionIndex);", mobile_page_text)
         self.assertIn("id: noteListBodyComponent", mobile_page_text)
@@ -329,8 +344,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertNotIn("activeMobilePage", mobile_page_text)
         self.assertNotIn("bodyComponent: hierarchyBodyComponent", mobile_page_text)
 
-        self.assertIn("readonly property var rootNavigationModeViewModel: navigationModeViewModel", main_text)
-        self.assertIn("readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel", main_text)
+        self.assertIn("readonly property var rootNavigationModeViewModel: {", main_text)
+        self.assertIn('return LV.ViewModels.get("navigationModeViewModel");', main_text)
+        self.assertIn("readonly property var rootSidebarHierarchyViewModel: {", main_text)
+        self.assertIn('return LV.ViewModels.get("sidebarHierarchyViewModel");', main_text)
         self.assertIn("navigationModeViewModel: applicationWindow.rootNavigationModeViewModel", main_text)
         self.assertIn("sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel", main_text)
         self.assertIn("toolbarIconNames: applicationWindow.hierarchyToolbarIconNames", main_text)
