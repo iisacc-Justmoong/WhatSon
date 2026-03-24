@@ -20,7 +20,7 @@ LV.HStack {
     LV.IconButton {
         id: makeStickyNoteButton
 
-        iconName: "generalprojectStructure"
+        iconName: "generalpaste"
     }
     LV.IconButton {
         id: pinWindowButton

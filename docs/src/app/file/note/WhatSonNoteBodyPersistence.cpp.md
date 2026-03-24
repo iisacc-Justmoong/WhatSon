@@ -1,37 +1,16 @@
 # `src/app/file/note/WhatSonNoteBodyPersistence.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+This implementation owns the reusable note-body normalization and save workflow.
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteBodyPersistence.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonNoteBodyPersistence.cpp`
-- Approximate line count: 241
+The file now also contains the shared XML-to-plain-text extraction path used by both the local note file store and the library runtime indexer.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Key Behaviors
+- `normalizeBodyPlainText(...)` normalizes only `CRLF` / `CR` into `LF`.
+- `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
+- Empty paragraphs are emitted as empty lines instead of being dropped.
+- Whitespace-only paragraphs are emitted as whitespace-only lines instead of being trimmed away.
+- `persistBodyPlainText(...)` short-circuits when the editor text matches the parsed plain text from disk, which prevents accidental body rewrites and tag cleanup during no-op saves.
 
-### Classes and Structs
-- None detected during scaffold generation.
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Why This Matters
+Before this change, the read path collapsed whitespace and discarded empty lines. That made the editor believe the body had changed even when the user had not asked for any structural cleanup, and a later save could rewrite `.wsnbody` without preserving intentional blank paragraphs.

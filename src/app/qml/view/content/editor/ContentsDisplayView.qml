@@ -35,6 +35,8 @@ Item {
     readonly property int editorTopInset: LV.Theme.gap4
     property int editorTopInsetOverride: -1
     readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
+    readonly property real editorViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
+    readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)
     readonly property var effectiveGutterMarkers: {
         const normalizedMarkers = [];
         if (contentsView.showCurrentLineMarker) {
@@ -72,7 +74,7 @@ Item {
     property var gutterMarkers: []
     property int gutterRefreshPassesRemaining: 0
     property int gutterRefreshRevision: 0
-    readonly property real gutterViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
+    readonly property real gutterViewportHeight: contentsView.editorViewportHeight
     readonly property int gutterWidth: 74
     property int gutterWidthOverride: -1
     readonly property int effectiveGutterWidth: contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth
@@ -425,7 +427,7 @@ Item {
         if (!flickable)
             return contentsView.minimapTrackRuntimeHeight;
         const contentHeight = Math.max(1, contentsView.minimapContentHeight());
-        const viewportHeight = Math.max(0, Number(flickable.height) || 0);
+        const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
         if (contentHeight <= viewportHeight)
             return contentsView.minimapTrackRuntimeHeight;
         const proportionalHeight = contentsView.minimapTrackHeightForContentHeight(viewportHeight);
@@ -436,7 +438,7 @@ Item {
         if (!flickable)
             return 0;
         const contentHeight = Math.max(1, contentsView.minimapContentHeight());
-        const viewportHeight = Math.max(0, Number(flickable.height) || 0);
+        const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
         const maxContentY = Math.max(0, contentHeight - viewportHeight);
         if (maxContentY <= 0)
             return 0;
@@ -514,8 +516,8 @@ Item {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
             return;
-        const contentHeight = Math.max(1, Number(flickable.contentHeight) || 0);
-        const viewportHeight = Math.max(0, Number(flickable.height) || 0);
+        const contentHeight = Math.max(1, contentsView.editorOccupiedContentHeight());
+        const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
         const maxContentY = Math.max(0, contentHeight - viewportHeight);
         if (maxContentY <= 0) {
             flickable.contentY = 0;
@@ -715,6 +717,7 @@ Item {
                         id: contentEditor
 
                         anchors.fill: parent
+                        anchors.topMargin: contentsView.editorDocumentStartY
                         autoFocusOnPress: true
                         backgroundColor: contentsView.displayColor
                         backgroundColorDisabled: contentsView.displayColor
@@ -723,9 +726,9 @@ Item {
                         backgroundColorPressed: contentsView.displayColor
                         centeredTextHeight: contentsView.editorTextLineBoxHeight
                         cornerRadius: 0
-                        editorHeight: editorViewport.height
+                        editorHeight: contentsView.editorSurfaceHeight
                         enforceModeDefaults: false
-                        fieldMinHeight: Math.max(contentsView.minEditorHeight, editorViewport.height)
+                        fieldMinHeight: Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
                         fontFamily: LV.Theme.fontBody
                         fontLetterSpacing: 0
                         fontPixelSize: 12
@@ -758,12 +761,7 @@ Item {
                             contentsView.editorTextEdited(text);
                         }
                     }
-                    Binding {
-                        property: "y"
-                        target: contentEditor.editorItem
-                        value: contentsView.editorDocumentStartY
-                    }
-                    // Shared desktop/mobile contract: outer inset owns document origin, so LVRS top centering stays disabled.
+                    // Shared desktop/mobile contract: the outer editor surface owns the 16px top spacer, so LVRS top centering stays disabled.
                     Binding {
                         property: "topPadding"
                         target: contentEditor.editorItem

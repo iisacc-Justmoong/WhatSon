@@ -1,37 +1,18 @@
 # `src/app/file/note/WhatSonLocalNoteFileStore.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`WhatSonLocalNoteFileStore` is the concrete filesystem adapter for `.wsnhead`, `.wsnbody`, `.wsnhistory`, and `.wsnversion`.
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonLocalNoteFileStore.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonLocalNoteFileStore.cpp`
-- Approximate line count: 1029
+It creates notes, reads materialized note directories, updates persisted body/header state, and deletes local note storage.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Body Parsing Contract
+- `applyBodyDocumentText(...)` is the read-side body decoder.
+- The decoder still detects `<resource ...>` tags for thumbnail metadata, but the editor text now comes from `WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(...)`.
+- This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Update Contract
+- `updateNote(...)` still serializes the edited plain text back into paragraph nodes when a real body write is requested.
+- The important guard is that no-op saves now compare against a faithful plain-text reconstruction of the existing `.wsnbody`, so the store is not forced into an unsolicited rewrite simply because the read path trimmed the body differently.
 
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Regression Coverage
+- `tests/app/test_whatson_local_note_file_store.cpp` now verifies that a body containing empty and whitespace-only paragraphs round-trips through `readNote(...)`.

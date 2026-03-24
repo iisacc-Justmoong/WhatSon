@@ -1,37 +1,15 @@
 # `src/app/file/hierarchy/library/LibraryAll.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`LibraryAll.cpp` scans the library storage, resolves note records, and produces the canonical runtime `LibraryNoteRecord` list used by the Library hierarchy and note list.
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/LibraryAll.cpp`
-- Source kind: C++ implementation
-- File name: `LibraryAll.cpp`
-- Approximate line count: 1277
+## Body Extraction
+- `extractBodyContentFromWsnbody(...)` is the load-time body decoder for indexed note records.
+- It still resolves resource thumbnails from `<resource ...>` tags, but plain-text body extraction now delegates to `WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(...)`.
+- That shared parser preserves blank paragraphs and whitespace-only paragraphs, so the runtime note model exposes the same logical body text that the editor will compare during a save.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Why The Shared Parser Matters
+The library runtime and the local note file store must agree on what the body text actually is. If one side trims blank lines and the other side preserves them, the editor will observe false body changes and the next save can rewrite `.wsnbody` unexpectedly.
 
-### Classes and Structs
-- `BodyContentExtract`
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Regression Coverage
+- `tests/app/test_library_hierarchy_view_model.cpp` now verifies that an unchanged save preserves both blank paragraphs and whitespace-only paragraphs in an existing `.wsnbody` document.

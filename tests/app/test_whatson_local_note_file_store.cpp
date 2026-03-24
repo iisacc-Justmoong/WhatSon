@@ -10,6 +10,17 @@
 
 namespace
 {
+    bool writeUtf8File(const QString& filePath, const QString& text)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            return false;
+        }
+        file.write(text.toUtf8());
+        return true;
+    }
+
     QString readUtf8File(const QString& filePath)
     {
         QFile file(filePath);
@@ -42,6 +53,7 @@ class WhatSonLocalNoteFileStoreTest final : public QObject
 
 private slots:
     void createReadUpdateDelete_roundTripsLocalNoteFiles();
+    void readNote_preservesEmptyAndWhitespaceOnlyParagraphs();
     void updateNote_headerOnlyRewrite_preservesExistingBodyText();
 };
 
@@ -192,6 +204,54 @@ void WhatSonLocalNoteFileStoreTest::updateNote_headerOnlyRewrite_preservesExisti
     QCOMPARE(rereadDocument.bodyPlainText, QStringLiteral("body before"));
     QCOMPARE(rereadDocument.headerStore.folders(), QStringList{QStringLiteral("Inbox/Sub")});
     QCOMPARE(readHistoryEntries(rereadDocument.noteHistoryPath).size(), 1);
+}
+
+void WhatSonLocalNoteFileStoreTest::readNote_preservesEmptyAndWhitespaceOnlyParagraphs()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString noteDirectoryPath = QDir(tempDir.path()).filePath(QStringLiteral("Gamma.wsnote"));
+
+    WhatSonNoteHeaderStore headerStore;
+    headerStore.setNoteId(QStringLiteral("Gamma"));
+    headerStore.setCreatedAt(QStringLiteral("2026-03-22-12-00-00"));
+    headerStore.setAuthor(QStringLiteral("Tester"));
+    headerStore.setLastModifiedAt(QStringLiteral("2026-03-22-12-00-00"));
+    headerStore.setModifiedBy(QStringLiteral("Tester"));
+
+    WhatSonLocalNoteFileStore store;
+    WhatSonLocalNoteFileStore::CreateRequest createRequest;
+    createRequest.noteId = QStringLiteral("Gamma");
+    createRequest.noteDirectoryPath = noteDirectoryPath;
+    createRequest.headerStore = headerStore;
+    createRequest.bodyPlainText = QStringLiteral("seed");
+
+    WhatSonLocalNoteDocument createdDocument;
+    QString createError;
+    QVERIFY2(store.createNote(std::move(createRequest), &createdDocument, &createError), qPrintable(createError));
+
+    const QString bodyXml = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"Gamma\">\n"
+        "  <body>\n"
+        "    <paragraph>alpha</paragraph>\n"
+        "    <paragraph></paragraph>\n"
+        "    <paragraph>   </paragraph>\n"
+        "    <paragraph>beta</paragraph>\n"
+        "  </body>\n"
+        "</contents>\n");
+    QVERIFY(writeUtf8File(createdDocument.noteBodyPath, bodyXml));
+
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    WhatSonLocalNoteDocument readDocument;
+    QString readError;
+    QVERIFY2(store.readNote(readRequest, &readDocument, &readError), qPrintable(readError));
+    QCOMPARE(readDocument.bodyPlainText, QStringLiteral("alpha\n\n   \nbeta"));
+    QCOMPARE(readDocument.bodyFirstLine, QStringLiteral("alpha"));
 }
 
 QTEST_MAIN(WhatSonLocalNoteFileStoreTest)

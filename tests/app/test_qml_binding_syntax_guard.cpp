@@ -569,20 +569,24 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentViewLayout.qml must keep the editor selection highlight aligned with the LVRS input accent color.");
     QVERIFY2(
         contentViewText.contains(
-            QStringLiteral("fieldMinHeight: Math.max(contentsView.minEditorHeight, editorViewport.height)")),
-        "ContentViewLayout.qml must keep the editor surface on Fill height even when the body text is empty.");
+            QStringLiteral("fieldMinHeight: Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)")),
+        "ContentViewLayout.qml must keep the editor surface on Fill height even when the body text is empty after reserving the shared top spacer.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("property: \"y\"")),
-        "ContentViewLayout.qml must override the internal TextEditor y-position for top-left body alignment.");
+        contentViewText.contains(QStringLiteral("anchors.topMargin: contentsView.editorDocumentStartY")),
+        "ContentViewLayout.qml must materialize the shared 16px document spacer through the TextEditor top margin.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property real editorDocumentStartY: {")),
         "ContentsDisplayView.qml must centralize the document origin so desktop and mobile share the same editor geometry contract.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)")),
+        "ContentsDisplayView.qml must derive the LVRS editor surface height from the viewport minus the shared top spacer.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int editorTopInset: LV.Theme.gap4")),
         "ContentsDisplayView.qml must keep a shared 16px top inset through the LVRS gap4 token for every platform.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("value: contentsView.editorDocumentStartY")),
-        "ContentViewLayout.qml must drive body origin from the shared editorDocumentStartY resolver.");
+        !contentViewText.contains(QStringLiteral("property: \"y\"")) &&
+            !contentViewText.contains(QStringLiteral("value: contentsView.editorDocumentStartY")),
+        "ContentViewLayout.qml must no longer simulate the top spacer by rebinding TextEditor.editorItem.y.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int editorDocumentTopPadding: 0")),
         "ContentsDisplayView.qml must neutralize LVRS internal top padding through a shared editorDocumentTopPadding contract.");

@@ -99,12 +99,6 @@ namespace
         return text;
     }
 
-    QString normalizeBodyLine(QString text)
-    {
-        text.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
-        return text.trimmed();
-    }
-
     QString serializeBodyDocument(const QString& noteId, const QString& plainText)
     {
         const QString normalizedId = noteId.trimmed().isEmpty()
@@ -575,44 +569,8 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
         }
     }
 
-    innerText.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-    innerText.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-    innerText.replace(
-        QRegularExpression(QStringLiteral(R"(<br\s*/?>)"), QRegularExpression::CaseInsensitiveOption),
-        QStringLiteral("\n"));
-    innerText.replace(
-        QRegularExpression(
-            QStringLiteral(R"(</(?:p|paragraph|div|li|h[1-6]|section|article|blockquote|ul|ol|tr|table|pre)>)"),
-            QRegularExpression::CaseInsensitiveOption),
-        QStringLiteral("\n"));
-    innerText.replace(
-        QRegularExpression(
-            QStringLiteral(
-                R"(<(?:p|paragraph|div|li|h[1-6]|section|article|blockquote|ul|ol|tr|table|pre|hr)\b[^>]*>)"),
-            QRegularExpression::CaseInsensitiveOption),
-        QStringLiteral("\n"));
-    innerText.replace(QRegularExpression(QStringLiteral(R"(<[^>]+>)")), QString());
-    innerText = decodeXmlEntities(std::move(innerText));
-
-    const QStringList rawLines = innerText.split(QLatin1Char('\n'));
-    QStringList lines;
-    lines.reserve(rawLines.size());
-    for (QString line : rawLines)
-    {
-        line = normalizeBodyLine(std::move(line));
-        if (!line.isEmpty())
-        {
-            lines.push_back(std::move(line));
-        }
-    }
-
-    if (lines.isEmpty())
-    {
-        return;
-    }
-
-    document->bodyFirstLine = lines.constFirst();
-    document->bodyPlainText = lines.join(QLatin1Char('\n'));
+    document->bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
+    document->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(document->bodyPlainText);
 }
 
 bool WhatSonLocalNoteFileStore::createNote(

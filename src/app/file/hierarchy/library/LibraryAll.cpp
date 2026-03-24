@@ -1,6 +1,7 @@
 #include "LibraryAll.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "note/WhatSonNoteBodyPersistence.hpp"
 #include "note/WhatSonNoteHeaderParser.hpp"
 #include "note/WhatSonNoteFolderSemantics.hpp"
 #include "note/WhatSonNoteHeaderStore.hpp"
@@ -299,12 +300,6 @@ namespace
         return text;
     }
 
-    QString normalizeBodyLine(QString text)
-    {
-        text.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
-        return text.trimmed();
-    }
-
     QString findAncestorDirectoryWithSuffix(const QString& startPath, const QString& suffix)
     {
         if (startPath.trimmed().isEmpty())
@@ -526,44 +521,8 @@ namespace
             }
         }
 
-        innerText.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-        innerText.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-        innerText.replace(
-            QRegularExpression(QStringLiteral(R"(<br\s*/?>)"), QRegularExpression::CaseInsensitiveOption),
-            QStringLiteral("\n"));
-        innerText.replace(
-            QRegularExpression(
-                QStringLiteral(R"(</(?:p|paragraph|div|li|h[1-6]|section|article|blockquote|ul|ol|tr|table|pre)>)"),
-                QRegularExpression::CaseInsensitiveOption),
-            QStringLiteral("\n"));
-        innerText.replace(
-            QRegularExpression(
-                QStringLiteral(
-                    R"(<(?:p|paragraph|div|li|h[1-6]|section|article|blockquote|ul|ol|tr|table|pre|hr)\b[^>]*>)"),
-                QRegularExpression::CaseInsensitiveOption),
-            QStringLiteral("\n"));
-        innerText.replace(QRegularExpression(QStringLiteral(R"(<[^>]+>)")), QString());
-        innerText = decodeXmlEntities(std::move(innerText));
-
-        const QStringList rawLines = innerText.split(QLatin1Char('\n'));
-        QStringList lines;
-        lines.reserve(rawLines.size());
-        for (QString line : rawLines)
-        {
-            line = normalizeBodyLine(std::move(line));
-            if (!line.isEmpty())
-            {
-                lines.push_back(std::move(line));
-            }
-        }
-
-        if (lines.isEmpty())
-        {
-            return content;
-        }
-
-        content.firstLine = lines.constFirst();
-        content.plainText = lines.join(QLatin1Char('\n'));
+        content.plainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(wsnbodyText);
+        content.firstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(content.plainText);
         return content;
     }
 

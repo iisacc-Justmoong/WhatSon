@@ -178,9 +178,9 @@ WhatSon is an LVRS-based Qt Quick application.
   anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
   top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
-- That shared top inset is now applied directly as the editor document origin instead of being inferred back from the
-  internal `TextEditor.editorItem.y`, so the 16px separation from the navigation bar survives after the LVRS editor
-  item mounts on both desktop and mobile.
+- That shared top inset is now materialized as a real `LV.TextEditor` top margin while the internal LVRS
+  `topPadding` stays forced to `0`, so the 16px separation from the navigation bar remains visible even when the
+  editor viewport recalculates under Fill sizing on both desktop and mobile.
 - `LV.TextEditor` disables rendered preview output and forced wrap defaults
   (`showRenderedOutput: false`, `enforceModeDefaults: false`) while enabling `wrapMode: TextEdit.Wrap`; the gutter
   still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the

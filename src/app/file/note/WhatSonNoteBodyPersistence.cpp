@@ -4,6 +4,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QXmlStreamReader>
 
 namespace
 {
@@ -16,6 +17,23 @@ namespace
         }
         return QDir::cleanPath(path);
     }
+
+    bool isTextBlockElement(const QString& elementName)
+    {
+        const QString normalizedName = elementName.trimmed().toCaseFolded();
+        return normalizedName == QStringLiteral("p")
+            || normalizedName == QStringLiteral("paragraph")
+            || normalizedName == QStringLiteral("div")
+            || normalizedName == QStringLiteral("li")
+            || normalizedName == QStringLiteral("blockquote")
+            || normalizedName == QStringLiteral("pre")
+            || normalizedName == QStringLiteral("h1")
+            || normalizedName == QStringLiteral("h2")
+            || normalizedName == QStringLiteral("h3")
+            || normalizedName == QStringLiteral("h4")
+            || normalizedName == QStringLiteral("h5")
+            || normalizedName == QStringLiteral("h6");
+    }
 } // namespace
 
 namespace WhatSon::NoteBodyPersistence
@@ -25,6 +43,118 @@ namespace WhatSon::NoteBodyPersistence
         text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
         return text;
+    }
+
+    QString plainTextFromBodyDocument(const QString& bodyDocumentText)
+    {
+        if (bodyDocumentText.isEmpty())
+        {
+            return {};
+        }
+
+        QXmlStreamReader reader(bodyDocumentText);
+        bool insideBody = false;
+        bool encounteredBlockElement = false;
+        int blockDepth = 0;
+        QString currentBlockText;
+        QString fallbackText;
+        QStringList lines;
+
+        while (!reader.atEnd())
+        {
+            reader.readNext();
+            if (reader.isStartElement())
+            {
+                const QString elementName = reader.name().toString();
+                if (!insideBody)
+                {
+                    if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
+                    {
+                        insideBody = true;
+                    }
+                    continue;
+                }
+
+                if (elementName.compare(QStringLiteral("resource"), Qt::CaseInsensitive) == 0)
+                {
+                    continue;
+                }
+
+                if (elementName.compare(QStringLiteral("br"), Qt::CaseInsensitive) == 0)
+                {
+                    if (blockDepth > 0)
+                    {
+                        currentBlockText += QLatin1Char('\n');
+                    }
+                    else if (!encounteredBlockElement)
+                    {
+                        fallbackText += QLatin1Char('\n');
+                    }
+                    continue;
+                }
+
+                if (isTextBlockElement(elementName))
+                {
+                    encounteredBlockElement = true;
+                    if (blockDepth == 0)
+                    {
+                        currentBlockText.clear();
+                    }
+                    ++blockDepth;
+                }
+                continue;
+            }
+
+            if (!insideBody)
+            {
+                continue;
+            }
+
+            if (reader.isCharacters())
+            {
+                const QString text = reader.text().toString();
+                if (blockDepth > 0)
+                {
+                    currentBlockText += text;
+                }
+                else if (!encounteredBlockElement || !text.trimmed().isEmpty())
+                {
+                    fallbackText += text;
+                }
+                continue;
+            }
+
+            if (!reader.isEndElement())
+            {
+                continue;
+            }
+
+            const QString elementName = reader.name().toString();
+            if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
+            {
+                insideBody = false;
+                break;
+            }
+
+            if (!isTextBlockElement(elementName) || blockDepth <= 0)
+            {
+                continue;
+            }
+
+            --blockDepth;
+            if (blockDepth == 0)
+            {
+                lines.append(normalizeBodyPlainText(currentBlockText).split(QLatin1Char('\n'), Qt::KeepEmptyParts));
+                currentBlockText.clear();
+            }
+        }
+
+        if (!lines.isEmpty())
+        {
+            return lines.join(QLatin1Char('\n'));
+        }
+
+        return normalizeBodyPlainText(fallbackText);
     }
 
     QString firstLineFromBodyPlainText(const QString& text)

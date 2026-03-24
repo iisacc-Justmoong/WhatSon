@@ -30,7 +30,7 @@ Item {
     property var applicationControlMenuItems: [
         {
             "label": "Show Structure",
-            "iconName": "generalprojectStructure",
+            "iconName": "generalpaste",
             "keyVisible": false,
             "showChevron": false
         },
