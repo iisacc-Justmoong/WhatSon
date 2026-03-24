@@ -13,5 +13,6 @@ public:
     bool parse(
         const QString& rawText,
         WhatSonFoldersHierarchyStore* outStore,
-        QString* errorMessage = nullptr) const;
+        QString* errorMessage = nullptr,
+        bool* outUuidMigrationRequired = nullptr) const;
 };

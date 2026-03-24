@@ -36,6 +36,7 @@ struct WhatSonLocalNoteDocument
         record.modifiedBy = headerStore.modifiedBy();
         record.project = headerStore.project();
         record.folders = headerStore.folders();
+        record.folderUuids = headerStore.folderUuids();
         record.bookmarkColors = headerStore.bookmarkColors();
         record.tags = headerStore.tags();
         record.progress = headerStore.progress();

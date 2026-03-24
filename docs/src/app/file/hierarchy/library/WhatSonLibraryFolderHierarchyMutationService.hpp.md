@@ -1,39 +1,26 @@
 # `src/app/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp`
-- Source kind: C++ header
-- File name: `WhatSonLibraryFolderHierarchyMutationService.hpp`
-- Approximate line count: 36
+This header declares the service that commits persistent library-folder mutations. The service owns
+the write order between the visible folder tree and note-header folder bindings.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Why The Service Exists
 
-### Classes and Structs
-- `WhatSonLibraryFolderHierarchyMutationService`
-- `Request`
-- `Result`
+Folder rename, move, delete, and reorder operations are not purely visual in this application:
 
-### Enums
-- None detected during scaffold generation.
+- `Folders.wsfolders` changes the sidebar tree.
+- `.wsnhead` folder bindings determine which notes appear under each folder.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+The service keeps those two layers synchronized as one mutation boundary.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## UUID-Oriented Contract
+
+The current implementation treats folder UUID as the canonical identity:
+
+- path changes are allowed,
+- UUIDs remain stable,
+- note headers are rewritten by UUID lookup against the staged hierarchy.
+
+This solves the earlier failure mode where renaming a parent folder invalidated every descendant note
+binding because the stored path no longer matched the runtime tree.

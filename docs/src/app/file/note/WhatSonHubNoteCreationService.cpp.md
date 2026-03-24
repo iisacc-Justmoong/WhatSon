@@ -1,37 +1,17 @@
 # `src/app/file/note/WhatSonHubNoteCreationService.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonHubNoteCreationService.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonHubNoteCreationService.cpp`
-- Approximate line count: 393
+This implementation creates the initial note scaffold on disk and returns the matching
+`LibraryNoteRecord`.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## UUID-Aware Note Creation
 
-### Classes and Structs
-- None detected during scaffold generation.
+- The service aligns `assignedFolders` with `assignedFolderUuids`.
+- It writes both values into `WhatSonNoteHeaderStore` through `setFolderBindings(...)`.
+- It mirrors the same bindings into the returned `LibraryNoteRecord`.
 
-### Enums
-- None detected during scaffold generation.
+## Result
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+A note created while a folder is selected can later survive parent-folder rename and move operations
+because the note was born with the correct stable folder UUID, not merely the visible path string.

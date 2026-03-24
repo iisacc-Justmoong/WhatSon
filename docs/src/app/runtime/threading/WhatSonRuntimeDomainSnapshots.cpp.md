@@ -1,37 +1,29 @@
 # `src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/runtime/threading/WhatSonRuntimeDomainSnapshots.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonRuntimeDomainSnapshots.cpp`
-- Approximate line count: 546
+This file builds startup-time runtime snapshots for the main thread. It loads note records, smart
+bucket projections, and persisted hierarchy files in a worker-thread friendly form.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Folder Snapshot Role
 
-### Classes and Structs
-- None detected during scaffold generation.
+For library folders, the snapshot loader parses `Folders.wsfolders` into
+`WhatSonFolderDepthEntry` rows and exposes both the file path and the normalized folder entries to
+the startup pipeline.
 
-### Enums
-- None detected during scaffold generation.
+## UUID Migration Behavior
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+The snapshot loader now forwards the parser's `outUuidMigrationRequired` signal and rewrites
+`Folders.wsfolders` immediately when a legacy file had no persisted UUIDs.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+That keeps startup behavior aligned with direct `LibraryHierarchyViewModel::loadFromWshub()` loads:
+
+- a legacy folder tree receives stable UUIDs once,
+- the upgraded file is persisted,
+- the next launch reuses the same folder identities instead of generating a different in-memory set.
+
+## Failure Policy
+
+If the snapshot loader detects that UUID migration is required but cannot rewrite the folder file, it
+marks the snapshot as failed and propagates the write error. This avoids silently continuing with a
+session-local identity map.

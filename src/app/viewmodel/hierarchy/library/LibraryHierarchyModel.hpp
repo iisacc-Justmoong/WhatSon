@@ -12,6 +12,7 @@ struct LibraryHierarchyItem
     bool expanded = false;
     QString label;
     QString folderPath;
+    QString folderUuid;
 
     enum class SystemBucket
     {

@@ -1,37 +1,19 @@
 # `src/app/file/hub/WhatSonHubParser.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hub/WhatSonHubParser.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonHubParser.cpp`
-- Approximate line count: 961
+This file is the bootstrap parser for a `.wshub` package. It reads persisted hub files and produces
+the in-memory runtime payload consumed by higher-level stores and viewmodels.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Folder Hierarchy Output
 
-### Classes and Structs
-- None detected during scaffold generation.
+For folder hierarchies, the parser now forwards the full `WhatSonFolderDepthEntry` contract,
+including the stable `uuid` field. That makes UUID identity available immediately during startup,
+before the library hierarchy viewmodel or mutation services start filtering notes.
 
-### Enums
-- None detected during scaffold generation.
+## Compatibility Notes
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Legacy hub packages without folder UUIDs are still accepted because the lower-level folder parser
+  upgrades them.
+- New hub packages preserve UUIDs end to end, so a folder rename performed in one session remains a
+  rename rather than a delete-and-recreate event in the next session.

@@ -7,4 +7,5 @@ struct WhatSonFolderDepthEntry
     QString id;
     QString label;
     int depth = 0;
+    QString uuid;
 };

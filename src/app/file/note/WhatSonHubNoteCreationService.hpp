@@ -24,6 +24,7 @@ public:
         QVector<LibraryNoteRecord> notes;
         QString authorProfileName;
         QStringList assignedFolders;
+        QStringList assignedFolderUuids;
     };
 
     struct Result final

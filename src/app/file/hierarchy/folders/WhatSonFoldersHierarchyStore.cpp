@@ -1,5 +1,6 @@
 #include "WhatSonFoldersHierarchyStore.hpp"
 
+#include "../WhatSonFolderIdentity.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyCreator.hpp"
 #include "hub/WhatSonHubWriteLease.hpp"
@@ -26,6 +27,7 @@ namespace
         {
             entry.id = sanitizeText(std::move(entry.id));
             entry.label = sanitizeText(std::move(entry.label));
+            entry.uuid = WhatSon::FolderIdentity::normalizeFolderUuid(std::move(entry.uuid));
             if (entry.label.isEmpty() && !entry.id.isEmpty())
             {
                 entry.label = entry.id;
@@ -41,6 +43,10 @@ namespace
             if (entry.depth < 0)
             {
                 entry.depth = 0;
+            }
+            if (entry.uuid.isEmpty())
+            {
+                entry.uuid = WhatSon::FolderIdentity::createFolderUuid();
             }
             sanitized.push_back(std::move(entry));
         }

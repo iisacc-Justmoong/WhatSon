@@ -1,37 +1,29 @@
 # `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonFoldersHierarchyStore.cpp`
-- Approximate line count: 149
+This file owns the persisted `Folders.wsfolders` read/write boundary for generic folder hierarchies.
+Its main job after the UUID migration is to guarantee that every stored row carries a valid stable
+folder UUID.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## UUID Handling
 
-### Classes and Structs
-- None detected during scaffold generation.
+- Rows loaded from disk are normalized before the caller sees them.
+- If a row has no UUID, or if the value is malformed, the store synthesizes a new 64-character
+  UUID before the data is persisted again.
+- The store does not treat path changes as identity changes. `id` may change during a rename, but
+  `uuid` is preserved.
 
-### Enums
-- None detected during scaffold generation.
+## Persistence Role
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+The store sits above the parser/creator pair:
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+1. Parse raw JSON-like `.wsfolders` content into `WhatSonFolderDepthEntry` rows.
+2. Sanitize each row, especially the `uuid` field.
+3. Serialize the sanitized list back when callers save the hierarchy.
+
+## Why This Matters
+
+The rest of the library pipeline now depends on folder UUIDs to reconnect note headers to the
+renamed or moved folder tree. If the store allowed invalid or missing UUIDs to leak through,
+runtime filtering would fall back to path comparisons and reintroduce the original bug.

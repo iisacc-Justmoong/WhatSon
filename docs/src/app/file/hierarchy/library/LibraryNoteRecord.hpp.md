@@ -1,37 +1,30 @@
 # `src/app/file/hierarchy/library/LibraryNoteRecord.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/LibraryNoteRecord.hpp`
-- Source kind: C++ header
-- File name: `LibraryNoteRecord.hpp`
-- Approximate line count: 27
+`LibraryNoteRecord` is the normalized runtime payload for one note in the library domain. It is the
+shared data shape used by note list models, hierarchy filters, note mutation helpers, and local file
+stores.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Relevant Folder Fields
 
-### Classes and Structs
-- `LibraryNoteRecord`
+- `folders`: visible folder paths used for presentation and backward compatibility.
+- `folderUuids`: stable folder identities aligned by index with `folders`.
 
-### Enums
-- None detected during scaffold generation.
+The two lists are intentionally stored together so the application can keep a readable path while
+filtering and mutation logic rely on stable UUIDs.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Invariants
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- `folderUuids` should be normalized before the record is used for filtering or persistence.
+- Callers should keep `folders` and `folderUuids` aligned in order and count.
+- Missing UUIDs are tolerated only as legacy fallbacks during import; modern writes should preserve
+  UUIDs.
+
+## Main Collaborators
+
+- `LibraryAll.cpp`: produces runtime records from hub files.
+- `WhatSonHubNoteCreationService.cpp`: creates new records for freshly scaffolded notes.
+- `WhatSonHubNoteMutationSupport.cpp`: keeps runtime records synchronized with edited note
+  documents.
+- `LibraryHierarchyViewModel.cpp`: filters records by selected folder UUID.

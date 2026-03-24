@@ -1,37 +1,35 @@
 # `src/app/file/hierarchy/WhatSonFolderDepthEntry.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/WhatSonFolderDepthEntry.hpp`
-- Source kind: C++ header
-- File name: `WhatSonFolderDepthEntry.hpp`
-- Approximate line count: 10
+`WhatSonFolderDepthEntry` is the compact in-memory representation of one persisted folder row.
+It is used by folder parsers, folder serializers, hub bootstrap code, and the library hierarchy
+viewmodel.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Data Contract
 
-### Classes and Structs
-- `WhatSonFolderDepthEntry`
+- `id`: legacy full-path identifier such as `Research/Competitor`. The current code still keeps
+  this field because persisted `.wsfolders` data and some fallback lookups are path-based.
+- `label`: display name of the folder segment.
+- `depth`: zero-based nesting depth used by tree reconstruction.
+- `uuid`: stable 64-character alphanumeric folder identity. This is the canonical identity for
+  runtime folder relationships after the UUID migration.
 
-### Enums
-- None detected during scaffold generation.
+## Why Both `id` And `uuid` Exist
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+The repository is in a compatibility phase:
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- `.wsfolders` still stores human-readable path information.
+- note headers and runtime selection logic now prefer `uuid`.
+- older data without `uuid` is upgraded by parsers and stores during load/save.
+
+This split lets rename and reparent operations change visible paths without invalidating note-to-
+folder bindings.
+
+## Main Collaborators
+
+- `WhatSonFoldersHierarchyParser.cpp`: reads rows from `.wsfolders`.
+- `WhatSonFoldersHierarchyCreator.cpp`: writes rows back to disk.
+- `LibraryHierarchyViewModel.cpp`: projects these rows into UI-facing hierarchy items.
+- `WhatSonLibraryFolderHierarchyMutationService.cpp`: uses UUIDs to keep note headers aligned when
+  folder paths change.

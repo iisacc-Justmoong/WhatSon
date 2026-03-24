@@ -1,10 +1,12 @@
 #include "WhatSonNoteHeaderStore.hpp"
 
+#include "../hierarchy/WhatSonFolderIdentity.hpp"
 #include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonNoteFolderSemantics.hpp"
 
 #include <QRegularExpression>
+#include <QSet>
 #include <QUuid>
 
 #include <algorithm>
@@ -103,13 +105,22 @@ namespace
         return sanitized;
     }
 
-    QStringList sanitizeFolderList(QStringList values)
+    struct SanitizedFolderBindings final
     {
-        QStringList sanitized;
-        sanitized.reserve(values.size());
+        QStringList folders;
+        QStringList folderUuids;
+    };
 
-        for (QString& value : values)
+    SanitizedFolderBindings sanitizeFolderBindings(QStringList values, QStringList folderUuids)
+    {
+        SanitizedFolderBindings sanitized;
+        sanitized.folders.reserve(values.size());
+        sanitized.folderUuids.reserve(values.size());
+        QSet<QString> seenBindings;
+
+        for (int index = 0; index < values.size(); ++index)
         {
+            QString& value = values[index];
             value = value.trimmed();
             if (value.isEmpty())
             {
@@ -137,7 +148,22 @@ namespace
                 continue;
             }
 
-            sanitized.push_back(value);
+            const QString folderUuid = index < folderUuids.size()
+                                           ? WhatSon::FolderIdentity::normalizeFolderUuid(folderUuids.at(index))
+                                           : QString();
+            const QString bindingKey = !folderUuid.isEmpty()
+                                           ? QStringLiteral("uuid:%1").arg(folderUuid)
+                                           : QStringLiteral(
+                                               "path:%1").arg(WhatSon::NoteFolders::normalizeFolderPath(value)
+                                                                  .toCaseFolded());
+            if (bindingKey.endsWith(QLatin1Char(':')) || seenBindings.contains(bindingKey))
+            {
+                continue;
+            }
+
+            seenBindings.insert(bindingKey);
+            sanitized.folders.push_back(value);
+            sanitized.folderUuids.push_back(folderUuid);
         }
 
         return sanitized;
@@ -157,6 +183,7 @@ void WhatSonNoteHeaderStore::clear()
     m_lastModifiedAt.clear();
     m_modifiedBy.clear();
     m_folders.clear();
+    m_folderUuids.clear();
     m_project.clear();
     m_bookmarked = false;
     m_bookmarkColors.clear();
@@ -287,14 +314,34 @@ QStringList WhatSonNoteHeaderStore::folders() const
 
 void WhatSonNoteHeaderStore::setFolders(QStringList folders)
 {
+    setFolderBindings(std::move(folders), m_folderUuids);
+}
+
+QStringList WhatSonNoteHeaderStore::folderUuids() const
+{
+    return m_folderUuids;
+}
+
+void WhatSonNoteHeaderStore::setFolderUuids(QStringList folderUuids)
+{
+    setFolderBindings(m_folders, std::move(folderUuids));
+}
+
+void WhatSonNoteHeaderStore::setFolderBindings(QStringList folders, QStringList folderUuids)
+{
     const int rawCount = folders.size();
-    m_folders = sanitizeFolderList(std::move(folders));
+    const SanitizedFolderBindings sanitized = sanitizeFolderBindings(
+        std::move(folders),
+        std::move(folderUuids));
+    m_folders = sanitized.folders;
+    m_folderUuids = sanitized.folderUuids;
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("note.header.store"),
-                              QStringLiteral("setFolders"),
-                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              QStringLiteral("setFolderBindings"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 uuidCount=%3 values=[%4]")
                               .arg(rawCount)
                               .arg(m_folders.size())
+                              .arg(m_folderUuids.size())
                               .arg(m_folders.join(QStringLiteral(", "))));
 }
 

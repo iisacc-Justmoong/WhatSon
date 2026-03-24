@@ -1,43 +1,26 @@
 # `src/app/qml/view/panels/sidebar/SidebarHierarchyRenameController.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/sidebar/SidebarHierarchyRenameController.qml`
-- Source kind: QML view/component
-- File name: `SidebarHierarchyRenameController.qml`
-- Approximate line count: 145
+This helper owns the sidebar inline-rename transaction. It decides whether the selected hierarchy row can be renamed,
+seeds the temporary label, commits the bridge call, and unwinds focus/cancellation.
 
-## QML Surface Snapshot
-- Root type: `QtObject`
+## Rename Target Resolution
 
-### Object IDs
-- `renameController`
+- `beginRenameSelectedHierarchyItem()` resolves the selected hierarchy index from `hostView.selectedFolderIndex`.
+- Before showing the editor, it calls `hostView.syncSelectedHierarchyItem(false)` and
+  `hostView.refreshEditingHierarchyPresentation(true)` so the overlay is anchored to the selected LVRS row instead of
+  a stale topmost generated item.
+- The `Qt.callLater(...)` pass refreshes the presentation snapshot again after LVRS finishes any row regeneration.
 
-### Required Properties
-- `hierarchyInteractionBridge`
-- `hierarchyRenameField`
-- `hierarchyViewModel`
-- `hostView`
-- `standardHierarchyModel`
+## Commit / Cancel Rules
 
-### Signals
-- None detected during scaffold generation.
+- `commitHierarchyRename()` delegates the actual rename to `hierarchyInteractionBridge.renameItem(...)`.
+- Both commit and cancel clear the cached row presentation through `hostView.clearEditingHierarchyPresentation()` before
+  resynchronizing LVRS selection.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Label Handling
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- `leafHierarchyItemLabel(...)` strips hierarchy path prefixes and keeps only the terminal display segment.
+- `projectedHierarchyModel(...)` temporarily blanks the edited row label so the underlying text does not bleed through
+  the inline input overlay.

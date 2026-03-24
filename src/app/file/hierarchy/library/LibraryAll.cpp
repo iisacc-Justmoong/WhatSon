@@ -577,6 +577,9 @@ namespace
         record.folders = firstStringList(
             object,
             {QStringLiteral("folders"), QStringLiteral("folder"), QStringLiteral("folderValues")});
+        record.folderUuids = firstStringList(
+            object,
+            {QStringLiteral("folderUuids"), QStringLiteral("folderIds"), QStringLiteral("folderUuidValues")});
         record.bookmarkColors = firstStringList(
             object,
             {QStringLiteral("bookmarkColors"), QStringLiteral("bookmarkColor"), QStringLiteral("bookmarkColour")});
@@ -819,6 +822,7 @@ namespace
         }
         overwriteIfNonEmpty(&base->bodyFirstResourceThumbnailUrl, overlay.bodyFirstResourceThumbnailUrl);
         overwriteListIfNonEmpty(&base->folders, overlay.folders);
+        overwriteListIfNonEmpty(&base->folderUuids, overlay.folderUuids);
         overwriteListIfNonEmpty(&base->bookmarkColors, overlay.bookmarkColors);
         overwriteListIfNonEmpty(&base->tags, overlay.tags);
         base->progress = overlay.progress;
@@ -869,6 +873,14 @@ namespace
             }
         }
         record->folders = sanitizedFolders;
+        while (record->folderUuids.size() < record->folders.size())
+        {
+            record->folderUuids.push_back(QString());
+        }
+        while (record->folderUuids.size() > record->folders.size())
+        {
+            record->folderUuids.removeLast();
+        }
 
         if (record->noteId.trimmed().isEmpty() && !record->noteDirectoryPath.isEmpty())
         {
@@ -933,6 +945,7 @@ namespace
         record.modifiedBy = store.modifiedBy();
         record.project = store.project();
         record.folders = store.folders();
+        record.folderUuids = store.folderUuids();
         record.bookmarkColors = store.bookmarkColors();
         record.tags = store.tags();
         record.progress = store.progress();

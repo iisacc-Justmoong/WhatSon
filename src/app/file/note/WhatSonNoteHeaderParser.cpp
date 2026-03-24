@@ -1,5 +1,6 @@
 #include "WhatSonNoteHeaderParser.hpp"
 
+#include "../hierarchy/WhatSonFolderIdentity.hpp"
 #include "WhatSonBookmarkColorPalette.hpp"
 #include "WhatSonDebugTrace.hpp"
 
@@ -81,6 +82,48 @@ namespace
         }
 
         return values;
+    }
+
+    struct ParsedFolderBindings final
+    {
+        QStringList folders;
+        QStringList folderUuids;
+    };
+
+    ParsedFolderBindings extractFolderBindings(const QString& source)
+    {
+        static const QRegularExpression regex(
+            QStringLiteral(R"(<\s*folder\b([^>]*)>([\s\S]*?)<\s*/\s*folder\s*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        static const QRegularExpression uuidRegex(
+            QStringLiteral(R"(\buuid\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s/>]+)))"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        ParsedFolderBindings bindings;
+        QRegularExpressionMatchIterator it = regex.globalMatch(source);
+        while (it.hasNext())
+        {
+            const QRegularExpressionMatch match = it.next();
+            bindings.folders.push_back(normalizeSingleValue(match.captured(2)));
+
+            const QRegularExpressionMatch uuidMatch = uuidRegex.match(match.captured(1));
+            QString folderUuid;
+            if (uuidMatch.hasMatch())
+            {
+                for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
+                {
+                    const QString captured = normalizeSingleValue(uuidMatch.captured(captureIndex));
+                    if (!captured.isEmpty())
+                    {
+                        folderUuid = WhatSon::FolderIdentity::normalizeFolderUuid(captured);
+                        break;
+                    }
+                }
+            }
+            bindings.folderUuids.push_back(folderUuid);
+        }
+
+        return bindings;
     }
 
     QString extractStartTagAttributes(const QString& source, const QString& tagName)
@@ -260,7 +303,8 @@ bool WhatSonNoteHeaderParser::parse(
     outStore->setAuthor(extractTagText(wsnHeadText, QStringLiteral("author")));
     outStore->setLastModifiedAt(extractTagText(wsnHeadText, QStringLiteral("lastModified")));
     outStore->setModifiedBy(extractTagText(wsnHeadText, QStringLiteral("modifiedBy")));
-    outStore->setFolders(extractTagTexts(wsnHeadText, QStringLiteral("folder")));
+    const ParsedFolderBindings folderBindings = extractFolderBindings(wsnHeadText);
+    outStore->setFolderBindings(folderBindings.folders, folderBindings.folderUuids);
     outStore->setProject(extractTagText(wsnHeadText, QStringLiteral("project")));
     outStore->setBookmarked(parseBooleanValue(
         extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("state")),

@@ -1,5 +1,6 @@
 #include "WhatSonFoldersHierarchyCreator.hpp"
 
+#include "../WhatSonFolderIdentity.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyStore.hpp"
 
@@ -15,6 +16,7 @@ namespace
     {
         QString id;
         QString label;
+        QString uuid;
         QVector<FolderNode> children;
     };
 
@@ -23,6 +25,7 @@ namespace
         QJsonObject object;
         object.insert(QStringLiteral("id"), node.id);
         object.insert(QStringLiteral("label"), node.label);
+        object.insert(QStringLiteral("uuid"), node.uuid);
 
         if (!node.children.isEmpty())
         {
@@ -59,6 +62,7 @@ QString WhatSonFoldersHierarchyCreator::createText(const WhatSonFoldersHierarchy
     {
         const QString id = entry.id.trimmed();
         const QString label = entry.label.trimmed();
+        const QString uuid = WhatSon::FolderIdentity::normalizeFolderUuid(entry.uuid);
         if (id.isEmpty() || label.isEmpty())
         {
             continue;
@@ -77,6 +81,7 @@ QString WhatSonFoldersHierarchyCreator::createText(const WhatSonFoldersHierarchy
         FolderNode node;
         node.id = id;
         node.label = label;
+        node.uuid = uuid.isEmpty() ? WhatSon::FolderIdentity::createFolderUuid() : uuid;
 
         FolderNode* insertedNode = nullptr;
         if (depth == 0)

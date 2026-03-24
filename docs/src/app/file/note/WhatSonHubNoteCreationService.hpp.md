@@ -1,39 +1,22 @@
 # `src/app/file/note/WhatSonHubNoteCreationService.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonHubNoteCreationService.hpp`
-- Source kind: C++ header
-- File name: `WhatSonHubNoteCreationService.hpp`
-- Approximate line count: 49
+This header defines the service that scaffolds a new note inside a hub and returns a normalized
+runtime record for immediate UI use.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Folder Assignment Contract
 
-### Classes and Structs
-- `WhatSonHubNoteCreationService`
-- `Request`
-- `Result`
+`Request` now carries both:
 
-### Enums
-- None detected during scaffold generation.
+- `assignedFolders`
+- `assignedFolderUuids`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+Callers creating a note from a selected library folder should provide both values so the new note is
+born with a stable folder identity instead of receiving only a display path.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Why This Matters
+
+Creating a note inside a renamed subtree must not reintroduce path-based identity. The creation
+service therefore writes the same UUID-aware folder binding contract that rename and drag-and-drop
+mutations use.

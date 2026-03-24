@@ -1,40 +1,19 @@
 # `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.hpp`
-- Source kind: C++ header
-- File name: `LibraryHierarchyModel.hpp`
-- Approximate line count: 122
+This header defines the Qt item model that backs the visible library folder tree in QML.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## UUID In The UI Model
 
-### Classes and Structs
-- `LibraryHierarchyItem`
-- `SystemBucket`
-- `LibraryHierarchyModel`
+`LibraryHierarchyItem` now carries a `folderUuid` field in addition to its visible label, icon, and
+legacy path information. That lets the model expose a stable item key for normal folders even when a
+rename changes the rendered text.
 
-### Enums
-- `SystemBucket`
-- `Role`
+## Key Contract
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- system buckets such as All, Draft, and Today keep their reserved keys
+- regular folders prefer `folder:<uuid>` as the item key
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+This key contract is important because QML selection, LVRS reorder flows, and viewmodel lookup code
+need an identity that survives path edits.

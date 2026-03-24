@@ -1,37 +1,27 @@
 # `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonFoldersHierarchyCreator.cpp`
-- Approximate line count: 124
+This file serializes `WhatSonFolderDepthEntry` rows back into the persisted `Folders.wsfolders`
+document.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## UUID Persistence Rules
 
-### Classes and Structs
-- `FolderNode`
+- Every serialized folder node includes a `uuid` field.
+- If the caller forgot to provide a UUID, the creator generates one before writing.
+- The creator preserves the separation between:
+  - `id`: the current readable full path
+  - `uuid`: the stable identity used by runtime folder relationships
 
-### Enums
-- None detected during scaffold generation.
+## Output Invariant
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+After this creator runs, a modern `.wsfolders` file is expected to keep enough information for both:
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- reconstructing the visible tree from `id`, `label`, and `depth`
+- reconnecting note headers and selection state through `uuid` even when a parent path changes
+
+## Main Collaborators
+
+- `WhatSonFoldersHierarchyStore.cpp`: sanitizes rows before save.
+- `WhatSonHubParser.cpp`: exposes folder entries during runtime bootstrap.
+- `LibraryHierarchyViewModel.cpp`: persists edited hierarchy rows through this creator.

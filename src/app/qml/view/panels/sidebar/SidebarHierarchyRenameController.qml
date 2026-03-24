@@ -10,14 +10,18 @@ QtObject {
     required property var standardHierarchyModel
 
     function beginRenameSelectedHierarchyItem() {
-        if (!renameController.canRenameSelectedHierarchyItem())
+        const renameIndex = Math.floor(Number(hostView.selectedFolderIndex) || -1);
+        if (!renameController.canRenameIndex(renameIndex))
             return false;
-        hostView.editingHierarchyIndex = hostView.selectedFolderIndex;
+        hostView.syncSelectedHierarchyItem(false);
+        hostView.editingHierarchyIndex = renameIndex;
+        hostView.refreshEditingHierarchyPresentation(true);
         hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();
         hostView.requestViewHook("hierarchy.rename.begin");
         Qt.callLater(function () {
-            if (!hostView.renameEditingActive || !hierarchyRenameField)
+            if (!hostView.renameEditingActive || hostView.editingHierarchyIndex !== renameIndex || !hierarchyRenameField)
                 return;
+            hostView.refreshEditingHierarchyPresentation(true);
             hierarchyRenameField.text = hostView.editingHierarchyLabel;
             hierarchyRenameField.forceInputFocus();
             hierarchyRenameField.selectAll();
@@ -41,6 +45,7 @@ QtObject {
             return false;
         hostView.editingHierarchyIndex = -1;
         hostView.editingHierarchyLabel = "";
+        hostView.clearEditingHierarchyPresentation();
         Qt.callLater(function () {
             hostView.syncSelectedHierarchyItem(true);
         });
@@ -76,6 +81,7 @@ QtObject {
         }
         hostView.editingHierarchyIndex = -1;
         hostView.editingHierarchyLabel = "";
+        hostView.clearEditingHierarchyPresentation();
         hostView.requestViewHook("hierarchy.rename.commit");
         Qt.callLater(function () {
             hostView.syncSelectedHierarchyItem(true);

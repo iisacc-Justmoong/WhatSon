@@ -30,6 +30,12 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Drag and Rename Behavior
 - Rename state is represented by `editingHierarchyIndex` and `editingHierarchyLabel`.
+- Inline rename geometry is no longer derived only from the live LVRS row object. The view now keeps an
+  `editingHierarchyPresentation` snapshot so the overlay stays attached to the selected row even if `LV.Hierarchy`
+  regenerates items during a rename transaction.
+- `resolveVisibleHierarchyItem(...)` prefers the active LVRS row for the selected id and falls back to the shared
+  hierarchy-item locator. This keeps rename placement tied to the selected folder, not whichever generated row happens
+  to be first in the rebuilt tree.
 - Note-drop preview state is represented by `noteDropHoverIndex`.
 - The `DropArea` at the bottom of the file routes pointer payloads into `noteIdFromDragPayload(...)`, which now ultimately lives in the note-drop controller helper.
 

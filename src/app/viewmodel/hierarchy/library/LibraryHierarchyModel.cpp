@@ -1,5 +1,6 @@
 #include "LibraryHierarchyModel.hpp"
 
+#include "file/hierarchy/WhatSonFolderIdentity.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <stdexcept>
@@ -26,6 +27,12 @@ namespace
             return QStringLiteral("bucket:today");
         case LibraryHierarchyItem::SystemBucket::None:
             break;
+        }
+
+        const QString folderUuid = WhatSon::FolderIdentity::normalizeFolderUuid(item.folderUuid);
+        if (!folderUuid.isEmpty())
+        {
+            return QStringLiteral("folder:%1").arg(folderUuid);
         }
 
         const QString folderPath = item.folderPath.trimmed();
@@ -161,6 +168,7 @@ void LibraryHierarchyModel::setItems(QVector<LibraryHierarchyItem> items)
             item.depth = 0;
             item.accent = true;
             item.folderPath.clear();
+            item.folderUuid.clear();
         }
         if (item.depth < 0)
         {

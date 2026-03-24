@@ -1,37 +1,25 @@
 # `src/app/file/note/WhatSonNoteHeaderStore.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteHeaderStore.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonNoteHeaderStore.cpp`
-- Approximate line count: 417
+This implementation normalizes note-header metadata before it is consumed by the rest of the
+application.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Folder Binding Normalization
 
-### Classes and Structs
-- None detected during scaffold generation.
+The folder-related setters do more than plain assignment:
 
-### Enums
-- None detected during scaffold generation.
+- trim incoming values,
+- normalize UUIDs through `WhatSon::FolderIdentity`,
+- keep folder paths and UUIDs aligned by index,
+- deduplicate equivalent bindings,
+- clear invalid UUIDs instead of storing malformed identifiers.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+`setFolders(...)` remains for legacy callers, but it routes through the shared binding logic so new
+invariants are not bypassed.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Why This Matters
+
+The library hierarchy now filters and rewrites notes by folder UUID. If the store allowed path and
+UUID arrays to drift apart, the application could silently reassign a note to the wrong folder after
+a rename or drag-and-drop mutation.

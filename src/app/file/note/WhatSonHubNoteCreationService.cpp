@@ -61,6 +61,15 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
         }
     }
     assignedFolders.removeDuplicates();
+    QStringList assignedFolderUuids = request.assignedFolderUuids;
+    while (assignedFolderUuids.size() < assignedFolders.size())
+    {
+        assignedFolderUuids.push_back(QString());
+    }
+    while (assignedFolderUuids.size() > assignedFolders.size())
+    {
+        assignedFolderUuids.removeLast();
+    }
 
     const QString profileName = !request.authorProfileName.trimmed().isEmpty()
                                     ? request.authorProfileName.trimmed()
@@ -141,7 +150,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     headerStore.setAuthor(profileName);
     headerStore.setLastModifiedAt(createdTimestamp);
     headerStore.setModifiedBy(profileName);
-    headerStore.setFolders(assignedFolders);
+    headerStore.setFolderBindings(assignedFolders, assignedFolderUuids);
     headerStore.setProject(QString());
     headerStore.setBookmarked(false);
     headerStore.setBookmarkColors({});
@@ -203,6 +212,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     newNote.author = profileName;
     newNote.modifiedBy = profileName;
     newNote.folders = assignedFolders;
+    newNote.folderUuids = headerStore.folderUuids();
     newNote.progress = 0;
     newNote.bookmarked = false;
     newNote.preset = false;

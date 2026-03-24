@@ -3,6 +3,7 @@
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/WhatSonFolderIdentity.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp"
@@ -188,6 +189,11 @@ namespace
         return normalizeFolderPath(std::move(value)).toCaseFolded();
     }
 
+    QString normalizeFolderUuid(QString value)
+    {
+        return WhatSon::FolderIdentity::normalizeFolderUuid(std::move(value));
+    }
+
     QString leafNameFromFolderPath(const QString& value)
     {
         const QString normalized = normalizeFolderPath(value);
@@ -230,12 +236,15 @@ namespace
 
     struct FolderHierarchyLookup final
     {
-        QHash<QString, QStringList> pathKeysByLeafKey;
-        QHash<QString, QSet<QString>> ancestorLeafKeysByPathKey;
-        QHash<QString, QString> displayPathByPathKey;
+        QHash<QString, QStringList> folderUuidsByLeafKey;
+        QHash<QString, QSet<QString>> ancestorLeafKeysByFolderUuid;
+        QHash<QString, QString> displayPathByFolderUuid;
+        QHash<QString, QString> folderUuidByPathKey;
     };
 
     QStringList canonicalLeafFolderPaths(const QStringList& folderPaths);
+
+    QStringList canonicalLeafFolderUuids(const QStringList& folderUuids, const FolderHierarchyLookup& lookup);
 
     QStringList folderPathSegments(const QString& folderPath)
     {
@@ -259,31 +268,36 @@ namespace
             }
 
             const QString pathKey = normalizeFolderLookupKey(item.folderPath);
+            const QString folderUuid = normalizeFolderUuid(item.folderUuid);
             if (pathKey.isEmpty())
             {
                 continue;
             }
 
-            lookup.displayPathByPathKey.insert(pathKey, normalizeFolderPath(item.folderPath));
+            if (!folderUuid.isEmpty())
+            {
+                lookup.displayPathByFolderUuid.insert(folderUuid, normalizeFolderPath(item.folderPath));
+                lookup.folderUuidByPathKey.insert(pathKey, folderUuid);
+            }
 
             QString leafKey = normalizeFolderLookupKey(item.label);
             if (leafKey.isEmpty())
             {
                 leafKey = normalizeFolderLookupKey(leafNameFromFolderPath(item.folderPath));
             }
-            if (leafKey.isEmpty())
+            if (leafKey.isEmpty() || folderUuid.isEmpty())
             {
                 continue;
             }
 
-            QStringList& pathKeys = lookup.pathKeysByLeafKey[leafKey];
-            if (!pathKeys.contains(pathKey))
+            QStringList& folderUuids = lookup.folderUuidsByLeafKey[leafKey];
+            if (!folderUuids.contains(folderUuid))
             {
-                pathKeys.push_back(pathKey);
+                folderUuids.push_back(folderUuid);
             }
 
             const QStringList segments = folderPathSegments(item.folderPath);
-            QSet<QString>& ancestorLeafKeys = lookup.ancestorLeafKeysByPathKey[pathKey];
+            QSet<QString>& ancestorLeafKeys = lookup.ancestorLeafKeysByFolderUuid[folderUuid];
             for (int index = 0; index + 1 < segments.size(); ++index)
             {
                 const QString ancestorKey = normalizeFolderLookupKey(segments.at(index));
@@ -297,53 +311,70 @@ namespace
         return lookup;
     }
 
-    QStringList resolvedNoteFolderPathKeys(
+    QStringList resolvedNoteFolderUuids(
         const LibraryNoteRecord& note,
         const FolderHierarchyLookup& lookup)
     {
         struct NoteFolderToken final
         {
-            QString key;
+            QString pathKey;
+            QString folderUuid;
             bool hierarchical = false;
         };
 
         QVector<NoteFolderToken> tokens;
-        tokens.reserve(note.folders.size());
+        tokens.reserve(std::max(note.folders.size(), note.folderUuids.size()));
         QSet<QString> rawKeys;
 
-        for (const QString& rawFolder : note.folders)
+        const int tokenCount = std::max(note.folders.size(), note.folderUuids.size());
+        for (int index = 0; index < tokenCount; ++index)
         {
+            const QString rawFolder = index < note.folders.size() ? note.folders.at(index) : QString();
             const QString normalizedFolder = normalizeFolderPath(rawFolder);
-            const QString key = normalizeFolderLookupKey(normalizedFolder);
-            if (key.isEmpty())
+            const QString pathKey = normalizeFolderLookupKey(normalizedFolder);
+            const QString folderUuid = index < note.folderUuids.size()
+                                           ? normalizeFolderUuid(note.folderUuids.at(index))
+                                           : QString();
+            if (!pathKey.isEmpty())
+            {
+                rawKeys.insert(pathKey);
+            }
+            if (pathKey.isEmpty() && folderUuid.isEmpty())
             {
                 continue;
             }
-
-            rawKeys.insert(key);
             tokens.push_back(NoteFolderToken{
-                key,
+                pathKey,
+                folderUuid,
                 normalizedFolder.contains(QLatin1Char('/'))
             });
         }
 
         QStringList resolved;
         QSet<QString> resolvedSet;
-        auto appendResolved = [&resolved, &resolvedSet](const QString& pathKey)
+        auto appendResolved = [&resolved, &resolvedSet](const QString& folderUuid)
         {
-            if (pathKey.isEmpty() || resolvedSet.contains(pathKey))
+            if (folderUuid.isEmpty() || resolvedSet.contains(folderUuid))
             {
                 return;
             }
-            resolvedSet.insert(pathKey);
-            resolved.push_back(pathKey);
+            resolvedSet.insert(folderUuid);
+            resolved.push_back(folderUuid);
         };
+
+        for (const NoteFolderToken& token : tokens)
+        {
+            if (!token.folderUuid.isEmpty())
+            {
+                appendResolved(token.folderUuid);
+            }
+        }
 
         for (const NoteFolderToken& token : tokens)
         {
             if (token.hierarchical)
             {
-                appendResolved(token.key);
+                appendResolved(lookup.folderUuidByPathKey.value(token.pathKey));
             }
         }
 
@@ -354,16 +385,16 @@ namespace
                 continue;
             }
 
-            const QStringList candidates = lookup.pathKeysByLeafKey.value(token.key);
+            const QStringList candidates = lookup.folderUuidsByLeafKey.value(token.pathKey);
             if (candidates.isEmpty())
             {
                 continue;
             }
 
             QStringList contextualMatches;
-            for (const QString& candidatePathKey : candidates)
+            for (const QString& candidateFolderUuid : candidates)
             {
-                const QSet<QString> ancestorLeafKeys = lookup.ancestorLeafKeysByPathKey.value(candidatePathKey);
+                const QSet<QString> ancestorLeafKeys = lookup.ancestorLeafKeysByFolderUuid.value(candidateFolderUuid);
                 bool matchesAllAncestors = true;
                 for (const QString& ancestorLeafKey : ancestorLeafKeys)
                 {
@@ -376,7 +407,7 @@ namespace
 
                 if (matchesAllAncestors)
                 {
-                    contextualMatches.push_back(candidatePathKey);
+                    contextualMatches.push_back(candidateFolderUuid);
                 }
             }
 
@@ -402,13 +433,14 @@ namespace
         QStringList folders;
         if (lookup != nullptr)
         {
-            const QStringList resolvedFolderPathKeys = canonicalLeafFolderPaths(
-                resolvedNoteFolderPathKeys(note, *lookup));
-            folders.reserve(resolvedFolderPathKeys.size());
-            for (const QString& folderPathKey : resolvedFolderPathKeys)
+            const QStringList resolvedFolderUuids = canonicalLeafFolderUuids(
+                resolvedNoteFolderUuids(note, *lookup),
+                *lookup);
+            folders.reserve(resolvedFolderUuids.size());
+            for (const QString& folderUuid : resolvedFolderUuids)
             {
                 const QString normalizedFolderPath = normalizeFolderPath(
-                    lookup->displayPathByPathKey.value(folderPathKey, folderPathKey));
+                    lookup->displayPathByFolderUuid.value(folderUuid));
                 if (!normalizedFolderPath.isEmpty() && !folders.contains(normalizedFolderPath))
                 {
                     folders.push_back(normalizedFolderPath);
@@ -425,19 +457,20 @@ namespace
 
     bool noteMatchesFolderScope(
         const LibraryNoteRecord& note,
-        const QString& selectedPathKey,
+        const QString& selectedFolderUuid,
         const FolderHierarchyLookup& lookup)
     {
-        if (selectedPathKey.isEmpty())
+        if (selectedFolderUuid.isEmpty())
         {
             return true;
         }
 
-        const QStringList resolvedFolderPathKeys = canonicalLeafFolderPaths(
-            resolvedNoteFolderPathKeys(note, lookup));
-        for (const QString& folderPathKey : resolvedFolderPathKeys)
+        const QStringList resolvedFolderUuids = canonicalLeafFolderUuids(
+            resolvedNoteFolderUuids(note, lookup),
+            lookup);
+        for (const QString& folderUuid : resolvedFolderUuids)
         {
-            if (folderPathKey == selectedPathKey)
+            if (folderUuid == selectedFolderUuid)
             {
                 return true;
             }
@@ -764,13 +797,20 @@ namespace
         return false;
     }
 
-    void appendDistinctFolderValue(
-        QStringList* targetFolders,
+    struct FolderBindingList final
+    {
+        QStringList folders;
+        QStringList folderUuids;
+    };
+
+    void appendDistinctFolderBinding(
+        FolderBindingList* targetBindings,
         QSet<QString>* targetKeys,
         const QString& folderValue,
+        const QString& folderUuid,
         bool preserveOriginalValue)
     {
-        if (targetFolders == nullptr || targetKeys == nullptr)
+        if (targetBindings == nullptr || targetKeys == nullptr)
         {
             return;
         }
@@ -778,67 +818,166 @@ namespace
         const QString trimmedValue = folderValue.trimmed();
         const QString normalizedFolderPath = normalizeFolderPath(trimmedValue);
         const QString normalizedFolderKey = normalizeFolderLookupKey(trimmedValue);
-        if (normalizedFolderKey.isEmpty() || targetKeys->contains(normalizedFolderKey))
+        const QString normalizedFolderUuid = normalizeFolderUuid(folderUuid);
+        const QString bindingKey = !normalizedFolderUuid.isEmpty()
+                                       ? QStringLiteral("uuid:%1").arg(normalizedFolderUuid)
+                                       : QStringLiteral("path:%1").arg(normalizedFolderKey);
+        if ((normalizedFolderUuid.isEmpty() && normalizedFolderKey.isEmpty())
+            || targetKeys->contains(bindingKey))
         {
             return;
         }
 
-        targetKeys->insert(normalizedFolderKey);
-        targetFolders->push_back(preserveOriginalValue ? trimmedValue : normalizedFolderPath);
+        targetKeys->insert(bindingKey);
+        targetBindings->folders.push_back(preserveOriginalValue ? trimmedValue : normalizedFolderPath);
+        targetBindings->folderUuids.push_back(normalizedFolderUuid);
     }
 
-    QStringList mergeFolderAssignments(const QStringList& primaryFolders, const QStringList& secondaryFolders)
+    FolderBindingList mergeFolderAssignments(
+        const QStringList& primaryFolders,
+        const QStringList& primaryFolderUuids,
+        const QStringList& secondaryFolders,
+        const QStringList& secondaryFolderUuids)
     {
-        QStringList mergedFolders;
-        mergedFolders.reserve(primaryFolders.size() + secondaryFolders.size());
-        QSet<QString> mergedFolderKeys;
+        FolderBindingList mergedBindings;
+        mergedBindings.folders.reserve(primaryFolders.size() + secondaryFolders.size());
+        mergedBindings.folderUuids.reserve(primaryFolders.size() + secondaryFolders.size());
+        QSet<QString> mergedBindingKeys;
 
-        for (const QString& primaryFolder : primaryFolders)
+        for (int index = 0; index < primaryFolders.size(); ++index)
         {
-            appendDistinctFolderValue(&mergedFolders, &mergedFolderKeys, primaryFolder, true);
+            appendDistinctFolderBinding(
+                &mergedBindings,
+                &mergedBindingKeys,
+                primaryFolders.at(index),
+                index < primaryFolderUuids.size() ? primaryFolderUuids.at(index) : QString(),
+                true);
         }
 
-        for (const QString& secondaryFolder : secondaryFolders)
+        for (int index = 0; index < secondaryFolders.size(); ++index)
         {
-            appendDistinctFolderValue(&mergedFolders, &mergedFolderKeys, secondaryFolder, true);
+            appendDistinctFolderBinding(
+                &mergedBindings,
+                &mergedBindingKeys,
+                secondaryFolders.at(index),
+                index < secondaryFolderUuids.size() ? secondaryFolderUuids.at(index) : QString(),
+                true);
         }
 
-        return mergedFolders;
+        return mergedBindings;
     }
 
-    QStringList folderAssignmentForDrop(const QStringList& existingFolders, const QString& folderPath)
+    FolderBindingList folderAssignmentForDrop(
+        const FolderBindingList& existingBindings,
+        const QString& folderPath,
+        const QString& folderUuid)
     {
-        QStringList assignedFolders = mergeFolderAssignments(existingFolders, {});
-        QSet<QString> assignedFolderKeys;
-        assignedFolderKeys.reserve(assignedFolders.size());
-        for (const QString& assignedFolder : std::as_const(assignedFolders))
+        FolderBindingList assignedBindings = existingBindings;
+        const QString normalizedTargetFolderPath = normalizeFolderPath(folderPath);
+        const QString normalizedTargetFolderUuid = normalizeFolderUuid(folderUuid);
+        if (!normalizedTargetFolderUuid.isEmpty() && !normalizedTargetFolderPath.isEmpty())
         {
-            const QString assignedFolderKey = normalizeFolderLookupKey(assignedFolder);
-            if (!assignedFolderKey.isEmpty())
+            while (assignedBindings.folderUuids.size() < assignedBindings.folders.size())
             {
-                assignedFolderKeys.insert(assignedFolderKey);
+                assignedBindings.folderUuids.push_back(QString());
+            }
+
+            for (int index = 0; index < assignedBindings.folders.size(); ++index)
+            {
+                const QString existingUuid = index < assignedBindings.folderUuids.size()
+                                                 ? normalizeFolderUuid(assignedBindings.folderUuids.at(index))
+                                                 : QString();
+                if (existingUuid != normalizedTargetFolderUuid)
+                {
+                    continue;
+                }
+
+                assignedBindings.folders[index] = normalizedTargetFolderPath;
+                assignedBindings.folderUuids[index] = normalizedTargetFolderUuid;
+                return assignedBindings;
             }
         }
 
-        appendDistinctFolderValue(&assignedFolders, &assignedFolderKeys, folderPath, false);
-        if (assignedFolders.isEmpty())
+        QSet<QString> assignedBindingKeys;
+        for (int index = 0; index < assignedBindings.folders.size(); ++index)
         {
-            return {};
+            const QString normalizedFolderUuid = index < assignedBindings.folderUuids.size()
+                                                     ? normalizeFolderUuid(assignedBindings.folderUuids.at(index))
+                                                     : QString();
+            const QString normalizedFolderKey = normalizeFolderLookupKey(assignedBindings.folders.at(index));
+            const QString bindingKey = !normalizedFolderUuid.isEmpty()
+                                           ? QStringLiteral("uuid:%1").arg(normalizedFolderUuid)
+                                           : QStringLiteral("path:%1").arg(normalizedFolderKey);
+            if (!bindingKey.endsWith(QLatin1Char(':')))
+            {
+                assignedBindingKeys.insert(bindingKey);
+            }
         }
 
-        return assignedFolders;
+        appendDistinctFolderBinding(
+            &assignedBindings,
+            &assignedBindingKeys,
+            folderPath,
+            folderUuid,
+            false);
+        return assignedBindings;
     }
 
-    bool folderListsMatch(const QStringList& lhs, const QStringList& rhs)
+    bool folderBindingsContain(
+        const FolderBindingList& bindings,
+        const QString& folderPath,
+        const QString& folderUuid)
     {
-        if (lhs.size() != rhs.size())
+        const QString normalizedFolderUuid = normalizeFolderUuid(folderUuid);
+        const QString normalizedFolderKey = normalizeFolderLookupKey(folderPath);
+
+        for (int index = 0; index < bindings.folders.size(); ++index)
+        {
+            const QString existingUuid = index < bindings.folderUuids.size()
+                                             ? normalizeFolderUuid(bindings.folderUuids.at(index))
+                                             : QString();
+            if (!normalizedFolderUuid.isEmpty() && existingUuid == normalizedFolderUuid)
+            {
+                return true;
+            }
+            if (normalizedFolderUuid.isEmpty()
+                && normalizeFolderLookupKey(bindings.folders.at(index)) == normalizedFolderKey)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool folderBindingsMatch(
+        const QStringList& lhsFolders,
+        const QStringList& lhsFolderUuids,
+        const QStringList& rhsFolders,
+        const QStringList& rhsFolderUuids)
+    {
+        if (lhsFolders.size() != rhsFolders.size())
         {
             return false;
         }
 
-        for (int index = 0; index < lhs.size(); ++index)
+        for (int index = 0; index < lhsFolders.size(); ++index)
         {
-            if (normalizeFolderLookupKey(lhs.at(index)) != normalizeFolderLookupKey(rhs.at(index)))
+            const QString lhsUuid = index < lhsFolderUuids.size()
+                                        ? normalizeFolderUuid(lhsFolderUuids.at(index))
+                                        : QString();
+            const QString rhsUuid = index < rhsFolderUuids.size()
+                                        ? normalizeFolderUuid(rhsFolderUuids.at(index))
+                                        : QString();
+            if (!lhsUuid.isEmpty() || !rhsUuid.isEmpty())
+            {
+                if (lhsUuid != rhsUuid)
+                {
+                    return false;
+                }
+            }
+
+            if (normalizeFolderLookupKey(lhsFolders.at(index)) != normalizeFolderLookupKey(rhsFolders.at(index)))
             {
                 return false;
             }
@@ -854,12 +993,17 @@ namespace
         int index,
         const QString& noteId,
         QString* outTargetFolderPath = nullptr,
+        QString* outTargetFolderUuid = nullptr,
         int* outNoteIndex = nullptr,
         QString* outHeaderPath = nullptr)
     {
         if (outTargetFolderPath != nullptr)
         {
             outTargetFolderPath->clear();
+        }
+        if (outTargetFolderUuid != nullptr)
+        {
+            outTargetFolderUuid->clear();
         }
         if (outNoteIndex != nullptr)
         {
@@ -890,13 +1034,22 @@ namespace
         }
 
         const QString targetFolderPath = normalizeFolderPath(items.at(index).folderPath);
+        const QString targetFolderUuid = normalizeFolderUuid(items.at(index).folderUuid);
         if (outTargetFolderPath != nullptr)
         {
             *outTargetFolderPath = targetFolderPath;
         }
+        if (outTargetFolderUuid != nullptr)
+        {
+            *outTargetFolderUuid = targetFolderUuid;
+        }
         if (targetFolderPath.isEmpty())
         {
             return QStringLiteral("emptyTargetFolderPath");
+        }
+        if (targetFolderUuid.isEmpty())
+        {
+            return QStringLiteral("emptyTargetFolderUuid");
         }
         if (usesReservedTodayFolderToken(targetFolderPath))
         {
@@ -935,6 +1088,7 @@ namespace
 
         const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
         note->folders = updatedRecord.folders;
+        note->folderUuids = updatedRecord.folderUuids;
         note->lastModifiedAt = updatedRecord.lastModifiedAt;
         note->noteHeaderPath = updatedRecord.noteHeaderPath;
         if (note->noteDirectoryPath.isEmpty())
@@ -1018,10 +1172,16 @@ namespace
             return QStringLiteral("bucket:today");
         }
 
-        const QString itemKey = normalizeFolderPath(item.folderPath);
-        if (!itemKey.isEmpty())
+        const QString itemUuid = normalizeFolderUuid(item.folderUuid);
+        if (!itemUuid.isEmpty())
         {
-            return itemKey;
+            return QStringLiteral("folder:%1").arg(itemUuid);
+        }
+
+        const QString itemPath = normalizeFolderPath(item.folderPath);
+        if (!itemPath.isEmpty())
+        {
+            return itemPath;
         }
 
         return QStringLiteral("item:%1").arg(fallbackIndex);
@@ -1077,6 +1237,7 @@ namespace
             item.accent = false;
             item.expanded = false;
             item.folderPath = normalizeFolderPath(entry.id);
+            item.folderUuid = normalizeFolderUuid(entry.uuid);
             item.showChevron = true;
 
             if (item.label.isEmpty())
@@ -1149,6 +1310,7 @@ namespace
                 item.depth = 0;
                 item.accent = true;
                 item.folderPath.clear();
+                item.folderUuid.clear();
                 continue;
             }
 
@@ -1176,6 +1338,10 @@ namespace
                 folderPath = buildFolderPath(parentPath, leafNameFromFolderPath(folderPath));
             }
             item.folderPath = folderPath;
+            if (item.folderUuid.isEmpty())
+            {
+                item.folderUuid = WhatSon::FolderIdentity::createFolderUuid();
+            }
 
             if (pathStack.size() <= depth)
             {
@@ -1218,9 +1384,14 @@ namespace
             entry.id = normalizeFolderPath(item.folderPath);
             entry.label = label;
             entry.depth = std::max(0, item.depth);
+            entry.uuid = normalizeFolderUuid(item.folderUuid);
             if (entry.id.isEmpty())
             {
                 entry.id = label;
+            }
+            if (entry.uuid.isEmpty())
+            {
+                entry.uuid = WhatSon::FolderIdentity::createFolderUuid();
             }
             entries.push_back(std::move(entry));
         }
@@ -1409,6 +1580,33 @@ namespace
         return movedPathMap;
     }
 
+    QHash<QString, QString> movedFolderPathMapForUpdatedSubtree(
+        const QVector<LibraryHierarchyItem>& originalItems,
+        int subtreeStartIndex,
+        const QVector<LibraryHierarchyItem>& stagedItems)
+    {
+        QHash<QString, QString> movedPathMap;
+        if (subtreeStartIndex < 0
+            || subtreeStartIndex >= originalItems.size()
+            || originalItems.size() != stagedItems.size())
+        {
+            return movedPathMap;
+        }
+
+        const int subtreeEndIndex = subtreeEndIndexExclusive(originalItems, subtreeStartIndex);
+        for (int index = subtreeStartIndex; index < subtreeEndIndex && index < stagedItems.size(); ++index)
+        {
+            const QString sourcePath = normalizeFolderPath(originalItems.at(index).folderPath);
+            const QString targetPath = normalizeFolderPath(stagedItems.at(index).folderPath);
+            if (sourcePath.isEmpty() || targetPath.isEmpty() || sourcePath == targetPath)
+            {
+                continue;
+            }
+            movedPathMap.insert(normalizeFolderLookupKey(sourcePath), targetPath);
+        }
+        return movedPathMap;
+    }
+
     QString remapFolderPathForMove(const QString& folderPath, const QHash<QString, QString>& movedFolderPathMap)
     {
         const QString normalizedPath = normalizeFolderPath(folderPath);
@@ -1490,6 +1688,48 @@ namespace
         }
 
         return canonicalPaths;
+    }
+
+    QStringList canonicalLeafFolderUuids(const QStringList& folderUuids, const FolderHierarchyLookup& lookup)
+    {
+        QStringList canonicalUuids;
+        canonicalUuids.reserve(folderUuids.size());
+
+        for (const QString& rawFolderUuid : folderUuids)
+        {
+            const QString folderUuid = normalizeFolderUuid(rawFolderUuid);
+            const QString folderPath = normalizeFolderPath(lookup.displayPathByFolderUuid.value(folderUuid));
+            if (folderUuid.isEmpty() || folderPath.isEmpty())
+            {
+                continue;
+            }
+
+            bool hasDescendant = false;
+            for (const QString& compareRawFolderUuid : folderUuids)
+            {
+                const QString compareFolderUuid = normalizeFolderUuid(compareRawFolderUuid);
+                const QString compareFolderPath = normalizeFolderPath(
+                    lookup.displayPathByFolderUuid.value(compareFolderUuid));
+                if (compareFolderUuid.isEmpty()
+                    || compareFolderPath.isEmpty()
+                    || compareFolderUuid == folderUuid)
+                {
+                    continue;
+                }
+                if (compareFolderPath.startsWith(folderPath + QLatin1Char('/')))
+                {
+                    hasDescendant = true;
+                    break;
+                }
+            }
+
+            if (!hasDescendant && !canonicalUuids.contains(folderUuid))
+            {
+                canonicalUuids.push_back(folderUuid);
+            }
+        }
+
+        return canonicalUuids;
     }
 } // namespace
 
@@ -1788,7 +2028,8 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
 
         WhatSonFoldersHierarchyStore foldersStore;
         QString parseError;
-        if (!foldersParser.parse(rawText, &foldersStore, &parseError))
+        bool folderUuidMigrationRequired = false;
+        if (!foldersParser.parse(rawText, &foldersStore, &parseError, &folderUuidMigrationRequired))
         {
             if (errorMessage != nullptr)
             {
@@ -1796,6 +2037,20 @@ bool LibraryHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString*
             }
             updateLoadState(false, parseError);
             return false;
+        }
+
+        if (folderUuidMigrationRequired)
+        {
+            QString writeError;
+            if (!foldersStore.writeToFile(filePath, &writeError))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = writeError;
+                }
+                updateLoadState(false, writeError);
+                return false;
+            }
         }
 
         const QVector<WhatSonFolderDepthEntry> parsedEntries = foldersStore.folderEntries();
@@ -1916,6 +2171,7 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
         serializedItems.push_back(QVariantMap{
             {"label", item.label},
             {"id", item.folderPath},
+            {"uuid", item.folderUuid},
             {"itemId", index},
             {"key", hierarchyItemKey(item, index)},
             {"iconName", libraryHierarchyIconName(item)},
@@ -2016,27 +2272,15 @@ bool LibraryHierarchyViewModel::renameItem(int index, const QString& displayName
     QVector<LibraryHierarchyItem> stagedItems = m_items;
     stagedItems[index].label = trimmedName;
     finalizeFolderItems(&stagedItems, false);
-
-    WhatSonFoldersHierarchyStore stagedStore;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
-
-    if (!m_foldersFilePath.trimmed().isEmpty())
+    const QHash<QString, QString> movedPathMap = movedFolderPathMapForUpdatedSubtree(m_items, index, stagedItems);
+    if (!commitFolderHierarchyUpdate(std::move(stagedItems), m_selectedIndex, movedPathMap))
     {
-        QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
-        {
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("renameItem.writeFailed"),
-                                      QStringLiteral("index=%1 path=%2 reason=%3").arg(index).arg(
-                                          m_foldersFilePath, writeError));
-            return false;
-        }
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("renameItem.writeFailed"),
+                                  QStringLiteral("index=%1 path=%2").arg(index).arg(m_foldersFilePath));
+        return false;
     }
-
-    m_items = std::move(stagedItems);
-    syncModel();
-    applySelectedIndex(m_selectedIndex, true);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("renameItem"),
@@ -2429,6 +2673,7 @@ bool LibraryHierarchyViewModel::moveFolderToRoot(int sourceIndex)
 bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& noteId) const
 {
     QString targetFolderPath;
+    QString targetFolderUuid;
     int noteIndex = -1;
     const QString rejectReason = rejectNoteDropReason(
         m_items,
@@ -2437,6 +2682,7 @@ bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& note
         index,
         noteId,
         &targetFolderPath,
+        &targetFolderUuid,
         &noteIndex,
         nullptr);
     if (!rejectReason.isEmpty())
@@ -2449,7 +2695,12 @@ bool LibraryHierarchyViewModel::canAcceptNoteDrop(int index, const QString& note
         return false;
     }
 
-    return !folderListContainsPath(m_libraryAll.notes().at(noteIndex).folders, targetFolderPath);
+    const FolderBindingList existingBindings = mergeFolderAssignments(
+        m_libraryAll.notes().at(noteIndex).folders,
+        m_libraryAll.notes().at(noteIndex).folderUuids,
+        {},
+        {});
+    return !folderBindingsContain(existingBindings, targetFolderPath, targetFolderUuid);
 }
 
 bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& noteId)
@@ -2460,6 +2711,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                               QStringLiteral("index=%1 noteId=%2").arg(index).arg(noteId));
 
     QString targetFolderPath;
+    QString targetFolderUuid;
     QString headerPath;
     int noteIndex = -1;
     const QString rejectReason = rejectNoteDropReason(
@@ -2469,6 +2721,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         index,
         noteId,
         &targetFolderPath,
+        &targetFolderUuid,
         &noteIndex,
         &headerPath);
     if (!rejectReason.isEmpty())
@@ -2513,12 +2766,24 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    const QStringList mergedExistingFolders = mergeFolderAssignments(
+    const FolderBindingList mergedExistingBindings = mergeFolderAssignments(
         note.folders,
-        noteDocument.headerStore.folders());
-    const QStringList assignedFolders = folderAssignmentForDrop(mergedExistingFolders, targetFolderPath);
-    const bool targetAlreadyAssigned = folderListContainsPath(mergedExistingFolders, targetFolderPath);
-    const bool headerAlreadyMatchesAssignment = folderListsMatch(noteDocument.headerStore.folders(), assignedFolders);
+        note.folderUuids,
+        noteDocument.headerStore.folders(),
+        noteDocument.headerStore.folderUuids());
+    const FolderBindingList assignedBindings = folderAssignmentForDrop(
+        mergedExistingBindings,
+        targetFolderPath,
+        targetFolderUuid);
+    const bool targetAlreadyAssigned = folderBindingsContain(
+        mergedExistingBindings,
+        targetFolderPath,
+        targetFolderUuid);
+    const bool headerAlreadyMatchesAssignment = folderBindingsMatch(
+        noteDocument.headerStore.folders(),
+        noteDocument.headerStore.folderUuids(),
+        assignedBindings.folders,
+        assignedBindings.folderUuids);
 
     if (targetAlreadyAssigned && headerAlreadyMatchesAssignment)
     {
@@ -2534,11 +2799,11 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                                   .arg(index)
                                   .arg(noteId)
                                   .arg(targetFolderPath)
-                                  .arg(assignedFolders.size()));
+                                  .arg(assignedBindings.folders.size()));
         return true;
     }
 
-    noteDocument.headerStore.setFolders(assignedFolders);
+    noteDocument.headerStore.setFolderBindings(assignedBindings.folders, assignedBindings.folderUuids);
     noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
 
     WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
@@ -2570,7 +2835,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
                               .arg(index)
                               .arg(noteId)
                               .arg(targetFolderPath)
-                              .arg(assignedFolders.size()));
+                              .arg(assignedBindings.folders.size()));
     emit hubFilesystemMutated();
     return true;
 }
@@ -2615,14 +2880,21 @@ bool LibraryHierarchyViewModel::applyHierarchyNodes(const QVariantList& hierarch
         if (validSourceIndex)
         {
             item.folderPath = normalizeFolderPath(m_items.at(node.sourceIndex).folderPath);
+            item.folderUuid = folderUuidForIndex(node.sourceIndex);
         }
         else if (!node.id.isEmpty())
         {
             item.folderPath = normalizeFolderPath(node.id);
+            item.folderUuid = node.key.startsWith(QStringLiteral("folder:"))
+                                  ? normalizeFolderUuid(node.key.mid(QStringLiteral("folder:").size()))
+                                  : QString();
         }
         else
         {
             item.folderPath = normalizeFolderPath(node.key);
+            item.folderUuid = node.key.startsWith(QStringLiteral("folder:"))
+                                  ? normalizeFolderUuid(node.key.mid(QStringLiteral("folder:").size()))
+                                  : QString();
         }
 
         stagedIndexByFlatIndex[flatIndex] = stagedItems.size();
@@ -2699,15 +2971,18 @@ bool LibraryHierarchyViewModel::createEmptyNote()
                                         ? m_libraryAll.sourceWshubPath().trimmed()
                                         : m_hubStore.hubPath().trimmed();
     QStringList assignedFolders;
+    QStringList assignedFolderUuids;
     if (m_foldersHierarchyLoaded
         && m_selectedIndex >= 0
         && m_selectedIndex < m_items.size()
         && !isProtectedRootItem(m_items.at(m_selectedIndex)))
     {
         const QString selectedFolderPath = normalizeFolderPath(folderPathForIndex(m_selectedIndex));
+        const QString selectedFolderUuid = folderUuidForIndex(m_selectedIndex);
         if (!selectedFolderPath.isEmpty())
         {
             assignedFolders.push_back(selectedFolderPath);
+            assignedFolderUuids.push_back(selectedFolderUuid);
         }
     }
 
@@ -2723,6 +2998,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
                                     ? QString()
                                     : m_hubStore.stat().participants().constFirst().trimmed();
     request.assignedFolders = assignedFolders;
+    request.assignedFolderUuids = assignedFolderUuids;
 
     WhatSonHubNoteCreationService::Result result;
     QString createError;
@@ -3030,6 +3306,9 @@ LibraryHierarchyItem LibraryHierarchyViewModel::parseItem(const QVariant& entry,
             entryMap.value(QStringLiteral("id"),
                            entryMap.value(QStringLiteral("path"),
                                           entryMap.value(QStringLiteral("key")))).toString());
+        parsed.folderUuid = normalizeFolderUuid(
+            entryMap.value(QStringLiteral("uuid"),
+                           entryMap.value(QStringLiteral("folderUuid"))).toString());
         parsed.accent = entryMap.value(QStringLiteral("accent"), false).toBool();
         parsed.expanded = entryMap.value(QStringLiteral("expanded"), false).toBool();
         parsed.showChevron = entryMap.value(QStringLiteral("showChevron"), true).toBool();
@@ -3167,8 +3446,8 @@ LibraryHierarchyViewModel::FolderSelectionScope LibraryHierarchyViewModel::selec
         return scope;
     }
 
-    scope.selectedPathKey = normalizeFolderKey(folderPathForIndex(m_selectedIndex));
-    if (scope.selectedPathKey.isEmpty())
+    scope.selectedFolderUuid = folderUuidForIndex(m_selectedIndex);
+    if (scope.selectedFolderUuid.isEmpty())
     {
         return scope;
     }
@@ -3188,6 +3467,15 @@ QString LibraryHierarchyViewModel::folderPathForIndex(int index) const
         return {};
     }
     return normalizeFolderPath(m_items.at(index).folderPath);
+}
+
+QString LibraryHierarchyViewModel::folderUuidForIndex(int index) const
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return {};
+    }
+    return normalizeFolderUuid(m_items.at(index).folderUuid);
 }
 
 bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
@@ -3308,7 +3596,7 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
 
         for (const LibraryNoteRecord& note : m_libraryAll.notes())
         {
-            if (noteMatchesFolderScope(note, scope.selectedPathKey, lookup))
+            if (noteMatchesFolderScope(note, scope.selectedFolderUuid, lookup))
             {
                 filtered.push_back(note);
             }

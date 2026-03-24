@@ -86,9 +86,21 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
         + QStringLiteral("</modifiedBy>\n");
 
     text += QStringLiteral("    <folders>\n");
-    for (const QString& folder : store.folders())
+    const QStringList folders = store.folders();
+    const QStringList folderUuids = store.folderUuids();
+    for (int index = 0; index < folders.size(); ++index)
     {
-        text += QStringLiteral("      <folder>") + escapeXmlText(folder) + QStringLiteral("</folder>\n");
+        const QString folder = folders.at(index);
+        QString folderTag = QStringLiteral("      <folder");
+        if (index < folderUuids.size() && !folderUuids.at(index).trimmed().isEmpty())
+        {
+            folderTag += QStringLiteral(" uuid=\"") + escapeXmlText(folderUuids.at(index).trimmed())
+                + QStringLiteral("\"");
+        }
+        folderTag += QStringLiteral(">")
+            + escapeXmlText(folder)
+            + QStringLiteral("</folder>\n");
+        text += folderTag;
     }
     text += QStringLiteral("    </folders>\n");
 

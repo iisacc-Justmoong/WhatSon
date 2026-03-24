@@ -818,6 +818,7 @@ QVariantList WhatSonHubParser::toFolderEntryList(const QVector<WhatSonFolderDept
     {
         values.push_back(QVariantMap{
             {QStringLiteral("id"), entry.id},
+            {QStringLiteral("uuid"), entry.uuid},
             {QStringLiteral("label"), entry.label},
             {QStringLiteral("depth"), entry.depth}
         });

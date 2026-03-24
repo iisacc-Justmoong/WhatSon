@@ -1,15 +1,30 @@
 # `src/app/file/hierarchy/library/LibraryAll.cpp`
 
-## Role
-`LibraryAll.cpp` scans the library storage, resolves note records, and produces the canonical runtime `LibraryNoteRecord` list used by the Library hierarchy and note list.
+## Responsibility
 
-## Body Extraction
-- `extractBodyContentFromWsnbody(...)` is the load-time body decoder for indexed note records.
-- It still resolves resource thumbnails from `<resource ...>` tags, but plain-text body extraction now delegates to `WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(...)`.
-- That shared parser preserves blank paragraphs and whitespace-only paragraphs, so the runtime note model exposes the same logical body text that the editor will compare during a save.
+`LibraryAll` builds the runtime note bucket that backs the "All Library" list. It reads `.wsnindex`,
+`.wsnhead`, and body content, merges those sources into `LibraryNoteRecord`, and exposes a stable
+projection to the library hierarchy viewmodel.
 
-## Why The Shared Parser Matters
-The library runtime and the local note file store must agree on what the body text actually is. If one side trims blank lines and the other side preserves them, the editor will observe false body changes and the next save can rewrite `.wsnbody` unexpectedly.
+## Folder UUID Role
 
-## Regression Coverage
-- `tests/app/test_library_hierarchy_view_model.cpp` now verifies that an unchanged save preserves both blank paragraphs and whitespace-only paragraphs in an existing `.wsnbody` document.
+The record-merging pipeline now carries both:
+
+- human-readable folder paths
+- stable folder UUIDs
+
+When the index is incomplete, `LibraryAll` falls back to `.wsnhead` and aligns folder paths with
+their UUID counterparts so later filters can match notes by folder identity instead of by raw path.
+
+## Compatibility Behavior
+
+- Older note data that only contains folder paths still loads.
+- Newer note headers that store `<folder uuid="...">path</folder>` keep the UUID values intact.
+- Merging code pads or repairs UUID lists so a caller never receives mismatched folder path / UUID
+  arrays.
+
+## Why This Matters
+
+The library sidebar no longer treats a parent rename as a semantic folder change. `LibraryAll`
+therefore has to preserve the original folder UUIDs through load-time normalization, otherwise note
+filters would break after a hierarchy rename even if the underlying data was migrated correctly.

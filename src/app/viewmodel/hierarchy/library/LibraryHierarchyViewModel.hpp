@@ -146,7 +146,7 @@ private:
 
     struct FolderSelectionScope final
     {
-        QString selectedPathKey;
+        QString selectedFolderUuid;
     };
 
     static int extractDepth(const QVariantMap& entryMap);
@@ -159,6 +159,7 @@ private:
     FolderSelectionScope selectedFolderScope() const;
     static QString normalizeFolderKey(const QString& value);
     QString folderPathForIndex(int index) const;
+    QString folderUuidForIndex(int index) const;
     bool commitFolderHierarchyUpdate(
         QVector<LibraryHierarchyItem> stagedItems,
         int selectedIndex,

@@ -1,37 +1,34 @@
 # `src/app/file/note/WhatSonNoteHeaderStore.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteHeaderStore.hpp`
-- Source kind: C++ header
-- File name: `WhatSonNoteHeaderStore.hpp`
-- Approximate line count: 62
+`WhatSonNoteHeaderStore` is the normalized mutable container for `.wsnhead` metadata.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Folder Binding API
 
-### Classes and Structs
-- `WhatSonNoteHeaderStore`
+The store now exposes three levels of folder access:
 
-### Enums
-- None detected during scaffold generation.
+- `folders() / setFolders(...)`: legacy path-only access
+- `folderUuids() / setFolderUuids(...)`: raw stable folder identity access
+- `setFolderBindings(folders, folderUuids)`: aligned write API for modern callers
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+Modern code should prefer `setFolderBindings(...)` so both arrays stay synchronized.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Persistence Shape
+
+At serialization time, folder bindings are written as:
+
+```xml
+<folders>
+  <folder uuid="64-char-id">Research/Competitor</folder>
+</folders>
+```
+
+The text node remains the readable path. The `uuid` attribute carries the stable semantic identity.
+
+## Main Collaborators
+
+- `WhatSonNoteHeaderParser.cpp`: populates the store from XML.
+- `WhatSonNoteHeaderCreator.cpp`: serializes the store back to XML.
+- `WhatSonHubNoteCreationService.cpp`: creates initial folder bindings for new notes.
+- `WhatSonLibraryFolderHierarchyMutationService.cpp`: rewrites bindings when the folder tree changes.

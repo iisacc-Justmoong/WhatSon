@@ -1,37 +1,17 @@
 # `src/app/file/note/WhatSonHubNoteMutationSupport.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonHubNoteMutationSupport.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonHubNoteMutationSupport.cpp`
-- Approximate line count: 263
+This file contains shared helpers for keeping `LibraryNoteRecord` synchronized with note documents
+after local mutations.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Folder Synchronization
 
-### Classes and Structs
-- None detected during scaffold generation.
+The runtime sync path now copies both folder paths and folder UUIDs from the parsed note document
+back into the note record. This is important because many higher-level flows perform a write and
+then continue using the in-memory record without rebuilding the entire library snapshot.
 
-### Enums
-- None detected during scaffold generation.
+## Why This Matters
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+Without this synchronization step, a note header could be updated correctly on disk while the live
+note list still held stale path-only folder state until the next full reload.

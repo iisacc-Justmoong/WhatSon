@@ -1,37 +1,39 @@
 # `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonFoldersHierarchyParser.cpp`
-- Approximate line count: 490
+This parser converts the persisted `Folders.wsfolders` structure into
+`WhatSonFolderDepthEntry` rows. It also performs compatibility upgrades for older folder trees that
+were saved before UUID support existed.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Accepted UUID Keys
 
-### Classes and Structs
-- None detected during scaffold generation.
+The parser accepts several field names when it reads a folder row:
 
-### Enums
-- None detected during scaffold generation.
+- `uuid`
+- `UUID`
+- `folderUuid`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+This keeps older experiments and partially migrated files readable without a manual data-cleanup
+step.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Upgrade Behavior
+
+- If a folder row already carries a valid 64-character alphanumeric UUID, the parser preserves it.
+- If the row has no UUID, or the UUID is invalid, the parser synthesizes a new one.
+- Whenever that happens, `outUuidMigrationRequired` is set so the caller can persist the upgraded
+  file immediately.
+
+This makes UUID migration explicit instead of leaving the app with session-local random identities.
+
+## Structural Output
+
+Each parsed row returns:
+
+- the legacy path id,
+- the folder label,
+- the tree depth,
+- the stable UUID.
+
+The parser therefore remains path-aware for readability while producing the runtime identity needed
+for rename-safe mutations.

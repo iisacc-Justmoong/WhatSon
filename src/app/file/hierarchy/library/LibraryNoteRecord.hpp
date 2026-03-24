@@ -17,6 +17,7 @@ struct LibraryNoteRecord
     QString modifiedBy;
     QString project;
     QStringList folders;
+    QStringList folderUuids;
     QStringList bookmarkColors;
     QStringList tags;
     int progress = 0;

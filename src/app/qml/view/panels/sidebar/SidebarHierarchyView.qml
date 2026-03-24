@@ -23,22 +23,41 @@ Rectangle {
                 "y": Number(point.y) || 0
             });
     }
-    readonly property var editingHierarchyItem: sidebarHierarchyView.hierarchyItemForResolvedIndex(sidebarHierarchyView.editingHierarchyIndex)
+    readonly property var editingHierarchyItem: sidebarHierarchyView.resolveVisibleHierarchyItem(sidebarHierarchyView.editingHierarchyIndex)
+    property var editingHierarchyPresentation: ({
+            "chevronSize": 0,
+            "effectiveShowChevron": false,
+            "height": 0,
+            "iconSize": 0,
+            "index": -1,
+            "leadingSpacing": 0,
+            "leftPadding": 0,
+            "rightPadding": 0,
+            "rowBackgroundColor": LV.Theme.accentBlueMuted,
+            "rowHeight": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+        })
+    readonly property var editingHierarchyItemPresentation: {
+        const snapshot = sidebarHierarchyView.editingHierarchyPresentation;
+        const editingIndex = Math.floor(Number(sidebarHierarchyView.editingHierarchyIndex) || -1);
+        if (editingIndex >= 0
+                && snapshot
+                && Math.floor(Number(snapshot.index) || -1) === editingIndex
+                && (Number(snapshot.width) || 0) > 0
+                && (Number(snapshot.height) || 0) > 0) {
+            return snapshot;
+        }
+        return sidebarHierarchyView.hierarchyItemPresentation(sidebarHierarchyView.editingHierarchyItem, editingIndex);
+    }
     readonly property var editingHierarchyItemRect: {
-        const item = sidebarHierarchyView.editingHierarchyItem;
-        if (!item || item.mapToItem === undefined)
-            return ({
-                    "height": 0,
-                    "width": 0,
-                    "x": 0,
-                    "y": 0
-                });
-        const point = item.mapToItem(sidebarHierarchyView, 0, 0);
+        const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
         return ({
-                "height": Number(item.height) || 0,
-                "width": Number(item.width) || 0,
-                "x": Number(point.x) || 0,
-                "y": Number(point.y) || 0
+                "height": Number(presentation.height) || 0,
+                "width": Number(presentation.width) || 0,
+                "x": Number(presentation.x) || 0,
+                "y": Number(presentation.y) || 0
             });
     }
     property int activeToolbarIndex: defaultToolbarIndex
@@ -82,28 +101,28 @@ Rectangle {
         return LV.Theme.radiusControl;
     }
     readonly property color hierarchyRenameFieldBackgroundColor: {
-        const item = sidebarHierarchyView.editingHierarchyItem;
-        if (item && item.rowBackgroundColor !== undefined)
-            return item.rowBackgroundColor;
+        const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
+        if (presentation && presentation.rowBackgroundColor !== undefined)
+            return presentation.rowBackgroundColor;
         return LV.Theme.accentBlueMuted;
     }
     readonly property real hierarchyRenameFieldHeight: {
-        const item = sidebarHierarchyView.editingHierarchyItem;
-        return Math.max(16, item ? (Number(item.rowHeight) || Number(item.height) || 20) : 20);
+        const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
+        return Math.max(16, Number(presentation.rowHeight) || Number(presentation.height) || 20);
     }
     readonly property real hierarchyRenameFieldWidth: {
-        const item = sidebarHierarchyView.editingHierarchyItem;
-        if (!item)
+        const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
+        const itemWidth = Number(presentation.width) || 0;
+        if (itemWidth <= 0)
             return 0;
-        const chevronWidth = item.effectiveShowChevron ? (Number(item.chevronSize) || 0) + (Number(item.leadingSpacing) || 0) : 0;
-        const usedWidth = (Number(item.leftPadding) || 0) + (Number(item.rightPadding) || 0) + (Number(item.iconSize) || 0) + (Number(item.leadingSpacing) || 0) + chevronWidth;
-        return Math.max(0, (Number(sidebarHierarchyView.editingHierarchyItemRect.width) || 0) - usedWidth);
+        const leadingSpacing = Number(presentation.leadingSpacing) || 0;
+        const chevronWidth = Boolean(presentation.effectiveShowChevron) ? (Number(presentation.chevronSize) || 0) + leadingSpacing : 0;
+        const usedWidth = (Number(presentation.leftPadding) || 0) + (Number(presentation.rightPadding) || 0) + (Number(presentation.iconSize) || 0) + leadingSpacing + chevronWidth;
+        return Math.max(0, itemWidth - usedWidth);
     }
     readonly property real hierarchyRenameFieldX: {
-        const item = sidebarHierarchyView.editingHierarchyItem;
-        if (!item)
-            return 0;
-        return (Number(sidebarHierarchyView.editingHierarchyItemRect.x) || 0) + (Number(item.leftPadding) || 0) + (Number(item.iconSize) || 0) + (Number(item.leadingSpacing) || 0);
+        const presentation = sidebarHierarchyView.editingHierarchyItemPresentation;
+        return (Number(presentation.x) || 0) + (Number(presentation.leftPadding) || 0) + (Number(presentation.iconSize) || 0) + (Number(presentation.leadingSpacing) || 0);
     }
     readonly property real hierarchyRenameFieldY: {
         const rectY = Number(sidebarHierarchyView.editingHierarchyItemRect.y) || 0;
@@ -119,6 +138,7 @@ Rectangle {
     readonly property bool noteDropHoverVisible: sidebarHierarchyView.noteDropHoverIndex >= 0 && !!sidebarHierarchyView.noteDropHoverItem
     readonly property bool renameContractAvailable: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.renameContractAvailable) : false
     readonly property bool renameEditingActive: sidebarHierarchyView.editingHierarchyIndex >= 0
+    readonly property bool renamePresentationAvailable: sidebarHierarchyView.hierarchyRenameFieldWidth > 0 && (Number(sidebarHierarchyView.editingHierarchyItemRect.height) || 0) > 0
     property int searchHeaderMinHeight: LV.Theme.gap24
     property int searchHeaderTopGap: LV.Theme.gap4
     property int searchListGap: LV.Theme.gapNone
@@ -192,6 +212,86 @@ Rectangle {
 
     function hierarchyItemForResolvedIndex(itemId) {
         return noteDropController.hierarchyItemForResolvedIndex(itemId);
+    }
+
+    function clearEditingHierarchyPresentation() {
+        sidebarHierarchyView.editingHierarchyPresentation = ({
+                "chevronSize": 0,
+                "effectiveShowChevron": false,
+                "height": 0,
+                "iconSize": 0,
+                "index": -1,
+                "leadingSpacing": 0,
+                "leftPadding": 0,
+                "rightPadding": 0,
+                "rowBackgroundColor": LV.Theme.accentBlueMuted,
+                "rowHeight": 0,
+                "width": 0,
+                "x": 0,
+                "y": 0
+            });
+    }
+
+    function hierarchyItemPresentation(item, itemId) {
+        if (!item || item.mapToItem === undefined)
+            return ({
+                    "chevronSize": 0,
+                    "effectiveShowChevron": false,
+                    "height": 0,
+                    "iconSize": 0,
+                    "index": Math.floor(Number(itemId) || -1),
+                    "leadingSpacing": 0,
+                    "leftPadding": 0,
+                    "rightPadding": 0,
+                    "rowBackgroundColor": LV.Theme.accentBlueMuted,
+                    "rowHeight": 0,
+                    "width": 0,
+                    "x": 0,
+                    "y": 0
+                });
+        const point = item.mapToItem(sidebarHierarchyView, 0, 0);
+        return ({
+                "chevronSize": Number(item.chevronSize) || 0,
+                "effectiveShowChevron": Boolean(item.effectiveShowChevron),
+                "height": Number(item.height) || 0,
+                "iconSize": Number(item.iconSize) || 0,
+                "index": Math.floor(Number(itemId) || -1),
+                "leadingSpacing": Number(item.leadingSpacing) || 0,
+                "leftPadding": Number(item.leftPadding) || 0,
+                "rightPadding": Number(item.rightPadding) || 0,
+                "rowBackgroundColor": item.rowBackgroundColor !== undefined ? item.rowBackgroundColor : LV.Theme.accentBlueMuted,
+                "rowHeight": Number(item.rowHeight) || Number(item.height) || 0,
+                "width": Number(item.width) || 0,
+                "x": Number(point.x) || 0,
+                "y": Number(point.y) || 0
+            });
+    }
+
+    function resolveVisibleHierarchyItem(itemId) {
+        const resolvedIndex = Math.floor(Number(itemId) || -1);
+        if (resolvedIndex < 0)
+            return null;
+        const activeItemId = Math.floor(Number(hierarchyTree.activeListItemId) || -1);
+        if (activeItemId === resolvedIndex && hierarchyTree.activeListItem)
+            return hierarchyTree.activeListItem;
+        return noteDropController.hierarchyItemForResolvedIndex(resolvedIndex);
+    }
+
+    function refreshEditingHierarchyPresentation(forceSelectionSync) {
+        const editingIndex = Math.floor(Number(sidebarHierarchyView.editingHierarchyIndex) || -1);
+        if (editingIndex < 0) {
+            sidebarHierarchyView.clearEditingHierarchyPresentation();
+            return null;
+        }
+        if (Boolean(forceSelectionSync))
+            hierarchyTree.activateListItemById(editingIndex);
+        const item = sidebarHierarchyView.resolveVisibleHierarchyItem(editingIndex);
+        if (!item) {
+            sidebarHierarchyView.clearEditingHierarchyPresentation();
+            return null;
+        }
+        sidebarHierarchyView.editingHierarchyPresentation = sidebarHierarchyView.hierarchyItemPresentation(item, editingIndex);
+        return item;
     }
 
     function normalizeHierarchyModel(modelValue) {
@@ -294,11 +394,15 @@ Rectangle {
     }
 
     function syncSelectedHierarchyItem(focusView) {
-        if (selectedFolderIndex < 0)
+        if (selectedFolderIndex < 0) {
+            sidebarHierarchyView.clearEditingHierarchyPresentation();
             return;
+        }
         hierarchyTree.activateListItemById(selectedFolderIndex);
         if (focusView)
             sidebarHierarchyView.forceActiveFocus();
+        if (sidebarHierarchyView.renameEditingActive)
+            sidebarHierarchyView.refreshEditingHierarchyPresentation(false);
     }
 
     SidebarHierarchyRenameController {
@@ -366,6 +470,8 @@ Rectangle {
             sidebarHierarchyView.clearNoteDropPreview();
             Qt.callLater(function () {
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
+                if (sidebarHierarchyView.renameEditingActive)
+                    sidebarHierarchyView.refreshEditingHierarchyPresentation(true);
             });
             bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
         }
@@ -454,7 +560,7 @@ Rectangle {
         style: inlineStyle
         textColor: LV.Theme.bodyColor
         textColorDisabled: LV.Theme.disabledColor
-        visible: sidebarHierarchyView.renameEditingActive && !!sidebarHierarchyView.editingHierarchyItem && sidebarHierarchyView.hierarchyRenameFieldWidth > 0
+        visible: sidebarHierarchyView.renameEditingActive && sidebarHierarchyView.renamePresentationAvailable
         width: sidebarHierarchyView.hierarchyRenameFieldWidth
         x: sidebarHierarchyView.hierarchyRenameFieldX
         y: sidebarHierarchyView.hierarchyRenameFieldY

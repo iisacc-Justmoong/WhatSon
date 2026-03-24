@@ -1,41 +1,27 @@
 # `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp`
-- Source kind: C++ header
-- File name: `LibraryHierarchyViewModel.hpp`
-- Approximate line count: 195
+This header declares the main orchestration viewmodel for the library hierarchy domain.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## UUID-Oriented Selection Contract
 
-### Classes and Structs
-- `SystemCalendarStore`
-- `LibraryHierarchyViewModel`
-- `IndexedBucket`
-- `IndexedBucketRange`
-- `FolderSelectionScope`
+Folder selection scope no longer stores only a path key. It now tracks the selected folder UUID so
+note filtering, drag-and-drop assignment, and hierarchy mutations can resolve the intended folder
+even when the visible path changes.
 
-### Enums
-- `IndexedBucket`
+## Important Private Helpers
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- `folderUuidForIndex(...)`: maps a UI row to the persisted folder UUID.
+- folder-scope helpers use UUIDs first and path labels only as compatibility fallbacks.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Architectural Role
+
+The viewmodel remains the boundary between:
+
+- QML/LVRS hierarchy interactions
+- runtime note filtering
+- persistent folder mutation services
+
+The UUID change reduces accidental coupling between visible path strings and semantic folder
+identity, but the class is still the central coordinator for the library hierarchy domain.

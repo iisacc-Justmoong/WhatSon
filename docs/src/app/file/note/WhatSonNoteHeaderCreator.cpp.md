@@ -1,37 +1,19 @@
 # `src/app/file/note/WhatSonNoteHeaderCreator.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteHeaderCreator.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonNoteHeaderCreator.cpp`
-- Approximate line count: 129
+This file serializes `WhatSonNoteHeaderStore` back into `.wsnhead` XML.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Folder Serialization Rules
 
-### Classes and Structs
-- None detected during scaffold generation.
+- Each folder binding is emitted as a `<folder>` element.
+- When a valid UUID is present at the same index, the serializer writes it as `uuid="..."`.
+- The element body keeps the readable folder path.
 
-### Enums
-- None detected during scaffold generation.
+This dual representation lets humans inspect a note header while the application still relies on a
+stable machine identity.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Output Expectations
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+Callers should arrive with normalized data. The creator does not try to infer missing UUIDs from
+paths; that responsibility belongs to higher-level services that know the current folder tree.

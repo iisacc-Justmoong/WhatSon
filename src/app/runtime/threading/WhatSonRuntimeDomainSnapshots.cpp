@@ -100,11 +100,23 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
 
         WhatSonFoldersHierarchyStore foldersStore;
         QString parseError;
-        if (!foldersParser.parse(rawText, &foldersStore, &parseError))
+        bool folderUuidMigrationRequired = false;
+        if (!foldersParser.parse(rawText, &foldersStore, &parseError, &folderUuidMigrationRequired))
         {
             snapshot.succeeded = false;
             snapshot.error = parseError;
             return snapshot;
+        }
+
+        if (folderUuidMigrationRequired)
+        {
+            QString writeError;
+            if (!foldersStore.writeToFile(filePath, &writeError))
+            {
+                snapshot.succeeded = false;
+                snapshot.error = writeError;
+                return snapshot;
+            }
         }
 
         const QVector<WhatSonFolderDepthEntry> parsedEntries = foldersStore.folderEntries();

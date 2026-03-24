@@ -1,40 +1,52 @@
 # `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `LibraryHierarchyViewModel.cpp`
-- Approximate line count: 3383
+This file is the orchestration layer for the library hierarchy domain. It owns UI-facing folder
+selection state, note-list filtering, runtime snapshot application, and the translation from
+hierarchy edits into persistent mutations.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## UUID Migration Summary
 
-### Classes and Structs
-- `FolderHierarchyLookup`
-- `NoteFolderToken`
-- `FolderDropPlacement`
-- `FolderMoveOperation`
+The viewmodel treats folder UUID as the canonical runtime identity.
 
-### Enums
-- `FolderDropPlacement`
+- hierarchy item keys for user folders are `folder:<uuid>`
+- selected-folder scope stores `selectedFolderUuid`
+- note filtering resolves note assignments by `folderUuids` first
+- note creation and drag-and-drop assignment persist both folder path and folder UUID
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+Path comparison still exists only as a fallback for legacy data that has not been rewritten yet.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Legacy File Upgrade
+
+`loadFromWshub()` now asks the folder parser whether it had to synthesize UUIDs for legacy
+`Folders.wsfolders` content. If so, the viewmodel immediately rewrites the file through
+`WhatSonFoldersHierarchyStore`.
+
+This is important because otherwise a legacy folder tree would receive different random UUIDs on the
+next launch, and note-folder matching would quietly fall back to path recovery again.
+
+## Folder Mutation Contract
+
+- Folder create, delete, move, LVRS reorder, and rename converge on
+  `commitFolderHierarchyUpdate(...)`.
+- `buildFolderItems(...)` and `finalizeFolderItems(...)` ensure every runtime folder row has a UUID.
+- `folderEntriesFromItems(...)` persists those UUIDs back into `Folders.wsfolders`.
+- `applyHierarchyNodes(...)` preserves existing UUIDs across LVRS reordering and can recover identity
+  from a `folder:<uuid>` node key when no source index is supplied.
+
+## Note Filtering And Assignment
+
+- `resolvedNoteFolderUuids(...)` reconstructs a note's effective folder membership.
+- `canonicalLeafFolderUuids(...)` removes redundant ancestor assignments before comparison.
+- `noteMatchesFolderScope(...)` checks the selected folder by UUID rather than by the current path.
+- `assignNoteToFolder(...)` merges existing bindings and writes them through
+  `WhatSonNoteHeaderStore::setFolderBindings(...)`.
+- A drop onto a folder now repairs stale serialized folder text when the note already has the same
+  UUID but an outdated path string.
+
+## Why This Matters
+
+Before this change, renaming a parent folder changed every descendant full path and could make child
+folder notes disappear from the filtered list. With UUID-based identity, a rename only changes the
+display path, while the logical folder relationship remains stable and persisted.

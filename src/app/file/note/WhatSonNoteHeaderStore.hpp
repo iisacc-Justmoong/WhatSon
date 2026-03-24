@@ -28,6 +28,9 @@ public:
 
     QStringList folders() const;
     void setFolders(QStringList folders);
+    QStringList folderUuids() const;
+    void setFolderUuids(QStringList folderUuids);
+    void setFolderBindings(QStringList folders, QStringList folderUuids);
 
     QString project() const;
     void setProject(QString project);
@@ -53,6 +56,7 @@ private:
     QString m_lastModifiedAt;
     QString m_modifiedBy;
     QStringList m_folders;
+    QStringList m_folderUuids;
     QString m_project;
     bool m_bookmarked = false;
     QStringList m_bookmarkColors;

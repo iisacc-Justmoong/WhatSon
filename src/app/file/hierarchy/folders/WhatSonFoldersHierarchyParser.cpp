@@ -1,5 +1,6 @@
 #include "WhatSonFoldersHierarchyParser.hpp"
 
+#include "../WhatSonFolderIdentity.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyStore.hpp"
 
@@ -13,6 +14,21 @@
 
 namespace
 {
+    QString normalizedOrGeneratedFolderUuid(QString value, bool* outUuidMigrationRequired)
+    {
+        const QString normalizedValue = WhatSon::FolderIdentity::normalizeFolderUuid(std::move(value));
+        if (!normalizedValue.isEmpty())
+        {
+            return normalizedValue;
+        }
+
+        if (outUuidMigrationRequired != nullptr)
+        {
+            *outUuidMigrationRequired = true;
+        }
+        return WhatSon::FolderIdentity::createFolderUuid();
+    }
+
     QStringList sanitizeLines(const QString& rawText)
     {
         QStringList values;
@@ -66,7 +82,9 @@ namespace
         return normalized.mid(slashIndex + 1).trimmed();
     }
 
-    void normalizeEntriesByDepthAndPath(QVector<WhatSonFolderDepthEntry>* entries)
+    void normalizeEntriesByDepthAndPath(
+        QVector<WhatSonFolderDepthEntry>* entries,
+        bool* outUuidMigrationRequired)
     {
         if (entries == nullptr)
         {
@@ -81,6 +99,7 @@ namespace
         {
             entry.id = entry.id.trimmed();
             entry.label = entry.label.trimmed();
+            entry.uuid = normalizedOrGeneratedFolderUuid(std::move(entry.uuid), outUuidMigrationRequired);
             if (entry.label.isEmpty() && !entry.id.isEmpty())
             {
                 entry.label = leafNameFromPath(entry.id);
@@ -134,7 +153,9 @@ namespace
         *entries = std::move(normalized);
     }
 
-    QVector<WhatSonFolderDepthEntry> buildFlatEntries(const QStringList& values)
+    QVector<WhatSonFolderDepthEntry> buildFlatEntries(
+        const QStringList& values,
+        bool* outUuidMigrationRequired)
     {
         QVector<WhatSonFolderDepthEntry> entries;
         entries.reserve(values.size());
@@ -151,6 +172,7 @@ namespace
             entry.id = trimmedValue;
             entry.label = trimmedValue;
             entry.depth = 0;
+            entry.uuid = normalizedOrGeneratedFolderUuid({}, outUuidMigrationRequired);
             entries.push_back(std::move(entry));
         }
 
@@ -217,12 +239,14 @@ namespace
     void appendNodeRecursive(
         const QJsonValue& nodeValue,
         int fallbackDepth,
-        QVector<WhatSonFolderDepthEntry>* outEntries);
+        QVector<WhatSonFolderDepthEntry>* outEntries,
+        bool* outUuidMigrationRequired);
 
     void appendObjectMap(
         const QJsonObject& objectMap,
         int fallbackDepth,
-        QVector<WhatSonFolderDepthEntry>* outEntries)
+        QVector<WhatSonFolderDepthEntry>* outEntries,
+        bool* outUuidMigrationRequired)
     {
         if (outEntries == nullptr)
         {
@@ -246,7 +270,7 @@ namespace
                 {
                     nodeObject.insert(QStringLiteral("label"), key);
                 }
-                appendNodeRecursive(nodeObject, fallbackDepth, outEntries);
+                appendNodeRecursive(nodeObject, fallbackDepth, outEntries, outUuidMigrationRequired);
                 continue;
             }
 
@@ -255,6 +279,7 @@ namespace
                 WhatSonFolderDepthEntry entry;
                 entry.id = key;
                 entry.label = it.value().toString().trimmed();
+                entry.uuid = normalizedOrGeneratedFolderUuid({}, outUuidMigrationRequired);
                 if (entry.label.isEmpty())
                 {
                     entry.label = key;
@@ -272,7 +297,7 @@ namespace
                 const QJsonArray array = it.value().toArray();
                 for (const QJsonValue& childValue : array)
                 {
-                    appendNodeRecursive(childValue, fallbackDepth, outEntries);
+                    appendNodeRecursive(childValue, fallbackDepth, outEntries, outUuidMigrationRequired);
                 }
             }
         }
@@ -281,7 +306,8 @@ namespace
     void appendNodeRecursive(
         const QJsonValue& nodeValue,
         int fallbackDepth,
-        QVector<WhatSonFolderDepthEntry>* outEntries)
+        QVector<WhatSonFolderDepthEntry>* outEntries,
+        bool* outUuidMigrationRequired)
     {
         if (outEntries == nullptr)
         {
@@ -299,6 +325,7 @@ namespace
             entry.id = text;
             entry.label = text;
             entry.depth = fallbackDepth < 0 ? 0 : fallbackDepth;
+            entry.uuid = normalizedOrGeneratedFolderUuid({}, outUuidMigrationRequired);
             outEntries->push_back(std::move(entry));
             return;
         }
@@ -327,6 +354,11 @@ namespace
                                             QStringLiteral("path"),
                                             QStringLiteral("key")
                                         });
+        entry.uuid = firstNonEmptyText(object, {
+                                           QStringLiteral("uuid"),
+                                           QStringLiteral("UUID"),
+                                           QStringLiteral("folderUuid")
+                                       });
         if (entry.label.isEmpty() && !entry.id.isEmpty())
         {
             entry.label = entry.id;
@@ -339,6 +371,7 @@ namespace
         bool pushed = false;
         if (!entry.id.isEmpty() && !entry.label.isEmpty())
         {
+            entry.uuid = normalizedOrGeneratedFolderUuid(std::move(entry.uuid), outUuidMigrationRequired);
             outEntries->push_back(std::move(entry));
             pushed = true;
         }
@@ -352,13 +385,14 @@ namespace
         const int childDepth = pushed ? parseDepthValue(object, fallbackDepth) + 1 : fallbackDepth + 1;
         for (const QJsonValue& childNode : children)
         {
-            appendNodeRecursive(childNode, childDepth, outEntries);
+            appendNodeRecursive(childNode, childDepth, outEntries, outUuidMigrationRequired);
         }
     }
 
     bool parseRootObject(
         const QJsonObject& object,
-        QVector<WhatSonFolderDepthEntry>* outEntries)
+        QVector<WhatSonFolderDepthEntry>* outEntries,
+        bool* outUuidMigrationRequired)
     {
         if (outEntries == nullptr)
         {
@@ -384,18 +418,18 @@ namespace
                 const QJsonArray array = listValue.toArray();
                 for (const QJsonValue& value : array)
                 {
-                    appendNodeRecursive(value, 0, outEntries);
+                    appendNodeRecursive(value, 0, outEntries, outUuidMigrationRequired);
                 }
                 return true;
             }
             if (listValue.isObject())
             {
-                appendObjectMap(listValue.toObject(), 0, outEntries);
+                appendObjectMap(listValue.toObject(), 0, outEntries, outUuidMigrationRequired);
                 return true;
             }
             if (listValue.isString())
             {
-                appendNodeRecursive(listValue, 0, outEntries);
+                appendNodeRecursive(listValue, 0, outEntries, outUuidMigrationRequired);
                 return true;
             }
         }
@@ -408,11 +442,11 @@ namespace
             || object.contains(QStringLiteral("items"));
         if (looksLikeFolderNode)
         {
-            appendNodeRecursive(object, 0, outEntries);
+            appendNodeRecursive(object, 0, outEntries, outUuidMigrationRequired);
             return true;
         }
 
-        appendObjectMap(object, 0, outEntries);
+        appendObjectMap(object, 0, outEntries, outUuidMigrationRequired);
         return !outEntries->isEmpty();
     }
 } // namespace
@@ -424,7 +458,8 @@ WhatSonFoldersHierarchyParser::~WhatSonFoldersHierarchyParser() = default;
 bool WhatSonFoldersHierarchyParser::parse(
     const QString& rawText,
     WhatSonFoldersHierarchyStore* outStore,
-    QString* errorMessage) const
+    QString* errorMessage,
+    bool* outUuidMigrationRequired) const
 {
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("hierarchy.folders.parser"),
@@ -441,6 +476,10 @@ bool WhatSonFoldersHierarchyParser::parse(
     }
 
     outStore->clear();
+    if (outUuidMigrationRequired != nullptr)
+    {
+        *outUuidMigrationRequired = false;
+    }
 
     if (rawText.trimmed().isEmpty())
     {
@@ -456,32 +495,46 @@ bool WhatSonFoldersHierarchyParser::parse(
     if (parseError.error == QJsonParseError::NoError && !document.isNull())
     {
         QVector<WhatSonFolderDepthEntry> parsedEntries;
+        bool uuidMigrationRequired = false;
         if (document.isArray())
         {
             const QJsonArray array = document.array();
             parsedEntries.reserve(array.size());
             for (const QJsonValue& value : array)
             {
-                appendNodeRecursive(value, 0, &parsedEntries);
+                appendNodeRecursive(value, 0, &parsedEntries, &uuidMigrationRequired);
             }
-            normalizeEntriesByDepthAndPath(&parsedEntries);
+            normalizeEntriesByDepthAndPath(&parsedEntries, &uuidMigrationRequired);
             outStore->setFolderEntries(std::move(parsedEntries));
+            if (outUuidMigrationRequired != nullptr)
+            {
+                *outUuidMigrationRequired = uuidMigrationRequired;
+            }
             return true;
         }
 
         if (document.isObject())
         {
             const QJsonObject object = document.object();
-            if (parseRootObject(object, &parsedEntries))
+            if (parseRootObject(object, &parsedEntries, &uuidMigrationRequired))
             {
-                normalizeEntriesByDepthAndPath(&parsedEntries);
+                normalizeEntriesByDepthAndPath(&parsedEntries, &uuidMigrationRequired);
                 outStore->setFolderEntries(std::move(parsedEntries));
+                if (outUuidMigrationRequired != nullptr)
+                {
+                    *outUuidMigrationRequired = uuidMigrationRequired;
+                }
                 return true;
             }
         }
     }
 
-    outStore->setFolderEntries(buildFlatEntries(sanitizeLines(rawText)));
+    bool uuidMigrationRequired = false;
+    outStore->setFolderEntries(buildFlatEntries(sanitizeLines(rawText), &uuidMigrationRequired));
+    if (outUuidMigrationRequired != nullptr)
+    {
+        *outUuidMigrationRequired = uuidMigrationRequired;
+    }
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("hierarchy.folders.parser"),
                               QStringLiteral("parse.fallbackLines"),

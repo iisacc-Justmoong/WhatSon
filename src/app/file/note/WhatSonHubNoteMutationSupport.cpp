@@ -254,6 +254,7 @@ void WhatSon::NoteMutationSupport::syncNoteRecordFromDocument(
 
     const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
     note->folders = updatedRecord.folders;
+    note->folderUuids = updatedRecord.folderUuids;
     note->lastModifiedAt = updatedRecord.lastModifiedAt;
     note->noteHeaderPath = updatedRecord.noteHeaderPath;
     if (note->noteDirectoryPath.isEmpty())

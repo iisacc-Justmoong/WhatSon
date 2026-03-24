@@ -934,9 +934,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "SidebarHierarchyView.qml must store the transient rename text separately from the model snapshot.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral(
-            "readonly property var editingHierarchyItem: sidebarHierarchyView.hierarchyItemForResolvedIndex(sidebarHierarchyView.editingHierarchyIndex)")) &&
+            "readonly property var editingHierarchyItem: sidebarHierarchyView.resolveVisibleHierarchyItem(sidebarHierarchyView.editingHierarchyIndex)")) &&
+            sidebarViewText.contains(QStringLiteral("property var editingHierarchyPresentation: ({")) &&
+            sidebarViewText.contains(QStringLiteral("readonly property var editingHierarchyItemPresentation: {")) &&
             sidebarViewText.contains(QStringLiteral("readonly property var editingHierarchyItemRect: {")),
-        "SidebarHierarchyView.qml inline rename overlay must resolve geometry from the edited hierarchy row instead of the current active LVRS item.");
+        "SidebarHierarchyView.qml inline rename overlay must resolve geometry from the edited hierarchy row and preserve a presentation snapshot while LVRS regenerates visible rows.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function beginRenameSelectedHierarchyItem()")),
         "SidebarHierarchyView.qml must expose a keyboard-driven entrypoint for inline hierarchy rename.");
@@ -962,10 +964,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             QStringLiteral("backgroundColorFocused: sidebarHierarchyView.hierarchyRenameFieldBackgroundColor")),
         "SidebarHierarchyView.qml inline rename field must inherit the active row background so the original label never bleeds through the overlay.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("const item = sidebarHierarchyView.editingHierarchyItem;")) &&
+        sidebarViewText.contains(QStringLiteral("readonly property bool renamePresentationAvailable: sidebarHierarchyView.hierarchyRenameFieldWidth > 0 && (Number(sidebarHierarchyView.editingHierarchyItemRect.height) || 0) > 0")) &&
             sidebarViewText.contains(QStringLiteral(
-                "visible: sidebarHierarchyView.renameEditingActive && !!sidebarHierarchyView.editingHierarchyItem && sidebarHierarchyView.hierarchyRenameFieldWidth > 0")),
-        "SidebarHierarchyView.qml inline rename field must mount and size itself from the edited hierarchy row instead of a stale active item.");
+                "visible: sidebarHierarchyView.renameEditingActive && sidebarHierarchyView.renamePresentationAvailable")),
+        "SidebarHierarchyView.qml inline rename field must stay mounted from the edited row presentation even while LVRS rebuilds the backing hierarchy item.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral("return renameController.commitHierarchyRename();")) &&
@@ -976,6 +978,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             sidebarRenameControllerText.contains(QStringLiteral("function selectedHierarchyItemLabel()")) &&
             sidebarRenameControllerText.contains(QStringLiteral("hierarchyViewModel.hierarchyItemLabelAt(selectedIndex)")),
         "SidebarHierarchyView.qml inline rename must normalize hierarchy labels to the final leaf segment before seeding the editor text.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function refreshEditingHierarchyPresentation(forceSelectionSync)")) &&
+            sidebarViewText.contains(QStringLiteral("function resolveVisibleHierarchyItem(itemId)")) &&
+            sidebarRenameControllerText.contains(QStringLiteral("hostView.refreshEditingHierarchyPresentation(true);")) &&
+            sidebarRenameControllerText.contains(QStringLiteral("hostView.clearEditingHierarchyPresentation();")),
+        "SidebarHierarchyView.qml inline rename must snapshot the selected LVRS row presentation at rename start and clear it when the transaction ends.");
     QVERIFY2(
         sidebarViewText.contains(
             QStringLiteral(

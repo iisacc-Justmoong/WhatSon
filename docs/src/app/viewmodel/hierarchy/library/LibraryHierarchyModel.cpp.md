@@ -1,37 +1,17 @@
 # `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp`
-- Source kind: C++ implementation
-- File name: `LibraryHierarchyModel.cpp`
-- Approximate line count: 276
+This implementation projects `LibraryHierarchyItem` rows into a Qt model consumable by LVRS/QML.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## UUID-Specific Behavior
 
-### Classes and Structs
-- `ValidationIssue`
+- `ItemKeyRole` returns `folder:<uuid>` for persisted user folders when a UUID is available.
+- reserved smart buckets still use their historical stable keys.
+- model sanitization clears `folderUuid` from system buckets because those items are not backed by
+  persisted folder rows.
 
-### Enums
-- None detected during scaffold generation.
+## Why This Matters
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+The visible tree can be reordered, renamed, and rebound by QML delegates. Stable item keys prevent
+selection and rename overlays from drifting when the display path changes.
