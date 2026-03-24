@@ -22,7 +22,6 @@
 - `HierarchySidebarLayout.qml`
 - `ListBarHeader.qml`
 - `ListBarLayout.qml`
-- `MobileNormalLayout.qml`
 - `NavigationBarLayout.qml`
 - `NoteListItem.qml`
 - `PanelEdgeSplitter.qml`

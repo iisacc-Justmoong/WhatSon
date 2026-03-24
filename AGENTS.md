@@ -134,7 +134,6 @@ An exception is allowed only when all conditions are satisfied.
     - `src/app/qml/view/body/BodyLayout.qml`
     - `src/app/qml/view/mobile/MobilePageScaffold.qml` (shared mobile workspace scaffold for Figma VStack node `174:4987`, keeping the compact navigation bar and compact status/add-note bar mounted across pages)
     - `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` (Figma-driven routed mobile workspace page for hierarchy node `174:5026`, composed by `MobilePageScaffold.qml` plus the shared hierarchy panel)
-    - `src/app/qml/view/panels/MobileNormalLayout.qml` (compatibility wrapper that forwards to `view/mobile/pages/MobileHierarchyPage.qml` while preserving the existing panel-viewmodel registry contract)
     - `src/app/qml/view/panels/ListBarLayout.qml` (Figma-driven list bar panel for node `73:2635`)
     - `src/app/qml/view/panels/ListBarHeader.qml` (Figma-driven list bar header for node `134:3180`)
         - `src/app/qml/view/panels/NoteListItem.qml` (Figma-driven note item card for node `119:3028`)
@@ -170,7 +169,6 @@ An exception is allowed only when all conditions are satisfied.
                 - `src/app/qml/view/panels/sidebar/HierarchyViewProgress.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewEvent.qml`
                 - `src/app/qml/view/panels/sidebar/HierarchyViewPreset.qml`
-                - `src/app/qml/view/panels/sidebar/LibraryView.qml` (compatibility wrapper)
 - Shared components:
     - `src/app/qml/components/NavigationRail.qml`
     - `src/app/qml/components/MetricCard.qml`

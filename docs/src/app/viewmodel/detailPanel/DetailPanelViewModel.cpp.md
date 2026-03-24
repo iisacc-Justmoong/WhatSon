@@ -1,37 +1,17 @@
 # `src/app/viewmodel/detailPanel/DetailPanelViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`DetailPanelViewModel.cpp` owns the active detail-panel state, the active section view-model pointer, and the toolbar selection list.
 
-## Source Metadata
-- Source path: `src/app/viewmodel/detailPanel/DetailPanelViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `DetailPanelViewModel.cpp`
-- Approximate line count: 166
+## Active State Surface
+The exported `activeStateName()` now follows the corrected page ids:
+- `properties`
+- `fileStat`
+- `insert`
+- `layer`
+- `fileHistory`
+- `help`
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
-
-### Classes and Structs
-- None detected during scaffold generation.
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Notes
+- Dedicated section view-model objects now use the same canonical naming as the exported page ids.
+- The public string contract and the internal member/accessor names match; there is no alias layer between C++ and QML.

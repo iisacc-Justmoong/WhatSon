@@ -1967,6 +1967,22 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         bodyLayoutText.contains(QStringLiteral("PanelEdgeSplitter {")),
         "BodyLayout.qml must delegate splitter drag interactions to the reusable PanelEdgeSplitter component.");
 
+    const QString rightPanelPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/detail/RightPanel.qml"));
+    QFile rightPanelFile(rightPanelPath);
+    QVERIFY2(rightPanelFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(rightPanelPath));
+    const QString rightPanelText = QString::fromUtf8(rightPanelFile.readAll());
+    QVERIFY2(
+        rightPanelText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4574\"")),
+        "RightPanel.qml must expose the Figma frame id for the root detail panel.");
+    QVERIFY2(
+        rightPanelText.contains(QStringLiteral("objectName: \"RightPanel\"")),
+        "RightPanel.qml must keep the root detail panel object name.");
+    QVERIFY2(
+        rightPanelText.contains(QStringLiteral("DetailPanel {")) &&
+            rightPanelText.contains(QStringLiteral("anchors.fill: parent")),
+        "RightPanel.qml must compose DetailPanel as a full-size child surface.");
+
     const QString detailPanelPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailPanel.qml"));
     QFile detailPanelFile(detailPanelPath);
@@ -2009,6 +2025,29 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailPanelText.contains(QStringLiteral("activeStateName: detailPanel.resolvedActiveStateName")),
         "DetailPanel.qml must forward the resolved state name into DetailContents.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("anchors.horizontalCenter: parent.horizontalCenter")),
+        "DetailPanel.qml must keep the header toolbar centered within the panel.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("readonly property var defaultToolbarItems: [")) &&
+            detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4576\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconName\": \"config\"")) &&
+            detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4577\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconName\": \"chartBar\"")) &&
+            detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4578\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconName\": \"generaladd\"")) &&
+            detailPanelText.contains(QStringLiteral("\"objectName\": \"Insert\"")) &&
+            detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4579\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconName\": \"toolwindowdependencies\"")) &&
+            detailPanelText.contains(QStringLiteral("\"objectName\": \"Layer\"")) &&
+            detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4580\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconName\": \"toolWindowClock\"")) &&
+            detailPanelText.contains(QStringLiteral("\"figmaNodeId\": \"155:4581\"")) &&
+            detailPanelText.contains(QStringLiteral("\"iconName\": \"featureAnswer\"")),
+        "DetailPanel.qml must define the full Figma-scoped toolbar icon mapping from metadata.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("\"iconName\": metadata.iconName")),
+        "DetailPanel.qml must keep Figma metadata as the canonical icon source when it normalizes toolbar items.");
 
     const QString detailToolbarPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailPanelHeaderToolbar.qml"));
@@ -2018,6 +2057,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral("signal detailStateChangeRequested(int stateValue)")),
         "DetailPanelHeaderToolbar.qml must expose detailStateChangeRequested(int stateValue).");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4575\"")),
+        "DetailPanelHeaderToolbar.qml must expose the Figma frame id for the toolbar.");
+    QVERIFY2(
+        detailToolbarText.contains(QStringLiteral("objectName: \"DetailPanelHeaderToolbar\"")),
+        "DetailPanelHeaderToolbar.qml must keep the toolbar object name aligned with the Figma frame.");
     QVERIFY2(
         detailToolbarText.contains(QStringLiteral(
             "readonly property var resolvedToolbarButtonSpecs: detailPanelHeaderToolbar.normalizeToolbarButtonSpecs(detailPanelHeaderToolbar.toolbarButtonSpecs)")),
@@ -2070,6 +2115,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailToolbarButtonText.contains(QStringLiteral("stateClickRequested(nextState);")),
         "DetailPanelHeaderToolbarButton.qml must emit stateClickRequested from icon button clicks.");
+    QVERIFY2(
+        detailToolbarButtonText.contains(QStringLiteral("objectName: detailPanelHeaderToolbarButton.resolvedObjectName")),
+        "DetailPanelHeaderToolbarButton.qml must expose semantic object names from toolbar specs.");
+    QVERIFY2(
+        detailToolbarButtonText.contains(QStringLiteral("readonly property string figmaNodeId: buttonSpec && buttonSpec.figmaNodeId !== undefined ? String(buttonSpec.figmaNodeId) : \"\"")),
+        "DetailPanelHeaderToolbarButton.qml must preserve the Figma node id on each toolbar button delegate.");
 
     const QString detailContentsPath = QDir(qmlRoot).absoluteFilePath(
         QStringLiteral("view/panels/detail/DetailContents.qml"));
@@ -2080,7 +2131,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailContentsText.contains(QStringLiteral("property var activeContentViewModel: null")),
         "DetailContents.qml must expose activeContentViewModel for dedicated detail section view-model wiring.");
     QVERIFY2(
-        detailContentsText.contains(QStringLiteral("property string activeStateName: \"fileInfo\"")),
+        detailContentsText.contains(QStringLiteral("property string activeStateName: \"properties\"")),
         "DetailContents.qml must expose activeStateName default.");
     QVERIFY2(
         detailContentsText.contains(QStringLiteral(
@@ -2092,6 +2143,29 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("state: detailContents.resolvedActiveStateName")),
         "DetailContents.qml must bind QML state to the resolved active state name.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4582\"")),
+        "DetailContents.qml must expose the Figma frame id for the content surface.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("objectName: \"DetailContents\"")) &&
+            detailContentsText.contains(QStringLiteral("objectName: \"Form\"")),
+        "DetailContents.qml must preserve the root and form object names from the Figma structure.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("labelText: \"Projects\"")) &&
+            detailContentsText.contains(QStringLiteral("labelText: \"Bookmark\"")) &&
+            detailContentsText.contains(QStringLiteral("titleText: \"Folders\"")) &&
+            detailContentsText.contains(QStringLiteral("titleText: \"Tags\"")) &&
+            detailContentsText.contains(QStringLiteral("labelText: \"Progress\"")),
+        "DetailContents.qml must render the Properties form sections in the Figma order.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("iconName: \"addFile\"")) &&
+            detailContentsText.contains(QStringLiteral("iconName: \"trash\"")) &&
+            detailContentsText.contains(QStringLiteral("iconName: \"settings\"")),
+        "DetailContents.qml list footers must use the add/trash/settings control set.");
+    QVERIFY2(
+        detailContentsText.contains(QStringLiteral("frameNodeId: \"155:4587\"")) &&
+            detailContentsText.contains(QStringLiteral("frameNodeId: \"155:4590\"")),
+        "DetailContents.qml must pin Folders and Tags sections to the correct Figma node ids.");
 }
 
 void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivationIntoNoteListBody()

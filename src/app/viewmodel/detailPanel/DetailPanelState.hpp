@@ -6,11 +6,11 @@ namespace WhatSon::DetailPanel
 {
     enum class ContentState
     {
-        FileInfo = 0,
+        Properties = 0,
         FileStat,
-        FileFormat,
+        Insert,
         FileHistory,
-        Appearance,
+        Layer,
         Help
     };
 

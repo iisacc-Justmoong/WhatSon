@@ -1,40 +1,22 @@
 # `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`DetailPanelHeaderToolbar.qml` renders the six-button detail toolbar for Figma frame `155:4575`.
+It normalizes toolbar specs, keeps the `145x20` Figma frame, and emits `detailStateChangeRequested(int)` when a button is activated.
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/detail/DetailPanelHeaderToolbar.qml`
-- Source kind: QML view/component
-- File name: `DetailPanelHeaderToolbar.qml`
-- Approximate line count: 50
+## Visual Contract
+- Root `objectName`: `DetailPanelHeaderToolbar`
+- Figma node id: `155:4575`
+- Frame size: `145 x 20`
+- Inter-button spacing: `5`
+- The toolbar is centered by its parent panel, while this file only preserves the internal row geometry.
 
-## QML Surface Snapshot
-- Root type: `Item`
+## Delegate Contract
+Each delegate receives a normalized spec object with:
+- `figmaNodeId`
+- `iconName`
+- `objectName`
+- `stateValue`
+- `selected`
 
-### Object IDs
-- `detailPanelHeaderToolbar`
-
-### Required Properties
-- None detected during scaffold generation.
-
-### Signals
-- `detailStateChangeRequested`
-- `viewHookRequested`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+The toolbar itself remains data-driven and does not hardcode state transitions beyond emitting the selected state value.

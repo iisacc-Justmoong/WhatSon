@@ -1,40 +1,23 @@
 # `src/app/qml/view/panels/detail/DetailPanelHeaderToolbarButton.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`DetailPanelHeaderToolbarButton.qml` is the per-button delegate used by the detail toolbar.
+It adapts toolbar spec data into an `LV.IconButton` while preserving the Figma object name and node id for inspection/debugging.
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/detail/DetailPanelHeaderToolbarButton.qml`
-- Source kind: QML view/component
-- File name: `DetailPanelHeaderToolbarButton.qml`
-- Approximate line count: 34
-
-## QML Surface Snapshot
+## Contract
 - Root type: `LV.IconButton`
+- Fixed frame: `20 x 20`
+- Icon size: `16`
+- Selected tone: `LV.AbstractButton.Default`
+- Unselected tone: `LV.AbstractButton.Borderless`
 
-### Object IDs
-- `detailPanelHeaderToolbarButton`
+## Data Inputs
+- `buttonSpec.iconName`
+- `buttonSpec.objectName`
+- `buttonSpec.figmaNodeId`
+- `buttonSpec.selected`
+- `buttonSpec.stateValue`
 
-### Required Properties
-- None detected during scaffold generation.
-
-### Signals
-- `stateClickRequested`
-- `viewHookRequested`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Behavior
+- Invalid or non-numeric `stateValue` is ignored and logged through the existing view-hook path.
+- Valid clicks emit `stateClickRequested(nextState)`.

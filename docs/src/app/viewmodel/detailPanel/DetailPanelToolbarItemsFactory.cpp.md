@@ -1,37 +1,23 @@
 # `src/app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+This factory builds the canonical toolbar spec list consumed by `DetailPanelViewModel`.
+It is the C++ source of truth for the six detail-panel state buttons and their icon names.
 
-## Source Metadata
-- Source path: `src/app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.cpp`
-- Source kind: C++ implementation
-- File name: `DetailPanelToolbarItemsFactory.cpp`
-- Approximate line count: 43
+## Current Mapping
+- `Properties` -> `config`
+- `FileStat` -> `chartBar`
+- `Insert` -> `generaladd`
+- `Layer` -> `toolwindowdependencies`
+- `FileHistory` -> `toolWindowClock`
+- `Help` -> `featureAnswer`
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Output Shape
+Each generated toolbar item is a `QVariantMap` with:
+- `iconName`
+- `stateValue`
+- `selected`
 
-### Classes and Structs
-- `ToolbarSpec`
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Notes
+- The first icon changed from the old project-structure glyph to `config` so the desktop detail toolbar matches the Figma `Properties` button contract.
+- QML still enriches these items with Figma node ids and semantic object names for inspection and testing.

@@ -531,7 +531,7 @@ int main(int argc, char* argv[])
             requestNewLibraryNote);
     }
     if (auto* mobilePanelViewModel = qobject_cast<PanelViewModel*>(
-        panelViewModelRegistry.panelViewModel(QStringLiteral("MobileNormalLayout"))))
+        panelViewModelRegistry.panelViewModel(QStringLiteral("mobile.MobileHierarchyPage"))))
     {
         QObject::connect(
             mobilePanelViewModel,
@@ -980,24 +980,6 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("detailPanelViewModel"), &detailPanelViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("editorViewModeViewModel"), &editorViewModeViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("navigationModeViewModel"), &navigationModeViewModel);
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("detailFileInfoViewModel"),
-        detailPanelViewModel.fileInfoViewModel());
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("detailFileStatViewModel"),
-        detailPanelViewModel.fileStatViewModel());
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("detailFileFormatViewModel"),
-        detailPanelViewModel.fileFormatViewModel());
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("detailFileHistoryViewModel"),
-        detailPanelViewModel.fileHistoryViewModel());
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("detailAppearanceViewModel"),
-        detailPanelViewModel.appearanceViewModel());
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("detailHelpViewModel"),
-        detailPanelViewModel.helpViewModel());
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), &sidebarHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
     engine.rootContext()->setContextProperty(QStringLiteral("systemCalendarStore"), &systemCalendarStore);

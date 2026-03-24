@@ -4,7 +4,7 @@ namespace WhatSon::DetailPanel
 {
     bool isValidStateValue(int stateValue) noexcept
     {
-        return stateValue >= static_cast<int>(ContentState::FileInfo)
+        return stateValue >= static_cast<int>(ContentState::Properties)
             && stateValue <= static_cast<int>(ContentState::Help);
     }
 
@@ -12,7 +12,7 @@ namespace WhatSon::DetailPanel
     {
         if (!isValidStateValue(stateValue))
         {
-            return ContentState::FileInfo;
+            return ContentState::Properties;
         }
 
         return static_cast<ContentState>(stateValue);
@@ -27,21 +27,21 @@ namespace WhatSon::DetailPanel
     {
         switch (state)
         {
-        case ContentState::FileInfo:
-            return QStringLiteral("fileInfo");
+        case ContentState::Properties:
+            return QStringLiteral("properties");
         case ContentState::FileStat:
             return QStringLiteral("fileStat");
-        case ContentState::FileFormat:
-            return QStringLiteral("fileFormat");
+        case ContentState::Insert:
+            return QStringLiteral("insert");
         case ContentState::FileHistory:
             return QStringLiteral("fileHistory");
-        case ContentState::Appearance:
-            return QStringLiteral("appearance");
+        case ContentState::Layer:
+            return QStringLiteral("layer");
         case ContentState::Help:
             return QStringLiteral("help");
         }
 
-        return QStringLiteral("fileInfo");
+        return QStringLiteral("properties");
     }
 
     QString stateNameFromValue(int stateValue)

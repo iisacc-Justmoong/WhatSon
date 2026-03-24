@@ -13,23 +13,23 @@ private
 
 
 
-    void defaults_mustExposeFileInfoState();
+    void defaults_mustExposePropertiesState();
     void detailContentViewModels_mustMapEachStateToDedicatedViewModel();
     void requestStateChange_mustUpdateActiveStateAndToolbarSelection();
     void requestStateChange_invalidValue_mustBeIgnored();
 };
 
-void DetailPanelViewModelTest::defaults_mustExposeFileInfoState()
+void DetailPanelViewModelTest::defaults_mustExposePropertiesState()
 {
     DetailPanelViewModel viewModel;
 
-    QCOMPARE(viewModel.activeState(), static_cast<int>(DetailPanelViewModel::DetailContentState::FileInfo));
-    QCOMPARE(viewModel.activeStateName(), QStringLiteral("fileInfo"));
+    QCOMPARE(viewModel.activeState(), static_cast<int>(DetailPanelViewModel::DetailContentState::Properties));
+    QCOMPARE(viewModel.activeStateName(), QStringLiteral("properties"));
 
     const QVariantList toolbarItems = viewModel.toolbarItems();
     QCOMPARE(toolbarItems.size(), 6);
     const QStringList expectedIconNames = {
-        QStringLiteral("generalprojectStructure"),
+        QStringLiteral("config"),
         QStringLiteral("chartBar"),
         QStringLiteral("generaladd"),
         QStringLiteral("toolwindowdependencies"),
@@ -52,36 +52,36 @@ void DetailPanelViewModelTest::detailContentViewModels_mustMapEachStateToDedicat
 {
     DetailPanelViewModel viewModel;
 
-    QObject* fileInfoVm = viewModel.fileInfoViewModel();
+    QObject* propertiesVm = viewModel.propertiesViewModel();
     QObject* fileStatVm = viewModel.fileStatViewModel();
-    QObject* fileFormatVm = viewModel.fileFormatViewModel();
+    QObject* insertVm = viewModel.insertViewModel();
     QObject* fileHistoryVm = viewModel.fileHistoryViewModel();
-    QObject* appearanceVm = viewModel.appearanceViewModel();
+    QObject* layerVm = viewModel.layerViewModel();
     QObject* helpVm = viewModel.helpViewModel();
 
-    QVERIFY(fileInfoVm != nullptr);
+    QVERIFY(propertiesVm != nullptr);
     QVERIFY(fileStatVm != nullptr);
-    QVERIFY(fileFormatVm != nullptr);
+    QVERIFY(insertVm != nullptr);
     QVERIFY(fileHistoryVm != nullptr);
-    QVERIFY(appearanceVm != nullptr);
+    QVERIFY(layerVm != nullptr);
     QVERIFY(helpVm != nullptr);
 
-    QCOMPARE(fileInfoVm->property("stateName").toString(), QStringLiteral("fileInfo"));
+    QCOMPARE(propertiesVm->property("stateName").toString(), QStringLiteral("properties"));
     QCOMPARE(fileStatVm->property("stateName").toString(), QStringLiteral("fileStat"));
-    QCOMPARE(fileFormatVm->property("stateName").toString(), QStringLiteral("fileFormat"));
+    QCOMPARE(insertVm->property("stateName").toString(), QStringLiteral("insert"));
     QCOMPARE(fileHistoryVm->property("stateName").toString(), QStringLiteral("fileHistory"));
-    QCOMPARE(appearanceVm->property("stateName").toString(), QStringLiteral("appearance"));
+    QCOMPARE(layerVm->property("stateName").toString(), QStringLiteral("layer"));
     QCOMPARE(helpVm->property("stateName").toString(), QStringLiteral("help"));
 
-    QCOMPARE(viewModel.activeContentViewModel(), fileInfoVm);
-    QCOMPARE(fileInfoVm->property("active").toBool(), true);
-    QCOMPARE(appearanceVm->property("active").toBool(), false);
+    QCOMPARE(viewModel.activeContentViewModel(), propertiesVm);
+    QCOMPARE(propertiesVm->property("active").toBool(), true);
+    QCOMPARE(layerVm->property("active").toBool(), false);
 
-    viewModel.requestStateChange(static_cast<int>(DetailPanelViewModel::DetailContentState::Appearance));
+    viewModel.requestStateChange(static_cast<int>(DetailPanelViewModel::DetailContentState::Layer));
 
-    QCOMPARE(viewModel.activeContentViewModel(), appearanceVm);
-    QCOMPARE(fileInfoVm->property("active").toBool(), false);
-    QCOMPARE(appearanceVm->property("active").toBool(), true);
+    QCOMPARE(viewModel.activeContentViewModel(), layerVm);
+    QCOMPARE(propertiesVm->property("active").toBool(), false);
+    QCOMPARE(layerVm->property("active").toBool(), true);
     QCOMPARE(
         viewModel.contentViewModelForState(static_cast<int>(DetailPanelViewModel::DetailContentState::Help)),
         helpVm);
@@ -95,12 +95,12 @@ void DetailPanelViewModelTest::requestStateChange_mustUpdateActiveStateAndToolba
     QSignalSpy activeStateSpy(&viewModel, &DetailPanelViewModel::activeStateChanged);
     QSignalSpy toolbarItemsSpy(&viewModel, &DetailPanelViewModel::toolbarItemsChanged);
 
-    viewModel.requestStateChange(static_cast<int>(DetailPanelViewModel::DetailContentState::Appearance));
+    viewModel.requestStateChange(static_cast<int>(DetailPanelViewModel::DetailContentState::Layer));
 
     QCOMPARE(activeStateSpy.count(), 1);
     QCOMPARE(toolbarItemsSpy.count(), 1);
-    QCOMPARE(viewModel.activeState(), static_cast<int>(DetailPanelViewModel::DetailContentState::Appearance));
-    QCOMPARE(viewModel.activeStateName(), QStringLiteral("appearance"));
+    QCOMPARE(viewModel.activeState(), static_cast<int>(DetailPanelViewModel::DetailContentState::Layer));
+    QCOMPARE(viewModel.activeStateName(), QStringLiteral("layer"));
 
     const QVariantList toolbarItems = viewModel.toolbarItems();
     QCOMPARE(toolbarItems.size(), 6);
@@ -126,8 +126,8 @@ void DetailPanelViewModelTest::requestStateChange_invalidValue_mustBeIgnored()
 
     QCOMPARE(activeStateSpy.count(), 0);
     QCOMPARE(toolbarItemsSpy.count(), 0);
-    QCOMPARE(viewModel.activeState(), static_cast<int>(DetailPanelViewModel::DetailContentState::FileInfo));
-    QCOMPARE(viewModel.activeStateName(), QStringLiteral("fileInfo"));
+    QCOMPARE(viewModel.activeState(), static_cast<int>(DetailPanelViewModel::DetailContentState::Properties));
+    QCOMPARE(viewModel.activeStateName(), QStringLiteral("properties"));
 }
 
 QTEST_APPLESS_MAIN(DetailPanelViewModelTest)

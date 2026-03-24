@@ -26,7 +26,7 @@
 - `qmlRegisterType(...)` is used for bridge-like objects that should be instantiated from QML rather than pushed as singletons.
 
 ## QML Exposure
-This file still exports many objects through `engine.rootContext()->setContextProperty(...)`. That bootstrap path remains in place for compatibility, but `Main.qml` immediately re-registers the important viewmodels into `LV.ViewModels` and binds write ownership per view ID.
+This file exports the root runtime objects through `engine.rootContext()->setContextProperty(...)`. `Main.qml` immediately re-registers the view-facing objects into `LV.ViewModels` and binds write ownership per view ID.
 
 The practical split is this.
 - C++ owns object lifetime and initial graph assembly.

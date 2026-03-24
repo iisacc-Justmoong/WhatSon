@@ -1,39 +1,37 @@
 # `src/app/qml/view/panels/detail/DetailContents.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`DetailContents.qml` owns the state-switched body of the desktop detail panel.
+The implemented primary form is the Figma `Properties` example (`155:4582`), while the other toolbar states mount dedicated placeholder forms instead of reusing the properties body.
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/detail/DetailContents.qml`
-- Source kind: QML view/component
-- File name: `DetailContents.qml`
-- Approximate line count: 56
+## Root Contract
+- Root `objectName`: `DetailContents`
+- Root Figma node id: `155:4582`
+- Inputs:
+  - `activeContentViewModel`
+  - `activeStateName`
+- Normalized state values:
+  - `properties`
+  - `fileStat`
+  - `insert`
+  - `fileHistory`
+  - `layer`
+  - `help`
+- Legacy aliases are intentionally not accepted. Callers must send the canonical state ids above.
 
-## QML Surface Snapshot
-- Root type: `Item`
+## Implemented Properties Form
+The `properties` state renders the Figma `Form` node (`155:4583`) with the exact section order:
+1. `Projects` combo (`178:5494`, text `178:5495`, combo `178:5496`)
+2. `Bookmark` combo (`155:4584`, text `155:4585`, combo `155:4586`)
+3. `FoldersList` (`155:4587`, text `155:4588`, list `155:4589`)
+4. `TagsList` (`155:4590`, text `155:4591`, list `155:4592`)
+5. `Progress` combo (`178:5501`, text `178:5502`, combo `178:5503`)
 
-### Object IDs
-- `detailContents`
+## LVRS Reuse
+- Uses `LV.ComboBox` for all compact selectors.
+- Uses `LV.ListFooter` for the `addFile` / `trash` / `settings` footer controls in the Figma small lists.
+- Uses LVRS typography and panel tokens instead of introducing ad-hoc colors or fonts.
 
-### Required Properties
-- None detected during scaffold generation.
-
-### Signals
-- `viewHookRequested`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Non-Properties States
+For `fileStat`, `insert`, `fileHistory`, `layer`, and `help`, the file renders a distinct placeholder form with state-specific titles and summaries.
+This keeps the state switch explicit until each mode receives its final Figma form.

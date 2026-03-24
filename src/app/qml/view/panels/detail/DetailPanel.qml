@@ -4,6 +4,50 @@ import LVRS 1.0 as LV
 Item {
     id: detailPanel
 
+    readonly property var defaultToolbarItems: [
+        {
+            "figmaNodeId": "155:4576",
+            "iconName": "config",
+            "objectName": "Properties",
+            "selected": true,
+            "stateValue": 0
+        },
+        {
+            "figmaNodeId": "155:4577",
+            "iconName": "chartBar",
+            "objectName": "FileStat",
+            "selected": false,
+            "stateValue": 1
+        },
+        {
+            "figmaNodeId": "155:4578",
+            "iconName": "generaladd",
+            "objectName": "Insert",
+            "selected": false,
+            "stateValue": 2
+        },
+        {
+            "figmaNodeId": "155:4579",
+            "iconName": "toolwindowdependencies",
+            "objectName": "Layer",
+            "selected": false,
+            "stateValue": 4
+        },
+        {
+            "figmaNodeId": "155:4580",
+            "iconName": "toolWindowClock",
+            "objectName": "FileHistory",
+            "selected": false,
+            "stateValue": 3
+        },
+        {
+            "figmaNodeId": "155:4581",
+            "iconName": "featureAnswer",
+            "objectName": "Help",
+            "selected": false,
+            "stateValue": 5
+        }
+    ]
     readonly property int detailContentsHeight: Math.max(0, detailPanel.height - detailPanel.headerToolbarHeight - detailPanel.panelSpacing)
     readonly property int detailContentsWidth: detailPanel.width
     readonly property var registeredViewModelKeys: LV.ViewModels.keys
@@ -27,35 +71,87 @@ Item {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function toolbarMetadataForStateValue(stateValue) {
+        switch (Number(stateValue)) {
+        case 0:
+            return detailPanel.defaultToolbarItems[0];
+        case 1:
+            return detailPanel.defaultToolbarItems[1];
+        case 2:
+            return detailPanel.defaultToolbarItems[2];
+        case 3:
+            return detailPanel.defaultToolbarItems[4];
+        case 4:
+            return detailPanel.defaultToolbarItems[3];
+        case 5:
+            return detailPanel.defaultToolbarItems[5];
+        default:
+            return detailPanel.defaultToolbarItems[0];
+        }
+    }
     function resolveActiveContentViewModel() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeContentViewModel === undefined)
             return null;
+        return detailPanel.detailPanelVm.activeContentViewModel;
     }
     function resolveActiveStateName() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeStateName === undefined)
-            return "fileInfo";
+            return "properties";
         const stateName = String(detailPanel.detailPanelVm.activeStateName).trim();
-        return stateName.length > 0 ? stateName : "fileInfo";
+        return stateName.length > 0 ? stateName : "properties";
     }
     function resolveToolbarItems() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.toolbarItems === undefined || detailPanel.detailPanelVm.toolbarItems === null)
-            return [];
+            return detailPanel.defaultToolbarItems;
+        const sourceItems = detailPanel.detailPanelVm.toolbarItems;
+        const normalizedItems = Array.isArray(sourceItems)
+            ? sourceItems
+            : sourceItems.length !== undefined
+                ? Array.prototype.slice.call(sourceItems)
+                : [];
+        if (normalizedItems.length <= 0)
+            return detailPanel.defaultToolbarItems;
+        const resolvedItems = [];
+        for (var index = 0; index < normalizedItems.length; ++index) {
+            const sourceItem = normalizedItems[index];
+            const stateValue = sourceItem && sourceItem.stateValue !== undefined
+                ? Number(sourceItem.stateValue)
+                : NaN;
+            const metadata = detailPanel.toolbarMetadataForStateValue(stateValue);
+            resolvedItems.push({
+                                   "figmaNodeId": metadata.figmaNodeId,
+                                   "iconName": metadata.iconName,
+                                   "objectName": metadata.objectName,
+                                   "selected": sourceItem && sourceItem.selected === true,
+                                   "stateValue": isFinite(stateValue) ? stateValue : metadata.stateValue
+                               });
+        }
+        return resolvedItems.length > 0 ? resolvedItems : detailPanel.defaultToolbarItems;
     }
 
+    objectName: "DetailPanel"
+    implicitWidth: detailPanel.detailContentsWidth > 0 ? detailPanel.detailContentsWidth : 194
+
     Column {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
+        anchors.fill: parent
         spacing: detailPanel.panelSpacing
 
-        DetailPanelHeaderToolbar {
+        Item {
+            width: parent.width
             height: detailPanel.headerToolbarHeight
-            toolbarButtonSpecs: detailPanel.resolvedToolbarItems
-            width: detailPanel.headerToolbarWidth
 
-            onDetailStateChangeRequested: function (stateValue) {
-                detailPanel.requestViewHook("detailStateChangeRequested.stateValue=" + stateValue);
-                if (detailPanel.detailPanelVm)
-                    detailPanel.detailPanelVm.requestStateChange(stateValue);
+            DetailPanelHeaderToolbar {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                height: detailPanel.headerToolbarHeight
+                toolbarButtonSpecs: detailPanel.resolvedToolbarItems
+                width: detailPanel.headerToolbarWidth
+
+                onDetailStateChangeRequested: function (stateValue) {
+                    detailPanel.requestViewHook("detailStateChangeRequested.stateValue=" + stateValue);
+                    if (detailPanel.detailPanelVm)
+                        detailPanel.detailPanelVm.requestStateChange(stateValue);
+                }
             }
         }
         DetailContents {

@@ -1,39 +1,20 @@
 # `src/app/qml/view/panels/detail/RightPanel.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`RightPanel.qml` is the outer desktop detail-panel shell for the Figma `RightPanel` frame (`155:4574`).
+It keeps the panel canvas transparent, preserves the panel-view-model hook entrypoint, and mounts the actual detail composition through `DetailPanel.qml`.
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/detail/RightPanel.qml`
-- Source kind: QML view/component
-- File name: `RightPanel.qml`
-- Approximate line count: 29
+## Visual Contract
+- Figma root frame id: `155:4574`
+- Root `objectName`: `RightPanel`
+- Default panel width: `194`
+- The child `DetailPanel` fills the wrapper, so parent layout sizing controls the final width.
 
-## QML Surface Snapshot
-- Root type: `Rectangle`
+## Runtime Notes
+- The file intentionally stays thin.
+- It does not own detail state; it only forwards lifecycle visibility through the shared panel wrapper pattern already used in the rest of the desktop shell.
+- `requestViewHook(reason)` still routes through `panelViewModelRegistry.panelViewModel("detail.RightPanel")`.
 
-### Object IDs
-- `rightPanel`
-
-### Required Properties
-- None detected during scaffold generation.
-
-### Signals
-- `viewHookRequested`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Integration
+- Parent wrapper: `src/app/qml/view/panels/DetailPanelLayout.qml`
+- Child composition: `src/app/qml/view/panels/detail/DetailPanel.qml`

@@ -63,6 +63,7 @@ Item {
     readonly property bool editorPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.editorRoutePath
     readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
+    readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("mobile.MobileHierarchyPage") : null
     property string pendingCreatedNoteId: ""
     required property var sidebarHierarchyViewModel
     property string statusPlaceholderText: ""
@@ -358,6 +359,8 @@ Item {
         mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);
     }
     function requestViewHook() {
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook();
         viewHookRequested();
     }
     function routeToHierarchyRoot() {

@@ -11,7 +11,7 @@ The core rule in this directory is that visual composition belongs here, while p
 - `DesignTokens.qml`: QML-side design token aggregation.
 
 ## Ownership Model
-The C++ composition root still injects bootstrap objects through context properties. `Main.qml` then re-registers the important viewmodels into `LV.ViewModels` and claims write ownership for selected view IDs. This split keeps startup compatibility while moving mutation rights toward explicit LVRS ownership.
+The C++ composition root injects bootstrap objects through context properties. `Main.qml` then re-registers the important viewmodels into `LV.ViewModels` and claims write ownership for selected view IDs.
 
 ## Why This Directory Is Important
 If a runtime object exists in C++ but behaves incorrectly in the UI, this directory is usually where the mismatch becomes visible first.

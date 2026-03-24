@@ -5,7 +5,9 @@ LV.IconButton {
     id: detailPanelHeaderToolbarButton
 
     property var buttonSpec: ({})
+    readonly property string figmaNodeId: buttonSpec && buttonSpec.figmaNodeId !== undefined ? String(buttonSpec.figmaNodeId) : ""
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanelHeaderToolbarButton") : null
+    readonly property string resolvedObjectName: buttonSpec && buttonSpec.objectName !== undefined ? String(buttonSpec.objectName) : ""
     property bool selected: buttonSpec && buttonSpec.selected === true
 
     signal stateClickRequested(int stateValue)
@@ -18,8 +20,12 @@ LV.IconButton {
         viewHookRequested();
     }
 
+    objectName: detailPanelHeaderToolbarButton.resolvedObjectName
+    height: 20
     iconName: buttonSpec && buttonSpec.iconName !== undefined ? buttonSpec.iconName : ""
     iconSize: 16
+    implicitWidth: 20
+    width: 20
     tone: selected ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
 
     onClicked: {

@@ -11,6 +11,7 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Drive left-edge back-swipe gestures through `LV.PageTransitionController`.
 - Promote newly created library notes into the editor route once the shared models are ready.
 - Keep compact navigation chrome route-aware so hierarchy-only controls do not leak into note-list or editor pages.
+- Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component.
 
 ## Routing Model
 The file defines three route constants:

@@ -13,9 +13,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         mac_menu_bar_text = (
             REPO_ROOT / "src/app/qml/window/MacNativeMenuBar.qml"
         ).read_text(encoding="utf-8")
-        mobile_layout_text = (
-            REPO_ROOT / "src/app/qml/view/panels/MobileNormalLayout.qml"
-        ).read_text(encoding="utf-8")
         mobile_scaffold_text = (
             REPO_ROOT / "src/app/qml/view/mobile/MobilePageScaffold.qml"
         ).read_text(encoding="utf-8")
@@ -162,11 +159,6 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertNotIn("searchIconVisible: false", list_bar_header_text)
         self.assertNotIn("trailingItems: Item {", list_bar_header_text)
 
-        self.assertIn('import "../mobile/pages" as MobilePageView', mobile_layout_text)
-        self.assertIn('panelViewModelRegistry.panelViewModel("MobileNormalLayout")', mobile_layout_text)
-        self.assertIn("MobilePageView.MobileHierarchyPage {", mobile_layout_text)
-        self.assertIn('onViewHookRequested: mobileNormalLayout.requestViewHook("mobile-hierarchy-page")', mobile_layout_text)
-
         self.assertIn("readonly property var activePageRouter: bodyRouter", mobile_scaffold_text)
         self.assertIn("readonly property var bodyItem: bodyRouter.currentPageItem", mobile_scaffold_text)
         self.assertIn("readonly property real bodyWidth: bodyRouter.width", mobile_scaffold_text)
@@ -233,6 +225,12 @@ class MobileShellLayoutTests(unittest.TestCase):
             "readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath",
             mobile_page_text,
         )
+        self.assertIn(
+            'panelViewModelRegistry.panelViewModel("mobile.MobileHierarchyPage")',
+            mobile_page_text,
+        )
+        self.assertIn("if (panelViewModel && panelViewModel.requestViewModelHook)", mobile_page_text)
+        self.assertIn("panelViewModel.requestViewModelHook();", mobile_page_text)
         self.assertIn("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive", mobile_page_text)
         self.assertIn("compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive", mobile_page_text)
         self.assertIn("compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive", mobile_page_text)

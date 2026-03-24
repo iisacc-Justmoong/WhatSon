@@ -5,11 +5,11 @@
 
 DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
     : QObject(parent)
-      , m_fileInfoViewModel(DetailContentState::FileInfo, this)
+      , m_propertiesViewModel(DetailContentState::Properties, this)
       , m_fileStatViewModel(DetailContentState::FileStat, this)
-      , m_fileFormatViewModel(DetailContentState::FileFormat, this)
+      , m_insertViewModel(DetailContentState::Insert, this)
       , m_fileHistoryViewModel(DetailContentState::FileHistory, this)
-      , m_appearanceViewModel(DetailContentState::Appearance, this)
+      , m_layerViewModel(DetailContentState::Layer, this)
       , m_helpViewModel(DetailContentState::Help, this)
 {
     applyActiveContentViewModel(m_activeState);
@@ -37,11 +37,6 @@ QString DetailPanelViewModel::activeStateName() const
     return WhatSon::DetailPanel::stateName(m_activeState);
 }
 
-QObject* DetailPanelViewModel::appearanceViewModel() const noexcept
-{
-    return const_cast<DetailContentSectionViewModel*>(&m_appearanceViewModel);
-}
-
 QObject* DetailPanelViewModel::contentViewModelForState(int stateValue) const noexcept
 {
     if (!WhatSon::DetailPanel::isValidStateValue(stateValue))
@@ -51,16 +46,16 @@ QObject* DetailPanelViewModel::contentViewModelForState(int stateValue) const no
 
     switch (WhatSon::DetailPanel::stateFromValue(stateValue))
     {
-    case DetailContentState::FileInfo:
-        return const_cast<DetailContentSectionViewModel*>(&m_fileInfoViewModel);
+    case DetailContentState::Properties:
+        return const_cast<DetailContentSectionViewModel*>(&m_propertiesViewModel);
     case DetailContentState::FileStat:
         return const_cast<DetailContentSectionViewModel*>(&m_fileStatViewModel);
-    case DetailContentState::FileFormat:
-        return const_cast<DetailContentSectionViewModel*>(&m_fileFormatViewModel);
+    case DetailContentState::Insert:
+        return const_cast<DetailContentSectionViewModel*>(&m_insertViewModel);
     case DetailContentState::FileHistory:
         return const_cast<DetailContentSectionViewModel*>(&m_fileHistoryViewModel);
-    case DetailContentState::Appearance:
-        return const_cast<DetailContentSectionViewModel*>(&m_appearanceViewModel);
+    case DetailContentState::Layer:
+        return const_cast<DetailContentSectionViewModel*>(&m_layerViewModel);
     case DetailContentState::Help:
         return const_cast<DetailContentSectionViewModel*>(&m_helpViewModel);
     }
@@ -68,9 +63,9 @@ QObject* DetailPanelViewModel::contentViewModelForState(int stateValue) const no
     return nullptr;
 }
 
-QObject* DetailPanelViewModel::fileFormatViewModel() const noexcept
+QObject* DetailPanelViewModel::insertViewModel() const noexcept
 {
-    return const_cast<DetailContentSectionViewModel*>(&m_fileFormatViewModel);
+    return const_cast<DetailContentSectionViewModel*>(&m_insertViewModel);
 }
 
 QObject* DetailPanelViewModel::fileHistoryViewModel() const noexcept
@@ -78,9 +73,9 @@ QObject* DetailPanelViewModel::fileHistoryViewModel() const noexcept
     return const_cast<DetailContentSectionViewModel*>(&m_fileHistoryViewModel);
 }
 
-QObject* DetailPanelViewModel::fileInfoViewModel() const noexcept
+QObject* DetailPanelViewModel::layerViewModel() const noexcept
 {
-    return const_cast<DetailContentSectionViewModel*>(&m_fileInfoViewModel);
+    return const_cast<DetailContentSectionViewModel*>(&m_layerViewModel);
 }
 
 QObject* DetailPanelViewModel::fileStatViewModel() const noexcept
@@ -91,6 +86,11 @@ QObject* DetailPanelViewModel::fileStatViewModel() const noexcept
 QObject* DetailPanelViewModel::helpViewModel() const noexcept
 {
     return const_cast<DetailContentSectionViewModel*>(&m_helpViewModel);
+}
+
+QObject* DetailPanelViewModel::propertiesViewModel() const noexcept
+{
+    return const_cast<DetailContentSectionViewModel*>(&m_propertiesViewModel);
 }
 
 QVariantList DetailPanelViewModel::toolbarItems() const
@@ -156,11 +156,11 @@ void DetailPanelViewModel::requestStateChange(int stateValue)
 
 void DetailPanelViewModel::applyActiveContentViewModel(DetailContentState activeState)
 {
-    m_fileInfoViewModel.setActive(activeState == DetailContentState::FileInfo);
+    m_propertiesViewModel.setActive(activeState == DetailContentState::Properties);
     m_fileStatViewModel.setActive(activeState == DetailContentState::FileStat);
-    m_fileFormatViewModel.setActive(activeState == DetailContentState::FileFormat);
+    m_insertViewModel.setActive(activeState == DetailContentState::Insert);
     m_fileHistoryViewModel.setActive(activeState == DetailContentState::FileHistory);
-    m_appearanceViewModel.setActive(activeState == DetailContentState::Appearance);
+    m_layerViewModel.setActive(activeState == DetailContentState::Layer);
     m_helpViewModel.setActive(activeState == DetailContentState::Help);
     m_activeContentViewModel = contentViewModelForState(WhatSon::DetailPanel::stateValue(activeState));
 }

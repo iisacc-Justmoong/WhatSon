@@ -44,6 +44,6 @@ public
     void viewModelHookRequested();
 
 private:
-    DetailContentState m_state = DetailContentState::FileInfo;
+    DetailContentState m_state = DetailContentState::Properties;
     bool m_active = false;
 };

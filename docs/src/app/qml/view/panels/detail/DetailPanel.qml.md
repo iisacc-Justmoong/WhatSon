@@ -1,39 +1,32 @@
 # `src/app/qml/view/panels/detail/DetailPanel.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`DetailPanel.qml` binds the C++ `detailPanelViewModel` from the LVRS registry, resolves the active state/content contract, and composes the centered header toolbar plus the active detail form surface.
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/detail/DetailPanel.qml`
-- Source kind: QML view/component
-- File name: `DetailPanel.qml`
-- Approximate line count: 68
+## Key Contracts
+- View-model lookup: `LV.ViewModels.get("detailPanelViewModel")`
+- Active content contract: `resolvedActiveContentViewModel`
+- Active state contract: `resolvedActiveStateName`
+- Toolbar contract: `resolvedToolbarItems`
 
-## QML Surface Snapshot
-- Root type: `Item`
+## Figma Mapping
+- Toolbar frame width: `145`
+- Toolbar frame height: `20`
+- Gap between toolbar and contents: `10`
+- The toolbar remains horizontally centered regardless of panel width.
 
-### Object IDs
-- `detailPanel`
+## Toolbar Metadata
+The file keeps a Figma-scoped toolbar spec and uses its icon names as the canonical source even when C++ toolbar items are present.
+This prevents stale backend icon strings from drifting away from the current design metadata.
 
-### Required Properties
-- None detected during scaffold generation.
+Current metadata mapping:
+- `155:4576` -> `Properties` -> `config`
+- `155:4577` -> `FileStat` -> `chartBar`
+- `155:4578` -> `Insert` -> `generaladd`
+- `155:4579` -> `Layer` -> `toolwindowdependencies`
+- `155:4580` -> `FileHistory` -> `toolWindowClock`
+- `155:4581` -> `Help` -> `featureAnswer`
 
-### Signals
-- `viewHookRequested`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Behavior
+- Toolbar clicks forward to `detailPanelViewModel.requestStateChange(stateValue)`.
+- The contents area always receives both the resolved state name and the resolved active content view-model.
