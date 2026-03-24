@@ -757,9 +757,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             mainQmlText.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel")),
         "Main.qml must forward sidebarHierarchyViewModel to BodyLayout through a distinct root alias.");
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("readonly property var rootLibraryHierarchyViewModel: libraryHierarchyViewModel")) &&
-            mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.rootLibraryHierarchyViewModel")),
-        "Main.qml must inject the centralized library delete-note command source into BodyLayout through a distinct root alias.");
+        mainQmlText.contains(QStringLiteral("readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel")) &&
+            mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel")),
+        "Main.qml must inject the dedicated library note-mutation view-model into BodyLayout through a distinct root alias.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("MainWindowInteractionController {")),
         "Main.qml must delegate root interaction policy to a dedicated MainWindowInteractionController.");
@@ -2121,7 +2121,7 @@ void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized
     QVERIFY2(mainQmlFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mainQmlPath));
     const QString mainQmlText = QString::fromUtf8(mainQmlFile.readAll());
     QVERIFY2(
-        mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.rootLibraryHierarchyViewModel")),
+        mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel")),
         "Main.qml must inject the centralized library delete-note command source into BodyLayout.");
 
     const QString bodyLayoutPath = QDir(qmlRoot).absoluteFilePath(

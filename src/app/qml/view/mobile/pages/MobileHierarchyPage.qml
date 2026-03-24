@@ -36,9 +36,13 @@ Item {
     property int preservedNoteListSelectionIndex: -1
     property bool routeSelectionSyncSuppressed: false
     readonly property var libraryNoteCreationViewModel: mobileHierarchyPage.windowInteractions
-        && mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel !== undefined
-        ? mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel
-        : null
+        && mobileHierarchyPage.windowInteractions.libraryNoteMutationViewModel !== undefined
+        && mobileHierarchyPage.windowInteractions.libraryNoteMutationViewModel !== null
+        ? mobileHierarchyPage.windowInteractions.libraryNoteMutationViewModel
+        : (mobileHierarchyPage.windowInteractions
+               && mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel !== undefined
+               ? mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel
+               : null)
     readonly property var mobileBodyRoutes: [
         {
             "path": mobileHierarchyPage.hierarchyRoutePath,

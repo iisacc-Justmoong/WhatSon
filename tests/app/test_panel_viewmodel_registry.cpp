@@ -84,7 +84,7 @@ namespace
             },
             {"view/panels/navigation/edit/NavigationApplicationEditBar.qml", "navigation.NavigationApplicationEditBar"},
             {"view/panels/navigation/view/NavigationApplicationViewBar.qml", "navigation.NavigationApplicationViewBar"},
-            {"view/panels/navigation/control/NavigationCalendarBar.qml", "navigation.NavigationCalendarBar"},
+            {"view/panels/navigation/NavigationCalendarBar.qml", "navigation.NavigationCalendarBar"},
             {"view/panels/navigation/NavigationEditorViewBar.qml", "navigation.NavigationEditorViewBar"},
             {"view/panels/navigation/control/NavigationExportBar.qml", "navigation.NavigationExportBar"},
             {"view/panels/navigation/NavigationInformationBar.qml", "navigation.NavigationInformationBar"},

@@ -20,10 +20,15 @@ class MainShortcutTests(unittest.TestCase):
         self.assertIn("readonly property var rootPanelViewModelRegistry: panelViewModelRegistry", main_qml_text)
         self.assertIn("panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry", main_qml_text)
         self.assertIn("property var panelViewModelRegistry: null", controller_text)
+        self.assertIn("property var libraryNoteMutationViewModel: null", controller_text)
+        self.assertIn(
+            "readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel",
+            main_qml_text,
+        )
         self.assertIn('panelViewModelRegistry.panelViewModel("navigation.NavigationAddNewBar")', controller_text)
         self.assertIn('addNewPanelViewModel.requestViewModelHook("create-note");', controller_text)
         self.assertIn("setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);", controller_text)
-        self.assertIn("return Boolean(interactionController.libraryHierarchyViewModel.createEmptyNote());", controller_text)
+        self.assertIn("return Boolean(noteMutationViewModel.createEmptyNote());", controller_text)
         self.assertIn("global platform-native New shortcut", readme_text)
         self.assertIn("existing `create-note` hook path used by the navigation add surfaces", readme_text)
         self.assertIn("Main.qml` binds the platform-native New shortcut", architecture_text)

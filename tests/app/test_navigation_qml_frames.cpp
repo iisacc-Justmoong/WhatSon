@@ -105,19 +105,22 @@ void NavigationQmlFramesTest::mainQml_mustBindNewShortcutForNoteCreation()
     QVERIFY(mainQml.contains(QStringLiteral("readonly property int libraryHierarchyIndex: 0")));
     QVERIFY(interactionController.contains(QStringLiteral("property int libraryHierarchyIndex: 0")));
     QVERIFY(interactionController.contains(QStringLiteral("property var libraryHierarchyViewModel: null")));
+    QVERIFY(interactionController.contains(QStringLiteral("property var libraryNoteMutationViewModel: null")));
     QVERIFY(interactionController.contains(QStringLiteral("property var sidebarHierarchyViewModel: null")));
     QVERIFY(interactionController.contains(QStringLiteral("function createNoteFromShortcut()")));
     QVERIFY(interactionController.contains(QStringLiteral(
         "interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);")));
     QVERIFY(interactionController.contains(QStringLiteral(
-        "interactionController.libraryHierarchyViewModel.createEmptyNote()")));
+        "noteMutationViewModel.createEmptyNote()")));
     QVERIFY(mainQml.contains(QStringLiteral("sequence: StandardKey.New")));
     QVERIFY(mainQml.contains(QStringLiteral("context: Qt.ApplicationShortcut")));
     QVERIFY(mainQml.contains(QStringLiteral("onActivated: windowInteractions.createNoteFromShortcut()")));
     QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex")));
     QVERIFY(mainQml.contains(QStringLiteral("readonly property var rootLibraryHierarchyViewModel: libraryHierarchyViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral("readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel")));
     QVERIFY(mainQml.contains(QStringLiteral("readonly property var rootSidebarHierarchyViewModel: sidebarHierarchyViewModel")));
     QVERIFY(mainQml.contains(QStringLiteral("libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral("libraryNoteMutationViewModel: applicationWindow.rootLibraryNoteMutationViewModel")));
     QVERIFY(mainQml.contains(QStringLiteral("sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel")));
 }
 

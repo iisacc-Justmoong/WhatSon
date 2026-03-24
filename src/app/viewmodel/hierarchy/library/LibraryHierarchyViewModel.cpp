@@ -5,10 +5,13 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonHubNoteCreationService.hpp"
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
+#include "file/note/WhatSonHubNoteFolderClearService.hpp"
 #include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
@@ -2695,36 +2698,6 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     const QString sourceWshubPath = !m_libraryAll.sourceWshubPath().trimmed().isEmpty()
                                         ? m_libraryAll.sourceWshubPath().trimmed()
                                         : m_hubStore.hubPath().trimmed();
-    QString libraryPath = WhatSon::Hierarchy::LibrarySupport::normalizePath(m_hubStore.libraryPath());
-    QString resolveError;
-    if (libraryPath.isEmpty() || !QFileInfo(libraryPath).isDir())
-    {
-        libraryPath = resolvePrimaryLibraryPathFromWshub(sourceWshubPath, &resolveError);
-    }
-
-    if (libraryPath.isEmpty())
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=resolveLibrary path=%1 error=%2").arg(
-                                      sourceWshubPath, resolveError));
-        return false;
-    }
-
-    const QString noteId = createUniqueNoteId(libraryPath, m_libraryAll.notes());
-    if (noteId.isEmpty())
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=generateId library=%1").arg(libraryPath));
-        return false;
-    }
-
-    const QString profileName = m_hubStore.stat().participants().isEmpty()
-                                    ? QString()
-                                    : m_hubStore.stat().participants().constFirst().trimmed();
     QStringList assignedFolders;
     if (m_foldersHierarchyLoaded
         && m_selectedIndex >= 0
@@ -2738,312 +2711,58 @@ bool LibraryHierarchyViewModel::createEmptyNote()
         }
     }
 
-    WhatSonNoteHeaderCreator headerCreator(libraryPath, QString());
-    WhatSonNoteAttachManagerCreator attachCreator(libraryPath, QString());
-    WhatSonNoteLinkManagerCreator linkCreator(libraryPath, QString());
+    WhatSonHubNoteCreationService creationService;
+    WhatSonHubNoteCreationService::Request request;
+    request.wshubPath = sourceWshubPath;
+    request.libraryPath = m_hubStore.libraryPath();
+    request.statPath = m_hubStore.statPath();
+    request.hubName = m_hubStore.hubName();
+    request.hubStat = m_hubStore.stat();
+    request.notes = m_libraryAll.notes();
+    request.authorProfileName = m_hubStore.stat().participants().isEmpty()
+                                    ? QString()
+                                    : m_hubStore.stat().participants().constFirst().trimmed();
+    request.assignedFolders = assignedFolders;
 
-    const QString headerPath = headerCreator.targetPathForNote(noteId);
-    const QString attachmentManifestPath = attachCreator.targetPathForNote(noteId);
-    const QString linksPath = linkCreator.targetPathForNote(noteId);
-    const QString noteDirectoryPath = QFileInfo(headerPath).absolutePath();
-
-    if (QFileInfo(noteDirectoryPath).exists())
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=noteDirectoryExists path=%1").arg(noteDirectoryPath));
-        return false;
-    }
-
+    WhatSonHubNoteCreationService::Result result;
     QString createError;
-    if (!ensureDirectoryPath(noteDirectoryPath, &createError))
+    if (!creationService.createNote(std::move(request), &result, &createError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=createNoteDirectory path=%1 error=%2").arg(
-                                      noteDirectoryPath, createError));
+                                  QStringLiteral("path=%1 error=%2").arg(sourceWshubPath, createError));
         return false;
     }
 
-    auto rollbackNoteDirectory = [&noteDirectoryPath]()
-    {
-        if (QFileInfo(noteDirectoryPath).exists())
-        {
-            removeDirectoryPath(noteDirectoryPath, nullptr);
-        }
-    };
-
-    for (const QString& relativePath : headerCreator.requiredRelativePaths())
-    {
-        if (!ensureDirectoryPath(QDir(noteDirectoryPath).filePath(relativePath), &createError))
-        {
-            rollbackNoteDirectory();
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("createEmptyNote.failed"),
-                                      QStringLiteral("reason=createHeaderSupportDirectory path=%1 error=%2").arg(
-                                          relativePath, createError));
-            return false;
-        }
-    }
-    for (const QString& relativePath : attachCreator.requiredRelativePaths())
-    {
-        if (!ensureDirectoryPath(QDir(noteDirectoryPath).filePath(relativePath), &createError))
-        {
-            rollbackNoteDirectory();
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("createEmptyNote.failed"),
-                                      QStringLiteral("reason=createAttachmentDirectory path=%1 error=%2").arg(
-                                          relativePath, createError));
-            return false;
-        }
-    }
-
-    const QString createdTimestamp = currentNoteTimestamp();
-    WhatSonNoteHeaderStore headerStore;
-    headerStore.setNoteId(noteId);
-    headerStore.setCreatedAt(createdTimestamp);
-    headerStore.setAuthor(profileName);
-    headerStore.setLastModifiedAt(createdTimestamp);
-    headerStore.setModifiedBy(profileName);
-    headerStore.setFolders(assignedFolders);
-    headerStore.setProject(QString());
-    headerStore.setBookmarked(false);
-    headerStore.setBookmarkColors({});
-    headerStore.setTags({});
-    headerStore.setProgress(0);
-    headerStore.setPreset(false);
-
-    if (!writeUtf8File(attachmentManifestPath, createAttachmentManifestText(noteId), &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=writeAttachmentManifest path=%1 error=%2").arg(
-                                      attachmentManifestPath, createError));
-        return false;
-    }
-    if (!writeUtf8File(
-        linksPath,
-        createLinkManifestText(noteId, QStringLiteral("whatson.note.links")),
-        &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                      QStringLiteral("reason=writeLinks path=%1 error=%2").arg(
-                                          linksPath, createError));
-        return false;
-    }
-
-    WhatSonLocalNoteFileStore localNoteFileStore;
-    WhatSonLocalNoteFileStore::CreateRequest createRequest;
-    createRequest.noteId = noteId;
-    createRequest.noteDirectoryPath = noteDirectoryPath;
-    createRequest.headerStore = headerStore;
-    createRequest.bodyPlainText = QString();
-
-    WhatSonLocalNoteDocument createdNoteDocument;
-    if (!localNoteFileStore.createNote(std::move(createRequest), &createdNoteDocument, &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=createLocalNote path=%1 error=%2").arg(noteDirectoryPath, createError));
-        return false;
-    }
-
-    const QString normalizedBodyText = createdNoteDocument.bodyPlainText;
-    const QString lastModifiedAt = createdNoteDocument.headerStore.lastModifiedAt();
-
-    QVector<LibraryNoteRecord> nextAllNotes = m_libraryAll.notes();
-    LibraryNoteRecord newNote;
-    newNote.noteId = noteId;
-    newNote.storageKind = QStringLiteral("wsnote");
-    newNote.createdAt = createdTimestamp;
-    newNote.lastModifiedAt = lastModifiedAt.isEmpty() ? createdTimestamp : lastModifiedAt;
-    newNote.author = profileName;
-    newNote.modifiedBy = profileName;
-    newNote.folders = assignedFolders;
-    newNote.progress = 0;
-    newNote.bookmarked = false;
-    newNote.preset = false;
-    newNote.bodyPlainText = normalizedBodyText;
-    newNote.noteDirectoryPath = noteDirectoryPath;
-    newNote.noteHeaderPath = headerPath;
-    nextAllNotes.push_back(newNote);
-
-    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
-    QString previousIndexText;
-    const bool hadIndexFile = QFileInfo(indexPath).isFile();
-    if (hadIndexFile
-        && !WhatSon::Hierarchy::LibrarySupport::readUtf8File(indexPath, &previousIndexText, &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=readIndex path=%1 error=%2").arg(indexPath, createError));
-        return false;
-    }
-
-    WhatSonLibraryHierarchyStore libraryStore;
-    libraryStore.setHubPath(sourceWshubPath);
-    libraryStore.setNoteIds(noteIdsFromRecords(nextAllNotes));
-
-    WhatSonLibraryHierarchyCreator libraryCreator;
-    if (!writeUtf8File(indexPath, libraryCreator.createText(libraryStore), &createError))
-    {
-        rollbackNoteDirectory();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("createEmptyNote.failed"),
-                                  QStringLiteral("reason=writeIndex path=%1 error=%2").arg(indexPath, createError));
-        return false;
-    }
-
-    const QString statPath = !m_hubStore.statPath().trimmed().isEmpty()
-                                 ? WhatSon::Hierarchy::LibrarySupport::normalizePath(m_hubStore.statPath())
-                                 : resolveHubStatPathFromWshub(sourceWshubPath);
-    const QString nowUtc = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
-    QString statCreatedAtUtc = m_hubStore.stat().createdAtUtc().trimmed();
-    if (!statPath.isEmpty())
-    {
-        QJsonObject statRoot;
-        if (QFileInfo(statPath).isFile())
-        {
-            QString rawStatText;
-            if (!WhatSon::Hierarchy::LibrarySupport::readUtf8File(statPath, &rawStatText, &createError))
-            {
-                if (hadIndexFile)
-                {
-                    writeUtf8File(indexPath, previousIndexText, nullptr);
-                }
-                else
-                {
-                    removeFilePath(indexPath, nullptr);
-                }
-                rollbackNoteDirectory();
-                WhatSon::Debug::traceSelf(this,
-                                          QStringLiteral("library.viewmodel"),
-                                          QStringLiteral("createEmptyNote.failed"),
-                                          QStringLiteral("reason=readStat path=%1 error=%2").arg(
-                                              statPath, createError));
-                return false;
-            }
-
-            QJsonParseError statParseError;
-            const QJsonDocument statDocument = QJsonDocument::fromJson(rawStatText.toUtf8(), &statParseError);
-            if (statParseError.error == QJsonParseError::NoError && statDocument.isObject())
-            {
-                statRoot = statDocument.object();
-            }
-        }
-
-        if (statCreatedAtUtc.isEmpty())
-        {
-            statCreatedAtUtc = statRoot.value(QStringLiteral("createdAtUtc")).toString().trimmed();
-        }
-        if (statCreatedAtUtc.isEmpty())
-        {
-            statCreatedAtUtc = nowUtc;
-        }
-
-        if (!statRoot.contains(QStringLiteral("version")))
-        {
-            statRoot.insert(QStringLiteral("version"), 1);
-        }
-        if (!statRoot.contains(QStringLiteral("schema")))
-        {
-            statRoot.insert(QStringLiteral("schema"), QStringLiteral("whatson.hub.stat"));
-        }
-        if (!statRoot.contains(QStringLiteral("hub")) && !m_hubStore.hubName().trimmed().isEmpty())
-        {
-            statRoot.insert(QStringLiteral("hub"), m_hubStore.hubName().trimmed());
-        }
-        if (!statRoot.contains(QStringLiteral("participants")))
-        {
-            QJsonArray participants;
-            for (const QString& participant : m_hubStore.stat().participants())
-            {
-                participants.push_back(participant);
-            }
-            statRoot.insert(QStringLiteral("participants"), participants);
-        }
-        if (!statRoot.contains(QStringLiteral("profileLastModifiedAtUtc")))
-        {
-            statRoot.insert(
-                QStringLiteral("profileLastModifiedAtUtc"),
-                QJsonObject::fromVariantMap(m_hubStore.stat().profileLastModifiedAtUtc()));
-        }
-
-        statRoot.insert(QStringLiteral("noteCount"), nextAllNotes.size());
-        statRoot.insert(QStringLiteral("resourceCount"), m_hubStore.stat().resourceCount());
-        statRoot.insert(QStringLiteral("characterCount"), m_hubStore.stat().characterCount());
-        statRoot.insert(QStringLiteral("createdAtUtc"), statCreatedAtUtc);
-        statRoot.insert(QStringLiteral("lastModifiedAtUtc"), nowUtc);
-
-        if (!writeUtf8File(
-            statPath,
-            QString::fromUtf8(QJsonDocument(statRoot).toJson(QJsonDocument::Indented)),
-            &createError))
-        {
-            if (hadIndexFile)
-            {
-                writeUtf8File(indexPath, previousIndexText, nullptr);
-            }
-            else
-            {
-                removeFilePath(indexPath, nullptr);
-            }
-            rollbackNoteDirectory();
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("createEmptyNote.failed"),
-                                      QStringLiteral("reason=writeStat path=%1 error=%2").arg(
-                                          statPath, createError));
-            return false;
-        }
-    }
-
-    m_libraryAll.setIndexedNotes(sourceWshubPath, std::move(nextAllNotes));
+    const QString effectiveWshubPath = !result.wshubPath.isEmpty() ? result.wshubPath : sourceWshubPath;
+    m_libraryAll.setIndexedNotes(effectiveWshubPath, std::move(result.notes));
     m_libraryDraft.rebuild(m_libraryAll.notes());
     m_libraryToday.rebuild(m_libraryAll.notes());
 
-    m_hubStore.setHubPath(sourceWshubPath);
-    m_hubStore.setLibraryPath(libraryPath);
-    if (!statPath.isEmpty())
+    if (!effectiveWshubPath.isEmpty())
     {
-        m_hubStore.setStatPath(statPath);
+        m_hubStore.setHubPath(effectiveWshubPath);
     }
-    if (!m_hubStore.hubPath().isEmpty())
+    if (!result.libraryPath.isEmpty())
     {
-        WhatSonHubStat updatedStat = m_hubStore.stat();
-        updatedStat.setNoteCount(m_libraryAll.notes().size());
-        updatedStat.setResourceCount(updatedStat.resourceCount());
-        updatedStat.setCharacterCount(updatedStat.characterCount());
-        if (updatedStat.createdAtUtc().trimmed().isEmpty())
-        {
-            updatedStat.setCreatedAtUtc(statCreatedAtUtc.isEmpty() ? nowUtc : statCreatedAtUtc);
-        }
-        updatedStat.setLastModifiedAtUtc(nowUtc);
-        m_hubStore.setStat(std::move(updatedStat));
+        m_hubStore.setLibraryPath(result.libraryPath);
     }
+    if (!result.statPath.isEmpty())
+    {
+        m_hubStore.setStatPath(result.statPath);
+    }
+    m_hubStore.setStat(result.hubStat);
 
     refreshNoteListForSelection();
 
-    auto createdNoteIndexForCurrentItems = [this, &noteId]() -> int
+    const QString createdNoteId = result.noteId.trimmed();
+    auto createdNoteIndexForCurrentItems = [this, &createdNoteId]() -> int
     {
         const QVector<LibraryNoteListItem>& noteItems = m_noteListModel.items();
         for (int index = 0; index < noteItems.size(); ++index)
         {
-            if (noteItems.at(index).id.trimmed() == noteId)
+            if (noteItems.at(index).id.trimmed() == createdNoteId)
             {
                 return index;
             }
@@ -3061,17 +2780,17 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     {
         m_noteListModel.setCurrentIndex(createdNoteIndex);
     }
-    emit emptyNoteCreated(noteId);
+    emit emptyNoteCreated(createdNoteId);
     emit hubFilesystemMutated();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("createEmptyNote.success"),
                               QStringLiteral("id=%1 folderCount=%2 noteCount=%3 path=%4")
-                              .arg(noteId)
+                              .arg(createdNoteId)
                               .arg(assignedFolders.size())
                               .arg(m_libraryAll.notes().size())
-                              .arg(noteDirectoryPath));
+                              .arg(result.libraryPath));
     return true;
 }
 
@@ -3159,89 +2878,37 @@ bool LibraryHierarchyViewModel::clearNoteFoldersById(const QString& noteId)
         return false;
     }
 
-    QVector<LibraryNoteRecord> allNotes = m_libraryAll.notes();
-    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
-    if (noteIndex < 0)
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("clearNoteFoldersById.rejected"),
-                                  QStringLiteral("noteId=%1 reason=noteNotFound").arg(normalizedNoteId));
-        return false;
-    }
+    WhatSonHubNoteFolderClearService clearService;
+    WhatSonHubNoteFolderClearService::Request request;
+    request.noteId = normalizedNoteId;
+    request.notes = m_libraryAll.notes();
 
-    LibraryNoteRecord& note = allNotes[noteIndex];
-    const QString headerPath = resolveNoteHeaderPath(note);
-    if (headerPath.isEmpty())
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("clearNoteFoldersById.rejected"),
-                                  QStringLiteral("noteId=%1 reason=missingNoteHeader").arg(normalizedNoteId));
-        return false;
-    }
-
-    WhatSonLocalNoteFileStore localNoteFileStore;
-    WhatSonLocalNoteFileStore::ReadRequest readRequest;
-    readRequest.noteId = note.noteId;
-    readRequest.noteDirectoryPath = note.noteDirectoryPath;
-    readRequest.noteHeaderPath = headerPath;
-
-    WhatSonLocalNoteDocument noteDocument;
-    QString ioError;
-    if (!localNoteFileStore.readNote(std::move(readRequest), &noteDocument, &ioError))
+    WhatSonHubNoteFolderClearService::Result result;
+    QString clearError;
+    if (!clearService.clearFolders(std::move(request), &result, &clearError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
                                   QStringLiteral("clearNoteFoldersById.failed"),
-                                  QStringLiteral("reason=readLocalNote path=%1 error=%2").arg(headerPath, ioError));
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, clearError));
         return false;
     }
 
-    if (noteDocument.headerStore.folders().isEmpty())
-    {
-        syncNoteRecordFromDocument(&note, noteDocument);
-        m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
-        m_libraryDraft.rebuild(m_libraryAll.notes());
-        m_libraryToday.rebuild(m_libraryAll.notes());
-        refreshNoteListForSelection();
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("clearNoteFoldersById.noopAlreadyClear"),
-                                  QStringLiteral("noteId=%1").arg(normalizedNoteId));
-        return true;
-    }
-
-    noteDocument.headerStore.setFolders({});
-    noteDocument.headerStore.setLastModifiedAt(currentNoteTimestamp());
-
-    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-    updateRequest.document = noteDocument;
-    updateRequest.persistHeader = true;
-    updateRequest.persistBody = false;
-
-    QString writeError;
-    if (!localNoteFileStore.updateNote(std::move(updateRequest), &noteDocument, &writeError))
-    {
-        WhatSon::Debug::traceSelf(this,
-                                  QStringLiteral("library.viewmodel"),
-                                  QStringLiteral("clearNoteFoldersById.failed"),
-                                  QStringLiteral("reason=writeHeader path=%1 error=%2").arg(headerPath, writeError));
-        return false;
-    }
-
-    syncNoteRecordFromDocument(&note, noteDocument);
-
-    m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(allNotes));
+    m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(result.notes));
     m_libraryDraft.rebuild(m_libraryAll.notes());
     m_libraryToday.rebuild(m_libraryAll.notes());
     refreshNoteListForSelection();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
-                              QStringLiteral("clearNoteFoldersById.success"),
+                              result.foldersCleared
+                                  ? QStringLiteral("clearNoteFoldersById.success")
+                                  : QStringLiteral("clearNoteFoldersById.noopAlreadyClear"),
                               QStringLiteral("noteId=%1").arg(normalizedNoteId));
-    emit hubFilesystemMutated();
+    if (result.foldersCleared)
+    {
+        emit hubFilesystemMutated();
+    }
     return true;
 }
 
@@ -3528,171 +3195,35 @@ bool LibraryHierarchyViewModel::commitFolderHierarchyUpdate(
     int selectedIndex,
     const QHash<QString, QString>& movedFolderPathMap)
 {
-    WhatSonFoldersHierarchyStore stagedStore;
-    stagedStore.setFolderEntries(folderEntriesFromItems(stagedItems));
+    const QVector<WhatSonFolderDepthEntry> currentFolderEntries = folderEntriesFromItems(m_items);
+    const QVector<WhatSonFolderDepthEntry> stagedFolderEntries = folderEntriesFromItems(stagedItems);
 
-    struct PendingNoteFolderRewrite final
+    WhatSonLibraryFolderHierarchyMutationService mutationService;
+    WhatSonLibraryFolderHierarchyMutationService::Request request;
+    request.foldersFilePath = m_foldersFilePath;
+    request.runtimeIndexLoaded = m_runtimeIndexLoaded;
+    request.currentFolderEntries = currentFolderEntries;
+    request.stagedFolderEntries = stagedFolderEntries;
+    request.notes = m_libraryAll.notes();
+    request.movedFolderPathMap = movedFolderPathMap;
+
+    WhatSonLibraryFolderHierarchyMutationService::Result result;
+    QString mutationError;
+    if (!mutationService.commitMutation(std::move(request), &result, &mutationError))
     {
-        int noteIndex = -1;
-        WhatSonLocalNoteDocument previousDocument;
-        WhatSonLocalNoteDocument nextDocument;
-    };
-
-    QVector<PendingNoteFolderRewrite> pendingNoteWrites;
-    QVector<LibraryNoteRecord> stagedAllNotes = m_libraryAll.notes();
-    WhatSonLocalNoteFileStore localNoteFileStore;
-
-    if (m_runtimeIndexLoaded && !movedFolderPathMap.isEmpty())
-    {
-        const FolderHierarchyLookup originalLookup = buildFolderHierarchyLookup(m_items);
-        const QString rewriteTimestamp = currentNoteTimestamp();
-
-        for (int noteIndex = 0; noteIndex < stagedAllNotes.size(); ++noteIndex)
-        {
-            const LibraryNoteRecord& note = stagedAllNotes.at(noteIndex);
-            const QStringList resolvedFolders = canonicalLeafFolderPaths(
-                resolvedNoteFolderPathKeys(note, originalLookup));
-            if (resolvedFolders.isEmpty())
-            {
-                continue;
-            }
-
-            QStringList remappedFolders;
-            remappedFolders.reserve(resolvedFolders.size());
-            QSet<QString> seenFolderKeys;
-            bool noteChanged = false;
-
-            for (const QString& resolvedFolder : resolvedFolders)
-            {
-                const QString remappedFolder = remapFolderPathForMove(resolvedFolder, movedFolderPathMap);
-                const QString remappedKey = normalizeFolderLookupKey(remappedFolder);
-                if (remappedKey.isEmpty() || seenFolderKeys.contains(remappedKey))
-                {
-                    continue;
-                }
-                seenFolderKeys.insert(remappedKey);
-                remappedFolders.push_back(remappedFolder);
-                if (normalizeFolderPath(resolvedFolder) != remappedFolder)
-                {
-                    noteChanged = true;
-                }
-            }
-
-            if (!noteChanged)
-            {
-                continue;
-            }
-
-            const QString headerPath = resolveNoteHeaderPath(note);
-            if (headerPath.isEmpty())
-            {
-                WhatSon::Debug::traceSelf(this,
-                                          QStringLiteral("library.viewmodel"),
-                                          QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                          QStringLiteral("reason=missingHeader noteId=%1").arg(note.noteId));
-                return false;
-            }
-
-            WhatSonLocalNoteFileStore::ReadRequest readRequest;
-            readRequest.noteId = note.noteId;
-            readRequest.noteDirectoryPath = note.noteDirectoryPath;
-            readRequest.noteHeaderPath = headerPath;
-
-            WhatSonLocalNoteDocument previousDocument;
-            QString readError;
-            if (!localNoteFileStore.readNote(std::move(readRequest), &previousDocument, &readError))
-            {
-                WhatSon::Debug::traceSelf(this,
-                                          QStringLiteral("library.viewmodel"),
-                                          QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                          QStringLiteral("reason=readLocalNote path=%1 error=%2").arg(
-                                              headerPath, readError));
-                return false;
-            }
-
-            WhatSonLocalNoteDocument nextDocument = previousDocument;
-            nextDocument.headerStore.setFolders(remappedFolders);
-            nextDocument.headerStore.setLastModifiedAt(rewriteTimestamp);
-
-            PendingNoteFolderRewrite rewrite;
-            rewrite.noteIndex = noteIndex;
-            rewrite.previousDocument = std::move(previousDocument);
-            rewrite.nextDocument = std::move(nextDocument);
-            pendingNoteWrites.push_back(std::move(rewrite));
-        }
-    }
-
-    auto rollbackNoteWrites = [&localNoteFileStore](const QVector<PendingNoteFolderRewrite>& writes)
-    {
-        for (int index = writes.size() - 1; index >= 0; --index)
-        {
-            const PendingNoteFolderRewrite& rewrite = writes.at(index);
-            WhatSonLocalNoteFileStore::UpdateRequest rollbackRequest;
-            rollbackRequest.document = rewrite.previousDocument;
-            rollbackRequest.persistHeader = true;
-            rollbackRequest.persistBody = false;
-            localNoteFileStore.updateNote(std::move(rollbackRequest), nullptr, nullptr);
-        }
-    };
-
-    QVector<PendingNoteFolderRewrite> appliedNoteWrites;
-    appliedNoteWrites.reserve(pendingNoteWrites.size());
-    for (const PendingNoteFolderRewrite& rewrite : pendingNoteWrites)
-    {
-        WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
-        updateRequest.document = rewrite.nextDocument;
-        updateRequest.persistHeader = true;
-        updateRequest.persistBody = false;
-
-        WhatSonLocalNoteDocument updatedDocument;
-        QString writeError;
-        if (!localNoteFileStore.updateNote(std::move(updateRequest), &updatedDocument, &writeError))
-        {
-            rollbackNoteWrites(appliedNoteWrites);
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                      QStringLiteral("reason=writeLocalNote path=%1 error=%2").arg(
-                                          rewrite.nextDocument.noteHeaderPath, writeError));
-            return false;
-        }
-
-        PendingNoteFolderRewrite appliedRewrite = rewrite;
-        appliedRewrite.nextDocument = std::move(updatedDocument);
-        appliedNoteWrites.push_back(std::move(appliedRewrite));
-    }
-
-    if (!m_foldersFilePath.trimmed().isEmpty())
-    {
-        QString writeError;
-        if (!stagedStore.writeToFile(m_foldersFilePath, &writeError))
-        {
-            rollbackNoteWrites(appliedNoteWrites);
-            WhatSon::Debug::traceSelf(this,
-                                      QStringLiteral("library.viewmodel"),
-                                      QStringLiteral("commitFolderHierarchyUpdate.failed"),
-                                      QStringLiteral("reason=writeFolders path=%1 error=%2").arg(
-                                          m_foldersFilePath, writeError));
-            return false;
-        }
-    }
-
-    for (const PendingNoteFolderRewrite& rewrite : appliedNoteWrites)
-    {
-        LibraryNoteRecord& note = stagedAllNotes[rewrite.noteIndex];
-        const LibraryNoteRecord updatedRecord = rewrite.nextDocument.toLibraryNoteRecord();
-        note.folders = updatedRecord.folders;
-        note.lastModifiedAt = updatedRecord.lastModifiedAt;
-        note.noteHeaderPath = updatedRecord.noteHeaderPath;
-        note.noteDirectoryPath = updatedRecord.noteDirectoryPath;
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("commitFolderHierarchyUpdate.failed"),
+                                  QStringLiteral("error=%1").arg(mutationError));
+        return false;
     }
 
     m_items = std::move(stagedItems);
-    m_foldersHierarchyLoaded = !folderEntriesFromItems(m_items).isEmpty();
+    m_foldersHierarchyLoaded = !stagedFolderEntries.isEmpty();
 
     if (m_runtimeIndexLoaded)
     {
-        m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(stagedAllNotes));
+        m_libraryAll.setIndexedNotes(m_libraryAll.sourceWshubPath(), std::move(result.notes));
         m_libraryDraft.rebuild(m_libraryAll.notes());
         m_libraryToday.rebuild(m_libraryAll.notes());
     }

@@ -427,7 +427,7 @@ Domain-isolated support:
               item-icon contract `generalshow`, `renameColumn`, `abstractClass`, and its trailing shortcut column stays
               hidden because each entry keeps `keyVisible: false`.
             - `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileHierarchyPage.qml` all forward
-              the same `create-note` view hook into `LibraryHierarchyViewModel::createEmptyNote()`.
+              the same `create-note` view hook into `LibraryNoteMutationViewModel::createEmptyNote()`.
             - `Main.qml` binds the platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) to that same
               `create-note` hook path instead of duplicating note-creation policy in a second shortcut-only code path.
             - `StatusBarLayout.qml` compact mode is now the node `174:4995` mobile bottom bar: it resolves to a `20px`
@@ -725,7 +725,9 @@ Library-specific modeling:
   assignments instead of being treated as a user folder.
 - Accent depth-0 library headers are treated as protected structural roots for rename/delete/move targets even when
   they are not runtime-injected system buckets.
-- `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note scaffold inside the active `.wslibrary` using a
+- `LibraryNoteMutationViewModel::createEmptyNote()` is the QML-facing create-note surface, while
+  `LibraryHierarchyViewModel::createEmptyNote()` now acts as a thin orchestration wrapper around
+  `WhatSonHubNoteCreationService`. The service creates a blank note scaffold inside the active `.wslibrary` using a
   mixed-case alphanumeric `16-16` note ID, persists `.wsnhead`, `.wsnbody`, an empty `.wsnhistory`, an empty
   `.wsnversion`, a single `links.wsnlink` manifest, and attachment metadata through the existing note creator stack,
   then rewrites `index.wsnindex` plus hub stat metadata before focusing the new note in the current folder scope.
@@ -741,10 +743,11 @@ Library-specific modeling:
   / `Draft` / `Today` buckets from the returned note set, restores visible neighbor selection, and emits
   `noteDeleted(noteId)` so bookmark-only projections can drop the same note without owning file-system deletion
   themselves.
-- `LibraryHierarchyViewModel::clearNoteFoldersById()` now owns the inverse non-destructive header mutation for
-  note-card context actions: it resolves the materialized `.wsnhead`, clears every concrete `<folder>` entry from the
-  persisted header, rebuilds the indexed `All Library` / `Draft` / `Today` projections, refreshes the active note-list
-  filter, and emits `hubFilesystemMutated()` only when the header actually needs rewriting.
+- `LibraryNoteMutationViewModel::clearNoteFoldersById()` is the QML-facing non-destructive folder-clear contract, and
+  `LibraryHierarchyViewModel::clearNoteFoldersById()` now delegates the file mutation to
+  `WhatSonHubNoteFolderClearService`. The resulting header rewrite still clears every concrete `<folder>` entry from
+  the persisted `.wsnhead`, rebuilds the indexed `All Library` / `Draft` / `Today` projections, refreshes the active
+  note-list filter, and emits `hubFilesystemMutated()` only when the header actually needs rewriting.
 - `LibraryHierarchyViewModel` no longer writes note headers/bodies through ad-hoc file helpers for note CRUD. It now
   delegates local note creation and header/body/history/version persistence to `WhatSonLocalNoteFileStore`, including
   folder-drop assignment and folder hierarchy move/rename header rewrites, keeping note file ownership inside one CRUD
@@ -1040,8 +1043,8 @@ Hierarchy rendering pipeline:
 - Library note-list context actions: `ListBarLayout.qml` now mounts an LVRS `ContextMenu` that opens from a desktop
   right-click on a note card without forcing a committed note-selection change first. The shared menu currently exposes
   `Delete note`, routed through `FocusedNoteDeletionBridge`, and `Clear all folders`, routed through
-  `LibraryHierarchyViewModel::clearNoteFoldersById(...)`, so note-level destructive and non-destructive actions share
-  one explicit menu contract.
+  `LibraryNoteMutationViewModel::clearNoteFoldersById(...)`, so note-level destructive and non-destructive actions
+  share one explicit mutation-focused menu contract instead of reaching back into the hierarchy read model.
 - Library folder move persistence: `LibraryHierarchyViewModel::applyHierarchyNodes(...)` still owns canonical
   `Folders.wsfolders` rewrites plus note-header `<folders>` normalization when LVRS drag-reorder commits a new depth
   ordering.

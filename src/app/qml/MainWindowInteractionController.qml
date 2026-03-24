@@ -13,6 +13,7 @@ QtObject {
     property var hostWindow: null
     property int libraryHierarchyIndex: 0
     property var libraryHierarchyViewModel: null
+    property var libraryNoteMutationViewModel: null
     property var navigationModeViewModel: null
     property var panelViewModelRegistry: null
     property bool resizeDrWasSuspended: false
@@ -47,11 +48,15 @@ QtObject {
             addNewPanelViewModel.requestViewModelHook("create-note");
             return true;
         }
-        if (!interactionController.libraryHierarchyViewModel || interactionController.libraryHierarchyViewModel.createEmptyNote === undefined)
+        const noteMutationViewModel = interactionController.libraryNoteMutationViewModel !== null
+                && interactionController.libraryNoteMutationViewModel !== undefined
+                ? interactionController.libraryNoteMutationViewModel
+                : interactionController.libraryHierarchyViewModel;
+        if (!noteMutationViewModel || noteMutationViewModel.createEmptyNote === undefined)
             return false;
         if (interactionController.sidebarHierarchyViewModel && interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex !== undefined)
             interactionController.sidebarHierarchyViewModel.setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);
-        return Boolean(interactionController.libraryHierarchyViewModel.createEmptyNote());
+        return Boolean(noteMutationViewModel.createEmptyNote());
     }
     function cycleNavigationModeFromShortcut() {
         if (interactionController.hasFocusedTextInput())

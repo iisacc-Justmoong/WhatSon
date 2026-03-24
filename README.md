@@ -205,8 +205,9 @@ WhatSon is an LVRS-based Qt Quick application.
   so rapid note changes still win even if the previously focused editor is flushing a debounced body save.
 - The same `ListBarLayout.qml` now composes a narrow `FocusedNoteDeletionBridge`, so `Backspace` / `Delete` resolve
   the visually focused note id directly from the list view before falling back to the active note-list model. The
-  bridge still forwards deletion into the injected `LibraryHierarchyViewModel::deleteNoteById(...)` contract, and that
-  view-model remains a thin wrapper around `WhatSonHubNoteDeletionService`. File-system integrity repair now lives
+  bridge still forwards deletion into the injected `LibraryNoteMutationViewModel::deleteNoteById(...)` contract, while
+  the note-mutation view-model stays separate from the hierarchy read model and delegates destructive writes into
+  `WhatSonHubNoteDeletionService`. File-system integrity repair now lives
   under `src/app/file/validator/`: `WhatSonHubStructureValidator` resolves hub/library/stat paths,
   `WhatSonNoteStorageValidator` resolves materialized `.wsnote` / `.wsnhead` storage, and
   `WhatSonLibraryIndexIntegrityValidator` owns orphan pruning plus `index.wsnindex` rewrites. When a stale
@@ -216,8 +217,9 @@ WhatSon is an LVRS-based Qt Quick application.
   `BookmarksHierarchyViewModel` only mirrors the deletion into its bookmarked subset.
 - `ListBarLayout.qml` now also mounts an LVRS note-card context menu for desktop right-click. It targets the hovered
   note id without forcing a selection change first, and currently exposes `Delete note` plus `Clear all folders`.
-  The latter forwards into `LibraryHierarchyViewModel::clearNoteFoldersById(...)`, which rewrites only the note
-  header `<folders>` entries and refreshes the visible note metadata without deleting the note itself.
+  The latter forwards into `LibraryNoteMutationViewModel::clearNoteFoldersById(...)`, which delegates the
+  non-destructive header rewrite to `WhatSonHubNoteFolderClearService` and refreshes the visible note metadata
+  without deleting the note itself.
 - The note-card delegate now uses explicit required note roles (`noteId`, `primaryText`, `image`, `imageSource`,
   `displayDate`, `folders`, `tags`, `bookmarked`, `bookmarkColor`) instead of depending on a nullable runtime
   `model` object, which removes delegate startup `TypeError` churn during note-list refresh and keeps note drags
@@ -599,7 +601,7 @@ for hub/note hierarchy payloads.
   (`panelViewModelRegistry.panelViewModel("<panel-key>")`) to a dedicated `PanelViewModel` instance.
 - The navigation add surfaces share one `create-note` hook path:
   `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileHierarchyPage.qml`
-  all route into `LibraryHierarchyViewModel::createEmptyNote()`.
+  all route into `LibraryNoteMutationViewModel::createEmptyNote()`.
 - Mobile workspace views now live under `src/app/qml/view/mobile/**`. `src/app/qml/view/mobile/MobilePageScaffold.qml`
   keeps the top navigation bar and the bottom status/add-note bar persistent across mobile workspace pages, while
   `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` now mounts the node `174:5026` hierarchy body and the
@@ -820,10 +822,11 @@ Library runtime classification behavior:
 - `All`: detects the first non-text `<resource ...>` entry in `.wsnbody`, resolves its thumbnail path against the note
   directory / hub root, and exposes that preview to the note-list card
 - `All`: scans both fixed `Library.wslibrary` and dynamic `*.wslibrary` roots under each `*.wscontents`
-- `All`: `LibraryHierarchyViewModel::createEmptyNote()` creates a blank note directly under the active `.wslibrary`
-  with a mixed-case alphanumeric `16-16` ID, persists the header/body, an empty `.wsnhistory`, an empty
-  `.wsnversion`, a single `links.wsnlink`, and attachment scaffold through the existing note creators, updates
-  `index.wsnindex` plus hub stat metadata, and keeps the new note selected in the current scope
+- `All`: `LibraryNoteMutationViewModel::createEmptyNote()` routes note creation through
+  `WhatSonHubNoteCreationService`, which creates a blank note directly under the active `.wslibrary` with a
+  mixed-case alphanumeric `16-16` ID, persists the header/body, an empty `.wsnhistory`, an empty `.wsnversion`, a
+  single `links.wsnlink`, and attachment scaffold through the existing note creators, updates `index.wsnindex` plus
+  hub stat metadata, and keeps the new note selected in the current scope
 - `Draft`: filters notes only when the raw `.wsnhead` `<folders>...</folders>` block is present and contains no
   concrete folder text or `<folder>` entries, so stale `.wsnindex` folder values and literal `Draft` text do not
   qualify as draft membership

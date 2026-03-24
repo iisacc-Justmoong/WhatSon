@@ -312,8 +312,12 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteMutationSupport.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteCreationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteFolderClearService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp
@@ -430,8 +434,12 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteMutationSupport.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteCreationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteFolderClearService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
@@ -454,6 +462,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_library_hierarchy_tests)
 
 add_executable(whatson_file_validator_tests
         app/test_file_validators.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp

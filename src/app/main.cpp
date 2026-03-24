@@ -2,6 +2,7 @@
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteMutationViewModel.hpp"
 #include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
@@ -425,6 +426,7 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
     SystemCalendarStore systemCalendarStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
+    LibraryNoteMutationViewModel libraryNoteMutationViewModel;
     ProjectsHierarchyViewModel projectsHierarchyViewModel;
     BookmarksHierarchyViewModel bookmarksHierarchyViewModel;
     TagsHierarchyViewModel tagsHierarchyViewModel;
@@ -496,11 +498,12 @@ int main(int argc, char* argv[])
     OnboardingHubController onboardingHubController;
     WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
     PermissionBootstrapper permissionBootstrapper(app);
+    libraryNoteMutationViewModel.setSourceViewModel(&libraryHierarchyViewModel);
 
-    const auto requestNewLibraryNote = [&libraryHierarchyViewModel, &sidebarHierarchyViewModel]()
+    const auto requestNewLibraryNote = [&libraryNoteMutationViewModel, &sidebarHierarchyViewModel]()
     {
         sidebarHierarchyViewModel.setActiveHierarchyIndex(static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Library));
-        if (!libraryHierarchyViewModel.createEmptyNote())
+        if (!libraryNoteMutationViewModel.createEmptyNote())
         {
             qWarning().noquote() << QStringLiteral("Failed to create a new library note from navigation Add action.");
         }
@@ -955,6 +958,9 @@ int main(int argc, char* argv[])
     WhatSon::Policy::ArchitecturePolicyLock::lock();
 
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("libraryNoteMutationViewModel"),
+        &libraryNoteMutationViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("projectsHierarchyViewModel"), &projectsHierarchyViewModel);
     engine.rootContext()->setContextProperty(
         QStringLiteral("bookmarksHierarchyViewModel"),

@@ -47,6 +47,7 @@ LV.ApplicationWindow {
     readonly property var rootEditorViewModeViewModel: editorViewModeViewModel
     readonly property int libraryHierarchyIndex: 0
     readonly property var rootLibraryHierarchyViewModel: libraryHierarchyViewModel
+    readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minDisplayHeight: LV.Theme.gap20 * 8
@@ -201,6 +202,7 @@ LV.ApplicationWindow {
         hostWindow: applicationWindow
         libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex
         libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
+        libraryNoteMutationViewModel: applicationWindow.rootLibraryNoteMutationViewModel
         navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
         panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry
         sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
@@ -446,7 +448,7 @@ LV.ApplicationWindow {
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
-                    noteDeletionViewModel: applicationWindow.rootLibraryHierarchyViewModel
+                    noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
