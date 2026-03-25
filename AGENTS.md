@@ -58,6 +58,16 @@ every turn.
 - Flat/shared hierarchy model abstraction is prohibited for runtime hierarchy ViewModel wiring.
 - Keep model/support code isolated per domain directory in `src/app/viewmodel/hierarchy/<domain>/`.
 
+## Architectural Direction
+
+- Prefer Domain-Driven Development and Feature-Driven Development for new code, refactors, and file moves.
+- Organize changes around domain or feature boundaries first, not around broad shared technical layers, unless the
+  shared layer is already a stable cross-domain primitive.
+- Keep each feature slice as end-to-end as possible: storage, runtime loading, service logic, viewmodel wiring, QML
+  surface, tests, and docs should stay close to the owning domain.
+- Shared helpers are allowed only when multiple domains genuinely reuse them and when extracting them does not pull
+  business rules out of the domain that owns those rules.
+
 ## Codex Init (`/init`) Procedure
 
 Initialization is considered complete when the following sequence succeeds.
