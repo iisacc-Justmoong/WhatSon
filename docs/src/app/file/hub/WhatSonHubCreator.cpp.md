@@ -1,37 +1,16 @@
 # `src/app/file/hub/WhatSonHubCreator.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+Implements the on-disk scaffold for a brand new `.wshub` package.
 
-## Source Metadata
-- Source path: `src/app/file/hub/WhatSonHubCreator.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonHubCreator.cpp`
-- Approximate line count: 508
+## Scaffold Output
+- Creates the package directory and mandatory roots under `.whatson`, `.wscontents`, and `.wsresources`.
+- Writes `.whatson/hub.json` as the primary package manifest.
+- Writes the initial stat, library index, tags, folders, bookmarks, progress, and project list files.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Behavior Notes
+- Hub names are sanitized before any path is materialized.
+- File writes go through `QSaveFile` for local paths, so manifest and scaffold updates stay atomic on supported filesystems.
 
-### Classes and Structs
-- None detected during scaffold generation.
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Tests
+- `tests/app/test_whatson_workspace_hub_creator.cpp` verifies manifest creation, sanitized package layout creation, and explicit-path creation behavior.

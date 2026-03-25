@@ -30,10 +30,6 @@
 - `WhatSonHubStore.hpp`
 - `WhatSonHubWriteLease.hpp`
 
-## Intended Detailed Sections
-- Module responsibilities and architectural layer
-- Internal submodule boundaries
-- Cross-directory dependencies
-- Runtime ownership and lifecycle rules
-- Testing strategy and coverage map
-- Known hotspots and refactor priorities
+## Notes
+- `WhatSonHubCreator` is responsible for initial hub package materialization, including `.whatson/hub.json`.
+- `WhatSonHubWriteLease.hpp` owns runtime write-lock coordination after a hub already exists.

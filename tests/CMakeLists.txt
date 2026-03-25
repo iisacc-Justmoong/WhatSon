@@ -967,6 +967,26 @@ target_link_libraries(whatson_permission_bridge_source_guard_tests
 add_test(NAME whatson_permission_bridge_source_guard_tests COMMAND whatson_permission_bridge_source_guard_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_permission_bridge_source_guard_tests)
 
+add_executable(whatson_trial_policy_tests
+        app/test_trial_policy.cpp
+        ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialInstallStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialClockStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialActivationPolicy.cpp
+        ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialWshubAccessBackend.cpp
+)
+set_target_properties(whatson_trial_policy_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_trial_policy_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/extension/trial
+)
+target_link_libraries(whatson_trial_policy_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_trial_policy_tests COMMAND whatson_trial_policy_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_trial_policy_tests)
+
 if (WHATSON_TEST_TARGETS)
     add_custom_target(whatson_tests DEPENDS ${WHATSON_TEST_TARGETS})
 endif ()

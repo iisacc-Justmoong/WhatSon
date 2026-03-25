@@ -1,24 +1,14 @@
 # `src/extension`
 
-## Status
-- Directory mirror generated from the current `src` tree.
-- This file is the entry point for the detailed documentation pass of this directory.
+## Role
+This directory is reserved for optional product extensions that should not automatically become mandatory app or daemon build inputs.
 
-## Scope
-- Mirrored source directory: `src/extension`
-- Child directories: 0
-- Child files: 0
+## Directories
+- `appintent`: reserved space for platform intent integrations.
+- `trial`: local trial-entitlement policy kit for evaluation builds.
+- `widget`: reserved space for optional widget packaging code.
 
-## Child Directories
-- No child directories.
-
-## Child Files
-- No direct source files.
-
-## Intended Detailed Sections
-- Module responsibilities and architectural layer
-- Internal submodule boundaries
-- Cross-directory dependencies
-- Runtime ownership and lifecycle rules
-- Testing strategy and coverage map
-- Known hotspots and refactor priorities
+## Build Policy
+- Extension code is opt-in by design.
+- New modules here should avoid silently expanding the mandatory root build graph.
+- Automated tests may still compile extension sources directly so behavior stays covered before runtime integration happens.
