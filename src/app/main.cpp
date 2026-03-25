@@ -956,6 +956,9 @@ int main(int argc, char* argv[])
     hierarchyViewModelTargets.eventViewModel = &eventHierarchyViewModel;
     hierarchyViewModelTargets.presetViewModel = &presetHierarchyViewModel;
     hierarchyViewModelProvider.setTargets(hierarchyViewModelTargets);
+    detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
+    detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
+    detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
     WhatSon::Policy::ArchitecturePolicyLock::lock();

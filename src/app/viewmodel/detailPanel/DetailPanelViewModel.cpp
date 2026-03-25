@@ -11,6 +11,9 @@ DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
       , m_fileHistoryViewModel(DetailContentState::FileHistory, this)
       , m_layerViewModel(DetailContentState::Layer, this)
       , m_helpViewModel(DetailContentState::Help, this)
+      , m_projectSelectionViewModel(QStringLiteral("DetailContent.ProjectSelection"), this)
+      , m_bookmarkSelectionViewModel(QStringLiteral("DetailContent.BookmarkSelection"), this)
+      , m_progressSelectionViewModel(QStringLiteral("DetailContent.ProgressSelection"), this)
 {
     applyActiveContentViewModel(m_activeState);
     m_toolbarItems = WhatSon::DetailPanel::buildToolbarItems(m_activeState);
@@ -76,6 +79,21 @@ QObject* DetailPanelViewModel::fileHistoryViewModel() const noexcept
 QObject* DetailPanelViewModel::layerViewModel() const noexcept
 {
     return const_cast<DetailContentSectionViewModel*>(&m_layerViewModel);
+}
+
+QObject* DetailPanelViewModel::projectSelectionViewModel() const noexcept
+{
+    return const_cast<DetailHierarchySelectionViewModel*>(&m_projectSelectionViewModel);
+}
+
+QObject* DetailPanelViewModel::bookmarkSelectionViewModel() const noexcept
+{
+    return const_cast<DetailHierarchySelectionViewModel*>(&m_bookmarkSelectionViewModel);
+}
+
+QObject* DetailPanelViewModel::progressSelectionViewModel() const noexcept
+{
+    return const_cast<DetailHierarchySelectionViewModel*>(&m_progressSelectionViewModel);
 }
 
 QObject* DetailPanelViewModel::fileStatViewModel() const noexcept
@@ -152,6 +170,21 @@ void DetailPanelViewModel::requestStateChange(int stateValue)
         QStringLiteral("requestStateChange"),
         detail);
     setActiveState(stateValue);
+}
+
+void DetailPanelViewModel::setProjectSelectionSourceViewModel(QObject* sourceViewModel)
+{
+    m_projectSelectionViewModel.setSourceViewModel(sourceViewModel);
+}
+
+void DetailPanelViewModel::setBookmarkSelectionSourceViewModel(QObject* sourceViewModel)
+{
+    m_bookmarkSelectionViewModel.setSourceViewModel(sourceViewModel);
+}
+
+void DetailPanelViewModel::setProgressSelectionSourceViewModel(QObject* sourceViewModel)
+{
+    m_progressSelectionViewModel.setSourceViewModel(sourceViewModel);
 }
 
 void DetailPanelViewModel::applyActiveContentViewModel(DetailContentState activeState)

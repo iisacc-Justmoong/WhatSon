@@ -5,6 +5,15 @@
 `BookmarksHierarchyViewModel.cpp` projects bookmarked `LibraryNoteRecord` entries into bookmark
 color folders plus the bookmark note-list model.
 
+## Hierarchy Metadata
+
+`depthItems()` / `hierarchyModel()` now serialize an explicit `iconName` field for each bookmark
+color row.
+
+The current contract uses the shared `bookmarksbookmarksList` icon token so downstream consumers
+such as the detail-panel combo popup can render the same icon the hierarchy advertises, instead of
+falling back to a generic menu icon.
+
 ## Note List Projection
 
 `buildBookmarksListItem(...)` now forwards `createdAt` and `lastModifiedAt` into

@@ -4,6 +4,55 @@
 #include <QVariantMap>
 #include <QtTest>
 
+class FakeDetailHierarchySourceViewModel final : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel WRITE setHierarchyModel NOTIFY hierarchyModelChanged)
+    Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
+
+public:
+    QVariantList hierarchyModel() const
+    {
+        return m_hierarchyModel;
+    }
+
+    int selectedIndex() const noexcept
+    {
+        return m_selectedIndex;
+    }
+
+    void setHierarchyModel(const QVariantList& hierarchyModel)
+    {
+        if (m_hierarchyModel == hierarchyModel)
+        {
+            return;
+        }
+
+        m_hierarchyModel = hierarchyModel;
+        emit hierarchyModelChanged();
+    }
+
+    void setSelectedIndex(int index)
+    {
+        if (m_selectedIndex == index)
+        {
+            return;
+        }
+
+        m_selectedIndex = index;
+        emit selectedIndexChanged();
+    }
+
+signals:
+    void hierarchyModelChanged();
+    void selectedIndexChanged();
+
+private:
+    QVariantList m_hierarchyModel;
+    int m_selectedIndex = -1;
+};
+
 class DetailPanelViewModelTest final : public QObject
 {
     Q_OBJECT
@@ -15,6 +64,7 @@ private
 
     void defaults_mustExposePropertiesState();
     void detailContentViewModels_mustMapEachStateToDedicatedViewModel();
+    void detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection();
     void requestStateChange_mustUpdateActiveStateAndToolbarSelection();
     void requestStateChange_invalidValue_mustBeIgnored();
 };
@@ -86,6 +136,72 @@ void DetailPanelViewModelTest::detailContentViewModels_mustMapEachStateToDedicat
         viewModel.contentViewModelForState(static_cast<int>(DetailPanelViewModel::DetailContentState::Help)),
         helpVm);
     QCOMPARE(viewModel.contentViewModelForState(-1), nullptr);
+}
+
+void DetailPanelViewModelTest::detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection()
+{
+    DetailPanelViewModel viewModel;
+    FakeDetailHierarchySourceViewModel projectsSource;
+    FakeDetailHierarchySourceViewModel bookmarksSource;
+    FakeDetailHierarchySourceViewModel progressSource;
+
+    const QVariantList sharedHierarchyModel = {
+        QVariantMap{
+            {QStringLiteral("key"), QStringLiteral("project:alpha")},
+            {QStringLiteral("label"), QStringLiteral("Alpha")},
+            {QStringLiteral("iconName"), QStringLiteral("customFolder")}
+        },
+        QVariantMap{
+            {QStringLiteral("key"), QStringLiteral("project:beta")},
+            {QStringLiteral("label"), QStringLiteral("Beta")},
+            {QStringLiteral("iconName"), QStringLiteral("customFolder")}
+        }
+    };
+
+    projectsSource.setHierarchyModel(sharedHierarchyModel);
+    projectsSource.setSelectedIndex(1);
+    bookmarksSource.setHierarchyModel(sharedHierarchyModel);
+    bookmarksSource.setSelectedIndex(0);
+    progressSource.setHierarchyModel(sharedHierarchyModel);
+    progressSource.setSelectedIndex(-1);
+
+    viewModel.setProjectSelectionSourceViewModel(&projectsSource);
+    viewModel.setBookmarkSelectionSourceViewModel(&bookmarksSource);
+    viewModel.setProgressSelectionSourceViewModel(&progressSource);
+
+    QObject* projectSelector = viewModel.projectSelectionViewModel();
+    QObject* bookmarkSelector = viewModel.bookmarkSelectionViewModel();
+    QObject* progressSelector = viewModel.progressSelectionViewModel();
+
+    QVERIFY(projectSelector != nullptr);
+    QVERIFY(bookmarkSelector != nullptr);
+    QVERIFY(progressSelector != nullptr);
+
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), -1);
+    QCOMPARE(projectSelector->property("hierarchyModel").toList(), sharedHierarchyModel);
+
+    projectsSource.setSelectedIndex(0);
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
+
+    QVERIFY(QMetaObject::invokeMethod(projectSelector, "setSelectedIndex", Q_ARG(int, 0)));
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(projectsSource.selectedIndex(), 0);
+
+    const QVariantList reorderedHierarchyModel = {
+        QVariantMap{
+            {QStringLiteral("key"), QStringLiteral("project:gamma")},
+            {QStringLiteral("label"), QStringLiteral("Gamma")},
+            {QStringLiteral("iconName"), QStringLiteral("customFolder")}
+        },
+        sharedHierarchyModel.at(0).toMap(),
+        sharedHierarchyModel.at(1).toMap()
+    };
+    projectsSource.setHierarchyModel(reorderedHierarchyModel);
+
+    QCOMPARE(projectSelector->property("hierarchyModel").toList(), reorderedHierarchyModel);
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
 }
 
 void DetailPanelViewModelTest::requestStateChange_mustUpdateActiveStateAndToolbarSelection()

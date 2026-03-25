@@ -10,30 +10,20 @@ Item {
     readonly property string figmaNodeId: "155:4582"
     property var activeContentViewModel: null
     property string activeStateName: "properties"
+    property var projectSelectionViewModel: null
+    property var bookmarkSelectionViewModel: null
+    property var progressSelectionViewModel: null
     readonly property var folderItems: ["Label", "Label", "Label", "Label", "Label"]
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
-    readonly property var registeredViewModelKeys: LV.ViewModels.keys
-    readonly property var projectsHierarchyViewModel: {
-        const _ = detailContents.registeredViewModelKeys;
-        return LV.ViewModels.get("projectsHierarchyViewModel");
-    }
-    readonly property var bookmarksHierarchyViewModel: {
-        const _ = detailContents.registeredViewModelKeys;
-        return LV.ViewModels.get("bookmarksHierarchyViewModel");
-    }
-    readonly property var progressHierarchyViewModel: {
-        const _ = detailContents.registeredViewModelKeys;
-        return LV.ViewModels.get("progressHierarchyViewModel");
-    }
-    readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectsHierarchyViewModel)
-    readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectsHierarchyViewModel)
-    readonly property string resolvedProjectSelectionText: detailContents.resolveHierarchySelectionText(detailContents.projectsHierarchyViewModel, "No project")
-    readonly property var bookmarkMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.bookmarksHierarchyViewModel)
-    readonly property int bookmarkMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.bookmarksHierarchyViewModel)
-    readonly property string resolvedBookmarkSelectionText: detailContents.resolveHierarchySelectionText(detailContents.bookmarksHierarchyViewModel, "No bookmark")
-    readonly property var progressMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.progressHierarchyViewModel)
-    readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressHierarchyViewModel)
-    readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressHierarchyViewModel, "No progress")
+    readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectSelectionViewModel)
+    readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectSelectionViewModel)
+    readonly property string resolvedProjectSelectionText: detailContents.resolveHierarchySelectionText(detailContents.projectSelectionViewModel, "No project")
+    readonly property var bookmarkMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.bookmarkSelectionViewModel)
+    readonly property int bookmarkMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.bookmarkSelectionViewModel)
+    readonly property string resolvedBookmarkSelectionText: detailContents.resolveHierarchySelectionText(detailContents.bookmarkSelectionViewModel, "No bookmark")
+    readonly property var progressMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.progressSelectionViewModel)
+    readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressSelectionViewModel)
+    readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionViewModel, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
     readonly property var tagItems: ["Label", "Label", "Label", "Label"]
 
@@ -107,9 +97,13 @@ Item {
         for (let index = 0; index < sourceEntries.length; ++index) {
             const entry = sourceEntries[index];
             const label = entry && entry.label !== undefined && entry.label !== null ? String(entry.label).trim() : "";
+            const iconName = entry && entry.iconName !== undefined && entry.iconName !== null ? String(entry.iconName).trim() : "";
+            const iconSource = entry && entry.iconSource !== undefined && entry.iconSource !== null ? entry.iconSource : "";
             if (label.length === 0)
                 continue;
             resolvedItems.push({
+                                   iconName: iconName,
+                                   iconSource: iconSource,
                                    label: label,
                                    keyVisible: false,
                                    selected: index === selectedIndex
@@ -482,7 +476,7 @@ Item {
                 width: parent.width
 
                 onMenuItemTriggered: function(index) {
-                    detailContents.applyHierarchySelection(detailContents.projectsHierarchyViewModel, index, "projects.comboSelect");
+                    detailContents.applyHierarchySelection(detailContents.projectSelectionViewModel, index, "projects.comboSelect");
                 }
             }
             DetailComboSection {
@@ -498,7 +492,7 @@ Item {
                 width: parent.width
 
                 onMenuItemTriggered: function(index) {
-                    detailContents.applyHierarchySelection(detailContents.bookmarksHierarchyViewModel, index, "bookmark.comboSelect");
+                    detailContents.applyHierarchySelection(detailContents.bookmarkSelectionViewModel, index, "bookmark.comboSelect");
                 }
             }
             DetailListSection {
@@ -536,7 +530,7 @@ Item {
                 width: parent.width
 
                 onMenuItemTriggered: function(index) {
-                    detailContents.applyHierarchySelection(detailContents.progressHierarchyViewModel, index, "progress.comboSelect");
+                    detailContents.applyHierarchySelection(detailContents.progressSelectionViewModel, index, "progress.comboSelect");
                 }
             }
         }

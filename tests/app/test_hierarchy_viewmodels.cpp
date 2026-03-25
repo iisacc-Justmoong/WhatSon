@@ -491,6 +491,15 @@ void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
     QVERIFY(!viewModel.createFolderEnabled());
     QVERIFY(!viewModel.viewOptionsEnabled());
     QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), BookmarksHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("bookmarksbookmarksList"));
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    QVERIFY(!hierarchyModel.isEmpty());
+    QCOMPARE(
+        hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(),
+        QStringLiteral("bookmarksbookmarksList"));
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("Bookmarks-Header")));

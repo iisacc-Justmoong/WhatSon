@@ -61,6 +61,9 @@ Item {
     property int panelSpacing: 10
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanel") : null
     readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()
+    readonly property var resolvedProjectSelectionViewModel: detailPanel.resolveProjectSelectionViewModel()
+    readonly property var resolvedBookmarkSelectionViewModel: detailPanel.resolveBookmarkSelectionViewModel()
+    readonly property var resolvedProgressSelectionViewModel: detailPanel.resolveProgressSelectionViewModel()
     readonly property string resolvedActiveStateName: detailPanel.resolveActiveStateName()
     readonly property var resolvedToolbarItems: detailPanel.resolveToolbarItems()
 
@@ -94,6 +97,21 @@ Item {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeContentViewModel === undefined)
             return null;
         return detailPanel.detailPanelVm.activeContentViewModel;
+    }
+    function resolveProjectSelectionViewModel() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.projectSelectionViewModel === undefined)
+            return null;
+        return detailPanel.detailPanelVm.projectSelectionViewModel;
+    }
+    function resolveBookmarkSelectionViewModel() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.bookmarkSelectionViewModel === undefined)
+            return null;
+        return detailPanel.detailPanelVm.bookmarkSelectionViewModel;
+    }
+    function resolveProgressSelectionViewModel() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.progressSelectionViewModel === undefined)
+            return null;
+        return detailPanel.detailPanelVm.progressSelectionViewModel;
     }
     function resolveActiveStateName() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeStateName === undefined)
@@ -159,7 +177,10 @@ Item {
         DetailContents {
             activeContentViewModel: detailPanel.resolvedActiveContentViewModel
             activeStateName: detailPanel.resolvedActiveStateName
+            bookmarkSelectionViewModel: detailPanel.resolvedBookmarkSelectionViewModel
             height: detailPanel.detailContentsHeight
+            progressSelectionViewModel: detailPanel.resolvedProgressSelectionViewModel
+            projectSelectionViewModel: detailPanel.resolvedProjectSelectionViewModel
             width: detailPanel.detailContentsWidth
         }
     }

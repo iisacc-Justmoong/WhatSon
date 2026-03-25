@@ -1997,6 +1997,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             "readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()")),
         "DetailPanel.qml must resolve the active content view-model through an explicit contract property.");
     QVERIFY2(
+        detailPanelText.contains(QStringLiteral(
+            "readonly property var resolvedProjectSelectionViewModel: detailPanel.resolveProjectSelectionViewModel()")) &&
+            detailPanelText.contains(QStringLiteral(
+                "readonly property var resolvedBookmarkSelectionViewModel: detailPanel.resolveBookmarkSelectionViewModel()")) &&
+            detailPanelText.contains(QStringLiteral(
+                "readonly property var resolvedProgressSelectionViewModel: detailPanel.resolveProgressSelectionViewModel()")),
+        "DetailPanel.qml must resolve dedicated selector copies for the detail panel instead of binding directly to hierarchy selection state.");
+    QVERIFY2(
         detailPanelText.contains(
             QStringLiteral("readonly property string resolvedActiveStateName: detailPanel.resolveActiveStateName()")),
         "DetailPanel.qml must resolve the active state name through an explicit contract property.");
@@ -2008,8 +2016,18 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailPanelText.contains(QStringLiteral("function resolveActiveContentViewModel()")),
         "DetailPanel.qml must expose a helper that resolves the active content view-model from C++ state.");
     QVERIFY2(
+        detailPanelText.contains(QStringLiteral("function resolveProjectSelectionViewModel()")) &&
+            detailPanelText.contains(QStringLiteral("function resolveBookmarkSelectionViewModel()")) &&
+            detailPanelText.contains(QStringLiteral("function resolveProgressSelectionViewModel()")),
+        "DetailPanel.qml must expose helpers that resolve dedicated selector copies from C++ detail-panel state.");
+    QVERIFY2(
         detailPanelText.contains(QStringLiteral("function resolveActiveStateName()")),
         "DetailPanel.qml must expose a helper that resolves the active detail state name from C++ state.");
+    QVERIFY2(
+        detailPanelText.contains(QStringLiteral("projectSelectionViewModel: detailPanel.resolvedProjectSelectionViewModel")) &&
+            detailPanelText.contains(QStringLiteral("bookmarkSelectionViewModel: detailPanel.resolvedBookmarkSelectionViewModel")) &&
+            detailPanelText.contains(QStringLiteral("progressSelectionViewModel: detailPanel.resolvedProgressSelectionViewModel")),
+        "DetailPanel.qml must forward dedicated selector copies into DetailContents.");
     QVERIFY2(
         detailPanelText.contains(QStringLiteral("function resolveToolbarItems()")),
         "DetailPanel.qml must expose a helper that resolves toolbar specs from C++ state.");
@@ -2177,19 +2195,30 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         detailContentsText.contains(QStringLiteral("labelColor: LV.Theme.captionColor")),
         "DetailContents.qml combo section labels must use the caption token color.");
     QVERIFY2(
-        detailContentsText.contains(QStringLiteral("return LV.ViewModels.get(\"projectsHierarchyViewModel\");")) &&
-            detailContentsText.contains(QStringLiteral("return LV.ViewModels.get(\"bookmarksHierarchyViewModel\");")) &&
-            detailContentsText.contains(QStringLiteral("return LV.ViewModels.get(\"progressHierarchyViewModel\");")) &&
+        detailContentsText.contains(QStringLiteral("property var projectSelectionViewModel: null")) &&
+            detailContentsText.contains(QStringLiteral("property var bookmarkSelectionViewModel: null")) &&
+            detailContentsText.contains(QStringLiteral("property var progressSelectionViewModel: null")) &&
             detailContentsText.contains(QStringLiteral("function resolveHierarchyMenuItems(hierarchyViewModel)")) &&
             detailContentsText.contains(QStringLiteral("function resolveHierarchySelectionText(hierarchyViewModel, emptyText)")) &&
+            detailContentsText.contains(QStringLiteral("const iconName = entry && entry.iconName !== undefined && entry.iconName !== null ? String(entry.iconName).trim() : \"\";")) &&
+            detailContentsText.contains(QStringLiteral("const iconSource = entry && entry.iconSource !== undefined && entry.iconSource !== null ? entry.iconSource : \"\";")) &&
             detailContentsText.contains(QStringLiteral("hierarchyViewModel.setSelectedIndex(normalizedIndex);")) &&
             detailContentsText.contains(QStringLiteral("menuItems: detailContents.projectMenuItems")) &&
             detailContentsText.contains(QStringLiteral("menuItems: detailContents.bookmarkMenuItems")) &&
             detailContentsText.contains(QStringLiteral("menuItems: detailContents.progressMenuItems")) &&
             detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedProjectSelectionText")) &&
             detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedBookmarkSelectionText")) &&
-            detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedProgressSelectionText")),
-        "DetailContents.qml must source Projects, Bookmark, and Progress combo popups from their matching hierarchy view-models and push selection back through the same view-models.");
+            detailContentsText.contains(QStringLiteral("comboText: detailContents.resolvedProgressSelectionText")) &&
+            detailContentsText.contains(QStringLiteral(
+                "detailContents.applyHierarchySelection(detailContents.projectSelectionViewModel, index, \"projects.comboSelect\");")) &&
+            detailContentsText.contains(QStringLiteral(
+                "detailContents.applyHierarchySelection(detailContents.bookmarkSelectionViewModel, index, \"bookmark.comboSelect\");")) &&
+            detailContentsText.contains(QStringLiteral(
+                "detailContents.applyHierarchySelection(detailContents.progressSelectionViewModel, index, \"progress.comboSelect\");")) &&
+            !detailContentsText.contains(QStringLiteral("LV.ViewModels.get(\"projectsHierarchyViewModel\")")) &&
+            !detailContentsText.contains(QStringLiteral("LV.ViewModels.get(\"bookmarksHierarchyViewModel\")")) &&
+            !detailContentsText.contains(QStringLiteral("LV.ViewModels.get(\"progressHierarchyViewModel\")")),
+        "DetailContents.qml must use dedicated selector copies provided by DetailPanel.qml and must not bind selector state directly to shared hierarchy view-models.");
     QVERIFY2(
         detailContentsText.contains(QStringLiteral("frameNodeId: \"155:4587\"")) &&
             detailContentsText.contains(QStringLiteral("frameNodeId: \"155:4590\"")),

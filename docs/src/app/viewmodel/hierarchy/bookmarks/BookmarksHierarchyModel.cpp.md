@@ -4,6 +4,13 @@
 - Documentation phase: scaffold generated from the live source tree.
 - Detail level: structural placeholder prepared for a later deep pass.
 
+## Runtime Contract
+- `BookmarksHierarchyModel` exposes a dedicated `iconName` role.
+- Every bookmark color row currently resolves that role through the shared `bookmarksbookmarksList`
+  token.
+- This keeps `QAbstractListModel` data and `BookmarksHierarchyViewModel::hierarchyModel()` aligned
+  for consumers that expect icon-bearing hierarchy entries.
+
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp`
 - Source kind: C++ implementation

@@ -14,6 +14,11 @@ struct BookmarksHierarchyItem
     bool showChevron = true;
 };
 
+inline QString bookmarksHierarchyIconName(const BookmarksHierarchyItem&)
+{
+    return QStringLiteral("bookmarksbookmarksList");
+}
+
 class BookmarksHierarchyModel final : public QAbstractListModel
 {
     Q_OBJECT
@@ -31,7 +36,8 @@ public:
         IndentLevelRole,
         AccentRole,
         ExpandedRole,
-        ShowChevronRole
+        ShowChevronRole,
+        IconNameRole
     };
 
     Q_ENUM(Role)

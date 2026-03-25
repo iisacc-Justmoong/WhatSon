@@ -52,6 +52,8 @@ QVariant BookmarksHierarchyModel::data(const QModelIndex& index, int role) const
         return item.expanded;
     case ShowChevronRole:
         return item.showChevron;
+    case IconNameRole:
+        return bookmarksHierarchyIconName(item);
     default:
         return {};
     }
@@ -65,7 +67,8 @@ QHash<int, QByteArray> BookmarksHierarchyModel::roleNames() const
         {IndentLevelRole, "indentLevel"},
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
-        {ShowChevronRole, "showChevron"}
+        {ShowChevronRole, "showChevron"},
+        {IconNameRole, "iconName"}
     };
 }
 

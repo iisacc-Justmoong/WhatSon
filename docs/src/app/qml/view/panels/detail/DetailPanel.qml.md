@@ -6,6 +6,10 @@
 ## Key Contracts
 - View-model lookup: `LV.ViewModels.get("detailPanelViewModel")`
 - Active content contract: `resolvedActiveContentViewModel`
+- Selector-copy contracts:
+  - `resolvedProjectSelectionViewModel`
+  - `resolvedBookmarkSelectionViewModel`
+  - `resolvedProgressSelectionViewModel`
 - Active state contract: `resolvedActiveStateName`
 - Toolbar contract: `resolvedToolbarItems`
 
@@ -33,4 +37,5 @@ composite `config.svg` asset.
 
 ## Behavior
 - Toolbar clicks forward to `detailPanelViewModel.requestStateChange(stateValue)`.
-- The contents area always receives both the resolved state name and the resolved active content view-model.
+- The contents area always receives the resolved state name, the resolved active content view-model, and the three detail-local selector-copy viewmodels.
+- This keeps detail-panel selector state independent from sidebar hierarchy selection state.

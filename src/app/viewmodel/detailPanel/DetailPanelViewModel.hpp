@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DetailHierarchySelectionViewModel.hpp"
 #include "DetailContentSectionViewModel.hpp"
 #include "DetailPanelState.hpp"
 
@@ -18,6 +19,9 @@ class DetailPanelViewModel final : public QObject
     Q_PROPERTY(QObject* helpViewModel READ helpViewModel CONSTANT)
     Q_PROPERTY(QObject* insertViewModel READ insertViewModel CONSTANT)
     Q_PROPERTY(QObject* layerViewModel READ layerViewModel CONSTANT)
+    Q_PROPERTY(QObject* projectSelectionViewModel READ projectSelectionViewModel CONSTANT)
+    Q_PROPERTY(QObject* bookmarkSelectionViewModel READ bookmarkSelectionViewModel CONSTANT)
+    Q_PROPERTY(QObject* progressSelectionViewModel READ progressSelectionViewModel CONSTANT)
     Q_PROPERTY(QObject* propertiesViewModel READ propertiesViewModel CONSTANT)
     Q_PROPERTY(QVariantList toolbarItems READ toolbarItems NOTIFY toolbarItemsChanged)
 
@@ -36,11 +40,17 @@ public:
     QObject* helpViewModel() const noexcept;
     QObject* insertViewModel() const noexcept;
     QObject* layerViewModel() const noexcept;
+    QObject* projectSelectionViewModel() const noexcept;
+    QObject* bookmarkSelectionViewModel() const noexcept;
+    QObject* progressSelectionViewModel() const noexcept;
     QObject* propertiesViewModel() const noexcept;
     QVariantList toolbarItems() const;
 
     Q_INVOKABLE void setActiveState(int stateValue);
     Q_INVOKABLE void requestStateChange(int stateValue);
+    void setProjectSelectionSourceViewModel(QObject* sourceViewModel);
+    void setBookmarkSelectionSourceViewModel(QObject* sourceViewModel);
+    void setProgressSelectionSourceViewModel(QObject* sourceViewModel);
 
 public
     slots  :
@@ -70,6 +80,9 @@ private:
     DetailContentSectionViewModel m_fileHistoryViewModel;
     DetailContentSectionViewModel m_layerViewModel;
     DetailContentSectionViewModel m_helpViewModel;
+    DetailHierarchySelectionViewModel m_projectSelectionViewModel;
+    DetailHierarchySelectionViewModel m_bookmarkSelectionViewModel;
+    DetailHierarchySelectionViewModel m_progressSelectionViewModel;
     QObject* m_activeContentViewModel = nullptr;
     QVariantList m_toolbarItems;
 };

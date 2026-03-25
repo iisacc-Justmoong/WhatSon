@@ -10,6 +10,9 @@ The implemented primary form is the Figma `Properties` example (`155:4582`), whi
 - Inputs:
   - `activeContentViewModel`
   - `activeStateName`
+  - `projectSelectionViewModel`
+  - `bookmarkSelectionViewModel`
+  - `progressSelectionViewModel`
 - Normalized state values:
   - `properties`
   - `fileStat`
@@ -29,17 +32,17 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 
 ## Selector Wiring
 - The `Projects`, `Bookmark`, and `Progress` selectors do not own ad-hoc option lists.
-- `Projects` resolves `projectsHierarchyViewModel` from the LVRS view-model registry.
-- `Bookmark` resolves `bookmarksHierarchyViewModel` from the LVRS view-model registry.
-- `Progress` resolves `progressHierarchyViewModel` from the LVRS view-model registry.
-- Each selector builds its popup entries from the matched hierarchy view-model's `hierarchyModel`.
-- Each visible combo label mirrors the matched hierarchy view-model's `selectedIndex` through `itemLabel(...)`.
-- Selecting a popup entry writes the chosen index back through that same hierarchy view-model's `setSelectedIndex(...)`.
+- Each selector receives a dedicated detail-panel-local selector viewmodel from `DetailPanel.qml`.
+- Those selector viewmodels mirror hierarchy entries from the canonical Projects/Bookmarks/Progress hierarchy viewmodels, but they keep their own local `selectedIndex`.
+- Each selector builds its popup entries from the matched detail-local selector viewmodel's `hierarchyModel`.
+- Each popup item forwards `iconName` and `iconSource` from the hierarchy entry when those fields are present, so the detail-panel menu mirrors the hierarchy icon contract instead of falling back to LVRS defaults.
+- Each visible combo label mirrors the matched selector-copy `selectedIndex` through `itemLabel(...)`.
+- Selecting a popup entry writes the chosen index back through that selector-copy object only.
 - Empty selection copy is explicit instead of using Figma template placeholders:
   - `Projects`: `No project`
   - `Bookmark`: `No bookmark`
   - `Progress`: `No progress`
-- This keeps the detail panel aligned with the canonical hierarchy sources instead of duplicating selector state locally.
+- This keeps the detail panel aligned with the canonical hierarchy item lists without sharing mutable selection state with the sidebar.
 
 ## LVRS Reuse
 - Uses `LV.ComboBox` for all compact selectors.

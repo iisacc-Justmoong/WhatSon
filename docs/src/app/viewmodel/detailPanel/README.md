@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/detailPanel`
 - Child directories: 0
-- Child files: 8
+- Child files: 10
 
 ## Child Directories
 - No child directories.
@@ -15,6 +15,8 @@
 ## Child Files
 - `DetailContentSectionViewModel.cpp`
 - `DetailContentSectionViewModel.hpp`
+- `DetailHierarchySelectionViewModel.cpp`
+- `DetailHierarchySelectionViewModel.hpp`
 - `DetailPanelState.cpp`
 - `DetailPanelState.hpp`
 - `DetailPanelToolbarItemsFactory.cpp`

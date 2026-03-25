@@ -23,6 +23,7 @@
 - `HierarchyViewModelProvider` is the single runtime map from sidebar domain index to dedicated hierarchy viewmodel.
 - `SidebarHierarchyViewModel` must receive its selection store and provider before the architecture lock is enabled.
 - `LibraryNoteMutationViewModel` wraps `LibraryHierarchyViewModel` so note mutation shortcuts no longer need the full library hierarchy surface.
+- `DetailPanelViewModel` owns dedicated selector-copy viewmodels for Projects, Bookmarks, and Progress. `main.cpp` injects the canonical hierarchy viewmodels only as read-only selector sources so detail-panel combo state stays decoupled from sidebar selection.
 - `qmlRegisterType(...)` is used for bridge-like objects that should be instantiated from QML rather than pushed as singletons.
 
 ## QML Exposure

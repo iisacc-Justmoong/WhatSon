@@ -1,37 +1,29 @@
 # `src/app/viewmodel/detailPanel/DetailPanelViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`DetailPanelViewModel` owns the active detail-panel page state, toolbar selection state, and the three detail-local hierarchy selector copies used by the properties form.
 
-## Source Metadata
-- Source path: `src/app/viewmodel/detailPanel/DetailPanelViewModel.hpp`
-- Source kind: C++ header
-- File name: `DetailPanelViewModel.hpp`
-- Approximate line count: 75
+## Owned Objects
+- `DetailContentSectionViewModel` instances for:
+  - `properties`
+  - `fileStat`
+  - `insert`
+  - `fileHistory`
+  - `layer`
+  - `help`
+- `DetailHierarchySelectionViewModel` instances for:
+  - `projectSelectionViewModel`
+  - `bookmarkSelectionViewModel`
+  - `progressSelectionViewModel`
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public Wiring Surface
+- `activeContentViewModel`
+- `activeStateName`
+- `toolbarItems`
+- `projectSelectionViewModel`
+- `bookmarkSelectionViewModel`
+- `progressSelectionViewModel`
 
-### Classes and Structs
-- `DetailPanelViewModel`
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Dependency Direction
+The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
+Instead, C++ injects those hierarchy viewmodels as read-only sources into the owned selector-copy objects.
