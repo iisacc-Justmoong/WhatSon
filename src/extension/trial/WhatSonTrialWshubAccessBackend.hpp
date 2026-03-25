@@ -1,9 +1,13 @@
 #pragma once
 
+#include "WhatSonRegisterManager.hpp"
 #include "WhatSonTrialActivationPolicy.hpp"
+#include "WhatSonTrialClientIdentityStore.hpp"
 #include "WhatSonTrialInstallStore.hpp"
+#include "WhatSonTrialRegisterXml.hpp"
 
 #include <QDate>
+#include <QPointer>
 #include <QString>
 
 struct WhatSonTrialWshubAccessDecision final
@@ -12,9 +16,15 @@ struct WhatSonTrialWshubAccessDecision final
     QString normalizedTargetPath;
     QString denialReason;
     WhatSonTrialActivationState trialState;
+    WhatSonTrialClientIdentity clientIdentity;
+    WhatSonTrialClientIdentity hubIdentity;
     bool wshubTarget = false;
     bool allowed = true;
     bool restrictedByExpiredTrial = false;
+    bool registerFilePresent = false;
+    bool clientKeyMatched = true;
+    bool restrictedByMissingRegister = false;
+    bool restrictedByClientKeyMismatch = false;
 
     bool operator==(const WhatSonTrialWshubAccessDecision& other) const = default;
 };
@@ -22,7 +32,11 @@ struct WhatSonTrialWshubAccessDecision final
 class WhatSonTrialWshubAccessBackend final
 {
 public:
-    explicit WhatSonTrialWshubAccessBackend(WhatSonTrialInstallStore installStore = WhatSonTrialInstallStore());
+    explicit WhatSonTrialWshubAccessBackend(
+        WhatSonTrialInstallStore installStore = WhatSonTrialInstallStore(),
+        WhatSonRegisterManager* registerManager = nullptr,
+        WhatSonTrialClientIdentityStore clientIdentityStore = WhatSonTrialClientIdentityStore(),
+        WhatSonTrialRegisterXml registerXml = WhatSonTrialRegisterXml());
 
     WhatSonTrialWshubAccessDecision evaluateAccess(
         const QString& targetPath,
@@ -35,6 +49,10 @@ public:
 private:
     static QString normalizeTargetPath(const QString& targetPath);
     static bool isWshubTargetPath(const QString& normalizedTargetPath);
+    static bool isLocalComparableWshubTarget(const QString& normalizedTargetPath);
 
     WhatSonTrialInstallStore m_installStore;
+    QPointer<WhatSonRegisterManager> m_registerManager;
+    WhatSonTrialClientIdentityStore m_clientIdentityStore;
+    WhatSonTrialRegisterXml m_registerXml;
 };

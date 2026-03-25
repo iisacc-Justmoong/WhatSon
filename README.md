@@ -919,9 +919,11 @@ Behavior by OS:
 - Headless Linux host sessions without `DISPLAY` and `WAYLAND_DISPLAY` automatically configure
   the full desktop app build, run daemon healthcheck, and then skip only the desktop app launch.
 
-Logs are written to `build/automation-logs/*.log` by default.
-Default artifacts are generated at:
+Logs are written to `automation-logs/*.log` by default.
+Default build and artifact directories are:
 
+- Standard host build directory: `build`
+- Trial packaging build directory: `build-trial`
 - iOS Xcode project: `build/ios-xcode-artifact/WhatSon.xcodeproj`
 - Android Studio project: `build/android-studio-artifact`
 - Linux staged install tree: `build/dist`
@@ -934,11 +936,16 @@ builds are not blocked by stale cross-compile metadata under `build/ios-xcode-ar
 The explicit `whatson_export_xcodeproj` target now clears only the nested iOS CMake
 cache/state files before reconfiguring, which keeps the export reproducible without
 deleting the entire artifact directory.
+When the host task runs, the automation now always configures both `build` and `build-trial`.
+`build` is used for the normal runnable host build, while `build-trial` is reserved for the
+trial packaging pass and builds the `whatson_package` target there.
 
 You can override artifact locations:
 
 ```bash
 python3 scripts/build_all.py \
+  --host-build-dir build \
+  --trial-build-dir build-trial \
   --ios-project-dir build/ios-xcode-artifact \
   --android-studio-dir build/android-studio-artifact
 ```
@@ -969,5 +976,5 @@ python3 scripts/runtime_smoke_matrix.py --tasks ios --strict-ios-smoke
 
 Outputs:
 
-- Logs: `build/runtime-matrix-logs/*.log`
-- Artifacts: `build/runtime-matrix-artifacts/`
+- Logs: `runtime-matrix-logs/*.log`
+- Artifacts: `runtime-matrix-artifacts/`

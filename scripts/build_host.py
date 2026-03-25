@@ -19,6 +19,7 @@ def main() -> int:
         root=_path_state(runner.root),
         logs_dir=_path_state(runner.logs_dir),
         build_dir=_path_state(runner.host_build_dir),
+        trial_build_dir=_path_state(runner.trial_build_dir),
         jobs=runner.build_jobs,
         no_host_run=runner.no_host_run,
     )

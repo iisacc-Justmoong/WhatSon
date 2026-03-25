@@ -9,6 +9,7 @@ Implements the basic local trial-window calculation on top of `WhatSonTrialInsta
 - `elapsedDays` clamps negative clock drift to `0` instead of producing a larger entitlement window.
 - `active` is `true` while `elapsedDays < 90`.
 - `remainingDays` is `90 - elapsedDays` while active, otherwise `0`.
+- When `WhatSonRegisterManager::authenticated()` is `true`, the policy reports an authenticated-bypass state instead of an expiring trial state.
 
 ## Change Signaling
 - `stateChanged()` is emitted only when the newly computed snapshot differs from the cached one.

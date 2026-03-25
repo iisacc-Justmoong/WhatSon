@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${BUILD_DIR:-${ROOT_DIR}/build}"
+TRIAL_BUILD_DIR="${TRIAL_BUILD_DIR:-${ROOT_DIR}/build-trial}"
 APP_TARGET="${APP_TARGET:-WhatSon}"
 PLATFORM="${1:-all}"
 LVRS_PREFIX="${LVRS_PREFIX:-${HOME}/.local/LVRS}"
@@ -243,6 +244,53 @@ configure_root() {
     cmake "${cmake_args[@]}"
 }
 
+configure_trial_root() {
+    local prefix_path
+    local lvrs_dir
+    local cmake_args=()
+    local prefix_args=()
+
+    log "Configuring trial packaging build dir: ${TRIAL_BUILD_DIR}"
+
+    if [[ -d "${QT_HOST_PREFIX}" ]]; then
+        prefix_args+=("${QT_HOST_PREFIX}")
+    fi
+    if [[ -d "${LVRS_PREFIX}" ]]; then
+        prefix_args+=("${LVRS_PREFIX}")
+    fi
+
+    prefix_path="$(join_by_semicolon "${prefix_args[@]}")"
+    lvrs_dir="$(resolve_lvrs_dir "${LVRS_PREFIX}" "${HOST_PLATFORM}")"
+
+    cmake_args=(
+        -S "${ROOT_DIR}"
+        -B "${TRIAL_BUILD_DIR}"
+        -DLVRS_DIR="${lvrs_dir}"
+        -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON
+        -DQT_ROOT_PATH="${QT_HOST_PREFIX}"
+        -DLVRS_BOOTSTRAP_QT_PREFIX_ANDROID="${QT_ANDROID_PREFIX}"
+    )
+    if [[ -n "${prefix_path}" ]]; then
+        cmake_args+=("-DCMAKE_PREFIX_PATH=${prefix_path}")
+    fi
+
+    if [[ "${HOST_PLATFORM}" == "macos" ]]; then
+        cmake_args+=(
+            -DLVRS_BOOTSTRAP_QT_PREFIX_MACOS="${QT_HOST_PREFIX}"
+            -DLVRS_BOOTSTRAP_QT_PREFIX_IOS="${QT_IOS_PREFIX}"
+            -DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF
+            -DLVRS_BOOTSTRAP_IOS_ARCHITECTURES="${IOS_SIMULATOR_ARCH}"
+        )
+    elif [[ "${HOST_PLATFORM}" == "linux" ]]; then
+        cmake_args+=(
+            -DLVRS_BOOTSTRAP_QT_PREFIX_LINUX="${QT_HOST_PREFIX}"
+            -DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF
+        )
+    fi
+
+    cmake "${cmake_args[@]}"
+}
+
 build_platform() {
     local platform_name="$1"
     local target_name
@@ -273,6 +321,19 @@ build_platform() {
         fi
     fi
 
+    return ${result}
+}
+
+build_trial_package() {
+    local log_file
+    local result
+
+    log_file="${TRIAL_BUILD_DIR}/whatson_package.log"
+    log "Building trial package target: whatson_package"
+    set +e
+    cmake --build "${TRIAL_BUILD_DIR}" --target "whatson_package" -j 2>&1 | tee "${log_file}"
+    result=${PIPESTATUS[0]}
+    set -e
     return ${result}
 }
 
@@ -307,10 +368,15 @@ fi
 
 configure_root
 
+if [[ "${PLATFORM}" == "all" || "${PLATFORM}" == "host" || "${PLATFORM}" == "macos" || "${PLATFORM}" == "linux" ]]; then
+    configure_trial_root
+fi
+
 overall_result=0
 
 if [[ "${PLATFORM}" == "all" ]]; then
     build_platform "${HOST_PLATFORM}" || overall_result=1
+    build_trial_package || overall_result=1
 
     if [[ "${HOST_PLATFORM}" == "macos" ]]; then
         build_platform "ios" || overall_result=1
@@ -323,12 +389,16 @@ if [[ "${PLATFORM}" == "all" ]]; then
     fi
 elif [[ "${PLATFORM}" == "host" ]]; then
     build_platform "${HOST_PLATFORM}" || overall_result=1
+    build_trial_package || overall_result=1
 else
     if [[ "${PLATFORM}" == "android" && -z "${ANDROID_NDK_ROOT_DETECTED}" ]]; then
         log "Cannot build Android target without NDK."
         exit 2
     fi
     build_platform "${PLATFORM}" || overall_result=1
+    if [[ "${PLATFORM}" == "macos" || "${PLATFORM}" == "linux" ]]; then
+        build_trial_package || overall_result=1
+    fi
 fi
 
 exit ${overall_result}

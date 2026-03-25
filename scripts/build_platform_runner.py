@@ -486,6 +486,7 @@ class BuildAll:
         self.lvrs_source_dir = _expand(args.lvrs_source_dir)
 
         self.host_build_dir = _expand(args.host_build_dir)
+        self.trial_build_dir = _expand(args.trial_build_dir)
         self.android_build_dir = _expand(args.android_build_dir)
         self.ios_project_dir = _expand(args.ios_project_dir)
         self.android_studio_dir = _expand(args.android_studio_dir)
@@ -551,6 +552,57 @@ class BuildAll:
         if self._linux_headless_session():
             return False
         return True
+
+    def _host_configure_command(self, build_dir: Path) -> List[str]:
+        cmake_cmd = ["cmake", "-S", str(self.root), "-B", str(build_dir)]
+        prefix_paths: List[str] = []
+        if self.qt_host_prefix.exists():
+            prefix_paths.append(str(self.qt_host_prefix))
+        if self.lvrs_prefix.exists():
+            prefix_paths.append(str(self.lvrs_prefix))
+        if prefix_paths:
+            cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}")
+        cmake_cmd.append("-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF")
+        lvrs_dir = self.lvrs_dir or self._lvrs_cmake_dir(
+            self._lvrs_platform_prefix(self._host_platform_name())
+        )
+        if lvrs_dir.exists():
+            cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
+        return cmake_cmd
+
+    def _build_trial_package(self, *, task: str, log_path: Path) -> None:
+        self._emit_state(
+            "trial_package_prepare",
+            task=task,
+            trial_build_dir=_path_state(self.trial_build_dir),
+            log_path=_path_state(log_path),
+        )
+        self._clean_path(task=task, path=self.trial_build_dir, log_path=log_path)
+        self.trial_build_dir.mkdir(parents=True, exist_ok=True)
+
+        self._run(
+            task=task,
+            cmd=self._host_configure_command(self.trial_build_dir),
+            log_path=log_path,
+        )
+        self._run(
+            task=task,
+            cmd=[
+                "cmake",
+                "--build",
+                str(self.trial_build_dir),
+                "--target",
+                "whatson_package",
+                *self._build_parallel_args(task),
+            ],
+            log_path=log_path,
+        )
+        self._emit_state(
+            "trial_package_ready",
+            task=task,
+            trial_build_dir=_path_state(self.trial_build_dir),
+            log_path=_path_state(log_path),
+        )
 
     def _run(
             self,
@@ -1706,6 +1758,7 @@ class BuildAll:
             task=task,
             log_path=_path_state(log_path),
             build_dir=_path_state(self.host_build_dir),
+            trial_build_dir=_path_state(self.trial_build_dir),
             root=_path_state(self.root),
             logs_dir=_path_state(self.logs_dir),
             no_host_run=self.no_host_run,
@@ -1719,22 +1772,7 @@ class BuildAll:
             self._clean_path(task=task, path=self.host_build_dir, log_path=log_path)
             self.host_build_dir.mkdir(parents=True, exist_ok=True)
 
-            cmake_cmd = ["cmake", "-S", str(self.root), "-B", str(self.host_build_dir)]
-            prefix_paths: List[str] = []
-            if self.qt_host_prefix.exists():
-                prefix_paths.append(str(self.qt_host_prefix))
-            if self.lvrs_prefix.exists():
-                prefix_paths.append(str(self.lvrs_prefix))
-            if prefix_paths:
-                cmake_cmd.append(f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}")
-            cmake_cmd.append("-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF")
-            lvrs_dir = self.lvrs_dir or self._lvrs_cmake_dir(
-                self._lvrs_platform_prefix(self._host_platform_name())
-            )
-            if lvrs_dir.exists():
-                cmake_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
-
-            self._run(task=task, cmd=cmake_cmd, log_path=log_path)
+            self._run(task=task, cmd=self._host_configure_command(self.host_build_dir), log_path=log_path)
             self._run(
                 task=task,
                 cmd=[
@@ -1759,6 +1797,8 @@ class BuildAll:
                 ],
                 log_path=log_path,
             )
+
+            self._build_trial_package(task=task, log_path=log_path)
 
             daemon = self._daemon_binary()
             if daemon:
@@ -2426,7 +2466,7 @@ def parse_args() -> argparse.Namespace:
         )
     )
     parser.add_argument("--root", default=str(repo_root), help="Repository root path.")
-    parser.add_argument("--logs-dir", default=str(repo_root / "build" / "automation-logs"))
+    parser.add_argument("--logs-dir", default=str(repo_root / "automation-logs"))
     parser.add_argument("--tasks", default="host,android,ios", help="Comma-separated tasks: host,android,ios")
 
     mode_group = parser.add_mutually_exclusive_group()
@@ -2448,7 +2488,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--no-host-run", action="store_true", help="Skip launching the host desktop app.")
 
-    parser.add_argument("--host-build-dir", default=str(repo_root / "build" / "host-auto"))
+    parser.add_argument("--host-build-dir", default=str(repo_root / "build"))
+    parser.add_argument("--trial-build-dir", default=str(repo_root / "build-trial"))
     parser.add_argument("--android-build-dir",
                         default=str(repo_root / "build" / "android-auto"))
     parser.add_argument("--ios-project-dir",

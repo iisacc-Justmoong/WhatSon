@@ -150,24 +150,24 @@ class RuntimeSmokeMatrix:
     def _host_binary(self) -> Optional[Path]:
         if self.system_name.startswith("darwin"):
             candidates = [
-                self.root / "build" / "host-auto" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
                 self.root / "build" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
-                self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
                 self.root / "build" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
+                self.root / "build" / "host-auto" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
+                self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon",
             ]
         elif self.system_name.startswith("win"):
             candidates = [
-                self.root / "build" / "host-auto" / "WhatSon.exe",
                 self.root / "build" / "WhatSon.exe",
-                self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.exe",
                 self.root / "build" / "src" / "app" / "bin" / "WhatSon.exe",
+                self.root / "build" / "host-auto" / "WhatSon.exe",
+                self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.exe",
             ]
         else:
             candidates = [
-                self.root / "build" / "host-auto" / "WhatSon",
                 self.root / "build" / "WhatSon",
-                self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon",
                 self.root / "build" / "src" / "app" / "bin" / "WhatSon",
+                self.root / "build" / "host-auto" / "WhatSon",
+                self.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon",
             ]
         return self._find_existing(candidates)
 
@@ -232,7 +232,7 @@ class RuntimeSmokeMatrix:
     def verify_qml_cache_contract(self) -> None:
         self._emit_state("phase_start", phase="verify_qml_cache_contract")
         required = [
-            self.root / "build" / "host-auto" / "src" / "app" / ".rcc" / "qmlcache" / "WhatSon_qml" / "shell" / "BodyLayout_qml.cpp",
+            self.root / "build" / "src" / "app" / ".rcc" / "qmlcache" / "WhatSon_qml" / "shell" / "BodyLayout_qml.cpp",
             self.root / "build" / "android-auto" / "src" / "app" / ".rcc" / "qmlcache" / "WhatSon_qml" / "shell" / "BodyLayout_qml.cpp",
         ]
         missing = [str(path) for path in required if not path.exists()]
@@ -456,12 +456,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tasks", default="host,android,ios", help="Comma-separated tasks: host,android,ios")
     parser.add_argument(
         "--logs-dir",
-        default=str(root / "build" / "runtime-matrix-logs"),
+        default=str(root / "runtime-matrix-logs"),
         help="Runtime matrix log directory.",
     )
     parser.add_argument(
         "--artifacts-dir",
-        default=str(root / "build" / "runtime-matrix-artifacts"),
+        default=str(root / "runtime-matrix-artifacts"),
         help="Runtime matrix artifacts directory.",
     )
     parser.add_argument(

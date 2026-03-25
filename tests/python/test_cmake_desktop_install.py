@@ -63,8 +63,11 @@ class CMakeDesktopInstallTests(unittest.TestCase):
         cli_text = (REPO_ROOT / "src/cli/src/main.rs").read_text(encoding="utf-8")
         runner_text = (REPO_ROOT / "scripts/build_platform_runner.py").read_text(encoding="utf-8")
 
-        self.assertIn('    "build/host-auto/WhatSon.app/Contents/MacOS/WhatSon",', cli_text)
+        self.assertIn('    "build/WhatSon.app/Contents/MacOS/WhatSon",', cli_text)
+        self.assertIn('    "build-trial/WhatSon.app/Contents/MacOS/WhatSon",', cli_text)
         self.assertIn('    "build/WhatSon.exe",', cli_text)
+        self.assertIn('parser.add_argument("--host-build-dir", default=str(repo_root / "build"))', runner_text)
+        self.assertIn('parser.add_argument("--trial-build-dir", default=str(repo_root / "build-trial"))', runner_text)
         self.assertIn('destination=self.ios_project_dir / "WhatSon.app",', runner_text)
         self.assertIn('destination=self.android_build_dir / "WhatSon.apk",', runner_text)
 

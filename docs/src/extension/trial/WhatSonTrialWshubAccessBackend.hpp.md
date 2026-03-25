@@ -9,6 +9,10 @@ Declares the optional backend that blocks `.wshub` access after the local 90-day
 
 ## Decision Model
 - Non-`.wshub` targets are ignored and remain allowed.
+- If `WhatSonRegisterManager::authenticated()` is `true`, the backend bypasses every trial-specific restriction.
 - `.wshub` targets are allowed only while `WhatSonTrialActivationPolicy` reports an active trial state.
 - Expired decisions include the install-derived trial state and a user-facing denial string.
-- Trial-only hub identity checks are expected to use `.whatson/trial_register.xml`, not the licensed-build register filename.
+- Local `.wshub` targets also inspect `.whatson/trial_register.xml`.
+- Local `.wshub` targets are denied when the trial register file is missing.
+- The register payload reads both `deviceUUID` and `key`, but only the `key` comparison controls access.
+- When the local hub key differs from the persisted in-app trial key, the decision is denied even if the device UUID still matches.

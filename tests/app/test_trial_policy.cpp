@@ -1,11 +1,15 @@
 #include "WhatSonTrialActivationPolicy.hpp"
+#include "WhatSonRegisterManager.hpp"
+#include "WhatSonTrialClientIdentityStore.hpp"
 #include "WhatSonTrialClockStore.hpp"
 #include "WhatSonTrialInstallStore.hpp"
+#include "WhatSonTrialRegisterXml.hpp"
 #include "WhatSonTrialWshubAccessBackend.hpp"
 
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -22,6 +26,13 @@ namespace
         QSettings settings;
         settings.clear();
         settings.sync();
+    }
+
+    QString createHubPath(const QTemporaryDir& tempDir, const QString& hubName)
+    {
+        const QString hubPath = QDir(tempDir.path()).filePath(hubName);
+        QDir().mkpath(QDir(hubPath).filePath(QStringLiteral(".whatson")));
+        return hubPath;
     }
 }
 
@@ -41,9 +52,19 @@ private slots:
     void inspect_detectsClockRollbackAgainstLastSeenTimestamp();
     void stampExitTimestamp_preservesMonotonicLastSeenTimestamp();
     void loadLastSeenTimestampUtc_clearsInvalidStoredTimestamp();
+    void registerManager_persistsAuthenticatedFlag();
+    void ensureIdentity_persistsStableClientIdentity();
+    void writeRegister_writesTrialRegisterXmlForCurrentClient();
+    void refreshForDate_bypassesTrialWhenRegisterAuthenticated();
     void evaluateAccess_allowsWshubWithinTrialWindow();
     void evaluateAccess_blocksWshubAfterTrialExpiry();
     void evaluateAccess_blocksWshubContentUriAfterTrialExpiry();
+    void evaluateAccess_blocksLocalWshubWithoutTrialRegister();
+    void evaluateAccess_bypassesAllTrialGuardsWhenRegisterAuthenticated();
+    void evaluateAccess_allowsWshubWhenRegisterKeyMatches();
+    void evaluateAccess_ignoresDeviceUuidMismatchWhenKeyMatches();
+    void evaluateAccess_blocksWshubWhenRegisterKeyDiffersFromClientKey();
+    void evaluateAccess_blocksInvalidTrialRegisterFile();
     void evaluateAccess_ignoresNonWshubTargetsAfterTrialExpiry();
 };
 
@@ -250,14 +271,106 @@ void WhatSonTrialPolicyTest::loadLastSeenTimestampUtc_clearsInvalidStoredTimesta
     QVERIFY(!settings.contains(WhatSonTrialClockStore::defaultLastSeenTimestampSettingsKey()));
 }
 
-void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWithinTrialWindow()
+void WhatSonTrialPolicyTest::registerManager_persistsAuthenticatedFlag()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    WhatSonRegisterManager manager;
+    QVERIFY(!manager.authenticated());
+
+    QSignalSpy authenticatedChangedSpy(&manager, &WhatSonRegisterManager::authenticatedChanged);
+    manager.setAuthenticated(true);
+
+    QVERIFY(manager.authenticated());
+    QCOMPARE(authenticatedChangedSpy.count(), 1);
+
+    WhatSonRegisterManager reloadedManager;
+    QVERIFY(reloadedManager.authenticated());
+
+    reloadedManager.clearAuthentication();
+    QVERIFY(!reloadedManager.authenticated());
+
+    WhatSonRegisterManager clearedManager;
+    QVERIFY(!clearedManager.authenticated());
+}
+
+void WhatSonTrialPolicyTest::ensureIdentity_persistsStableClientIdentity()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    WhatSonTrialClientIdentityStore store;
+    const WhatSonTrialClientIdentity identity = store.ensureIdentity();
+    const WhatSonTrialClientIdentity reloadedIdentity = store.ensureIdentity();
+
+    QVERIFY(!identity.deviceUuid.isEmpty());
+    QVERIFY(!identity.key.isEmpty());
+    QCOMPARE(identity, reloadedIdentity);
+    QCOMPARE(identity.deviceUuid, WhatSonTrialClientIdentityStore::normalizeDeviceUuid(identity.deviceUuid));
+    QCOMPARE(identity.key.size(), 32);
+}
+
+void WhatSonTrialPolicyTest::writeRegister_writesTrialRegisterXmlForCurrentClient()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Alpha.wshub"));
-    QVERIFY(QDir().mkpath(hubPath));
+    QVERIFY(QDir().mkpath(QDir(hubPath).filePath(QStringLiteral(".whatson"))));
+
+    WhatSonTrialClientIdentityStore identityStore;
+    const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
+
+    WhatSonTrialRegisterXml registerXml;
+    QString errorMessage;
+    QVERIFY2(registerXml.writeRegister(hubPath, identity, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(QFileInfo(QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"))).isFile());
+
+    const WhatSonTrialClientIdentity loadedIdentity = registerXml.loadRegister(hubPath, &errorMessage);
+    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
+    QCOMPARE(loadedIdentity, identity);
+}
+
+void WhatSonTrialPolicyTest::refreshForDate_bypassesTrialWhenRegisterAuthenticated()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    WhatSonTrialInstallStore installStore;
+    installStore.storeInstallDate(QDate(2026, 1, 10));
+
+    WhatSonRegisterManager registerManager;
+    registerManager.setAuthenticated(true);
+
+    WhatSonTrialActivationPolicy policy(installStore);
+    policy.setRegisterManager(&registerManager);
+    const WhatSonTrialActivationState state = policy.refreshForDate(QDate(2026, 4, 10));
+
+    QVERIFY(state.active);
+    QVERIFY(state.bypassedByAuthentication);
+    QCOMPARE(state.installDate, QDate(2026, 1, 10));
+    QCOMPARE(state.remainingDays, WhatSonTrialActivationPolicy::kDefaultTrialLengthDays);
+    QCOMPARE(state.elapsedDays, 0);
+    QVERIFY(!state.lastActiveDate.isValid());
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWithinTrialWindow()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("Alpha.wshub"));
+
+    WhatSonTrialClientIdentityStore identityStore;
+    WhatSonTrialRegisterXml registerXml;
+    QString errorMessage;
+    QVERIFY2(registerXml.writeRegister(hubPath, identityStore.ensureIdentity(), &errorMessage), qPrintable(errorMessage));
 
     WhatSonTrialWshubAccessBackend backend;
     const WhatSonTrialWshubAccessDecision decision =
@@ -266,6 +379,10 @@ void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWithinTrialWindow()
     QVERIFY(decision.wshubTarget);
     QVERIFY(decision.allowed);
     QVERIFY(!decision.restrictedByExpiredTrial);
+    QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.clientKeyMatched);
+    QVERIFY(!decision.clientIdentity.key.isEmpty());
+    QCOMPARE(decision.clientIdentity, decision.hubIdentity);
     QCOMPARE(decision.normalizedTargetPath, QDir::cleanPath(hubPath));
     QCOMPARE(decision.trialState.installDate, QDate(2026, 1, 10));
     QCOMPARE(decision.trialState.remainingDays, WhatSonTrialActivationPolicy::kDefaultTrialLengthDays);
@@ -320,6 +437,175 @@ void WhatSonTrialPolicyTest::evaluateAccess_blocksWshubContentUriAfterTrialExpir
     QVERIFY(!decision.allowed);
     QVERIFY(decision.restrictedByExpiredTrial);
     QCOMPARE(decision.normalizedTargetPath, hubUri);
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_blocksLocalWshubWithoutTrialRegister()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("MissingRegister.wshub"));
+
+    WhatSonTrialWshubAccessBackend backend;
+    const WhatSonTrialWshubAccessDecision decision =
+        backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
+
+    QVERIFY(!decision.allowed);
+    QVERIFY(decision.wshubTarget);
+    QVERIFY(!decision.restrictedByExpiredTrial);
+    QVERIFY(!decision.registerFilePresent);
+    QVERIFY(!decision.clientKeyMatched);
+    QVERIFY(decision.restrictedByMissingRegister);
+    QVERIFY(decision.denialReason.contains(QStringLiteral("trial_register.xml")));
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWhenRegisterKeyMatches()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("Matching.wshub"));
+
+    WhatSonTrialClientIdentityStore identityStore;
+    WhatSonTrialRegisterXml registerXml;
+    QString errorMessage;
+    const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
+    QVERIFY2(registerXml.writeRegister(hubPath, identity, &errorMessage), qPrintable(errorMessage));
+
+    WhatSonTrialWshubAccessBackend backend;
+    const WhatSonTrialWshubAccessDecision decision =
+        backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
+
+    QVERIFY(decision.allowed);
+    QVERIFY(decision.wshubTarget);
+    QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.clientKeyMatched);
+    QVERIFY(!decision.restrictedByClientKeyMismatch);
+    QCOMPARE(decision.clientIdentity, identity);
+    QCOMPARE(decision.hubIdentity, identity);
+    QCOMPARE(decision.denialReason, QString());
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_ignoresDeviceUuidMismatchWhenKeyMatches()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("DeviceMismatch.wshub"));
+
+    WhatSonTrialClientIdentityStore identityStore;
+    WhatSonTrialRegisterXml registerXml;
+    QString errorMessage;
+    const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
+    WhatSonTrialClientIdentity hubIdentity = identity;
+    hubIdentity.deviceUuid = QStringLiteral("01234567-89ab-cdef-0123-456789abcdef");
+    QVERIFY2(registerXml.writeRegister(hubPath, hubIdentity, &errorMessage), qPrintable(errorMessage));
+
+    WhatSonTrialWshubAccessBackend backend;
+    const WhatSonTrialWshubAccessDecision decision =
+        backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
+
+    QVERIFY(decision.allowed);
+    QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.clientKeyMatched);
+    QVERIFY(!decision.restrictedByClientKeyMismatch);
+    QCOMPARE(decision.clientIdentity, identity);
+    QCOMPARE(decision.hubIdentity.key, identity.key);
+    QCOMPARE(decision.hubIdentity.deviceUuid, hubIdentity.deviceUuid);
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_blocksWshubWhenRegisterKeyDiffersFromClientKey()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("KeyMismatch.wshub"));
+
+    WhatSonTrialClientIdentityStore identityStore;
+    WhatSonTrialRegisterXml registerXml;
+    QString errorMessage;
+    const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
+    WhatSonTrialClientIdentity hubIdentity = identity;
+    hubIdentity.key = QStringLiteral("ABCDEFGH12345678IJKLMNOP87654321");
+    QVERIFY2(registerXml.writeRegister(hubPath, hubIdentity, &errorMessage), qPrintable(errorMessage));
+
+    WhatSonTrialWshubAccessBackend backend;
+    const WhatSonTrialWshubAccessDecision decision =
+        backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
+
+    QVERIFY(!decision.allowed);
+    QVERIFY(decision.registerFilePresent);
+    QVERIFY(!decision.clientKeyMatched);
+    QVERIFY(!decision.restrictedByMissingRegister);
+    QVERIFY(decision.restrictedByClientKeyMismatch);
+    QCOMPARE(decision.clientIdentity, identity);
+    QCOMPARE(decision.hubIdentity.key, hubIdentity.key);
+    QVERIFY(decision.denialReason.contains(QStringLiteral("trial_register.xml")));
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_bypassesAllTrialGuardsWhenRegisterAuthenticated()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("Authenticated.wshub"));
+    const QString registerPath = QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"));
+
+    QFile file(registerPath);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    file.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<trialRegister><deviceUUID>01234567-89ab-cdef-0123-456789abcdef</deviceUUID><key>bad</key></trialRegister>\n");
+    file.close();
+
+    WhatSonTrialInstallStore installStore;
+    installStore.storeInstallDate(QDate(2026, 1, 10));
+
+    WhatSonRegisterManager registerManager;
+    registerManager.setAuthenticated(true);
+
+    WhatSonTrialWshubAccessBackend backend(installStore, &registerManager);
+    const WhatSonTrialWshubAccessDecision decision =
+        backend.evaluateAccess(hubPath, QDate(2026, 4, 10));
+
+    QVERIFY(decision.wshubTarget);
+    QVERIFY(decision.allowed);
+    QVERIFY(!decision.restrictedByExpiredTrial);
+    QVERIFY(decision.trialState.active);
+    QVERIFY(decision.trialState.bypassedByAuthentication);
+    QVERIFY(!decision.restrictedByMissingRegister);
+    QVERIFY(!decision.restrictedByClientKeyMismatch);
+    QCOMPARE(decision.denialReason, QString());
+}
+
+void WhatSonTrialPolicyTest::evaluateAccess_blocksInvalidTrialRegisterFile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("InvalidRegister.wshub"));
+    const QString registerPath = QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"));
+
+    QFile file(registerPath);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    file.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<trialRegister><deviceUUID>01234567-89ab-cdef-0123-456789abcdef</deviceUUID><key>bad</key></trialRegister>\n");
+    file.close();
+
+    WhatSonTrialWshubAccessBackend backend;
+    const WhatSonTrialWshubAccessDecision decision =
+        backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
+
+    QVERIFY(!decision.allowed);
+    QVERIFY(decision.registerFilePresent);
+    QVERIFY(!decision.clientKeyMatched);
+    QVERIFY(!decision.restrictedByMissingRegister);
+    QVERIFY(decision.restrictedByClientKeyMismatch);
+    QVERIFY(decision.hubIdentity.key.isEmpty());
+    QVERIFY(decision.denialReason.contains(QStringLiteral("valid key")));
 }
 
 void WhatSonTrialPolicyTest::evaluateAccess_ignoresNonWshubTargetsAfterTrialExpiry()

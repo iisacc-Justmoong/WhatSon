@@ -118,6 +118,7 @@ def _make_args(temp_root: Path, *, jobs: int, sequential: bool = True) -> argpar
         jobs=jobs,
         no_host_run=True,
         host_build_dir=str(temp_root / "build-host"),
+        trial_build_dir=str(temp_root / "build-trial"),
         android_build_dir=str(temp_root / "build-android"),
         ios_project_dir=str(temp_root / "ios-project"),
         android_studio_dir=str(temp_root / "android-studio"),
@@ -205,6 +206,24 @@ class BuildParallelismTests(unittest.TestCase):
         self.assertNotIn("-j", build_commands[0])
         self.assertEqual(build_commands[0][3:5], ["--target", "WhatSon"])
         self.assertEqual(build_commands[1][3:5], ["--target", "whatson_build_all"])
+        self.assertEqual(result.status, "success")
+
+    def test_host_build_also_generates_trial_package_build_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            args = _make_args(Path(temp_dir), jobs=4)
+            build_runner = RecordingBuildAll(args)
+
+            result = build_runner.task_host()
+
+        configure_commands = [cmd for cmd in build_runner.commands if cmd[:3] == ["cmake", "-S", str(build_runner.root)]]
+        self.assertTrue(configure_commands)
+        self.assertEqual(configure_commands[0][4], str(build_runner.host_build_dir))
+        self.assertEqual(configure_commands[1][4], str(build_runner.trial_build_dir))
+
+        build_commands = [cmd for cmd in build_runner.commands if cmd[:2] == ["cmake", "--build"]]
+        self.assertTrue(build_commands)
+        self.assertEqual(build_commands[2][2], str(build_runner.trial_build_dir))
+        self.assertEqual(build_commands[2][3:5], ["--target", "whatson_package"])
         self.assertEqual(result.status, "success")
 
     def test_linux_headless_host_build_keeps_desktop_app_build_enabled(self) -> None:
@@ -410,9 +429,9 @@ class BuildParallelismTests(unittest.TestCase):
             args = _make_smoke_args(Path(temp_dir), jobs=2)
             smoke_runner = smoke_matrix.RuntimeSmokeMatrix(args)
             smoke_runner.system_name = "darwin"
-            root_binary = smoke_runner.root / "build" / "host-auto" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
+            root_binary = smoke_runner.root / "build" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
             legacy_binary = (
-                smoke_runner.root / "build" / "host-auto" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
+                smoke_runner.root / "build" / "src" / "app" / "bin" / "WhatSon.app" / "Contents" / "MacOS" / "WhatSon"
             )
             root_binary.parent.mkdir(parents=True, exist_ok=True)
             legacy_binary.parent.mkdir(parents=True, exist_ok=True)

@@ -1,9 +1,11 @@
 #pragma once
 
+#include "WhatSonRegisterManager.hpp"
 #include "WhatSonTrialInstallStore.hpp"
 
 #include <QDate>
 #include <QObject>
+#include <QPointer>
 
 struct WhatSonTrialActivationState final
 {
@@ -13,6 +15,7 @@ struct WhatSonTrialActivationState final
     int elapsedDays = 0;
     int remainingDays = 0;
     bool active = false;
+    bool bypassedByAuthentication = false;
 
     bool operator==(const WhatSonTrialActivationState& other) const = default;
 };
@@ -26,6 +29,7 @@ class WhatSonTrialActivationPolicy final : public QObject
     Q_PROPERTY(int trialLengthDays READ trialLengthDays CONSTANT FINAL)
     Q_PROPERTY(int elapsedDays READ elapsedDays NOTIFY stateChanged FINAL)
     Q_PROPERTY(int remainingDays READ remainingDays NOTIFY stateChanged FINAL)
+    Q_PROPERTY(bool bypassedByAuthentication READ bypassedByAuthentication NOTIFY stateChanged FINAL)
 
 public:
     static constexpr int kDefaultTrialLengthDays = 90;
@@ -39,6 +43,9 @@ public:
     int elapsedDays() const noexcept;
     int remainingDays() const noexcept;
     bool active() const noexcept;
+    bool bypassedByAuthentication() const noexcept;
+
+    void setRegisterManager(WhatSonRegisterManager* registerManager);
 
     WhatSonTrialActivationState currentState() const noexcept;
     WhatSonTrialActivationState refreshForDate(const QDate& today);
@@ -51,9 +58,11 @@ signals:
 
 private:
     static WhatSonTrialActivationState buildState(const QDate& installDate, const QDate& today);
+    static WhatSonTrialActivationState buildAuthenticatedState(const QDate& installDate);
     void setState(const WhatSonTrialActivationState& state);
 
     WhatSonTrialInstallStore m_installStore;
+    QPointer<WhatSonRegisterManager> m_registerManager;
     WhatSonTrialActivationState m_state;
 };
 

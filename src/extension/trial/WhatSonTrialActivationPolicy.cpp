@@ -45,6 +45,16 @@ bool WhatSonTrialActivationPolicy::active() const noexcept
     return m_state.active;
 }
 
+bool WhatSonTrialActivationPolicy::bypassedByAuthentication() const noexcept
+{
+    return m_state.bypassedByAuthentication;
+}
+
+void WhatSonTrialActivationPolicy::setRegisterManager(WhatSonRegisterManager* registerManager)
+{
+    m_registerManager = registerManager;
+}
+
 WhatSonTrialActivationState WhatSonTrialActivationPolicy::currentState() const noexcept
 {
     return m_state;
@@ -54,7 +64,10 @@ WhatSonTrialActivationState WhatSonTrialActivationPolicy::refreshForDate(const Q
 {
     const QDate evaluationDate = today.isValid() ? today : QDate::currentDate();
     const QDate installDate = m_installStore.ensureInstallDate(evaluationDate);
-    const WhatSonTrialActivationState nextState = buildState(installDate, evaluationDate);
+    const WhatSonTrialActivationState nextState =
+        m_registerManager != nullptr && m_registerManager->authenticated()
+            ? buildAuthenticatedState(installDate)
+            : buildState(installDate, evaluationDate);
     setState(nextState);
     return m_state;
 }
@@ -79,6 +92,17 @@ WhatSonTrialActivationState WhatSonTrialActivationPolicy::buildState(const QDate
     state.elapsedDays = qMax(0, installDate.daysTo(today));
     state.active = state.elapsedDays < kDefaultTrialLengthDays;
     state.remainingDays = state.active ? kDefaultTrialLengthDays - state.elapsedDays : 0;
+    return state;
+}
+
+WhatSonTrialActivationState WhatSonTrialActivationPolicy::buildAuthenticatedState(const QDate& installDate)
+{
+    WhatSonTrialActivationState state;
+    state.trialLengthDays = kDefaultTrialLengthDays;
+    state.installDate = installDate;
+    state.active = true;
+    state.remainingDays = kDefaultTrialLengthDays;
+    state.bypassedByAuthentication = true;
     return state;
 }
 

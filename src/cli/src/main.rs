@@ -6,13 +6,6 @@ use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 
 const APP_EXECUTABLES: &[&str] = &[
-    "build/host-auto/WhatSon.app/Contents/MacOS/WhatSon",
-    "build/host-auto/WhatSon.exe",
-    "build/host-auto/WhatSon",
-    "build/host-auto/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
-    "build/host-auto/src/app/bin/WhatSon.exe",
-    "build/host-auto/src/app/bin/WhatSon",
-    "build/host-auto/src/app/WhatSon",
     "build/WhatSon.app/Contents/MacOS/WhatSon",
     "build/WhatSon.exe",
     "build/WhatSon",
@@ -20,9 +13,23 @@ const APP_EXECUTABLES: &[&str] = &[
     "build/src/app/bin/WhatSon.exe",
     "build/src/app/bin/WhatSon",
     "build/src/app/WhatSon",
+    "build-trial/WhatSon.app/Contents/MacOS/WhatSon",
+    "build-trial/WhatSon.exe",
+    "build-trial/WhatSon",
+    "build-trial/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
+    "build-trial/src/app/bin/WhatSon.exe",
+    "build-trial/src/app/bin/WhatSon",
+    "build-trial/src/app/WhatSon",
+    "build/host-auto/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/host-auto/WhatSon.exe",
+    "build/host-auto/WhatSon",
+    "build/host-auto/src/app/bin/WhatSon.app/Contents/MacOS/WhatSon",
+    "build/host-auto/src/app/bin/WhatSon.exe",
+    "build/host-auto/src/app/bin/WhatSon",
+    "build/host-auto/src/app/WhatSon",
 ];
 
-const BUILD_DIRS: &[&str] = &["build/host-auto", "build"];
+const BUILD_DIRS: &[&str] = &["build", "build-trial", "build/host-auto"];
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum LaunchMode {
