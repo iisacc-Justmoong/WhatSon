@@ -59,6 +59,97 @@ option(WHATSON_BUILD_CLI "Build the Rust CLI launcher" ON)
 option(WHATSON_ENABLE_TESTING "Enable automated tests for TDD workflow" ON)
 option(WHATSON_RUN_TESTS_ON_BUILD "Run automated tests on every build" ON)
 option(WHATSON_ENABLE_DEV_TOOLING "Enable developer lint/format convenience targets" ON)
+get_filename_component(_whatson_binary_dir_name "${CMAKE_BINARY_DIR}" NAME)
+set(_WHATSON_IS_TRIAL_BUILD_DEFAULT OFF)
+if (_whatson_binary_dir_name STREQUAL "build-trial")
+    set(_WHATSON_IS_TRIAL_BUILD_DEFAULT ON)
+endif ()
+option(WHATSON_IS_TRIAL_BUILD "Mark this build tree as the dedicated trial packaging tree." ${_WHATSON_IS_TRIAL_BUILD_DEFAULT})
+set(_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT ON)
+if (WHATSON_IS_TRIAL_BUILD OR CMAKE_CROSSCOMPILING)
+    set(_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT OFF)
+endif ()
+option(WHATSON_ENABLE_TRIAL_BUILD_MIRROR
+        "Configure and build the dedicated build-trial packaging tree from this host build."
+        ${_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT})
+set(WHATSON_TRIAL_BUILD_DIR "${CMAKE_SOURCE_DIR}/build-trial" CACHE PATH
+        "Output directory for the dedicated desktop trial packaging tree.")
+set(_WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT "")
+if (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    set(_whatson_trial_requested_osx_architectures "")
+    if (DEFINED CMAKE_OSX_ARCHITECTURES AND NOT CMAKE_OSX_ARCHITECTURES STREQUAL "")
+        set(_whatson_trial_requested_osx_architectures "${CMAKE_OSX_ARCHITECTURES}")
+    else ()
+        execute_process(
+                COMMAND /usr/bin/uname -m
+                RESULT_VARIABLE _whatson_trial_uname_result
+                OUTPUT_VARIABLE _whatson_trial_uname_architecture
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+        )
+        if (_whatson_trial_uname_result EQUAL 0 AND NOT _whatson_trial_uname_architecture STREQUAL "")
+            set(_whatson_trial_requested_osx_architectures "${_whatson_trial_uname_architecture}")
+        endif ()
+    endif ()
+
+    set(_whatson_trial_lvrs_library "")
+    if (LVRS_PREFIX AND EXISTS "${LVRS_PREFIX}/platforms/macos/lib/libLVRS.dylib")
+        set(_whatson_trial_lvrs_library "${LVRS_PREFIX}/platforms/macos/lib/libLVRS.dylib")
+    endif ()
+
+    set(_whatson_trial_lvrs_architectures "")
+    if (_whatson_trial_lvrs_library)
+        find_program(_WHATSON_LIPO_EXECUTABLE NAMES lipo)
+        if (_WHATSON_LIPO_EXECUTABLE)
+            execute_process(
+                    COMMAND "${_WHATSON_LIPO_EXECUTABLE}" -archs "${_whatson_trial_lvrs_library}"
+                    RESULT_VARIABLE _whatson_trial_lipo_result
+                    OUTPUT_VARIABLE _whatson_trial_lvrs_architectures_raw
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ERROR_QUIET
+            )
+            if (_whatson_trial_lipo_result EQUAL 0 AND NOT _whatson_trial_lvrs_architectures_raw STREQUAL "")
+                string(REGEX REPLACE "[ \t]+" ";" _whatson_trial_lvrs_architectures
+                        "${_whatson_trial_lvrs_architectures_raw}")
+            endif ()
+        endif ()
+    endif ()
+
+    if (_whatson_trial_requested_osx_architectures)
+        string(REGEX REPLACE "[;, ]+" ";" _whatson_trial_requested_osx_architecture_list
+                "${_whatson_trial_requested_osx_architectures}")
+    else ()
+        set(_whatson_trial_requested_osx_architecture_list "")
+    endif ()
+
+    if (_whatson_trial_lvrs_architectures)
+        set(_whatson_trial_effective_osx_architectures "")
+        foreach (_whatson_trial_requested_architecture IN LISTS _whatson_trial_requested_osx_architecture_list)
+            list(FIND _whatson_trial_lvrs_architectures "${_whatson_trial_requested_architecture}"
+                    _whatson_trial_lvrs_architecture_index)
+            if (NOT _whatson_trial_lvrs_architecture_index EQUAL -1)
+                list(APPEND _whatson_trial_effective_osx_architectures
+                        "${_whatson_trial_requested_architecture}")
+            endif ()
+        endforeach ()
+
+        if (_whatson_trial_effective_osx_architectures)
+            list(REMOVE_DUPLICATES _whatson_trial_effective_osx_architectures)
+            list(JOIN _whatson_trial_effective_osx_architectures ";"
+                    _WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT)
+        else ()
+            list(GET _whatson_trial_lvrs_architectures 0 _WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT)
+        endif ()
+    else ()
+        set(_WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT "${_whatson_trial_requested_osx_architectures}")
+    endif ()
+endif ()
+set(WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES "${_WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT}" CACHE STRING
+        "macOS architectures used when configuring the dedicated build-trial tree.")
+if (WHATSON_IS_TRIAL_BUILD)
+    set(WHATSON_ENABLE_TRIAL_BUILD_MIRROR OFF CACHE BOOL
+            "Configure and build the dedicated build-trial packaging tree from this host build." FORCE)
+endif ()
 
 set(WHATSON_PLATFORM_DIR "${CMAKE_SOURCE_DIR}/platform")
 set(WHATSON_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
@@ -96,6 +187,10 @@ message(STATUS "  WHATSON_BUILD_CLI: ${WHATSON_BUILD_CLI}")
 message(STATUS "  BUILD_TESTING: ${BUILD_TESTING}")
 message(STATUS "  WHATSON_RUN_TESTS_ON_BUILD: ${WHATSON_RUN_TESTS_ON_BUILD}")
 message(STATUS "  WHATSON_ENABLE_DEV_TOOLING: ${WHATSON_ENABLE_DEV_TOOLING}")
+message(STATUS "  WHATSON_IS_TRIAL_BUILD: ${WHATSON_IS_TRIAL_BUILD}")
+message(STATUS "  WHATSON_ENABLE_TRIAL_BUILD_MIRROR: ${WHATSON_ENABLE_TRIAL_BUILD_MIRROR}")
+message(STATUS "  WHATSON_TRIAL_BUILD_DIR: ${WHATSON_TRIAL_BUILD_DIR}")
+message(STATUS "  WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES: ${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}")
 message(STATUS "  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "  QT_ROOT_PATH: ${QT_ROOT_PATH}")
 message(STATUS "  LVRS_PREFIX: ${LVRS_PREFIX}")
@@ -667,4 +762,108 @@ if (CMAKE_CPACK_COMMAND)
     if (TARGET whatson_build_all)
         add_dependencies(whatson_package whatson_build_all)
     endif ()
+endif ()
+
+if (TARGET whatson_package
+        AND TARGET WhatSon
+        AND NOT CMAKE_CROSSCOMPILING
+        AND NOT WHATSON_IS_TRIAL_BUILD
+        AND WHATSON_ENABLE_TRIAL_BUILD_MIRROR)
+    set(_whatson_trial_configure_command
+            "${CMAKE_COMMAND}"
+            -G "${CMAKE_GENERATOR}")
+    if (CMAKE_GENERATOR_PLATFORM)
+        list(APPEND _whatson_trial_configure_command -A "${CMAKE_GENERATOR_PLATFORM}")
+    endif ()
+    if (CMAKE_GENERATOR_TOOLSET)
+        list(APPEND _whatson_trial_configure_command -T "${CMAKE_GENERATOR_TOOLSET}")
+    endif ()
+    if (CMAKE_GENERATOR_INSTANCE)
+        list(APPEND _whatson_trial_configure_command
+                "-DCMAKE_GENERATOR_INSTANCE=${CMAKE_GENERATOR_INSTANCE}")
+    endif ()
+
+    list(APPEND _whatson_trial_configure_command
+            -S "${CMAKE_SOURCE_DIR}"
+            -B "${WHATSON_TRIAL_BUILD_DIR}"
+            "-DWHATSON_IS_TRIAL_BUILD=ON"
+            "-DWHATSON_ENABLE_TRIAL_BUILD_MIRROR=OFF"
+            "-DWHATSON_TRIAL_BUILD_DIR=${WHATSON_TRIAL_BUILD_DIR}"
+            "-DWHATSON_ENABLE_IOS_XCODEPROJ_ON_BUILD=OFF"
+            "-DWHATSON_BUILD_APP=${WHATSON_BUILD_APP}"
+            "-DWHATSON_BUILD_DAEMON=${WHATSON_BUILD_DAEMON}"
+            "-DWHATSON_BUILD_CLI=${WHATSON_BUILD_CLI}"
+            "-DWHATSON_ENABLE_TESTING=OFF"
+            "-DWHATSON_RUN_TESTS_ON_BUILD=OFF"
+            "-DWHATSON_ENABLE_DEV_TOOLING=OFF"
+            "-DWHATSON_IOS_SIMULATOR_ARCH=${WHATSON_IOS_SIMULATOR_ARCH}")
+
+    if (DEFINED CMAKE_BUILD_TYPE AND NOT CMAKE_BUILD_TYPE STREQUAL "")
+        list(APPEND _whatson_trial_configure_command "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+    endif ()
+    if (DEFINED CMAKE_MAKE_PROGRAM AND NOT CMAKE_MAKE_PROGRAM STREQUAL "")
+        list(APPEND _whatson_trial_configure_command "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}")
+    endif ()
+    if (DEFINED QT_ROOT_PATH AND NOT QT_ROOT_PATH STREQUAL "")
+        list(APPEND _whatson_trial_configure_command "-DQT_ROOT_PATH=${QT_ROOT_PATH}")
+    endif ()
+    if (DEFINED LVRS_PREFIX AND NOT LVRS_PREFIX STREQUAL "")
+        list(APPEND _whatson_trial_configure_command "-DLVRS_PREFIX=${LVRS_PREFIX}")
+    endif ()
+    if (DEFINED LVRS_DIR AND NOT LVRS_DIR STREQUAL "")
+        list(APPEND _whatson_trial_configure_command "-DLVRS_DIR=${LVRS_DIR}")
+    endif ()
+    if (DEFINED CMAKE_PREFIX_PATH AND NOT CMAKE_PREFIX_PATH STREQUAL "")
+        list(APPEND _whatson_trial_configure_command "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
+    endif ()
+    if (APPLE)
+        if (DEFINED WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES
+                AND NOT WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES STREQUAL "")
+            list(APPEND _whatson_trial_configure_command
+                    "-DCMAKE_OSX_ARCHITECTURES=${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}")
+        endif ()
+        if (DEFINED CMAKE_OSX_DEPLOYMENT_TARGET AND NOT CMAKE_OSX_DEPLOYMENT_TARGET STREQUAL "")
+            list(APPEND _whatson_trial_configure_command
+                    "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+        endif ()
+        if (DEFINED CMAKE_OSX_SYSROOT AND NOT CMAKE_OSX_SYSROOT STREQUAL "")
+            list(APPEND _whatson_trial_configure_command "-DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}")
+        endif ()
+    endif ()
+
+    set(_whatson_trial_build_command
+            "${CMAKE_COMMAND}"
+            --build "${WHATSON_TRIAL_BUILD_DIR}"
+            --target whatson_package)
+    if (CMAKE_CONFIGURATION_TYPES)
+        list(APPEND _whatson_trial_build_command --config "$<CONFIG>")
+    endif ()
+
+    add_custom_target(whatson_sync_trial_build
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "${WHATSON_TRIAL_BUILD_DIR}"
+            COMMAND ${_whatson_trial_configure_command}
+            COMMAND ${_whatson_trial_build_command}
+            USES_TERMINAL
+            COMMENT "Configure and build the dedicated build-trial packaging tree"
+    )
+
+    if (TARGET whatson_build_all)
+        add_dependencies(whatson_build_all whatson_sync_trial_build)
+    endif ()
+
+    if (TARGET WhatSon)
+        add_dependencies(WhatSon whatson_sync_trial_build)
+    endif ()
+
+    if (TARGET WhatSon_daemon)
+        add_dependencies(WhatSon_daemon whatson_sync_trial_build)
+    endif ()
+
+    if (TARGET whatson_cli)
+        add_dependencies(whatson_cli whatson_sync_trial_build)
+    endif ()
+
+    add_custom_target(whatson_sync_trial_build_on_build ALL
+            DEPENDS whatson_sync_trial_build
+    )
 endif ()

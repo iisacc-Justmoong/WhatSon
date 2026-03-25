@@ -345,6 +345,14 @@ cmake -S . -B build
 cmake --build build -j
 ```
 
+The root host build now also prepares `build-trial` as the dedicated desktop trial-packaging tree.
+That means plain `cmake --build build`, `cmake --build build --target WhatSon`, CLion's `WhatSon`
+build, and `whatson_build_all` all configure `build-trial` and build the nested `whatson_package`
+target there.
+On macOS the nested trial tree pins `CMAKE_OSX_ARCHITECTURES` from the host/LVRS setup so an
+auxiliary x86_64 CMake process does not accidentally configure `build-trial` against an arm64-only
+LVRS install.
+
 If Qt is not auto-discovered on a native desktop build, pass the kit prefix explicitly:
 
 ```bash
@@ -939,6 +947,8 @@ deleting the entire artifact directory.
 When the host task runs, the automation now always configures both `build` and `build-trial`.
 `build` is used for the normal runnable host build, while `build-trial` is reserved for the
 trial packaging pass and builds the `whatson_package` target there.
+The same `build-trial` mirror is also created by the root CMake build path, so CLion and plain
+`cmake --build build` keep the same two-tree contract as the Python automation.
 
 You can override artifact locations:
 

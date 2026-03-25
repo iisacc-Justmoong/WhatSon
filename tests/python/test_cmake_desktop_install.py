@@ -71,6 +71,28 @@ class CMakeDesktopInstallTests(unittest.TestCase):
         self.assertIn('destination=self.ios_project_dir / "WhatSon.app",', runner_text)
         self.assertIn('destination=self.android_build_dir / "WhatSon.apk",', runner_text)
 
+    def test_root_cmake_syncs_trial_build_tree_for_host_builds(self) -> None:
+        root_cmake_text = (REPO_ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+
+        self.assertIn('option(WHATSON_IS_TRIAL_BUILD "Mark this build tree as the dedicated trial packaging tree."', root_cmake_text)
+        self.assertIn('option(WHATSON_ENABLE_TRIAL_BUILD_MIRROR', root_cmake_text)
+        self.assertIn('set(WHATSON_TRIAL_BUILD_DIR "${CMAKE_SOURCE_DIR}/build-trial" CACHE PATH', root_cmake_text)
+        self.assertIn('set(WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES "${_WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES_DEFAULT}" CACHE STRING', root_cmake_text)
+        self.assertIn('add_custom_target(whatson_sync_trial_build', root_cmake_text)
+        self.assertIn('add_dependencies(whatson_build_all whatson_sync_trial_build)', root_cmake_text)
+        self.assertIn('add_dependencies(WhatSon whatson_sync_trial_build)', root_cmake_text)
+        self.assertIn('add_custom_target(whatson_sync_trial_build_on_build ALL', root_cmake_text)
+        self.assertIn('"-DCMAKE_OSX_ARCHITECTURES=${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}"', root_cmake_text)
+
+    def test_readme_documents_root_build_creates_build_trial(self) -> None:
+        readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("The root host build now also prepares `build-trial` as the dedicated desktop trial-packaging tree.", readme_text)
+        self.assertIn("plain `cmake --build build`, `cmake --build build --target WhatSon`, CLion's `WhatSon`", readme_text)
+        self.assertIn("build, and `whatson_build_all` all configure `build-trial`", readme_text)
+        self.assertIn("On macOS the nested trial tree pins `CMAKE_OSX_ARCHITECTURES` from the host/LVRS setup", readme_text)
+        self.assertIn("The same `build-trial` mirror is also created by the root CMake build path", readme_text)
+
 
 if __name__ == "__main__":
     unittest.main()
