@@ -14,5 +14,6 @@ Declares the optional backend that blocks `.wshub` access after the local 90-day
 - Expired decisions include the install-derived trial state and a user-facing denial string.
 - Local `.wshub` targets also inspect `.whatson/trial_register.xml`.
 - Local `.wshub` targets are denied when the trial register file is missing.
-- The register payload reads both `deviceUUID` and `key`, but only the `key` comparison controls access.
+- The register payload must first pass integrity verification before its `key` value is trusted.
+- The register payload reads both `deviceUUID` and `key`, but only the `key` comparison controls access after integrity verification succeeds.
 - When the local hub key differs from the persisted in-app trial key, the decision is denied even if the device UUID still matches.

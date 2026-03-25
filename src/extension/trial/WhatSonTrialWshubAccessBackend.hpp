@@ -22,9 +22,11 @@ struct WhatSonTrialWshubAccessDecision final
     bool allowed = true;
     bool restrictedByExpiredTrial = false;
     bool registerFilePresent = false;
+    bool registerIntegrityVerified = false;
     bool clientKeyMatched = true;
     bool restrictedByMissingRegister = false;
     bool restrictedByClientKeyMismatch = false;
+    bool restrictedByRegisterIntegrityFailure = false;
 
     bool operator==(const WhatSonTrialWshubAccessDecision& other) const = default;
 };

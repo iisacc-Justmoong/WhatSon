@@ -39,6 +39,13 @@ namespace
             "WhatSon trial hub access is denied because .whatson/trial_register.xml "
             "is missing a valid client key.");
     }
+
+    QString buildInvalidRegisterIntegrityMessage()
+    {
+        return QStringLiteral(
+            "WhatSon trial hub access is denied because .whatson/trial_register.xml "
+            "failed integrity verification.");
+    }
 }
 
 WhatSonTrialWshubAccessBackend::WhatSonTrialWshubAccessBackend(
@@ -99,15 +106,23 @@ WhatSonTrialWshubAccessDecision WhatSonTrialWshubAccessBackend::evaluateAccess(
     }
 
     QString registerError;
-    decision.hubIdentity = m_registerXml.loadRegister(decision.normalizedTargetPath, &registerError);
     decision.clientIdentity = m_clientIdentityStore.ensureIdentity();
+    const WhatSonTrialRegisterLoadResult registerLoad = m_registerXml.loadRegister(decision.normalizedTargetPath);
+    decision.hubIdentity = registerLoad.identity;
+    decision.registerIntegrityVerified = registerLoad.integrityVerified;
+    registerError = registerLoad.errorMessage;
     if (decision.hubIdentity.key.isEmpty())
     {
         decision.allowed = false;
         decision.clientKeyMatched = false;
-        decision.restrictedByClientKeyMismatch = true;
+        decision.restrictedByRegisterIntegrityFailure =
+            registerError.contains(QStringLiteral("integrity"), Qt::CaseInsensitive)
+            || registerError.contains(QStringLiteral("signature"), Qt::CaseInsensitive);
+        decision.restrictedByClientKeyMismatch = !decision.restrictedByRegisterIntegrityFailure;
         decision.denialReason = registerError.trimmed().isEmpty()
-                                    ? buildInvalidRegisterMessage()
+                                    ? (decision.restrictedByRegisterIntegrityFailure
+                                           ? buildInvalidRegisterIntegrityMessage()
+                                           : buildInvalidRegisterMessage())
                                     : registerError.trimmed();
         return decision;
     }

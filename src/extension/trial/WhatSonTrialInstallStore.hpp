@@ -1,12 +1,16 @@
 #pragma once
 
+#include "WhatSonTrialSecureStore.hpp"
+
 #include <QDate>
 #include <QString>
 
 class WhatSonTrialInstallStore final
 {
 public:
-    explicit WhatSonTrialInstallStore(QString installDateSettingsKey = defaultInstallDateSettingsKey());
+    explicit WhatSonTrialInstallStore(
+        QString installDateSettingsKey = defaultInstallDateSettingsKey(),
+        WhatSonTrialSecureStore secureStore = WhatSonTrialSecureStore());
 
     static QString defaultInstallDateSettingsKey();
 
@@ -18,4 +22,5 @@ public:
 
 private:
     QString m_installDateSettingsKey;
+    WhatSonTrialSecureStore m_secureStore;
 };

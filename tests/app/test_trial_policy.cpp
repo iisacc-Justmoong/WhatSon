@@ -4,20 +4,75 @@
 #include "WhatSonTrialClockStore.hpp"
 #include "WhatSonTrialInstallStore.hpp"
 #include "WhatSonTrialRegisterXml.hpp"
+#include "WhatSonTrialSecureStore.hpp"
 #include "WhatSonTrialWshubAccessBackend.hpp"
 
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTimeZone>
 #include <QtTest/QtTest>
 
+#include <memory>
+
 namespace
 {
+    class MemoryTrialSecureStoreBackend final : public WhatSonTrialSecureStoreBackend
+    {
+    public:
+        WhatSonTrialSecureStoreReadResult readSecret(
+            const QString& serviceName,
+            const QString& entryKey) const override
+        {
+            const QString compositeKey = serviceName + QLatin1Char('\n') + entryKey;
+            if (!m_values.contains(compositeKey))
+            {
+                return {
+                    {},
+                    {},
+                    WhatSonTrialSecureStoreStatus::NotFound
+                };
+            }
+
+            return {
+                m_values.value(compositeKey),
+                {},
+                WhatSonTrialSecureStoreStatus::Success
+            };
+        }
+
+        WhatSonTrialSecureStoreWriteResult writeSecret(
+            const QString& serviceName,
+            const QString& entryKey,
+            const QString& value) const override
+        {
+            m_values.insert(serviceName + QLatin1Char('\n') + entryKey, value);
+            return {
+                {},
+                WhatSonTrialSecureStoreStatus::Success
+            };
+        }
+
+        WhatSonTrialSecureStoreWriteResult removeSecret(
+            const QString& serviceName,
+            const QString& entryKey) const override
+        {
+            m_values.remove(serviceName + QLatin1Char('\n') + entryKey);
+            return {
+                {},
+                WhatSonTrialSecureStoreStatus::Success
+            };
+        }
+
+    private:
+        mutable QHash<QString, QString> m_values;
+    };
+
     void prepareIsolatedSettings(const QTemporaryDir& tempDir)
     {
         QSettings::setDefaultFormat(QSettings::IniFormat);
@@ -34,6 +89,32 @@ namespace
         QDir().mkpath(QDir(hubPath).filePath(QStringLiteral(".whatson")));
         return hubPath;
     }
+
+    WhatSonTrialSecureStore createSecureStore(const std::shared_ptr<MemoryTrialSecureStoreBackend>& backend)
+    {
+        return WhatSonTrialSecureStore(QStringLiteral("whatson-trial-policy-tests"), backend);
+    }
+
+    WhatSonTrialInstallStore createInstallStore(const std::shared_ptr<MemoryTrialSecureStoreBackend>& backend)
+    {
+        return WhatSonTrialInstallStore(
+            WhatSonTrialInstallStore::defaultInstallDateSettingsKey(),
+            createSecureStore(backend));
+    }
+
+    WhatSonTrialClientIdentityStore createIdentityStore(const std::shared_ptr<MemoryTrialSecureStoreBackend>& backend)
+    {
+        return WhatSonTrialClientIdentityStore(
+            WhatSonTrialClientIdentityStore::defaultDeviceUuidSettingsKey(),
+            WhatSonTrialClientIdentityStore::defaultClientKeySettingsKey(),
+            WhatSonTrialClientIdentityStore::defaultRegisterIntegritySecretSettingsKey(),
+            createSecureStore(backend));
+    }
+
+    WhatSonTrialRegisterXml createRegisterXml(const std::shared_ptr<MemoryTrialSecureStoreBackend>& backend)
+    {
+        return WhatSonTrialRegisterXml(createIdentityStore(backend));
+    }
 }
 
 class WhatSonTrialPolicyTest final : public QObject
@@ -44,6 +125,7 @@ private slots:
     void init();
     void refreshForDate_persistsInitialInstallDate();
     void refreshForDate_reusesPersistedInstallDate();
+    void loadInstallDate_restoresSecureStoreBackedInstallDateAfterSettingsReset();
     void refreshForDate_keepsTrialActiveThroughLastActiveDay();
     void refreshForDate_expiresTrialAfterNinetyDays();
     void refreshForDate_recoversFromInvalidStoredInstallDate();
@@ -54,6 +136,7 @@ private slots:
     void loadLastSeenTimestampUtc_clearsInvalidStoredTimestamp();
     void registerManager_persistsAuthenticatedFlag();
     void ensureIdentity_persistsStableClientIdentity();
+    void ensureIdentity_restoresSecureStoreBackedIdentityAfterSettingsReset();
     void writeRegister_writesTrialRegisterXmlForCurrentClient();
     void refreshForDate_bypassesTrialWhenRegisterAuthenticated();
     void evaluateAccess_allowsWshubWithinTrialWindow();
@@ -65,6 +148,7 @@ private slots:
     void evaluateAccess_ignoresDeviceUuidMismatchWhenKeyMatches();
     void evaluateAccess_blocksWshubWhenRegisterKeyDiffersFromClientKey();
     void evaluateAccess_blocksInvalidTrialRegisterFile();
+    void loadRegister_rejectsTamperedRegisterSignature();
     void evaluateAccess_ignoresNonWshubTargetsAfterTrialExpiry();
 };
 
@@ -79,10 +163,12 @@ void WhatSonTrialPolicyTest::refreshForDate_persistsInitialInstallDate()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QDate installDate(2026, 1, 10);
 
-    WhatSonTrialActivationPolicy policy;
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
+    WhatSonTrialActivationPolicy policy(store);
     const WhatSonTrialActivationState state = policy.refreshForDate(installDate);
 
     QCOMPARE(state.installDate, installDate);
@@ -92,7 +178,6 @@ void WhatSonTrialPolicyTest::refreshForDate_persistsInitialInstallDate()
     QCOMPARE(state.remainingDays, WhatSonTrialActivationPolicy::kDefaultTrialLengthDays);
     QVERIFY(state.active);
 
-    WhatSonTrialInstallStore store;
     QCOMPARE(store.loadInstallDate(), installDate);
 }
 
@@ -101,10 +186,12 @@ void WhatSonTrialPolicyTest::refreshForDate_reusesPersistedInstallDate()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QDate installDate(2026, 1, 10);
 
-    WhatSonTrialActivationPolicy policy;
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
+    WhatSonTrialActivationPolicy policy(store);
     QCOMPARE(policy.refreshForDate(installDate).installDate, installDate);
 
     const WhatSonTrialActivationState nextState = policy.refreshForDate(installDate.addDays(1));
@@ -114,14 +201,36 @@ void WhatSonTrialPolicyTest::refreshForDate_reusesPersistedInstallDate()
     QVERIFY(nextState.active);
 }
 
+void WhatSonTrialPolicyTest::loadInstallDate_restoresSecureStoreBackedInstallDateAfterSettingsReset()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
+
+    const QDate installDate(2026, 1, 10);
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
+    store.storeInstallDate(installDate);
+
+    QSettings settings;
+    settings.remove(WhatSonTrialInstallStore::defaultInstallDateSettingsKey());
+    settings.sync();
+
+    WhatSonTrialInstallStore reloadedStore = createInstallStore(secureBackend);
+    QCOMPARE(reloadedStore.loadInstallDate(), installDate);
+    QCOMPARE(settings.value(WhatSonTrialInstallStore::defaultInstallDateSettingsKey()).toString(),
+             installDate.toString(Qt::ISODate));
+}
+
 void WhatSonTrialPolicyTest::refreshForDate_keepsTrialActiveThroughLastActiveDay()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QDate installDate(2026, 1, 10);
-    WhatSonTrialInstallStore store;
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
     store.storeInstallDate(installDate);
 
     WhatSonTrialActivationPolicy policy(store);
@@ -139,9 +248,10 @@ void WhatSonTrialPolicyTest::refreshForDate_expiresTrialAfterNinetyDays()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QDate installDate(2026, 1, 10);
-    WhatSonTrialInstallStore store;
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
     store.storeInstallDate(installDate);
 
     WhatSonTrialActivationPolicy policy(store);
@@ -159,13 +269,15 @@ void WhatSonTrialPolicyTest::refreshForDate_recoversFromInvalidStoredInstallDate
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     QSettings settings;
     settings.setValue(WhatSonTrialInstallStore::defaultInstallDateSettingsKey(), QStringLiteral("not-a-date"));
     settings.sync();
 
     const QDate fallbackDate(2026, 2, 1);
-    WhatSonTrialActivationPolicy policy;
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
+    WhatSonTrialActivationPolicy policy(store);
     const WhatSonTrialActivationState state = policy.refreshForDate(fallbackDate);
 
     settings.sync();
@@ -179,10 +291,12 @@ void WhatSonTrialPolicyTest::refreshForDate_emitsStateChangedOnlyOnStateMutation
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QDate installDate(2026, 1, 10);
 
-    WhatSonTrialActivationPolicy policy;
+    WhatSonTrialInstallStore store = createInstallStore(secureBackend);
+    WhatSonTrialActivationPolicy policy(store);
     QSignalSpy stateChangedSpy(&policy, &WhatSonTrialActivationPolicy::stateChanged);
 
     policy.refreshForDate(installDate);
@@ -301,8 +415,9 @@ void WhatSonTrialPolicyTest::ensureIdentity_persistsStableClientIdentity()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
-    WhatSonTrialClientIdentityStore store;
+    WhatSonTrialClientIdentityStore store = createIdentityStore(secureBackend);
     const WhatSonTrialClientIdentity identity = store.ensureIdentity();
     const WhatSonTrialClientIdentity reloadedIdentity = store.ensureIdentity();
 
@@ -311,6 +426,29 @@ void WhatSonTrialPolicyTest::ensureIdentity_persistsStableClientIdentity()
     QCOMPARE(identity, reloadedIdentity);
     QCOMPARE(identity.deviceUuid, WhatSonTrialClientIdentityStore::normalizeDeviceUuid(identity.deviceUuid));
     QCOMPARE(identity.key.size(), 32);
+    QVERIFY(!store.loadRegisterIntegritySecret().isEmpty());
+}
+
+void WhatSonTrialPolicyTest::ensureIdentity_restoresSecureStoreBackedIdentityAfterSettingsReset()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
+
+    WhatSonTrialClientIdentityStore store = createIdentityStore(secureBackend);
+    const WhatSonTrialClientIdentity identity = store.ensureIdentity();
+    const QString registerIntegritySecret = store.loadRegisterIntegritySecret();
+
+    QSettings settings;
+    settings.remove(WhatSonTrialClientIdentityStore::defaultDeviceUuidSettingsKey());
+    settings.remove(WhatSonTrialClientIdentityStore::defaultClientKeySettingsKey());
+    settings.remove(WhatSonTrialClientIdentityStore::defaultRegisterIntegritySecretSettingsKey());
+    settings.sync();
+
+    WhatSonTrialClientIdentityStore reloadedStore = createIdentityStore(secureBackend);
+    QCOMPARE(reloadedStore.ensureIdentity(), identity);
+    QCOMPARE(reloadedStore.loadRegisterIntegritySecret(), registerIntegritySecret);
 }
 
 void WhatSonTrialPolicyTest::writeRegister_writesTrialRegisterXmlForCurrentClient()
@@ -318,21 +456,27 @@ void WhatSonTrialPolicyTest::writeRegister_writesTrialRegisterXmlForCurrentClien
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Alpha.wshub"));
     QVERIFY(QDir().mkpath(QDir(hubPath).filePath(QStringLiteral(".whatson"))));
 
-    WhatSonTrialClientIdentityStore identityStore;
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
     const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
 
-    WhatSonTrialRegisterXml registerXml;
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
     QString errorMessage;
     QVERIFY2(registerXml.writeRegister(hubPath, identity, &errorMessage), qPrintable(errorMessage));
     QVERIFY(QFileInfo(QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"))).isFile());
 
-    const WhatSonTrialClientIdentity loadedIdentity = registerXml.loadRegister(hubPath, &errorMessage);
-    QVERIFY2(errorMessage.isEmpty(), qPrintable(errorMessage));
-    QCOMPARE(loadedIdentity, identity);
+    const WhatSonTrialRegisterLoadResult loadResult = registerXml.loadRegister(hubPath);
+    QVERIFY2(loadResult.errorMessage.isEmpty(), qPrintable(loadResult.errorMessage));
+    QVERIFY(loadResult.integrityVerified);
+    QCOMPARE(loadResult.identity, identity);
+
+    QFile registerFile(QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml")));
+    QVERIFY(registerFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    QVERIFY(QString::fromUtf8(registerFile.readAll()).contains(QStringLiteral("<signature algorithm=\"HMAC-SHA256\">")));
 }
 
 void WhatSonTrialPolicyTest::refreshForDate_bypassesTrialWhenRegisterAuthenticated()
@@ -340,8 +484,9 @@ void WhatSonTrialPolicyTest::refreshForDate_bypassesTrialWhenRegisterAuthenticat
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
-    WhatSonTrialInstallStore installStore;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
     installStore.storeInstallDate(QDate(2026, 1, 10));
 
     WhatSonRegisterManager registerManager;
@@ -364,15 +509,17 @@ void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWithinTrialWindow()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("Alpha.wshub"));
 
-    WhatSonTrialClientIdentityStore identityStore;
-    WhatSonTrialRegisterXml registerXml;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
     QString errorMessage;
     QVERIFY2(registerXml.writeRegister(hubPath, identityStore.ensureIdentity(), &errorMessage), qPrintable(errorMessage));
 
-    WhatSonTrialWshubAccessBackend backend;
+    WhatSonTrialWshubAccessBackend backend(installStore, nullptr, identityStore, registerXml);
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 1, 10));
 
@@ -380,6 +527,7 @@ void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWithinTrialWindow()
     QVERIFY(decision.allowed);
     QVERIFY(!decision.restrictedByExpiredTrial);
     QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.registerIntegrityVerified);
     QVERIFY(decision.clientKeyMatched);
     QVERIFY(!decision.clientIdentity.key.isEmpty());
     QCOMPARE(decision.clientIdentity, decision.hubIdentity);
@@ -394,14 +542,19 @@ void WhatSonTrialPolicyTest::evaluateAccess_blocksWshubAfterTrialExpiry()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("Expired.wshub"));
     QVERIFY(QDir().mkpath(hubPath));
 
-    WhatSonTrialInstallStore installStore;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
     installStore.storeInstallDate(QDate(2026, 1, 10));
 
-    WhatSonTrialWshubAccessBackend backend(installStore);
+    WhatSonTrialWshubAccessBackend backend(
+        installStore,
+        nullptr,
+        createIdentityStore(secureBackend),
+        createRegisterXml(secureBackend));
     QString denialReason;
     const bool allowed = backend.canAccess(hubPath, &denialReason, QDate(2026, 4, 10));
     const WhatSonTrialWshubAccessDecision decision =
@@ -423,13 +576,18 @@ void WhatSonTrialPolicyTest::evaluateAccess_blocksWshubContentUriAfterTrialExpir
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
-    WhatSonTrialInstallStore installStore;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
     installStore.storeInstallDate(QDate(2026, 1, 10));
 
     const QString hubUri =
         QStringLiteral("content://whatson.provider/document/Expired.wshub");
-    WhatSonTrialWshubAccessBackend backend(installStore);
+    WhatSonTrialWshubAccessBackend backend(
+        installStore,
+        nullptr,
+        createIdentityStore(secureBackend),
+        createRegisterXml(secureBackend));
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubUri, QDate(2026, 4, 10));
 
@@ -444,10 +602,15 @@ void WhatSonTrialPolicyTest::evaluateAccess_blocksLocalWshubWithoutTrialRegister
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("MissingRegister.wshub"));
 
-    WhatSonTrialWshubAccessBackend backend;
+    WhatSonTrialWshubAccessBackend backend(
+        createInstallStore(secureBackend),
+        nullptr,
+        createIdentityStore(secureBackend),
+        createRegisterXml(secureBackend));
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
 
@@ -465,22 +628,25 @@ void WhatSonTrialPolicyTest::evaluateAccess_allowsWshubWhenRegisterKeyMatches()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("Matching.wshub"));
 
-    WhatSonTrialClientIdentityStore identityStore;
-    WhatSonTrialRegisterXml registerXml;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
     QString errorMessage;
     const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
     QVERIFY2(registerXml.writeRegister(hubPath, identity, &errorMessage), qPrintable(errorMessage));
 
-    WhatSonTrialWshubAccessBackend backend;
+    WhatSonTrialWshubAccessBackend backend(installStore, nullptr, identityStore, registerXml);
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
 
     QVERIFY(decision.allowed);
     QVERIFY(decision.wshubTarget);
     QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.registerIntegrityVerified);
     QVERIFY(decision.clientKeyMatched);
     QVERIFY(!decision.restrictedByClientKeyMismatch);
     QCOMPARE(decision.clientIdentity, identity);
@@ -493,23 +659,26 @@ void WhatSonTrialPolicyTest::evaluateAccess_ignoresDeviceUuidMismatchWhenKeyMatc
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("DeviceMismatch.wshub"));
 
-    WhatSonTrialClientIdentityStore identityStore;
-    WhatSonTrialRegisterXml registerXml;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
     QString errorMessage;
     const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
     WhatSonTrialClientIdentity hubIdentity = identity;
     hubIdentity.deviceUuid = QStringLiteral("01234567-89ab-cdef-0123-456789abcdef");
     QVERIFY2(registerXml.writeRegister(hubPath, hubIdentity, &errorMessage), qPrintable(errorMessage));
 
-    WhatSonTrialWshubAccessBackend backend;
+    WhatSonTrialWshubAccessBackend backend(installStore, nullptr, identityStore, registerXml);
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
 
     QVERIFY(decision.allowed);
     QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.registerIntegrityVerified);
     QVERIFY(decision.clientKeyMatched);
     QVERIFY(!decision.restrictedByClientKeyMismatch);
     QCOMPARE(decision.clientIdentity, identity);
@@ -522,23 +691,26 @@ void WhatSonTrialPolicyTest::evaluateAccess_blocksWshubWhenRegisterKeyDiffersFro
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("KeyMismatch.wshub"));
 
-    WhatSonTrialClientIdentityStore identityStore;
-    WhatSonTrialRegisterXml registerXml;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
     QString errorMessage;
     const WhatSonTrialClientIdentity identity = identityStore.ensureIdentity();
     WhatSonTrialClientIdentity hubIdentity = identity;
     hubIdentity.key = QStringLiteral("ABCDEFGH12345678IJKLMNOP87654321");
     QVERIFY2(registerXml.writeRegister(hubPath, hubIdentity, &errorMessage), qPrintable(errorMessage));
 
-    WhatSonTrialWshubAccessBackend backend;
+    WhatSonTrialWshubAccessBackend backend(installStore, nullptr, identityStore, registerXml);
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
 
     QVERIFY(!decision.allowed);
     QVERIFY(decision.registerFilePresent);
+    QVERIFY(decision.registerIntegrityVerified);
     QVERIFY(!decision.clientKeyMatched);
     QVERIFY(!decision.restrictedByMissingRegister);
     QVERIFY(decision.restrictedByClientKeyMismatch);
@@ -552,6 +724,7 @@ void WhatSonTrialPolicyTest::evaluateAccess_bypassesAllTrialGuardsWhenRegisterAu
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("Authenticated.wshub"));
     const QString registerPath = QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"));
@@ -561,13 +734,17 @@ void WhatSonTrialPolicyTest::evaluateAccess_bypassesAllTrialGuardsWhenRegisterAu
     file.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<trialRegister><deviceUUID>01234567-89ab-cdef-0123-456789abcdef</deviceUUID><key>bad</key></trialRegister>\n");
     file.close();
 
-    WhatSonTrialInstallStore installStore;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
     installStore.storeInstallDate(QDate(2026, 1, 10));
 
     WhatSonRegisterManager registerManager;
     registerManager.setAuthenticated(true);
 
-    WhatSonTrialWshubAccessBackend backend(installStore, &registerManager);
+    WhatSonTrialWshubAccessBackend backend(
+        installStore,
+        &registerManager,
+        createIdentityStore(secureBackend),
+        createRegisterXml(secureBackend));
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 4, 10));
 
@@ -586,26 +763,72 @@ void WhatSonTrialPolicyTest::evaluateAccess_blocksInvalidTrialRegisterFile()
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString hubPath = createHubPath(tempDir, QStringLiteral("InvalidRegister.wshub"));
     const QString registerPath = QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"));
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
+    QString errorMessage;
+    QVERIFY2(registerXml.writeRegister(hubPath, identityStore.ensureIdentity(), &errorMessage), qPrintable(errorMessage));
 
     QFile file(registerPath);
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    QString registerText = QString::fromUtf8(file.readAll());
+    file.close();
+    registerText.replace(QStringLiteral("<key>") + identityStore.loadClientKey() + QStringLiteral("</key>"),
+                         QStringLiteral("<key>ABCDEFGH12345678IJKLMNOP87654321</key>"));
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
-    file.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<trialRegister><deviceUUID>01234567-89ab-cdef-0123-456789abcdef</deviceUUID><key>bad</key></trialRegister>\n");
+    file.write(registerText.toUtf8());
     file.close();
 
-    WhatSonTrialWshubAccessBackend backend;
+    WhatSonTrialWshubAccessBackend backend(
+        createInstallStore(secureBackend),
+        nullptr,
+        identityStore,
+        registerXml);
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(hubPath, QDate(2026, 1, 15));
 
     QVERIFY(!decision.allowed);
     QVERIFY(decision.registerFilePresent);
+    QVERIFY(!decision.registerIntegrityVerified);
     QVERIFY(!decision.clientKeyMatched);
     QVERIFY(!decision.restrictedByMissingRegister);
-    QVERIFY(decision.restrictedByClientKeyMismatch);
+    QVERIFY(!decision.restrictedByClientKeyMismatch);
+    QVERIFY(decision.restrictedByRegisterIntegrityFailure);
     QVERIFY(decision.hubIdentity.key.isEmpty());
-    QVERIFY(decision.denialReason.contains(QStringLiteral("valid key")));
+    QVERIFY(decision.denialReason.contains(QStringLiteral("integrity")));
+}
+
+void WhatSonTrialPolicyTest::loadRegister_rejectsTamperedRegisterSignature()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
+
+    const QString hubPath = createHubPath(tempDir, QStringLiteral("TamperedRegister.wshub"));
+    const QString registerPath = QDir(hubPath).filePath(QStringLiteral(".whatson/trial_register.xml"));
+
+    WhatSonTrialClientIdentityStore identityStore = createIdentityStore(secureBackend);
+    WhatSonTrialRegisterXml registerXml = createRegisterXml(secureBackend);
+    QString errorMessage;
+    QVERIFY2(registerXml.writeRegister(hubPath, identityStore.ensureIdentity(), &errorMessage), qPrintable(errorMessage));
+
+    QFile file(registerPath);
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    QString registerText = QString::fromUtf8(file.readAll());
+    file.close();
+    registerText.replace(QStringLiteral("<deviceUUID>"), QStringLiteral("<deviceUUID>badbadba-"));
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate));
+    file.write(registerText.toUtf8());
+    file.close();
+
+    const WhatSonTrialRegisterLoadResult loadResult = registerXml.loadRegister(hubPath);
+    QVERIFY(loadResult.identity.key.isEmpty());
+    QVERIFY(!loadResult.integrityVerified);
+    QVERIFY(loadResult.errorMessage.contains(QStringLiteral("integrity")));
 }
 
 void WhatSonTrialPolicyTest::evaluateAccess_ignoresNonWshubTargetsAfterTrialExpiry()
@@ -613,6 +836,7 @@ void WhatSonTrialPolicyTest::evaluateAccess_ignoresNonWshubTargetsAfterTrialExpi
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     prepareIsolatedSettings(tempDir);
+    const auto secureBackend = std::make_shared<MemoryTrialSecureStoreBackend>();
 
     const QString nonHubPath = QDir(tempDir.path()).filePath(QStringLiteral("notes.txt"));
     QFile file(nonHubPath);
@@ -620,10 +844,14 @@ void WhatSonTrialPolicyTest::evaluateAccess_ignoresNonWshubTargetsAfterTrialExpi
     file.write("sample");
     file.close();
 
-    WhatSonTrialInstallStore installStore;
+    WhatSonTrialInstallStore installStore = createInstallStore(secureBackend);
     installStore.storeInstallDate(QDate(2026, 1, 10));
 
-    WhatSonTrialWshubAccessBackend backend(installStore);
+    WhatSonTrialWshubAccessBackend backend(
+        installStore,
+        nullptr,
+        createIdentityStore(secureBackend),
+        createRegisterXml(secureBackend));
     const WhatSonTrialWshubAccessDecision decision =
         backend.evaluateAccess(nonHubPath, QDate(2026, 4, 10));
 

@@ -970,6 +970,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_permission_bridge_source_guard_tests)
 add_executable(whatson_trial_policy_tests
         app/test_trial_policy.cpp
         ${CMAKE_SOURCE_DIR}/src/app/register/WhatSonRegisterManager.cpp
+        ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialSecureStore.cpp
         ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialInstallStore.cpp
         ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialClientIdentityStore.cpp
         ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialRegisterXml.cpp
@@ -988,6 +989,10 @@ target_link_libraries(whatson_trial_policy_tests
         Qt6::Core
         Qt6::Test
 )
+if (APPLE)
+    find_library(WHATSON_SECURITY_FRAMEWORK Security REQUIRED)
+    target_link_libraries(whatson_trial_policy_tests PRIVATE ${WHATSON_SECURITY_FRAMEWORK})
+endif ()
 add_test(NAME whatson_trial_policy_tests COMMAND whatson_trial_policy_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_trial_policy_tests)
 
