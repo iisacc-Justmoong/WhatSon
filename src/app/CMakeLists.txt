@@ -76,6 +76,20 @@ list(SORT WHATSON_APP_INCLUDE_DIRS)
 
 target_include_directories(WhatSon PRIVATE ${WHATSON_APP_INCLUDE_DIRS})
 
+if (WHATSON_IS_TRIAL_BUILD AND NOT ANDROID AND NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))
+    target_sources(WhatSon PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialSecureStore.cpp
+            ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialInstallStore.cpp
+            ${CMAKE_SOURCE_DIR}/src/extension/trial/WhatSonTrialActivationPolicy.cpp
+    )
+    target_include_directories(WhatSon PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/extension/trial
+    )
+    target_compile_definitions(WhatSon PRIVATE
+            WHATSON_IS_TRIAL_BUILD=1
+    )
+endif ()
+
 set(WHATSON_RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
 set(WHATSON_APP_ICON_DIR "${WHATSON_RESOURCES_DIR}/icons/app")
 set(WHATSON_APP_ICON_DESKTOP_DIR "${WHATSON_APP_ICON_DIR}/desktop")
@@ -430,6 +444,11 @@ if (APPLE)
         if (WHATSON_APPLICATION_SERVICES_FRAMEWORK)
             target_link_libraries(WhatSon PRIVATE "${WHATSON_APPLICATION_SERVICES_FRAMEWORK}")
         endif ()
+    endif ()
+
+    if (WHATSON_IS_TRIAL_BUILD AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        find_library(WHATSON_SECURITY_FRAMEWORK Security REQUIRED)
+        target_link_libraries(WhatSon PRIVATE "${WHATSON_SECURITY_FRAMEWORK}")
     endif ()
 endif ()
 

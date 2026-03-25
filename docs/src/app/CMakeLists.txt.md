@@ -48,6 +48,12 @@
 - Extension points, invariants, and known complexity hotspots
 - Test coverage and missing verification
 
+## Current Notes
+- All `src/app/qml/**/*.qml` files are still globbed into the `WhatSon.App` QML module, so adding a new desktop helper window under `qml/window/` automatically exports it to `loadFromModule(...)`.
+- Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
+- Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
+- On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.
+
 ## Authoring Notes For Next Pass
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.

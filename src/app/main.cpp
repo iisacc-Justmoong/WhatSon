@@ -38,6 +38,9 @@
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "sync/WhatSonHubSyncController.hpp"
+#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+#include "WhatSonTrialActivationPolicy.hpp"
+#endif
 
 #include <QByteArray>
 #include <QCommandLineOption>
@@ -501,6 +504,17 @@ int main(int argc, char* argv[])
     OnboardingHubController onboardingHubController;
     WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
     PermissionBootstrapper permissionBootstrapper(app);
+#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+    WhatSonRegisterManager trialRegisterManager;
+    WhatSonTrialActivationPolicy trialActivationPolicy;
+    trialActivationPolicy.setRegisterManager(&trialRegisterManager);
+    QObject::connect(
+        &trialRegisterManager,
+        &WhatSonRegisterManager::authenticatedChanged,
+        &trialActivationPolicy,
+        &WhatSonTrialActivationPolicy::refresh);
+    trialActivationPolicy.refresh();
+#endif
     libraryNoteMutationViewModel.setSourceViewModel(&libraryHierarchyViewModel);
 
     const auto requestNewLibraryNote = [&libraryNoteMutationViewModel, &sidebarHierarchyViewModel]()
@@ -1043,6 +1057,22 @@ int main(int argc, char* argv[])
         }
     };
 
+#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+    const auto loadTrialStatusWindow =
+        [&loadWindowFromModule](QObject* hostWindow, QObject* trialPolicyObject) -> QObject*
+    {
+        const QVariantMap trialWindowInitialProperties{
+            {QStringLiteral("hostWindow"), QVariant::fromValue(hostWindow)},
+            {QStringLiteral("trialActivationPolicy"), QVariant::fromValue(trialPolicyObject)},
+            {QStringLiteral("visible"), true}
+        };
+        return loadWindowFromModule(
+            QStringLiteral("WhatSon.App"),
+            QStringLiteral("TrialStatus"),
+            trialWindowInitialProperties);
+    };
+#endif
+
     if (launchOptions.onboardingOnly)
     {
         const QVariantMap onboardingWindowInitialProperties{
@@ -1059,6 +1089,18 @@ int main(int argc, char* argv[])
             qWarning().noquote() << QStringLiteral("Failed to resolve onboarding window root object.");
             return EXIT_FAILURE;
         }
+
+#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+        QObject* trialWindow = loadTrialStatusWindow(
+            onboardingWindow,
+            static_cast<QObject*>(&trialActivationPolicy));
+        if (trialWindow == nullptr)
+        {
+            qWarning().noquote() << QStringLiteral("Failed to resolve the trial status window root object.");
+            return EXIT_FAILURE;
+        }
+        activateWindowObject(trialWindow);
+#endif
 
         QPointer<QObject> onboardingWindowGuard(onboardingWindow);
         QObject* workspaceMainWindow = nullptr;
@@ -1155,6 +1197,18 @@ int main(int argc, char* argv[])
     }
 
     activateWindowObject(mainWindow);
+
+#if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+    QObject* trialWindow = loadTrialStatusWindow(
+        mainWindow,
+        static_cast<QObject*>(&trialActivationPolicy));
+    if (trialWindow == nullptr)
+    {
+        qWarning().noquote() << QStringLiteral("Failed to resolve the trial status window root object.");
+        return EXIT_FAILURE;
+    }
+    activateWindowObject(trialWindow);
+#endif
 
     startForegroundServices();
     return app.exec();

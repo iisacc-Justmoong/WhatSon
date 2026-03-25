@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/window`
 - Child directories: 1
-- Child files: 7
+- Child files: 8
 
 ## Child Directories
 - `preference`
@@ -20,6 +20,7 @@
 - `Preference.qml`
 - `ProfileControl.qml`
 - `QuickNote.qml`
+- `TrialStatus.qml`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

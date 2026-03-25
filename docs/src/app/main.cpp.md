@@ -7,6 +7,7 @@
 - Dedicated hierarchy viewmodels for each hierarchy domain.
 - `LibraryNoteMutationViewModel` as a narrower write facade for note creation and deletion.
 - Navigation, detail-panel, onboarding, sidebar, calendar, and panel-registry viewmodels.
+- In trial builds, a trial activation policy and a dedicated desktop trial-status window bootstrap path.
 - Runtime services such as async scheduling, hub sync, permission bootstrap, write lease management, and startup hub selection persistence.
 - QML bridge types such as `HierarchyDragDropBridge`, `HierarchyInteractionBridge`, and editor helper bridges.
 
@@ -18,6 +19,7 @@
 5. Populate `HierarchyViewModelProvider`, then connect it to `SidebarHierarchyViewModel`.
 6. Call `ArchitecturePolicyLock::lock()` after mutable dependency injection is complete.
 7. Export root runtime objects to the `QQmlContext`, then load the LVRS root window module.
+8. In trial builds, load `TrialStatus.qml` as a second desktop window and inject the refreshed `WhatSonTrialActivationPolicy`.
 
 ## Important Wiring Decisions
 - `HierarchyViewModelProvider` is the single runtime map from sidebar domain index to dedicated hierarchy viewmodel.
@@ -25,6 +27,7 @@
 - `LibraryNoteMutationViewModel` wraps `LibraryHierarchyViewModel` so note mutation shortcuts no longer need the full library hierarchy surface.
 - `DetailPanelViewModel` owns dedicated selector-copy viewmodels for Projects, Bookmarks, and Progress. `main.cpp` injects the canonical hierarchy viewmodels only as read-only selector sources so detail-panel combo state stays decoupled from sidebar selection.
 - `qmlRegisterType(...)` is used for bridge-like objects that should be instantiated from QML rather than pushed as singletons.
+- Trial builds keep the trial-status window out of the main workspace route graph. The composition root injects the activation policy through dedicated initial properties instead of exposing another global workspace context object.
 
 ## QML Exposure
 This file exports the root runtime objects through `engine.rootContext()->setContextProperty(...)`. `Main.qml` immediately re-registers the view-facing objects into `LV.ViewModels` and binds write ownership per view ID.
