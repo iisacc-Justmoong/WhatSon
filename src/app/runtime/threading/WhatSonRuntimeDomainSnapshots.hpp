@@ -70,6 +70,7 @@ public:
     };
 
     static LibrarySnapshot loadLibrary(const QString& wshubPath);
+    static BookmarksSnapshot buildBookmarks(const QVector<LibraryNoteRecord>& allNotes);
     static BookmarksSnapshot loadBookmarks(const QString& wshubPath);
     static ProjectsSnapshot loadProjects(const QString& wshubPath);
     static StringListSnapshot loadResources(const QString& wshubPath);

@@ -19,6 +19,9 @@ class MobileShellLayoutTests(unittest.TestCase):
         mobile_page_text = (
             REPO_ROOT / "src/app/qml/view/mobile/pages/MobileHierarchyPage.qml"
         ).read_text(encoding="utf-8")
+        note_creation_coordinator_text = (
+            REPO_ROOT / "src/app/qml/view/mobile/MobileNoteCreationCoordinator.qml"
+        ).read_text(encoding="utf-8")
         list_bar_header_text = (
             REPO_ROOT / "src/app/qml/view/panels/ListBarHeader.qml"
         ).read_text(encoding="utf-8")
@@ -86,7 +89,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("placeholderText: statusBar.compactToolbarText", status_bar_text)
         self.assertIn("shapeStyle: shapeCylinder", status_bar_text)
         self.assertNotIn("id: compactSearchTextField", status_bar_text)
-        self.assertIn('statusBar.requestViewHook("create-note");', status_bar_text)
+        self.assertNotIn('statusBar.requestViewHook("create-note");', status_bar_text)
         self.assertIn("statusBar.createNoteRequested();", status_bar_text)
 
         self.assertIn("property bool footerVisible: true", hierarchy_layout_text)
@@ -230,7 +233,7 @@ class MobileShellLayoutTests(unittest.TestCase):
             mobile_page_text,
         )
         self.assertIn("if (panelViewModel && panelViewModel.requestViewModelHook)", mobile_page_text)
-        self.assertIn("panelViewModel.requestViewModelHook();", mobile_page_text)
+        self.assertIn("panelViewModel.requestViewModelHook(hookReason);", mobile_page_text)
         self.assertIn("compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive", mobile_page_text)
         self.assertIn("compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive", mobile_page_text)
         self.assertIn("compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive", mobile_page_text)
@@ -239,7 +242,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes", mobile_page_text)
         self.assertIn("onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()", mobile_page_text)
         self.assertIn("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()", mobile_page_text)
-        self.assertIn("onCreateNoteRequested: mobileHierarchyPage.requestCreateNote()", mobile_page_text)
+        self.assertIn("onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()", mobile_page_text)
         self.assertIn("function beginBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("function cancelBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("function clearActiveHierarchySelection()", mobile_page_text)
@@ -341,7 +344,16 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();", mobile_page_text)
         self.assertIn("mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);", mobile_page_text)
         self.assertIn("mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);", mobile_page_text)
-        self.assertIn("windowInteractions.createNoteFromShortcut();", mobile_page_text)
+        self.assertIn("MobileView.MobileNoteCreationCoordinator {", mobile_page_text)
+        self.assertIn("onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()", mobile_page_text)
+        self.assertIn("onActiveContentViewModelChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()", mobile_page_text)
+        self.assertIn("onOpenEditorRequested: function (noteId, index) {", mobile_page_text)
+        self.assertIn("windowInteractions: mobileHierarchyPage.windowInteractions", mobile_page_text)
+        self.assertIn("function requestCreateNote()", note_creation_coordinator_text)
+        self.assertIn("function routePendingCreatedNoteToEditor()", note_creation_coordinator_text)
+        self.assertIn("function scheduleCreatedNoteEditorRoute(noteId)", note_creation_coordinator_text)
+        self.assertIn("noteCreationCoordinator.windowInteractions.createNoteFromShortcut();", note_creation_coordinator_text)
+        self.assertIn("target: noteCreationCoordinator.noteCreationViewModel", note_creation_coordinator_text)
         self.assertIn(
             "function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId)",
             mobile_page_text,

@@ -22,6 +22,7 @@ their UUID counterparts so later filters can match notes by folder identity inst
 - Newer note headers that store `<folder uuid="...">path</folder>` keep the UUID values intact.
 - Merging code pads or repairs UUID lists so a caller never receives mismatched folder path / UUID
   arrays.
+- Runtime body indexing now derives `bodyFirstLine` from `firstLineFromBodyDocument(...)`, which preserves inline titles that appear before the first paragraph block.
 
 ## Why This Matters
 

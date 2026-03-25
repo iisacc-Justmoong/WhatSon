@@ -18,10 +18,26 @@ repaint brighter panel slabs over the root `ApplicationWindow` canvas.
 
 The compact navigation surface stays `24px` high on `panelBackground10`, and the hierarchy route keeps `gap2` VStack spacing so the mobile shell preserves the Figma rhythm instead of introducing a second shell layout.
 
+## Root Ownership
+`Main.qml` binds the desktop-only New shortcut and routes that shortcut through `MainWindowInteractionController.qml`
+instead of handing every mutable root viewmodel directly to every consumer.
+
+Shortcut writes now resolve through owned writable LVRS view ids first:
+- `windowInteractions.libraryNoteMutation`
+- `windowInteractions.navigationMode`
+- `windowInteractions.sidebarHierarchy`
+
+This keeps shortcut-triggered mutation aligned with LVRS ownership rather than turning the root scene into a bag of
+globally writable QObjects.
+
 ## Routed Workspace
 `MobileHierarchyPage.qml` owns the mobile `LV.PageRouter` stack and mounts the hierarchy page, note-list body, and editor body as routed children.
 
 The same file suppresses the compact leading action on the note-list body and editor body, keeps the shared compact `settings` button exclusive to the hierarchy route, drives interactive back through `LV.PageTransitionController`, and begins that transition from a left-edge touch `DragHandler`.
+
+Mobile note creation is no longer open-coded inside `MobileHierarchyPage.qml`. The page now delegates create-note
+dispatch and post-create editor promotion into `MobileNoteCreationCoordinator.qml`, so routing/gesture policy and
+note-creation mutation no longer share one QML object.
 
 Editor-pop repair prefers the actually rendered note-list body before rebuilding a canonical stack, so returning from a note does not fall through to the generic All Library state.
 
@@ -36,3 +52,21 @@ Library system buckets now emit `draggable`, `dragAllowed`, `movable`, and `drag
 The compact control menu anchors from the trigger's bottom-right point. On the mobile hierarchy/control route, that trigger uses the `toolwindowtodo` glyph plus the built-in LVRS chevron instead of the old project-structure icon, and the trigger keeps the Figma `2 / 4 / 2 / 2` padding contract.
 
 Action-only control entries disable the default LVRS shortcut placeholder column so icon-only mobile actions keep their full available label width.
+
+## Hub Sync
+`WhatSonHubSyncController` is a filesystem watcher plus debounce/timer coordinator for the mounted `.wshub`.
+
+It no longer listens to generic app activation, pointer press, or touch events. Runtime reloads now depend on observed
+filesystem changes and local-mutation acknowledgements only, which keeps hub sync separate from navigation and input
+policy.
+
+The controller now computes the hub signature and watcher path set in a single recursive observation pass, so one sync
+hint maps to one filesystem walk instead of one walk for hashing plus another for watcher coverage.
+
+## Runtime Index Pipeline
+`WhatSonLibraryIndexedState` is the backend projection boundary for library note indexing. It owns the canonical `all`,
+`draft`, and `today` note collections so viewmodels do not each rebuild those derived buckets themselves.
+
+`WhatSonRuntimeParallelLoader.cpp` now derives bookmarks from the shared library snapshot when both domains are mounted.
+That keeps the runtime bootstrap on one library index traversal instead of reparsing the same `.wshub` tree for the
+bookmarks domain.

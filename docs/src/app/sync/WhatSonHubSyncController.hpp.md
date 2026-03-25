@@ -1,38 +1,39 @@
 # `src/app/sync/WhatSonHubSyncController.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`WhatSonHubSyncController` defines the app-level synchronization boundary between the mounted `.wshub` filesystem and
+the in-memory runtime.
 
-## Source Metadata
-- Source path: `src/app/sync/WhatSonHubSyncController.hpp`
-- Source kind: C++ header
-- File name: `WhatSonHubSyncController.hpp`
-- Approximate line count: 63
+It is intentionally narrow: the class watches the hub, debounces change hints, and asks a caller-provided reload
+callback to rebuild runtime state when the observed hub signature changes.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Public API
+- `setReloadCallback(...)`: injects the runtime reload function used after an observed external change.
+- `setCurrentHubPath(...)`: switches the mounted hub path, rebuilds the signature baseline, and reconfigures watcher
+  coverage.
+- `setPeriodicIntervalMs(...)` / `setDebounceIntervalMs(...)`: tune polling/debounce policy for tests or platform
+  adjustments.
+- `requestSyncHint()`: schedules a debounced sync check.
+- `acknowledgeLocalMutation()`: marks an app-owned write so the next signature change refreshes baseline instead of
+  reloading the runtime.
 
-### Classes and Structs
-- `QCoreApplication`
-- `WhatSonHubSyncController`
+## Signals
+- `syncReloaded(hubPath)`: emitted after the reload callback succeeds and the baseline is refreshed.
+- `syncFailed(errorMessage)`: emitted when the reload callback reports failure.
 
-### Enums
-- None detected during scaffold generation.
+## Architectural Constraints
+- The controller is filesystem-oriented. It no longer exposes application-event attachment, event filtering, or app
+  activation hooks.
+- UI navigation, gestures, and generic input events are outside this class's responsibility.
+- Local app writes are treated differently from external writes through `acknowledgeLocalMutation()`, which keeps the
+  current session from reloading itself after its own mutation path.
+- `HubObservation` is the internal single-pass contract: one recursive walk produces both the signature payload and the
+  watcher path coverage.
+- The controller also remembers the last applied watch-path set so unchanged sync hints do not rebuild watcher
+  registration.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Collaborators
+- `main.cpp`: creates the controller, injects the reload callback, and wires local mutation acknowledgements from the
+  hierarchy viewmodels.
+- `WhatSonHubPathUtils`: normalizes the mounted hub path.
+- `QFileSystemWatcher`: provides recursive watch coverage once the controller enumerates relevant hub paths.

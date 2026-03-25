@@ -2,12 +2,9 @@
 
 #include "file/hub/WhatSonHubPathUtils.hpp"
 
-#include <QCoreApplication>
 #include <QCryptographicHash>
-#include <QDateTime>
 #include <QDir>
 #include <QDirIterator>
-#include <QEvent>
 #include <QFileInfo>
 #include <QStringList>
 
@@ -40,6 +37,24 @@ namespace
         return normalizedRelativePath == QStringLiteral(".whatson")
             || normalizedRelativePath == QStringLiteral(".whatson/write-lease.json");
     }
+
+    QStringList normalizeWatchPaths(QStringList watchPaths)
+    {
+        QStringList normalized;
+        normalized.reserve(watchPaths.size());
+        for (QString path : watchPaths)
+        {
+            path = QDir::cleanPath(path.trimmed());
+            if (path.isEmpty())
+            {
+                continue;
+            }
+            normalized.push_back(std::move(path));
+        }
+        normalized.removeDuplicates();
+        std::sort(normalized.begin(), normalized.end());
+        return normalized;
+    }
 }
 
 WhatSonHubSyncController::WhatSonHubSyncController(QObject* parent)
@@ -64,32 +79,6 @@ WhatSonHubSyncController::WhatSonHubSyncController(QObject* parent)
         &WhatSonHubSyncController::onWatchedPathChanged);
 }
 
-void WhatSonHubSyncController::attachToApplication(QCoreApplication* application)
-{
-    if (m_application == application)
-    {
-        return;
-    }
-
-    if (m_application != nullptr)
-    {
-        m_application->removeEventFilter(this);
-    }
-
-    m_application = application;
-    if (m_application == nullptr)
-    {
-        return;
-    }
-
-    m_application->installEventFilter(this);
-    QObject::connect(
-        m_application,
-        SIGNAL(applicationStateChanged(Qt::ApplicationState)),
-        this,
-        SLOT(handleApplicationStateChanged(Qt::ApplicationState)));
-}
-
 void WhatSonHubSyncController::setReloadCallback(std::function<bool(const QString&, QString*)> callback)
 {
     m_reloadCallback = std::move(callback);
@@ -112,6 +101,7 @@ void WhatSonHubSyncController::setCurrentHubPath(const QString& hubPath)
     {
         m_periodicTimer.stop();
         m_lastKnownHubSignature.clear();
+        m_lastObservedWatchPaths.clear();
         clearWatcher();
         return;
     }
@@ -159,29 +149,10 @@ void WhatSonHubSyncController::acknowledgeLocalMutation()
     scheduleSyncCheck();
 }
 
-bool WhatSonHubSyncController::eventFilter(QObject* watched, QEvent* event)
-{
-    Q_UNUSED(watched);
-    if (event != nullptr && isInteractiveSyncEvent(event->type()))
-    {
-        requestSyncHint();
-    }
-
-    return QObject::eventFilter(watched, event);
-}
-
 void WhatSonHubSyncController::onWatchedPathChanged(const QString& path)
 {
     Q_UNUSED(path);
     scheduleSyncCheck();
-}
-
-void WhatSonHubSyncController::handleApplicationStateChanged(const Qt::ApplicationState state)
-{
-    if (state == Qt::ApplicationActive)
-    {
-        requestSyncHint();
-    }
 }
 
 void WhatSonHubSyncController::onPeriodicTimeout()
@@ -196,26 +167,29 @@ void WhatSonHubSyncController::onDebounceTimeout()
         return;
     }
 
-    const QByteArray currentSignature = computeHubSignature(m_currentHubPath);
-    if (currentSignature == m_lastKnownHubSignature)
+    const HubObservation currentObservation = inspectHub(m_currentHubPath);
+    if (currentObservation.signature == m_lastKnownHubSignature)
     {
         m_localMutationPending = false;
-        rebuildWatcher();
+        m_lastObservedWatchPaths = currentObservation.watchPaths;
+        rebuildWatcher(m_lastObservedWatchPaths);
         return;
     }
 
     if (m_localMutationPending)
     {
         m_localMutationPending = false;
-        m_lastKnownHubSignature = currentSignature;
-        rebuildWatcher();
+        m_lastKnownHubSignature = currentObservation.signature;
+        m_lastObservedWatchPaths = currentObservation.watchPaths;
+        rebuildWatcher(m_lastObservedWatchPaths);
         return;
     }
 
     if (!m_reloadCallback)
     {
-        m_lastKnownHubSignature = currentSignature;
-        rebuildWatcher();
+        m_lastKnownHubSignature = currentObservation.signature;
+        m_lastObservedWatchPaths = currentObservation.watchPaths;
+        rebuildWatcher(m_lastObservedWatchPaths);
         return;
     }
 
@@ -232,21 +206,25 @@ void WhatSonHubSyncController::onDebounceTimeout()
         return;
     }
 
-    refreshBaseline(true);
+    m_lastKnownHubSignature = currentObservation.signature;
+    m_lastObservedWatchPaths = currentObservation.watchPaths;
+    rebuildWatcher(m_lastObservedWatchPaths);
     emit syncReloaded(m_currentHubPath);
 }
 
-QByteArray WhatSonHubSyncController::computeHubSignature(const QString& hubPath) const
+WhatSonHubSyncController::HubObservation WhatSonHubSyncController::inspectHub(const QString& hubPath) const
 {
+    HubObservation observation;
     const QFileInfo rootInfo(hubPath);
     if (!rootInfo.exists() || !rootInfo.isDir())
     {
-        return {};
+        return observation;
     }
 
     QStringList signatureRecords;
     signatureRecords.reserve(64);
     signatureRecords.push_back(signatureRecordForInfo(QStringLiteral("."), rootInfo));
+    observation.watchPaths.push_back(rootInfo.absoluteFilePath());
 
     QDirIterator iterator(
         hubPath,
@@ -268,6 +246,7 @@ QByteArray WhatSonHubSyncController::computeHubSignature(const QString& hubPath)
             continue;
         }
         signatureRecords.push_back(signatureRecordForInfo(relativePath, info));
+        observation.watchPaths.push_back(info.absoluteFilePath());
     }
 
     std::sort(signatureRecords.begin(), signatureRecords.end());
@@ -277,55 +256,9 @@ QByteArray WhatSonHubSyncController::computeHubSignature(const QString& hubPath)
         hash.addData(record.toUtf8());
         hash.addData(QByteArrayView("\n", 1));
     }
-    return hash.result();
-}
-
-QStringList WhatSonHubSyncController::collectWatchPaths(const QString& hubPath) const
-{
-    QStringList paths;
-    const QFileInfo rootInfo(hubPath);
-    if (!rootInfo.exists() || !rootInfo.isDir())
-    {
-        return paths;
-    }
-
-    paths.push_back(rootInfo.absoluteFilePath());
-    const QDir rootDirectory(hubPath);
-    QDirIterator iterator(
-        hubPath,
-        QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System,
-        QDirIterator::Subdirectories);
-    while (iterator.hasNext())
-    {
-        iterator.next();
-        const QFileInfo info = iterator.fileInfo();
-        if (!info.exists())
-        {
-            continue;
-        }
-        const QString relativePath = rootDirectory.relativeFilePath(info.absoluteFilePath());
-        if (shouldIgnoreObservedRelativePath(relativePath))
-        {
-            continue;
-        }
-        paths.push_back(info.absoluteFilePath());
-    }
-
-    paths.removeDuplicates();
-    return paths;
-}
-
-bool WhatSonHubSyncController::isInteractiveSyncEvent(const QEvent::Type type) const
-{
-    switch (type)
-    {
-    case QEvent::MouseButtonPress:
-    case QEvent::TouchBegin:
-    case QEvent::TabletPress:
-        return true;
-    default:
-        return false;
-    }
+    observation.signature = hash.result();
+    observation.watchPaths.removeDuplicates();
+    return observation;
 }
 
 void WhatSonHubSyncController::scheduleSyncCheck()
@@ -348,22 +281,34 @@ void WhatSonHubSyncController::refreshBaseline(const bool rebuildWatcherRequeste
         return;
     }
 
-    m_lastKnownHubSignature = computeHubSignature(m_currentHubPath);
+    const HubObservation observation = inspectHub(m_currentHubPath);
+    m_lastKnownHubSignature = observation.signature;
+    m_lastObservedWatchPaths = observation.watchPaths;
     if (rebuildWatcherRequested)
     {
-        rebuildWatcher();
+        rebuildWatcher(m_lastObservedWatchPaths);
     }
 }
 
 void WhatSonHubSyncController::rebuildWatcher()
 {
-    clearWatcher();
+    rebuildWatcher(m_lastObservedWatchPaths);
+}
 
-    const QStringList watchPaths = collectWatchPaths(m_currentHubPath);
+void WhatSonHubSyncController::rebuildWatcher(QStringList watchPaths)
+{
+    watchPaths = normalizeWatchPaths(std::move(watchPaths));
+    if (watchPaths == m_appliedWatchPaths)
+    {
+        return;
+    }
+
+    clearWatcher();
     if (!watchPaths.isEmpty())
     {
         m_fileSystemWatcher.addPaths(watchPaths);
     }
+    m_appliedWatchPaths = std::move(watchPaths);
 }
 
 void WhatSonHubSyncController::clearWatcher()
@@ -379,4 +324,6 @@ void WhatSonHubSyncController::clearWatcher()
     {
         m_fileSystemWatcher.removePaths(directoryPaths);
     }
+
+    m_appliedWatchPaths.clear();
 }

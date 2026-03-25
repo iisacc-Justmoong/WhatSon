@@ -511,6 +511,15 @@ int main(int argc, char* argv[])
             qWarning().noquote() << QStringLiteral("Failed to create a new library note from navigation Add action.");
         }
     };
+    const auto handlePanelCreateNoteRequest = [&requestNewLibraryNote](const QString& reason)
+    {
+        if (reason.trimmed() != QStringLiteral("create-note"))
+        {
+            return;
+        }
+
+        requestNewLibraryNote();
+    };
 
     if (auto* addNewPanelViewModel = qobject_cast<PanelViewModel*>(
         panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationAddNewBar"))))
@@ -519,7 +528,7 @@ int main(int argc, char* argv[])
             addNewPanelViewModel,
             &PanelViewModel::viewModelHookRequested,
             &app,
-            requestNewLibraryNote);
+            handlePanelCreateNoteRequest);
     }
     if (auto* applicationControlPanelViewModel = qobject_cast<PanelViewModel*>(
         panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationControlBar"))))
@@ -528,16 +537,7 @@ int main(int argc, char* argv[])
             applicationControlPanelViewModel,
             &PanelViewModel::viewModelHookRequested,
             &app,
-            requestNewLibraryNote);
-    }
-    if (auto* mobilePanelViewModel = qobject_cast<PanelViewModel*>(
-        panelViewModelRegistry.panelViewModel(QStringLiteral("mobile.MobileHierarchyPage"))))
-    {
-        QObject::connect(
-            mobilePanelViewModel,
-            &PanelViewModel::viewModelHookRequested,
-            &app,
-            requestNewLibraryNote);
+            handlePanelCreateNoteRequest);
     }
 
     libraryHierarchyViewModel.setSystemCalendarStore(&systemCalendarStore);
@@ -703,7 +703,6 @@ int main(int argc, char* argv[])
     };
 
     WhatSonHubSyncController hubSyncController;
-    hubSyncController.attachToApplication(&app);
     hubSyncController.setReloadCallback(loadHubIntoRuntime);
     QObject::connect(
         &hubSyncController,

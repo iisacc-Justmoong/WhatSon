@@ -185,7 +185,6 @@ Rectangle {
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        statusBar.requestViewHook("create-note");
                         statusBar.createNoteRequested();
                     }
                 }

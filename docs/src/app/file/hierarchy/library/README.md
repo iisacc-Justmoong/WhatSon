@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/hierarchy/library`
 - Child directories: 0
-- Child files: 15
+- Child files: 17
 
 ## Child Directories
 - No child directories.
@@ -20,6 +20,8 @@
 - `LibraryNoteRecord.hpp`
 - `LibraryToday.cpp`
 - `LibraryToday.hpp`
+- `WhatSonLibraryIndexedState.cpp`
+- `WhatSonLibraryIndexedState.hpp`
 - `WhatSonLibraryFolderHierarchyMutationService.cpp`
 - `WhatSonLibraryFolderHierarchyMutationService.hpp`
 - `WhatSonLibraryHierarchyCreator.cpp`

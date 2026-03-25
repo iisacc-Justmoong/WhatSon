@@ -250,13 +250,9 @@ LV.ApplicationWindow {
         adaptiveNavigationMode: applicationWindow.adaptiveNavigationMode
         hostWindow: applicationWindow
         libraryHierarchyIndex: applicationWindow.libraryHierarchyIndex
-        libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
-        libraryNoteMutationViewModel: applicationWindow.rootLibraryNoteMutationViewModel
         libraryNoteMutationViewId: applicationWindow.libraryNoteMutationViewId
-        navigationModeViewModel: applicationWindow.rootNavigationModeViewModel
         navigationModeViewId: applicationWindow.navigationModeViewId
         panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry
-        sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
         sidebarHierarchyViewId: applicationWindow.sidebarHierarchyViewId
     }
     Timer {
@@ -278,6 +274,7 @@ LV.ApplicationWindow {
     Shortcut {
         autoRepeat: false
         context: Qt.ApplicationShortcut
+        enabled: applicationWindow.isDesktopPlatform
         sequence: StandardKey.New
 
         onActivated: windowInteractions.createNoteFromShortcut()

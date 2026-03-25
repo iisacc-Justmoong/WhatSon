@@ -35,14 +35,6 @@ Item {
     property string lastObservedRoutePath: hierarchyRoutePath
     property int preservedNoteListSelectionIndex: -1
     property bool routeSelectionSyncSuppressed: false
-    readonly property var libraryNoteCreationViewModel: mobileHierarchyPage.windowInteractions
-        && mobileHierarchyPage.windowInteractions.libraryNoteMutationViewModel !== undefined
-        && mobileHierarchyPage.windowInteractions.libraryNoteMutationViewModel !== null
-        ? mobileHierarchyPage.windowInteractions.libraryNoteMutationViewModel
-        : (mobileHierarchyPage.windowInteractions
-               && mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel !== undefined
-               ? mobileHierarchyPage.windowInteractions.libraryHierarchyViewModel
-               : null)
     readonly property var mobileBodyRoutes: [
         {
             "path": mobileHierarchyPage.hierarchyRoutePath,
@@ -64,7 +56,6 @@ Item {
     readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("mobile.MobileHierarchyPage") : null
-    property string pendingCreatedNoteId: ""
     required property var sidebarHierarchyViewModel
     property string statusPlaceholderText: ""
     property string statusSearchText: ""
@@ -283,34 +274,6 @@ Item {
         if (mobileScaffold.bodyItem && mobileScaffold.bodyItem.requestCreateFolder !== undefined)
             mobileScaffold.bodyItem.requestCreateFolder();
     }
-    function requestCreateNote() {
-        mobileHierarchyPage.requestViewHook();
-        if (mobileHierarchyPage.windowInteractions && mobileHierarchyPage.windowInteractions.createNoteFromShortcut !== undefined)
-            mobileHierarchyPage.windowInteractions.createNoteFromShortcut();
-    }
-    function routePendingCreatedNoteToEditor() {
-        const pendingNoteId = mobileHierarchyPage.pendingCreatedNoteId === undefined || mobileHierarchyPage.pendingCreatedNoteId === null
-                ? ""
-                : String(mobileHierarchyPage.pendingCreatedNoteId).trim();
-        if (pendingNoteId.length === 0
-                || !mobileHierarchyPage.activeContentViewModel
-                || !mobileHierarchyPage.activeNoteListModel
-                || !mobileScaffold.activePageRouter)
-            return false;
-        mobileHierarchyPage.pendingCreatedNoteId = "";
-        mobileHierarchyPage.requestOpenEditor(pendingNoteId, -1);
-        return true;
-    }
-    function scheduleCreatedNoteEditorRoute(noteId) {
-        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
-        if (normalizedNoteId.length === 0)
-            return false;
-        mobileHierarchyPage.pendingCreatedNoteId = normalizedNoteId;
-        Qt.callLater(function () {
-            mobileHierarchyPage.routePendingCreatedNoteToEditor();
-        });
-        return true;
-    }
     function requestOpenNoteList(item, itemId, index) {
         if (!mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
@@ -358,9 +321,10 @@ Item {
         }
         mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);
     }
-    function requestViewHook() {
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook();
+            panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
     function routeToHierarchyRoot() {
@@ -438,22 +402,26 @@ Item {
                 });
     }
 
-    onActiveContentViewModelChanged: mobileHierarchyPage.routePendingCreatedNoteToEditor()
+    onActiveContentViewModelChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()
     onActiveNoteListModelChanged: {
         if (mobileHierarchyPage.activeNoteListModel) {
-            mobileHierarchyPage.routePendingCreatedNoteToEditor();
+            noteCreationCoordinator.routePendingCreatedNoteToEditor();
             return;
         }
         mobileHierarchyPage.routeToHierarchyRoot();
     }
     onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()
 
-    Connections {
-        target: mobileHierarchyPage.libraryNoteCreationViewModel
-        ignoreUnknownSignals: true
+    MobileView.MobileNoteCreationCoordinator {
+        id: noteCreationCoordinator
 
-        function onEmptyNoteCreated(noteId) {
-            mobileHierarchyPage.scheduleCreatedNoteEditorRoute(noteId);
+        activeContentViewModel: mobileHierarchyPage.activeContentViewModel
+        activeNoteListModel: mobileHierarchyPage.activeNoteListModel
+        activePageRouter: mobileScaffold.activePageRouter
+        windowInteractions: mobileHierarchyPage.windowInteractions
+
+        onOpenEditorRequested: function (noteId, index) {
+            mobileHierarchyPage.requestOpenEditor(noteId, index);
         }
     }
     Connections {
@@ -485,7 +453,7 @@ Item {
 
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
         onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()
-        onCreateNoteRequested: mobileHierarchyPage.requestCreateNote()
+        onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()
         onStatusSearchSubmitted: function (text) {
             mobileHierarchyPage.statusSearchText = text;
         }
@@ -634,7 +602,7 @@ Item {
             frameHorizontalInsetOverride: LV.Theme.gapNone
             gutterColor: "transparent"
             gutterWidthOverride: LV.Theme.gap20 * 2
-            libraryHierarchyViewModel: mobileHierarchyPage.libraryNoteCreationViewModel
+            libraryHierarchyViewModel: noteCreationCoordinator.noteCreationViewModel
             lineNumberColumnLeftOverride: 14
             lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
             minimapVisible: false

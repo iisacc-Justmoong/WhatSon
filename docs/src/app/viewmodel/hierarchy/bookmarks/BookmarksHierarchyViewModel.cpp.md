@@ -5,6 +5,10 @@
 `BookmarksHierarchyViewModel.cpp` projects bookmarked `LibraryNoteRecord` entries into bookmark
 color folders plus the bookmark note-list model.
 
+`loadFromWshub()` now resolves that source note set through `WhatSonLibraryIndexedState` and then
+filters with `collectBookmarkedNotes(...)`, so bookmarks reuse the same backend library indexing
+policy as the runtime loader and library hierarchy viewmodel.
+
 ## Hierarchy Metadata
 
 `depthItems()` / `hierarchyModel()` now serialize an explicit `iconName` field for each bookmark

@@ -438,13 +438,18 @@ Concurrent hub access is now allowed across desktop and mobile sessions. `WhatSo
 legacy cleanup shim for old `.whatson/write-lease.json` artifacts, so onboarding/runtime loading and filesystem
 mutation paths no longer reject a `.wshub` just because another WhatSon session already touched the same package.
 Runtime hub refresh now flows through `src/app/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
-filesystem resync timer, recursive `QFileSystemWatcher` coverage over the mounted `.wshub`, and app-level interaction
-hints (`TouchBegin`, pointer press, and app activation) that trigger a debounced runtime reload whenever the observed
-hub signature changes. App-owned `.whatson/write-lease.json` heartbeat updates are excluded from that observed
-signature/watch set so local lease maintenance never bounces the runtime through a self-reload.
+filesystem watcher/timer policy, recursive `QFileSystemWatcher` coverage over the mounted `.wshub`, and a debounced
+reload path that reacts to observed hub-signature changes without UI interaction hints. Signature hashing and watcher
+path collection now come from a single recursive observation pass, so one sync hint no longer scans the hub twice.
+App-owned
+`.whatson/write-lease.json` heartbeat updates are excluded from that observed signature/watch set so local lease
+maintenance never bounces the runtime through a self-reload.
 App-owned note and folder mutations do not bounce the runtime through a full reload immediately. Instead,
 `LibraryHierarchyViewModel` and `BookmarksHierarchyViewModel` emit a local mutation acknowledgment so
 `WhatSonHubSyncController` can refresh its baseline after self-writes and keep the current editing session stable.
+The runtime loader must derive bookmarks from the shared library snapshot instead of reparsing the same `.wshub` tree
+a second time. `WhatSonLibraryIndexedState` centralizes the library/draft/today projection backend used by both the
+runtime loader and hierarchy viewmodels.
 Within `ContentsDisplayView.qml`, a selected note's live editor buffer becomes the source of truth after the user edits
 it once; divergent same-note storage payloads are rejected and re-persisted so runtime reloads cannot steal the caret
 or overwrite the active mobile/desktop editing session.
@@ -617,9 +622,12 @@ for hub/note hierarchy payloads.
 - Panel-level MVVM is now explicit for every QML panel under `src/app/qml/view/panels/**`:
   `main.cpp` injects `panelViewModelRegistry`, and each panel binds its own key
   (`panelViewModelRegistry.panelViewModel("<panel-key>")`) to a dedicated `PanelViewModel` instance.
-- The navigation add surfaces share one `create-note` hook path:
-  `NavigationAddNewBar.qml`, `NavigationApplicationControlBar.qml`, and `MobileHierarchyPage.qml`
-  all route into `LibraryNoteMutationViewModel::createEmptyNote()`.
+- The desktop navigation add surfaces share one `create-note` panel hook path:
+  `NavigationAddNewBar.qml` and `NavigationApplicationControlBar.qml`
+  route `create-note` into `LibraryNoteMutationViewModel::createEmptyNote()`, while the mobile bottom add button
+  delegates through `windowInteractions.createNoteFromShortcut()` so generic mobile panel hooks do not create notes.
+- The application-wide `StandardKey.New` shortcut is desktop-only. Mobile note creation must stay on explicit UI
+  surfaces instead of a global application shortcut.
 - Mobile workspace views now live under `src/app/qml/view/mobile/**`. `src/app/qml/view/mobile/MobilePageScaffold.qml`
   keeps the top navigation bar and the bottom status/add-note bar persistent across mobile workspace pages, while
   `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml` now mounts the node `174:5026` hierarchy body and the
@@ -721,9 +729,9 @@ for hub/note hierarchy payloads.
   control mode until mode-specific tools are added.
 - `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
   text editor currently owns focus.
-- `Main.qml` also binds a global platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere) and routes it to
-  the existing `create-note` hook path used by the navigation add surfaces, preserving the same library-note creation
-  behavior.
+- `Main.qml` also binds a global platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere), but that
+  desktop-only ownership-aware New shortcut is now exposed only on desktop platforms. Mobile note creation must stay
+  on explicit UI surfaces instead of a global application shortcut.
 - New note creation now emits a dedicated runtime signal from `LibraryHierarchyViewModel`, and `ContentsDisplayView.qml`
   consumes it to move keyboard focus into the editor so body text entry can begin immediately.
 - If the active note search would hide the freshly created note, the library list clears that search first so the new

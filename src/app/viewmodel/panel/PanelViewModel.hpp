@@ -23,12 +23,12 @@ public
     Q_INVOKABLE
     void requestViewModelHook(const QString& reason = QString());
 
-    signals  :
+signals  :
 
 
 
     void hookRequestCountChanged();
-    void viewModelHookRequested();
+    void viewModelHookRequested(const QString& reason);
 
 private:
     QString m_panelKey;

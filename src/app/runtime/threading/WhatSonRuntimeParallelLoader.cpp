@@ -114,6 +114,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     bool hasLibraryTask = false;
     bool hasProjectsTask = false;
     bool hasBookmarksTask = false;
+    bool deriveBookmarksFromLibrary = false;
     bool hasTagsTask = false;
     bool hasResourcesTask = false;
     bool hasProgressTask = false;
@@ -122,6 +123,7 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
 
     QVector<QThread*> threads;
     threads.reserve(9);
+    int derivedBookmarksResultIndex = -1;
 
     auto addImmediateFailure = [&results](const QString& domain, const QString& error)
     {
@@ -204,13 +206,24 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
     else
     {
         hasBookmarksTask = true;
-        addSnapshotTask(
-            QStringLiteral("bookmarks"),
-            &bookmarksSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadBookmarks(path);
-            });
+        if (hasLibraryTask)
+        {
+            deriveBookmarksFromLibrary = true;
+            DomainLoadResult result;
+            result.domain = QStringLiteral("bookmarks");
+            results.push_back(result);
+            derivedBookmarksResultIndex = results.size() - 1;
+        }
+        else
+        {
+            addSnapshotTask(
+                QStringLiteral("bookmarks"),
+                &bookmarksSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadBookmarks(path);
+                });
+        }
     }
 
     if (targets.tagsViewModel == nullptr)
@@ -364,6 +377,29 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
         }
         thread->wait();
         delete thread;
+    }
+
+    if (deriveBookmarksFromLibrary)
+    {
+        if (librarySnapshot.succeeded)
+        {
+            bookmarksSnapshot = WhatSonRuntimeDomainSnapshots::buildBookmarks(librarySnapshot.allNotes);
+        }
+        else
+        {
+            bookmarksSnapshot.succeeded = false;
+            bookmarksSnapshot.error = librarySnapshot.error.trimmed().isEmpty()
+                                          ? QStringLiteral("Library snapshot failed while deriving bookmarks.")
+                                          : librarySnapshot.error;
+            bookmarksSnapshot.bookmarkedNotes.clear();
+        }
+
+        if (derivedBookmarksResultIndex >= 0 && derivedBookmarksResultIndex < results.size())
+        {
+            DomainLoadResult& bookmarksResult = results[derivedBookmarksResultIndex];
+            bookmarksResult.succeeded = bookmarksSnapshot.succeeded;
+            bookmarksResult.error = bookmarksSnapshot.error;
+        }
     }
 
     if (hasLibraryTask)

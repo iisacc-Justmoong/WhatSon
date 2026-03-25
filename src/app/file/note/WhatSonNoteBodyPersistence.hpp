@@ -6,6 +6,7 @@ namespace WhatSon::NoteBodyPersistence
 {
     QString normalizeBodyPlainText(QString text);
     QString plainTextFromBodyDocument(const QString& bodyDocumentText);
+    QString firstLineFromBodyDocument(const QString& bodyDocumentText);
     QString firstLineFromBodyPlainText(const QString& text);
     QString resolveBodyPath(const QString& noteDirectoryPath);
     QString resolveHeaderPath(const QString& noteHeaderPath, const QString& noteDirectoryPath);

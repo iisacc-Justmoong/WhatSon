@@ -4,9 +4,7 @@
 #include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
-#include "file/hierarchy/library/LibraryAll.hpp"
-#include "file/hierarchy/library/LibraryDraft.hpp"
-#include "file/hierarchy/library/LibraryToday.hpp"
+#include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyParser.hpp"
 #include "file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
@@ -45,24 +43,19 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
 {
     LibrarySnapshot snapshot;
 
-    LibraryAll libraryAll;
+    WhatSonLibraryIndexedState indexedState;
     QString indexError;
-    if (!libraryAll.indexFromWshub(wshubPath, &indexError))
+    if (!indexedState.indexFromWshub(wshubPath, &indexError))
     {
         snapshot.succeeded = false;
         snapshot.error = indexError;
         return snapshot;
     }
 
-    snapshot.allNotes = libraryAll.notes();
-
-    LibraryDraft libraryDraft;
-    libraryDraft.rebuild(snapshot.allNotes);
-    snapshot.draftNotes = libraryDraft.notes();
-
-    LibraryToday libraryToday;
-    libraryToday.rebuild(snapshot.allNotes);
-    snapshot.todayNotes = libraryToday.notes();
+    const WhatSonLibraryIndexedState::Snapshot indexedSnapshot = indexedState.snapshot();
+    snapshot.allNotes = indexedSnapshot.allNotes;
+    snapshot.draftNotes = indexedSnapshot.draftNotes;
+    snapshot.todayNotes = indexedSnapshot.todayNotes;
 
     QStringList contentsDirectories;
     QString resolveError;
@@ -135,32 +128,28 @@ WhatSonRuntimeDomainSnapshots::LibrarySnapshot WhatSonRuntimeDomainSnapshots::lo
     return snapshot;
 }
 
-WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::loadBookmarks(const QString& wshubPath)
+WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::buildBookmarks(
+    const QVector<LibraryNoteRecord>& allNotes)
 {
     BookmarksSnapshot snapshot;
+    snapshot.bookmarkedNotes = WhatSonLibraryIndexedState::collectBookmarkedNotes(allNotes);
+    snapshot.succeeded = true;
+    return snapshot;
+}
 
-    LibraryAll libraryAll;
+WhatSonRuntimeDomainSnapshots::BookmarksSnapshot WhatSonRuntimeDomainSnapshots::loadBookmarks(const QString& wshubPath)
+{
+    WhatSonLibraryIndexedState indexedState;
     QString indexError;
-    if (!libraryAll.indexFromWshub(wshubPath, &indexError))
+    if (!indexedState.indexFromWshub(wshubPath, &indexError))
     {
+        BookmarksSnapshot snapshot;
         snapshot.succeeded = false;
         snapshot.error = indexError;
         return snapshot;
     }
 
-    const QVector<LibraryNoteRecord>& notes = libraryAll.notes();
-    snapshot.bookmarkedNotes.reserve(notes.size());
-    for (const LibraryNoteRecord& note : notes)
-    {
-        if (!note.bookmarked)
-        {
-            continue;
-        }
-        snapshot.bookmarkedNotes.push_back(note);
-    }
-
-    snapshot.succeeded = true;
-    return snapshot;
+    return buildBookmarks(indexedState.allNotes());
 }
 
 WhatSonRuntimeDomainSnapshots::ProjectsSnapshot WhatSonRuntimeDomainSnapshots::loadProjects(const QString& wshubPath)

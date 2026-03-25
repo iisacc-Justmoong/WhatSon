@@ -2304,6 +2304,13 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
     QFile mobilePageFile(mobilePagePath);
     QVERIFY2(mobilePageFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mobilePagePath));
     const QString mobilePageText = QString::fromUtf8(mobilePageFile.readAll());
+    const QString noteCreationCoordinatorPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/mobile/MobileNoteCreationCoordinator.qml"));
+    QFile noteCreationCoordinatorFile(noteCreationCoordinatorPath);
+    QVERIFY2(
+        noteCreationCoordinatorFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(noteCreationCoordinatorPath));
+    const QString noteCreationCoordinatorText = QString::fromUtf8(noteCreationCoordinatorFile.readAll());
     QVERIFY2(
         mobilePageText.contains(
             QStringLiteral("readonly property var activeContentViewModel: mobileHierarchyPage.sidebarHierarchyViewModel")) &&
@@ -2357,15 +2364,15 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("function requestOpenEditor(noteId, index)")) &&
             mobilePageText.contains(QStringLiteral("function cancelPendingEditorPopRepair()")) &&
             mobilePageText.contains(QStringLiteral("function restoreNoteListSelection(selectionIndex)")) &&
-            mobilePageText.contains(QStringLiteral("function routePendingCreatedNoteToEditor()")) &&
-            mobilePageText.contains(QStringLiteral("function scheduleCreatedNoteEditorRoute(noteId)")) &&
             mobilePageText.contains(QStringLiteral("function verifyCommittedEditorPopState(requestId, attemptsRemaining)")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenNoteList(item, itemId, index)")) &&
             mobilePageText.contains(QStringLiteral("function routeToHierarchyRoot()")) &&
             mobilePageText.contains(QStringLiteral("function clearActiveHierarchySelection()")) &&
             mobilePageText.contains(QStringLiteral("function syncRouteSelectionState()")) &&
+            mobilePageText.contains(QStringLiteral("id: noteCreationCoordinator")) &&
+            mobilePageText.contains(QStringLiteral("MobileView.MobileNoteCreationCoordinator {")) &&
             mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")),
-        "MobileHierarchyPage.qml must expose explicit hierarchy, note-list, editor, created-note, and editor-pop repair helpers while keeping the compact leading action wired to the shared back path and a dedicated hierarchy-selection reset helper.");
+        "MobileHierarchyPage.qml must keep routing and gesture helpers local while delegating created-note promotion into a dedicated mobile note-creation coordinator.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("LV.PageTransitionController {")) &&
             mobilePageText.contains(QStringLiteral("router: mobileScaffold.activePageRouter")) &&
@@ -2403,15 +2410,20 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("mobileScaffold.activePageRouter.push(mobileHierarchyPage.editorRoutePath);")),
         "MobileHierarchyPage.qml must transition from the mobile note-list body into the mobile editor body when a shared note card is activated.");
     QVERIFY2(
-        mobilePageText.contains(QStringLiteral("readonly property var libraryNoteCreationViewModel: mobileHierarchyPage.windowInteractions")) &&
-            mobilePageText.contains(QStringLiteral("property string pendingCreatedNoteId: \"\"")) &&
-            mobilePageText.contains(QStringLiteral("target: mobileHierarchyPage.libraryNoteCreationViewModel")) &&
-            mobilePageText.contains(QStringLiteral("function onEmptyNoteCreated(noteId) {")) &&
-            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.scheduleCreatedNoteEditorRoute(noteId);")) &&
-            mobilePageText.contains(QStringLiteral("onActiveContentViewModelChanged: mobileHierarchyPage.routePendingCreatedNoteToEditor()")) &&
-            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.routePendingCreatedNoteToEditor();")) &&
-            mobilePageText.contains(QStringLiteral("mobileHierarchyPage.requestOpenEditor(pendingNoteId, -1);")),
-        "MobileHierarchyPage.qml must capture LibraryHierarchyViewModel.emptyNoteCreated(noteId) and promote the created note into the mobile editor route once the shared library models resolve.");
+        noteCreationCoordinatorText.contains(QStringLiteral("property string pendingCreatedNoteId: \"\"")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("function requestCreateNote()")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("function routePendingCreatedNoteToEditor()")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("function scheduleCreatedNoteEditorRoute(noteId)")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("target: noteCreationCoordinator.noteCreationViewModel")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("function onEmptyNoteCreated(noteId) {")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("noteCreationCoordinator.scheduleCreatedNoteEditorRoute(noteId);")) &&
+            noteCreationCoordinatorText.contains(QStringLiteral("noteCreationCoordinator.openEditorRequested(pendingNoteId, -1);")) &&
+            mobilePageText.contains(QStringLiteral("onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()")) &&
+            mobilePageText.contains(QStringLiteral("onActiveContentViewModelChanged: noteCreationCoordinator.routePendingCreatedNoteToEditor()")) &&
+            mobilePageText.contains(QStringLiteral("noteCreationCoordinator.routePendingCreatedNoteToEditor();")) &&
+            mobilePageText.contains(QStringLiteral("onOpenEditorRequested: function (noteId, index) {")) &&
+            mobilePageText.contains(QStringLiteral("libraryHierarchyViewModel: noteCreationCoordinator.noteCreationViewModel")),
+        "Mobile note creation must be coordinated by a dedicated helper that owns pending-note promotion and explicit create-note dispatch, while MobileHierarchyPage only bridges that helper into route transitions.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("id: editorBodyComponent")) &&
             mobilePageText.contains(QStringLiteral("PanelView.ContentViewLayout {")) &&

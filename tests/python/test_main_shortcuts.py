@@ -20,19 +20,28 @@ class MainShortcutTests(unittest.TestCase):
         self.assertIn("readonly property var rootPanelViewModelRegistry: panelViewModelRegistry", main_qml_text)
         self.assertIn("panelViewModelRegistry: applicationWindow.rootPanelViewModelRegistry", main_qml_text)
         self.assertIn("property var panelViewModelRegistry: null", controller_text)
-        self.assertIn("property var libraryNoteMutationViewModel: null", controller_text)
+        self.assertIn('readonly property string addNewPanelKey: "navigation.NavigationAddNewBar"', controller_text)
         self.assertIn(
-            "readonly property var rootLibraryNoteMutationViewModel: libraryNoteMutationViewModel",
-            main_qml_text,
+            'readonly property string libraryNoteMutationViewModelKey: "libraryNoteMutationViewModel"',
+            controller_text,
         )
-        self.assertIn('panelViewModelRegistry.panelViewModel("navigation.NavigationAddNewBar")', controller_text)
+        self.assertIn(
+            'readonly property string sidebarHierarchyViewModelKey: "sidebarHierarchyViewModel"',
+            controller_text,
+        )
+        self.assertIn(
+            "function resolveOwnedWritableViewModel(viewId, viewModelKey)",
+            controller_text,
+        )
+        self.assertIn("function resolveLibraryNoteCreationViewModel()", controller_text)
+        self.assertIn("libraryNoteMutationViewId: applicationWindow.libraryNoteMutationViewId", main_qml_text)
         self.assertIn('addNewPanelViewModel.requestViewModelHook("create-note");', controller_text)
         self.assertIn("setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);", controller_text)
         self.assertIn("return Boolean(noteMutationViewModel.createEmptyNote());", controller_text)
         self.assertIn("global platform-native New shortcut", readme_text)
-        self.assertIn("existing `create-note` hook path used by the navigation add surfaces", readme_text)
-        self.assertIn("Main.qml` binds the platform-native New shortcut", architecture_text)
-        self.assertIn("`create-note` hook path instead of duplicating note-creation policy", architecture_text)
+        self.assertIn("desktop-only ownership-aware New shortcut", readme_text)
+        self.assertIn("Main.qml` binds the desktop-only New shortcut", architecture_text)
+        self.assertIn("owned writable LVRS view ids", architecture_text)
 
 
 if __name__ == "__main__":

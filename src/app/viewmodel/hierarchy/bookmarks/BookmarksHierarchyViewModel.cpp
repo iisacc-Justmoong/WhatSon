@@ -2,7 +2,7 @@
 
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/hierarchy/library/LibraryAll.hpp"
+#include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 
@@ -545,9 +545,9 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub.begin"),
                               QStringLiteral("path=%1").arg(wshubPath));
-    LibraryAll libraryAll;
+    WhatSonLibraryIndexedState indexedState;
     QString indexError;
-    if (!libraryAll.indexFromWshub(wshubPath, &indexError))
+    if (!indexedState.indexFromWshub(wshubPath, &indexError))
     {
         if (errorMessage != nullptr)
         {
@@ -561,22 +561,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         return false;
     }
 
-    const QVector<LibraryNoteRecord>& notes = libraryAll.notes();
-
-    QVector<LibraryNoteRecord> bookmarkedNotes;
-    bookmarkedNotes.reserve(notes.size());
-
-    for (const LibraryNoteRecord& note : notes)
-    {
-        if (!note.bookmarked)
-        {
-            continue;
-        }
-
-        bookmarkedNotes.push_back(note);
-    }
-
-    m_bookmarkedNotes = std::move(bookmarkedNotes);
+    m_bookmarkedNotes = WhatSonLibraryIndexedState::collectBookmarkedNotes(indexedState.allNotes());
     rebuildColorFolders();
     setSelectedIndex(-1);
     refreshNoteListForSelection();

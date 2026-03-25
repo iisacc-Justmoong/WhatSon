@@ -8,6 +8,12 @@
 
 namespace
 {
+    struct BodyDocumentTextFragments final
+    {
+        QString fallbackText;
+        QStringList blockLines;
+    };
+
     QString normalizePath(QString path)
     {
         path = path.trimmed();
@@ -34,22 +40,13 @@ namespace
             || normalizedName == QStringLiteral("h5")
             || normalizedName == QStringLiteral("h6");
     }
-} // namespace
 
-namespace WhatSon::NoteBodyPersistence
-{
-    QString normalizeBodyPlainText(QString text)
+    BodyDocumentTextFragments parseBodyDocumentTextFragments(const QString& bodyDocumentText)
     {
-        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-        return text;
-    }
-
-    QString plainTextFromBodyDocument(const QString& bodyDocumentText)
-    {
+        BodyDocumentTextFragments fragments;
         if (bodyDocumentText.isEmpty())
         {
-            return {};
+            return fragments;
         }
 
         QXmlStreamReader reader(bodyDocumentText);
@@ -57,8 +54,6 @@ namespace WhatSon::NoteBodyPersistence
         bool encounteredBlockElement = false;
         int blockDepth = 0;
         QString currentBlockText;
-        QString fallbackText;
-        QStringList lines;
 
         while (!reader.atEnd())
         {
@@ -88,7 +83,7 @@ namespace WhatSon::NoteBodyPersistence
                     }
                     else if (!encounteredBlockElement)
                     {
-                        fallbackText += QLatin1Char('\n');
+                        fragments.fallbackText += QLatin1Char('\n');
                     }
                     continue;
                 }
@@ -119,7 +114,7 @@ namespace WhatSon::NoteBodyPersistence
                 }
                 else if (!encounteredBlockElement || !text.trimmed().isEmpty())
                 {
-                    fallbackText += text;
+                    fragments.fallbackText += text;
                 }
                 continue;
             }
@@ -132,7 +127,6 @@ namespace WhatSon::NoteBodyPersistence
             const QString elementName = reader.name().toString();
             if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
             {
-                insideBody = false;
                 break;
             }
 
@@ -144,17 +138,51 @@ namespace WhatSon::NoteBodyPersistence
             --blockDepth;
             if (blockDepth == 0)
             {
-                lines.append(normalizeBodyPlainText(currentBlockText).split(QLatin1Char('\n'), Qt::KeepEmptyParts));
+                fragments.blockLines.append(
+                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockText).split(
+                        QLatin1Char('\n'),
+                        Qt::KeepEmptyParts));
                 currentBlockText.clear();
             }
         }
 
-        if (!lines.isEmpty())
-        {
-            return lines.join(QLatin1Char('\n'));
-        }
+        fragments.fallbackText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackText);
+        return fragments;
+    }
+} // namespace
 
-        return normalizeBodyPlainText(fallbackText);
+namespace WhatSon::NoteBodyPersistence
+{
+    QString normalizeBodyPlainText(QString text)
+    {
+        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return text;
+    }
+
+    QString plainTextFromBodyDocument(const QString& bodyDocumentText)
+    {
+        const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
+        if (!fragments.blockLines.isEmpty())
+        {
+            return fragments.blockLines.join(QLatin1Char('\n'));
+        }
+        return fragments.fallbackText;
+    }
+
+    QString firstLineFromBodyDocument(const QString& bodyDocumentText)
+    {
+        const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
+        const QString fallbackFirstLine = firstLineFromBodyPlainText(fragments.fallbackText);
+        if (!fallbackFirstLine.isEmpty())
+        {
+            return fallbackFirstLine;
+        }
+        if (!fragments.blockLines.isEmpty())
+        {
+            return firstLineFromBodyPlainText(fragments.blockLines.join(QLatin1Char('\n')));
+        }
+        return {};
     }
 
     QString firstLineFromBodyPlainText(const QString& text)

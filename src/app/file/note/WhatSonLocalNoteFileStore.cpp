@@ -570,7 +570,7 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
     }
 
     document->bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
-    document->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(document->bodyPlainText);
+    document->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(bodyDocumentText);
 }
 
 bool WhatSonLocalNoteFileStore::createNote(

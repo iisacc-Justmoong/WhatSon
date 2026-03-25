@@ -8,6 +8,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 ## Public Contract
 - `normalizeBodyPlainText(...)` only normalizes line endings. It must not trim lines or collapse whitespace.
 - `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs.
+- `firstLineFromBodyDocument(...)` derives preview text from the first logical XML line, including leading inline text that appears before the first paragraph block.
 - `firstLineFromBodyPlainText(...)` derives preview text from the first non-empty trimmed line, without mutating the stored plain text.
 - `persistBodyPlainText(...)` is the high-level save entry used by hierarchy viewmodels.
 

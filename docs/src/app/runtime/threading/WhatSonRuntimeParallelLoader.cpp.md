@@ -1,37 +1,19 @@
 # `src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/runtime/threading/WhatSonRuntimeParallelLoader.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonRuntimeParallelLoader.cpp`
-- Approximate line count: 472
+`WhatSonRuntimeParallelLoader.cpp` fans out domain snapshot work onto worker threads and then applies
+those immutable snapshot payloads back onto the main-thread viewmodels.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Shared Library Snapshot Rule
 
-### Classes and Structs
-- None detected during scaffold generation.
+When both the library and bookmarks domains are present, the loader now indexes the library domain
+once and derives bookmarks from that shared library snapshot.
 
-### Enums
-- None detected during scaffold generation.
+This removes the previous duplicate `.wshub` traversal where the bookmarks task reparsed the same
+library note set independently.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Failure Behavior
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- If the library snapshot fails, the derived bookmarks result fails with the same error.
+- If the library domain is absent, the loader falls back to the standalone bookmarks snapshot path.

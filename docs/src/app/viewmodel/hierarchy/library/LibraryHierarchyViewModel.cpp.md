@@ -6,6 +6,11 @@ This file is the orchestration layer for the library hierarchy domain. It owns U
 selection state, note-list filtering, runtime snapshot application, and the translation from
 hierarchy edits into persistent mutations.
 
+`WhatSonLibraryIndexedState` now owns the backend note index and smart-bucket projections behind this
+viewmodel. `LibraryHierarchyViewModel.cpp` still decides when to mutate or filter the library state,
+but it no longer rebuilds `all` / `draft` / `today` note collections manually after every note
+write.
+
 ## UUID Migration Summary
 
 The viewmodel treats folder UUID as the canonical runtime identity.
@@ -82,6 +87,23 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 The actual sort is still performed inside `LibraryNoteListModel`, but the viewmodel is now
 responsible for supplying the timestamp keys required to keep the visible note list ordered by the
 most recently modified note first after load, refresh, and save.
+
+Primary note preview text also restores `bodyFirstLine` ahead of the truncated plain-text summary
+when the rendered first line came from markup that is not preserved as the leading plain-text line.
+
+## Backend Boundary
+
+- note creation, deletion, folder clearing, folder assignment, and body persistence now update the
+  shared `WhatSonLibraryIndexedState` backend instead of separately touching `LibraryAll`,
+  `LibraryDraft`, and `LibraryToday`
+- `notesForBucket(...)` reads the smart buckets from that backend state
+- runtime snapshot application delegates the indexed collections into `WhatSonLibraryIndexedState`
+  before the viewmodel rebuilds visible folder rows
+- note-list rows are now cached per note ID until either the indexed note state changes or the
+  rendered folder hierarchy changes, so bucket switches and folder-scope refreshes no longer
+  rebuild every visible row from scratch
+- folder-scoped note filtering now builds the visible `LibraryNoteListItem` list directly instead
+  of first materializing an intermediate filtered `LibraryNoteRecord` vector
 
 ## Why This Matters
 

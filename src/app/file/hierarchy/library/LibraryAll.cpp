@@ -522,7 +522,7 @@ namespace
         }
 
         content.plainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(wsnbodyText);
-        content.firstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(content.plainText);
+        content.firstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(wsnbodyText);
         return content;
     }
 

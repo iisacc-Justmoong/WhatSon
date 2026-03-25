@@ -3,13 +3,12 @@
 #include "LibraryHierarchyModel.hpp"
 #include "LibraryNoteListModel.hpp"
 #include "file/hierarchy/WhatSonFolderDepthEntry.hpp"
-#include "file/hierarchy/library/LibraryAll.hpp"
-#include "file/hierarchy/library/LibraryDraft.hpp"
-#include "file/hierarchy/library/LibraryToday.hpp"
+#include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/hub/WhatSonHubStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
 
+#include <QHash>
 #include <QPointer>
 #include <QSet>
 #include <QVariantList>
@@ -152,7 +151,9 @@ private:
     static int extractDepth(const QVariantMap& entryMap);
     static LibraryHierarchyItem parseItem(const QVariant& entry, int fallbackOrdinal);
     static int nextFolderSequence(const QVector<LibraryHierarchyItem>& items);
+    LibraryNoteListItem buildNoteListItem(const LibraryNoteRecord& note, const QStringList& folderLabels) const;
     QVector<LibraryNoteListItem> buildNoteListItems(const QVector<LibraryNoteRecord>& notes) const;
+    QVector<LibraryNoteListItem> buildFolderScopedNoteListItems(const FolderSelectionScope& scope) const;
     const QVector<LibraryNoteRecord>& notesForBucket(IndexedBucket bucket) const;
     const IndexedBucketRange* bucketRangeForIndex(int index) const noexcept;
     IndexedBucket selectedBucket() const;
@@ -160,6 +161,14 @@ private:
     static QString normalizeFolderKey(const QString& value);
     QString folderPathForIndex(int index) const;
     QString folderUuidForIndex(int index) const;
+    void invalidateNoteListItemCache() const;
+    void setIndexedStateNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes);
+    void applyIndexedStateSnapshot(
+        QString wshubPath,
+        QVector<LibraryNoteRecord> allNotes,
+        QVector<LibraryNoteRecord> draftNotes,
+        QVector<LibraryNoteRecord> todayNotes);
+    bool loadIndexedStateFromWshub(const QString& wshubPath, QString* errorMessage);
     bool commitFolderHierarchyUpdate(
         QVector<LibraryHierarchyItem> stagedItems,
         int selectedIndex,
@@ -177,10 +186,10 @@ private:
     QVector<LibraryHierarchyItem> m_items;
     LibraryHierarchyModel m_itemModel;
     LibraryNoteListModel m_noteListModel;
-    LibraryAll m_libraryAll;
-    LibraryDraft m_libraryDraft;
-    LibraryToday m_libraryToday;
+    WhatSonLibraryIndexedState m_indexedState;
     QVector<IndexedBucketRange> m_bucketRanges;
+    mutable QHash<QString, LibraryNoteListItem> m_noteListItemCache;
+    mutable bool m_noteListItemCacheUsesFoldersHierarchy = false;
     bool m_runtimeIndexLoaded = false;
     bool m_foldersHierarchyLoaded = false;
     int m_selectedIndex = -1;

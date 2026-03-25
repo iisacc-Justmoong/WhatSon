@@ -32,5 +32,5 @@ void PanelViewModel::requestViewModelHook(const QString& reason)
                            .arg(normalizedReason);
     WhatSon::Debug::traceSelf(this, QStringLiteral("panel.viewmodel"), QStringLiteral("hook.request"), detail);
     emit hookRequestCountChanged();
-    emit viewModelHookRequested();
+    emit viewModelHookRequested(normalizedReason);
 }

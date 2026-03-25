@@ -5,6 +5,11 @@
 This file builds startup-time runtime snapshots for the main thread. It loads note records, smart
 bucket projections, and persisted hierarchy files in a worker-thread friendly form.
 
+`WhatSonLibraryIndexedState` is now the shared backend for the library-side note projections. The
+snapshot loader uses that backend to materialize `all`, `draft`, and `today` once, then exposes a
+`buildBookmarks(...)` helper that derives the bookmarks domain from the already indexed library note
+set instead of reparsing the mounted hub.
+
 ## Folder Snapshot Role
 
 For library folders, the snapshot loader parses `Folders.wsfolders` into

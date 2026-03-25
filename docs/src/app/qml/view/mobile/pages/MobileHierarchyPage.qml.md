@@ -9,9 +9,9 @@ It does not own the domain data itself. Its job is to keep the mobile `LV.PageRo
 - Mount the three mobile body routes: hierarchy, note list, and editor.
 - Preserve the selected hierarchy folder while the user moves between note list and editor pages.
 - Drive left-edge back-swipe gestures through `LV.PageTransitionController`.
-- Promote newly created library notes into the editor route once the shared models are ready.
+- Delegate newly created library-note promotion into a dedicated coordinator once the shared models are ready.
 - Keep compact navigation chrome route-aware so hierarchy-only controls do not leak into note-list or editor pages.
-- Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component.
+- Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component, while keeping note creation on the dedicated `windowInteractions` shortcut path so generic route hooks never create files.
 
 ## Routing Model
 The file defines three route constants:
@@ -67,11 +67,12 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 
 ## Collaborators
 - `MobilePageScaffold.qml`: owns the shared compact navigation and status chrome.
+- `MobileNoteCreationCoordinator.qml`: owns create-note dispatch plus pending-note promotion into the editor route.
 - `HierarchySidebarLayout.qml`: renders the hierarchy route body.
 - `ListBarLayout.qml`: renders the folder-scoped note list route body.
 - `ContentViewLayout.qml`: renders the editor route body.
 - `SidebarHierarchyViewModel`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
-- `windowInteractions`: routes create-note shortcuts and exposes the library note mutation viewmodel.
+- `windowInteractions`: routes the dedicated create-note action and resolves the writable note-mutation capability.
 
 ## Known Invariants
 - A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.

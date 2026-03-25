@@ -10,6 +10,7 @@
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
 - Switch between onboarding and workspace routes.
+- Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
 
 ## ViewModel Ownership
 The important architectural work in this file is not the layout math. It is the ownership hand-off.
@@ -36,6 +37,8 @@ The file keeps both desktop and mobile layout branches alive.
 
 ## Important Signals and Hooks
 - `viewHookRequested` is the root forwarding signal used by nested components that want to bubble interaction intent upward.
+- The root `Shortcut` for `StandardKey.New` is intentionally gated behind `isDesktopPlatform` so mobile route changes and
+  panel navigation cannot fall into global note creation.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
 - `Component.onDestruction` releases owned view bindings so the registry does not retain stale writable handles.
 

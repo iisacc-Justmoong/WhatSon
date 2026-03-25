@@ -25,3 +25,10 @@ The viewmodel remains the boundary between:
 
 The UUID change reduces accidental coupling between visible path strings and semantic folder
 identity, but the class is still the central coordinator for the library hierarchy domain.
+
+The header now also makes `WhatSonLibraryIndexedState` the private backend note-index dependency.
+That narrows the viewmodel's direct storage responsibility to orchestration state instead of three
+separate indexed note containers.
+
+It also declares the private note-list item cache helpers that let the viewmodel reuse derived row
+data across bucket switches and folder-scope refreshes.

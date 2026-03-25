@@ -139,10 +139,11 @@ void PanelViewModelRegistryTest::registry_mustExposeAllKnownPanels()
         QCOMPARE(panelVm->property("panelKey").toString(), key);
 
         const int hookCountBefore = panelVm->property("hookRequestCount").toInt();
-        QSignalSpy hookSignalSpy(panelVm, SIGNAL(viewModelHookRequested()));
+        QSignalSpy hookSignalSpy(panelVm, SIGNAL(viewModelHookRequested(QString)));
         QSignalSpy hookCountSpy(panelVm, SIGNAL(hookRequestCountChanged()));
         QMetaObject::invokeMethod(panelVm, "requestViewModelHook", Qt::DirectConnection);
         QCOMPARE(hookSignalSpy.count(), 1);
+        QCOMPARE(hookSignalSpy.at(0).at(0).toString(), QStringLiteral("manual"));
         QCOMPARE(hookCountSpy.count(), 1);
         QCOMPARE(panelVm->property("hookRequestCount").toInt(), hookCountBefore + 1);
     }

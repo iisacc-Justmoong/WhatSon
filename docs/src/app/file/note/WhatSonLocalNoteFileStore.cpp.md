@@ -8,6 +8,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
 ## Body Parsing Contract
 - `applyBodyDocumentText(...)` is the read-side body decoder.
 - The decoder still detects `<resource ...>` tags for thumbnail metadata, but the editor text now comes from `WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(...)`.
+- The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
 
 ## Update Contract
