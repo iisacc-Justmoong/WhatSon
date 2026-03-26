@@ -16,8 +16,8 @@ list.
 
 ## Stored State
 
-- `m_progressStates` is the canonical ordered enum list mirrored from `Progress.wsprogress`.
-- `m_items` is the flat LVRS-facing row set derived directly from `m_progressStates`.
+- `m_progressStates` stores the persisted `Progress.wsprogress` payload for runtime synchronization.
+- `m_items` is the fixed ten-row LVRS-facing taxonomy used by the sidebar.
 - `m_allNotes` stores the indexed hub notes used to build the filtered note list.
 - `m_progressFilePath` keeps the source file path required to resolve the owning `.wshub` during
   runtime refreshes.

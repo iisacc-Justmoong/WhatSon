@@ -3,6 +3,8 @@
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
+#include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -174,6 +176,7 @@ private
     void detailContentViewModels_mustMapEachStateToDedicatedViewModel();
     void detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection();
     void detailSelectors_mustMirrorCurrentNoteHeaderFileState();
+    void detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries();
     void folderAssignments_mustSyncHeaderFoldersAndHierarchyStore();
     void requestStateChange_mustUpdateActiveStateAndToolbarSelection();
     void requestStateChange_invalidValue_mustBeIgnored();
@@ -470,6 +473,107 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QCOMPARE(header.bookmarkColors(), QStringList{});
     QCOMPARE(header.tags(), QStringList{});
     QCOMPARE(header.progress(), -1);
+}
+
+void DetailPanelViewModelTest::detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString hubPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("DetailProgressBridge.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("DetailProgressBridge.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("BridgeNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    const QString noteId = QStringLiteral("note-bridge");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.library.index\",\n"
+                "  \"notes\": [\n"
+                "    {\"id\": \"note-bridge\"}\n"
+                "  ]\n"
+                "}\n")),
+        "index.wsnindex must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("Progress.wsprogress")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.progress.state\",\n"
+                "  \"progress\": 0,\n"
+                "  \"states\": [\"Ready\", \"Pending\", \"InProgress\", \"Done\"]\n"
+                "}\n")),
+        "Progress.wsprogress must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("BridgeNote.wsnhead")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-bridge\">\n"
+                "  <head>\n"
+                "    <created>2026-03-01-00-00-00</created>\n"
+                "    <author>Tester</author>\n"
+                "    <lastModified>2026-03-01-00-00-00</lastModified>\n"
+                "    <modifiedBy>Tester</modifiedBy>\n"
+                "    <folders></folders>\n"
+                "    <project></project>\n"
+                "    <bookmarks state=\"false\" />\n"
+                "    <tags>\n"
+                "    </tags>\n"
+                "    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n"
+                "    <isPreset>false</isPreset>\n"
+                "  </head>\n"
+                "</contents>\n")),
+        "BridgeNote.wsnhead must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("BridgeNote.wsnbody")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-bridge\">\n"
+                "  <body>\n"
+                "    <paragraph>Done bridge summary</paragraph>\n"
+                "  </body>\n"
+                "</contents>\n")),
+        "BridgeNote.wsnbody must be written");
+
+    ProgressHierarchyViewModel progressHierarchyViewModel;
+    QVERIFY(progressHierarchyViewModel.loadFromWshub(hubPath));
+
+    DetailPanelViewModel detailPanelViewModel;
+    FakeCurrentNoteListModel noteListModel;
+    FakeNoteDirectorySourceViewModel noteDirectorySourceViewModel;
+
+    noteListModel.setCurrentNoteId(noteId);
+    noteDirectorySourceViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+    detailPanelViewModel.setCurrentNoteListModel(&noteListModel);
+    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&noteDirectorySourceViewModel);
+    detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
+
+    QObject* progressSelector = detailPanelViewModel.progressSelectionViewModel();
+    QVERIFY(progressSelector != nullptr);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 1);
+
+    QVERIFY(detailPanelViewModel.writeProgressSelection(7));
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 7);
+    QCOMPARE(detailPanelViewModel.propertiesViewModel()->property("currentProgress").toInt(), 6);
+
+    QVERIFY(progressHierarchyViewModel.loadFromWshub(hubPath));
+    progressHierarchyViewModel.setSelectedIndex(6);
+    QCOMPARE(progressHierarchyViewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        progressHierarchyViewModel.noteListModel()->data(
+            progressHierarchyViewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::NoteIdRole).toString(),
+        noteId);
 }
 
 void DetailPanelViewModelTest::folderAssignments_mustSyncHeaderFoldersAndHierarchyStore()

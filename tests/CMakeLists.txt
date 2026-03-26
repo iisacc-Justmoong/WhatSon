@@ -746,14 +746,27 @@ list(APPEND WHATSON_TEST_TARGETS whatson_solid_architecture_contract_tests)
 
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/SystemCalendarStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/IO/WhatSonSystemIoGateway.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailContentSectionViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailHierarchySelectionViewModel.cpp
@@ -764,6 +777,10 @@ add_executable(whatson_detail_panel_viewmodel_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPropertiesViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp
 )
 set_target_properties(whatson_detail_panel_viewmodel_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_detail_panel_viewmodel_tests

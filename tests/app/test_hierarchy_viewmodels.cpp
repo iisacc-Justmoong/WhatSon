@@ -307,7 +307,7 @@ namespace
 
         if (!writeUtf8File(
             QDir(pendingNotePath).filePath(QStringLiteral("Pending.wsnhead")),
-            makeWsnHeadText(QStringLiteral("note-pending"), false, {}, {}, 1))
+            makeWsnHeadText(QStringLiteral("note-pending"), false, {}, {}, 3))
             || !writeUtf8File(
                 QDir(pendingNotePath).filePath(QStringLiteral("Pending.wsnbody")),
                 makeWsnBodyText(QStringLiteral("Pending summary"))))
@@ -317,7 +317,7 @@ namespace
 
         if (!writeUtf8File(
             QDir(doneNotePath).filePath(QStringLiteral("Done.wsnhead")),
-            makeWsnHeadText(QStringLiteral("note-done"), false, {}, {}, 3))
+            makeWsnHeadText(QStringLiteral("note-done"), false, {}, {}, 6))
             || !writeUtf8File(
                 QDir(doneNotePath).filePath(QStringLiteral("Done.wsnbody")),
                 makeWsnBodyText(QStringLiteral("Done summary"))))
@@ -934,65 +934,82 @@ void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
     QVERIFY(viewModel.loadFromWshub(hubPath));
     QVERIFY(!viewModel.renameEnabled());
     QVERIFY(!viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::LabelRole).toString(),
-        QStringLiteral("Ready"));
+        QStringLiteral("First draft"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::ShowChevronRole)
                  .toBool(),
-        false);
+        true);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::IconNameRole)
                  .toString(),
         QStringLiteral("inlineinlineEdit"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProgressHierarchyModel::LabelRole).toString(),
-        QStringLiteral("InProgress"));
+        QStringLiteral("In Progress"));
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProgressHierarchyModel::ShowChevronRole)
                  .toBool(),
-        false);
+        true);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProgressHierarchyModel::IconNameRole)
                  .toString(),
         QStringLiteral("progressresume"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), ProgressHierarchyModel::LabelRole).toString(),
-        QStringLiteral("Done"));
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Reviewing"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), ProgressHierarchyModel::ShowChevronRole)
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), ProgressHierarchyModel::ShowChevronRole)
                  .toBool(),
         false);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(3, 0), ProgressHierarchyModel::IconNameRole)
+        viewModel.itemModel()->data(viewModel.itemModel()->index(4, 0), ProgressHierarchyModel::IconNameRole)
+                 .toString(),
+        QStringLiteral("showLogs"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(6, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Done"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(6, 0), ProgressHierarchyModel::ShowChevronRole)
+                 .toBool(),
+        false);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(6, 0), ProgressHierarchyModel::IconNameRole)
                  .toString(),
         QStringLiteral("validator"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(7, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Lagacy"));
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(9, 0), ProgressHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Delete review"));
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
-    QCOMPARE(hierarchyModel.size(), 4);
+    QCOMPARE(hierarchyModel.size(), 10);
     QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(), QStringLiteral("inlineinlineEdit"));
-    QCOMPARE(hierarchyModel.at(3).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Done"));
-    QCOMPARE(hierarchyModel.at(3).toMap().value(QStringLiteral("progressValue")).toInt(), 3);
+    QCOMPARE(hierarchyModel.at(6).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Done"));
+    QCOMPARE(hierarchyModel.at(6).toMap().value(QStringLiteral("progressValue")).toInt(), 6);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(!viewModel.canRenameItem(0));
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("Progress-Header")));
 
-    viewModel.setSelectedIndex(3);
+    viewModel.setSelectedIndex(6);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::NoteIdRole).toString(),
         QStringLiteral("note-done"));
-    QVERIFY(!viewModel.canRenameItem(3));
-    QVERIFY(!viewModel.renameItem(3, QStringLiteral("Done-Renamed")));
-    QCOMPARE(viewModel.itemLabel(3), QStringLiteral("Done"));
+    QVERIFY(!viewModel.canRenameItem(6));
+    QVERIFY(!viewModel.renameItem(6, QStringLiteral("Done-Renamed")));
+    QCOMPARE(viewModel.itemLabel(6), QStringLiteral("Done"));
     viewModel.createFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     viewModel.deleteSelectedFolder();
-    QCOMPARE(viewModel.itemModel()->rowCount(), 4);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 10);
 }
 
 void HierarchyViewModelsTest::progressViewModel_applyRuntimeSnapshot_preservesSelectionAndVisibleNotes()
@@ -1003,9 +1020,14 @@ void HierarchyViewModelsTest::progressViewModel_applyRuntimeSnapshot_preservesSe
     ProgressHierarchyViewModel viewModel;
     QVERIFY(viewModel.loadFromWshub(hubPath));
 
-    viewModel.setSelectedIndex(3);
-    QCOMPARE(viewModel.selectedIndex(), 3);
+    QVERIFY(viewModel.setItemExpanded(0, true));
+    viewModel.setSelectedIndex(6);
+    QCOMPARE(viewModel.selectedIndex(), 6);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::ExpandedRole)
+            .toBool(),
+        true);
 
     viewModel.applyRuntimeSnapshot(
         0,
@@ -1019,8 +1041,12 @@ void HierarchyViewModelsTest::progressViewModel_applyRuntimeSnapshot_preservesSe
             QStringLiteral("Progress.wsprogress")),
         true);
 
-    QCOMPARE(viewModel.selectedIndex(), 3);
+    QCOMPARE(viewModel.selectedIndex(), 6);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProgressHierarchyModel::ExpandedRole)
+            .toBool(),
+        true);
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),

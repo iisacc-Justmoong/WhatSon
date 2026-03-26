@@ -7,6 +7,64 @@
 
 namespace
 {
+    QString normalizeProgressLabelKey(QString value)
+    {
+        value = value.trimmed().toLower();
+        value.remove(QLatin1Char(' '));
+        value.remove(QLatin1Char('-'));
+        value.remove(QLatin1Char('_'));
+        return value;
+    }
+
+    int fallbackProgressValueForLabel(const QString& label)
+    {
+        const QString normalizedLabel = normalizeProgressLabelKey(label);
+        if (normalizedLabel == QStringLiteral("ready")
+            || normalizedLabel == QStringLiteral("firstdraft"))
+        {
+            return 0;
+        }
+        if (normalizedLabel == QStringLiteral("modifieddraft"))
+        {
+            return 1;
+        }
+        if (normalizedLabel == QStringLiteral("inprogress"))
+        {
+            return 2;
+        }
+        if (normalizedLabel == QStringLiteral("pending"))
+        {
+            return 3;
+        }
+        if (normalizedLabel == QStringLiteral("reviewing"))
+        {
+            return 4;
+        }
+        if (normalizedLabel == QStringLiteral("waitingforapproval"))
+        {
+            return 5;
+        }
+        if (normalizedLabel == QStringLiteral("done"))
+        {
+            return 6;
+        }
+        if (normalizedLabel == QStringLiteral("lagacy")
+            || normalizedLabel == QStringLiteral("legacy"))
+        {
+            return 7;
+        }
+        if (normalizedLabel == QStringLiteral("archived"))
+        {
+            return 8;
+        }
+        if (normalizedLabel == QStringLiteral("deletereview"))
+        {
+            return 9;
+        }
+
+        return -1;
+    }
+
     QString clearSelectionLabel(DetailNoteHeaderSelectionSourceViewModel::Field field)
     {
         switch (field)
@@ -253,22 +311,11 @@ int DetailNoteHeaderSelectionSourceViewModel::progressValueForHierarchyEntry(
         }
     }
 
-    const QString label = entryMap.value(QStringLiteral("label")).toString().trimmed();
-    if (label.compare(QStringLiteral("Ready"), Qt::CaseInsensitive) == 0)
+    const int fallbackLabelValue = fallbackProgressValueForLabel(
+        entryMap.value(QStringLiteral("label")).toString());
+    if (fallbackLabelValue >= 0)
     {
-        return 0;
-    }
-    if (label.compare(QStringLiteral("Pending"), Qt::CaseInsensitive) == 0)
-    {
-        return 1;
-    }
-    if (label.compare(QStringLiteral("InProgress"), Qt::CaseInsensitive) == 0)
-    {
-        return 2;
-    }
-    if (label.compare(QStringLiteral("Done"), Qt::CaseInsensitive) == 0)
-    {
-        return 3;
+        return fallbackLabelValue;
     }
 
     return fallbackProgressValue;

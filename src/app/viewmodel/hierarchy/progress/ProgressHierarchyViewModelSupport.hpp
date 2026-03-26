@@ -273,19 +273,38 @@ namespace WhatSon::Hierarchy::ProgressSupport
 
     inline QVector<ProgressHierarchyItem> buildSupportedTypeItems(const QStringList& progressStates)
     {
-        const QStringList sanitizedStates = sanitizeStringList(progressStates);
+        struct SupportedProgressItem final
+        {
+            QString label;
+            bool showChevron;
+        };
+
+        static const QVector<SupportedProgressItem> kItems = {
+            {QStringLiteral("First draft"), true},
+            {QStringLiteral("Modified draft"), true},
+            {QStringLiteral("In Progress"), true},
+            {QStringLiteral("Pending"), true},
+            {QStringLiteral("Reviewing"), false},
+            {QStringLiteral("Waiting for approval"), false},
+            {QStringLiteral("Done"), false},
+            {QStringLiteral("Lagacy"), false},
+            {QStringLiteral("Archived"), false},
+            {QStringLiteral("Delete review"), false}
+        };
+
+        Q_UNUSED(progressStates);
 
         QVector<ProgressHierarchyItem> items;
-        items.reserve(sanitizedStates.size());
+        items.reserve(kItems.size());
 
-        for (const QString& stateLabel : sanitizedStates)
+        for (const SupportedProgressItem& supportedItem : kItems)
         {
             ProgressHierarchyItem item;
             item.depth = 0;
             item.accent = false;
             item.expanded = false;
-            item.label = stateLabel;
-            item.showChevron = false;
+            item.label = supportedItem.label;
+            item.showChevron = supportedItem.showChevron;
             items.push_back(std::move(item));
         }
 

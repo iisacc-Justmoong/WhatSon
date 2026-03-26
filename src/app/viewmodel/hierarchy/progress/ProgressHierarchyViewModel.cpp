@@ -408,10 +408,10 @@ void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList
                               QStringLiteral("setProgressState.begin"),
                               QStringLiteral("value=%1 rawCount=%2").arg(progressValue).arg(progressStates.size()));
     m_progressStates = sanitizeProgressStatesOrDefault(std::move(progressStates));
-    const int maxProgressValue = std::max(0, static_cast<int>(m_progressStates.size()) - 1);
+    rebuildItems();
+    const int maxProgressValue = std::max(0, static_cast<int>(m_items.size()) - 1);
     m_progressValue = std::clamp(progressValue, 0, maxProgressValue);
     syncProgressStore();
-    rebuildItems();
     m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
     syncModel();
     const int nextSelectedIndex = WhatSon::Hierarchy::ProgressSupport::clampSelectionIndex(m_selectedIndex, m_itemModel.rowCount());
@@ -776,7 +776,7 @@ bool ProgressHierarchyViewModel::refreshIndexedNotesFromProgressFilePath(QString
 
 int ProgressHierarchyViewModel::selectedProgressFilterValue() const noexcept
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= m_progressStates.size())
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_items.size())
     {
         return -1;
     }
@@ -786,7 +786,17 @@ int ProgressHierarchyViewModel::selectedProgressFilterValue() const noexcept
 
 void ProgressHierarchyViewModel::rebuildItems()
 {
+    const QVector<ProgressHierarchyItem> previousItems = m_items;
     m_items = WhatSon::Hierarchy::ProgressSupport::buildSupportedTypeItems(m_progressStates);
+
+    for (int index = 0; index < m_items.size() && index < previousItems.size(); ++index)
+    {
+        if (m_items.at(index).label == previousItems.at(index).label
+            && m_items.at(index).showChevron == previousItems.at(index).showChevron)
+        {
+            m_items[index].expanded = previousItems.at(index).expanded;
+        }
+    }
 }
 
 void ProgressHierarchyViewModel::syncProgressStore()
