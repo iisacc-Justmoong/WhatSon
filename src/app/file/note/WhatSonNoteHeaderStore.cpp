@@ -441,7 +441,7 @@ int WhatSonNoteHeaderStore::progress() const noexcept
 
 void WhatSonNoteHeaderStore::setProgress(int progress) noexcept
 {
-    m_progress = std::max(progress, 0);
+    m_progress = std::max(progress, -1);
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("note.header.store"),
                               QStringLiteral("setProgress"),

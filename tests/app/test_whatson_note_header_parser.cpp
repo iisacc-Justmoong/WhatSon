@@ -14,10 +14,12 @@ private
 
     void parse_readsWsnHeadFieldsWithExpectedTypes();
     void parse_mapsProgressEnumLabelToInteger();
+    void parse_readsEmptyProgressAsClearedState();
     void parse_resolvesTemplateTokensInFolderAndTagArrays();
     void parse_dropsReservedTodayFolderTokens();
     void parse_resolvesTemplateTokensInSingleFields();
     void createHeaderText_roundTripsThroughParser();
+    void createHeaderText_roundTripsClearedProgressState();
 };
 
 void WhatSonNoteHeaderParserTest::parse_readsWsnHeadFieldsWithExpectedTypes()
@@ -85,6 +87,24 @@ void WhatSonNoteHeaderParserTest::parse_mapsProgressEnumLabelToInteger()
     QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
 
     QCOMPARE(store.progress(), 2);
+}
+
+void WhatSonNoteHeaderParserTest::parse_readsEmptyProgressAsClearedState()
+{
+    const QString input =
+        QStringLiteral(
+            "<contents id=note-002-empty>\n"
+            "  <head>\n"
+            "    <progress enums={Ready,Pending,InProgress,Done}></progress>\n"
+            "  </head>\n"
+            "</contents>\n");
+
+    WhatSonNoteHeaderStore store;
+    WhatSonNoteHeaderParser parser;
+    QString errorMessage;
+    QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(store.progress(), -1);
 }
 
 void WhatSonNoteHeaderParserTest::parse_resolvesTemplateTokensInFolderAndTagArrays()
@@ -196,6 +216,24 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
     QCOMPARE(decoded.progress(), seed.progress());
     QCOMPARE(decoded.isBookmarked(), seed.isBookmarked());
     QCOMPARE(decoded.isPreset(), seed.isPreset());
+}
+
+void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsClearedProgressState()
+{
+    WhatSonNoteHeaderStore seed;
+    seed.setNoteId(QStringLiteral("seed-note-cleared-progress"));
+    seed.setProgress(-1);
+
+    const WhatSonNoteHeaderCreator creator(QStringLiteral("/tmp"));
+    const QString encoded = creator.createHeaderText(seed);
+    QVERIFY(encoded.contains(QStringLiteral("<progress enums=\"{Ready,Pending,InProgress,Done}\"></progress>")));
+
+    WhatSonNoteHeaderStore decoded;
+    WhatSonNoteHeaderParser parser;
+    QString errorMessage;
+    QVERIFY2(parser.parse(encoded, &decoded, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(decoded.progress(), -1);
 }
 
 QTEST_APPLESS_MAIN(WhatSonNoteHeaderParserTest)

@@ -1,12 +1,17 @@
 #include "ProgressHierarchyViewModel.hpp"
 
+#include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyParser.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
 #include <QDir>
 #include <QFileInfo>
+#include <QUrl>
 #include <utility>
 
 #include <algorithm>
@@ -14,6 +19,205 @@
 namespace
 {
     constexpr auto kScope = "progress.viewmodel";
+    constexpr int kMaxNoteListSummaryLines = 5;
+
+    QStringList defaultProgressStates()
+    {
+        return {
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        };
+    }
+
+    QStringList sanitizeProgressStatesOrDefault(QStringList values)
+    {
+        values = WhatSon::Hierarchy::ProgressSupport::sanitizeStringList(std::move(values));
+        if (values.isEmpty())
+        {
+            return defaultProgressStates();
+        }
+        return values;
+    }
+
+    QString truncateToMaxLines(const QString& value, int maxLines)
+    {
+        if (maxLines <= 0)
+        {
+            return {};
+        }
+
+        const QStringList lines = value.split(QLatin1Char('\n'));
+        if (lines.size() <= maxLines)
+        {
+            return value;
+        }
+
+        QStringList truncated;
+        truncated.reserve(maxLines);
+        for (int index = 0; index < maxLines; ++index)
+        {
+            truncated.push_back(lines.at(index));
+        }
+        return truncated.join(QLatin1Char('\n'));
+    }
+
+    QString notePrimaryText(const LibraryNoteRecord& note)
+    {
+        const QString firstLine = note.bodyFirstLine.trimmed();
+        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
+        if (!firstLine.isEmpty())
+        {
+            if (bodyPlainText.isEmpty())
+            {
+                return firstLine;
+            }
+
+            if (!bodyPlainText.startsWith(firstLine))
+            {
+                return firstLine + QLatin1Char('\n') + bodyPlainText;
+            }
+        }
+
+        if (!bodyPlainText.isEmpty())
+        {
+            return bodyPlainText;
+        }
+
+        return note.noteId.trimmed();
+    }
+
+    QStringList noteListFolders(const LibraryNoteRecord& note)
+    {
+        QStringList folders;
+        folders.reserve(note.folders.size());
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                folders.push_back(trimmed);
+            }
+        }
+        folders.removeDuplicates();
+        if (folders.isEmpty())
+        {
+            folders.push_back(QStringLiteral("Draft"));
+        }
+        return folders;
+    }
+
+    QStringList noteListTags(const LibraryNoteRecord& note)
+    {
+        QStringList tags;
+        tags.reserve(note.tags.size());
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                tags.push_back(trimmed);
+            }
+        }
+        tags.removeDuplicates();
+        return tags;
+    }
+
+    QString noteSearchableText(const LibraryNoteRecord& note, const QStringList& folderLabels)
+    {
+        QStringList parts;
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            parts.push_back(noteId);
+        }
+
+        const QString firstLine = note.bodyFirstLine.trimmed();
+        if (!firstLine.isEmpty())
+        {
+            parts.push_back(firstLine);
+        }
+
+        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        if (!bodyPlainText.isEmpty())
+        {
+            parts.push_back(bodyPlainText);
+        }
+
+        for (const QString& folder : folderLabels)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        return parts.join(QLatin1Char('\n'));
+    }
+
+    QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
+    {
+        if (!note.bookmarkColors.isEmpty())
+        {
+            return WhatSon::Bookmarks::bookmarkColorToHex(note.bookmarkColors.first());
+        }
+        return WhatSon::Bookmarks::defaultBookmarkColorHex();
+    }
+
+    int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < notes.size(); ++index)
+        {
+            if (notes.at(index).noteId.trimmed() == normalizedNoteId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    QString resolveWshubPathFromProgressFile(const QString& progressFilePath)
+    {
+        QFileInfo info(progressFilePath.trimmed());
+        QString currentPath = info.isDir() ? info.absoluteFilePath() : info.absolutePath();
+        while (!currentPath.isEmpty())
+        {
+            const QFileInfo currentInfo(currentPath);
+            if (currentInfo.fileName().endsWith(QStringLiteral(".wshub")) && currentInfo.isDir())
+            {
+                return currentInfo.absoluteFilePath();
+            }
+
+            const QDir dir(currentPath);
+            const QString parentPath = dir.absolutePath() == dir.rootPath() ? QString() : dir.filePath(QStringLiteral(".."));
+            const QString normalizedParentPath = QFileInfo(parentPath).absoluteFilePath();
+            if (normalizedParentPath.isEmpty() || normalizedParentPath == currentPath)
+            {
+                break;
+            }
+            currentPath = normalizedParentPath;
+        }
+
+        return {};
+    }
 } // namespace
 
 ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
@@ -31,6 +235,14 @@ ProgressHierarchyViewModel::ProgressHierarchyViewModel(QObject* parent)
             updateItemCount();
             setSelectedIndex(m_selectedIndex);
         });
+    QObject::connect(
+        &m_noteListModel,
+        &LibraryNoteListModel::itemCountChanged,
+        this,
+        [this](int)
+        {
+            updateNoteItemCount();
+        });
     setProgressState(0, {
                          QStringLiteral("Ready"),
                          QStringLiteral("Pending"),
@@ -46,6 +258,11 @@ ProgressHierarchyModel* ProgressHierarchyViewModel::itemModel() noexcept
     return &m_itemModel;
 }
 
+LibraryNoteListModel* ProgressHierarchyViewModel::noteListModel() noexcept
+{
+    return &m_noteListModel;
+}
+
 int ProgressHierarchyViewModel::selectedIndex() const noexcept
 {
     return m_selectedIndex;
@@ -54,6 +271,11 @@ int ProgressHierarchyViewModel::selectedIndex() const noexcept
 int ProgressHierarchyViewModel::itemCount() const noexcept
 {
     return m_itemCount;
+}
+
+int ProgressHierarchyViewModel::noteItemCount() const noexcept
+{
+    return m_noteItemCount;
 }
 
 bool ProgressHierarchyViewModel::loadSucceeded() const noexcept
@@ -79,6 +301,7 @@ void ProgressHierarchyViewModel::setSelectedIndex(int index)
                               QString::fromLatin1(kScope),
                               QStringLiteral("setSelectedIndex"),
                               QStringLiteral("value=%1").arg(m_selectedIndex));
+    refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
@@ -104,6 +327,7 @@ QVariantList ProgressHierarchyViewModel::depthItems() const
         QVariantMap entry = serialized.at(index).toMap();
         entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), QStringLiteral("progress:%1").arg(index));
+        entry.insert(QStringLiteral("progressValue"), index);
         serialized[index] = entry;
     }
     return serialized;
@@ -183,16 +407,20 @@ void ProgressHierarchyViewModel::setProgressState(int progressValue, QStringList
                               QString::fromLatin1(kScope),
                               QStringLiteral("setProgressState.begin"),
                               QStringLiteral("value=%1 rawCount=%2").arg(progressValue).arg(progressStates.size()));
-    m_progressValue = progressValue;
-    m_progressStates = WhatSon::Hierarchy::ProgressSupport::sanitizeStringList(std::move(progressStates));
+    m_progressStates = sanitizeProgressStatesOrDefault(std::move(progressStates));
+    const int maxProgressValue = std::max(0, static_cast<int>(m_progressStates.size()) - 1);
+    m_progressValue = std::clamp(progressValue, 0, maxProgressValue);
     syncProgressStore();
-    if (m_items.isEmpty())
+    rebuildItems();
+    m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
+    syncModel();
+    const int nextSelectedIndex = WhatSon::Hierarchy::ProgressSupport::clampSelectionIndex(m_selectedIndex, m_itemModel.rowCount());
+    if (m_selectedIndex != nextSelectedIndex)
     {
-        rebuildItems();
-        m_createdFolderSequence = WhatSon::Hierarchy::ProgressSupport::nextGeneratedFolderSequence(m_items);
-        syncModel();
-        setSelectedIndex(-1);
+        m_selectedIndex = nextSelectedIndex;
+        emit selectedIndexChanged();
     }
+    refreshNoteListForSelection();
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setProgressState.success"),
@@ -223,6 +451,67 @@ bool ProgressHierarchyViewModel::createFolderEnabled() const noexcept
 bool ProgressHierarchyViewModel::deleteFolderEnabled() const noexcept
 {
     return false;
+}
+
+bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const QString& text)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0)
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = m_allNotes[noteIndex];
+    QString normalizedBodyText;
+    QString lastModifiedAt;
+    QString saveError;
+    if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
+            note.noteId,
+            note.noteDirectoryPath,
+            note.noteHeaderPath,
+            text,
+            &normalizedBodyText,
+            &lastModifiedAt,
+            &saveError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("saveCurrentBodyText.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, saveError));
+        return false;
+    }
+
+    note.bodyPlainText = normalizedBodyText;
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
+    if (!lastModifiedAt.isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt;
+    }
+
+    refreshNoteListForSelection();
+    return true;
+}
+
+bool ProgressHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+}
+
+QString ProgressHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
+{
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, noteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return {};
+    }
+
+    return m_allNotes.at(noteIndex).noteDirectoryPath.trimmed();
 }
 
 bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
@@ -322,6 +611,21 @@ bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
 
     setProgressState(m_store.progressValue(), m_store.progressStates());
 
+    QString noteLoadError;
+    if (!refreshIndexedNotesFromWshub(wshubPath, &noteLoadError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = noteLoadError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.index"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, noteLoadError));
+        updateLoadState(false, noteLoadError);
+        return false;
+    }
+
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub"),
@@ -350,6 +654,12 @@ void ProgressHierarchyViewModel::applyRuntimeSnapshot(
     }
 
     setProgressState(progressValue, std::move(progressStates));
+    QString noteLoadError;
+    if (!refreshIndexedNotesFromProgressFilePath(&noteLoadError))
+    {
+        updateLoadState(false, noteLoadError);
+        return;
+    }
     updateLoadState(true);
 }
 
@@ -362,6 +672,18 @@ void ProgressHierarchyViewModel::updateItemCount()
     }
     m_itemCount = nextCount;
     emit itemCountChanged();
+}
+
+void ProgressHierarchyViewModel::updateNoteItemCount()
+{
+    const int nextCount = m_noteListModel.rowCount();
+    if (m_noteItemCount == nextCount)
+    {
+        return;
+    }
+
+    m_noteItemCount = nextCount;
+    emit noteItemCountChanged();
 }
 
 void ProgressHierarchyViewModel::updateLoadState(bool succeeded, QString errorMessage)
@@ -377,9 +699,94 @@ void ProgressHierarchyViewModel::updateLoadState(bool succeeded, QString errorMe
     }
 }
 
+LibraryNoteListItem ProgressHierarchyViewModel::buildNoteListItem(const LibraryNoteRecord& note) const
+{
+    const QStringList folderLabels = noteListFolders(note);
+
+    LibraryNoteListItem item;
+    item.id = note.noteId.trimmed();
+    item.primaryText = notePrimaryText(note);
+    item.searchableText = noteSearchableText(note, folderLabels);
+    item.bodyText = note.bodyPlainText;
+    item.createdAt = note.createdAt;
+    item.lastModifiedAt = note.lastModifiedAt;
+    item.image = note.bodyHasResource;
+    item.imageSource = note.bodyFirstResourceThumbnailUrl;
+    item.displayDate = SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
+    item.folders = folderLabels;
+    item.tags = noteListTags(note);
+    item.bookmarked = note.bookmarked;
+    item.bookmarkColor = bookmarkColorHexFromNote(note);
+    return item;
+}
+
+void ProgressHierarchyViewModel::refreshNoteListForSelection()
+{
+    const int selectedProgressValue = selectedProgressFilterValue();
+
+    QVector<LibraryNoteListItem> items;
+    items.reserve(m_allNotes.size());
+    for (const LibraryNoteRecord& note : std::as_const(m_allNotes))
+    {
+        if (selectedProgressValue >= 0 && note.progress != selectedProgressValue)
+        {
+            continue;
+        }
+
+        items.push_back(buildNoteListItem(note));
+    }
+
+    m_noteListModel.setItems(std::move(items));
+    updateNoteItemCount();
+}
+
+bool ProgressHierarchyViewModel::refreshIndexedNotesFromWshub(const QString& wshubPath, QString* errorMessage)
+{
+    LibraryAll libraryAll;
+    if (!libraryAll.indexFromWshub(wshubPath, errorMessage))
+    {
+        m_allNotes.clear();
+        m_noteListModel.setItems({});
+        updateNoteItemCount();
+        return false;
+    }
+
+    m_allNotes = libraryAll.notes();
+    refreshNoteListForSelection();
+    return true;
+}
+
+bool ProgressHierarchyViewModel::refreshIndexedNotesFromProgressFilePath(QString* errorMessage)
+{
+    const QString wshubPath = resolveWshubPathFromProgressFile(m_progressFilePath);
+    if (wshubPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to resolve .wshub path from Progress.wsprogress.");
+        }
+        m_allNotes.clear();
+        m_noteListModel.setItems({});
+        updateNoteItemCount();
+        return false;
+    }
+
+    return refreshIndexedNotesFromWshub(wshubPath, errorMessage);
+}
+
+int ProgressHierarchyViewModel::selectedProgressFilterValue() const noexcept
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= m_progressStates.size())
+    {
+        return -1;
+    }
+
+    return m_selectedIndex;
+}
+
 void ProgressHierarchyViewModel::rebuildItems()
 {
-    m_items = WhatSon::Hierarchy::ProgressSupport::buildSupportedTypeItems();
+    m_items = WhatSon::Hierarchy::ProgressSupport::buildSupportedTypeItems(m_progressStates);
 }
 
 void ProgressHierarchyViewModel::syncProgressStore()
@@ -391,7 +798,7 @@ void ProgressHierarchyViewModel::syncProgressStore()
 void ProgressHierarchyViewModel::syncProgressStatesFromItems()
 {
     m_progressStates.clear();
-    for (int index = 1; index < m_items.size(); ++index)
+    for (int index = 0; index < m_items.size(); ++index)
     {
         const QString label = m_items.at(index).label.trimmed();
         if (label.isEmpty() || m_progressStates.contains(label))
@@ -399,6 +806,10 @@ void ProgressHierarchyViewModel::syncProgressStatesFromItems()
             continue;
         }
         m_progressStates.push_back(label);
+    }
+    if (m_progressStates.isEmpty())
+    {
+        m_progressStates = defaultProgressStates();
     }
     if (m_progressValue >= m_progressStates.size())
     {

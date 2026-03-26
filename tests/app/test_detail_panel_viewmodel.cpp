@@ -1,4 +1,7 @@
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
+#include "file/hierarchy/WhatSonFolderIdentity.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
+#include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
@@ -110,12 +113,38 @@ private:
 
 namespace
 {
-    QVariantMap makeHierarchyEntry(const QString& key, const QString& label)
+    QVariantMap makeHierarchyEntry(
+        const QString& key,
+        const QString& label,
+        const QVariantMap& extraFields = {})
     {
-        return QVariantMap{
+        QVariantMap entry{
             {QStringLiteral("key"), key},
             {QStringLiteral("label"), label}
         };
+        for (auto it = extraFields.constBegin(); it != extraFields.constEnd(); ++it)
+        {
+            entry.insert(it.key(), it.value());
+        }
+        return entry;
+    }
+
+    QVariantList detailSelectorHierarchyModel(
+        const QString& clearKey,
+        const QString& clearLabel,
+        const QVariantList& sourceEntries,
+        const QVariantMap& extraFields = {})
+    {
+        QVariantList hierarchyModel;
+        hierarchyModel.reserve(sourceEntries.size() + 1);
+        QVariantMap clearEntryExtraFields = extraFields;
+        clearEntryExtraFields.insert(QStringLiteral("clearSelection"), true);
+        hierarchyModel.push_back(makeHierarchyEntry(clearKey, clearLabel, clearEntryExtraFields));
+        for (const QVariant& entry : sourceEntries)
+        {
+            hierarchyModel.push_back(entry);
+        }
+        return hierarchyModel;
     }
 
     bool writeUtf8File(const QString& filePath, const QString& text)
@@ -145,6 +174,7 @@ private
     void detailContentViewModels_mustMapEachStateToDedicatedViewModel();
     void detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection();
     void detailSelectors_mustMirrorCurrentNoteHeaderFileState();
+    void folderAssignments_mustSyncHeaderFoldersAndHierarchyStore();
     void requestStateChange_mustUpdateActiveStateAndToolbarSelection();
     void requestStateChange_invalidValue_mustBeIgnored();
 };
@@ -260,7 +290,12 @@ void DetailPanelViewModelTest::detailSelectorViewModels_mustMirrorHierarchyItems
     QCOMPARE(projectSelector->property("selectedIndex").toInt(), -1);
     QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), -1);
     QCOMPARE(progressSelector->property("selectedIndex").toInt(), -1);
-    QCOMPARE(projectSelector->property("hierarchyModel").toList(), sharedHierarchyModel);
+    QCOMPARE(
+        projectSelector->property("hierarchyModel").toList(),
+        detailSelectorHierarchyModel(
+            QStringLiteral("detail:none:project"),
+            QStringLiteral("No project"),
+            sharedHierarchyModel));
 
     projectsSource.setSelectedIndex(0);
     QCOMPARE(projectSelector->property("selectedIndex").toInt(), -1);
@@ -280,8 +315,13 @@ void DetailPanelViewModelTest::detailSelectorViewModels_mustMirrorHierarchyItems
     };
     projectsSource.setHierarchyModel(reorderedHierarchyModel);
 
-    QCOMPARE(projectSelector->property("hierarchyModel").toList(), reorderedHierarchyModel);
-    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
+    QCOMPARE(
+        projectSelector->property("hierarchyModel").toList(),
+        detailSelectorHierarchyModel(
+            QStringLiteral("detail:none:project"),
+            QStringLiteral("No project"),
+            reorderedHierarchyModel));
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 0);
 }
 
 void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileState()
@@ -302,14 +342,14 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
                        "    <meta charset=\"UTF-8\" />\n"
                        "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
                        "    <folders>\n"
-                       "      <folder>Knowledge</folder>\n"
+                       "      <folder>Archive/Knowledge</folder>\n"
                        "    </folders>\n"
                        "    <project>Beta</project>\n"
                        "    <bookmarks state=\"true\" colors=\"amber\" />\n"
                        "    <tags>\n"
                        "      <tag>seed</tag>\n"
                        "    </tags>\n"
-                       "    <progress enums=\"{Ready,Pending,InProgress,Done}\">2</progress>\n"
+                       "    <progress enums=\"{Queued,Review,Ship,Published}\">7</progress>\n"
                        "    <isPreset>false</isPreset>\n"
                        "  </head>\n"
                        "</contents>\n");
@@ -333,10 +373,22 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
         makeHierarchyEntry(QStringLiteral("bookmark:blue"), QStringLiteral("Blue"))
     });
     progressSource.setHierarchyModel({
-        makeHierarchyEntry(QStringLiteral("progress:ready"), QStringLiteral("Ready")),
-        makeHierarchyEntry(QStringLiteral("progress:pending"), QStringLiteral("Pending")),
-        makeHierarchyEntry(QStringLiteral("progress:inprogress"), QStringLiteral("InProgress")),
-        makeHierarchyEntry(QStringLiteral("progress:done"), QStringLiteral("Done"))
+        makeHierarchyEntry(
+            QStringLiteral("progress:4"),
+            QStringLiteral("Queued"),
+            QVariantMap{{QStringLiteral("itemId"), 4}}),
+        makeHierarchyEntry(
+            QStringLiteral("progress:7"),
+            QStringLiteral("Review"),
+            QVariantMap{{QStringLiteral("itemId"), 7}}),
+        makeHierarchyEntry(
+            QStringLiteral("progress:9"),
+            QStringLiteral("Ship"),
+            QVariantMap{{QStringLiteral("itemId"), 9}}),
+        makeHierarchyEntry(
+            QStringLiteral("progress:11"),
+            QStringLiteral("Published"),
+            QVariantMap{{QStringLiteral("itemId"), 11}})
     });
 
     viewModel.setProjectSelectionSourceViewModel(&projectsSource);
@@ -358,23 +410,50 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QVERIFY(bookmarkSelector != nullptr);
     QVERIFY(progressSelector != nullptr);
 
-    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
-    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 1);
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 2);
     QCOMPARE(progressSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(propertiesViewModel->property("folderItems").toStringList(), QStringList{QStringLiteral("Knowledge")});
+    QCOMPARE(propertiesViewModel->property("tagItems").toStringList(), QStringList{QStringLiteral("seed")});
     QCOMPARE(propertiesViewModel->property("currentProject").toString(), QStringLiteral("Beta"));
     QCOMPARE(propertiesViewModel->property("currentBookmark").toString(), QStringLiteral("amber"));
-    QCOMPARE(propertiesViewModel->property("currentProgress").toInt(), 2);
+    QCOMPARE(propertiesViewModel->property("currentProgress").toInt(), 7);
 
-    QVERIFY(viewModel.writeProjectSelection(2));
-    QVERIFY(viewModel.writeBookmarkSelection(0));
+    const QVariantList projectHierarchyModel = projectSelector->property("hierarchyModel").toList();
+    const QVariantList bookmarkHierarchyModel = bookmarkSelector->property("hierarchyModel").toList();
+    const QVariantList progressHierarchyModel = progressSelector->property("hierarchyModel").toList();
+    QCOMPARE(projectHierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("No project"));
+    QCOMPARE(bookmarkHierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("No bookmark"));
+    QCOMPARE(progressHierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("No progress"));
+
+    QVERIFY(viewModel.writeProjectSelection(3));
+    QVERIFY(viewModel.writeBookmarkSelection(1));
     QVERIFY(viewModel.writeProgressSelection(3));
-
-    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 2);
-    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 3);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 1);
     QCOMPARE(progressSelector->property("selectedIndex").toInt(), 3);
     QCOMPARE(propertiesViewModel->property("currentProject").toString(), QStringLiteral("Gamma"));
     QCOMPARE(propertiesViewModel->property("currentBookmark").toString(), QStringLiteral("red"));
-    QCOMPARE(propertiesViewModel->property("currentProgress").toInt(), 3);
+    QCOMPARE(propertiesViewModel->property("currentProgress").toInt(), 9);
+
+    QVERIFY(viewModel.writeProjectSelection(0));
+    QVERIFY(viewModel.writeBookmarkSelection(0));
+    QVERIFY(viewModel.writeProgressSelection(0));
+    QVERIFY(propertiesViewModel->setProperty("activeFolderIndex", 0));
+    QVERIFY(viewModel.removeActiveFolder());
+    QVERIFY(propertiesViewModel->setProperty("activeTagIndex", 0));
+    QVERIFY(viewModel.removeActiveTag());
+
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(propertiesViewModel->property("folderItems").toStringList(), QStringList{});
+    QCOMPARE(propertiesViewModel->property("tagItems").toStringList(), QStringList{});
+    QCOMPARE(propertiesViewModel->property("activeFolderIndex").toInt(), -1);
+    QCOMPARE(propertiesViewModel->property("activeTagIndex").toInt(), -1);
+    QCOMPARE(propertiesViewModel->property("currentProject").toString(), QString());
+    QCOMPARE(propertiesViewModel->property("currentBookmark").toString(), QString());
+    QCOMPARE(propertiesViewModel->property("currentProgress").toInt(), -1);
 
     QFile headerFile(headerFilePath);
     QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "persisted header file must be readable");
@@ -385,9 +464,130 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     WhatSonNoteHeaderParser parser;
     QString parseError;
     QVERIFY2(parser.parse(updatedHeaderText, &header, &parseError), qPrintable(parseError));
-    QCOMPARE(header.project(), QStringLiteral("Gamma"));
-    QCOMPARE(header.bookmarkColors(), QStringList{QStringLiteral("red")});
-    QCOMPARE(header.progress(), 3);
+    QCOMPARE(header.folders(), QStringList{});
+    QCOMPARE(header.project(), QString());
+    QVERIFY(!header.isBookmarked());
+    QCOMPARE(header.bookmarkColors(), QStringList{});
+    QCOMPARE(header.tags(), QStringList{});
+    QCOMPARE(header.progress(), -1);
+}
+
+void DetailPanelViewModelTest::folderAssignments_mustSyncHeaderFoldersAndHierarchyStore()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString contentsDirectoryPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("TestHub.wscontents"));
+    QVERIFY(QDir().mkpath(contentsDirectoryPath));
+
+    const QString noteId = QStringLiteral("FolderNote");
+    const QString noteDirectoryPath = QDir(contentsDirectoryPath).filePath(QStringLiteral("FolderNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    const QString headerFilePath = QDir(noteDirectoryPath).filePath(QStringLiteral("FolderNote.wsnhead"));
+    const QString initialHeaderText =
+        QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                       "<!DOCTYPE WHATSONNOTE>\n"
+                       "<contents id=\"FolderNote\">\n"
+                       "  <head>\n"
+                       "    <meta charset=\"UTF-8\" />\n"
+                       "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
+                       "    <folders>\n"
+                       "    </folders>\n"
+                       "    <project></project>\n"
+                       "    <bookmarks state=\"false\" colors=\"\" />\n"
+                       "    <tags>\n"
+                       "    </tags>\n"
+                       "    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n"
+                       "    <isPreset>false</isPreset>\n"
+                       "  </head>\n"
+                       "</contents>\n");
+    QVERIFY2(writeUtf8File(headerFilePath, initialHeaderText), "initial header file must be written");
+
+    const QString foldersFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Folders.wsfolders"));
+    const QString knowledgeUuid = WhatSon::FolderIdentity::createFolderUuid();
+    WhatSonFoldersHierarchyStore initialFoldersStore;
+    initialFoldersStore.setFolderEntries({
+        WhatSonFolderDepthEntry{
+            QStringLiteral("Knowledge"),
+            QStringLiteral("Knowledge"),
+            0,
+            knowledgeUuid
+        }
+    });
+    QString foldersWriteError;
+    QVERIFY2(initialFoldersStore.writeToFile(foldersFilePath, &foldersWriteError), qPrintable(foldersWriteError));
+
+    DetailPanelViewModel viewModel;
+    FakeCurrentNoteListModel noteListModel;
+    FakeNoteDirectorySourceViewModel noteDirectorySourceViewModel;
+    noteDirectorySourceViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+    viewModel.setCurrentNoteDirectorySourceViewModel(&noteDirectorySourceViewModel);
+    noteListModel.setCurrentNoteId(noteId);
+    viewModel.setCurrentNoteListModel(&noteListModel);
+
+    QObject* propertiesViewModel = viewModel.propertiesViewModel();
+    QVERIFY(propertiesViewModel != nullptr);
+
+    QVERIFY(viewModel.assignFolderByName(QStringLiteral("Knowledge")));
+    QCOMPARE(propertiesViewModel->property("folderItems").toStringList(), QStringList{QStringLiteral("Knowledge")});
+    QCOMPARE(propertiesViewModel->property("activeFolderIndex").toInt(), 0);
+
+    QFile headerFile(headerFilePath);
+    QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "header file must be readable");
+    QString headerText = QString::fromUtf8(headerFile.readAll());
+    headerFile.close();
+
+    WhatSonNoteHeaderStore header;
+    WhatSonNoteHeaderParser headerParser;
+    QString parseError;
+    QVERIFY2(headerParser.parse(headerText, &header, &parseError), qPrintable(parseError));
+    QCOMPARE(header.folders(), QStringList{QStringLiteral("Knowledge")});
+    QCOMPARE(header.folderUuids(), QStringList{knowledgeUuid});
+
+    QFile foldersFile(foldersFilePath);
+    QVERIFY2(foldersFile.open(QIODevice::ReadOnly | QIODevice::Text), "folders hierarchy file must be readable");
+    const QString foldersTextAfterExistingAssign = QString::fromUtf8(foldersFile.readAll());
+    foldersFile.close();
+
+    WhatSonFoldersHierarchyStore foldersStore;
+    WhatSonFoldersHierarchyParser foldersParser;
+    QVERIFY2(foldersParser.parse(foldersTextAfterExistingAssign, &foldersStore, &parseError, nullptr), qPrintable(parseError));
+    QCOMPARE(foldersStore.folderEntries().size(), 1);
+    QCOMPARE(foldersStore.folderEntries().constFirst().id, QStringLiteral("Knowledge"));
+    QCOMPARE(foldersStore.folderEntries().constFirst().uuid, knowledgeUuid);
+
+    QVERIFY(viewModel.assignFolderByName(QStringLiteral("Research/Ideas")));
+    QCOMPARE(
+        propertiesViewModel->property("folderItems").toStringList(),
+        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Ideas")}));
+    QCOMPARE(propertiesViewModel->property("activeFolderIndex").toInt(), 1);
+
+    QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "header file must remain readable");
+    headerText = QString::fromUtf8(headerFile.readAll());
+    headerFile.close();
+    QVERIFY2(headerParser.parse(headerText, &header, &parseError), qPrintable(parseError));
+    QCOMPARE(header.folders(), QStringList({QStringLiteral("Knowledge"), QStringLiteral("Research/Ideas")}));
+    QCOMPARE(header.folderUuids().size(), 2);
+    QVERIFY(!header.folderUuids().at(1).trimmed().isEmpty());
+
+    QVERIFY2(foldersFile.open(QIODevice::ReadOnly | QIODevice::Text), "folders hierarchy file must remain readable");
+    const QString foldersTextAfterCreate = QString::fromUtf8(foldersFile.readAll());
+    foldersFile.close();
+    QVERIFY2(foldersParser.parse(foldersTextAfterCreate, &foldersStore, &parseError, nullptr), qPrintable(parseError));
+    QCOMPARE(foldersStore.folderEntries().size(), 3);
+    QCOMPARE(foldersStore.folderEntries().at(0).id, QStringLiteral("Knowledge"));
+    QCOMPARE(foldersStore.folderEntries().at(0).uuid, knowledgeUuid);
+    QCOMPARE(foldersStore.folderEntries().at(1).id, QStringLiteral("Research"));
+    QCOMPARE(foldersStore.folderEntries().at(2).id, QStringLiteral("Research/Ideas"));
+    QCOMPARE(foldersStore.folderEntries().at(2).uuid, header.folderUuids().at(1));
+
+    QVERIFY(viewModel.assignFolderByName(QStringLiteral("Research/Ideas")));
+    QVERIFY2(foldersFile.open(QIODevice::ReadOnly | QIODevice::Text), "folders hierarchy file must still be readable");
+    const QString foldersTextAfterDuplicateAssign = QString::fromUtf8(foldersFile.readAll());
+    foldersFile.close();
+    QVERIFY2(foldersParser.parse(foldersTextAfterDuplicateAssign, &foldersStore, &parseError, nullptr), qPrintable(parseError));
+    QCOMPARE(foldersStore.folderEntries().size(), 3);
 }
 
 void DetailPanelViewModelTest::requestStateChange_mustUpdateActiveStateAndToolbarSelection()

@@ -746,7 +746,11 @@ list(APPEND WHATSON_TEST_TARGETS whatson_solid_architecture_contract_tests)
 
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
@@ -758,6 +762,7 @@ add_executable(whatson_detail_panel_viewmodel_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPropertiesViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp
 )
 set_target_properties(whatson_detail_panel_viewmodel_tests PROPERTIES AUTOMOC ON)

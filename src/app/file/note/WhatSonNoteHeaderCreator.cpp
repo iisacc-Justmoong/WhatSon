@@ -122,8 +122,9 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     }
     text += QStringLiteral("    </tags>\n");
 
+    const QString progressText = store.progress() < 0 ? QString() : QString::number(store.progress());
     text += QStringLiteral("    <progress enums=\"{Ready,Pending,InProgress,Done}\">")
-        + QString::number(store.progress()) + QStringLiteral("</progress>\n");
+        + progressText + QStringLiteral("</progress>\n");
     text += QStringLiteral("    <isPreset>") + boolToText(store.isPreset()) + QStringLiteral("</isPreset>\n");
     text += QStringLiteral("  </head>\n");
     text += QStringLiteral("</contents>\n");

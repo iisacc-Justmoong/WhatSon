@@ -9,6 +9,7 @@ It mirrors hierarchy entries from a source hierarchy viewmodel, but it owns its 
 - Exposes `selectedIndex` as a detail-panel-local selection slot.
 - Exposes `itemCount` for simple availability checks.
 - Accepts a `sourceViewModel` QObject that must publish `hierarchyModel`, `selectedIndex`, `hierarchyModelChanged()`, and `selectedIndexChanged()`.
+- The exposed `hierarchyModel` may contain synthetic file-backed clear entries ahead of the raw domain options when the injected selector source chooses to provide them.
 
 ## Invariants
 - Source hierarchy data is copied, not shared as mutable selection state.

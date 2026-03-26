@@ -25,6 +25,18 @@ namespace WhatSon::NoteFolders
         return value;
     }
 
+    inline QString leafFolderName(QString value)
+    {
+        const QString normalizedPath = normalizeFolderPath(std::move(value));
+        if (normalizedPath.isEmpty())
+        {
+            return {};
+        }
+
+        const QStringList segments = normalizedPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+        return segments.isEmpty() ? QString() : segments.constLast().trimmed();
+    }
+
     inline bool usesReservedTodayFolderSegment(const QString& value)
     {
         const QString normalizedPath = normalizeFolderPath(value);

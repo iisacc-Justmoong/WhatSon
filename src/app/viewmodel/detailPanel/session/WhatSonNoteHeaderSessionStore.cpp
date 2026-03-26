@@ -1,6 +1,7 @@
 #include "WhatSonNoteHeaderSessionStore.hpp"
 
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
+#include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
@@ -180,6 +181,120 @@ bool WhatSonNoteHeaderSessionStore::updateProgress(const QString& noteId, int pr
     }
 
     existing->header.setProgress(progress);
+    existing->dirty = true;
+    const bool saved = persistEntry(*existing, errorMessage);
+    if (saved)
+    {
+        emit entryChanged(existing->noteId);
+    }
+    return saved;
+}
+
+bool WhatSonNoteHeaderSessionStore::assignFolderBinding(
+    const QString& noteId,
+    const QString& folderPath,
+    const QString& folderUuid,
+    QString* errorMessage)
+{
+    Entry* existing = findEntry(noteId);
+    if (existing == nullptr || !existing->loaded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Note header session is not loaded.");
+        }
+        return false;
+    }
+
+    const WhatSonNoteFolderBindingService bindingService;
+    const WhatSonNoteFolderBindingService::Bindings previousBindings = bindingService.bindings(
+        existing->header.folders(),
+        existing->header.folderUuids());
+    const WhatSonNoteFolderBindingService::Bindings nextBindings = bindingService.assignFolder(
+        previousBindings,
+        folderPath,
+        folderUuid);
+    if (bindingService.matches(previousBindings, nextBindings))
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    existing->header.setFolderBindings(nextBindings.folders, nextBindings.folderUuids);
+    existing->dirty = true;
+    const bool saved = persistEntry(*existing, errorMessage);
+    if (saved)
+    {
+        emit entryChanged(existing->noteId);
+    }
+    return saved;
+}
+
+bool WhatSonNoteHeaderSessionStore::removeFolderAt(const QString& noteId, int index, QString* errorMessage)
+{
+    Entry* existing = findEntry(noteId);
+    if (existing == nullptr || !existing->loaded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Note header session is not loaded.");
+        }
+        return false;
+    }
+
+    QStringList folders = existing->header.folders();
+    QStringList folderUuids = existing->header.folderUuids();
+    if (index < 0 || index >= folders.size())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Folder index is out of range.");
+        }
+        return false;
+    }
+
+    folders.removeAt(index);
+    if (index >= 0 && index < folderUuids.size())
+    {
+        folderUuids.removeAt(index);
+    }
+    existing->header.setFolderBindings(std::move(folders), std::move(folderUuids));
+    existing->dirty = true;
+    const bool saved = persistEntry(*existing, errorMessage);
+    if (saved)
+    {
+        emit entryChanged(existing->noteId);
+    }
+    return saved;
+}
+
+bool WhatSonNoteHeaderSessionStore::removeTagAt(const QString& noteId, int index, QString* errorMessage)
+{
+    Entry* existing = findEntry(noteId);
+    if (existing == nullptr || !existing->loaded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Note header session is not loaded.");
+        }
+        return false;
+    }
+
+    QStringList tags = existing->header.tags();
+    if (index < 0 || index >= tags.size())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Tag index is out of range.");
+        }
+        return false;
+    }
+
+    tags.removeAt(index);
+    existing->header.setTags(std::move(tags));
     existing->dirty = true;
     const bool saved = persistEntry(*existing, errorMessage);
     if (saved)

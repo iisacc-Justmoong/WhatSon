@@ -34,6 +34,13 @@ public:
     bool updateProject(const QString& noteId, const QString& project, QString* errorMessage = nullptr);
     bool updateBookmarked(const QString& noteId, bool bookmarked, QStringList bookmarkColors, QString* errorMessage = nullptr);
     bool updateProgress(const QString& noteId, int progress, QString* errorMessage = nullptr);
+    bool assignFolderBinding(
+        const QString& noteId,
+        const QString& folderPath,
+        const QString& folderUuid,
+        QString* errorMessage = nullptr);
+    bool removeFolderAt(const QString& noteId, int index, QString* errorMessage = nullptr);
+    bool removeTagAt(const QString& noteId, int index, QString* errorMessage = nullptr);
 
 signals:
     void entryChanged(const QString& noteId);

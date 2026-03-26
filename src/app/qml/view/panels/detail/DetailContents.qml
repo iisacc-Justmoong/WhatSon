@@ -10,9 +10,18 @@ Item {
     readonly property string figmaNodeId: "155:4582"
     property var activeContentViewModel: null
     property string activeStateName: "properties"
+    property var detailPanelViewModel: null
     property var projectSelectionViewModel: null
     property var bookmarkSelectionViewModel: null
     property var progressSelectionViewModel: null
+    property bool folderCreationEditing: false
+    property string folderCreationText: ""
+    readonly property int activeFolderIndex: detailContents.resolveMetadataActiveIndex(
+                                                 detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeFolderIndex : -1,
+                                                 detailContents.folderItems)
+    readonly property int activeTagIndex: detailContents.resolveMetadataActiveIndex(
+                                              detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeTagIndex : -1,
+                                              detailContents.tagItems)
     readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.folderItems : [])
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
     readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectSelectionViewModel)
@@ -136,6 +145,85 @@ Item {
             return Array.prototype.slice.call(values);
         return [];
     }
+    function resolveMetadataActiveIndex(value, items) {
+        const resolvedItems = detailContents.resolveHeaderStringList(items);
+        const itemCount = resolvedItems.length;
+        const normalizedValue = Number(value);
+        if (!isFinite(normalizedValue) || normalizedValue < 0 || itemCount <= 0)
+            return -1;
+        if (normalizedValue >= itemCount)
+            return itemCount - 1;
+        return normalizedValue;
+    }
+    function beginFolderCreation() {
+        if (detailContents.folderCreationEditing)
+            return;
+        detailContents.folderCreationText = "";
+        detailContents.folderCreationEditing = true;
+        detailContents.requestViewHook("folders.add.begin");
+    }
+    function cancelFolderCreation() {
+        if (!detailContents.folderCreationEditing && detailContents.folderCreationText.length === 0)
+            return;
+        detailContents.folderCreationEditing = false;
+        detailContents.folderCreationText = "";
+        detailContents.requestViewHook("folders.add.cancel");
+    }
+    function commitFolderCreation(rawText) {
+        if (!detailContents.folderCreationEditing || !detailPanelViewModel || detailPanelViewModel.assignFolderByName === undefined)
+            return;
+
+        const normalizedText = rawText === undefined || rawText === null
+            ? detailContents.folderCreationText.trim()
+            : String(rawText).trim();
+        if (normalizedText.length === 0) {
+            detailContents.cancelFolderCreation();
+            return;
+        }
+        if (!detailPanelViewModel.assignFolderByName(normalizedText))
+            return;
+
+        detailContents.folderCreationEditing = false;
+        detailContents.folderCreationText = "";
+        detailContents.requestViewHook("folders.add.commit");
+    }
+    function requestMetadataAdd(listKind) {
+        if (listKind === "folders") {
+            detailContents.beginFolderCreation();
+            return;
+        }
+        detailContents.requestViewHook(String(listKind) + ".add");
+    }
+    function setMetadataListActiveIndex(listKind, index) {
+        if (!detailContents.activeContentViewModel)
+            return;
+
+        const normalizedIndex = Number(index);
+        if (!isFinite(normalizedIndex))
+            return;
+
+        if (listKind === "folders" && detailContents.activeContentViewModel.setActiveFolderIndex !== undefined) {
+            detailContents.activeContentViewModel.setActiveFolderIndex(normalizedIndex);
+            detailContents.requestViewHook("folders.select");
+        } else if (listKind === "tags" && detailContents.activeContentViewModel.setActiveTagIndex !== undefined) {
+            detailContents.activeContentViewModel.setActiveTagIndex(normalizedIndex);
+            detailContents.requestViewHook("tags.select");
+        }
+    }
+    function deleteActiveMetadataItem(listKind) {
+        if (!detailPanelViewModel)
+            return;
+
+        if (listKind === "folders" && detailPanelViewModel.removeActiveFolder !== undefined) {
+            if (!detailPanelViewModel.removeActiveFolder())
+                return;
+            detailContents.requestViewHook("folders.delete");
+        } else if (listKind === "tags" && detailPanelViewModel.removeActiveTag !== undefined) {
+            if (!detailPanelViewModel.removeActiveTag())
+                return;
+            detailContents.requestViewHook("tags.delete");
+        }
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -170,6 +258,11 @@ Item {
     objectName: "DetailContents"
     state: detailContents.resolvedActiveStateName
 
+    onResolvedActiveStateNameChanged: {
+        if (detailContents.resolvedActiveStateName !== "properties")
+            detailContents.cancelFolderCreation();
+    }
+
     component DetailSectionTitle: LV.Label {
         required property string figmaTextNodeId
 
@@ -182,38 +275,27 @@ Item {
         wrapMode: Text.NoWrap
     }
 
-    component DetailListRow: Item {
+    component DetailListRow: LV.HierarchyItem {
         required property string rowLabel
         required property string rowObjectName
+        property string rowIconName: ""
+        property url rowIconSource: ""
+        property bool rowSelected: false
 
-        objectName: rowObjectName
+        activatable: true
+        generatedByTreeModel: false
+        hasChildItems: false
+        iconName: rowIconName
+        iconSource: rowIconSource
         implicitHeight: 20
         implicitWidth: 170
-
-        Row {
-            anchors.fill: parent
-            anchors.bottomMargin: 2
-            anchors.leftMargin: 4
-            anchors.rightMargin: 4
-            anchors.topMargin: 2
-            spacing: 1
-
-            Image {
-                fillMode: Image.PreserveAspectFit
-                height: 16
-                smooth: true
-                source: LV.Theme.iconPath("nodesfolder")
-                sourceSize.height: 16
-                sourceSize.width: 16
-                width: 16
-            }
-            DetailSectionTitle {
-                figmaTextNodeId: ""
-                labelColor: LV.Theme.bodyColor
-                style: body
-                text: rowLabel
-            }
-        }
+        itemWidth: width
+        label: rowLabel
+        objectName: rowObjectName
+        rowHeight: 20
+        selected: rowSelected
+        showChevron: false
+        textColorNormal: LV.Theme.bodyColor
     }
 
     component DetailComboSection: Item {
@@ -301,12 +383,23 @@ Item {
 
     component DetailListSection: Item {
         id: listSection
+        property int activeIndex: -1
+        property bool addEnabled: true
+        property bool deleteEnabled: false
         required property string footerActionPrefix
         required property string frameNodeId
+        property bool inlineInputVisible: false
+        property string inlineInputObjectName: listSection.listObjectName + "InlineInput"
+        property string inlineInputPlaceholderText: ""
+        property string inlineInputRowIconName: listSection.rowIconName
+        property string inlineInputText: ""
         required property string itemsNodeId
         required property var listItems
         required property string listNodeId
         required property string listObjectName
+        property string rowIconName: ""
+        property url rowIconSource: ""
+        property bool settingsEnabled: true
         required property string titleNodeId
         required property string titleText
 
@@ -314,6 +407,20 @@ Item {
         implicitHeight: 155
         implicitWidth: 178
         objectName: listObjectName
+
+        signal itemTriggered(int index)
+        signal inlineInputAccepted(string text)
+        signal inlineInputCanceled()
+        signal inlineInputTextEdited(string text)
+
+        onInlineInputVisibleChanged: {
+            if (!listSection.inlineInputVisible)
+                return;
+            Qt.callLater(function() {
+                inlineInputField.forceInputFocus();
+                inlineInputField.selectAll();
+            });
+        }
 
         Column {
             anchors.fill: parent
@@ -345,8 +452,72 @@ Item {
 
                     Column {
                         anchors.left: parent.left
+                        anchors.right: parent.right
                         anchors.top: parent.top
                         spacing: 0
+
+                        Item {
+                            visible: listSection.inlineInputVisible
+                            width: parent.width
+                            height: visible ? 20 : 0
+
+                            DetailListRow {
+                                anchors.fill: parent
+                                enabled: false
+                                rowIconName: listSection.inlineInputRowIconName
+                                rowLabel: ""
+                                rowObjectName: listSection.inlineInputObjectName + "Row"
+                                rowSelected: true
+                            }
+                            LV.InputField {
+                                id: inlineInputField
+
+                                anchors.fill: parent
+                                anchors.leftMargin: 25
+                                anchors.rightMargin: 6
+                                backgroundColor: LV.Theme.accentTransparent
+                                backgroundColorDisabled: LV.Theme.accentTransparent
+                                backgroundColorFocused: LV.Theme.accentTransparent
+                                backgroundColorHover: LV.Theme.accentTransparent
+                                backgroundColorPressed: LV.Theme.accentTransparent
+                                clearButtonVisible: false
+                                fieldMinHeight: 20
+                                insetHorizontal: 0
+                                insetVertical: 0
+                                objectName: listSection.inlineInputObjectName
+                                placeholderText: listSection.inlineInputPlaceholderText
+                                selectByMouse: true
+                                sideSpacing: 0
+                                style: inlineStyle
+                                text: listSection.inlineInputText
+                                textColor: LV.Theme.bodyColor
+                                textColorDisabled: LV.Theme.disabledColor
+                                visible: listSection.inlineInputVisible
+
+                                Keys.onEscapePressed: function(event) {
+                                    event.accepted = true;
+                                    listSection.inlineInputCanceled();
+                                }
+                                onAccepted: function(text) {
+                                    const nextText = typeof text === "string" ? text : inlineInputField.text;
+                                    listSection.inlineInputAccepted(nextText);
+                                }
+                                onActiveFocusChanged: {
+                                    if (inlineInputField.activeFocus)
+                                        return;
+                                    Qt.callLater(function() {
+                                        if (listSection.inlineInputVisible
+                                                && !inlineInputField.activeFocus
+                                                && !inlineInputField.inputItem.activeFocus)
+                                            listSection.inlineInputCanceled();
+                                    });
+                                }
+                                onTextEdited: function(text) {
+                                    const nextText = typeof text === "string" ? text : inlineInputField.text;
+                                    listSection.inlineInputTextEdited(nextText);
+                                }
+                            }
+                        }
 
                         Repeater {
                             model: listSection.listItems.length
@@ -354,8 +525,16 @@ Item {
                             delegate: DetailListRow {
                                 required property int index
 
+                                rowIconName: listSection.rowIconName
+                                rowIconSource: listSection.rowIconSource
                                 rowLabel: String(listSection.listItems[index])
                                 rowObjectName: listSection.listObjectName + "Item" + index
+                                rowSelected: index === listSection.activeIndex
+                                width: parent ? parent.width : listSection.width
+
+                                onClicked: function() {
+                                    listSection.itemTriggered(index);
+                                }
                             }
                         }
                     }
@@ -370,9 +549,10 @@ Item {
                             backgroundColorDisabled: "transparent",
                             backgroundColorHover: "transparent",
                             backgroundColorPressed: "transparent",
+                            enabled: listSection.addEnabled,
                             horizontalPadding: 2,
                             onClicked: function () {
-                                detailContents.requestViewHook(listSection.footerActionPrefix + ".add");
+                                detailContents.requestMetadataAdd(listSection.footerActionPrefix);
                             },
                             verticalPadding: 2
                         })
@@ -384,9 +564,10 @@ Item {
                             backgroundColorDisabled: "transparent",
                             backgroundColorHover: "transparent",
                             backgroundColorPressed: "transparent",
+                            enabled: listSection.deleteEnabled,
                             horizontalPadding: 2,
                             onClicked: function () {
-                                detailContents.requestViewHook(listSection.footerActionPrefix + ".delete");
+                                detailContents.deleteActiveMetadataItem(listSection.footerActionPrefix);
                             },
                             verticalPadding: 2
                         })
@@ -397,6 +578,7 @@ Item {
                             backgroundColorDisabled: "transparent",
                             backgroundColorHover: "transparent",
                             backgroundColorPressed: "transparent",
+                            enabled: listSection.settingsEnabled,
                             bottomPadding: 2,
                             leftPadding: 2,
                             onClicked: function () {
@@ -517,26 +699,56 @@ Item {
                 }
             }
             DetailListSection {
+                activeIndex: detailContents.activeFolderIndex
+                addEnabled: !detailContents.folderCreationEditing
+                deleteEnabled: !detailContents.folderCreationEditing && detailContents.activeFolderIndex >= 0
                 footerActionPrefix: "folders"
                 frameNodeId: "155:4587"
+                inlineInputObjectName: "FoldersListInlineInput"
+                inlineInputPlaceholderText: "Assign or create folder"
+                inlineInputText: detailContents.folderCreationText
+                inlineInputVisible: detailContents.folderCreationEditing
+                inlineInputRowIconName: "nodesnewFolder"
                 itemsNodeId: "I155:4589;179:438"
                 listItems: detailContents.folderItems
                 listNodeId: "155:4589"
                 listObjectName: "FoldersList"
+                rowIconName: "nodesfolder"
+                settingsEnabled: !detailContents.folderCreationEditing
                 titleNodeId: "155:4588"
                 titleText: "Folders"
                 width: parent.width
+
+                onItemTriggered: function(index) {
+                    detailContents.setMetadataListActiveIndex("folders", index);
+                }
+                onInlineInputAccepted: function(text) {
+                    detailContents.commitFolderCreation(text);
+                }
+                onInlineInputCanceled: {
+                    detailContents.cancelFolderCreation();
+                }
+                onInlineInputTextEdited: function(text) {
+                    detailContents.folderCreationText = text;
+                }
             }
             DetailListSection {
+                activeIndex: detailContents.activeTagIndex
+                deleteEnabled: detailContents.activeTagIndex >= 0
                 footerActionPrefix: "tags"
                 frameNodeId: "155:4590"
                 itemsNodeId: "I155:4592;179:438"
                 listItems: detailContents.tagItems
                 listNodeId: "155:4592"
                 listObjectName: "TagsList"
+                rowIconName: "nodesfolder"
                 titleNodeId: "155:4591"
                 titleText: "Tags"
                 width: parent.width
+
+                onItemTriggered: function(index) {
+                    detailContents.setMetadataListActiveIndex("tags", index);
+                }
             }
             DetailComboSection {
                 comboNodeId: "178:5503"

@@ -2,7 +2,60 @@
 
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 
+#include <QRegularExpression>
 #include <QVariantMap>
+
+namespace
+{
+    QString clearSelectionLabel(DetailNoteHeaderSelectionSourceViewModel::Field field)
+    {
+        switch (field)
+        {
+        case DetailNoteHeaderSelectionSourceViewModel::Field::Project:
+            return QStringLiteral("No project");
+        case DetailNoteHeaderSelectionSourceViewModel::Field::Bookmark:
+            return QStringLiteral("No bookmark");
+        case DetailNoteHeaderSelectionSourceViewModel::Field::Progress:
+            return QStringLiteral("No progress");
+        }
+
+        return {};
+    }
+
+    QString clearSelectionKey(DetailNoteHeaderSelectionSourceViewModel::Field field)
+    {
+        switch (field)
+        {
+        case DetailNoteHeaderSelectionSourceViewModel::Field::Project:
+            return QStringLiteral("detail:none:project");
+        case DetailNoteHeaderSelectionSourceViewModel::Field::Bookmark:
+            return QStringLiteral("detail:none:bookmark");
+        case DetailNoteHeaderSelectionSourceViewModel::Field::Progress:
+            return QStringLiteral("detail:none:progress");
+        }
+
+        return {};
+    }
+
+    QVariantMap clearSelectionEntry(DetailNoteHeaderSelectionSourceViewModel::Field field)
+    {
+        QVariantMap entry{
+            {QStringLiteral("key"), clearSelectionKey(field)},
+            {QStringLiteral("label"), clearSelectionLabel(field)},
+            {QStringLiteral("clearSelection"), true}
+        };
+        if (field == DetailNoteHeaderSelectionSourceViewModel::Field::Progress)
+        {
+            entry.insert(QStringLiteral("progressValue"), -1);
+        }
+        return entry;
+    }
+
+    bool isClearSelectionEntry(const QVariantMap& entry)
+    {
+        return entry.value(QStringLiteral("clearSelection")).toBool();
+    }
+}
 
 DetailNoteHeaderSelectionSourceViewModel::DetailNoteHeaderSelectionSourceViewModel(Field field, QObject* parent)
     : QObject(parent)
@@ -116,7 +169,12 @@ void DetailNoteHeaderSelectionSourceViewModel::synchronize(bool reloadSession)
     QVariantList nextHierarchyModel;
     if (m_optionsSourceViewModel != nullptr)
     {
-        nextHierarchyModel = m_optionsSourceViewModel->property("hierarchyModel").toList();
+        nextHierarchyModel = buildHierarchyModelWithClearEntry(
+            m_optionsSourceViewModel->property("hierarchyModel").toList());
+    }
+    else
+    {
+        nextHierarchyModel = buildHierarchyModelWithClearEntry({});
     }
 
     if (m_hierarchyModel != nextHierarchyModel)
@@ -152,6 +210,93 @@ void DetailNoteHeaderSelectionSourceViewModel::disconnectOptionsSourceSignals()
     }
 }
 
+int DetailNoteHeaderSelectionSourceViewModel::progressValueForHierarchyEntry(
+    const QVariant& entry,
+    int fallbackProgressValue)
+{
+    const QVariantMap entryMap = entry.toMap();
+    if (isClearSelectionEntry(entryMap))
+    {
+        return -1;
+    }
+
+    bool ok = false;
+    const int explicitProgressValue = entryMap.value(QStringLiteral("progressValue")).toInt(&ok);
+    if (ok && explicitProgressValue >= 0)
+    {
+        return explicitProgressValue;
+    }
+
+    const int itemId = entryMap.value(QStringLiteral("itemId")).toInt(&ok);
+    if (ok && itemId >= 0)
+    {
+        return itemId;
+    }
+
+    const int rawValue = entryMap.value(QStringLiteral("value")).toInt(&ok);
+    if (ok && rawValue >= 0)
+    {
+        return rawValue;
+    }
+
+    static const QRegularExpression progressKeyRegex(
+        QStringLiteral(R"(^progress:(\d+)$)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QString key = entryMap.value(QStringLiteral("key")).toString().trimmed();
+    const QRegularExpressionMatch progressKeyMatch = progressKeyRegex.match(key);
+    if (progressKeyMatch.hasMatch())
+    {
+        const int keyValue = progressKeyMatch.captured(1).toInt(&ok);
+        if (ok && keyValue >= 0)
+        {
+            return keyValue;
+        }
+    }
+
+    const QString label = entryMap.value(QStringLiteral("label")).toString().trimmed();
+    if (label.compare(QStringLiteral("Ready"), Qt::CaseInsensitive) == 0)
+    {
+        return 0;
+    }
+    if (label.compare(QStringLiteral("Pending"), Qt::CaseInsensitive) == 0)
+    {
+        return 1;
+    }
+    if (label.compare(QStringLiteral("InProgress"), Qt::CaseInsensitive) == 0)
+    {
+        return 2;
+    }
+    if (label.compare(QStringLiteral("Done"), Qt::CaseInsensitive) == 0)
+    {
+        return 3;
+    }
+
+    return fallbackProgressValue;
+}
+
+QVariantList DetailNoteHeaderSelectionSourceViewModel::buildHierarchyModelWithClearEntry(
+    const QVariantList& optionsHierarchyModel) const
+{
+    QVariantList hierarchyModel;
+    hierarchyModel.reserve(optionsHierarchyModel.size() + 1);
+
+    const QVariantMap clearEntry = clearSelectionEntry(m_field);
+    hierarchyModel.push_back(clearEntry);
+
+    const QString clearKey = clearEntry.value(QStringLiteral("key")).toString();
+    for (const QVariant& option : optionsHierarchyModel)
+    {
+        const QVariantMap optionMap = option.toMap();
+        if (optionMap.value(QStringLiteral("key")).toString() == clearKey)
+        {
+            continue;
+        }
+        hierarchyModel.push_back(option);
+    }
+
+    return hierarchyModel;
+}
+
 int DetailNoteHeaderSelectionSourceViewModel::resolveSelectedIndexForHeader(const QVariantList& hierarchyModel) const
 {
     if (m_sessionStore == nullptr || m_noteId.isEmpty() || !m_sessionStore->hasEntry(m_noteId))
@@ -165,23 +310,37 @@ int DetailNoteHeaderSelectionSourceViewModel::resolveSelectedIndexForHeader(cons
     {
     case Field::Project:
         selectedLabel = header.project().trimmed();
+        if (selectedLabel.isEmpty())
+        {
+            return hierarchyModel.isEmpty() ? -1 : 0;
+        }
         break;
     case Field::Bookmark:
+        if (!header.isBookmarked() || header.bookmarkColors().isEmpty())
+        {
+            return hierarchyModel.isEmpty() ? -1 : 0;
+        }
         if (!header.bookmarkColors().isEmpty())
         {
             selectedLabel = WhatSon::Bookmarks::bookmarkDisplayNameForName(header.bookmarkColors().first());
         }
         break;
     case Field::Progress:
-        switch (header.progress())
+    {
+        const int currentProgressValue = header.progress();
+        if (currentProgressValue < 0)
         {
-        case 0: selectedLabel = QStringLiteral("Ready"); break;
-        case 1: selectedLabel = QStringLiteral("Pending"); break;
-        case 2: selectedLabel = QStringLiteral("InProgress"); break;
-        case 3: selectedLabel = QStringLiteral("Done"); break;
-        default: break;
+            return hierarchyModel.isEmpty() ? -1 : 0;
+        }
+        for (int index = 0; index < hierarchyModel.size(); ++index)
+        {
+            if (progressValueForHierarchyEntry(hierarchyModel.at(index)) == currentProgressValue)
+            {
+                return index;
+            }
         }
         break;
+    }
     }
 
     for (int index = 0; index < hierarchyModel.size(); ++index)
@@ -201,14 +360,25 @@ bool DetailNoteHeaderSelectionSourceViewModel::persistSelection(int index)
     {
         return false;
     }
+    if (index < 0 || index >= m_hierarchyModel.size())
+    {
+        return false;
+    }
 
-    const QString label = entryLabelAt(index);
+    const QVariantMap entry = m_hierarchyModel.at(index).toMap();
+    const bool clearSelection = isClearSelectionEntry(entry);
+    const QString label = entry.value(QStringLiteral("label")).toString().trimmed();
     switch (m_field)
     {
     case Field::Project:
-        return m_sessionStore->updateProject(m_noteId, label, nullptr);
+        return m_sessionStore->updateProject(m_noteId, clearSelection ? QString() : label, nullptr);
     case Field::Bookmark:
     {
+        if (clearSelection)
+        {
+            return m_sessionStore->updateBookmarked(m_noteId, false, {}, nullptr);
+        }
+
         const QString colorName = label.trimmed().toLower();
         return m_sessionStore->updateBookmarked(
             m_noteId,
@@ -218,13 +388,7 @@ bool DetailNoteHeaderSelectionSourceViewModel::persistSelection(int index)
     }
     case Field::Progress:
     {
-        int progress = 0;
-        if (label.compare(QStringLiteral("Pending"), Qt::CaseInsensitive) == 0)
-            progress = 1;
-        else if (label.compare(QStringLiteral("InProgress"), Qt::CaseInsensitive) == 0)
-            progress = 2;
-        else if (label.compare(QStringLiteral("Done"), Qt::CaseInsensitive) == 0)
-            progress = 3;
+        const int progress = progressValueForHierarchyEntry(m_hierarchyModel.at(index), index);
         return m_sessionStore->updateProgress(m_noteId, progress, nullptr);
     }
     }

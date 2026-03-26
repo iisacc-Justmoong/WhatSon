@@ -5,6 +5,7 @@
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
+#include <QVariant>
 #include <QVariantList>
 
 class DetailNoteHeaderSelectionSourceViewModel final : public QObject
@@ -40,6 +41,7 @@ public:
 
     Q_INVOKABLE void setSelectedIndex(int index);
     void synchronize(bool reloadSession);
+    static int progressValueForHierarchyEntry(const QVariant& entry, int fallbackProgressValue = -1);
 
 public
     slots  :
@@ -58,6 +60,7 @@ signals:
 
 private:
     void disconnectOptionsSourceSignals();
+    QVariantList buildHierarchyModelWithClearEntry(const QVariantList& optionsHierarchyModel) const;
     int resolveSelectedIndexForHeader(const QVariantList& hierarchyModel) const;
     bool persistSelection(int index);
     QString entryLabelAt(int index) const;

@@ -9,6 +9,7 @@ It snapshots incoming selector entries, mirrors file-backed selector selection c
 - After that handoff, source item-list refreshes are mirrored and source `selectedIndexChanged()` is accepted only from the injected detail selector source.
 - Local `setSelectedIndex(...)` never writes back to the source hierarchy viewmodel.
 - Selection preservation prefers `key`, then `itemId`, then `label`.
+- Synthetic clear entries such as `No project`, `No bookmark`, and `No progress` are treated like ordinary keyed items, so a cleared selector state survives option-list refreshes without falling back to a domain entry.
 
 ## Why It Exists
 The detail panel uses the same domain data as the hierarchy selectors, but it cannot share the same mutable selection object.

@@ -17,3 +17,8 @@ stable machine identity.
 
 Callers should arrive with normalized data. The creator does not try to infer missing UUIDs from
 paths; that responsibility belongs to higher-level services that know the current folder tree.
+
+## Progress Serialization Rules
+
+- Non-negative progress values are serialized as the `<progress>` element body.
+- A cleared progress state (`-1`) is serialized as an empty `<progress ...></progress>` element so the parser can round-trip the absence of progress instead of coercing it back to `0`.

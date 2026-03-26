@@ -2,31 +2,31 @@
 
 ## Responsibility
 
-This implementation translates the progress hierarchy store into LVRS rows and keeps the progress
-sidebar stable across runtime refreshes.
+This implementation turns `Progress.wsprogress` state labels into the sidebar rows for the progress
+domain and materializes the matching note list from `.wsnhead` metadata.
 
-## Static-Tree Refresh Contract
+## Runtime Data Flow
 
-`setProgressState(...)` now updates the domain payload without rebuilding the row tree after the
-first initialization.
+- `loadFromWshub(...)` resolves the active `Progress.wsprogress`, parses its state list, and then
+  indexes the hub library through `LibraryAll`.
+- `applyRuntimeSnapshot(...)` refreshes the same state list from the startup snapshot and reindexes
+  notes by resolving the enclosing `.wshub` from the snapshot file path.
+- `setProgressState(...)` sanitizes the state labels, falls back to the default four-state set when
+  needed, rebuilds the visible rows, and immediately reapplies note filtering.
 
-- The progress value and sanitized state labels are always refreshed.
-- The backing store is always synchronized.
-- `rebuildItems()` is called only when `m_items` is empty.
-- As a result, watcher-driven runtime refreshes keep the user's current expansion state intact.
+## Note List Semantics
 
-`applyRuntimeSnapshot(...)` delegates to that logic, so runtime reloads caused by note writes do not
-collapse the progress buckets.
+- `noteListModel()` exposes a `LibraryNoteListModel` so the progress domain can drive the shared
+  note list and editor selection bridge.
+- `selectedIndex` is treated as the canonical progress enum value because the row order now mirrors
+  the order defined in `Progress.wsprogress`.
+- `refreshNoteListForSelection()` keeps only notes whose `.wsnhead` `progress` integer matches the
+  selected progress value. When no row is selected, all indexed notes remain visible.
+- `saveBodyTextForNote(...)`, `saveCurrentBodyText(...)`, and `noteDirectoryPathForNoteId(...)`
+  keep the progress domain compatible with existing note editing and detail-panel current-note
+  wiring.
 
-## Interaction Semantics
+## Intentional Constraints
 
-- `setItemExpanded(...)` persists open/closed state inside `m_items`.
-- Rename/create/delete remain unavailable in practice because the progress taxonomy is treated as a
-  fixed support structure.
-- `loadFromWshub(...)` parses `Progress.wsprogress` when it exists and falls back to parser defaults
-  when it does not.
-
-## Invariants
-
-- Progress payload changes are allowed.
-- Progress bucket topology should remain stable once the initial row tree has been created.
+- Rename, create, delete, and folder expansion remain disabled because progress states are treated
+  as a flat taxonomy owned by `Progress.wsprogress`, not as mutable hierarchy folders in the view.

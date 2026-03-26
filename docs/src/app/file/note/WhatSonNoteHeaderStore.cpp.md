@@ -23,3 +23,8 @@ invariants are not bypassed.
 The library hierarchy now filters and rewrites notes by folder UUID. If the store allowed path and
 UUID arrays to drift apart, the application could silently reassign a note to the wrong folder after
 a rename or drag-and-drop mutation.
+
+## Progress State
+
+- The store still treats non-negative integers as concrete progress enum values.
+- `-1` is now a valid in-memory sentinel for “no progress selected”, so detail-panel clear actions can round-trip an empty progress field through `.wsnhead` without being forced back to `0`.

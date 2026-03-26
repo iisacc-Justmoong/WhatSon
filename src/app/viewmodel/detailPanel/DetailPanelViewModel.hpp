@@ -6,6 +6,7 @@
 #include "DetailPropertiesViewModel.hpp"
 #include "DetailNoteHeaderSelectionSourceViewModel.hpp"
 #include "DetailPanelState.hpp"
+#include "session/WhatSonFoldersHierarchySessionService.hpp"
 #include "session/WhatSonNoteHeaderSessionStore.hpp"
 
 #include <QObject>
@@ -60,6 +61,9 @@ public:
     Q_INVOKABLE bool writeProjectSelection(int index);
     Q_INVOKABLE bool writeBookmarkSelection(int index);
     Q_INVOKABLE bool writeProgressSelection(int index);
+    Q_INVOKABLE bool assignFolderByName(const QString& folderPath);
+    Q_INVOKABLE bool removeActiveFolder();
+    Q_INVOKABLE bool removeActiveTag();
 
 public
     slots  :
@@ -84,7 +88,11 @@ private:
     bool ensureCurrentHeaderLoaded(QString* errorMessage = nullptr);
     QString currentNoteId() const;
     QString currentNoteDirectoryPath() const;
-    bool writeSelectionIndex(QObject* optionsSourceViewModel, int index, DetailNoteHeaderSelectionSourceViewModel::Field field);
+    bool writeSelectionIndex(
+        const DetailNoteHeaderSelectionSourceViewModel& selectionSourceViewModel,
+        int index,
+        DetailNoteHeaderSelectionSourceViewModel::Field field);
+    bool removeMetadataEntry(bool removeFolder);
 
     WhatSon::DetailPanel::ContentState m_activeState = WhatSon::DetailPanel::ContentState::Properties;
     DetailPropertiesViewModel m_propertiesViewModel;
@@ -93,6 +101,7 @@ private:
     DetailContentSectionViewModel m_fileHistoryViewModel;
     DetailContentSectionViewModel m_layerViewModel;
     DetailContentSectionViewModel m_helpViewModel;
+    WhatSonFoldersHierarchySessionService m_foldersHierarchySessionService;
     WhatSonNoteHeaderSessionStore m_noteHeaderSessionStore;
     DetailCurrentNoteContextBridge m_currentNoteContextBridge;
     DetailNoteHeaderSelectionSourceViewModel m_projectSelectionSourceViewModel;

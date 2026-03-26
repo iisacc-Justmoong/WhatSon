@@ -16,16 +16,19 @@ struct ProgressHierarchyItem
 
 inline QString progressHierarchyIconName(const ProgressHierarchyItem& item)
 {
-    const QString normalizedLabel = item.label.trimmed().toLower();
-    if (normalizedLabel == QStringLiteral("first draft"))
+    QString normalizedLabel = item.label.trimmed().toLower();
+    normalizedLabel.remove(QLatin1Char(' '));
+    normalizedLabel.remove(QLatin1Char('-'));
+    normalizedLabel.remove(QLatin1Char('_'));
+    if (normalizedLabel == QStringLiteral("ready") || normalizedLabel == QStringLiteral("firstdraft"))
     {
         return QStringLiteral("inlineinlineEdit");
     }
-    if (normalizedLabel == QStringLiteral("modified draft"))
+    if (normalizedLabel == QStringLiteral("modifieddraft"))
     {
         return QStringLiteral("rendererKit");
     }
-    if (normalizedLabel == QStringLiteral("in progress"))
+    if (normalizedLabel == QStringLiteral("inprogress"))
     {
         return QStringLiteral("progressresume");
     }
@@ -37,7 +40,7 @@ inline QString progressHierarchyIconName(const ProgressHierarchyItem& item)
     {
         return QStringLiteral("showLogs");
     }
-    if (normalizedLabel == QStringLiteral("waiting for approval"))
+    if (normalizedLabel == QStringLiteral("waitingforapproval"))
     {
         return QStringLiteral("toolWindowTimer");
     }
@@ -53,7 +56,7 @@ inline QString progressHierarchyIconName(const ProgressHierarchyItem& item)
     {
         return QStringLiteral("projectModels");
     }
-    if (normalizedLabel == QStringLiteral("delete review"))
+    if (normalizedLabel == QStringLiteral("deletereview"))
     {
         return QStringLiteral("gutterCheckBoxIndeterminate@14x14");
     }

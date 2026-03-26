@@ -1,8 +1,10 @@
 #pragma once
 
+#include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyModel.hpp"
 
 #include <QStringList>
@@ -18,9 +20,11 @@ class ProgressHierarchyViewModel final : public IHierarchyViewModel,
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
     Q_PROPERTY(ProgressHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
+    Q_PROPERTY(int noteItemCount READ noteItemCount NOTIFY noteItemCountChanged)
     Q_PROPERTY(bool loadSucceeded READ loadSucceeded NOTIFY loadStateChanged)
     Q_PROPERTY(QString lastLoadError READ lastLoadError NOTIFY loadStateChanged)
     Q_PROPERTY(bool renameEnabled READ renameEnabled CONSTANT)
@@ -32,10 +36,12 @@ public:
     ~ProgressHierarchyViewModel() override;
 
     ProgressHierarchyModel* itemModel() noexcept override;
+    LibraryNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
     Q_INVOKABLE void setSelectedIndex(int index) override;
     int itemCount() const noexcept override;
+    int noteItemCount() const noexcept;
     bool loadSucceeded() const noexcept override;
     QString lastLoadError() const override;
 
@@ -55,6 +61,9 @@ public:
     bool renameEnabled() const noexcept;
     bool createFolderEnabled() const noexcept;
     bool deleteFolderEnabled() const noexcept;
+    Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
+    Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(
@@ -82,12 +91,19 @@ public
     void selectedIndexChanged();
     void hierarchyModelChanged();
     void itemCountChanged();
+    void noteItemCountChanged();
     void loadStateChanged();
     void viewModelHookRequested();
 
 private:
     void updateItemCount();
+    void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
+    LibraryNoteListItem buildNoteListItem(const LibraryNoteRecord& note) const;
+    void refreshNoteListForSelection();
+    bool refreshIndexedNotesFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    bool refreshIndexedNotesFromProgressFilePath(QString* errorMessage = nullptr);
+    int selectedProgressFilterValue() const noexcept;
     void rebuildItems();
     void syncProgressStore();
     void syncProgressStatesFromItems();
@@ -98,9 +114,12 @@ private:
     QVector<ProgressHierarchyItem> m_items;
     WhatSonProgressHierarchyStore m_store;
     ProgressHierarchyModel m_itemModel;
+    LibraryNoteListModel m_noteListModel;
+    QVector<LibraryNoteRecord> m_allNotes;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;
+    int m_noteItemCount = 0;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
     QString m_progressFilePath;

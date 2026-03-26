@@ -19,3 +19,8 @@ The exported `activeStateName()` now follows the corrected page ids:
 - `main.cpp` injects the canonical Projects/Bookmarks/Progress hierarchy viewmodels only as option sources for these copies.
 - The current note context now follows `SidebarHierarchyViewModel` active bindings instead of being pinned to the library hierarchy, so the detail panel reads and writes the `.wsnhead` file for the note that the current workspace view actually identified.
 - `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, and `writeProgressSelection(...)` persist directly into the active note header file and then re-synchronize the selector copies from the file-backed session store.
+- Each selector model now prepends a synthetic clear entry (`No project`, `No bookmark`, `No progress`), and selecting that entry clears the corresponding field in the current `.wsnhead` file instead of writing the visible label text.
+- `assignFolderByName(...)` first resolves or creates the folder entry in `Folders.wsfolders`, then persists the resulting folder path/uuid binding into the active note header file, and finally re-applies the current header to the properties content view-model.
+- `removeActiveFolder()` and `removeActiveTag()` delete the active metadata entry from the current note header file through the same file-backed session store and then re-apply the updated header to the properties content view-model.
+- Progress persistence resolves the enum integer from hierarchy entry metadata such as `itemId` or a numeric `progress:*` key; it is no longer hard-coded to the default `Ready/Pending/InProgress/Done` labels.
+- Clearing progress writes the `.wsnhead` field as an explicit empty progress value, which round-trips back into the detail selector as `No progress`.

@@ -2,27 +2,22 @@
 
 ## Responsibility
 
-This header declares the progress hierarchy viewmodel. It presents the progress buckets defined by
-`Progress.wsprogress` while exposing selection, load state, and expansion control to QML.
+This header declares the progress hierarchy viewmodel that backs the progress sidebar and its note
+list.
 
 ## Public Contract
 
-- Publishes the row model and the usual hierarchy-facing observable properties.
-- Implements rename/create/delete/expansion capability interfaces on top of the shared hierarchy
-  base interface.
-- Exposes `setProgressState(int, QStringList)` for imperative input and `applyRuntimeSnapshot(...)`
-  for runtime-loader refreshes.
-- Exposes `setItemExpanded(int, bool)` so the viewmodel, not the delegate tree, owns fold state.
+- Publishes both `itemModel` and `noteListModel`, so the progress domain exposes sidebar rows and
+  filtered notes through the same hierarchy interface used by other domains.
+- Exposes `setProgressState(int, QStringList)` for direct state injection and
+  `applyRuntimeSnapshot(...)` for startup/runtime refreshes.
+- Exposes body persistence helpers and note-directory lookup so the active progress note can remain
+  editable in shared editor flows.
 
-## Refresh Rules
+## Stored State
 
-- The progress bucket taxonomy is effectively static after first construction.
-- Snapshot updates may refresh progress value and state labels without rebuilding existing rows when
-  the row tree is already initialized.
-- Expansion state must therefore survive repeated runtime updates.
-
-## Internal State
-
-- `m_progressValue` and `m_progressStates` hold the current domain payload.
-- `m_items` stores the rendered row tree and expansion state.
-- `m_progressFilePath` points to the active `Progress.wsprogress` file used for loading.
+- `m_progressStates` is the canonical ordered enum list mirrored from `Progress.wsprogress`.
+- `m_items` is the flat LVRS-facing row set derived directly from `m_progressStates`.
+- `m_allNotes` stores the indexed hub notes used to build the filtered note list.
+- `m_progressFilePath` keeps the source file path required to resolve the owning `.wshub` during
+  runtime refreshes.

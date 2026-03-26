@@ -209,6 +209,14 @@ namespace
 
     int parseProgressValue(const QString& source)
     {
+        static const QRegularExpression progressTagRegex(
+            QStringLiteral(R"(<\s*progress\b)"),
+            QRegularExpression::CaseInsensitiveOption);
+        if (!progressTagRegex.match(source).hasMatch())
+        {
+            return -1;
+        }
+
         const QString progressText = extractTagText(source, QStringLiteral("progress"));
         bool ok = false;
         const int progressNumeric = progressText.toInt(&ok);
@@ -225,6 +233,11 @@ namespace
             {
                 return valueNumeric;
             }
+        }
+
+        if (progressText.isEmpty() && valueAttr.isEmpty())
+        {
+            return -1;
         }
 
         const QString enumsAttr = extractAttributeValue(source, QStringLiteral("progress"), QStringLiteral("enums"));

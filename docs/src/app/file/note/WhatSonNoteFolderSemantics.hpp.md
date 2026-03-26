@@ -1,37 +1,15 @@
 # `src/app/file/note/WhatSonNoteFolderSemantics.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+This header centralizes lightweight folder-path rules that must stay consistent across note-header parsing, mutation, and detail-panel presentation.
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonNoteFolderSemantics.hpp`
-- Source kind: C++ header
-- File name: `WhatSonNoteFolderSemantics.hpp`
-- Approximate line count: 90
+## Public Helpers
+- `normalizeFolderPath(QString)` normalizes slash direction, trims whitespace, and removes leading or trailing separators.
+- `leafFolderName(QString)` returns only the final visible segment of a normalized folder path.
+  - Example: `Research/Ideas` becomes `Ideas`.
+- `usesReservedTodayFolderSegment(const QString&)` guards the reserved `Today` segment policy.
+- `inspectRawFoldersBlock(const QString&)` inspects whether a raw `.wsnhead` folders block exists and whether it contains a concrete entry.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
-
-### Classes and Structs
-- `RawFoldersBlockState`
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Notes
+- `leafFolderName(...)` is now used by the detail-panel properties view-model so the compact folder list shows the effective folder name instead of the full persisted path.
+- The helper does not change persistence. `.wsnhead` and `.wsfolders` continue to store normalized full paths.

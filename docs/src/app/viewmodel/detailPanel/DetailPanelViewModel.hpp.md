@@ -26,9 +26,16 @@
 - `writeProjectSelection(int index)`
 - `writeBookmarkSelection(int index)`
 - `writeProgressSelection(int index)`
+- `assignFolderByName(const QString& folderPath)`
+- `removeActiveFolder()`
+- `removeActiveTag()`
 - `setCurrentNoteListModel(QObject*)`
 - `setCurrentNoteDirectorySourceViewModel(QObject*)`
 
 ## Dependency Direction
 The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
 Instead, C++ injects those hierarchy viewmodels as read-only option sources into the owned selector-copy objects while a separate current-note context bridge resolves the active note id and note directory path.
+
+## Selection Semantics
+- The three selector-copy objects expose a synthetic `No ...` item at index `0`.
+- Passing index `0` to `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, or `writeProgressSelection(...)` clears the corresponding field in the current `.wsnhead` file.

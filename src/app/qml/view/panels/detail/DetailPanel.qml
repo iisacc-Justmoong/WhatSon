@@ -178,6 +178,7 @@ Item {
             activeContentViewModel: detailPanel.resolvedActiveContentViewModel
             activeStateName: detailPanel.resolvedActiveStateName
             bookmarkSelectionViewModel: detailPanel.resolvedBookmarkSelectionViewModel
+            detailPanelViewModel: detailPanel.detailPanelVm
             height: detailPanel.detailContentsHeight
             progressSelectionViewModel: detailPanel.resolvedProgressSelectionViewModel
             projectSelectionViewModel: detailPanel.resolvedProjectSelectionViewModel
