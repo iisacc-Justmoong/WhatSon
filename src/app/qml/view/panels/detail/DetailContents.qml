@@ -148,6 +148,18 @@ Item {
         const normalizedIndex = Number(index);
         if (!isFinite(normalizedIndex) || normalizedIndex < 0)
             return;
+
+        if (hookReason === "projects.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeProjectSelection !== undefined) {
+            if (!detailPanelViewModel.writeProjectSelection(normalizedIndex))
+                return;
+        } else if (hookReason === "bookmark.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeBookmarkSelection !== undefined) {
+            if (!detailPanelViewModel.writeBookmarkSelection(normalizedIndex))
+                return;
+        } else if (hookReason === "progress.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeProgressSelection !== undefined) {
+            if (!detailPanelViewModel.writeProgressSelection(normalizedIndex))
+                return;
+        }
+
         if (hierarchyViewModel.setSelectedIndex !== undefined)
             hierarchyViewModel.setSelectedIndex(normalizedIndex);
         else if (hierarchyViewModel.selectedIndex !== undefined)

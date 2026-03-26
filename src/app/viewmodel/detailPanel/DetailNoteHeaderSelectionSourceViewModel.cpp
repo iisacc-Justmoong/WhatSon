@@ -71,7 +71,28 @@ void DetailNoteHeaderSelectionSourceViewModel::setOptionsSourceViewModel(QObject
     {
         return;
     }
+
+    disconnectOptionsSourceSignals();
     m_optionsSourceViewModel = optionsSourceViewModel;
+    if (m_optionsSourceViewModel != nullptr)
+    {
+        m_optionsHierarchyModelChangedConnection = QObject::connect(
+            m_optionsSourceViewModel.data(),
+            SIGNAL(hierarchyModelChanged()),
+            this,
+            SLOT(synchronizeOptionsSourceChange()));
+        m_optionsDestroyedConnection = QObject::connect(
+            m_optionsSourceViewModel.data(),
+            &QObject::destroyed,
+            this,
+            [this]()
+            {
+                disconnectOptionsSourceSignals();
+                m_optionsSourceViewModel = nullptr;
+                emit optionsSourceViewModelChanged();
+                synchronize(false);
+            });
+    }
     emit optionsSourceViewModelChanged();
     synchronize(false);
 }
@@ -114,6 +135,20 @@ void DetailNoteHeaderSelectionSourceViewModel::synchronize(bool reloadSession)
     {
         m_selectedIndex = nextSelectedIndex;
         emit selectedIndexChanged();
+    }
+}
+
+void DetailNoteHeaderSelectionSourceViewModel::disconnectOptionsSourceSignals()
+{
+    if (m_optionsHierarchyModelChangedConnection)
+    {
+        QObject::disconnect(m_optionsHierarchyModelChangedConnection);
+        m_optionsHierarchyModelChangedConnection = QMetaObject::Connection();
+    }
+    if (m_optionsDestroyedConnection)
+    {
+        QObject::disconnect(m_optionsDestroyedConnection);
+        m_optionsDestroyedConnection = QMetaObject::Connection();
     }
 }
 

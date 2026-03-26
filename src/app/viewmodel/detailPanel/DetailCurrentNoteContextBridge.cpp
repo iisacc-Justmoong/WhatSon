@@ -1,6 +1,7 @@
 #include "DetailCurrentNoteContextBridge.hpp"
 
 #include <QMetaObject>
+#include <QVariant>
 
 DetailCurrentNoteContextBridge::DetailCurrentNoteContextBridge(QObject* parent)
     : QObject(parent)

@@ -27,6 +27,7 @@
 - `SidebarHierarchyViewModel` must receive its selection store and provider before the architecture lock is enabled.
 - `LibraryNoteMutationViewModel` wraps `LibraryHierarchyViewModel` so note mutation shortcuts no longer need the full library hierarchy surface.
 - `DetailPanelViewModel` owns dedicated selector-copy viewmodels for Projects, Bookmarks, and Progress. `main.cpp` injects the canonical hierarchy viewmodels only as read-only selector sources so detail-panel combo state stays decoupled from sidebar selection.
+- The detail panel current-note bridge must follow `SidebarHierarchyViewModel::activeNoteListModel` and `activeHierarchyViewModel`, not the library hierarchy unconditionally, because `.wsnhead` reads and writes must target the note identified by the current workspace view.
 - `qmlRegisterType(...)` is used for bridge-like objects that should be instantiated from QML rather than pushed as singletons.
 - Trial builds keep the trial-status window out of the main workspace route graph. The composition root injects the activation policy through dedicated initial properties instead of exposing another global workspace context object.
 

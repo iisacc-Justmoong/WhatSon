@@ -43,11 +43,13 @@ Rectangle {
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property int pressedNoteIndex: -1
+    property real preservedNoteListContentY: 0
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
     readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(
                                                   listBarLayout.currentIndexFromModel())
     readonly property real grabbedNoteOpacity: 0.25
     readonly property int noteListFlickDeceleration: 1000000
+    property bool noteListViewportRestorePending: false
     readonly property int noteListScrollTick: LV.Theme.gap2
     property string searchText: ""
     property bool syncingNoteListViewport: false
@@ -251,6 +253,12 @@ Rectangle {
             return maxContentY;
         return Math.max(0, Math.min(maxContentY, Math.round(clampedValue / tick) * tick));
     }
+    function captureNoteListViewport() {
+        if (!listBarLayout.noteListMode)
+            return;
+        listBarLayout.preservedNoteListContentY = listBarLayout.quantizedNoteListContentY(noteListView.contentY);
+        listBarLayout.noteListViewportRestorePending = true;
+    }
     function applyNoteListViewportStep(contentY) {
         const targetY = listBarLayout.quantizedNoteListContentY(contentY);
         const previousY = Number(noteListView.contentY) || 0;
@@ -260,7 +268,17 @@ Rectangle {
         noteListView.contentY = targetY;
         listBarLayout.syncingNoteListViewport = false;
     }
+    function restoreNoteListViewport() {
+        if (!listBarLayout.noteListViewportRestorePending)
+            return;
+        listBarLayout.noteListViewportRestorePending = false;
+        listBarLayout.applyNoteListViewportStep(listBarLayout.preservedNoteListContentY);
+    }
     function settleNoteListViewport() {
+        if (listBarLayout.noteListViewportRestorePending) {
+            listBarLayout.restoreNoteListViewport();
+            return;
+        }
         listBarLayout.applyNoteListViewportStep(noteListView.contentY);
     }
     function pushCurrentIndexToModel(index) {
@@ -346,6 +364,8 @@ Rectangle {
     onNoteListModelChanged: {
         listBarLayout.noteDragCanceled = true;
         listBarLayout.noteDragActive = false;
+        listBarLayout.noteListViewportRestorePending = false;
+        listBarLayout.preservedNoteListContentY = 0;
         listBarLayout.clearInternalNoteDropPreview();
         listBarLayout.clearNoteDragPreview(null);
         if (noteContextMenu.opened)
@@ -457,7 +477,7 @@ Rectangle {
 
                     onContentHeightChanged: listBarLayout.settleNoteListViewport()
                     onContentYChanged: {
-                        if (listBarLayout.syncingNoteListViewport)
+                        if (listBarLayout.syncingNoteListViewport || listBarLayout.noteListViewportRestorePending)
                             return;
                         listBarLayout.applyNoteListViewportStep(noteListView.contentY);
                     }
@@ -756,6 +776,16 @@ Rectangle {
         }
     }
     Connections {
+        function onModelAboutToBeReset() {
+            listBarLayout.captureNoteListViewport();
+        }
+
+        function onModelReset() {
+            Qt.callLater(function () {
+                listBarLayout.restoreNoteListViewport();
+            });
+        }
+
         function onCurrentIndexChanged() {
             listBarLayout.syncCurrentIndexFromModel();
         }

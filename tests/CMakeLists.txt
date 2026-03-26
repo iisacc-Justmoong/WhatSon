@@ -746,16 +746,25 @@ list(APPEND WHATSON_TEST_TARGETS whatson_solid_architecture_contract_tests)
 
 add_executable(whatson_detail_panel_viewmodel_tests
         app/test_detail_panel_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailCurrentNoteContextBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailContentSectionViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailHierarchySelectionViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailNoteHeaderSelectionSourceViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelState.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelToolbarItemsFactory.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPanelViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/DetailPropertiesViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp
 )
 set_target_properties(whatson_detail_panel_viewmodel_tests PROPERTIES AUTOMOC ON)
 target_include_directories(whatson_detail_panel_viewmodel_tests
         PRIVATE
         ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/file
 )
 target_link_libraries(whatson_detail_panel_viewmodel_tests
         PRIVATE

@@ -57,6 +57,9 @@ public:
     void setProgressSelectionSourceViewModel(QObject* sourceViewModel);
     void setCurrentNoteListModel(QObject* noteListModel);
     void setCurrentNoteDirectorySourceViewModel(QObject* sourceViewModel);
+    Q_INVOKABLE bool writeProjectSelection(int index);
+    Q_INVOKABLE bool writeBookmarkSelection(int index);
+    Q_INVOKABLE bool writeProgressSelection(int index);
 
 public
     slots  :
@@ -78,6 +81,10 @@ public
 
 private:
     void applyActiveContentViewModel(DetailContentState activeState);
+    bool ensureCurrentHeaderLoaded(QString* errorMessage = nullptr);
+    QString currentNoteId() const;
+    QString currentNoteDirectoryPath() const;
+    bool writeSelectionIndex(QObject* optionsSourceViewModel, int index, DetailNoteHeaderSelectionSourceViewModel::Field field);
 
     WhatSon::DetailPanel::ContentState m_activeState = WhatSon::DetailPanel::ContentState::Properties;
     DetailPropertiesViewModel m_propertiesViewModel;

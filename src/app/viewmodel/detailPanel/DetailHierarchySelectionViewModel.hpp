@@ -39,6 +39,11 @@ public
         synchronizeFromSource(false);
     }
 
+    void synchronizeSelectionFromSourceChange()
+    {
+        synchronizeFromSource(true);
+    }
+
     void requestViewModelHook()
     {
         emit viewModelHookRequested();
@@ -64,5 +69,6 @@ private:
     QVariantList m_hierarchyModel;
     int m_selectedIndex = -1;
     QMetaObject::Connection m_sourceHierarchyModelChangedConnection;
+    QMetaObject::Connection m_sourceSelectedIndexChangedConnection;
     QMetaObject::Connection m_sourceDestroyedConnection;
 };

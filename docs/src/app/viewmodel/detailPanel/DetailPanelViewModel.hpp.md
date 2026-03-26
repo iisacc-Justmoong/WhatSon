@@ -23,7 +23,12 @@
 - `projectSelectionViewModel`
 - `bookmarkSelectionViewModel`
 - `progressSelectionViewModel`
+- `writeProjectSelection(int index)`
+- `writeBookmarkSelection(int index)`
+- `writeProgressSelection(int index)`
+- `setCurrentNoteListModel(QObject*)`
+- `setCurrentNoteDirectorySourceViewModel(QObject*)`
 
 ## Dependency Direction
 The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
-Instead, C++ injects those hierarchy viewmodels as read-only sources into the owned selector-copy objects.
+Instead, C++ injects those hierarchy viewmodels as read-only option sources into the owned selector-copy objects while a separate current-note context bridge resolves the active note id and note directory path.

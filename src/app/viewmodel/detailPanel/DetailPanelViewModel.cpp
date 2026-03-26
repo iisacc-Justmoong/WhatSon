@@ -51,6 +51,9 @@ DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
                              && m_noteHeaderSessionStore.ensureLoaded(noteId, noteDirectoryPath, &loadError))
                          {
                              m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
+                             m_projectSelectionSourceViewModel.synchronize(false);
+                             m_bookmarkSelectionSourceViewModel.synchronize(false);
+                             m_progressSelectionSourceViewModel.synchronize(false);
                          }
                          else
                          {
@@ -96,7 +99,7 @@ QObject* DetailPanelViewModel::contentViewModelForState(int stateValue) const no
     switch (WhatSon::DetailPanel::stateFromValue(stateValue))
     {
     case DetailContentState::Properties:
-        return const_cast<DetailContentSectionViewModel*>(&m_propertiesViewModel);
+        return const_cast<DetailPropertiesViewModel*>(&m_propertiesViewModel);
     case DetailContentState::FileStat:
         return const_cast<DetailContentSectionViewModel*>(&m_fileStatViewModel);
     case DetailContentState::Insert:
@@ -241,6 +244,105 @@ void DetailPanelViewModel::setCurrentNoteListModel(QObject* noteListModel)
 void DetailPanelViewModel::setCurrentNoteDirectorySourceViewModel(QObject* sourceViewModel)
 {
     m_currentNoteContextBridge.setNoteDirectorySourceViewModel(sourceViewModel);
+}
+
+bool DetailPanelViewModel::writeProjectSelection(int index)
+{
+    return writeSelectionIndex(m_projectSelectionSourceViewModel.optionsSourceViewModel(), index, DetailNoteHeaderSelectionSourceViewModel::Field::Project);
+}
+
+bool DetailPanelViewModel::writeBookmarkSelection(int index)
+{
+    return writeSelectionIndex(m_bookmarkSelectionSourceViewModel.optionsSourceViewModel(), index, DetailNoteHeaderSelectionSourceViewModel::Field::Bookmark);
+}
+
+bool DetailPanelViewModel::writeProgressSelection(int index)
+{
+    return writeSelectionIndex(m_progressSelectionSourceViewModel.optionsSourceViewModel(), index, DetailNoteHeaderSelectionSourceViewModel::Field::Progress);
+}
+
+bool DetailPanelViewModel::ensureCurrentHeaderLoaded(QString* errorMessage)
+{
+    const QString noteId = currentNoteId();
+    const QString noteDirectoryPath = currentNoteDirectoryPath();
+    if (noteId.isEmpty() || noteDirectoryPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Current note context is incomplete.");
+        }
+        return false;
+    }
+    return m_noteHeaderSessionStore.ensureLoaded(noteId, noteDirectoryPath, errorMessage);
+}
+
+QString DetailPanelViewModel::currentNoteId() const
+{
+    return m_currentNoteContextBridge.currentNoteId().trimmed();
+}
+
+QString DetailPanelViewModel::currentNoteDirectoryPath() const
+{
+    return m_currentNoteContextBridge.currentNoteDirectoryPath().trimmed();
+}
+
+bool DetailPanelViewModel::writeSelectionIndex(QObject* optionsSourceViewModel, int index, DetailNoteHeaderSelectionSourceViewModel::Field field)
+{
+    if (optionsSourceViewModel == nullptr)
+    {
+        return false;
+    }
+
+    QString errorMessage;
+    if (!ensureCurrentHeaderLoaded(&errorMessage))
+    {
+        return false;
+    }
+
+    const QVariantList hierarchyModel = optionsSourceViewModel->property("hierarchyModel").toList();
+    if (index < 0 || index >= hierarchyModel.size())
+    {
+        return false;
+    }
+
+    const QString label = hierarchyModel.at(index).toMap().value(QStringLiteral("label")).toString().trimmed();
+    const QString noteId = currentNoteId();
+
+    bool saved = false;
+    switch (field)
+    {
+    case DetailNoteHeaderSelectionSourceViewModel::Field::Project:
+        saved = m_noteHeaderSessionStore.updateProject(noteId, label, &errorMessage);
+        break;
+    case DetailNoteHeaderSelectionSourceViewModel::Field::Bookmark:
+        saved = m_noteHeaderSessionStore.updateBookmarked(
+            noteId,
+            !label.isEmpty(),
+            label.isEmpty() ? QStringList{} : QStringList{label.toLower()},
+            &errorMessage);
+        break;
+    case DetailNoteHeaderSelectionSourceViewModel::Field::Progress:
+    {
+        int progress = 0;
+        if (label.compare(QStringLiteral("Pending"), Qt::CaseInsensitive) == 0)
+            progress = 1;
+        else if (label.compare(QStringLiteral("InProgress"), Qt::CaseInsensitive) == 0)
+            progress = 2;
+        else if (label.compare(QStringLiteral("Done"), Qt::CaseInsensitive) == 0)
+            progress = 3;
+        saved = m_noteHeaderSessionStore.updateProgress(noteId, progress, &errorMessage);
+        break;
+    }
+    }
+
+    if (saved)
+    {
+        m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
+        m_projectSelectionSourceViewModel.synchronize(false);
+        m_bookmarkSelectionSourceViewModel.synchronize(false);
+        m_progressSelectionSourceViewModel.synchronize(false);
+    }
+    return saved;
 }
 
 void DetailPanelViewModel::applyActiveContentViewModel(DetailContentState activeState)

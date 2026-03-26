@@ -2,6 +2,7 @@
 
 #include "viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
 
+#include <QMetaObject>
 #include <QObject>
 #include <QPointer>
 #include <QVariantList>
@@ -38,6 +39,15 @@ public:
     void setOptionsSourceViewModel(QObject* optionsSourceViewModel);
 
     Q_INVOKABLE void setSelectedIndex(int index);
+    void synchronize(bool reloadSession);
+
+public
+    slots  :
+
+    void synchronizeOptionsSourceChange()
+    {
+        synchronize(false);
+    }
 
 signals:
     void hierarchyModelChanged();
@@ -47,7 +57,7 @@ signals:
     void optionsSourceViewModelChanged();
 
 private:
-    void synchronize(bool reloadSession);
+    void disconnectOptionsSourceSignals();
     int resolveSelectedIndexForHeader(const QVariantList& hierarchyModel) const;
     bool persistSelection(int index);
     QString entryLabelAt(int index) const;
@@ -59,4 +69,6 @@ private:
     QString m_noteId;
     QString m_noteDirectoryPath;
     int m_selectedIndex = -1;
+    QMetaObject::Connection m_optionsHierarchyModelChangedConnection;
+    QMetaObject::Connection m_optionsDestroyedConnection;
 };

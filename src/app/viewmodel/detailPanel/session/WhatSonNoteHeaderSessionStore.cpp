@@ -48,6 +48,7 @@ bool WhatSonNoteHeaderSessionStore::ensureLoaded(const QString& noteId, const QS
     entry.noteDirectoryPath = normalizedDirectoryPath;
     entry.headerFilePath = resolveHeaderFilePath(normalizedDirectoryPath);
     entry.header.clear();
+    entry.loaded = false;
     entry.dirty = false;
 
     QFile file(entry.headerFilePath);
@@ -93,7 +94,8 @@ bool WhatSonNoteHeaderSessionStore::ensureLoaded(const QString& noteId, const QS
 
 bool WhatSonNoteHeaderSessionStore::hasEntry(const QString& noteId) const
 {
-    return findEntry(noteId) != nullptr;
+    const Entry* existing = findEntry(noteId);
+    return existing != nullptr && existing->loaded;
 }
 
 WhatSonNoteHeaderSessionStore::Entry WhatSonNoteHeaderSessionStore::entry(const QString& noteId) const
@@ -189,9 +191,65 @@ bool WhatSonNoteHeaderSessionStore::updateProgress(const QString& noteId, int pr
 
 QString WhatSonNoteHeaderSessionStore::resolveHeaderFilePath(const QString& noteDirectoryPath)
 {
-    const QFileInfo noteDirInfo(noteDirectoryPath.trimmed());
-    const QString noteStem = noteDirInfo.completeBaseName();
-    return QDir(noteDirInfo.absoluteFilePath()).filePath(QStringLiteral(".meta/%1.wsnhead").arg(noteStem));
+    const QString normalizedNoteDirectoryPath = QDir::cleanPath(noteDirectoryPath.trimmed());
+    if (normalizedNoteDirectoryPath.isEmpty())
+    {
+        return {};
+    }
+
+    const QDir noteDirectory(normalizedNoteDirectoryPath);
+    if (!noteDirectory.exists())
+    {
+        return {};
+    }
+
+    const QString noteStem = QFileInfo(normalizedNoteDirectoryPath).completeBaseName().trimmed();
+    if (!noteStem.isEmpty())
+    {
+        const QString stemHeaderPath = noteDirectory.filePath(noteStem + QStringLiteral(".wsnhead"));
+        if (QFileInfo(stemHeaderPath).isFile())
+        {
+            return QDir::cleanPath(stemHeaderPath);
+        }
+    }
+
+    const QString canonicalHeaderPath = noteDirectory.filePath(QStringLiteral("note.wsnhead"));
+    if (QFileInfo(canonicalHeaderPath).isFile())
+    {
+        return QDir::cleanPath(canonicalHeaderPath);
+    }
+
+    const QFileInfoList headerCandidates = noteDirectory.entryInfoList(
+        QStringList{QStringLiteral("*.wsnhead")},
+        QDir::Files,
+        QDir::Name);
+    QString draftHeaderPath;
+    for (const QFileInfo& fileInfo : headerCandidates)
+    {
+        const QString loweredName = fileInfo.fileName().toCaseFolded();
+        if (loweredName.contains(QStringLiteral(".draft.")))
+        {
+            if (draftHeaderPath.isEmpty())
+            {
+                draftHeaderPath = fileInfo.absoluteFilePath();
+            }
+            continue;
+        }
+
+        return QDir::cleanPath(fileInfo.absoluteFilePath());
+    }
+
+    if (!draftHeaderPath.isEmpty())
+    {
+        return QDir::cleanPath(draftHeaderPath);
+    }
+
+    if (!noteStem.isEmpty())
+    {
+        return QDir::cleanPath(noteDirectory.filePath(noteStem + QStringLiteral(".wsnhead")));
+    }
+
+    return QDir::cleanPath(noteDirectory.filePath(QStringLiteral("note.wsnhead")));
 }
 
 WhatSonNoteHeaderSessionStore::Entry* WhatSonNoteHeaderSessionStore::findEntry(const QString& noteId)

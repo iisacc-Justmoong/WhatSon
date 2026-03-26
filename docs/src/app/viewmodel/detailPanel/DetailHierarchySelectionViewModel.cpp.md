@@ -2,14 +2,15 @@
 
 ## Responsibility
 This implementation keeps the detail panel decoupled from sidebar hierarchy selection churn.
-It listens only for source `hierarchyModelChanged()` events, snapshots the incoming entry list, and preserves the detail-panel-local selection across source refreshes.
+It snapshots incoming selector entries, mirrors file-backed selector selection changes from the injected detail source object, and preserves the detail-panel-local selection across option-list refreshes.
 
 ## Synchronization Rules
 - `setSourceViewModel(...)` performs an initial one-time import of source items and source selection.
-- After that handoff, only source item-list refreshes are mirrored.
+- After that handoff, source item-list refreshes are mirrored and source `selectedIndexChanged()` is accepted only from the injected detail selector source.
 - Local `setSelectedIndex(...)` never writes back to the source hierarchy viewmodel.
 - Selection preservation prefers `key`, then `itemId`, then `label`.
 
 ## Why It Exists
 The detail panel uses the same domain data as the hierarchy selectors, but it cannot share the same mutable selection object.
 Without this adapter, clicking a hierarchy row would also mutate the detail-panel combo state and vice versa.
+The file-backed detail selector source now uses this adapter to push `.wsnhead` reads and writes back into the combo state without re-coupling the combo to sidebar row clicks.

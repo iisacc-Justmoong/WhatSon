@@ -86,6 +86,11 @@ void DetailHierarchySelectionViewModel::setSourceViewModel(QObject* sourceViewMo
             SIGNAL(hierarchyModelChanged()),
             this,
             SLOT(synchronizeFromSourceChange()));
+        m_sourceSelectedIndexChangedConnection = QObject::connect(
+            m_sourceViewModel.data(),
+            SIGNAL(selectedIndexChanged()),
+            this,
+            SLOT(synchronizeSelectionFromSourceChange()));
         m_sourceDestroyedConnection = QObject::connect(
             m_sourceViewModel.data(),
             &QObject::destroyed,
@@ -109,6 +114,11 @@ void DetailHierarchySelectionViewModel::disconnectSourceSignals()
     {
         QObject::disconnect(m_sourceHierarchyModelChangedConnection);
         m_sourceHierarchyModelChangedConnection = QMetaObject::Connection();
+    }
+    if (m_sourceSelectedIndexChangedConnection)
+    {
+        QObject::disconnect(m_sourceSelectedIndexChangedConnection);
+        m_sourceSelectedIndexChangedConnection = QMetaObject::Connection();
     }
     if (m_sourceDestroyedConnection)
     {

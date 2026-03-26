@@ -54,6 +54,8 @@ itself.
 - `noteListScrollTick` is fixed to `LV.Theme.gap2`, and all viewport motion is quantized through
   `noteListMaxContentY()`, `quantizedNoteListContentY(value)`, `applyNoteListViewportStep(contentY)`, and
   `settleNoteListViewport()`.
+- The list caches `contentY` before note-model reset cycles and restores it after the reset settles, so periodic
+  note-list refreshes do not yank the viewport back to the first row.
 - `LV.WheelScrollGuard` is mounted over the list viewport so wheel input follows the same small-step contract as drag
   scrolling.
 

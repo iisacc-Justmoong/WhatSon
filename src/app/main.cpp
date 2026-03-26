@@ -390,10 +390,24 @@ int main(int argc, char* argv[])
     detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
     detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
     detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
-    detailPanelViewModel.setCurrentNoteListModel(libraryHierarchyViewModel.noteListModel());
-    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&libraryHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
+    const auto syncDetailPanelCurrentNoteContext = [&detailPanelViewModel, &sidebarHierarchyViewModel]()
+    {
+        detailPanelViewModel.setCurrentNoteListModel(sidebarHierarchyViewModel.activeNoteListModel());
+        detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(sidebarHierarchyViewModel.activeHierarchyViewModel());
+    };
+    QObject::connect(
+        &sidebarHierarchyViewModel,
+        &SidebarHierarchyViewModel::activeNoteListModelChanged,
+        &detailPanelViewModel,
+        syncDetailPanelCurrentNoteContext);
+    QObject::connect(
+        &sidebarHierarchyViewModel,
+        &SidebarHierarchyViewModel::activeHierarchyViewModelChanged,
+        &detailPanelViewModel,
+        syncDetailPanelCurrentNoteContext);
+    syncDetailPanelCurrentNoteContext();
 
     startupRuntimeCoordinator.bindSidebarActivation(&sidebarHierarchyViewModel);
 
