@@ -37,9 +37,10 @@ every turn.
   `src/app/viewmodel/sidebar/HierarchyViewModelProvider.*`,
   `src/app/viewmodel/sidebar/SidebarHierarchyViewModel.*`
 - Architecture policy lock and layer contract: `src/app/policy/ArchitecturePolicyLock.*`
-- Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and runs domain parsing/store loading in
-  parallel worker threads via `WhatSonRuntimeParallelLoader`, then applies snapshots to ViewModel objects on the main
-  thread.
+- Runtime bootstrap: app startup resolves the first `blueprint/*.wshub` package and loads the critical startup domains
+  in parallel worker threads via `WhatSonRuntimeParallelLoader`, then applies those snapshots to ViewModel objects on
+  the main thread before the first workspace frame. Low-priority hierarchy domains may be deferred until first-frame
+  idle turns or the first explicit sidebar activation.
 
 ### Hierarchy ViewModel Ownership (Critical)
 
