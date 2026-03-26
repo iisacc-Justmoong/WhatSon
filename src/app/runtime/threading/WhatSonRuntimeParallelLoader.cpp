@@ -70,6 +70,7 @@ namespace
 bool WhatSonRuntimeParallelLoader::loadFromWshub(
     const QString& wshubPath,
     const Targets& targets,
+    const RequestedDomains& requestedDomains,
     QVector<DomainLoadResult>* outResults) const
 {
     QElapsedTimer totalElapsedTimer;
@@ -167,171 +168,198 @@ bool WhatSonRuntimeParallelLoader::loadFromWshub(
         threads.push_back(thread);
     };
 
-    if (targets.libraryViewModel == nullptr)
+    if (requestedDomains.library)
     {
-        addImmediateFailure(QStringLiteral("library"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasLibraryTask = true;
-        addSnapshotTask(
-            QStringLiteral("library"),
-            &librarySnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadLibrary(path);
-            });
-    }
-
-    if (targets.projectsViewModel == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("projects"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasProjectsTask = true;
-        addSnapshotTask(
-            QStringLiteral("projects"),
-            &projectsSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadProjects(path);
-            });
-    }
-
-    if (targets.bookmarksViewModel == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("bookmarks"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasBookmarksTask = true;
-        if (hasLibraryTask)
+        if (targets.libraryViewModel == nullptr)
         {
-            deriveBookmarksFromLibrary = true;
-            DomainLoadResult result;
-            result.domain = QStringLiteral("bookmarks");
-            results.push_back(result);
-            derivedBookmarksResultIndex = results.size() - 1;
+            addImmediateFailure(QStringLiteral("library"), QStringLiteral("Target viewModel is null."));
         }
         else
         {
+            hasLibraryTask = true;
             addSnapshotTask(
-                QStringLiteral("bookmarks"),
-                &bookmarksSnapshot,
+                QStringLiteral("library"),
+                &librarySnapshot,
                 [](const QString& path)
                 {
-                    return WhatSonRuntimeDomainSnapshots::loadBookmarks(path);
+                    return WhatSonRuntimeDomainSnapshots::loadLibrary(path);
                 });
         }
     }
 
-    if (targets.tagsViewModel == nullptr)
+    if (requestedDomains.projects)
     {
-        addImmediateFailure(QStringLiteral("tags"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasTagsTask = true;
-        addSnapshotTask(
-            QStringLiteral("tags"),
-            &tagsSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadTags(path);
-            });
-    }
-
-    if (targets.resourcesViewModel == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("resources"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasResourcesTask = true;
-        addSnapshotTask(
-            QStringLiteral("resources"),
-            &resourcesSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadResources(path);
-            });
-    }
-
-    if (targets.progressViewModel == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("progress"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasProgressTask = true;
-        addSnapshotTask(
-            QStringLiteral("progress"),
-            &progressSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadProgress(path);
-            });
-    }
-
-    if (targets.eventViewModel == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("event"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasEventTask = true;
-        addSnapshotTask(
-            QStringLiteral("event"),
-            &eventSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadEvent(path);
-            });
-    }
-
-    if (targets.presetViewModel == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("preset"), QStringLiteral("Target viewModel is null."));
-    }
-    else
-    {
-        hasPresetTask = true;
-        addSnapshotTask(
-            QStringLiteral("preset"),
-            &presetSnapshot,
-            [](const QString& path)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadPreset(path);
-            });
-    }
-
-    if (targets.hubRuntimeStore == nullptr)
-    {
-        addImmediateFailure(QStringLiteral("hub.runtime"), QStringLiteral("Target runtime store is null."));
-    }
-    else
-    {
-        results.push_back(DomainLoadResult{});
-        DomainLoadResult* hubResult = &results.back();
-        QThread* hubThread = spawnFunctionLoadThread(
-            QStringLiteral("hub.runtime"),
-            normalizedPath,
-            hubResult,
-            [&targets](const QString& path, QString* error)
-            {
-                return WhatSonRuntimeDomainSnapshots::loadHubRuntime(path, targets.hubRuntimeStore, error);
-            });
-
-        if (hubThread == nullptr)
+        if (targets.projectsViewModel == nullptr)
         {
-            hubResult->domain = QStringLiteral("hub.runtime");
-            hubResult->succeeded = false;
-            hubResult->error = QStringLiteral("Failed to create worker thread.");
+            addImmediateFailure(QStringLiteral("projects"), QStringLiteral("Target viewModel is null."));
         }
         else
         {
-            threads.push_back(hubThread);
+            hasProjectsTask = true;
+            addSnapshotTask(
+                QStringLiteral("projects"),
+                &projectsSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadProjects(path);
+                });
+        }
+    }
+
+    if (requestedDomains.bookmarks)
+    {
+        if (targets.bookmarksViewModel == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("bookmarks"), QStringLiteral("Target viewModel is null."));
+        }
+        else
+        {
+            hasBookmarksTask = true;
+            if (hasLibraryTask)
+            {
+                deriveBookmarksFromLibrary = true;
+                DomainLoadResult result;
+                result.domain = QStringLiteral("bookmarks");
+                results.push_back(result);
+                derivedBookmarksResultIndex = results.size() - 1;
+            }
+            else
+            {
+                addSnapshotTask(
+                    QStringLiteral("bookmarks"),
+                    &bookmarksSnapshot,
+                    [](const QString& path)
+                    {
+                        return WhatSonRuntimeDomainSnapshots::loadBookmarks(path);
+                    });
+            }
+        }
+    }
+
+    if (requestedDomains.tags)
+    {
+        if (targets.tagsViewModel == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("tags"), QStringLiteral("Target viewModel is null."));
+        }
+        else
+        {
+            hasTagsTask = true;
+            addSnapshotTask(
+                QStringLiteral("tags"),
+                &tagsSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadTags(path);
+                });
+        }
+    }
+
+    if (requestedDomains.resources)
+    {
+        if (targets.resourcesViewModel == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("resources"), QStringLiteral("Target viewModel is null."));
+        }
+        else
+        {
+            hasResourcesTask = true;
+            addSnapshotTask(
+                QStringLiteral("resources"),
+                &resourcesSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadResources(path);
+                });
+        }
+    }
+
+    if (requestedDomains.progress)
+    {
+        if (targets.progressViewModel == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("progress"), QStringLiteral("Target viewModel is null."));
+        }
+        else
+        {
+            hasProgressTask = true;
+            addSnapshotTask(
+                QStringLiteral("progress"),
+                &progressSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadProgress(path);
+                });
+        }
+    }
+
+    if (requestedDomains.event)
+    {
+        if (targets.eventViewModel == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("event"), QStringLiteral("Target viewModel is null."));
+        }
+        else
+        {
+            hasEventTask = true;
+            addSnapshotTask(
+                QStringLiteral("event"),
+                &eventSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadEvent(path);
+                });
+        }
+    }
+
+    if (requestedDomains.preset)
+    {
+        if (targets.presetViewModel == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("preset"), QStringLiteral("Target viewModel is null."));
+        }
+        else
+        {
+            hasPresetTask = true;
+            addSnapshotTask(
+                QStringLiteral("preset"),
+                &presetSnapshot,
+                [](const QString& path)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadPreset(path);
+                });
+        }
+    }
+
+    if (requestedDomains.hubRuntimeStore)
+    {
+        if (targets.hubRuntimeStore == nullptr)
+        {
+            addImmediateFailure(QStringLiteral("hub.runtime"), QStringLiteral("Target runtime store is null."));
+        }
+        else
+        {
+            results.push_back(DomainLoadResult{});
+            DomainLoadResult* hubResult = &results.back();
+            QThread* hubThread = spawnFunctionLoadThread(
+                QStringLiteral("hub.runtime"),
+                normalizedPath,
+                hubResult,
+                [&targets](const QString& path, QString* error)
+                {
+                    return WhatSonRuntimeDomainSnapshots::loadHubRuntime(path, targets.hubRuntimeStore, error);
+                });
+
+            if (hubThread == nullptr)
+            {
+                hubResult->domain = QStringLiteral("hub.runtime");
+                hubResult->succeeded = false;
+                hubResult->error = QStringLiteral("Failed to create worker thread.");
+            }
+            else
+            {
+                threads.push_back(hubThread);
+            }
         }
     }
 

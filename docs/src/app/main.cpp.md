@@ -15,11 +15,12 @@
 1. Parse launch options such as onboarding-only mode.
 2. Resolve a candidate startup workspace by checking persisted hub selection and then falling back to the first `blueprint/*.wshub`.
 3. Create runtime stores and viewmodels before any QML is loaded.
-4. If a hub can be mounted, load its domain snapshots through `WhatSonRuntimeParallelLoader` and apply them to the runtime objects.
-5. Populate `HierarchyViewModelProvider`, then connect it to `SidebarHierarchyViewModel`.
-6. Call `ArchitecturePolicyLock::lock()` after mutable dependency injection is complete.
-7. Export root runtime objects to the `QQmlContext`, then load the LVRS root window module.
-8. In trial builds, load `TrialStatus.qml` as a second desktop window and inject the refreshed `WhatSonTrialActivationPolicy`.
+4. If a hub can be mounted, load the critical startup domain snapshots through `WhatSonRuntimeParallelLoader` and apply them to the runtime objects before the first workspace frame.
+5. Defer only low-priority hierarchy domains until either the post-show idle turns or the first sidebar activation that needs them.
+6. Populate `HierarchyViewModelProvider`, then connect it to `SidebarHierarchyViewModel`.
+7. Call `ArchitecturePolicyLock::lock()` after mutable dependency injection is complete.
+8. Export root runtime objects to the `QQmlContext`, then load the LVRS root window module.
+9. In trial builds, load `TrialStatus.qml` as a second desktop window and inject the refreshed `WhatSonTrialActivationPolicy`.
 
 ## Important Wiring Decisions
 - `HierarchyViewModelProvider` is the single runtime map from sidebar domain index to dedicated hierarchy viewmodel.
@@ -39,6 +40,7 @@ The practical split is this.
 ## Failure and Recovery Behavior
 - If no startup hub can be resolved, the app still starts and logs the condition.
 - If initial hub loading fails, startup continues with warnings rather than crashing.
+- Deferred low-priority startup domain loads are retried on first sidebar activation while the partial-bootstrap window stays active.
 - If QML object creation fails, the process exits through the engine failure callback.
 - Permission bootstrap starts after the foreground UI has been brought up, which keeps startup responsive.
 

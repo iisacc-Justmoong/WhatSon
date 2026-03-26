@@ -25,6 +25,7 @@
 - `PresetHierarchyViewModel`
 - `WhatSonHubRuntimeStore`
 - `WhatSonRuntimeParallelLoader`
+- `RequestedDomains`
 - `DomainLoadResult`
 - `Targets`
 

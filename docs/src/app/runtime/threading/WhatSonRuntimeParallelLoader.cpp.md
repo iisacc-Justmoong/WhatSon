@@ -5,6 +5,12 @@
 `WhatSonRuntimeParallelLoader.cpp` fans out domain snapshot work onto worker threads and then applies
 those immutable snapshot payloads back onto the main-thread viewmodels.
 
+## Requested Domain Selection
+
+The loader now accepts an explicit requested-domain mask. Startup can therefore load only the
+critical first-frame domains while leaving only low-priority hierarchies for deferred follow-up
+work.
+
 ## Shared Library Snapshot Rule
 
 When both the library and bookmarks domains are present, the loader now indexes the library domain

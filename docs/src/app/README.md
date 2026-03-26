@@ -19,9 +19,10 @@ This directory is the architectural center of the repository. Most other modules
 The app startup sequence lives in `main.cpp` and performs five broad phases.
 1. Parse launch options and resolve a startup hub candidate.
 2. Construct stores, services, viewmodels, and helper bridges on the C++ side.
-3. Load workspace domain snapshots, usually through `WhatSonRuntimeParallelLoader`.
-4. Wire dedicated hierarchy viewmodels into `HierarchyViewModelProvider` and `SidebarHierarchyViewModel`.
-5. Freeze mutable wiring through `ArchitecturePolicyLock`, then expose runtime objects to QML.
+3. Load critical workspace domain snapshots, usually through `WhatSonRuntimeParallelLoader`.
+4. Defer low-priority hierarchy domains until the first post-show idle turns or the first sidebar activation that needs them.
+5. Wire dedicated hierarchy viewmodels into `HierarchyViewModelProvider` and `SidebarHierarchyViewModel`.
+6. Freeze mutable wiring through `ArchitecturePolicyLock`, then expose runtime objects to QML.
 
 ## Architectural Notes
 - The repository follows dedicated hierarchy viewmodels per domain. Library, projects, bookmarks, tags, resources, progress, event, and preset each keep their own viewmodel instance.

@@ -434,6 +434,9 @@ Startup onboarding is now gated by hub mountability rather than by full runtime-
 the persisted hub selection into a mountable startup hub path (local `.wshub`, Android source URI -> mounted local
 copy, or restored Android mounted-hub source URI). If that persisted candidate can no longer be mounted, startup
 retries the bundled blueprint hub before handing control to onboarding.
+When a startup hub is available, the first workspace frame now prioritizes the critical library-facing runtime
+domains and defers low-priority hierarchy domains (`Event`, `Preset`) until post-show idle turns or the first sidebar
+activation that needs them.
 Concurrent hub access is now allowed across desktop and mobile sessions. `WhatSonHubWriteLease` remains only as a
 legacy cleanup shim for old `.whatson/write-lease.json` artifacts, so onboarding/runtime loading and filesystem
 mutation paths no longer reject a `.wshub` just because another WhatSon session already touched the same package.

@@ -16,6 +16,19 @@ class WhatSonHubRuntimeStore;
 class WhatSonRuntimeParallelLoader final
 {
 public:
+    struct RequestedDomains
+    {
+        bool library = true;
+        bool projects = true;
+        bool bookmarks = true;
+        bool tags = true;
+        bool resources = true;
+        bool progress = true;
+        bool event = true;
+        bool preset = true;
+        bool hubRuntimeStore = true;
+    };
+
     struct DomainLoadResult
     {
         QString domain;
@@ -39,5 +52,6 @@ public:
     bool loadFromWshub(
         const QString& wshubPath,
         const Targets& targets,
+        const RequestedDomains& requestedDomains,
         QVector<DomainLoadResult>* outResults = nullptr) const;
 };

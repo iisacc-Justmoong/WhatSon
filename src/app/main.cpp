@@ -27,6 +27,10 @@
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "runtime/threading/WhatSonRuntimeParallelLoader.hpp"
+#include "runtime/startup/WhatSonStartupRuntimeCoordinator.hpp"
+#include "runtime/startup/WhatSonStartupHubResolver.hpp"
+#include "runtime/bootstrap/WhatSonAppLaunchSupport.hpp"
+#include "runtime/permissions/WhatSonPermissionBootstrapper.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
@@ -43,329 +47,30 @@
 #endif
 
 #include <QByteArray>
-#include <QCommandLineOption>
-#include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDebug>
-#include <QDir>
-#include <QFileInfo>
 #include <QGuiApplication>
 #include <QIcon>
-#include <QPermission>
 #include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QSettings>
-#include <QStringList>
+#include <QSet>
 #include <QTimer>
 #include <QVariant>
 #include <QVector>
 #include <QWindow>
 #include <qqml.h>
 #include <QtCore/qglobal.h>
-#include <QtCore/qpermissions.h>
 
 #include <cstdlib>
 #include <functional>
+#include <memory>
 #include <utility>
 
 void qml_register_types_LVRS();
 
 namespace
 {
-    constexpr auto kPermissionsGrantedSettingsKey = "permissions/granted";
-    constexpr auto kPermissionsScopeKey = "permissions";
-
-    struct LaunchOptions final
-    {
-        bool onboardingOnly = false;
-    };
-
-    void prependEnvPath(const char* variableName, const QByteArray& path)
-    {
-        if (path.isEmpty())
-        {
-            return;
-        }
-
-        const QByteArray currentValue = qgetenv(variableName);
-        if (currentValue.isEmpty())
-        {
-            qputenv(variableName, path);
-            return;
-        }
-
-        qputenv(variableName, path + ":" + currentValue);
-    }
-
-    QString resolveBlueprintHubPath()
-    {
-        const QStringList basePaths = {
-            QDir::currentPath(),
-            QCoreApplication::applicationDirPath()
-        };
-
-        WhatSon::Debug::trace(
-            QStringLiteral("main.blueprint"),
-            QStringLiteral("resolve.start"),
-            QStringLiteral("basePathCount=%1").arg(basePaths.size()));
-
-        for (const QString& basePath : basePaths)
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.blueprint"),
-                QStringLiteral("resolve.base"),
-                QStringLiteral("basePath=%1").arg(basePath));
-            QDir probe(basePath);
-            for (int depth = 0; depth < 8; ++depth)
-            {
-                const QDir blueprintDir(probe.filePath(QStringLiteral("blueprint")));
-                WhatSon::Debug::trace(
-                    QStringLiteral("main.blueprint"),
-                    QStringLiteral("resolve.probe"),
-                    QStringLiteral("depth=%1 probe=%2").arg(depth).arg(blueprintDir.path()));
-                if (blueprintDir.exists())
-                {
-                    WhatSon::Debug::trace(
-                        QStringLiteral("main.blueprint"),
-                        QStringLiteral("resolve.blueprintDirFound"),
-                        QStringLiteral("path=%1").arg(blueprintDir.path()));
-                    const QFileInfoList hubCandidates = blueprintDir.entryInfoList(
-                        QStringList{QStringLiteral("*.wshub")},
-                        QDir::Dirs | QDir::NoDotAndDotDot,
-                        QDir::Name);
-                    if (!hubCandidates.isEmpty())
-                    {
-                        const QString resolvedPath = QDir::cleanPath(hubCandidates.first().absoluteFilePath());
-                        WhatSon::Debug::trace(
-                            QStringLiteral("main.blueprint"),
-                            QStringLiteral("resolve.found"),
-                            QStringLiteral("wshub=%1").arg(resolvedPath));
-                        return resolvedPath;
-                    }
-                }
-
-                if (!probe.cdUp())
-                {
-                    break;
-                }
-            }
-        }
-
-        WhatSon::Debug::trace(
-            QStringLiteral("main.blueprint"),
-            QStringLiteral("resolve.notFound"));
-        return QString();
-    }
-
-    LaunchOptions parseLaunchOptions(QGuiApplication& app)
-    {
-        QCommandLineParser parser;
-        parser.setApplicationDescription(QStringLiteral("WhatSon application launcher"));
-        parser.addHelpOption();
-
-        const QCommandLineOption onboardingOnlyOption(
-            QStringList{QStringLiteral("onboarding-only")},
-            QStringLiteral("Launch only the onboarding window and skip workspace initialization."));
-        parser.addOption(onboardingOnlyOption);
-        parser.process(app);
-
-        LaunchOptions options;
-        options.onboardingOnly = parser.isSet(onboardingOnlyOption);
-        return options;
-    }
-
-    using PermissionCompletion = std::function<void(bool granted)>;
-    using PermissionRequester = std::function<void(const PermissionCompletion& completion)>;
-
-    struct PermissionStep final
-    {
-        QString id;
-        PermissionRequester request;
-    };
-
-    class PermissionBootstrapper final : public QObject
-    {
-    public:
-        explicit PermissionBootstrapper(QCoreApplication& app)
-            : QObject(&app)
-              , m_app(app)
-        {
-            buildPermissionSteps();
-        }
-
-        void start()
-        {
-            requestNextPermission();
-        }
-
-    private:
-        static QString permissionSettingKey(const QString& permissionId, const QString& suffix)
-        {
-            return QStringLiteral("%1/%2/%3").arg(
-                QString::fromLatin1(kPermissionsScopeKey),
-                permissionId,
-                suffix);
-        }
-
-        bool hasStoredDecision(const QString& permissionId) const
-        {
-            QSettings settings;
-            return settings.value(permissionSettingKey(permissionId, QStringLiteral("requested")), false).toBool();
-        }
-
-        bool isGranted(const QString& permissionId) const
-        {
-            QSettings settings;
-            return settings.value(permissionSettingKey(permissionId, QStringLiteral("granted")), false).toBool();
-        }
-
-        void storeDecision(const QString& permissionId, bool granted) const
-        {
-            QSettings settings;
-            settings.setValue(permissionSettingKey(permissionId, QStringLiteral("requested")), true);
-            settings.setValue(permissionSettingKey(permissionId, QStringLiteral("granted")), granted);
-            settings.sync();
-        }
-
-        void finalizePermissionBootstrap() const
-        {
-            bool allGranted = true;
-            for (const PermissionStep& step : m_steps)
-            {
-                if (!isGranted(step.id))
-                {
-                    allGranted = false;
-                    break;
-                }
-            }
-
-            QSettings settings;
-            settings.setValue(QString::fromLatin1(kPermissionsGrantedSettingsKey), allGranted);
-            settings.sync();
-        }
-
-        void addStep(QString id, PermissionRequester request)
-        {
-            m_steps.push_back(PermissionStep{std::move(id), std::move(request)});
-        }
-
-        template <typename PermissionFactory>
-        void addQtPermissionStep(QString id, PermissionFactory permissionFactory)
-        {
-            addStep(std::move(id), [this, permissionFactory](const PermissionCompletion& completion)
-            {
-#if QT_CONFIG(permissions)
-                const QPermission permission = permissionFactory();
-                const Qt::PermissionStatus status = m_app.checkPermission(permission);
-                if (status == Qt::PermissionStatus::Granted)
-                {
-                    completion(true);
-                    return;
-                }
-                if (status == Qt::PermissionStatus::Denied)
-                {
-                    completion(false);
-                    return;
-                }
-
-                m_app.requestPermission(permission, this, [this, completion](const QPermission& requestedPermission)
-                {
-                    const bool granted =
-                        m_app.checkPermission(requestedPermission) == Qt::PermissionStatus::Granted;
-                    completion(granted);
-                });
-#else
-                completion(true);
-#endif
-            });
-        }
-
-        void addApplePermissionStep(
-            QString id,
-            void (*requestApplePermission)(const WhatSon::Permissions::PermissionCallback& completion))
-        {
-            addStep(std::move(id), [requestApplePermission](const PermissionCompletion& completion)
-            {
-                requestApplePermission([completion](bool granted)
-                {
-                    completion(granted);
-                });
-            });
-        }
-
-        void buildPermissionSteps()
-        {
-#if defined(Q_OS_MACOS)
-            addApplePermissionStep(
-                QStringLiteral("full_disk_access"),
-                WhatSon::Permissions::requestFullDiskAccessPermission);
-#endif
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-            addApplePermissionStep(QStringLiteral("photo_library"),
-                                   WhatSon::Permissions::requestPhotoLibraryPermission);
-#endif
-#if QT_CONFIG(permissions)
-            addQtPermissionStep(QStringLiteral("microphone"), []() -> QPermission
-            {
-                return QMicrophonePermission{};
-            });
-#endif
-#if defined(Q_OS_MACOS)
-            addApplePermissionStep(
-                QStringLiteral("accessibility"),
-                WhatSon::Permissions::requestAccessibilityPermission);
-#endif
-#if QT_CONFIG(permissions)
-            addQtPermissionStep(QStringLiteral("calendar"), []() -> QPermission
-            {
-                QCalendarPermission permission;
-                permission.setAccessMode(QCalendarPermission::ReadWrite);
-                return permission;
-            });
-#endif
-#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
-            addApplePermissionStep(QStringLiteral("reminders"), WhatSon::Permissions::requestRemindersPermission);
-            addApplePermissionStep(
-                QStringLiteral("local_network"),
-                WhatSon::Permissions::requestLocalNetworkPermission);
-#endif
-#if QT_CONFIG(permissions)
-            addQtPermissionStep(QStringLiteral("location"), []() -> QPermission
-            {
-                QLocationPermission permission;
-                permission.setAvailability(QLocationPermission::WhenInUse);
-                permission.setAccuracy(QLocationPermission::Precise);
-                return permission;
-            });
-#endif
-        }
-
-        void requestNextPermission()
-        {
-            while (m_nextIndex < m_steps.size())
-            {
-                const PermissionStep step = m_steps.at(m_nextIndex++);
-                if (hasStoredDecision(step.id))
-                {
-                    continue;
-                }
-
-                step.request([this, permissionId = step.id](bool granted)
-                {
-                    storeDecision(permissionId, granted);
-                    QTimer::singleShot(0, this, [this]() { requestNextPermission(); });
-                });
-                return;
-            }
-
-            finalizePermissionBootstrap();
-        }
-
-        QCoreApplication& m_app;
-        QVector<PermissionStep> m_steps;
-        qsizetype m_nextIndex = 0;
-    };
 } // namespace
 
 int main(int argc, char* argv[])
@@ -392,8 +97,8 @@ int main(int argc, char* argv[])
     Q_CLEANUP_RESOURCE(qmake_LVRS);
 
     const QByteArray lvrsImportRoot = QByteArrayLiteral(WHATSON_LVRS_RUNTIME_IMPORT_ROOT);
-    prependEnvPath("QML_IMPORT_PATH", lvrsImportRoot);
-    prependEnvPath("QML2_IMPORT_PATH", lvrsImportRoot);
+    WhatSon::Runtime::Bootstrap::prependEnvPath("QML_IMPORT_PATH", lvrsImportRoot);
+    WhatSon::Runtime::Bootstrap::prependEnvPath("QML2_IMPORT_PATH", lvrsImportRoot);
 #endif
 
 #if !defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT)
@@ -418,7 +123,8 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationName(QStringLiteral("WhatSon"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("whatson.local"));
-    const LaunchOptions launchOptions = parseLaunchOptions(app);
+    const WhatSon::Runtime::Bootstrap::LaunchOptions launchOptions =
+        WhatSon::Runtime::Bootstrap::parseLaunchOptions(app);
 
     WhatSon::Debug::trace(
         QStringLiteral("main"),
@@ -503,7 +209,7 @@ int main(int argc, char* argv[])
     WhatSonHubRuntimeStore hubRuntimeStore;
     OnboardingHubController onboardingHubController;
     WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
-    PermissionBootstrapper permissionBootstrapper(app);
+    WhatSonPermissionBootstrapper permissionBootstrapper(app);
 #if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
     WhatSonRegisterManager trialRegisterManager;
     WhatSonTrialActivationPolicy trialActivationPolicy;
@@ -577,147 +283,24 @@ int main(int argc, char* argv[])
             }
         });
 
-    const auto loadHubIntoRuntime =
-        [&libraryHierarchyViewModel,
-            &projectsHierarchyViewModel,
-            &bookmarksHierarchyViewModel,
-            &tagsHierarchyViewModel,
-            &resourcesHierarchyViewModel,
-            &progressHierarchyViewModel,
-            &eventHierarchyViewModel,
-            &presetHierarchyViewModel,
-            &hubRuntimeStore,
-            &currentWriteLeaseHubPath](const QString& hubPath, QString* errorMessage) -> bool
-    {
-        const QString normalizedHubPath = hubPath.trimmed().isEmpty()
-                                              ? QString()
-                                              : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
-        if (normalizedHubPath.isEmpty())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Hub path must not be empty.");
-            }
-            return false;
-        }
-
-        QString leaseError;
-        const bool replacingCurrentLease = currentWriteLeaseHubPath == normalizedHubPath;
-        if (!WhatSon::HubWriteLease::refreshWriteLeaseForHub(normalizedHubPath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
-
-        WhatSon::Debug::trace(
-            QStringLiteral("main.runtime"),
-            QStringLiteral("loadFromWshub.begin"),
-            QStringLiteral("path=%1").arg(normalizedHubPath));
-
-        WhatSonRuntimeParallelLoader parallelLoader;
-        WhatSonRuntimeParallelLoader::Targets targets;
-        targets.libraryViewModel = &libraryHierarchyViewModel;
-        targets.projectsViewModel = &projectsHierarchyViewModel;
-        targets.bookmarksViewModel = &bookmarksHierarchyViewModel;
-        targets.tagsViewModel = &tagsHierarchyViewModel;
-        targets.resourcesViewModel = &resourcesHierarchyViewModel;
-        targets.progressViewModel = &progressHierarchyViewModel;
-        targets.eventViewModel = &eventHierarchyViewModel;
-        targets.presetViewModel = &presetHierarchyViewModel;
-        targets.hubRuntimeStore = &hubRuntimeStore;
-
-        QVector<WhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;
-        const bool loadSucceeded = parallelLoader.loadFromWshub(normalizedHubPath, targets, &loadResults);
-
-        bool hubRuntimeLoadSucceeded = false;
-        QStringList failedDomains;
-        for (const WhatSonRuntimeParallelLoader::DomainLoadResult& result : loadResults)
-        {
-            if (result.domain == QStringLiteral("hub.runtime"))
-            {
-                hubRuntimeLoadSucceeded = result.succeeded;
-            }
-
-            if (result.succeeded)
-            {
-                WhatSon::Debug::trace(
-                    QStringLiteral("main.runtime"),
-                    QStringLiteral("load.success"),
-                    QStringLiteral("domain=%1").arg(result.domain));
-                continue;
-            }
-
-            failedDomains.push_back(result.domain);
-            const QString domainErrorMessage = result.error.trimmed().isEmpty()
-                                                   ? QStringLiteral("unknown load error")
-                                                   : result.error.trimmed();
-            qWarning().noquote()
-                << QStringLiteral("Failed to load domain '%1' from .wshub: %2")
-                .arg(result.domain, domainErrorMessage);
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("load.failed"),
-                QStringLiteral("domain=%1 reason=%2").arg(result.domain, domainErrorMessage));
-        }
-
-        if (hubRuntimeLoadSucceeded)
-        {
-            libraryHierarchyViewModel.setHubStore(hubRuntimeStore.hub(normalizedHubPath));
-            tagsHierarchyViewModel.setTagDepthEntries(hubRuntimeStore.tagDepthEntries(normalizedHubPath));
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("applyTagsDepthEntries.success"),
-                QStringLiteral("itemCount=%1").arg(tagsHierarchyViewModel.itemModel()->rowCount()));
-        }
-        else
-        {
-            WhatSon::Debug::trace(
-                QStringLiteral("main.runtime"),
-                QStringLiteral("applyTagsDepthEntries.skipped"),
-                QStringLiteral("reason=hub.runtime load failed"));
-        }
-
-        if (!loadSucceeded)
-        {
-            if (!replacingCurrentLease)
-            {
-                WhatSon::HubWriteLease::releaseWriteLeaseForHub(normalizedHubPath, nullptr);
-            }
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = failedDomains.isEmpty()
-                                    ? QStringLiteral("Failed to load the selected WhatSon Hub.")
-                                    : QStringLiteral("Failed to load .wshub domains: %1")
-                                    .arg(failedDomains.join(QStringLiteral(", ")));
-            }
-            return false;
-        }
-
-        if (!hubRuntimeLoadSucceeded)
-        {
-            if (!replacingCurrentLease)
-            {
-                WhatSon::HubWriteLease::releaseWriteLeaseForHub(normalizedHubPath, nullptr);
-            }
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Failed to load the selected WhatSon Hub runtime state.");
-            }
-            return false;
-        }
-
-        if (errorMessage != nullptr)
-        {
-            errorMessage->clear();
-        }
-        return true;
-    };
+    WhatSonStartupRuntimeCoordinator::RuntimeTargets startupRuntimeTargets;
+    startupRuntimeTargets.libraryViewModel = &libraryHierarchyViewModel;
+    startupRuntimeTargets.projectsViewModel = &projectsHierarchyViewModel;
+    startupRuntimeTargets.bookmarksViewModel = &bookmarksHierarchyViewModel;
+    startupRuntimeTargets.tagsViewModel = &tagsHierarchyViewModel;
+    startupRuntimeTargets.resourcesViewModel = &resourcesHierarchyViewModel;
+    startupRuntimeTargets.progressViewModel = &progressHierarchyViewModel;
+    startupRuntimeTargets.eventViewModel = &eventHierarchyViewModel;
+    startupRuntimeTargets.presetViewModel = &presetHierarchyViewModel;
+    startupRuntimeTargets.hubRuntimeStore = &hubRuntimeStore;
+    WhatSonStartupRuntimeCoordinator startupRuntimeCoordinator(startupRuntimeTargets);
 
     WhatSonHubSyncController hubSyncController;
-    hubSyncController.setReloadCallback(loadHubIntoRuntime);
+    hubSyncController.setReloadCallback(
+        [&startupRuntimeCoordinator](const QString& hubPath, QString* errorMessage) -> bool
+        {
+            return startupRuntimeCoordinator.loadHubIntoRuntime(hubPath, errorMessage);
+        });
     QObject::connect(
         &hubSyncController,
         &WhatSonHubSyncController::syncFailed,
@@ -745,7 +328,11 @@ int main(int argc, char* argv[])
         {
             return hubCreator.createHubAtPath(requestedHubPath, outPackagePath, errorMessage);
         });
-    onboardingHubController.setLoadHubCallback(loadHubIntoRuntime);
+    onboardingHubController.setLoadHubCallback(
+        [&startupRuntimeCoordinator](const QString& hubPath, QString* errorMessage) -> bool
+        {
+            return startupRuntimeCoordinator.loadHubIntoRuntime(hubPath, errorMessage);
+        });
     OnboardingRouteBootstrapController onboardingRouteBootstrapController;
     onboardingRouteBootstrapController.setHubController(&onboardingHubController);
     QObject::connect(
@@ -761,202 +348,33 @@ int main(int argc, char* argv[])
             hubSyncController.setCurrentHubPath(hubPath);
         });
 
-    const auto resolveStartupHubMountPath =
-        [](const QString& hubPath, const QByteArray& hubAccessBookmark, QString* errorMessage) -> QString
-    {
-        const QString normalizedHubPath = hubPath.trimmed().isEmpty()
-                                              ? QString()
-                                              : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
-        if (normalizedHubPath.isEmpty())
-        {
-            if (errorMessage != nullptr)
-            {
-                errorMessage->clear();
-            }
-            return {};
-        }
-
-        if (WhatSon::Android::Storage::isSupportedUri(normalizedHubPath))
-        {
-            QString mountedHubPath;
-            if (!WhatSon::Android::Storage::mountHub(normalizedHubPath, &mountedHubPath, errorMessage))
-            {
-                return {};
-            }
-            return WhatSon::HubPath::normalizeAbsolutePath(mountedHubPath);
-        }
-
-        if (WhatSon::Android::Storage::isMountedHubPath(normalizedHubPath))
-        {
-            const QString sourceUri = WhatSon::Android::Storage::mountedHubSourceUri(normalizedHubPath);
-            if (sourceUri.trimmed().isEmpty())
-            {
-                if (errorMessage != nullptr)
-                {
-                    *errorMessage = QStringLiteral(
-                        "Stored Android mounted WhatSon Hub is missing its source document URI.");
-                }
-                return {};
-            }
-
-            QString remountedHubPath;
-            if (!WhatSon::Android::Storage::mountHub(sourceUri, &remountedHubPath, errorMessage))
-            {
-                return {};
-            }
-            return WhatSon::HubPath::normalizeAbsolutePath(remountedHubPath);
-        }
-
-#if defined(Q_OS_IOS)
-        QString restoredBookmarkPath;
-        QString bookmarkRestoreError;
-        if (!hubAccessBookmark.isEmpty())
-        {
-            WhatSon::Apple::SecurityScopedResourceAccess::restoreAccessFromBookmarkData(
-                hubAccessBookmark,
-                &restoredBookmarkPath,
-                &bookmarkRestoreError);
-        }
-
-        QString iosAccessError;
-        if (!WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(
-                normalizedHubPath,
-                &iosAccessError))
-        {
-            const QString parentDirectoryPath = QFileInfo(normalizedHubPath).absolutePath();
-            QString parentAccessError;
-            const bool parentAccessGranted =
-                !parentDirectoryPath.trimmed().isEmpty()
-                && WhatSon::Apple::SecurityScopedResourceAccess::ensureAccessForPath(
-                    parentDirectoryPath,
-                    &parentAccessError);
-            if (!parentAccessGranted)
-            {
-                if (errorMessage != nullptr)
-                {
-                    *errorMessage = iosAccessError.trimmed().isEmpty()
-                                        ? (bookmarkRestoreError.trimmed().isEmpty()
-                                               ? (parentAccessError.trimmed().isEmpty()
-                                               ? QStringLiteral(
-                                                     "iOS denied access to the stored WhatSon Hub path during startup.")
-                                                      : parentAccessError.trimmed())
-                                               : bookmarkRestoreError.trimmed())
-                                        : iosAccessError.trimmed();
-                }
-                return {};
-            }
-        }
-#endif
-
-        const QFileInfo hubInfo(normalizedHubPath);
-        if (!hubInfo.exists() || !hubInfo.isDir())
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Startup WhatSon Hub directory does not exist: %1")
-                                    .arg(normalizedHubPath);
-            }
-            return {};
-        }
-
-        if (!hubInfo.fileName().endsWith(QStringLiteral(".wshub"), Qt::CaseInsensitive))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = QStringLiteral("Startup WhatSon Hub path is not a .wshub directory: %1")
-                                    .arg(normalizedHubPath);
-            }
-            return {};
-        }
-
-        if (errorMessage != nullptr)
-        {
-            errorMessage->clear();
-        }
-        return normalizedHubPath;
-    };
-
     bool initialHubLoaded = false;
-    bool startupHubMounted = false;
-    const QString blueprintFallbackHubPath = resolveBlueprintHubPath();
-    const QString startupHubSelectionPath = selectedHubStore.startupHubPath(blueprintFallbackHubPath);
-    const QByteArray startupHubAccessBookmark = selectedHubStore.selectedHubAccessBookmark();
-    QString startupHubPath;
-    QByteArray startupHubAccessBookmarkInUse;
-    const auto tryResolveStartupHubSelection =
-        [&resolveStartupHubMountPath,
-         &startupHubMounted,
-         &startupHubPath,
-         &startupHubAccessBookmarkInUse](const QString& selectionPath,
-                                         const QByteArray& selectionBookmark,
-                                         const QString& selectionLabel) -> bool
-    {
-        QString startupMountError;
-        const QString resolvedStartupHubPath = resolveStartupHubMountPath(
-            selectionPath,
-            selectionBookmark,
-            &startupMountError);
-        if (resolvedStartupHubPath.isEmpty())
-        {
-            if (!startupMountError.trimmed().isEmpty())
-            {
-                qWarning().noquote()
-                    << QStringLiteral("Failed to resolve %1 startup WhatSon Hub mount '%2': %3")
-                           .arg(selectionLabel, selectionPath, startupMountError.trimmed());
-            }
-            return false;
-        }
+    const QString blueprintFallbackHubPath = WhatSon::Runtime::Bootstrap::resolveBlueprintHubPath();
+    const WhatSon::Runtime::Startup::StartupHubSelection startupHubSelection =
+        WhatSon::Runtime::Startup::resolveStartupHubSelection(selectedHubStore, blueprintFallbackHubPath);
 
-        startupHubPath = resolvedStartupHubPath;
-        startupHubAccessBookmarkInUse = selectionBookmark;
-        startupHubMounted = true;
-        return true;
-    };
-
-    if (!startupHubSelectionPath.isEmpty())
-    {
-        const bool startupSelectionResolved = tryResolveStartupHubSelection(
-            startupHubSelectionPath,
-            startupHubAccessBookmark,
-            QStringLiteral("persisted"));
-        if (!startupSelectionResolved
-            && !blueprintFallbackHubPath.trimmed().isEmpty()
-            && WhatSon::HubPath::normalizePath(startupHubSelectionPath)
-                != WhatSon::HubPath::normalizePath(blueprintFallbackHubPath))
-        {
-            tryResolveStartupHubSelection(
-                blueprintFallbackHubPath,
-                {},
-                QStringLiteral("blueprint fallback"));
-        }
-    }
-
-    if (startupHubMounted)
+    if (startupHubSelection.mounted)
     {
         QString errorMessage;
-        initialHubLoaded = loadHubIntoRuntime(startupHubPath, &errorMessage);
+        initialHubLoaded = startupRuntimeCoordinator.loadStartupHubIntoRuntime(
+            startupHubSelection.hubPath,
+            &errorMessage);
         if (initialHubLoaded)
         {
-            onboardingHubController.syncCurrentHubSelection(startupHubPath);
+            onboardingHubController.syncCurrentHubSelection(startupHubSelection.hubPath);
             onboardingHubController.completeWorkspaceTransition();
-            selectedHubStore.setSelectedHubSelection(startupHubPath, startupHubAccessBookmarkInUse);
-            updateWriteLeaseOwnership(startupHubPath);
-            hubSyncController.setCurrentHubPath(startupHubPath);
+            selectedHubStore.setSelectedHubSelection(
+                startupHubSelection.hubPath,
+                startupHubSelection.accessBookmark);
+            updateWriteLeaseOwnership(startupHubSelection.hubPath);
+            hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {
             qWarning().noquote()
                 << QStringLiteral("Failed to load startup WhatSon Hub '%1': %2")
-                .arg(startupHubPath, errorMessage.trimmed());
+                       .arg(startupHubSelection.hubPath, errorMessage.trimmed());
         }
-    }
-    else
-    {
-        qWarning().noquote() << QStringLiteral("No startup WhatSon Hub could be resolved.");
-        WhatSon::Debug::trace(
-            QStringLiteral("main.runtime"),
-            QStringLiteral("loadFromWshub.skipped"),
-            QStringLiteral("no startup .wshub detected"));
     }
 
     HierarchyViewModelProvider::Targets hierarchyViewModelTargets;
@@ -974,6 +392,9 @@ int main(int argc, char* argv[])
     detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
+
+    startupRuntimeCoordinator.bindSidebarActivation(&sidebarHierarchyViewModel);
+
     WhatSon::Policy::ArchitecturePolicyLock::lock();
 
     engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
@@ -1176,8 +597,8 @@ int main(int argc, char* argv[])
 #else
     const bool useEmbeddedStartupOnboarding = false;
 #endif
-    const bool showDesktopStartupOnboarding = !startupHubMounted && !useEmbeddedStartupOnboarding;
-    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupHubMounted);
+    const bool showDesktopStartupOnboarding = !startupHubSelection.mounted && !useEmbeddedStartupOnboarding;
+    onboardingRouteBootstrapController.configure(useEmbeddedStartupOnboarding, startupHubSelection.mounted);
 
     const QVariantMap mainWindowInitialProperties{
         {
@@ -1197,6 +618,53 @@ int main(int argc, char* argv[])
     }
 
     activateWindowObject(mainWindow);
+
+    if (startupRuntimeCoordinator.startupDeferredBootstrapActive())
+    {
+        const QVector<int> deferredStartupHierarchyOrder{
+            static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Event),
+            static_cast<int>(WhatSon::Sidebar::HierarchyDomain::Preset)
+        };
+        auto deferredStartupHierarchyCursor = std::make_shared<int>(0);
+        auto scheduleDeferredStartupHierarchyLoad = std::make_shared<std::function<void()>>();
+        *scheduleDeferredStartupHierarchyLoad =
+            [&app,
+                &startupRuntimeCoordinator,
+                deferredStartupHierarchyOrder,
+                deferredStartupHierarchyCursor,
+                scheduleDeferredStartupHierarchyLoad]()
+        {
+            if (!startupRuntimeCoordinator.startupDeferredBootstrapActive())
+            {
+                return;
+            }
+
+            const QSet<int> startupLoadedHierarchyIndices =
+                startupRuntimeCoordinator.startupLoadedHierarchyIndices();
+            while (*deferredStartupHierarchyCursor < deferredStartupHierarchyOrder.size())
+            {
+                const int hierarchyIndex = deferredStartupHierarchyOrder.at(*deferredStartupHierarchyCursor);
+                *deferredStartupHierarchyCursor += 1;
+                if (startupLoadedHierarchyIndices.contains(hierarchyIndex))
+                {
+                    continue;
+                }
+
+                QTimer::singleShot(0, &app, [hierarchyIndex, &startupRuntimeCoordinator, scheduleDeferredStartupHierarchyLoad]()
+                {
+                    startupRuntimeCoordinator.ensureDeferredStartupHierarchyLoaded(
+                        hierarchyIndex,
+                        QStringLiteral("startup-idle-prefetch"));
+                    (*scheduleDeferredStartupHierarchyLoad)();
+                });
+                return;
+            }
+        };
+        QTimer::singleShot(0, &app, [scheduleDeferredStartupHierarchyLoad]()
+        {
+            (*scheduleDeferredStartupHierarchyLoad)();
+        });
+    }
 
 #if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
     QObject* trialWindow = loadTrialStatusWindow(
