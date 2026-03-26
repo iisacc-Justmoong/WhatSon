@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QString>
 
-class DetailContentSectionViewModel final : public QObject
+class DetailContentSectionViewModel : public QObject
 {
     Q_OBJECT
 

@@ -390,6 +390,8 @@ int main(int argc, char* argv[])
     detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
     detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
     detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
+    detailPanelViewModel.setCurrentNoteListModel(libraryHierarchyViewModel.noteListModel());
+    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&libraryHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
 

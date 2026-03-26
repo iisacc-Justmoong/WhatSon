@@ -3176,6 +3176,24 @@ bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
     return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
 }
 
+QString LibraryHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
+    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= allNotes.size())
+    {
+        return {};
+    }
+
+    return allNotes.at(noteIndex).noteDirectoryPath.trimmed();
+}
+
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
 {
     const QString nextHubPath = store.hubPath().trimmed();

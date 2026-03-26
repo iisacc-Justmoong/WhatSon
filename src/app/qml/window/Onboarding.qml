@@ -106,7 +106,8 @@ Window {
         standaloneMode: root.standaloneMode
         versionText: root.versionText
 
-        onCompleted: root.close()
+        onCompleted: {
+        }
         onCreateFileRequested: root.createFileRequested()
         onDismissRequested: root.close()
         onRequestWindowMove: {

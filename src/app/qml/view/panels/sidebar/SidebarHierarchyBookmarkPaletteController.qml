@@ -73,11 +73,6 @@ QtObject {
             const bookmarkColor = bookmarkPaletteController.bookmarkPaletteColorForLabel(item.text);
             item.textColorNormal = bookmarkColor;
             item.textColorDisabled = bookmarkColor;
-            item.iconName = "";
-            item.iconSource = "";
-            item.iconGlyph = "";
-            item.iconPlaceholderVisible = false;
-            item.iconPlaceholderColor = "transparent";
         }
     }
 

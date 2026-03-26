@@ -530,28 +530,12 @@ Rectangle {
         id: bookmarkPaletteIconOverlay
 
         anchors.fill: hierarchyTree
-        visible: sidebarHierarchyView.bookmarkPaletteVisualsEnabled
+        visible: false
         z: 1
 
         onPaint: {
             const ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
-            if (!sidebarHierarchyView.bookmarkPaletteVisualsEnabled)
-                return;
-            const hierarchyItems = noteDropController.collectHierarchyItems();
-            for (let index = 0; index < hierarchyItems.length; ++index) {
-                const item = hierarchyItems[index];
-                if (!item || item.mapToItem === undefined)
-                    continue;
-                const bookmarkColor = bookmarkPaletteController.bookmarkPaletteColorForLabel(item.text);
-                const point = item.mapToItem(bookmarkPaletteIconOverlay, 0, 0);
-                const iconSize = Math.max(0, Number(item.iconSize) || 0);
-                const itemHeight = Math.max(0, Number(item.height) || 0);
-                const leftPadding = Math.max(0, Number(item.leftPadding) || 0);
-                const iconX = (Number(point.x) || 0) + leftPadding;
-                const iconY = (Number(point.y) || 0) + Math.max(0, Math.floor((itemHeight - iconSize) * 0.5));
-                bookmarkPaletteController.drawBookmarkGlyph(ctx, iconX, iconY, iconSize, bookmarkColor);
-            }
         }
     }
     LV.InputField {

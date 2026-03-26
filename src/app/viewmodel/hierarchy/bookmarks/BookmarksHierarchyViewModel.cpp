@@ -7,6 +7,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QFileInfo>
+#include <QUrl>
 #include <QVariantMap>
 
 #include <algorithm>
@@ -199,6 +200,19 @@ namespace
         return {};
     }
 
+    QString bookmarkIconDataUrlForHex(const QString& colorHex)
+    {
+        const QString normalizedColor = colorHex.trimmed().isEmpty()
+                                            ? WhatSon::Bookmarks::defaultBookmarkColorHex()
+                                            : colorHex.trimmed();
+        const QString svg = QStringLiteral(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'>"
+            "<path d='M4 1.5C3.44772 1.5 3 1.94772 3 2.5V14L8 10.6667L13 14V2.5C13 1.94772 12.5523 1.5 12 1.5H4Z' fill='%1'/>"
+            "</svg>")
+                                .arg(normalizedColor.toHtmlEscaped());
+        return QStringLiteral("data:image/svg+xml;utf8,") + QUrl::toPercentEncoding(svg);
+    }
+
     QVector<BookmarksHierarchyItem> buildColorFolderItems()
     {
         QVector<BookmarksHierarchyItem> items;
@@ -212,6 +226,7 @@ namespace
             item.expanded = false;
             item.label = QString::fromLatin1(colorDef.displayName);
             item.showChevron = false;
+            item.iconSource = bookmarkIconDataUrlForHex(QString::fromLatin1(colorDef.hex));
             items.push_back(std::move(item));
         }
 
@@ -386,7 +401,8 @@ QVariantList BookmarksHierarchyViewModel::depthItems() const
             {QStringLiteral("accent"), item.accent},
             {QStringLiteral("expanded"), item.expanded},
             {QStringLiteral("showChevron"), item.showChevron},
-            {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)}
+            {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)},
+            {QStringLiteral("iconSource"), item.iconSource}
         });
     }
 
@@ -517,6 +533,23 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
 bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
 {
     return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+}
+
+QString BookmarksHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
+    {
+        return {};
+    }
+
+    return m_bookmarkedNotes.at(noteIndex).noteDirectoryPath.trimmed();
 }
 
 bool BookmarksHierarchyViewModel::renameEnabled() const noexcept

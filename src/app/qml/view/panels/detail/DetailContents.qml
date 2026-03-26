@@ -13,7 +13,7 @@ Item {
     property var projectSelectionViewModel: null
     property var bookmarkSelectionViewModel: null
     property var progressSelectionViewModel: null
-    readonly property var folderItems: ["Label", "Label", "Label", "Label", "Label"]
+    readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.folderItems : [])
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
     readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectSelectionViewModel)
     readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectSelectionViewModel)
@@ -25,7 +25,7 @@ Item {
     readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressSelectionViewModel)
     readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionViewModel, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
-    readonly property var tagItems: ["Label", "Label", "Label", "Label"]
+    readonly property var tagItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.tagItems : [])
 
     signal viewHookRequested
 
@@ -126,6 +126,15 @@ Item {
             return fallbackText;
         const label = String(hierarchyViewModel.itemLabel(selectedIndex) || "").trim();
         return label.length > 0 ? label : fallbackText;
+    }
+    function resolveHeaderStringList(values) {
+        if (!values)
+            return [];
+        if (Array.isArray(values))
+            return values;
+        if (values.length !== undefined)
+            return Array.prototype.slice.call(values);
+        return [];
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";

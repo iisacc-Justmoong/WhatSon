@@ -5,16 +5,62 @@
 
 DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
     : QObject(parent)
-      , m_propertiesViewModel(DetailContentState::Properties, this)
+      , m_propertiesViewModel(this)
       , m_fileStatViewModel(DetailContentState::FileStat, this)
       , m_insertViewModel(DetailContentState::Insert, this)
       , m_fileHistoryViewModel(DetailContentState::FileHistory, this)
       , m_layerViewModel(DetailContentState::Layer, this)
       , m_helpViewModel(DetailContentState::Help, this)
+      , m_noteHeaderSessionStore(this)
+      , m_currentNoteContextBridge(this)
+      , m_projectSelectionSourceViewModel(DetailNoteHeaderSelectionSourceViewModel::Field::Project, this)
+      , m_bookmarkSelectionSourceViewModel(DetailNoteHeaderSelectionSourceViewModel::Field::Bookmark, this)
+      , m_progressSelectionSourceViewModel(DetailNoteHeaderSelectionSourceViewModel::Field::Progress, this)
       , m_projectSelectionViewModel(QStringLiteral("DetailContent.ProjectSelection"), this)
       , m_bookmarkSelectionViewModel(QStringLiteral("DetailContent.BookmarkSelection"), this)
       , m_progressSelectionViewModel(QStringLiteral("DetailContent.ProgressSelection"), this)
 {
+    m_projectSelectionSourceViewModel.setSessionStore(&m_noteHeaderSessionStore);
+    m_bookmarkSelectionSourceViewModel.setSessionStore(&m_noteHeaderSessionStore);
+    m_progressSelectionSourceViewModel.setSessionStore(&m_noteHeaderSessionStore);
+
+    QObject::connect(&m_currentNoteContextBridge,
+                     &DetailCurrentNoteContextBridge::currentNoteIdChanged,
+                     this,
+                     [this]()
+                     {
+                         const QString noteId = m_currentNoteContextBridge.currentNoteId();
+                         m_projectSelectionSourceViewModel.setNoteId(noteId);
+                         m_bookmarkSelectionSourceViewModel.setNoteId(noteId);
+                         m_progressSelectionSourceViewModel.setNoteId(noteId);
+                     });
+    QObject::connect(&m_currentNoteContextBridge,
+                     &DetailCurrentNoteContextBridge::currentNoteDirectoryPathChanged,
+                     this,
+                     [this]()
+                     {
+                         const QString noteDirectoryPath = m_currentNoteContextBridge.currentNoteDirectoryPath();
+                         m_projectSelectionSourceViewModel.setNoteDirectoryPath(noteDirectoryPath);
+                         m_bookmarkSelectionSourceViewModel.setNoteDirectoryPath(noteDirectoryPath);
+                         m_progressSelectionSourceViewModel.setNoteDirectoryPath(noteDirectoryPath);
+
+                         const QString noteId = m_currentNoteContextBridge.currentNoteId();
+                         QString loadError;
+                         if (!noteId.isEmpty()
+                             && !noteDirectoryPath.isEmpty()
+                             && m_noteHeaderSessionStore.ensureLoaded(noteId, noteDirectoryPath, &loadError))
+                         {
+                             m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
+                         }
+                         else
+                         {
+                             m_propertiesViewModel.clearHeader();
+                         }
+                     });
+
+    m_projectSelectionViewModel.setSourceViewModel(&m_projectSelectionSourceViewModel);
+    m_bookmarkSelectionViewModel.setSourceViewModel(&m_bookmarkSelectionSourceViewModel);
+    m_progressSelectionViewModel.setSourceViewModel(&m_progressSelectionSourceViewModel);
     applyActiveContentViewModel(m_activeState);
     m_toolbarItems = WhatSon::DetailPanel::buildToolbarItems(m_activeState);
     const QString detail = QStringLiteral("activeState=%1 toolbarItemCount=%2")
@@ -108,7 +154,7 @@ QObject* DetailPanelViewModel::helpViewModel() const noexcept
 
 QObject* DetailPanelViewModel::propertiesViewModel() const noexcept
 {
-    return const_cast<DetailContentSectionViewModel*>(&m_propertiesViewModel);
+    return const_cast<DetailPropertiesViewModel*>(&m_propertiesViewModel);
 }
 
 QVariantList DetailPanelViewModel::toolbarItems() const
@@ -174,17 +220,27 @@ void DetailPanelViewModel::requestStateChange(int stateValue)
 
 void DetailPanelViewModel::setProjectSelectionSourceViewModel(QObject* sourceViewModel)
 {
-    m_projectSelectionViewModel.setSourceViewModel(sourceViewModel);
+    m_projectSelectionSourceViewModel.setOptionsSourceViewModel(sourceViewModel);
 }
 
 void DetailPanelViewModel::setBookmarkSelectionSourceViewModel(QObject* sourceViewModel)
 {
-    m_bookmarkSelectionViewModel.setSourceViewModel(sourceViewModel);
+    m_bookmarkSelectionSourceViewModel.setOptionsSourceViewModel(sourceViewModel);
 }
 
 void DetailPanelViewModel::setProgressSelectionSourceViewModel(QObject* sourceViewModel)
 {
-    m_progressSelectionViewModel.setSourceViewModel(sourceViewModel);
+    m_progressSelectionSourceViewModel.setOptionsSourceViewModel(sourceViewModel);
+}
+
+void DetailPanelViewModel::setCurrentNoteListModel(QObject* noteListModel)
+{
+    m_currentNoteContextBridge.setNoteListModel(noteListModel);
+}
+
+void DetailPanelViewModel::setCurrentNoteDirectorySourceViewModel(QObject* sourceViewModel)
+{
+    m_currentNoteContextBridge.setNoteDirectorySourceViewModel(sourceViewModel);
 }
 
 void DetailPanelViewModel::applyActiveContentViewModel(DetailContentState activeState)

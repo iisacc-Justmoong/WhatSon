@@ -95,6 +95,7 @@ public:
     Q_INVOKABLE bool deleteNoteById(const QString& noteId);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
     bool supportsHierarchyNodeReorder() const noexcept;
     bool supportsHierarchyNoteDrop() const noexcept;
 

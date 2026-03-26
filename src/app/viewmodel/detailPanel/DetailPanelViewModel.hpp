@@ -2,7 +2,11 @@
 
 #include "DetailHierarchySelectionViewModel.hpp"
 #include "DetailContentSectionViewModel.hpp"
+#include "DetailCurrentNoteContextBridge.hpp"
+#include "DetailPropertiesViewModel.hpp"
+#include "DetailNoteHeaderSelectionSourceViewModel.hpp"
 #include "DetailPanelState.hpp"
+#include "session/WhatSonNoteHeaderSessionStore.hpp"
 
 #include <QObject>
 #include <QVariantList>
@@ -51,6 +55,8 @@ public:
     void setProjectSelectionSourceViewModel(QObject* sourceViewModel);
     void setBookmarkSelectionSourceViewModel(QObject* sourceViewModel);
     void setProgressSelectionSourceViewModel(QObject* sourceViewModel);
+    void setCurrentNoteListModel(QObject* noteListModel);
+    void setCurrentNoteDirectorySourceViewModel(QObject* sourceViewModel);
 
 public
     slots  :
@@ -74,12 +80,17 @@ private:
     void applyActiveContentViewModel(DetailContentState activeState);
 
     WhatSon::DetailPanel::ContentState m_activeState = WhatSon::DetailPanel::ContentState::Properties;
-    DetailContentSectionViewModel m_propertiesViewModel;
+    DetailPropertiesViewModel m_propertiesViewModel;
     DetailContentSectionViewModel m_fileStatViewModel;
     DetailContentSectionViewModel m_insertViewModel;
     DetailContentSectionViewModel m_fileHistoryViewModel;
     DetailContentSectionViewModel m_layerViewModel;
     DetailContentSectionViewModel m_helpViewModel;
+    WhatSonNoteHeaderSessionStore m_noteHeaderSessionStore;
+    DetailCurrentNoteContextBridge m_currentNoteContextBridge;
+    DetailNoteHeaderSelectionSourceViewModel m_projectSelectionSourceViewModel;
+    DetailNoteHeaderSelectionSourceViewModel m_bookmarkSelectionSourceViewModel;
+    DetailNoteHeaderSelectionSourceViewModel m_progressSelectionSourceViewModel;
     DetailHierarchySelectionViewModel m_projectSelectionViewModel;
     DetailHierarchySelectionViewModel m_bookmarkSelectionViewModel;
     DetailHierarchySelectionViewModel m_progressSelectionViewModel;
