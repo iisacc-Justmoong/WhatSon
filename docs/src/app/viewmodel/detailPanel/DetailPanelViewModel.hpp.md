@@ -35,6 +35,7 @@
 ## Dependency Direction
 The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
 Instead, C++ injects those hierarchy viewmodels as read-only option sources into the owned selector-copy objects while a separate current-note context bridge resolves the active note id and note directory path.
+That bridge keeps the last valid note context when the active sidebar domain does not expose note-list or note-directory contracts, so the selectors can continue mirroring the open note header instead of dropping to `No ...`.
 
 ## Selection Semantics
 - The three selector-copy objects expose a synthetic `No ...` item at index `0`.

@@ -3,6 +3,45 @@
 #include <QMetaObject>
 #include <QVariant>
 
+namespace
+{
+    bool hasNoteDirectoryResolver(const QObject* sourceViewModel)
+    {
+        if (sourceViewModel == nullptr)
+        {
+            return false;
+        }
+
+        const QMetaObject* metaObject = sourceViewModel->metaObject();
+        return metaObject != nullptr && metaObject->indexOfMethod("noteDirectoryPathForNoteId(QString)") >= 0;
+    }
+
+    QString readCurrentNoteId(const QObject* noteListModel, bool* resolvedFromModel)
+    {
+        if (resolvedFromModel != nullptr)
+        {
+            *resolvedFromModel = false;
+        }
+
+        if (noteListModel == nullptr)
+        {
+            return {};
+        }
+
+        const QMetaObject* metaObject = noteListModel->metaObject();
+        if (metaObject == nullptr || metaObject->indexOfProperty("currentNoteId") < 0)
+        {
+            return {};
+        }
+
+        if (resolvedFromModel != nullptr)
+        {
+            *resolvedFromModel = true;
+        }
+        return noteListModel->property("currentNoteId").toString().trimmed();
+    }
+}
+
 DetailCurrentNoteContextBridge::DetailCurrentNoteContextBridge(QObject* parent)
     : QObject(parent)
 {
@@ -57,20 +96,28 @@ QString DetailCurrentNoteContextBridge::currentNoteDirectoryPath() const
 
 void DetailCurrentNoteContextBridge::refreshContext()
 {
-    const QString nextNoteId = m_noteListModel != nullptr
-        ? m_noteListModel->property("currentNoteId").toString().trimmed()
-        : QString();
+    bool noteIdResolvedFromModel = false;
+    QString nextNoteId = readCurrentNoteId(m_noteListModel.data(), &noteIdResolvedFromModel);
+    if (!noteIdResolvedFromModel)
+    {
+        nextNoteId = m_currentNoteId;
+    }
 
     QString nextDirectoryPath;
-    if (m_noteDirectorySourceViewModel != nullptr && !nextNoteId.isEmpty())
+    bool directoryResolved = false;
+    if (hasNoteDirectoryResolver(m_noteDirectorySourceViewModel.data()) && !nextNoteId.isEmpty())
     {
-        QMetaObject::invokeMethod(
+        directoryResolved = QMetaObject::invokeMethod(
             m_noteDirectorySourceViewModel,
             "noteDirectoryPathForNoteId",
             Qt::DirectConnection,
             Q_RETURN_ARG(QString, nextDirectoryPath),
             Q_ARG(QString, nextNoteId));
         nextDirectoryPath = nextDirectoryPath.trimmed();
+    }
+    if (!directoryResolved)
+    {
+        nextDirectoryPath = nextNoteId == m_currentNoteId ? m_currentNoteDirectoryPath : QString();
     }
 
     if (m_currentNoteId != nextNoteId)

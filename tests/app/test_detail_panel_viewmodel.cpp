@@ -113,6 +113,11 @@ private:
     QHash<QString, QString> m_noteDirectoryPaths;
 };
 
+class UnsupportedDetailNoteContextSource final : public QObject
+{
+    Q_OBJECT
+};
+
 namespace
 {
     QVariantMap makeHierarchyEntry(
@@ -176,6 +181,7 @@ private
     void detailContentViewModels_mustMapEachStateToDedicatedViewModel();
     void detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection();
     void detailSelectors_mustMirrorCurrentNoteHeaderFileState();
+    void detailSelectors_mustPreserveCurrentNoteContextAcrossUnsupportedHierarchySources();
     void detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries();
     void folderAssignments_mustSyncHeaderFoldersAndHierarchyStore();
     void requestStateChange_mustUpdateActiveStateAndToolbarSelection();
@@ -473,6 +479,114 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QCOMPARE(header.bookmarkColors(), QStringList{});
     QCOMPARE(header.tags(), QStringList{});
     QCOMPARE(header.progress(), -1);
+}
+
+void DetailPanelViewModelTest::detailSelectors_mustPreserveCurrentNoteContextAcrossUnsupportedHierarchySources()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString noteId = QStringLiteral("StickyNote");
+    const QString noteDirectoryPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("StickyNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    const QString headerFilePath = QDir(noteDirectoryPath).filePath(QStringLiteral("StickyNote.wsnhead"));
+    QVERIFY2(
+        writeUtf8File(
+            headerFilePath,
+            QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                           "<!DOCTYPE WHATSONNOTE>\n"
+                           "<contents id=\"StickyNote\">\n"
+                           "  <head>\n"
+                           "    <meta charset=\"UTF-8\" />\n"
+                           "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
+                           "    <project>Alpha</project>\n"
+                           "    <bookmarks state=\"true\" colors=\"amber\" />\n"
+                           "    <progress enums=\"{First draft,Modified draft,In progress,Pending,Reviewing,Waiting for approval,Done,Lagacy,Archived,Delete review}\">6</progress>\n"
+                           "    <isPreset>false</isPreset>\n"
+                           "  </head>\n"
+                           "</contents>\n")),
+        "sticky header file must be written");
+
+    DetailPanelViewModel viewModel;
+    FakeDetailHierarchySourceViewModel projectsSource;
+    FakeDetailHierarchySourceViewModel bookmarksSource;
+    FakeDetailHierarchySourceViewModel progressSource;
+    FakeCurrentNoteListModel noteListModel;
+    FakeNoteDirectorySourceViewModel noteDirectorySourceViewModel;
+    UnsupportedDetailNoteContextSource unsupportedSource;
+
+    projectsSource.setHierarchyModel({
+        makeHierarchyEntry(QStringLiteral("project:alpha"), QStringLiteral("Alpha")),
+        makeHierarchyEntry(QStringLiteral("project:beta"), QStringLiteral("Beta"))
+    });
+    bookmarksSource.setHierarchyModel({
+        makeHierarchyEntry(QStringLiteral("bookmark:red"), QStringLiteral("Red")),
+        makeHierarchyEntry(QStringLiteral("bookmark:amber"), QStringLiteral("Amber"))
+    });
+    progressSource.setHierarchyModel({
+        makeHierarchyEntry(
+            QStringLiteral("progress:0"),
+            QStringLiteral("First draft"),
+            QVariantMap{{QStringLiteral("itemId"), 0}}),
+        makeHierarchyEntry(
+            QStringLiteral("progress:6"),
+            QStringLiteral("Done"),
+            QVariantMap{{QStringLiteral("itemId"), 6}}),
+        makeHierarchyEntry(
+            QStringLiteral("progress:8"),
+            QStringLiteral("Archived"),
+            QVariantMap{{QStringLiteral("itemId"), 8}})
+    });
+
+    viewModel.setProjectSelectionSourceViewModel(&projectsSource);
+    viewModel.setBookmarkSelectionSourceViewModel(&bookmarksSource);
+    viewModel.setProgressSelectionSourceViewModel(&progressSource);
+
+    noteDirectorySourceViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+    viewModel.setCurrentNoteDirectorySourceViewModel(&noteDirectorySourceViewModel);
+    noteListModel.setCurrentNoteId(noteId);
+    viewModel.setCurrentNoteListModel(&noteListModel);
+
+    QObject* projectSelector = viewModel.projectSelectionViewModel();
+    QObject* bookmarkSelector = viewModel.bookmarkSelectionViewModel();
+    QObject* progressSelector = viewModel.progressSelectionViewModel();
+
+    QVERIFY(projectSelector != nullptr);
+    QVERIFY(bookmarkSelector != nullptr);
+    QVERIFY(progressSelector != nullptr);
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 2);
+
+    viewModel.setCurrentNoteListModel(nullptr);
+    viewModel.setCurrentNoteDirectorySourceViewModel(&unsupportedSource);
+
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 2);
+
+    QVERIFY(viewModel.writeProjectSelection(2));
+    QVERIFY(viewModel.writeBookmarkSelection(1));
+    QVERIFY(viewModel.writeProgressSelection(3));
+
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 1);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 3);
+
+    QFile headerFile(headerFilePath);
+    QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "sticky header file must remain readable");
+    const QString updatedHeaderText = QString::fromUtf8(headerFile.readAll());
+    headerFile.close();
+
+    WhatSonNoteHeaderStore header;
+    WhatSonNoteHeaderParser parser;
+    QString parseError;
+    QVERIFY2(parser.parse(updatedHeaderText, &header, &parseError), qPrintable(parseError));
+    QCOMPARE(header.project(), QStringLiteral("Beta"));
+    QVERIFY(header.isBookmarked());
+    QCOMPARE(header.bookmarkColors(), QStringList{QStringLiteral("red")});
+    QCOMPARE(header.progress(), 8);
 }
 
 void DetailPanelViewModelTest::detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries()
