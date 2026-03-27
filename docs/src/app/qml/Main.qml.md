@@ -10,6 +10,7 @@
 - Claim writable ownership for selected interaction surfaces.
 - Mount `MainWindowInteractionController` and feed it the objects it needs for shortcuts and render-quality policy.
 - Switch between onboarding and workspace routes.
+- Recover embedded mobile startup routes when the LVRS page host resolves to an empty path or a missing page item.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
 
 ## ViewModel Ownership
@@ -34,12 +35,17 @@ The file keeps both desktop and mobile layout branches alive.
 - Desktop uses the status bar, navigation bar, sidebar, list, content, and detail panel composition.
 - Mobile uses routed workspace pages and a scaffold tuned for compact navigation.
 - Onboarding can be embedded into the route stack or opened as a separate window depending on platform and adaptive mode.
+- Embedded mobile startup now keeps an app-owned watchdog around the routed page host. If the expected onboarding or
+  workspace route exists in controller state but the active LVRS router has no current page item, `Main.qml` forces a
+  `setRoot(...)` rebuild on the expected route and shows a temporary fallback surface instead of leaving a black frame.
 
 ## Important Signals and Hooks
 - `viewHookRequested` is the root forwarding signal used by nested components that want to bubble interaction intent upward.
 - The root `Shortcut` for `StandardKey.New` is intentionally gated behind `isDesktopPlatform` so mobile route changes and
   panel navigation cannot fall into global note creation.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
+- `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
+  startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.
 - `Component.onDestruction` releases owned view bindings so the registry does not retain stale writable handles.
 
 ## Practical Reading

@@ -16,7 +16,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 import sys
 from pathlib import Path
 
-from build_platform_runner import _path_state, emit_state
+from build_platform_runner import _auto_detect_ios_development_team, _path_state, emit_state
 
 DEFAULT_ANDROID_PACKAGE_ID = "com.iisacc.app.whatson"
 DEFAULT_APPLE_BUNDLE_ID = "com.iisacc.app.whatson"
@@ -324,7 +324,13 @@ def _cmake_version_ok() -> Tuple[bool, str]:
     return True, ""
 
 
-def _build_manual_actions(system_name: str, env_map: Dict[str, str], tools: Dict[str, bool]) -> List[str]:
+def _build_manual_actions(
+        system_name: str,
+        env_map: Dict[str, str],
+        tools: Dict[str, bool],
+        *,
+        ios_signing_candidates: Optional[Sequence[str]] = None,
+) -> List[str]:
     actions: List[str] = []
 
     cmake_ok, cmake_msg = _cmake_version_ok()
@@ -358,6 +364,19 @@ def _build_manual_actions(system_name: str, env_map: Dict[str, str], tools: Dict
             )
         if not tools["xcrun"]:
             actions.append("Install Xcode Command Line Tools (xcode-select --install).")
+        ios_development_team = env_map.get("WHATSON_IOS_DEVELOPMENT_TEAM", "").strip()
+        if not ios_development_team:
+            if ios_signing_candidates:
+                candidates = "; ".join(ios_signing_candidates)
+                actions.append(
+                    "Set WHATSON_IOS_DEVELOPMENT_TEAM for iOS physical-device builds. "
+                    f"Multiple Apple Development teams were detected: {candidates}"
+                )
+            else:
+                actions.append(
+                    "Set WHATSON_IOS_DEVELOPMENT_TEAM for iOS physical-device builds, "
+                    "or install an Apple Development signing identity."
+                )
 
     lvrs_dir = Path(env_map["LVRS_DIR"])
     if not lvrs_dir.exists():
@@ -516,6 +535,16 @@ def main() -> int:
     android_package = os.environ.get("WHATSON_ANDROID_PACKAGE") or _read_android_manifest_package(
         repo_root) or DEFAULT_ANDROID_PACKAGE_ID
     apple_bundle_id = os.environ.get("WHATSON_APPLE_BUNDLE_ID") or DEFAULT_APPLE_BUNDLE_ID
+    ios_development_team = os.environ.get("WHATSON_IOS_DEVELOPMENT_TEAM", "").strip()
+    ios_signing_candidates: List[str] = []
+    if system_name == "Darwin" and not ios_development_team:
+        auto_team, detected_identities = _auto_detect_ios_development_team(system_name)
+        ios_signing_candidates = [
+            f"{identity.team_id} ({identity.name})"
+            for identity in detected_identities
+        ]
+        if auto_team:
+            ios_development_team = auto_team
 
     env_map: Dict[str, str] = {
         "WHATSON_ROOT": str(repo_root),
@@ -535,6 +564,7 @@ def main() -> int:
         "ANDROID_AVD": android_avd or "",
         "WHATSON_ANDROID_PACKAGE": android_package,
         "WHATSON_APPLE_BUNDLE_ID": apple_bundle_id,
+        "WHATSON_IOS_DEVELOPMENT_TEAM": ios_development_team,
         "JAVA21_HOME": str(java21_home) if java21_home else "",
     }
     if lvrs_source_dir:
@@ -546,7 +576,12 @@ def main() -> int:
         "cargo": shutil.which("cargo") is not None,
         "xcrun": shutil.which("xcrun") is not None,
     }
-    manual_actions = _build_manual_actions(system_name, env_map, tools)
+    manual_actions = _build_manual_actions(
+        system_name,
+        env_map,
+        tools,
+        ios_signing_candidates=ios_signing_candidates,
+    )
     emit_state(
         "dev_env",
         "environment_resolved",

@@ -98,6 +98,53 @@ LV.ApplicationWindow {
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
     readonly property string startupRoutePath: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.startupRoutePath : workspaceRoutePath
+    readonly property string expectedEmbeddedRoutePath: {
+        if (!applicationWindow.useEmbeddedOnboardingRoute)
+            return applicationWindow.workspaceRoutePath;
+        if (applicationWindow.onboardingRouteBootstrapController
+                && applicationWindow.onboardingRouteBootstrapController.embeddedOnboardingVisible)
+            return applicationWindow.onboardingRoutePath;
+        return applicationWindow.workspaceRoutePath;
+    }
+    readonly property bool embeddedRouteHostReady: {
+        if (!applicationWindow.useEmbeddedOnboardingRoute)
+            return true;
+        if (!applicationWindow.activePageRouter)
+            return false;
+        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined
+            ? String(applicationWindow.activePageRouter.currentPath).trim()
+            : "";
+        if (currentPath !== applicationWindow.expectedEmbeddedRoutePath)
+            return false;
+        return applicationWindow.activePageRouter.currentPageItem !== null
+            && applicationWindow.activePageRouter.currentPageItem !== undefined;
+    }
+    readonly property bool embeddedRouteRecoveryNeeded: {
+        if (!applicationWindow.useEmbeddedOnboardingRoute)
+            return false;
+        if (!applicationWindow.activePageRouter)
+            return true;
+        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined
+            ? String(applicationWindow.activePageRouter.currentPath).trim()
+            : "";
+        if (currentPath.length === 0)
+            return true;
+        if (currentPath === applicationWindow.expectedEmbeddedRoutePath)
+            return applicationWindow.activePageRouter.currentPageItem === null
+                || applicationWindow.activePageRouter.currentPageItem === undefined;
+        return !applicationWindow.onboardingRouteCommitPending;
+    }
+    readonly property string embeddedRouteStartupStatusText: {
+        if (!applicationWindow.embeddedRouteRecoveryNeeded)
+            return "";
+        if (applicationWindow.onboardingHubController
+                && applicationWindow.onboardingHubController.busy)
+            return "Preparing WhatSon workspace...";
+        if (applicationWindow.onboardingRouteCommitPending)
+            return "Opening WhatSon workspace...";
+        return "Restoring WhatSon startup route...";
+    }
+    readonly property int startupRouteRecoveryLimit: 3
     readonly property bool useEmbeddedOnboardingRoute: adaptiveMobileLayout || isMobilePlatform
     readonly property int windowDefaultHeight: LV.Theme.gap24 * 31 + LV.Theme.gap4
     readonly property int windowDefaultWidth: LV.Theme.controlHeightMd * 35 + LV.Theme.gap5
@@ -108,6 +155,8 @@ LV.ApplicationWindow {
             path: applicationWindow.workspaceRoutePath,
             component: workspacePageComponent
         })
+    property int startupRouteRecoveryAttempts: 0
+    property string startupRouteRecoveryReason: ""
 
     signal viewHookRequested
 
@@ -158,16 +207,60 @@ LV.ApplicationWindow {
         onboardingSubWindow.raise();
         onboardingSubWindow.requestActivate();
     }
-    function applyRequestedRoute(targetPath, routeSource) {
+    function applyRequestedRoute(targetPath, routeSource, forceReload) {
         if (!applicationWindow.activePageRouter)
             return;
 
+        const shouldForceReload = forceReload === true;
         const currentPath = applicationWindow.activePageRouter.currentPath !== undefined ? String(applicationWindow.activePageRouter.currentPath) : "";
-        if (currentPath === targetPath)
+        if (!shouldForceReload && currentPath === targetPath)
             return;
 
         applicationWindow.activePageRouter.setRoot(targetPath);
-        console.log("[whatson:debug][main.route][" + routeSource + "] target=" + targetPath);
+        console.log("[whatson:debug][main.route][" + routeSource + "] target=" + targetPath + " forceReload=" + shouldForceReload);
+    }
+    function recoverEmbeddedRouteHost(source) {
+        if (!applicationWindow.useEmbeddedOnboardingRoute
+                || !applicationWindow.embeddedRouteRecoveryNeeded
+                || !applicationWindow.activePageRouter)
+            return;
+
+        const currentPath = applicationWindow.activePageRouter.currentPath !== undefined
+            ? String(applicationWindow.activePageRouter.currentPath).trim()
+            : "";
+        const targetPath = applicationWindow.expectedEmbeddedRoutePath;
+        const forceReload = currentPath === targetPath && currentPath.length > 0;
+
+        applicationWindow.startupRouteRecoveryAttempts += 1;
+        console.warn("[whatson:debug][main.route][startupWatchdog] reason=" + source
+                     + " attempt=" + applicationWindow.startupRouteRecoveryAttempts
+                     + " current=" + currentPath
+                     + " target=" + targetPath
+                     + " forceReload=" + forceReload);
+        applicationWindow.applyRequestedRoute(
+                    targetPath,
+                    "startupWatchdog:" + source,
+                    forceReload);
+        if (applicationWindow.embeddedRouteRecoveryNeeded
+                && applicationWindow.startupRouteRecoveryAttempts < applicationWindow.startupRouteRecoveryLimit)
+            startupRouteWatchdogTimer.restart();
+    }
+    function syncEmbeddedRouteWatchdog(source) {
+        if (!applicationWindow.useEmbeddedOnboardingRoute)
+            return;
+
+        if (!applicationWindow.embeddedRouteRecoveryNeeded) {
+            applicationWindow.startupRouteRecoveryReason = "";
+            if (applicationWindow.startupRouteRecoveryAttempts !== 0)
+                applicationWindow.startupRouteRecoveryAttempts = 0;
+            if (startupRouteWatchdogTimer.running)
+                startupRouteWatchdogTimer.stop();
+            return;
+        }
+
+        applicationWindow.startupRouteRecoveryReason = source;
+        if (!startupRouteWatchdogTimer.running)
+            startupRouteWatchdogTimer.start();
     }
     function toggleDetailPanelVisibility() {
         applicationWindow.hideRightPanel = !applicationWindow.hideRightPanel;
@@ -211,6 +304,7 @@ LV.ApplicationWindow {
         if (applicationWindow.useEmbeddedOnboardingRoute) {
             Qt.callLater(function () {
                 applicationWindow.applyRequestedRoute(applicationWindow.startupRoutePath, "completed");
+                applicationWindow.syncEmbeddedRouteWatchdog("completed");
             });
         } else if (applicationWindow.desktopOnboardingWindowVisible) {
             onboardingSubWindow.show();
@@ -219,25 +313,35 @@ LV.ApplicationWindow {
     Component.onDestruction: {
         unbindOwnedViewModels();
     }
+    onActivePageRouterChanged: applicationWindow.syncEmbeddedRouteWatchdog("activePageRouterChanged")
     onAdaptiveLayoutStateChanged: windowInteractions.reportLayoutBranch("adaptiveLayoutStateChanged")
     onBodyHeightChanged: clampPreferredSizes()
+    onExpectedEmbeddedRoutePathChanged: applicationWindow.syncEmbeddedRouteWatchdog("expectedEmbeddedRoutePathChanged")
     onHeightChanged: {
-        windowInteractions.handleResizeForRenderQuality("heightChanged");
-        resizeDebounceTimer.restart();
+        if (applicationWindow.isDesktopPlatform) {
+            windowInteractions.handleResizeForRenderQuality("heightChanged");
+            resizeDebounceTimer.restart();
+        }
+        applicationWindow.syncEmbeddedRouteWatchdog("heightChanged");
     }
     onPageStackNavigated: function (path, params) {
         windowInteractions.reportLayoutBranch("pageStackNavigated");
+        applicationWindow.syncEmbeddedRouteWatchdog("pageStackNavigated");
         if (applicationWindow.onboardingRouteBootstrapController)
             applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigated(String(path));
     }
     onPageStackNavigationFailed: function (path) {
         console.warn("[whatson:debug][main.route][navigationFailed] path=" + path);
+        applicationWindow.syncEmbeddedRouteWatchdog("pageStackNavigationFailed");
         if (applicationWindow.onboardingRouteBootstrapController)
             applicationWindow.onboardingRouteBootstrapController.handlePageStackNavigationFailed(String(path));
     }
     onWidthChanged: {
-        windowInteractions.handleResizeForRenderQuality("widthChanged");
-        resizeDebounceTimer.restart();
+        if (applicationWindow.isDesktopPlatform) {
+            windowInteractions.handleResizeForRenderQuality("widthChanged");
+            resizeDebounceTimer.restart();
+        }
+        applicationWindow.syncEmbeddedRouteWatchdog("widthChanged");
     }
 
     MainWindowInteractionController {
@@ -262,6 +366,14 @@ LV.ApplicationWindow {
         repeat: false
 
         onTriggered: windowInteractions.finalizeResizeRenderQualityPolicy()
+    }
+    Timer {
+        id: startupRouteWatchdogTimer
+
+        interval: 240
+        repeat: false
+
+        onTriggered: applicationWindow.recoverEmbeddedRouteHost(applicationWindow.startupRouteRecoveryReason)
     }
     Shortcut {
         autoRepeat: false
@@ -309,6 +421,8 @@ LV.ApplicationWindow {
                 Qt.callLater(sync);
             else
                 sync();
+
+            applicationWindow.syncEmbeddedRouteWatchdog("routeSyncRequested");
         }
     }
     Connections {
@@ -319,11 +433,24 @@ LV.ApplicationWindow {
                 return;
             if (applicationWindow.onboardingRouteBootstrapController)
                 applicationWindow.onboardingRouteBootstrapController.handleHubLoaded();
+            applicationWindow.syncEmbeddedRouteWatchdog("hubLoaded");
         }
 
         function onOperationFailed(message) {
             if (applicationWindow.onboardingRouteBootstrapController)
                 applicationWindow.onboardingRouteBootstrapController.handleOperationFailed(message);
+            applicationWindow.syncEmbeddedRouteWatchdog("operationFailed");
+        }
+    }
+    Connections {
+        target: applicationWindow.activePageRouter
+
+        function onCurrentPageItemChanged() {
+            applicationWindow.syncEmbeddedRouteWatchdog("currentPageItemChanged");
+        }
+
+        function onCurrentPathChanged() {
+            applicationWindow.syncEmbeddedRouteWatchdog("currentPathChanged");
         }
     }
     Item {
@@ -381,6 +508,38 @@ LV.ApplicationWindow {
             height: mobileSafeAreaColorOverride.bottomInset
             visible: height > 0
             color: applicationWindow.mobileSafeAreaBackdropColor
+        }
+    }
+    Rectangle {
+        id: embeddedRouteStartupFallback
+
+        anchors.fill: parent
+        color: applicationWindow.canvasColor
+        visible: applicationWindow.useEmbeddedOnboardingRoute
+                 && applicationWindow.embeddedRouteRecoveryNeeded
+        z: 9050
+
+        LV.VStack {
+            anchors.centerIn: parent
+            spacing: LV.Theme.gap4
+            width: Math.max(0, Math.min(parent.width - LV.Theme.gap20 * 2, LV.Theme.gap20 * 13))
+
+            LV.Label {
+                color: LV.Theme.textPrimary
+                horizontalAlignment: Text.AlignHCenter
+                style: header2
+                text: "WhatSon"
+                width: parent.width
+                wrapMode: Text.NoWrap
+            }
+            LV.Label {
+                color: LV.Theme.descriptionColor
+                horizontalAlignment: Text.AlignHCenter
+                style: description
+                text: applicationWindow.embeddedRouteStartupStatusText
+                width: parent.width
+                wrapMode: Text.WordWrap
+            }
         }
     }
     Loader {

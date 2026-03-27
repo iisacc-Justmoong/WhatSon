@@ -38,6 +38,12 @@ WhatSon is an LVRS-based Qt Quick application.
   `delegateMobileInsetsToSystem` and forcing `forceFullWindowAreaOnMobile`. WhatSon therefore owns the visible top and
   bottom safe-area bands as part of the routed app surface instead of painting a background-only fallback outside the
   live content root.
+- `src/app/qml/MainWindowInteractionController.qml` now keeps the resize-time dynamic-resolution suspend/resume guard
+  desktop-only. iOS startup no longer flips `LV.RenderQuality.dynamicResolutionEnabled` during the first geometry churn,
+  which reduces swapchain recreate pressure while the Metal command queue still owns the previous multisample targets.
+- `src/app/qml/Main.qml` now also watches the embedded mobile onboarding/workspace route host. If LVRS exposes the
+  expected route path but the current page item never materializes, the root forces a route rebuild and paints a
+  temporary fallback surface instead of leaving the device on a black blank frame.
 - `main.cpp` now re-acquires iOS Files access during startup mount preflight before deciding whether onboarding is
   needed. The stored `.wshub` path is checked through `AppleSecurityScopedResourceAccess::ensureAccessForPath(...)`
   first, and its parent directory is retried as a fallback, so reopening the app no longer falls back to onboarding
@@ -892,7 +898,7 @@ Bookmarks runtime behavior:
 
 - `scripts/build_host.py`: build + launch on the current development machine
 - `scripts/build_android.py`: build + install + launch on Android, then export Android Studio artifact
-- `scripts/build_ios.py`: build + install + launch on connected iOS physical device
+- `scripts/build_ios.py`: generate/refresh the iOS Xcode project for manual Xcode device testing
 
 Default run (sequential to avoid peak CPU saturation):
 
@@ -911,16 +917,30 @@ Run a single platform script directly:
 ```bash
 python3 scripts/build_host.py
 python3 scripts/build_android.py
-python3 scripts/build_ios.py --ios-device "<UDID-or-Device-Name>"
+python3 scripts/build_ios.py
 python3 scripts/build_host.py --jobs 4
 ```
+
+For iOS Xcode-project generation, `scripts/build_ios.py` resolves
+`WHATSON_IOS_DEVELOPMENT_TEAM` from local `Apple Development`
+code-signing identities and writes that signing metadata into the generated
+`.xcodeproj`. When multiple Apple Development teams are present, set the team
+explicitly before running the script:
+
+```bash
+export WHATSON_IOS_DEVELOPMENT_TEAM=GRWGSK8RDF
+python3 scripts/build_ios.py
+```
+
+Then open the generated project in Xcode, select the connected iPhone/iPad as
+the run destination, and launch the `WhatSon` scheme from Xcode.
 
 Task selection through orchestrator:
 
 ```bash
 python3 scripts/build_all.py --tasks host,android,ios
 python3 scripts/build_all.py --tasks host --no-host-run
-python3 scripts/build_all.py --tasks ios --ios-device "<UDID-or-Device-Name>"
+python3 scripts/build_all.py --tasks ios
 python3 scripts/build_all.py --tasks host,android,ios --jobs 6
 python3 scripts/build_all.py --tasks host,android,ios --parallel
 ```
@@ -950,6 +970,9 @@ Default build and artifact directories are:
 The generated iOS configure path disables optional `Qt6GrpcQuick` / `Qt6ProtobufQuick`
 package discovery because WhatSon does not use those modules and cross-compiling may
 otherwise emit host `protoc` warnings.
+The generated iOS Xcode project keeps automatic signing metadata (`DEVELOPMENT_TEAM`,
+bundle identifier, optional code-sign identity) so the final physical-device build can
+be completed from Xcode against the selected run destination.
 The host `WhatSon` target no longer depends on iOS Xcode project export, so macOS app
 builds are not blocked by stale cross-compile metadata under `build/ios-xcode-artifact`.
 The explicit `whatson_export_xcodeproj` target now clears only the nested iOS CMake

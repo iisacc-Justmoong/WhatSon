@@ -4,6 +4,7 @@ import argparse
 import errno
 import io
 import json
+import plistlib
 import sys
 import tempfile
 import unittest
@@ -77,6 +78,90 @@ class RecordingXcodeBuildAll(RecordingBuildAll):
         if not log_path.exists():
             log_path.write_text("", encoding="utf-8")
         return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+
+class RecordingIosTaskBuildAll(RecordingBuildAll):
+    def _ensure_ios_device(self, *, task: str, log_path: Path):
+        return {
+            "identifier": "DEVICE-UDID",
+            "name": "Test iPhone",
+            "architecture": "arm64",
+            "platform": "com.apple.platform.iphoneos",
+        }
+
+    def _ensure_ios_lvrs_prefix(self, *, task: str, log_path: Path) -> Path:
+        prefix = self.lvrs_prefix / "platforms" / "ios"
+        (prefix / "lib" / "cmake" / "LVRS").mkdir(parents=True, exist_ok=True)
+        return prefix
+
+    def _uninstall_ios_app_best_effort(self, *, task: str, log_path: Path, device_identifier: str, bundle_id: str) -> None:
+        return
+
+    def _ios_backtrace_cmake_args(self, sdk_name: str):
+        return []
+
+    def _run(
+            self,
+            *,
+            task: str,
+            cmd,
+            cwd=None,
+            env=None,
+            log_path: Path,
+            check: bool = True,
+    ) -> int:
+        self.commands.append([str(item) for item in cmd])
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        if not log_path.exists():
+            log_path.write_text("", encoding="utf-8")
+        if list(cmd[:3]) == ["cmake", "-G", "Xcode"]:
+            (self.ios_project_dir / "WhatSon.xcodeproj").mkdir(parents=True, exist_ok=True)
+        return 0
+
+    def _run_ios_xcodebuild_with_destination_fallback(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            xcode_project: Path,
+            derived_data_dir: Path,
+            ios_device_id: str,
+    ) -> None:
+        self.commands.append(
+            [
+                "xcodebuild",
+                "-project",
+                str(xcode_project),
+                "-destination",
+                ios_device_id,
+            ]
+        )
+        app_dir = derived_data_dir / "Build" / "Products" / "Release-iphoneos" / "WhatSon.app"
+        app_dir.mkdir(parents=True, exist_ok=True)
+        with (app_dir / "Info.plist").open("wb") as fp:
+            plistlib.dump({"CFBundleIdentifier": self.ios_bundle_id}, fp)
+
+    def _stage_packaging_artifact(
+            self,
+            *,
+            task: str,
+            source: Path,
+            destination: Path,
+            log_path: Path,
+            artifact_kind: str,
+    ) -> Path:
+        return source
+
+    def _launch_ios_app_with_retry(
+            self,
+            *,
+            task: str,
+            log_path: Path,
+            xcrun: str,
+            ios_device_id: str,
+            bundle_id: str,
+    ) -> None:
+        return
 
 
 class RecordingRuntimeSmokeMatrix(smoke_matrix.RuntimeSmokeMatrix):
@@ -172,6 +257,30 @@ def _state_payloads(text: str) -> list[dict[str, object]]:
 
 
 class BuildParallelismTests(unittest.TestCase):
+    def test_parse_apple_development_identities_deduplicates_and_filters(self) -> None:
+        output = """
+  1) 04800EECDE315EC10E97E25C221A518D1DE10BF1 "Apple Development: MUYEONG YUN (GRWGSK8RDF)"
+  2) 0F0387D7FAA466148A18780B4E73333645784E21 "Developer ID Application: MUYEONG YUN (5U49ST9XZH)"
+  3) DBD2C38A71240AADDCADD42A5B529063DF892165 "Apple Development: MUYEONG YUN (GRWGSK8RDF)"
+  4) 1234567890ABCDEF1234567890ABCDEF12345678 "Apple Development: Example Org (ABCDE12345)"
+"""
+
+        identities = runner._parse_apple_development_identities(output)
+
+        self.assertEqual(
+            identities,
+            [
+                runner.AppleDevelopmentIdentity(
+                    name="Apple Development: MUYEONG YUN (GRWGSK8RDF)",
+                    team_id="GRWGSK8RDF",
+                ),
+                runner.AppleDevelopmentIdentity(
+                    name="Apple Development: Example Org (ABCDE12345)",
+                    team_id="ABCDE12345",
+                ),
+            ],
+        )
+
     def test_emit_state_outputs_json_line(self) -> None:
         buffer = io.StringIO()
         with redirect_stdout(buffer):
@@ -303,6 +412,28 @@ class BuildParallelismTests(unittest.TestCase):
 
         self.assertTrue(build_runner.captured_commands)
         self.assertEqual(build_runner.captured_commands[0][:3], ["xcodebuild", "-jobs", "3"])
+        self.assertIn("-allowProvisioningUpdates", build_runner.captured_commands[0])
+        self.assertIn("-allowProvisioningDeviceRegistration", build_runner.captured_commands[0])
+
+    def test_task_ios_auto_detects_development_team_for_configure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            args = _make_args(temp_root, jobs=4)
+            build_runner = RecordingIosTaskBuildAll(args)
+            build_runner.system_name = "Darwin"
+            toolchain = Path(args.qt_ios_prefix) / "lib" / "cmake" / "Qt6" / "qt.toolchain.cmake"
+            toolchain.parent.mkdir(parents=True, exist_ok=True)
+            toolchain.write_text("# mock toolchain\n", encoding="utf-8")
+
+            with patch.object(runner, "_auto_detect_ios_development_team", return_value=("GRWGSK8RDF", [])):
+                result = build_runner.task_ios()
+
+        configure_commands = [cmd for cmd in build_runner.commands if cmd[:3] == ["cmake", "-G", "Xcode"]]
+        self.assertTrue(configure_commands)
+        self.assertIn("-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM=GRWGSK8RDF", configure_commands[0])
+        self.assertFalse(any(cmd and cmd[0] == "xcodebuild" for cmd in build_runner.commands))
+        self.assertEqual(result.status, "success")
+        self.assertIn("Generated iOS Xcode project for manual device testing", result.detail)
 
     def test_gradle_uses_task_parallel_budget(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -465,6 +596,25 @@ class BuildParallelismTests(unittest.TestCase):
         events = [payload["event"] for payload in payloads]
         self.assertIn("environment_resolved", events)
         self.assertIn("script_finish", events)
+
+    def test_dev_env_writes_auto_detected_ios_development_team(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "dev-env-out"
+            argv = [
+                "dev_env.py",
+                "--repo-root",
+                str(REPO_ROOT),
+                "--output-dir",
+                str(output_dir),
+            ]
+            with patch.object(dev_env_script, "_auto_detect_ios_development_team", return_value=("GRWGSK8RDF", [])):
+                with patch.object(sys, "argv", argv):
+                    exit_code = dev_env_script.main()
+
+            payload = json.loads((output_dir / "dev_env.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["environment"]["WHATSON_IOS_DEVELOPMENT_TEAM"], "GRWGSK8RDF")
 
 
 if __name__ == "__main__":

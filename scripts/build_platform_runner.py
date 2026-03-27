@@ -43,6 +43,12 @@ class TaskResult:
     log_path: Path
 
 
+@dataclass(frozen=True)
+class AppleDevelopmentIdentity:
+    name: str
+    team_id: str
+
+
 class CommandError(RuntimeError):
     pass
 
@@ -307,6 +313,58 @@ def _pick_setting(name: str, profile: Dict[str, str], fallback: Optional[str] = 
     if profile_value is not None:
         return profile_value
     return fallback
+
+
+def _parse_apple_development_identities(output: str) -> List[AppleDevelopmentIdentity]:
+    identities: List[AppleDevelopmentIdentity] = []
+    seen: set[Tuple[str, str]] = set()
+    pattern = re.compile(r'"(?P<name>Apple Development: .* \((?P<team>[A-Z0-9]{10})\))"')
+
+    for line in output.splitlines():
+        match = pattern.search(line)
+        if not match:
+            continue
+        identity = AppleDevelopmentIdentity(
+            name=match.group("name").strip(),
+            team_id=match.group("team").strip(),
+        )
+        key = (identity.team_id, identity.name)
+        if key in seen:
+            continue
+        seen.add(key)
+        identities.append(identity)
+    return identities
+
+
+def _discover_apple_development_identities(system_name: str) -> List[AppleDevelopmentIdentity]:
+    if system_name != "Darwin":
+        return []
+
+    security_tool = shutil.which("security")
+    if not security_tool:
+        return []
+
+    try:
+        probe = subprocess.run(
+            [security_tool, "find-identity", "-v", "-p", "codesigning"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return []
+
+    if probe.returncode != 0:
+        return []
+    return _parse_apple_development_identities(probe.stdout)
+
+
+def _auto_detect_ios_development_team(system_name: str) -> Tuple[Optional[str], List[AppleDevelopmentIdentity]]:
+    identities = _discover_apple_development_identities(system_name)
+    unique_team_ids = sorted({identity.team_id for identity in identities})
+    if len(unique_team_ids) != 1:
+        return None, identities
+    return unique_team_ids[0], identities
 
 
 def _ndk_from_homebrew_cask(system_name: str) -> Optional[Path]:
@@ -1522,9 +1580,14 @@ class BuildAll:
             derived_data_dir: Path,
             ios_device_id: str,
     ) -> None:
+        provisioning_args = [
+            "-allowProvisioningUpdates",
+            "-allowProvisioningDeviceRegistration",
+        ]
         primary_cmd = [
             "xcodebuild",
             *self._xcodebuild_job_args(task),
+            *provisioning_args,
             "-project",
             str(xcode_project),
             "-scheme",
@@ -1560,6 +1623,7 @@ class BuildAll:
             fallback_cmd = [
                 "xcodebuild",
                 *self._xcodebuild_job_args(task),
+                *provisioning_args,
                 "-project",
                 str(xcode_project),
                 "-scheme",
@@ -1584,6 +1648,80 @@ class BuildAll:
             f"xcodebuild failed (exit={primary_result.returncode}) for destination id={ios_device_id}. "
             f"See log: {log_path}"
         )
+
+    def _configure_ios_xcode_project(self, *, task: str, log_path: Path) -> Path:
+        toolchain = _resolve_qt_toolchain_file(self.qt_ios_prefix)
+        if not toolchain.exists():
+            raise CommandError(f"Qt iOS toolchain file was not found: {toolchain}")
+
+        ios_lvrs_prefix = self._ensure_ios_lvrs_prefix(task=task, log_path=log_path)
+        prefix_paths = [str(self.qt_ios_prefix), str(ios_lvrs_prefix)]
+        if self.qt_host_prefix.exists():
+            prefix_paths.append(str(self.qt_host_prefix))
+
+        resolved_ios_development_team = _normalize_env_value(self.ios_development_team)
+        if not resolved_ios_development_team:
+            resolved_ios_development_team, detected_identities = _auto_detect_ios_development_team(self.system_name)
+            if resolved_ios_development_team:
+                self._log(task, f"Resolved Apple Development team automatically: {resolved_ios_development_team}")
+                self._emit_state(
+                    "ios_development_team_resolved",
+                    task=task,
+                    development_team=resolved_ios_development_team,
+                    source="security-find-identity",
+                )
+            elif detected_identities:
+                candidates = "; ".join(
+                    f"{identity.team_id} ({identity.name})"
+                    for identity in detected_identities
+                )
+                raise CommandError(
+                    "Multiple Apple Development teams were detected for iOS code signing. "
+                    "Set WHATSON_IOS_DEVELOPMENT_TEAM or pass --ios-development-team explicitly. "
+                    f"Candidates: {candidates}"
+                )
+            else:
+                raise CommandError(
+                    "No Apple Development team could be resolved for iOS code signing. "
+                    "Set WHATSON_IOS_DEVELOPMENT_TEAM or pass --ios-development-team explicitly. "
+                    "Diagnostic command: security find-identity -v -p codesigning"
+                )
+
+        ios_cmd = [
+            "cmake",
+            "-G",
+            "Xcode",
+            "-S",
+            str(self.root),
+            "-B",
+            str(self.ios_project_dir),
+            "-DCMAKE_SYSTEM_NAME=iOS",
+            f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
+            f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}",
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_OSX_SYSROOT=iphoneos",
+            "-DCMAKE_OSX_ARCHITECTURES=arm64",
+            *self._ios_backtrace_cmake_args("iphoneos"),
+            "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE=Automatic",
+            f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={resolved_ios_development_team}",
+            f"-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER={self.ios_bundle_id}",
+            "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE",
+            "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE",
+        ]
+        if self.ios_code_sign_identity:
+            ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={self.ios_code_sign_identity}")
+
+        lvrs_dir = self._lvrs_cmake_dir(ios_lvrs_prefix)
+        if lvrs_dir.exists():
+            ios_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
+
+        self._run(task=task, cmd=ios_cmd, log_path=log_path)
+
+        xcode_project = self.ios_project_dir / "WhatSon.xcodeproj"
+        if not xcode_project.exists():
+            raise CommandError(f"Xcode project was not generated: {xcode_project}")
+
+        return xcode_project
 
     def _host_platform_name(self) -> str:
         if self.system_name == "Darwin":
@@ -1881,142 +2019,25 @@ class BuildAll:
         )
         try:
             self._reset_task_log(log_path)
-            ios_device = self._ensure_ios_device(task=task, log_path=log_path)
-            ios_device_id = ios_device["identifier"]
-            ios_arch = ios_device.get("architecture", "arm64") or "arm64"
-            self._uninstall_ios_app_best_effort(
-                task=task,
-                log_path=log_path,
-                device_identifier=ios_device_id,
-                bundle_id=self.ios_bundle_id,
-            )
             self._clean_path(task=task, path=self.ios_project_dir, log_path=log_path)
-            toolchain = _resolve_qt_toolchain_file(self.qt_ios_prefix)
-            if not toolchain.exists():
-                raise CommandError(f"Qt iOS toolchain file was not found: {toolchain}")
-
-            ios_lvrs_prefix = self._ensure_ios_lvrs_prefix(task=task, log_path=log_path)
-            prefix_paths = [str(self.qt_ios_prefix), str(ios_lvrs_prefix)]
-            if self.qt_host_prefix.exists():
-                prefix_paths.append(str(self.qt_host_prefix))
-
-            ios_cmd = [
-                "cmake",
-                "-G",
-                "Xcode",
-                "-S",
-                str(self.root),
-                "-B",
-                str(self.ios_project_dir),
-                "-DCMAKE_SYSTEM_NAME=iOS",
-                f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
-                f"-DCMAKE_PREFIX_PATH={';'.join(prefix_paths)}",
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DCMAKE_OSX_SYSROOT=iphoneos",
-                f"-DCMAKE_OSX_ARCHITECTURES={ios_arch}",
-                *self._ios_backtrace_cmake_args("iphoneos"),
-                "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE=Automatic",
-                f"-DCMAKE_XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER={self.ios_bundle_id}",
-                "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6GrpcQuick=TRUE",
-                "-DCMAKE_DISABLE_FIND_PACKAGE_Qt6ProtobufQuick=TRUE",
-            ]
-            if self.ios_development_team:
-                ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={self.ios_development_team}")
-            if self.ios_code_sign_identity:
-                ios_cmd.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={self.ios_code_sign_identity}")
-
-            lvrs_dir = self._lvrs_cmake_dir(ios_lvrs_prefix)
-            if lvrs_dir.exists():
-                ios_cmd.append(f"-DLVRS_DIR={lvrs_dir}")
-
-            self._run(task=task, cmd=ios_cmd, log_path=log_path)
-
-            xcode_project = self.ios_project_dir / "WhatSon.xcodeproj"
-            if not xcode_project.exists():
-                raise CommandError(f"Xcode project was not generated: {xcode_project}")
-
-            derived_data_dir = self.ios_project_dir / "derived-data"
-            self._clean_path(task=task, path=derived_data_dir, log_path=log_path)
-
-            self._run_ios_xcodebuild_with_destination_fallback(
-                task=task,
-                log_path=log_path,
-                xcode_project=xcode_project,
-                derived_data_dir=derived_data_dir,
-                ios_device_id=ios_device_id,
-            )
-
-            app_bundle_candidates = [
-                derived_data_dir / "Build" / "Products" / "Release-iphoneos" / "WhatSon.app",
-                self.ios_project_dir / "src" / "app" / "bin" / "Release" / "WhatSon.app",
-                self.ios_project_dir / "src" / "app" / "bin" / "Debug" / "WhatSon.app",
-            ]
-            app_bundle: Path = app_bundle_candidates[0]
-            for candidate in app_bundle_candidates:
-                if candidate.exists():
-                    app_bundle = candidate
-                    break
-            if not app_bundle.exists():
-                candidates = sorted(derived_data_dir.glob("Build/Products/*-iphoneos/WhatSon.app"))
-                if candidates:
-                    app_bundle = candidates[-1]
-            if not app_bundle.exists():
-                candidates = sorted((self.ios_project_dir / "src" / "app" / "bin").glob("**/WhatSon.app"))
-                if candidates:
-                    app_bundle = candidates[-1]
-            if not app_bundle.exists():
-                raise CommandError("iOS .app bundle was not generated for iphoneos.")
-            app_bundle = self._stage_packaging_artifact(
-                task=task,
-                source=app_bundle,
-                destination=self.ios_project_dir / "WhatSon.app",
-                log_path=log_path,
-                artifact_kind="ios_app_bundle",
-            )
-
-            detected_bundle_id = self._read_bundle_id_from_app_bundle(app_bundle)
-            launch_bundle_id = detected_bundle_id or self.ios_bundle_id
-            if detected_bundle_id and detected_bundle_id != self.ios_bundle_id:
+            if (self.ios_device or "").strip():
                 self._log(
                     task,
-                    "Configured iOS bundle id differs from built app bundle id. "
-                    f"Using built bundle id for launch: {detected_bundle_id}",
+                    "Ignoring --ios-device for project generation. Select the target iPhone/iPad inside Xcode.",
                 )
-                with log_path.open("a", encoding="utf-8") as fp:
-                    fp.write(
-                        "# bundle-id-mismatch: "
-                        f"configured={self.ios_bundle_id}, built={detected_bundle_id}\n"
-                    )
+            xcode_project = self._configure_ios_xcode_project(task=task, log_path=log_path)
 
-            xcrun = shutil.which("xcrun")
-            if not xcrun:
-                raise CommandError("xcrun was not found, cannot install .app on iOS device.")
-
-            self._run(
-                task=task,
-                cmd=[
-                    xcrun,
-                    "devicectl",
-                    "device",
-                    "install",
-                    "app",
-                    "--device",
-                    ios_device_id,
-                    str(app_bundle),
-                ],
-                log_path=log_path,
+            detail = (
+                "Generated iOS Xcode project for manual device testing: "
+                f"{xcode_project}. Open it in Xcode, select the connected iPhone/iPad, and run the WhatSon scheme."
             )
-            self._launch_ios_app_with_retry(
+            self._emit_state(
+                "task_finish",
                 task=task,
-                log_path=log_path,
-                xcrun=xcrun,
-                ios_device_id=ios_device_id,
-                bundle_id=launch_bundle_id,
+                status="success",
+                detail=detail,
+                xcode_project=_path_state(xcode_project),
             )
-
-            detail = f"Installed .app on iOS device {ios_device['name']} ({ios_device_id}): {app_bundle}"
-            self._emit_state("task_finish", task=task, status="success", detail=detail,
-                             app_bundle=_path_state(app_bundle))
             return TaskResult(task, "success", detail, log_path)
         except Exception as exc:  # noqa: BLE001
             self._emit_state("task_finish", task=task, status="failed", detail=str(exc), log_path=_path_state(log_path))
@@ -2462,7 +2483,7 @@ def parse_args() -> argparse.Namespace:
         parents=[pre_parser],
         description=(
             "Build and run WhatSon on the current host, launch on Android (emulator fallback enabled), "
-            "build/install .app on a connected iOS physical device, and export project artifacts."
+            "generate an iOS Xcode project for manual device testing, and export project artifacts."
         )
     )
     parser.add_argument("--root", default=str(repo_root), help="Repository root path.")
@@ -2554,12 +2575,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ios-bundle-id",
         default=_pick_setting("WHATSON_APPLE_BUNDLE_ID", dev_env_profile, DEFAULT_APPLE_BUNDLE_ID),
-        help="iOS bundle identifier used for .app install/launch on connected physical device.",
+        help="iOS bundle identifier written into the generated Xcode project.",
     )
     parser.add_argument(
         "--ios-device",
         default=_pick_setting("WHATSON_IOS_DEVICE", dev_env_profile),
-        help="Target iOS physical device identifier or device name. Auto-selects first connected device when omitted.",
+        help="Deprecated compatibility option. The generated Xcode project is device-agnostic; choose the target device in Xcode.",
     )
     parser.add_argument(
         "--ios-development-team",

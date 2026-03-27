@@ -18,6 +18,9 @@ QtObject {
     property string navigationModeViewId: ""
     readonly property string navigationModeViewModelKey: "navigationModeViewModel"
     property var panelViewModelRegistry: null
+    readonly property bool resizeRenderGuardSupported: interactionController.hostWindow
+        ? interactionController.hostWindow.isDesktopPlatform
+        : false
     property bool resizeDrWasSuspended: false
     property bool resizeInProgress: false
     property int resizeRenderGuardDebounceMs: 220
@@ -29,7 +32,10 @@ QtObject {
         if (!interactionController.hostWindow || (!interactionController.hostWindow.isDesktopPlatform && !interactionController.hostWindow.isMobilePlatform))
             return;
 
-        console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=resizeSuspendResumeGuard dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled);
+        const guardPolicy = interactionController.resizeRenderGuardSupported
+            ? "desktopResizeSuspendResumeGuard"
+            : "mobileResizeGuardDisabled";
+        console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled);
     }
     function clearActiveFocus(reason) {
         let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;
@@ -93,7 +99,9 @@ QtObject {
             navigationModeViewModel.requestNextMode();
     }
     function finalizeResizeRenderQualityPolicy() {
-        if (!interactionController.resizeRenderGuardEnabled || !interactionController.hostWindow || (!interactionController.hostWindow.isMobilePlatform && !interactionController.hostWindow.isDesktopPlatform))
+        if (!interactionController.resizeRenderGuardEnabled
+                || !interactionController.resizeRenderGuardSupported
+                || !interactionController.hostWindow)
             return;
 
         interactionController.resizeInProgress = false;
@@ -108,7 +116,9 @@ QtObject {
         console.log("[whatson:debug][render.policy][resizeEnd] platform=" + interactionController.hostWindow.platform + " action=resumeWithMaxScaleReset");
     }
     function handleResizeForRenderQuality(source) {
-        if (!interactionController.resizeRenderGuardEnabled || !interactionController.hostWindow || (!interactionController.hostWindow.isMobilePlatform && !interactionController.hostWindow.isDesktopPlatform))
+        if (!interactionController.resizeRenderGuardEnabled
+                || !interactionController.resizeRenderGuardSupported
+                || !interactionController.hostWindow)
             return;
 
         if (!interactionController.resizeInProgress) {

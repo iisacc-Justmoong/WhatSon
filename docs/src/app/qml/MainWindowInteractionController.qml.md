@@ -25,7 +25,7 @@ the shortcut layer stays aligned with the same ownership contract used by the re
 - `cycleNavigationModeFromShortcut()`: advances navigation mode unless a text input currently holds focus.
 - `resolveOwnedWritableViewModel(...)`: normalizes writable lookup around LVRS view ownership plus the stable registry key for the same capability.
 - `resolvePanelViewModel(...)`: resolves panel-scoped hooks without forcing every consumer to know the registry contract.
-- `handleResizeForRenderQuality()` and `finalizeResizeRenderQualityPolicy()`: temporarily suspend dynamic resolution during active resize to avoid unstable render behavior.
+- `handleResizeForRenderQuality()` and `finalizeResizeRenderQualityPolicy()`: temporarily suspend dynamic resolution during active resize, but only on desktop. Mobile/iOS keeps the guard disabled so startup geometry churn does not force extra Metal swapchain rebuilds.
 - `clearActiveFocus(...)` and `shouldRetainFocusForUiHit(...)`: define when a click should clear editing focus and when it should not.
 
 ## Why It Exists

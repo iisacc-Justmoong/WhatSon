@@ -24,6 +24,7 @@ def main() -> int:
         ios_device=runner.ios_device,
     )
     print(f"[build_ios] root={runner.root}", flush=True)
+    print("[build_ios] mode=xcodeproj-config", flush=True)
 
     result = runner.run([TASK_IOS])[0]
     emit_state(
