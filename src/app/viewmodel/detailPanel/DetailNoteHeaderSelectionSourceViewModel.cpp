@@ -162,9 +162,10 @@ namespace
             }
 
             QVariantMap optionMap = findProgressHierarchyEntryByLabel(optionsHierarchyModel, label);
+            int fallbackProgressValue = -1;
             if (optionMap.isEmpty())
             {
-                const int fallbackProgressValue = fallbackProgressValueForLabel(label);
+                fallbackProgressValue = fallbackProgressValueForLabel(label);
                 if (fallbackProgressValue >= 0)
                 {
                     optionMap = findProgressHierarchyEntryByValue(optionsHierarchyModel, fallbackProgressValue);
@@ -172,10 +173,10 @@ namespace
             }
 
             const int progressValue = optionMap.isEmpty()
-                                          ? index
+                                          ? (fallbackProgressValue >= 0 ? fallbackProgressValue : index)
                                           : DetailNoteHeaderSelectionSourceViewModel::progressValueForHierarchyEntry(
                                               optionMap,
-                                              index);
+                                              fallbackProgressValue >= 0 ? fallbackProgressValue : index);
             optionMap.remove(QStringLiteral("clearSelection"));
             optionMap.insert(QStringLiteral("key"), QStringLiteral("progress:%1").arg(progressValue));
             optionMap.insert(QStringLiteral("label"), label);
@@ -312,8 +313,10 @@ void DetailNoteHeaderSelectionSourceViewModel::synchronize(bool reloadSession)
         && m_sessionStore->hasEntry(m_noteId))
     {
         const WhatSonNoteHeaderStore header = m_sessionStore->header(m_noteId);
-        if (!header.progressEnums().isEmpty())
+        if (optionsHierarchyModel.isEmpty() && !header.progressEnums().isEmpty())
         {
+            // The canonical Progress hierarchy remains the option source when available.
+            // Header enums only provide a fallback option list when no source model is injected.
             nextOptionsHierarchyModel = buildHeaderBackedProgressHierarchyModel(header, optionsHierarchyModel);
         }
     }

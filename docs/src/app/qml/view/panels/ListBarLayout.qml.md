@@ -61,6 +61,9 @@ itself.
 
 ## Interaction Contract
 
+- The panel enters note-list mode whenever an actual `noteListModel` is injected. It must not hard-code
+  hierarchy toolbar indexes such as `Library` or `Bookmarks`, because domains like `Projects` also own
+  note-list projections.
 - `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
   authoritative selection back into the bound note-list model, captures `focusedNoteId` for keyboard deletion, and
   reasserts the pending user choice after the current event turn.

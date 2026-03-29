@@ -4,6 +4,8 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
 
+#include <QSet>
+
 namespace
 {
     QString normalizeFolderLookupKey(QString value)
@@ -529,23 +531,32 @@ void DetailPanelViewModel::synchronizeCurrentNoteMetadataConsumers(const QString
         return;
     }
 
-    QObject* sourceViewModel = m_currentNoteContextBridge.noteDirectorySourceViewModel();
-    if (sourceViewModel == nullptr)
+    QSet<QObject*> synchronizedConsumers;
+    auto synchronizeConsumer = [&synchronizedConsumers, &normalizedNoteId](QObject* sourceViewModel)
     {
-        return;
-    }
+        if (sourceViewModel == nullptr || synchronizedConsumers.contains(sourceViewModel))
+        {
+            return;
+        }
 
-    const QMetaObject* metaObject = sourceViewModel->metaObject();
-    if (metaObject == nullptr || metaObject->indexOfMethod("reloadNoteMetadataForNoteId(QString)") < 0)
-    {
-        return;
-    }
+        const QMetaObject* metaObject = sourceViewModel->metaObject();
+        if (metaObject == nullptr || metaObject->indexOfMethod("reloadNoteMetadataForNoteId(QString)") < 0)
+        {
+            return;
+        }
 
-    bool synchronized = false;
-    QMetaObject::invokeMethod(
-        sourceViewModel,
-        "reloadNoteMetadataForNoteId",
-        Qt::DirectConnection,
-        Q_RETURN_ARG(bool, synchronized),
-        Q_ARG(QString, normalizedNoteId));
+        bool synchronized = false;
+        QMetaObject::invokeMethod(
+            sourceViewModel,
+            "reloadNoteMetadataForNoteId",
+            Qt::DirectConnection,
+            Q_RETURN_ARG(bool, synchronized),
+            Q_ARG(QString, normalizedNoteId));
+        synchronizedConsumers.insert(sourceViewModel);
+    };
+
+    synchronizeConsumer(m_currentNoteContextBridge.noteDirectorySourceViewModel());
+    synchronizeConsumer(m_projectSelectionSourceViewModel.optionsSourceViewModel());
+    synchronizeConsumer(m_bookmarkSelectionSourceViewModel.optionsSourceViewModel());
+    synchronizeConsumer(m_progressSelectionSourceViewModel.optionsSourceViewModel());
 }

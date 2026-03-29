@@ -64,6 +64,8 @@ public:
     Q_INVOKABLE bool applyHierarchyNodes(
         const QVariantList& hierarchyNodes,
         const QString& activeItemKey = QString()) override;
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
+    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
     bool supportsHierarchyNodeReorder() const noexcept override;
 
     void setProjectNames(QStringList projectNames);

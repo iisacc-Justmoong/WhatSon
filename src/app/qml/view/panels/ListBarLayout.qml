@@ -24,7 +24,7 @@ Rectangle {
         && listBarLayout.noteDeletionViewModel !== undefined
         && listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
-    readonly property bool noteListMode: activeToolbarIndex === 0 || activeToolbarIndex === 2
+    readonly property bool noteListMode: listBarLayout.hasNoteListModel
     readonly property var noteContextMenuItems: [
         {
             "label": "Delete note",

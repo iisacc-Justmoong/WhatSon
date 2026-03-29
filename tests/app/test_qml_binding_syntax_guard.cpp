@@ -1519,6 +1519,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml delete bridge must retain the resolved note-list model as a fallback focus source.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
+            "readonly property bool noteListMode: listBarLayout.hasNoteListModel")),
+        "ListBarLayout.qml must enable list mode from the injected note-list model contract instead of hard-coding toolbar indexes.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral(
             "readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null")),
         "ListBarLayout.qml must normalize the active note-list model through a resolved contract property.");
     QVERIFY2(

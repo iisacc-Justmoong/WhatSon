@@ -38,10 +38,19 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 
 - `noteListModel()` now returns a `LibraryNoteListModel` owned by the projects viewmodel instead of
   the inherited null default.
-- The note list is rebuilt from indexed `LibraryNoteRecord` entries and filtered by the selected
-  project label stored in each note header's `.wsnhead <project>` field.
+- The note list is rebuilt from indexed `LibraryNoteRecord` entries, but project membership is
+  synchronized again by reading each note header file before filtering.
+- This keeps `.wsnhead <project>` as the only source of truth for Projects filtering, even when
+  `index.wsnindex` still carries stale project labels.
+- The same header synchronization runs at each note-list refresh, so switching project selection
+  after an external `.wsnhead` edit cannot keep a stale project member visible.
+- If an index row cannot be mapped to a readable note header, its project label is ignored for the
+  Projects projection so index-only ghost rows do not leak into a selected project.
 - With no active sidebar selection, the model shows all notes whose project label is currently
   present in the loaded project hierarchy.
+- `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
+  filtered projection immediately, so project assignment writes do not require a later hub reload
+  before the projects note list catches up.
 
 ## Invariants
 

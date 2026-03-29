@@ -1031,13 +1031,18 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
         }
     };
 
-    auto upsertRecord = [&](LibraryNoteRecord record)
+    auto upsertRecord = [&](LibraryNoteRecord record, bool projectFieldAuthoritative)
     {
         normalizeRecordFallbacks(&record);
         const int foundIndex = indexRecord(record);
         if (foundIndex >= 0)
         {
             mergeRecord(&mergedRecords[foundIndex], record);
+            if (projectFieldAuthoritative)
+            {
+                // `.wsnhead <project>` is the source of truth, including the explicit empty state.
+                mergedRecords[foundIndex].project = record.project.trimmed();
+            }
             registerKeysForRecord(mergedRecords[foundIndex], foundIndex);
             return;
         }
@@ -1071,7 +1076,7 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
                         {
                             indexRecord.noteDirectoryPath = QDir(libraryRoot).filePath(indexRecord.noteDirectoryPath);
                         }
-                        upsertRecord(std::move(indexRecord));
+                        upsertRecord(std::move(indexRecord), false);
                     }
                 }
                 else
@@ -1106,7 +1111,7 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
         while (iterator.hasNext())
         {
             const QString wsnHeadPath = iterator.next();
-            upsertRecord(parseRecordFromWsnhead(wsnHeadPath));
+            upsertRecord(parseRecordFromWsnhead(wsnHeadPath), true);
         }
     }
 

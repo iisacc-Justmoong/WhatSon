@@ -483,6 +483,10 @@ private
     void libraryViewModel_supportsCrudContract();
     void projectsViewModel_supportsCrudContract();
     void projectsViewModel_loadFromWshub_populatesNoteListForSelectedProject();
+    void projectsViewModel_reloadNoteMetadataForNoteId_refreshesSelectedProjectProjection();
+    void projectsViewModel_loadFromWshub_ignoresStaleIndexProjectWhenHeaderProjectIsEmpty();
+    void projectsViewModel_loadFromWshub_ignoresIndexOnlyProjectRecordWithoutHeader();
+    void projectsViewModel_selectionRefresh_mustDropNoteWhenHeaderProjectBecomesEmpty();
     void projectsViewModel_reactsToModelMutation();
     void projectsViewModel_applyRuntimeSnapshot_preservesSelectionAcrossUnchangedSnapshot();
     void projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth();
@@ -624,6 +628,177 @@ void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_populatesNoteListF
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Beta summary"));
+}
+
+void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_refreshesSelectedProjectProjection()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(0);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    const QString betaHeaderPath = QDir(hubPath).filePath(
+        QStringLiteral("ProjectsVmHub.wscontents/Library.wslibrary/Beta.wsnote/Beta.wsnhead"));
+    QVERIFY2(
+        writeUtf8File(
+            betaHeaderPath,
+            makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QStringLiteral("Alpha"))),
+        "Beta.wsnhead must be rewritten");
+
+    QVERIFY(viewModel.reloadNoteMetadataForNoteId(QStringLiteral("note-beta")));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(2, 0),
+            LibraryNoteListModel::NoteIdRole).toString(),
+        QStringLiteral("note-beta"));
+}
+
+void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_ignoresStaleIndexProjectWhenHeaderProjectIsEmpty()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("ProjectsVmHub.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString projectsFilePath = QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj"));
+    const QString betaHeaderPath = QDir(libraryPath).filePath(
+        QStringLiteral("Beta.wsnote/Beta.wsnhead"));
+    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+
+    const QJsonArray projects = {
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Alpha")}, {QStringLiteral("label"), QStringLiteral("Alpha")}},
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Beta")}, {QStringLiteral("label"), QStringLiteral("Beta")}},
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Untitled")}, {QStringLiteral("label"), QStringLiteral("Untitled")}}
+    };
+    QVERIFY(writeUtf8File(projectsFilePath, makeProjectsWsprojText(projects)));
+
+    const QString staleIndexText = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.library.index\",\n"
+        "  \"notes\": [\n"
+        "    {\"id\": \"note-alpha-a\"},\n"
+        "    {\"id\": \"note-alpha-b\"},\n"
+        "    {\"id\": \"note-beta\", \"project\": \"Untitled\"},\n"
+        "    {\"id\": \"note-orphan\"}\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(indexPath, staleIndexText));
+    QVERIFY(writeUtf8File(betaHeaderPath, makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QString())));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Untitled"));
+
+    viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
+}
+
+void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_ignoresIndexOnlyProjectRecordWithoutHeader()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("ProjectsVmHub.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString projectsFilePath = QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj"));
+    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+
+    const QJsonArray projects = {
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Alpha")}, {QStringLiteral("label"), QStringLiteral("Alpha")}},
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Beta")}, {QStringLiteral("label"), QStringLiteral("Beta")}},
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Untitled")}, {QStringLiteral("label"), QStringLiteral("Untitled")}}
+    };
+    QVERIFY(writeUtf8File(projectsFilePath, makeProjectsWsprojText(projects)));
+
+    const QString staleIndexText = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.library.index\",\n"
+        "  \"notes\": [\n"
+        "    {\"id\": \"note-alpha-a\"},\n"
+        "    {\"id\": \"note-alpha-b\"},\n"
+        "    {\"id\": \"note-beta\"},\n"
+        "    {\"id\": \"note-orphan\"},\n"
+        "    {\"id\": \"index-only-ghost\", \"project\": \"Untitled\"}\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(indexPath, staleIndexText));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(2, 0), ProjectsHierarchyModel::LabelRole).toString(),
+        QStringLiteral("Untitled"));
+
+    viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
+}
+
+void HierarchyViewModelsTest::projectsViewModel_selectionRefresh_mustDropNoteWhenHeaderProjectBecomesEmpty()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("ProjectsVmHub.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString projectsFilePath = QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj"));
+    const QString betaHeaderPath = QDir(libraryPath).filePath(
+        QStringLiteral("Beta.wsnote/Beta.wsnhead"));
+    const QString indexPath = QDir(libraryPath).filePath(QStringLiteral("index.wsnindex"));
+
+    const QJsonArray projects = {
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Alpha")}, {QStringLiteral("label"), QStringLiteral("Alpha")}},
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Beta")}, {QStringLiteral("label"), QStringLiteral("Beta")}},
+        QJsonObject{{QStringLiteral("id"), QStringLiteral("Untitled")}, {QStringLiteral("label"), QStringLiteral("Untitled")}}
+    };
+    QVERIFY(writeUtf8File(projectsFilePath, makeProjectsWsprojText(projects)));
+
+    const QString staleIndexText = QStringLiteral(
+        "{\n"
+        "  \"version\": 1,\n"
+        "  \"schema\": \"whatson.library.index\",\n"
+        "  \"notes\": [\n"
+        "    {\"id\": \"note-alpha-a\"},\n"
+        "    {\"id\": \"note-alpha-b\"},\n"
+        "    {\"id\": \"note-beta\", \"project\": \"Untitled\"},\n"
+        "    {\"id\": \"note-orphan\"}\n"
+        "  ]\n"
+        "}\n");
+    QVERIFY(writeUtf8File(indexPath, staleIndexText));
+    QVERIFY(writeUtf8File(betaHeaderPath, makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QStringLiteral("Untitled"))));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::NoteIdRole).toString(),
+        QStringLiteral("note-beta"));
+
+    QVERIFY(writeUtf8File(betaHeaderPath, makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QString())));
+
+    viewModel.setSelectedIndex(0);
+    viewModel.setSelectedIndex(2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
 }
 
 void HierarchyViewModelsTest::projectsViewModel_reactsToModelMutation()

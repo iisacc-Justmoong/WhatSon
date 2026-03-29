@@ -6,6 +6,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -295,6 +296,173 @@ namespace
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
 
+    int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            return -1;
+        }
+
+        for (int index = 0; index < notes.size(); ++index)
+        {
+            if (notes.at(index).noteId.trimmed() == normalizedNoteId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
+    {
+        if (note == nullptr)
+        {
+            return;
+        }
+
+        const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
+        if (!updatedRecord.noteId.trimmed().isEmpty())
+        {
+            note->noteId = updatedRecord.noteId;
+        }
+        note->storageKind = updatedRecord.storageKind;
+        note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodyFirstLine = updatedRecord.bodyFirstLine;
+        note->bodyHasResource = updatedRecord.bodyHasResource;
+        note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
+        note->createdAt = updatedRecord.createdAt;
+        note->lastModifiedAt = updatedRecord.lastModifiedAt;
+        note->author = updatedRecord.author;
+        note->modifiedBy = updatedRecord.modifiedBy;
+        note->project = updatedRecord.project;
+        note->folders = updatedRecord.folders;
+        note->folderUuids = updatedRecord.folderUuids;
+        note->bookmarkColors = updatedRecord.bookmarkColors;
+        note->tags = updatedRecord.tags;
+        note->progress = updatedRecord.progress;
+        note->bookmarked = updatedRecord.bookmarked;
+        note->preset = updatedRecord.preset;
+        if (!updatedRecord.noteDirectoryPath.isEmpty())
+        {
+            note->noteDirectoryPath = updatedRecord.noteDirectoryPath;
+        }
+        note->noteHeaderPath = updatedRecord.noteHeaderPath;
+    }
+
+    QString resolveCanonicalHeaderPathForProjects(const LibraryNoteRecord& note)
+    {
+        QString normalizedDirectoryPath = QDir::cleanPath(note.noteDirectoryPath.trimmed());
+        const QString normalizedHeaderPath = QDir::cleanPath(note.noteHeaderPath.trimmed());
+        if (normalizedDirectoryPath.isEmpty() && !normalizedHeaderPath.isEmpty())
+        {
+            normalizedDirectoryPath = QFileInfo(normalizedHeaderPath).absolutePath();
+        }
+        if (normalizedDirectoryPath.isEmpty())
+        {
+            return normalizedHeaderPath;
+        }
+
+        const QDir noteDirectory(normalizedDirectoryPath);
+        if (!noteDirectory.exists())
+        {
+            return normalizedHeaderPath;
+        }
+
+        const QString noteStem = QFileInfo(normalizedDirectoryPath).completeBaseName().trimmed();
+        if (!noteStem.isEmpty())
+        {
+            const QString stemHeaderPath = noteDirectory.filePath(noteStem + QStringLiteral(".wsnhead"));
+            if (QFileInfo(stemHeaderPath).isFile())
+            {
+                return QDir::cleanPath(stemHeaderPath);
+            }
+        }
+
+        const QString canonicalHeaderPath = noteDirectory.filePath(QStringLiteral("note.wsnhead"));
+        if (QFileInfo(canonicalHeaderPath).isFile())
+        {
+            return QDir::cleanPath(canonicalHeaderPath);
+        }
+
+        const QFileInfoList headerCandidates = noteDirectory.entryInfoList(
+            QStringList{QStringLiteral("*.wsnhead")},
+            QDir::Files,
+            QDir::Name);
+        QString draftHeaderPath;
+        for (const QFileInfo& fileInfo : headerCandidates)
+        {
+            const QString loweredName = fileInfo.fileName().toCaseFolded();
+            if (loweredName.contains(QStringLiteral(".draft.")))
+            {
+                if (draftHeaderPath.isEmpty())
+                {
+                    draftHeaderPath = fileInfo.absoluteFilePath();
+                }
+                continue;
+            }
+
+            return QDir::cleanPath(fileInfo.absoluteFilePath());
+        }
+
+        if (!draftHeaderPath.isEmpty())
+        {
+            return QDir::cleanPath(draftHeaderPath);
+        }
+
+        return normalizedHeaderPath;
+    }
+
+    void synchronizeIndexedProjectLabelsFromHeaders(QVector<LibraryNoteRecord>* notes)
+    {
+        if (notes == nullptr)
+        {
+            return;
+        }
+
+        WhatSonNoteFolderBindingRepository noteRepository;
+        for (int index = 0; index < notes->size(); ++index)
+        {
+            LibraryNoteRecord& note = (*notes)[index];
+            WhatSonLocalNoteDocument noteDocument;
+            QString ioError;
+            const QString normalizedNoteId = note.noteId.trimmed();
+            QString normalizedDirectoryPath = QDir::cleanPath(note.noteDirectoryPath.trimmed());
+            const QString preferredHeaderPath = resolveCanonicalHeaderPathForProjects(note);
+            if (normalizedDirectoryPath.isEmpty() && !preferredHeaderPath.isEmpty())
+            {
+                normalizedDirectoryPath = QFileInfo(preferredHeaderPath).absolutePath();
+            }
+
+            bool loaded = false;
+            if (!normalizedNoteId.isEmpty() && !preferredHeaderPath.isEmpty())
+            {
+                loaded = noteRepository.readDocument(
+                    normalizedNoteId,
+                    normalizedDirectoryPath,
+                    preferredHeaderPath,
+                    &noteDocument,
+                    &ioError);
+            }
+
+            if (!loaded)
+            {
+                loaded = noteRepository.readDocument(note, &noteDocument, &ioError);
+            }
+
+            if (loaded)
+            {
+                syncNoteRecordFromDocument(&note, noteDocument);
+                continue;
+            }
+
+            // Projects membership is header-authoritative.
+            // If we cannot load a header for this index-only row, exclude it from Projects projection.
+            note.project.clear();
+        }
+    }
+
     QString resolveWshubPathFromProjectsFile(const QString& projectsFilePath)
     {
         QFileInfo info(projectsFilePath.trimmed());
@@ -517,6 +685,54 @@ LibraryNoteListModel* ProjectsHierarchyViewModel::noteListModel() noexcept
 bool ProjectsHierarchyViewModel::supportsHierarchyNodeReorder() const noexcept
 {
     return true;
+}
+
+bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return false;
+    }
+
+    WhatSonNoteFolderBindingRepository noteRepository;
+    WhatSonLocalNoteDocument noteDocument;
+    QString ioError;
+    if (!noteRepository.readDocument(m_allNotes.at(noteIndex), &noteDocument, &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("reloadNoteMetadataForNoteId.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
+        return false;
+    }
+
+    syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
+    refreshNoteListForSelection();
+    return true;
+}
+
+QString ProjectsHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return {};
+    }
+
+    return m_allNotes.at(noteIndex).noteDirectoryPath.trimmed();
 }
 
 int ProjectsHierarchyViewModel::selectedIndex() const noexcept
@@ -1275,6 +1491,10 @@ LibraryNoteListItem ProjectsHierarchyViewModel::buildNoteListItem(const LibraryN
 
 void ProjectsHierarchyViewModel::refreshNoteListForSelection()
 {
+    // Keep project projection strictly aligned with live `.wsnhead` values.
+    // This prevents stale index/cache labels from leaking into project buckets.
+    synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
+
     const QString selectedProject =
         (m_selectedIndex >= 0 && m_selectedIndex < m_items.size()) ? m_items.at(m_selectedIndex).label.trimmed() : QString();
 
@@ -1334,6 +1554,7 @@ bool ProjectsHierarchyViewModel::refreshIndexedNotesFromWshub(const QString& wsh
     }
 
     m_allNotes = libraryAll.notes();
+    synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
     refreshNoteListForSelection();
     return true;
 }

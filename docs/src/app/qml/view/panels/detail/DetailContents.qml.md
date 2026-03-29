@@ -36,6 +36,9 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 - Each selector receives a dedicated detail-panel-local selector viewmodel from `DetailPanel.qml`.
 - Those selector viewmodels mirror hierarchy entries from the canonical Projects/Bookmarks/Progress hierarchy viewmodels, but they keep their own local `selectedIndex`.
 - Each selector builds its popup entries from the matched detail-local selector viewmodel's `hierarchyModel`.
+- For `Progress`, the popup keeps the injected canonical Progress hierarchy options when that source
+  exists; it falls back to the current `.wsnhead` enum labels only when no Progress source model is
+  available.
 - Each selector popup starts with a synthetic clear item:
   - `Projects`: `No project`
   - `Bookmark`: `No bookmark`

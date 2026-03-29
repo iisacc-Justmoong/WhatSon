@@ -256,9 +256,11 @@ void SidebarHierarchyModuleTest::activeHierarchyBindings_mustResolveThroughProvi
     StubStandardHierarchyViewModel projectsViewModel;
     StubStandardHierarchyViewModel bookmarksViewModel;
     QObject libraryNoteListModel;
+    QObject projectsNoteListModel;
     QObject bookmarksNoteListModel;
 
     libraryViewModel.setNoteListModel(&libraryNoteListModel);
+    projectsViewModel.setNoteListModel(&projectsNoteListModel);
     bookmarksViewModel.setNoteListModel(&bookmarksNoteListModel);
 
     HierarchyViewModelProvider provider;
@@ -282,10 +284,10 @@ void SidebarHierarchyModuleTest::activeHierarchyBindings_mustResolveThroughProvi
 
     sidebarViewModel.setActiveHierarchyIndex(1);
     QCOMPARE(sidebarViewModel.activeHierarchyViewModel(), &projectsViewModel);
-    QCOMPARE(sidebarViewModel.activeNoteListModel(), static_cast<QObject*>(nullptr));
+    QCOMPARE(sidebarViewModel.activeNoteListModel(), &projectsNoteListModel);
     QCOMPARE(sidebarViewModel.property("resolvedActiveHierarchyIndex").toInt(), 1);
     QCOMPARE(sidebarViewModel.property("resolvedHierarchyViewModel").value<QObject*>(), &projectsViewModel);
-    QCOMPARE(sidebarViewModel.property("resolvedNoteListModel").value<QObject*>(), static_cast<QObject*>(nullptr));
+    QCOMPARE(sidebarViewModel.property("resolvedNoteListModel").value<QObject*>(), &projectsNoteListModel);
 
     sidebarViewModel.setActiveHierarchyIndex(2);
     QCOMPARE(sidebarViewModel.activeHierarchyViewModel(), &bookmarksViewModel);
