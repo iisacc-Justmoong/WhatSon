@@ -13,6 +13,8 @@ LVRS hierarchy view.
   viewmodel contract.
 - Accepts direct preset-name updates through `setPresetNames(...)`.
 - Accepts runtime-loader updates through `applyRuntimeSnapshot(...)`.
+- Uses explicit `override` markers on every inherited capability method so signature drift is
+  caught immediately and the build stays warning-clean.
 
 ## State Rules
 

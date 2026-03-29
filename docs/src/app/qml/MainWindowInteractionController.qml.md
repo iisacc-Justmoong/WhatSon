@@ -26,6 +26,7 @@ the shortcut layer stays aligned with the same ownership contract used by the re
 - `resolveOwnedWritableViewModel(...)`: normalizes writable lookup around LVRS view ownership plus the stable registry key for the same capability.
 - `resolvePanelViewModel(...)`: resolves panel-scoped hooks without forcing every consumer to know the registry contract.
 - `handleResizeForRenderQuality()` and `finalizeResizeRenderQualityPolicy()`: temporarily suspend dynamic resolution during active resize, but only on desktop. Mobile/iOS keeps the guard disabled so startup geometry churn does not force extra Metal swapchain rebuilds.
+- `applyRenderQualityPolicy()`: logs the effective guard mode together with the root window's device-tier and mobile-windowing policy so iOS/Xcode crash reports can distinguish render-tier issues from fullscreen coverage churn.
 - `clearActiveFocus(...)` and `shouldRetainFocusForUiHit(...)`: define when a click should clear editing focus and when it should not.
 
 ## Why It Exists

@@ -512,6 +512,7 @@ namespace
         const FolderHierarchyLookup* lookup)
     {
         QStringList folders;
+        QSet<QString> folderKeys;
         if (lookup != nullptr)
         {
             const QStringList resolvedFolderUuids = effectiveNoteFolderUuids(note, *lookup);
@@ -520,16 +521,32 @@ namespace
             {
                 const QString normalizedFolderPath = normalizeFolderPath(
                     lookup->displayPathByFolderUuid.value(folderUuid));
-                if (!normalizedFolderPath.isEmpty() && !folders.contains(normalizedFolderPath))
+                const QString folderKey = normalizedFolderPath.toCaseFolded();
+                if (!normalizedFolderPath.isEmpty() && !folderKeys.contains(folderKey))
                 {
                     folders.push_back(normalizedFolderPath);
+                    folderKeys.insert(folderKey);
                 }
             }
         }
 
+        const QStringList mirroredFolders = noteListFolders(note);
+        for (const QString& folderPath : mirroredFolders)
+        {
+            const QString normalizedFolderPath = normalizeFolderPath(folderPath);
+            const QString folderKey = normalizedFolderPath.toCaseFolded();
+            if (normalizedFolderPath.isEmpty() || folderKeys.contains(folderKey))
+            {
+                continue;
+            }
+
+            folders.push_back(normalizedFolderPath);
+            folderKeys.insert(folderKey);
+        }
+
         if (folders.isEmpty())
         {
-            folders = noteListFolders(note);
+            folders = mirroredFolders;
         }
         return folders;
     }
@@ -975,11 +992,29 @@ namespace
         }
 
         const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
+        if (!updatedRecord.noteId.trimmed().isEmpty())
+        {
+            note->noteId = updatedRecord.noteId;
+        }
+        note->storageKind = updatedRecord.storageKind;
+        note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodyFirstLine = updatedRecord.bodyFirstLine;
+        note->bodyHasResource = updatedRecord.bodyHasResource;
+        note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
+        note->createdAt = updatedRecord.createdAt;
+        note->author = updatedRecord.author;
+        note->modifiedBy = updatedRecord.modifiedBy;
+        note->project = updatedRecord.project;
         note->folders = updatedRecord.folders;
         note->folderUuids = updatedRecord.folderUuids;
+        note->bookmarkColors = updatedRecord.bookmarkColors;
+        note->tags = updatedRecord.tags;
+        note->progress = updatedRecord.progress;
+        note->bookmarked = updatedRecord.bookmarked;
+        note->preset = updatedRecord.preset;
         note->lastModifiedAt = updatedRecord.lastModifiedAt;
         note->noteHeaderPath = updatedRecord.noteHeaderPath;
-        if (note->noteDirectoryPath.isEmpty())
+        if (!updatedRecord.noteDirectoryPath.isEmpty())
         {
             note->noteDirectoryPath = updatedRecord.noteDirectoryPath;
         }
@@ -3192,6 +3227,39 @@ QString LibraryHierarchyViewModel::noteDirectoryPathForNoteId(const QString& not
     }
 
     return allNotes.at(noteIndex).noteDirectoryPath.trimmed();
+}
+
+bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty() || !m_runtimeIndexLoaded)
+    {
+        return false;
+    }
+
+    QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
+    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= allNotes.size())
+    {
+        return false;
+    }
+
+    WhatSonNoteFolderBindingRepository noteRepository;
+    WhatSonLocalNoteDocument noteDocument;
+    QString ioError;
+    if (!noteRepository.readDocument(allNotes.at(noteIndex), &noteDocument, &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("reloadNoteMetadataForNoteId.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
+        return false;
+    }
+
+    syncNoteRecordFromDocument(&allNotes[noteIndex], noteDocument);
+    setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
+    refreshNoteListForSelection();
+    return true;
 }
 
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)

@@ -22,7 +22,11 @@ WhatSonNoteHeaderSessionStore::WhatSonNoteHeaderSessionStore(QObject* parent)
 {
 }
 
-bool WhatSonNoteHeaderSessionStore::ensureLoaded(const QString& noteId, const QString& noteDirectoryPath, QString* errorMessage)
+bool WhatSonNoteHeaderSessionStore::ensureLoaded(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    QString* errorMessage,
+    const bool forceReload)
 {
     const QString normalizedNoteId = normalizeNoteId(noteId);
     const QString normalizedDirectoryPath = noteDirectoryPath.trimmed();
@@ -36,7 +40,7 @@ bool WhatSonNoteHeaderSessionStore::ensureLoaded(const QString& noteId, const QS
     }
 
     Entry& entry = m_entries[normalizedNoteId];
-    if (entry.loaded && entry.noteDirectoryPath == normalizedDirectoryPath)
+    if (!forceReload && entry.loaded && entry.noteDirectoryPath == normalizedDirectoryPath)
     {
         if (errorMessage != nullptr)
         {

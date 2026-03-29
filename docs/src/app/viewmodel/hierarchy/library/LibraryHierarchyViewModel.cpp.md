@@ -104,6 +104,13 @@ when the rendered first line came from markup that is not preserved as the leadi
   rebuild every visible row from scratch
 - folder-scoped note filtering now builds the visible `LibraryNoteListItem` list directly instead
   of first materializing an intermediate filtered `LibraryNoteRecord` vector
+- `reloadNoteMetadataForNoteId(...)` re-reads a single local note document from disk, refreshes the
+  indexed `LibraryNoteRecord`, invalidates the cached row projection, and rebinds the visible note
+  list without resetting the current sidebar selection.
+- `canonicalNoteFolderLabels(...)` must not drop folder bindings that already exist in `.wsnhead`
+  but are not yet resolvable from the current `Folders.wsfolders` hierarchy snapshot. Resolved
+  hierarchy paths stay first, but unresolved header-only paths are appended so the note list keeps
+  mirroring the current note metadata instead of lagging behind the detail panel.
 
 ## Why This Matters
 

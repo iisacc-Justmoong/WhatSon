@@ -7,6 +7,7 @@
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
 #include <QDir>
@@ -217,6 +218,42 @@ namespace
         }
 
         return {};
+    }
+
+    void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
+    {
+        if (note == nullptr)
+        {
+            return;
+        }
+
+        const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
+        if (!updatedRecord.noteId.trimmed().isEmpty())
+        {
+            note->noteId = updatedRecord.noteId;
+        }
+        note->storageKind = updatedRecord.storageKind;
+        note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodyFirstLine = updatedRecord.bodyFirstLine;
+        note->bodyHasResource = updatedRecord.bodyHasResource;
+        note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
+        note->createdAt = updatedRecord.createdAt;
+        note->lastModifiedAt = updatedRecord.lastModifiedAt;
+        note->author = updatedRecord.author;
+        note->modifiedBy = updatedRecord.modifiedBy;
+        note->project = updatedRecord.project;
+        note->folders = updatedRecord.folders;
+        note->folderUuids = updatedRecord.folderUuids;
+        note->bookmarkColors = updatedRecord.bookmarkColors;
+        note->tags = updatedRecord.tags;
+        note->progress = updatedRecord.progress;
+        note->bookmarked = updatedRecord.bookmarked;
+        note->preset = updatedRecord.preset;
+        if (!updatedRecord.noteDirectoryPath.isEmpty())
+        {
+            note->noteDirectoryPath = updatedRecord.noteDirectoryPath;
+        }
+        note->noteHeaderPath = updatedRecord.noteHeaderPath;
     }
 } // namespace
 
@@ -512,6 +549,37 @@ QString ProgressHierarchyViewModel::noteDirectoryPathForNoteId(const QString& no
     }
 
     return m_allNotes.at(noteIndex).noteDirectoryPath.trimmed();
+}
+
+bool ProgressHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return false;
+    }
+
+    WhatSonNoteFolderBindingRepository noteRepository;
+    WhatSonLocalNoteDocument noteDocument;
+    QString ioError;
+    if (!noteRepository.readDocument(m_allNotes.at(noteIndex), &noteDocument, &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("reloadNoteMetadataForNoteId.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
+        return false;
+    }
+
+    syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
+    refreshNoteListForSelection();
+    return true;
 }
 
 bool ProgressHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)

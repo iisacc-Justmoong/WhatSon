@@ -23,7 +23,11 @@ public:
 
     explicit WhatSonNoteHeaderSessionStore(QObject* parent = nullptr);
 
-    bool ensureLoaded(const QString& noteId, const QString& noteDirectoryPath, QString* errorMessage = nullptr);
+    bool ensureLoaded(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        QString* errorMessage = nullptr,
+        bool forceReload = false);
     bool hasEntry(const QString& noteId) const;
     Entry entry(const QString& noteId) const;
 

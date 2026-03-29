@@ -491,6 +491,51 @@ bool ProjectsHierarchyViewModel::renameItem(int index, const QString& displayNam
     return true;
 }
 
+bool ProjectsHierarchyViewModel::setItemExpanded(int index, bool expanded)
+{
+    if (index < 0 || index >= m_items.size())
+    {
+        return false;
+    }
+
+    if (!m_items.at(index).showChevron)
+    {
+        return false;
+    }
+
+    if (m_items.at(index).expanded == expanded)
+    {
+        return true;
+    }
+
+    m_items[index].expanded = expanded;
+    syncModel();
+    return true;
+}
+
+bool ProjectsHierarchyViewModel::setAllItemsExpanded(bool expanded)
+{
+    bool changed = false;
+    for (ProjectsHierarchyItem& item : m_items)
+    {
+        if (!item.showChevron || item.expanded == expanded)
+        {
+            continue;
+        }
+
+        item.expanded = expanded;
+        changed = true;
+    }
+
+    if (!changed)
+    {
+        return true;
+    }
+
+    syncModel();
+    return true;
+}
+
 void ProjectsHierarchyViewModel::createFolder()
 {
     WhatSon::Debug::traceSelf(this,

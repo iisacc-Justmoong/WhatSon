@@ -50,20 +50,21 @@ public:
     QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const override;
-    Q_INVOKABLE bool canRenameItem(int index) const;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
-    Q_INVOKABLE void createFolder();
-    Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE bool canRenameItem(int index) const override;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
+    Q_INVOKABLE void createFolder() override;
+    Q_INVOKABLE void deleteSelectedFolder() override;
     bool removeNoteById(const QString& noteId);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
+    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
 
     void setSystemCalendarStore(SystemCalendarStore* store);
     SystemCalendarStore* systemCalendarStore() const noexcept;
-    bool renameEnabled() const noexcept;
-    bool createFolderEnabled() const noexcept;
-    bool deleteFolderEnabled() const noexcept;
+    bool renameEnabled() const noexcept override;
+    bool createFolderEnabled() const noexcept override;
+    bool deleteFolderEnabled() const noexcept override;
     bool viewOptionsEnabled() const noexcept override;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);

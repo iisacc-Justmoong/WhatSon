@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
 import ".." as PanelView
 
@@ -148,6 +149,32 @@ Rectangle {
     property string searchText: ""
     readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1
     readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : [])
+    readonly property bool hierarchyBulkExpansionEnabled: {
+        if (!sidebarHierarchyView.hierarchyInteractionBridge)
+            return false;
+        const nodes = sidebarHierarchyView.standardHierarchyModel;
+        for (let index = 0; index < nodes.length; ++index) {
+            const node = nodes[index];
+            if (node && node.showChevron !== undefined && Boolean(node.showChevron))
+                return true;
+        }
+        return false;
+    }
+    readonly property var hierarchyViewOptionsMenuItems: [
+        {
+            "label": "Expand All",
+            "iconName": "generalshow",
+            "enabled": sidebarHierarchyView.hierarchyBulkExpansionEnabled,
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "label": "Collapse All",
+            "enabled": sidebarHierarchyView.hierarchyBulkExpansionEnabled,
+            "keyVisible": false,
+            "showChevron": false
+        }
+    ]
     property bool hierarchyExpansionActivationSuppressed: false
     property int hierarchyExpansionActivationSuppressionSerial: 0
     readonly property int toolbarButtonSize: LV.Theme.gap20
@@ -403,7 +430,40 @@ Rectangle {
             sidebarHierarchyView.cancelHierarchyRename();
         if (!sidebarHierarchyView.viewOptionsEnabled)
             return;
-        sidebarHierarchyView.requestViewHook("hierarchy.footer.options");
+        if (hierarchyViewOptionsMenu.opened) {
+            hierarchyViewOptionsMenu.close();
+            return;
+        }
+        hierarchyViewOptionsMenu.openFor(hierarchyFooter, hierarchyFooter.width, hierarchyFooter.height + 2);
+        sidebarHierarchyView.requestViewHook("hierarchy.footer.options.open");
+    }
+
+    function requestExpandAllHierarchyItems() {
+        if (sidebarHierarchyView.renameEditingActive)
+            sidebarHierarchyView.cancelHierarchyRename();
+        if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
+            return false;
+        if (!sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(true))
+            return false;
+        sidebarHierarchyView.requestViewHook("hierarchy.footer.expandAll");
+        Qt.callLater(function () {
+            sidebarHierarchyView.syncSelectedHierarchyItem(false);
+        });
+        return true;
+    }
+
+    function requestCollapseAllHierarchyItems() {
+        if (sidebarHierarchyView.renameEditingActive)
+            sidebarHierarchyView.cancelHierarchyRename();
+        if (!sidebarHierarchyView.hierarchyBulkExpansionEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
+            return false;
+        if (!sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(false))
+            return false;
+        sidebarHierarchyView.requestViewHook("hierarchy.footer.collapseAll");
+        Qt.callLater(function () {
+            sidebarHierarchyView.syncSelectedHierarchyItem(false);
+        });
+        return true;
     }
 
     function syncSelectedHierarchyItem(focusView) {
@@ -682,6 +742,23 @@ Rectangle {
 
         onActivated: {
             sidebarHierarchyView.cancelHierarchyRename();
+        }
+    }
+    LV.ContextMenu {
+        id: hierarchyViewOptionsMenu
+
+        autoCloseOnTrigger: true
+        closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
+        itemWidth: 144
+        items: sidebarHierarchyView.hierarchyViewOptionsMenuItems
+        modal: false
+        parent: Controls.Overlay.overlay
+
+        onItemTriggered: function (index) {
+            if (index === 0)
+                sidebarHierarchyView.requestExpandAllHierarchyItems();
+            else if (index === 1)
+                sidebarHierarchyView.requestCollapseAllHierarchyItems();
         }
     }
     LV.ListFooter {

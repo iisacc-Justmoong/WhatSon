@@ -9,6 +9,7 @@
 #include "session/WhatSonFoldersHierarchySessionService.hpp"
 #include "session/WhatSonNoteHeaderSessionStore.hpp"
 
+#include <QMetaObject>
 #include <QObject>
 #include <QVariantList>
 
@@ -76,15 +77,22 @@ public
         emit viewModelHookRequested();
     }
 
-    signals  :
+signals  :
 
 
     void activeStateChanged();
     void toolbarItemsChanged();
     void viewModelHookRequested();
 
+private slots:
+    void handleCurrentNoteItemsChanged();
+
 private:
     void applyActiveContentViewModel(DetailContentState activeState);
+    void reconnectCurrentNoteListModelSignals(QObject* noteListModel);
+    void disconnectCurrentNoteListModelSignals();
+    void reloadCurrentHeader(bool forceReload);
+    void synchronizeCurrentNoteMetadataConsumers(const QString& noteId);
     bool ensureCurrentHeaderLoaded(QString* errorMessage = nullptr);
     QString currentNoteId() const;
     QString currentNoteDirectoryPath() const;
@@ -112,4 +120,5 @@ private:
     DetailHierarchySelectionViewModel m_progressSelectionViewModel;
     QObject* m_activeContentViewModel = nullptr;
     QVariantList m_toolbarItems;
+    QMetaObject::Connection m_currentNoteListItemsChangedConnection;
 };

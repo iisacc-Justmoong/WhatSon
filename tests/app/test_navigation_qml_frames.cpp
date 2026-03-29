@@ -331,12 +331,20 @@ void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset(
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.leftMargin: sidebarHierarchyView.horizontalInset")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.rightMargin: sidebarHierarchyView.horizontalInset")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.ListFooter {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("LV.ContextMenu {")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("id: hierarchyViewOptionsMenu")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("items: sidebarHierarchyView.hierarchyViewOptionsMenuItems")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("hierarchyViewOptionsMenu.openFor(hierarchyFooter, hierarchyFooter.width, hierarchyFooter.height + 2);")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("\"label\": \"Expand All\"")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("\"label\": \"Collapse All\"")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarItems: []")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("spacing: sidebarHierarchyView.toolbarButtonSpacing")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("width: 78")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset")));
     QVERIFY(sidebarHierarchyView.contains(
         QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.footerVisible ? hierarchyFooter.implicitHeight : 0)")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(true)")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(false)")));
 }
 
 QTEST_APPLESS_MAIN(NavigationQmlFramesTest)

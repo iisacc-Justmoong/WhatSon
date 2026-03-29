@@ -3,6 +3,8 @@
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 
+#include <QVariantMap>
+
 HierarchyInteractionBridge::HierarchyInteractionBridge(QObject* parent)
     : QObject(parent)
 {
@@ -126,6 +128,52 @@ bool HierarchyInteractionBridge::setItemExpanded(int index, bool expanded)
     }
 
     return expansionCapability->setItemExpanded(index, expanded);
+}
+
+bool HierarchyInteractionBridge::setAllItemsExpanded(bool expanded)
+{
+    if (m_hierarchyViewModel == nullptr)
+    {
+        return false;
+    }
+
+    bool handled = false;
+    if (QMetaObject::invokeMethod(
+            m_hierarchyViewModel.data(),
+            "setAllItemsExpanded",
+            Qt::DirectConnection,
+            Q_RETURN_ARG(bool, handled),
+            Q_ARG(bool, expanded)))
+    {
+        return handled;
+    }
+
+    auto* expansionCapability = qobject_cast<IHierarchyExpansionCapability*>(m_hierarchyViewModel);
+    if (expansionCapability == nullptr)
+    {
+        return false;
+    }
+
+    const QVariantList hierarchyNodes = m_hierarchyViewModel->hierarchyNodes();
+    bool hasExpandableItems = false;
+    for (int index = 0; index < hierarchyNodes.size(); ++index)
+    {
+        const QVariantMap entryMap = hierarchyNodes.at(index).toMap();
+        if (!entryMap.value(QStringLiteral("showChevron")).toBool())
+        {
+            continue;
+        }
+
+        hasExpandableItems = true;
+        if (entryMap.value(QStringLiteral("expanded")).toBool() == expanded)
+        {
+            continue;
+        }
+
+        expansionCapability->setItemExpanded(index, expanded);
+    }
+
+    return hasExpandableItems || hierarchyNodes.isEmpty();
 }
 
 void HierarchyInteractionBridge::handleHierarchyViewModelDestroyed()

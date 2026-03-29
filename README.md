@@ -973,6 +973,10 @@ otherwise emit host `protoc` warnings.
 The generated iOS Xcode project keeps automatic signing metadata (`DEVELOPMENT_TEAM`,
 bundle identifier, optional code-sign identity) so the final physical-device build can
 be completed from Xcode against the selected run destination.
+The app-side iOS startup path now also prefers UIKit-managed windowing/insets together
+with the LVRS `LowTier` render preset during physical-device testing. That reduces
+first-frame Metal swapchain churn compared with the framework's default full-window
+coverage path on iOS.
 The host `WhatSon` target no longer depends on iOS Xcode project export, so macOS app
 builds are not blocked by stale cross-compile metadata under `build/ios-xcode-artifact`.
 The explicit `whatson_export_xcodeproj` target now clears only the nested iOS CMake

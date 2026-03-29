@@ -17,6 +17,14 @@
 ### Classes and Structs
 - `ProjectsHierarchyViewModel`
 
+## Current Public Surface Highlights
+
+- Implements rename, create/delete, reorder, and expansion capabilities for the projects hierarchy.
+- Exposes both `setItemExpanded(int, bool)` and `setAllItemsExpanded(bool)` so any future expandable
+  projects rows can share the same projects-owned expansion state as the sidebar footer context menu.
+- Declares inherited capability methods with explicit `override` so the reorder/rename/crud
+  contract stays compile-time checked and warning-clean.
+
 ### Enums
 - None detected during scaffold generation.
 

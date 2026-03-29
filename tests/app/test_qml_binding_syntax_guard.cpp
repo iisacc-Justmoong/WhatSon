@@ -1189,6 +1189,14 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("iconName: \"generalsettings\"")),
         "SidebarHierarchyView.qml footer must restore the settings menu button defined by the Figma footer node.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("readonly property var hierarchyViewOptionsMenuItems: [")) &&
+        sidebarViewText.contains(QStringLiteral("\"label\": \"Expand All\"")) &&
+        sidebarViewText.contains(QStringLiteral("\"label\": \"Collapse All\"")),
+        "SidebarHierarchyView.qml footer options must expose explicit Expand All / Collapse All menu entries.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("readonly property bool hierarchyBulkExpansionEnabled: {")),
+        "SidebarHierarchyView.qml must derive a dedicated bulk-expansion enablement flag from the projected hierarchy model.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("type: \"menu\"")),
         "SidebarHierarchyView.qml footer must keep the third button as a menu-style action.");
     QVERIFY2(
@@ -1215,6 +1223,15 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestDeleteFolder();")),
         "SidebarHierarchyView.qml footer delete button must route into the shared delete-folder helper.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("LV.ContextMenu {")) &&
+        sidebarViewText.contains(QStringLiteral("id: hierarchyViewOptionsMenu")) &&
+        sidebarViewText.contains(QStringLiteral("hierarchyViewOptionsMenu.openFor(hierarchyFooter, hierarchyFooter.width, hierarchyFooter.height + 2);")),
+        "SidebarHierarchyView.qml footer menu button must open a dedicated LVRS context menu anchored from the footer edge.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(true)")) &&
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(false)")),
+        "SidebarHierarchyView.qml footer options must route Expand All / Collapse All through the hierarchy interaction bridge.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("onListItemExpanded: function (item, itemId, index, expanded)")) &&
         sidebarViewText.contains(

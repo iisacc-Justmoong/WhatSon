@@ -2,7 +2,10 @@
 #include "file/hierarchy/WhatSonFolderIdentity.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
+#include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 
@@ -87,7 +90,13 @@ public:
         emit currentNoteIdChanged();
     }
 
+    void notifyItemsChanged()
+    {
+        emit itemsChanged();
+    }
+
 signals:
+    void itemsChanged();
     void currentNoteIdChanged();
 
 private:
@@ -181,7 +190,11 @@ private
     void detailContentViewModels_mustMapEachStateToDedicatedViewModel();
     void detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection();
     void detailSelectors_mustMirrorCurrentNoteHeaderFileState();
+    void detailSelectors_mustReloadCurrentHeaderWhenNoteMetadataChanges();
     void detailSelectors_mustPreserveCurrentNoteContextAcrossUnsupportedHierarchySources();
+    void detailWrites_mustSynchronizeActiveLibraryNoteListMetadata();
+    void detailWrites_mustSynchronizeActiveBookmarksNoteListMetadata();
+    void detailWrites_mustSynchronizeActiveProgressNoteListMetadata();
     void detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries();
     void folderAssignments_mustSyncHeaderFoldersAndHierarchyStore();
     void requestStateChange_mustUpdateActiveStateAndToolbarSelection();
@@ -422,7 +435,9 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QCOMPARE(projectSelector->property("selectedIndex").toInt(), 2);
     QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 2);
     QCOMPARE(progressSelector->property("selectedIndex").toInt(), 2);
-    QCOMPARE(propertiesViewModel->property("folderItems").toStringList(), QStringList{QStringLiteral("Knowledge")});
+    QCOMPARE(
+        propertiesViewModel->property("folderItems").toStringList(),
+        QStringList{QStringLiteral("Archive/Knowledge")});
     QCOMPARE(propertiesViewModel->property("tagItems").toStringList(), QStringList{QStringLiteral("seed")});
     QCOMPARE(propertiesViewModel->property("currentProject").toString(), QStringLiteral("Beta"));
     QCOMPARE(propertiesViewModel->property("currentBookmark").toString(), QStringLiteral("amber"));
@@ -479,6 +494,84 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QCOMPARE(header.bookmarkColors(), QStringList{});
     QCOMPARE(header.tags(), QStringList{});
     QCOMPARE(header.progress(), -1);
+}
+
+void DetailPanelViewModelTest::detailSelectors_mustReloadCurrentHeaderWhenNoteMetadataChanges()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString noteId = QStringLiteral("ReloadNote");
+    const QString noteDirectoryPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("ReloadNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    const QString headerFilePath = QDir(noteDirectoryPath).filePath(QStringLiteral("ReloadNote.wsnhead"));
+    const QString initialHeaderText =
+        QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                       "<!DOCTYPE WHATSONNOTE>\n"
+                       "<contents id=\"ReloadNote\">\n"
+                       "  <head>\n"
+                       "    <meta charset=\"UTF-8\" />\n"
+                       "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
+                       "    <folders>\n"
+                       "      <folder>Archive/Knowledge</folder>\n"
+                       "    </folders>\n"
+                       "    <project>Beta</project>\n"
+                       "    <bookmarks state=\"false\" colors=\"\" />\n"
+                       "    <tags>\n"
+                       "      <tag>seed</tag>\n"
+                       "    </tags>\n"
+                       "    <progress enums=\"{Queued,Review,Ship,Published}\">7</progress>\n"
+                       "    <isPreset>false</isPreset>\n"
+                       "  </head>\n"
+                       "</contents>\n");
+    QVERIFY2(writeUtf8File(headerFilePath, initialHeaderText), "initial header file must be written");
+
+    DetailPanelViewModel viewModel;
+    FakeCurrentNoteListModel noteListModel;
+    FakeNoteDirectorySourceViewModel noteDirectorySourceViewModel;
+    noteDirectorySourceViewModel.setNoteDirectoryPath(noteId, noteDirectoryPath);
+    viewModel.setCurrentNoteDirectorySourceViewModel(&noteDirectorySourceViewModel);
+    noteListModel.setCurrentNoteId(noteId);
+    viewModel.setCurrentNoteListModel(&noteListModel);
+
+    QObject* propertiesViewModel = viewModel.propertiesViewModel();
+    QVERIFY(propertiesViewModel != nullptr);
+    QCOMPARE(
+        propertiesViewModel->property("folderItems").toStringList(),
+        QStringList{QStringLiteral("Archive/Knowledge")});
+
+    const QString updatedHeaderText =
+        QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                       "<!DOCTYPE WHATSONNOTE>\n"
+                       "<contents id=\"ReloadNote\">\n"
+                       "  <head>\n"
+                       "    <meta charset=\"UTF-8\" />\n"
+                       "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
+                       "    <folders>\n"
+                       "      <folder>Workspace/Knowledge</folder>\n"
+                       "      <folder>Research/Ideas</folder>\n"
+                       "    </folders>\n"
+                       "    <project>Beta</project>\n"
+                       "    <bookmarks state=\"false\" colors=\"\" />\n"
+                       "    <tags>\n"
+                       "      <tag>seed</tag>\n"
+                       "      <tag>updated</tag>\n"
+                       "    </tags>\n"
+                       "    <progress enums=\"{Queued,Review,Ship,Published}\">7</progress>\n"
+                       "    <isPreset>false</isPreset>\n"
+                       "  </head>\n"
+                       "</contents>\n");
+    QVERIFY2(writeUtf8File(headerFilePath, updatedHeaderText), "updated header file must be written");
+
+    noteListModel.notifyItemsChanged();
+
+    QCOMPARE(
+        propertiesViewModel->property("folderItems").toStringList(),
+        QStringList({QStringLiteral("Workspace/Knowledge"), QStringLiteral("Research/Ideas")}));
+    QCOMPARE(
+        propertiesViewModel->property("tagItems").toStringList(),
+        QStringList({QStringLiteral("seed"), QStringLiteral("updated")}));
 }
 
 void DetailPanelViewModelTest::detailSelectors_mustPreserveCurrentNoteContextAcrossUnsupportedHierarchySources()
@@ -587,6 +680,279 @@ void DetailPanelViewModelTest::detailSelectors_mustPreserveCurrentNoteContextAcr
     QVERIFY(header.isBookmarked());
     QCOMPARE(header.bookmarkColors(), QStringList{QStringLiteral("red")});
     QCOMPARE(header.progress(), 8);
+}
+
+void DetailPanelViewModelTest::detailWrites_mustSynchronizeActiveLibraryNoteListMetadata()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString hubPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("DetailMirrorLibrary.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("DetailMirrorLibrary.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("MirrorNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    QVERIFY2(
+        writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.library.index\",\n"
+                "  \"notes\": [\n"
+                "    {\"id\": \"note-library\"}\n"
+                "  ]\n"
+                "}\n")),
+        "index.wsnindex must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("MirrorNote.wsnhead")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-library\">\n"
+                "  <head>\n"
+                "    <created>2026-03-01-00-00-00</created>\n"
+                "    <author>Tester</author>\n"
+                "    <lastModified>2026-03-01-00-00-00</lastModified>\n"
+                "    <modifiedBy>Tester</modifiedBy>\n"
+                "    <folders>\n"
+                "      <folder>Knowledge</folder>\n"
+                "    </folders>\n"
+                "    <project></project>\n"
+                "    <bookmarks state=\"false\" colors=\"\" />\n"
+                "    <tags>\n"
+                "      <tag>seed</tag>\n"
+                "    </tags>\n"
+                "    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n"
+                "    <isPreset>false</isPreset>\n"
+                "  </head>\n"
+                "</contents>\n")),
+        "MirrorNote.wsnhead must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("MirrorNote.wsnbody")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-library\">\n"
+                "  <body>\n"
+                "    <paragraph>Mirror library note</paragraph>\n"
+                "  </body>\n"
+                "</contents>\n")),
+        "MirrorNote.wsnbody must be written");
+
+    WhatSonFoldersHierarchyStore foldersStore;
+    foldersStore.setFolderEntries({
+        WhatSonFolderDepthEntry{
+            QStringLiteral("Knowledge"),
+            QStringLiteral("Knowledge"),
+            0,
+            WhatSon::FolderIdentity::createFolderUuid()
+        }
+    });
+    QString foldersWriteError;
+    QVERIFY2(
+        foldersStore.writeToFile(QDir(contentsPath).filePath(QStringLiteral("Folders.wsfolders")), &foldersWriteError),
+        qPrintable(foldersWriteError));
+
+    LibraryHierarchyViewModel libraryHierarchyViewModel;
+    QVERIFY(libraryHierarchyViewModel.loadFromWshub(hubPath));
+    LibraryNoteListModel* noteListModel = libraryHierarchyViewModel.noteListModel();
+    QVERIFY(noteListModel != nullptr);
+    QCOMPARE(noteListModel->rowCount(), 1);
+    noteListModel->setCurrentIndex(0);
+    QCOMPARE(noteListModel->currentNoteId(), QStringLiteral("note-library"));
+
+    DetailPanelViewModel detailPanelViewModel;
+    FakeDetailHierarchySourceViewModel bookmarksSource;
+    bookmarksSource.setHierarchyModel({
+        makeHierarchyEntry(QStringLiteral("bookmark:red"), QStringLiteral("Red")),
+        makeHierarchyEntry(QStringLiteral("bookmark:amber"), QStringLiteral("Amber"))
+    });
+    detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksSource);
+    detailPanelViewModel.setCurrentNoteListModel(noteListModel);
+    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&libraryHierarchyViewModel);
+
+    QObject* propertiesViewModel = detailPanelViewModel.propertiesViewModel();
+    QVERIFY(propertiesViewModel != nullptr);
+    QVERIFY(detailPanelViewModel.assignFolderByName(QStringLiteral("Research/Ideas")));
+    QVERIFY(propertiesViewModel->setProperty("activeTagIndex", 0));
+    QVERIFY(detailPanelViewModel.removeActiveTag());
+    QVERIFY(detailPanelViewModel.writeBookmarkSelection(1));
+
+    const QModelIndex noteIndex = noteListModel->index(0, 0);
+    QCOMPARE(
+        noteListModel->data(noteIndex, LibraryNoteListModel::FoldersRole).toStringList(),
+        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Research/Ideas")}));
+    QCOMPARE(noteListModel->data(noteIndex, LibraryNoteListModel::TagsRole).toStringList(), QStringList{});
+    QVERIFY(noteListModel->data(noteIndex, LibraryNoteListModel::BookmarkedRole).toBool());
+    QCOMPARE(
+        noteListModel->data(noteIndex, LibraryNoteListModel::BookmarkColorRole).toString(),
+        WhatSon::Bookmarks::bookmarkColorToHex(QStringLiteral("red")));
+}
+
+void DetailPanelViewModelTest::detailWrites_mustSynchronizeActiveBookmarksNoteListMetadata()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString hubPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("DetailMirrorBookmarks.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("DetailMirrorBookmarks.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("MarkedNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    QVERIFY2(
+        writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.library.index\",\n"
+                "  \"notes\": [\n"
+                "    {\"id\": \"note-bookmark\"}\n"
+                "  ]\n"
+                "}\n")),
+        "index.wsnindex must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("MarkedNote.wsnhead")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-bookmark\">\n"
+                "  <head>\n"
+                "    <created>2026-03-01-00-00-00</created>\n"
+                "    <author>Tester</author>\n"
+                "    <lastModified>2026-03-01-00-00-00</lastModified>\n"
+                "    <modifiedBy>Tester</modifiedBy>\n"
+                "    <folders></folders>\n"
+                "    <project></project>\n"
+                "    <bookmarks state=\"true\" colors=\"red\" />\n"
+                "    <tags>\n"
+                "    </tags>\n"
+                "    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n"
+                "    <isPreset>false</isPreset>\n"
+                "  </head>\n"
+                "</contents>\n")),
+        "MarkedNote.wsnhead must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("MarkedNote.wsnbody")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-bookmark\">\n"
+                "  <body>\n"
+                "    <paragraph>Bookmark note</paragraph>\n"
+                "  </body>\n"
+                "</contents>\n")),
+        "MarkedNote.wsnbody must be written");
+
+    BookmarksHierarchyViewModel bookmarksHierarchyViewModel;
+    QVERIFY(bookmarksHierarchyViewModel.loadFromWshub(hubPath));
+    BookmarksNoteListModel* noteListModel = bookmarksHierarchyViewModel.noteListModel();
+    QVERIFY(noteListModel != nullptr);
+    QCOMPARE(noteListModel->rowCount(), 1);
+    noteListModel->setCurrentIndex(0);
+    QCOMPARE(noteListModel->currentNoteId(), QStringLiteral("note-bookmark"));
+
+    DetailPanelViewModel detailPanelViewModel;
+    detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
+    detailPanelViewModel.setCurrentNoteListModel(noteListModel);
+    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&bookmarksHierarchyViewModel);
+
+    QVERIFY(detailPanelViewModel.writeBookmarkSelection(0));
+    QCOMPARE(noteListModel->rowCount(), 0);
+}
+
+void DetailPanelViewModelTest::detailWrites_mustSynchronizeActiveProgressNoteListMetadata()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString hubPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("DetailMirrorProgress.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("DetailMirrorProgress.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("ProgressNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    QVERIFY2(
+        writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.library.index\",\n"
+                "  \"notes\": [\n"
+                "    {\"id\": \"note-progress\"}\n"
+                "  ]\n"
+                "}\n")),
+        "index.wsnindex must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("Progress.wsprogress")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.progress.state\",\n"
+                "  \"progress\": 0,\n"
+                "  \"states\": [\"Ready\", \"Pending\", \"InProgress\", \"Done\"]\n"
+                "}\n")),
+        "Progress.wsprogress must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("ProgressNote.wsnhead")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-progress\">\n"
+                "  <head>\n"
+                "    <created>2026-03-01-00-00-00</created>\n"
+                "    <author>Tester</author>\n"
+                "    <lastModified>2026-03-01-00-00-00</lastModified>\n"
+                "    <modifiedBy>Tester</modifiedBy>\n"
+                "    <folders></folders>\n"
+                "    <project></project>\n"
+                "    <bookmarks state=\"false\" />\n"
+                "    <tags>\n"
+                "    </tags>\n"
+                "    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n"
+                "    <isPreset>false</isPreset>\n"
+                "  </head>\n"
+                "</contents>\n")),
+        "ProgressNote.wsnhead must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("ProgressNote.wsnbody")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-progress\">\n"
+                "  <body>\n"
+                "    <paragraph>Progress note</paragraph>\n"
+                "  </body>\n"
+                "</contents>\n")),
+        "ProgressNote.wsnbody must be written");
+
+    ProgressHierarchyViewModel progressHierarchyViewModel;
+    QVERIFY(progressHierarchyViewModel.loadFromWshub(hubPath));
+    progressHierarchyViewModel.setSelectedIndex(0);
+    LibraryNoteListModel* noteListModel = progressHierarchyViewModel.noteListModel();
+    QVERIFY(noteListModel != nullptr);
+    QCOMPARE(noteListModel->rowCount(), 1);
+    noteListModel->setCurrentIndex(0);
+    QCOMPARE(noteListModel->currentNoteId(), QStringLiteral("note-progress"));
+
+    DetailPanelViewModel detailPanelViewModel;
+    detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
+    detailPanelViewModel.setCurrentNoteListModel(noteListModel);
+    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&progressHierarchyViewModel);
+
+    QVERIFY(detailPanelViewModel.writeProgressSelection(4));
+    QCOMPARE(noteListModel->rowCount(), 0);
 }
 
 void DetailPanelViewModelTest::detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries()
@@ -778,7 +1144,7 @@ void DetailPanelViewModelTest::folderAssignments_mustSyncHeaderFoldersAndHierarc
     QVERIFY(viewModel.assignFolderByName(QStringLiteral("Research/Ideas")));
     QCOMPARE(
         propertiesViewModel->property("folderItems").toStringList(),
-        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Ideas")}));
+        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Research/Ideas")}));
     QCOMPARE(propertiesViewModel->property("activeFolderIndex").toInt(), 1);
 
     QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "header file must remain readable");

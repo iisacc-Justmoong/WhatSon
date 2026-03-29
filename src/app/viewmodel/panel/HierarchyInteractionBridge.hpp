@@ -36,6 +36,7 @@ public:
     Q_INVOKABLE void createFolder();
     Q_INVOKABLE void deleteSelectedFolder();
     Q_INVOKABLE bool setItemExpanded(int index, bool expanded);
+    Q_INVOKABLE bool setAllItemsExpanded(bool expanded);
 
 signals:
     void hierarchyViewModelChanged();

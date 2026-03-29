@@ -72,22 +72,7 @@ DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
                          m_projectSelectionSourceViewModel.setNoteDirectoryPath(noteDirectoryPath);
                          m_bookmarkSelectionSourceViewModel.setNoteDirectoryPath(noteDirectoryPath);
                          m_progressSelectionSourceViewModel.setNoteDirectoryPath(noteDirectoryPath);
-
-                         const QString noteId = m_currentNoteContextBridge.currentNoteId();
-                         QString loadError;
-                         if (!noteId.isEmpty()
-                             && !noteDirectoryPath.isEmpty()
-                             && m_noteHeaderSessionStore.ensureLoaded(noteId, noteDirectoryPath, &loadError))
-                         {
-                             m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
-                             m_projectSelectionSourceViewModel.synchronize(false);
-                             m_bookmarkSelectionSourceViewModel.synchronize(false);
-                             m_progressSelectionSourceViewModel.synchronize(false);
-                         }
-                         else
-                         {
-                             m_propertiesViewModel.clearHeader();
-                         }
+                         reloadCurrentHeader(false);
                      });
 
     m_projectSelectionViewModel.setSourceViewModel(&m_projectSelectionSourceViewModel);
@@ -268,6 +253,7 @@ void DetailPanelViewModel::setProgressSelectionSourceViewModel(QObject* sourceVi
 void DetailPanelViewModel::setCurrentNoteListModel(QObject* noteListModel)
 {
     m_currentNoteContextBridge.setNoteListModel(noteListModel);
+    reconnectCurrentNoteListModelSignals(noteListModel);
 }
 
 void DetailPanelViewModel::setCurrentNoteDirectorySourceViewModel(QObject* sourceViewModel)
@@ -334,7 +320,13 @@ bool DetailPanelViewModel::assignFolderByName(const QString& folderPath)
     {
         m_propertiesViewModel.setActiveFolderIndex(activeFolderIndex);
     }
+    synchronizeCurrentNoteMetadataConsumers(noteId);
     return true;
+}
+
+void DetailPanelViewModel::handleCurrentNoteItemsChanged()
+{
+    reloadCurrentHeader(true);
 }
 
 bool DetailPanelViewModel::removeActiveFolder()
@@ -433,6 +425,7 @@ bool DetailPanelViewModel::writeSelectionIndex(
         m_projectSelectionSourceViewModel.synchronize(false);
         m_bookmarkSelectionSourceViewModel.synchronize(false);
         m_progressSelectionSourceViewModel.synchronize(false);
+        synchronizeCurrentNoteMetadataConsumers(noteId);
     }
     return saved;
 }
@@ -463,6 +456,7 @@ bool DetailPanelViewModel::removeMetadataEntry(const bool removeFolder)
     }
 
     m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
+    synchronizeCurrentNoteMetadataConsumers(noteId);
     return true;
 }
 
@@ -475,4 +469,83 @@ void DetailPanelViewModel::applyActiveContentViewModel(DetailContentState active
     m_layerViewModel.setActive(activeState == DetailContentState::Layer);
     m_helpViewModel.setActive(activeState == DetailContentState::Help);
     m_activeContentViewModel = contentViewModelForState(WhatSon::DetailPanel::stateValue(activeState));
+}
+
+void DetailPanelViewModel::reconnectCurrentNoteListModelSignals(QObject* noteListModel)
+{
+    disconnectCurrentNoteListModelSignals();
+    if (noteListModel == nullptr)
+    {
+        return;
+    }
+
+    const QMetaObject* metaObject = noteListModel->metaObject();
+    if (metaObject == nullptr || metaObject->indexOfSignal("itemsChanged()") < 0)
+    {
+        return;
+    }
+
+    m_currentNoteListItemsChangedConnection = QObject::connect(
+        noteListModel,
+        SIGNAL(itemsChanged()),
+        this,
+        SLOT(handleCurrentNoteItemsChanged()),
+        Qt::UniqueConnection);
+}
+
+void DetailPanelViewModel::disconnectCurrentNoteListModelSignals()
+{
+    if (m_currentNoteListItemsChangedConnection)
+    {
+        disconnect(m_currentNoteListItemsChangedConnection);
+        m_currentNoteListItemsChangedConnection = {};
+    }
+}
+
+void DetailPanelViewModel::reloadCurrentHeader(const bool forceReload)
+{
+    const QString noteId = m_currentNoteContextBridge.currentNoteId();
+    const QString noteDirectoryPath = m_currentNoteContextBridge.currentNoteDirectoryPath();
+    QString loadError;
+    if (!noteId.isEmpty()
+        && !noteDirectoryPath.isEmpty()
+        && m_noteHeaderSessionStore.ensureLoaded(noteId, noteDirectoryPath, &loadError, forceReload))
+    {
+        m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
+        m_projectSelectionSourceViewModel.synchronize(false);
+        m_bookmarkSelectionSourceViewModel.synchronize(false);
+        m_progressSelectionSourceViewModel.synchronize(false);
+        return;
+    }
+
+    m_propertiesViewModel.clearHeader();
+}
+
+void DetailPanelViewModel::synchronizeCurrentNoteMetadataConsumers(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return;
+    }
+
+    QObject* sourceViewModel = m_currentNoteContextBridge.noteDirectorySourceViewModel();
+    if (sourceViewModel == nullptr)
+    {
+        return;
+    }
+
+    const QMetaObject* metaObject = sourceViewModel->metaObject();
+    if (metaObject == nullptr || metaObject->indexOfMethod("reloadNoteMetadataForNoteId(QString)") < 0)
+    {
+        return;
+    }
+
+    bool synchronized = false;
+    QMetaObject::invokeMethod(
+        sourceViewModel,
+        "reloadNoteMetadataForNoteId",
+        Qt::DirectConnection,
+        Q_RETURN_ARG(bool, synchronized),
+        Q_ARG(QString, normalizedNoteId));
 }

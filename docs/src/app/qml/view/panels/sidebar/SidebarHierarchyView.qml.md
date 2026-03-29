@@ -11,11 +11,15 @@ The file now delegates several responsibilities to sibling helper controllers.
 - `SidebarHierarchyNoteDropController`: hierarchy hit testing, drag payload decoding, note-drop preview, and drop commit.
 - `SidebarHierarchyBookmarkPaletteController`: bookmark color token lookup and canvas glyph drawing.
 
+Bookmark rows intentionally keep a single `bookmarksbookmark` icon token.
+Visual differentiation between bookmark colors belongs to the palette-applied label/icon tint path,
+not to per-row alternate icon sources.
+
 The root file still exposes wrapper functions for these helpers so callers and tests can use a stable interface.
 
 ## Important Inputs
 - `hierarchyViewModel`: the active hierarchy state provider.
-- `hierarchyInteractionBridge`: rename, create, delete, and expansion bridge.
+- `hierarchyInteractionBridge`: rename, create, delete, single-row expansion, and bulk expansion bridge.
 - `hierarchyDragDropBridge`: reorder and note-drop bridge.
 - appearance controls such as panel color, insets, toolbar icon names, and search configuration.
 
@@ -34,6 +38,16 @@ The root file still exposes wrapper functions for these helpers so callers and t
 - `viewHookRequested`
 
 These signals make the file a reusable visual surface instead of a hard-coded one-off sidebar.
+
+## Footer View Options
+
+- The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.
+- That menu exposes `Expand All` and `Collapse All` actions in English, which matches the repository rule that
+  project-facing strings stay in English.
+- Bulk expansion is enabled only when the projected hierarchy model currently contains at least one row with
+  `showChevron: true`.
+- Both actions route through `HierarchyInteractionBridge.setAllItemsExpanded(...)` so the active domain viewmodel, not
+  the view, owns the persisted `expanded` state.
 
 ## Expansion Routing Guard
 

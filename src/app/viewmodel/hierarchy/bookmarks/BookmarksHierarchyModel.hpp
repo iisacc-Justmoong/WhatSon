@@ -5,8 +5,6 @@
 #include <QVariantMap>
 #include <QVector>
 
-#include <QUrl>
-
 struct BookmarksHierarchyItem
 {
     int depth = 0;
@@ -14,7 +12,6 @@ struct BookmarksHierarchyItem
     bool expanded = false;
     QString label;
     bool showChevron = true;
-    QString iconSource;
 };
 
 inline QString bookmarksHierarchyIconName(const BookmarksHierarchyItem&)

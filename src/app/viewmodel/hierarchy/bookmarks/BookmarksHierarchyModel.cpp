@@ -55,7 +55,7 @@ QVariant BookmarksHierarchyModel::data(const QModelIndex& index, int role) const
     case IconNameRole:
         return bookmarksHierarchyIconName(item);
     case IconSourceRole:
-        return item.iconSource;
+        return {};
     default:
         return {};
     }

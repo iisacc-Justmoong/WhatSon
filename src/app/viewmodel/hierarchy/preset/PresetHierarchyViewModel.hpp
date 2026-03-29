@@ -43,17 +43,17 @@ public:
     QVariantList hierarchyModel() const override;
     Q_INVOKABLE QVariantList depthItems() const;
     Q_INVOKABLE QString itemLabel(int index) const override;
-    Q_INVOKABLE bool canRenameItem(int index) const;
-    Q_INVOKABLE bool renameItem(int index, const QString& displayName);
-    Q_INVOKABLE bool setItemExpanded(int index, bool expanded);
-    Q_INVOKABLE void createFolder();
-    Q_INVOKABLE void deleteSelectedFolder();
+    Q_INVOKABLE bool canRenameItem(int index) const override;
+    Q_INVOKABLE bool renameItem(int index, const QString& displayName) override;
+    Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;
+    Q_INVOKABLE void createFolder() override;
+    Q_INVOKABLE void deleteSelectedFolder() override;
 
     void setPresetNames(QStringList presetNames);
     QStringList presetNames() const;
-    bool renameEnabled() const noexcept;
-    bool createFolderEnabled() const noexcept;
-    bool deleteFolderEnabled() const noexcept;
+    bool renameEnabled() const noexcept override;
+    bool createFolderEnabled() const noexcept override;
+    bool deleteFolderEnabled() const noexcept override;
 
     bool loadFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void applyRuntimeSnapshot(

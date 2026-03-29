@@ -360,6 +360,7 @@ private
     void presetViewModel_supportsCrudContract();
     void presetViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void tagsViewModel_supportsCrudContract();
+    void hierarchyViewModels_exposeCapabilityInterfaces();
     void tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh();
     void libraryViewModel_reactsToNoteListModelMutation();
     void projectsModel_appliesCorrectionAndRaisesHookSignal();
@@ -602,12 +603,17 @@ void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), BookmarksHierarchyModel::IconNameRole)
                  .toString(),
-        QStringLiteral("bookmarksbookmarksList"));
+        QStringLiteral("bookmarksbookmark"));
+    QVERIFY(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), BookmarksHierarchyModel::IconSourceRole)
+            .toString()
+            .isEmpty());
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
     QVERIFY(!hierarchyModel.isEmpty());
     QCOMPARE(
         hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(),
-        QStringLiteral("bookmarksbookmarksList"));
+        QStringLiteral("bookmarksbookmark"));
+    QVERIFY(!hierarchyModel.at(0).toMap().contains(QStringLiteral("iconSource")));
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("Bookmarks-Header")));
@@ -1153,6 +1159,51 @@ void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+}
+
+void HierarchyViewModelsTest::hierarchyViewModels_exposeCapabilityInterfaces()
+{
+    LibraryHierarchyViewModel libraryViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&libraryViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&libraryViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&libraryViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyReorderCapability*>(&libraryViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyNoteDropCapability*>(&libraryViewModel) != nullptr);
+
+    ProjectsHierarchyViewModel projectsViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&projectsViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&projectsViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&projectsViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyReorderCapability*>(&projectsViewModel) != nullptr);
+
+    BookmarksHierarchyViewModel bookmarksViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&bookmarksViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&bookmarksViewModel) != nullptr);
+
+    ResourcesHierarchyViewModel resourcesViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&resourcesViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&resourcesViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&resourcesViewModel) != nullptr);
+
+    ProgressHierarchyViewModel progressViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&progressViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&progressViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&progressViewModel) != nullptr);
+
+    EventHierarchyViewModel eventViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&eventViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&eventViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&eventViewModel) != nullptr);
+
+    PresetHierarchyViewModel presetViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&presetViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&presetViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&presetViewModel) != nullptr);
+
+    TagsHierarchyViewModel tagsViewModel;
+    QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&tagsViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&tagsViewModel) != nullptr);
+    QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&tagsViewModel) != nullptr);
 }
 
 void HierarchyViewModelsTest::tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh()

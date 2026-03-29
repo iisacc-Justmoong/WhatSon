@@ -1,6 +1,7 @@
 #include "store/sidebar/SidebarSelectionStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/panel/HierarchyInteractionBridge.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
 
@@ -11,10 +12,11 @@
 
 class StubStandardHierarchyViewModel final : public IHierarchyViewModel,
                                              public IHierarchyRenameCapability,
-                                             public IHierarchyCrudCapability
+                                             public IHierarchyCrudCapability,
+                                             public IHierarchyExpansionCapability
 {
     Q_OBJECT
-    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability)
+    Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
 public:
     explicit StubStandardHierarchyViewModel(QObject* parent = nullptr)
@@ -26,13 +28,17 @@ public:
                 {QStringLiteral("itemId"), 0},
                 {QStringLiteral("key"), QStringLiteral("bucket:all")},
                 {QStringLiteral("label"), QStringLiteral("All Library")},
-                {QStringLiteral("depth"), 0}
+                {QStringLiteral("depth"), 0},
+                {QStringLiteral("expanded"), false},
+                {QStringLiteral("showChevron"), true}
             },
             QVariantMap{
                 {QStringLiteral("itemId"), 1},
                 {QStringLiteral("key"), QStringLiteral("library:brand")},
                 {QStringLiteral("label"), QStringLiteral("Brand")},
-                {QStringLiteral("depth"), 0}
+                {QStringLiteral("depth"), 0},
+                {QStringLiteral("expanded"), false},
+                {QStringLiteral("showChevron"), false}
             }
         };
     }
@@ -47,17 +53,17 @@ public:
         return m_noteListModel;
     }
 
-    QVariantList hierarchyModel() const
+    QVariantList hierarchyModel() const override
     {
         return m_hierarchyModel;
     }
 
-    int selectedIndex() const noexcept
+    int selectedIndex() const noexcept override
     {
         return m_selectedIndex;
     }
 
-    int itemCount() const noexcept
+    int itemCount() const noexcept override
     {
         return m_hierarchyModel.size();
     }
@@ -140,6 +146,58 @@ public:
         return false;
     }
 
+    bool setItemExpanded(int index, bool expanded) override
+    {
+        if (index < 0 || index >= m_hierarchyModel.size())
+        {
+            return false;
+        }
+
+        QVariantMap entry = m_hierarchyModel.at(index).toMap();
+        if (!entry.value(QStringLiteral("showChevron")).toBool())
+        {
+            return false;
+        }
+
+        entry.insert(QStringLiteral("expanded"), expanded);
+        m_hierarchyModel[index] = entry;
+        m_expansionCalls.push_back(qMakePair(index, expanded));
+        emit hierarchyModelChanged();
+        return true;
+    }
+
+    Q_INVOKABLE bool setAllItemsExpanded(bool expanded)
+    {
+        bool handled = false;
+        for (int index = 0; index < m_hierarchyModel.size(); ++index)
+        {
+            const QVariantMap entry = m_hierarchyModel.at(index).toMap();
+            if (!entry.value(QStringLiteral("showChevron")).toBool())
+            {
+                continue;
+            }
+
+            handled = true;
+            if (entry.value(QStringLiteral("expanded")).toBool() == expanded)
+            {
+                continue;
+            }
+            setItemExpanded(index, expanded);
+        }
+
+        return handled;
+    }
+
+    QVector<QPair<int, bool>> expansionCalls() const
+    {
+        return m_expansionCalls;
+    }
+
+    void clearExpansionCalls()
+    {
+        m_expansionCalls.clear();
+    }
+
     void setNoteListModel(QObject* noteListModel)
     {
         m_noteListModel = noteListModel;
@@ -151,11 +209,13 @@ public:
     void hierarchyModelChanged();
     void selectedIndexChanged();
     void itemCountChanged();
+    void loadStateChanged();
 
 private:
     QVariantList m_hierarchyModel;
     int m_selectedIndex = 0;
     QObject* m_noteListModel = nullptr;
+    QVector<QPair<int, bool>> m_expansionCalls;
 };
 
 class SidebarHierarchyModuleTest final : public QObject
@@ -169,6 +229,7 @@ private
     void activeHierarchyIndex_mustRoundTripThroughSelectionStore();
     void activeHierarchyBindings_mustResolveThroughProviderInterface();
     void hierarchyViewModel_mustExposeStandardHierarchyModelProperty();
+    void hierarchyInteractionBridge_bulkExpansion_mustUpdateOnlyExpandableRows();
 };
 
 void SidebarHierarchyModuleTest::activeHierarchyIndex_mustRoundTripThroughSelectionStore()
@@ -274,6 +335,59 @@ void SidebarHierarchyModuleTest::hierarchyViewModel_mustExposeStandardHierarchyM
     const QVariantList updatedModel = activeViewModel->hierarchyNodes();
     QCOMPARE(updatedModel.size(), 1);
     QCOMPARE(updatedModel.at(0).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("library:reordered"));
+}
+
+void SidebarHierarchyModuleTest::hierarchyInteractionBridge_bulkExpansion_mustUpdateOnlyExpandableRows()
+{
+    StubStandardHierarchyViewModel viewModel;
+    viewModel.setHierarchyModel(QVariantList{
+        QVariantMap{
+            {QStringLiteral("itemId"), 0},
+            {QStringLiteral("key"), QStringLiteral("parent")},
+            {QStringLiteral("label"), QStringLiteral("Parent")},
+            {QStringLiteral("depth"), 0},
+            {QStringLiteral("expanded"), false},
+            {QStringLiteral("showChevron"), true}
+        },
+        QVariantMap{
+            {QStringLiteral("itemId"), 1},
+            {QStringLiteral("key"), QStringLiteral("leaf")},
+            {QStringLiteral("label"), QStringLiteral("Leaf")},
+            {QStringLiteral("depth"), 1},
+            {QStringLiteral("expanded"), false},
+            {QStringLiteral("showChevron"), false}
+        },
+        QVariantMap{
+            {QStringLiteral("itemId"), 2},
+            {QStringLiteral("key"), QStringLiteral("second-parent")},
+            {QStringLiteral("label"), QStringLiteral("Second Parent")},
+            {QStringLiteral("depth"), 0},
+            {QStringLiteral("expanded"), true},
+            {QStringLiteral("showChevron"), true}
+        }
+    });
+
+    HierarchyInteractionBridge bridge;
+    bridge.setHierarchyViewModel(&viewModel);
+
+    QVERIFY(bridge.setAllItemsExpanded(true));
+    QCOMPARE(viewModel.expansionCalls().size(), 1);
+    QCOMPARE(viewModel.expansionCalls().at(0).first, 0);
+    QCOMPARE(viewModel.expansionCalls().at(0).second, true);
+    QCOMPARE(viewModel.hierarchyNodes().at(0).toMap().value(QStringLiteral("expanded")).toBool(), true);
+    QCOMPARE(viewModel.hierarchyNodes().at(1).toMap().value(QStringLiteral("expanded")).toBool(), false);
+    QCOMPARE(viewModel.hierarchyNodes().at(2).toMap().value(QStringLiteral("expanded")).toBool(), true);
+
+    viewModel.clearExpansionCalls();
+
+    QVERIFY(bridge.setAllItemsExpanded(false));
+    QCOMPARE(viewModel.expansionCalls().size(), 2);
+    QCOMPARE(viewModel.expansionCalls().at(0).first, 0);
+    QCOMPARE(viewModel.expansionCalls().at(0).second, false);
+    QCOMPARE(viewModel.expansionCalls().at(1).first, 2);
+    QCOMPARE(viewModel.expansionCalls().at(1).second, false);
+    QCOMPARE(viewModel.hierarchyNodes().at(0).toMap().value(QStringLiteral("expanded")).toBool(), false);
+    QCOMPARE(viewModel.hierarchyNodes().at(2).toMap().value(QStringLiteral("expanded")).toBool(), false);
 }
 
 QTEST_MAIN(SidebarHierarchyModuleTest)

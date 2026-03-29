@@ -15,6 +15,8 @@ views.
   runtime-loader driven refreshes.
 - Exposes `setItemExpanded(int, bool)` so fold state belongs to the viewmodel instead of to a
   transient delegate instance.
+- Marks inherited capability methods with explicit `override` so the interface contract remains
+  warning-clean and signature-safe during refactors.
 
 ## Refresh Rules
 

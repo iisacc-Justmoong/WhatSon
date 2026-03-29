@@ -14,6 +14,8 @@ from `Resources.wsresources`.
   snapshot loads.
 - Still exposes rename/create/delete entry points because it conforms to the shared hierarchy
   surface, but resources remains functionally read-only.
+- Declares the inherited rename/crud/expansion entry points with explicit `override` markers so the
+  shared hierarchy contract remains warning-clean.
 
 ## Refresh Rules
 

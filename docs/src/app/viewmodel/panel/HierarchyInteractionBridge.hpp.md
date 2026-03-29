@@ -25,6 +25,7 @@ QML can pass object references easily, but it does not know about C++ interface 
   - `createFolder()`
   - `deleteSelectedFolder()`
   - `setItemExpanded(...)`
+  - `setAllItemsExpanded(...)`
 
 ## Expected Consumer
 `SidebarHierarchyView.qml` is the primary consumer of this bridge.

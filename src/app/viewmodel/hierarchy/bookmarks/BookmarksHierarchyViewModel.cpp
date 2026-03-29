@@ -5,9 +5,9 @@
 #include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QFileInfo>
-#include <QUrl>
 #include <QVariantMap>
 
 #include <algorithm>
@@ -200,17 +200,40 @@ namespace
         return {};
     }
 
-    QString bookmarkIconDataUrlForHex(const QString& colorHex)
+    void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
     {
-        const QString normalizedColor = colorHex.trimmed().isEmpty()
-                                            ? WhatSon::Bookmarks::defaultBookmarkColorHex()
-                                            : colorHex.trimmed();
-        const QString svg = QStringLiteral(
-            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'>"
-            "<path d='M4 1.5C3.44772 1.5 3 1.94772 3 2.5V14L8 10.6667L13 14V2.5C13 1.94772 12.5523 1.5 12 1.5H4Z' fill='%1'/>"
-            "</svg>")
-                                .arg(normalizedColor.toHtmlEscaped());
-        return QStringLiteral("data:image/svg+xml;utf8,") + QUrl::toPercentEncoding(svg);
+        if (note == nullptr)
+        {
+            return;
+        }
+
+        const LibraryNoteRecord updatedRecord = document.toLibraryNoteRecord();
+        if (!updatedRecord.noteId.trimmed().isEmpty())
+        {
+            note->noteId = updatedRecord.noteId;
+        }
+        note->storageKind = updatedRecord.storageKind;
+        note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodyFirstLine = updatedRecord.bodyFirstLine;
+        note->bodyHasResource = updatedRecord.bodyHasResource;
+        note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
+        note->createdAt = updatedRecord.createdAt;
+        note->lastModifiedAt = updatedRecord.lastModifiedAt;
+        note->author = updatedRecord.author;
+        note->modifiedBy = updatedRecord.modifiedBy;
+        note->project = updatedRecord.project;
+        note->folders = updatedRecord.folders;
+        note->folderUuids = updatedRecord.folderUuids;
+        note->bookmarkColors = updatedRecord.bookmarkColors;
+        note->tags = updatedRecord.tags;
+        note->progress = updatedRecord.progress;
+        note->bookmarked = updatedRecord.bookmarked;
+        note->preset = updatedRecord.preset;
+        if (!updatedRecord.noteDirectoryPath.isEmpty())
+        {
+            note->noteDirectoryPath = updatedRecord.noteDirectoryPath;
+        }
+        note->noteHeaderPath = updatedRecord.noteHeaderPath;
     }
 
     QVector<BookmarksHierarchyItem> buildColorFolderItems()
@@ -226,7 +249,6 @@ namespace
             item.expanded = false;
             item.label = QString::fromLatin1(colorDef.displayName);
             item.showChevron = false;
-            item.iconSource = bookmarkIconDataUrlForHex(QString::fromLatin1(colorDef.hex));
             items.push_back(std::move(item));
         }
 
@@ -401,8 +423,7 @@ QVariantList BookmarksHierarchyViewModel::depthItems() const
             {QStringLiteral("accent"), item.accent},
             {QStringLiteral("expanded"), item.expanded},
             {QStringLiteral("showChevron"), item.showChevron},
-            {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)},
-            {QStringLiteral("iconSource"), item.iconSource}
+            {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)}
         });
     }
 
@@ -550,6 +571,41 @@ QString BookmarksHierarchyViewModel::noteDirectoryPathForNoteId(const QString& n
     }
 
     return m_bookmarkedNotes.at(noteIndex).noteDirectoryPath.trimmed();
+}
+
+bool BookmarksHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
+    {
+        return false;
+    }
+
+    WhatSonNoteFolderBindingRepository noteRepository;
+    WhatSonLocalNoteDocument noteDocument;
+    QString ioError;
+    if (!noteRepository.readDocument(m_bookmarkedNotes.at(noteIndex), &noteDocument, &ioError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("reloadNoteMetadataForNoteId.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
+        return false;
+    }
+
+    syncNoteRecordFromDocument(&m_bookmarkedNotes[noteIndex], noteDocument);
+    if (!m_bookmarkedNotes.at(noteIndex).bookmarked)
+    {
+        m_bookmarkedNotes.removeAt(noteIndex);
+    }
+    refreshNoteListForSelection();
+    return true;
 }
 
 bool BookmarksHierarchyViewModel::renameEnabled() const noexcept

@@ -648,6 +648,7 @@ add_executable(whatson_sidebar_hierarchy_module_tests
         ${CMAKE_SOURCE_DIR}/src/app/policy/ArchitecturePolicyLock.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/ISidebarSelectionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/store/sidebar/SidebarSelectionStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/HierarchyInteractionBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/IHierarchyViewModelProvider.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/HierarchyViewModelProvider.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/sidebar/SidebarHierarchyViewModel.cpp
@@ -752,18 +753,32 @@ add_executable(whatson_detail_panel_viewmodel_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/folders/WhatSonFoldersHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryAll.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryDraft.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/LibraryToday.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryIndexedState.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/progress/WhatSonProgressHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubStat.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteCreationService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteFolderClearService.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteMutationSupport.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingRepository.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
@@ -778,7 +793,12 @@ add_executable(whatson_detail_panel_viewmodel_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonFoldersHierarchySessionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksNoteListModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryNoteListModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp
 )

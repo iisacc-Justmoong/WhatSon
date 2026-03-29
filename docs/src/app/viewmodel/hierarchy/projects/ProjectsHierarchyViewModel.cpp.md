@@ -17,14 +17,19 @@ runtime snapshot updates.
 - If the source changed, the viewmodel rebuilds the project rows and restores the previous
   selection by key instead of dropping the user back to the implicit default state.
 
-Projects does not currently use expandable folder rows in the same way as library or tags, so the
-refresh fix focuses on avoiding unnecessary rebuilds and preserving selection.
+Projects now exposes the same expansion hooks used by the shared sidebar footer. When a projects
+snapshot eventually contains expandable rows, single-row and bulk expansion both mutate the
+viewmodel-owned `expanded` flags and then rebuild the model so the footer menu can drive
+`Expand All` / `Collapse All` without pushing that state into QML. If the current projects data is
+flat, the footer menu stays disabled because no row advertises `showChevron: true`.
 
 ## Mutation Flow
 
 - `loadFromWshub(...)` parses `Projects.wsprojects` into `WhatSonProjectsHierarchyStore`.
 - `renameItem(...)`, `createFolder()`, `deleteSelectedFolder()`, and reorder/move helpers mutate the
   store-backed folder entries and then rebuild the model.
+- `setItemExpanded(...)` and `setAllItemsExpanded(...)` mutate only in-memory expansion state. They do
+  not rewrite `Projects.wsproj`, because fold state is a sidebar presentation concern.
 - `itemsFromProjectEntries(...)` is the translation boundary from persisted folder-depth records to
   sidebar rows.
 

@@ -11,5 +11,5 @@ This header centralizes lightweight folder-path rules that must stay consistent 
 - `inspectRawFoldersBlock(const QString&)` inspects whether a raw `.wsnhead` folders block exists and whether it contains a concrete entry.
 
 ## Notes
-- `leafFolderName(...)` is now used by the detail-panel properties view-model so the compact folder list shows the effective folder name instead of the full persisted path.
 - The helper does not change persistence. `.wsnhead` and `.wsfolders` continue to store normalized full paths.
+- Detail-panel folder presentation no longer depends on `leafFolderName(...)`; the properties form now mirrors the persisted `.wsnhead` folder paths directly so UI refreshes can match the file-backed state exactly.

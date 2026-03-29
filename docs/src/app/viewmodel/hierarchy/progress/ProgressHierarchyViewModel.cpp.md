@@ -25,6 +25,9 @@ materializing the matching note list from `.wsnhead` metadata.
 - `saveBodyTextForNote(...)`, `saveCurrentBodyText(...)`, and `noteDirectoryPathForNoteId(...)`
   keep the progress domain compatible with existing note editing and detail-panel current-note
   wiring.
+- `reloadNoteMetadataForNoteId(...)` re-reads one indexed note from disk and re-applies the active
+  progress filter so a detail-panel progress write can immediately remove or keep the note in the
+  visible list according to its new enum value.
 
 ## Intentional Constraints
 

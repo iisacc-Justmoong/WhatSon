@@ -36,6 +36,8 @@
 The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
 Instead, C++ injects those hierarchy viewmodels as read-only option sources into the owned selector-copy objects while a separate current-note context bridge resolves the active note id and note directory path.
 That bridge keeps the last valid note context when the active sidebar domain does not expose note-list or note-directory contracts, so the selectors can continue mirroring the open note header instead of dropping to `No ...`.
+`setCurrentNoteListModel(QObject*)` also observes an optional `itemsChanged()` signal from the active note-list model so the same selected note can force-refresh its `.wsnhead` metadata snapshot after out-of-band folder or tag edits.
+The private write path now also routes successful metadata edits back into the active hierarchy domain through `reloadNoteMetadataForNoteId(QString)`, keeping the note list and detail panel in lockstep.
 
 ## Selection Semantics
 - The three selector-copy objects expose a synthetic `No ...` item at index `0`.

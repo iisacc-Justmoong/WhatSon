@@ -59,7 +59,7 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 
 ## Metadata List Interaction
 - `FoldersList` and `TagsList` derive their active row index from the properties content view-model instead of storing ad-hoc QML-only state.
-- `FoldersList` renders only the final leaf folder name from each `.wsnhead` folder path, so `Research/Ideas` is displayed as `Ideas` while the persisted header binding remains the full path.
+- `FoldersList` mirrors each `.wsnhead` folder path verbatim, so `Research/Ideas` remains `Research/Ideas` in the visible list instead of collapsing to the final segment.
 - Clicking a metadata row updates the corresponding `activeFolderIndex` or `activeTagIndex` property on the active properties view-model.
 - `FoldersList` now uses the footer `addFile` control to open an inline `LV.InputField` row inside the list viewport.
 - The inline folder editor is a temporary blank list item overlay, not a detached popup, so the add flow stays inside the Figma small-list surface.
@@ -68,6 +68,7 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 - The footer `trash` action is disabled until a row is active.
 - When the footer `trash` action is triggered, `DetailContents.qml` calls `detailPanelViewModel.removeActiveFolder()` or `detailPanelViewModel.removeActiveTag()` directly so the selected `.wsnhead` metadata entry is removed from the file-backed session store instead of only emitting a view hook.
 - Folder add confirmation writes through the detail-panel view-model instead of mutating the list locally, so the displayed list remains a direct mirror of persisted file state.
+- The visible `FoldersList` and `TagsList` must also refresh when the active note stays the same but its note-list model emits `itemsChanged()`, because that signal indicates the current `.wsnhead` metadata may have changed outside the detail-panel write path.
 
 ## Non-Properties States
 For `fileStat`, `insert`, `fileHistory`, `layer`, and `help`, the file renders a distinct placeholder form with state-specific titles and summaries.

@@ -32,3 +32,14 @@ separate indexed note containers.
 
 It also declares the private note-list item cache helpers that let the viewmodel reuse derived row
 data across bucket switches and folder-scope refreshes.
+
+The public invokable surface now includes `reloadNoteMetadataForNoteId(QString)` so external
+writers such as the detail panel can force the active library note list to re-mirror `.wsnhead`
+metadata for the currently selected note.
+
+## Capability Declaration Contract
+
+The capability-facing methods inherited from `IHierarchyRenameCapability`,
+`IHierarchyCrudCapability`, `IHierarchyExpansionCapability`, `IHierarchyReorderCapability`, and
+`IHierarchyNoteDropCapability` are declared with explicit `override` markers. That keeps the build
+warning-clean and makes accidental signature drift visible at compile time.

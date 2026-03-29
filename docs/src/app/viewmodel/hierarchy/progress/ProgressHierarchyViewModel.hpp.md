@@ -13,6 +13,11 @@ list.
   `applyRuntimeSnapshot(...)` for startup/runtime refreshes.
 - Exposes body persistence helpers and note-directory lookup so the active progress note can remain
   editable in shared editor flows.
+- Exposes `reloadNoteMetadataForNoteId(QString)` so detail-panel writes can refresh the current
+  progress-filtered note list without waiting for a full runtime reload.
+- Declares every inherited capability method with explicit `override`, keeping the header aligned
+  with `IHierarchyRenameCapability`, `IHierarchyCrudCapability`, and
+  `IHierarchyExpansionCapability` without compiler override warnings.
 
 ## Stored State
 

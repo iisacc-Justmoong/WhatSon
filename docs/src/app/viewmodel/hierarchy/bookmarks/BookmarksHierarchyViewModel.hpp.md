@@ -36,3 +36,10 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+
+## Current Public Contract Addendum
+- The header now exposes `reloadNoteMetadataForNoteId(QString)` so the active bookmarks note list
+  can refresh its current row after the detail panel mutates `.wsnhead` metadata.
+- The capability methods inherited from `IHierarchyRenameCapability` and
+  `IHierarchyCrudCapability` are explicitly marked `override` so warning-clean builds and contract
+  drift detection stay aligned.

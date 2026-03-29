@@ -14,9 +14,9 @@ policy as the runtime loader and library hierarchy viewmodel.
 `depthItems()` / `hierarchyModel()` now serialize an explicit `iconName` field for each bookmark
 color row.
 
-The current contract uses the shared `bookmarksbookmarksList` icon token so downstream consumers
-such as the detail-panel combo popup can render the same icon the hierarchy advertises, instead of
-falling back to a generic menu icon.
+The current contract uses the shared `bookmarksbookmark` icon token for every bookmark color row.
+It no longer emits per-row `iconSource` SVG overrides, so downstream consumers keep one bookmark
+glyph while label color remains the only bookmark-color differentiator.
 
 ## Note List Projection
 
@@ -26,6 +26,13 @@ bookmark-color roles.
 
 That keeps the bookmark note-list model able to apply the same latest-modified-first ordering rule
 used by the library list without inventing sort order from the localized `displayDate` string.
+
+## Runtime Mirror Repair
+
+- `reloadNoteMetadataForNoteId(...)` re-reads the active bookmarked note from disk and rebuilds the
+  visible bookmark note row from the persisted `.wsnhead` values.
+- If the refreshed header is no longer bookmarked, the note is dropped from `m_bookmarkedNotes`
+  immediately so the bookmarks list stays aligned with the detail panel write path.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp`

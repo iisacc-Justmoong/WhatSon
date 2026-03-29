@@ -35,7 +35,12 @@ QtObject {
         const guardPolicy = interactionController.resizeRenderGuardSupported
             ? "desktopResizeSuspendResumeGuard"
             : "mobileResizeGuardDisabled";
-        console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled);
+        const forcedTierPreset = interactionController.hostWindow.forcedDeviceTierPreset !== undefined
+            ? interactionController.hostWindow.forcedDeviceTierPreset
+            : -1;
+        const fullWindowAreaOnMobileEnabled = interactionController.hostWindow.fullWindowAreaOnMobileEnabled === true;
+        const delegateMobileWindowingToSystem = interactionController.hostWindow.delegateMobileWindowingToSystem === true;
+        console.log("[whatson:debug][render.policy][" + source + "] platform=" + interactionController.hostWindow.platform + " action=" + guardPolicy + " dynamicResolutionEnabled=" + LV.RenderQuality.dynamicResolutionEnabled + " forcedDeviceTierPreset=" + forcedTierPreset + " fullWindowAreaOnMobileEnabled=" + fullWindowAreaOnMobileEnabled + " delegateMobileWindowingToSystem=" + delegateMobileWindowingToSystem);
     }
     function clearActiveFocus(reason) {
         let current = interactionController.hostWindow ? interactionController.hostWindow.activeFocusItem : null;

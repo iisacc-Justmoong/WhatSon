@@ -1,19 +1,4 @@
 #include "DetailPropertiesViewModel.hpp"
-#include "file/note/WhatSonNoteFolderSemantics.hpp"
-
-namespace
-{
-    QStringList folderDisplayLabels(const QStringList& folderPaths)
-    {
-        QStringList labels;
-        labels.reserve(folderPaths.size());
-        for (const QString& folderPath : folderPaths)
-        {
-            labels.push_back(WhatSon::NoteFolders::leafFolderName(folderPath));
-        }
-        return labels;
-    }
-}
 
 namespace
 {
@@ -101,7 +86,7 @@ int DetailPropertiesViewModel::currentProgress() const noexcept
 
 void DetailPropertiesViewModel::applyHeader(const WhatSonNoteHeaderStore& header)
 {
-    m_folderItems = folderDisplayLabels(header.folders());
+    m_folderItems = header.folders();
     m_tagItems = header.tags();
     m_activeFolderIndex = normalizeMetadataIndex(m_activeFolderIndex, m_folderItems.size());
     m_activeTagIndex = normalizeMetadataIndex(m_activeTagIndex, m_tagItems.size());
