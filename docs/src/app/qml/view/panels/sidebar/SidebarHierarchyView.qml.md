@@ -49,6 +49,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `showChevron: true`.
 - Both actions route through `HierarchyInteractionBridge.setAllItemsExpanded(...)` so the active domain viewmodel, not
   the view, owns the persisted `expanded` state.
+- The menu entries now carry explicit `eventName` values (`hierarchy.expandAll` / `hierarchy.collapseAll`) and route
+  through a shared trigger handler that accepts both `onItemTriggered(index)` and
+  `onItemEventTriggered(eventName, ...)`, preventing callback-type differences in LVRS context-menu dispatch from
+  dropping bulk expansion actions.
 
 ## Expansion Routing Guard
 

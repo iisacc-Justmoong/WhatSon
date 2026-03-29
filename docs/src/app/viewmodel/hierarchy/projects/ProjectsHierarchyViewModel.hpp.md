@@ -24,6 +24,8 @@
   `project` label matches the active hierarchy selection.
 - Exposes `reloadNoteMetadataForNoteId(...)` so external metadata writers such as the detail panel
   can refresh one note's project membership without rebuilding the whole hub snapshot.
+- Exposes `noteDirectoryPathForNoteId(...)` for detail-panel note-header writes, with an expected
+  canonical directory resolution contract (indexed path first, `.wsnhead` directory fallback).
 - Exposes both `setItemExpanded(int, bool)` and `setAllItemsExpanded(bool)` so any future expandable
   projects rows can share the same projects-owned expansion state as the sidebar footer context menu.
 - Declares inherited capability methods with explicit `override` so the reorder/rename/crud

@@ -2280,6 +2280,7 @@ bool LibraryHierarchyViewModel::setItemExpanded(int index, bool expanded)
 
     m_items[index].expanded = expanded;
     m_itemModel.setItemExpanded(index, expanded);
+    emit hierarchyModelChanged();
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
                               QStringLiteral("setItemExpanded"),

@@ -481,9 +481,11 @@ private
 
 
     void libraryViewModel_supportsCrudContract();
+    void libraryViewModel_setItemExpanded_emitsHierarchyNodesChanged();
     void projectsViewModel_supportsCrudContract();
     void projectsViewModel_loadFromWshub_populatesNoteListForSelectedProject();
     void projectsViewModel_reloadNoteMetadataForNoteId_refreshesSelectedProjectProjection();
+    void projectsViewModel_reloadNoteMetadataForNoteId_whenHeaderMissing_mustDropStaleProjection();
     void projectsViewModel_loadFromWshub_ignoresStaleIndexProjectWhenHeaderProjectIsEmpty();
     void projectsViewModel_loadFromWshub_ignoresIndexOnlyProjectRecordWithoutHeader();
     void projectsViewModel_selectionRefresh_mustDropNoteWhenHeaderProjectBecomesEmpty();
@@ -557,6 +559,38 @@ void HierarchyViewModelsTest::libraryViewModel_supportsCrudContract()
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("BlockedHeaderRename")));
 }
 
+void HierarchyViewModelsTest::libraryViewModel_setItemExpanded_emitsHierarchyNodesChanged()
+{
+    LibraryHierarchyViewModel viewModel;
+    viewModel.setDepthItems(QVariantList{
+        QVariantMap{{"label", QStringLiteral("Root")}, {"depth", 0}},
+        QVariantMap{{"label", QStringLiteral("Child")}, {"depth", 1}}
+    });
+
+    const QVariantList initialNodes = viewModel.hierarchyNodes();
+    int expandableIndex = -1;
+    for (int index = 0; index < initialNodes.size(); ++index)
+    {
+        const QVariantMap node = initialNodes.at(index).toMap();
+        if (node.value(QStringLiteral("showChevron")).toBool()
+            && !node.value(QStringLiteral("accent")).toBool())
+        {
+            expandableIndex = index;
+            break;
+        }
+    }
+    QVERIFY(expandableIndex >= 0);
+
+    QSignalSpy hierarchyNodesSpy(&viewModel, SIGNAL(hierarchyNodesChanged()));
+    QVERIFY(hierarchyNodesSpy.isValid());
+
+    QVERIFY(viewModel.setItemExpanded(expandableIndex, true));
+    QCOMPARE(hierarchyNodesSpy.count(), 1);
+    QCOMPARE(
+        viewModel.hierarchyNodes().at(expandableIndex).toMap().value(QStringLiteral("expanded")).toBool(),
+        true);
+}
+
 void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
 {
     ProjectsHierarchyViewModel viewModel;
@@ -594,6 +628,8 @@ void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_populatesNoteListF
 {
     QString hubPath;
     QVERIFY(prepareProjectsHub(&hubPath));
+    const QString betaNoteDirectoryPath = QDir(hubPath).filePath(
+        QStringLiteral("ProjectsVmHub.wscontents/Library.wslibrary/Beta.wsnote"));
 
     ProjectsHierarchyViewModel viewModel;
     QString errorMessage;
@@ -628,6 +664,9 @@ void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_populatesNoteListF
             viewModel.noteListModel()->index(0, 0),
             LibraryNoteListModel::PrimaryTextRole).toString(),
         QStringLiteral("Beta summary"));
+    QCOMPARE(
+        QDir::cleanPath(viewModel.noteDirectoryPathForNoteId(QStringLiteral("note-beta"))),
+        QDir::cleanPath(betaNoteDirectoryPath));
 }
 
 void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_refreshesSelectedProjectProjection()
@@ -657,6 +696,27 @@ void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_refr
             viewModel.noteListModel()->index(2, 0),
             LibraryNoteListModel::NoteIdRole).toString(),
         QStringLiteral("note-beta"));
+}
+
+void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_whenHeaderMissing_mustDropStaleProjection()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(1);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+
+    const QString betaHeaderPath = QDir(hubPath).filePath(
+        QStringLiteral("ProjectsVmHub.wscontents/Library.wslibrary/Beta.wsnote/Beta.wsnhead"));
+    QVERIFY(QFileInfo(betaHeaderPath).isFile());
+    QVERIFY(QFile::remove(betaHeaderPath));
+
+    QVERIFY(!viewModel.reloadNoteMetadataForNoteId(QStringLiteral("note-beta")));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
 }
 
 void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_ignoresStaleIndexProjectWhenHeaderProjectIsEmpty()

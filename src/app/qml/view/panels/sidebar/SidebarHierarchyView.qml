@@ -164,12 +164,14 @@ Rectangle {
         {
             "label": "Expand All",
             "iconName": "generalshow",
+            "eventName": "hierarchy.expandAll",
             "enabled": sidebarHierarchyView.hierarchyBulkExpansionEnabled,
             "keyVisible": false,
             "showChevron": false
         },
         {
             "label": "Collapse All",
+            "eventName": "hierarchy.collapseAll",
             "enabled": sidebarHierarchyView.hierarchyBulkExpansionEnabled,
             "keyVisible": false,
             "showChevron": false
@@ -436,6 +438,15 @@ Rectangle {
         }
         hierarchyViewOptionsMenu.openFor(hierarchyFooter, hierarchyFooter.width, hierarchyFooter.height + 2);
         sidebarHierarchyView.requestViewHook("hierarchy.footer.options.open");
+    }
+
+    function handleHierarchyViewOptionsTrigger(index, eventName) {
+        const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
+        const normalizedIndex = Number(index);
+        if (normalizedEventName === "hierarchy.expandAll" || normalizedIndex === 0)
+            sidebarHierarchyView.requestExpandAllHierarchyItems();
+        else if (normalizedEventName === "hierarchy.collapseAll" || normalizedIndex === 1)
+            sidebarHierarchyView.requestCollapseAllHierarchyItems();
     }
 
     function requestExpandAllHierarchyItems() {
@@ -755,10 +766,10 @@ Rectangle {
         parent: Controls.Overlay.overlay
 
         onItemTriggered: function (index) {
-            if (index === 0)
-                sidebarHierarchyView.requestExpandAllHierarchyItems();
-            else if (index === 1)
-                sidebarHierarchyView.requestCollapseAllHierarchyItems();
+            sidebarHierarchyView.handleHierarchyViewOptionsTrigger(index, "");
+        }
+        onItemEventTriggered: function (eventName, payload, index, item) {
+            sidebarHierarchyView.handleHierarchyViewOptionsTrigger(index, eventName);
         }
     }
     LV.ListFooter {

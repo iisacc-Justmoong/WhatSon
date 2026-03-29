@@ -371,6 +371,8 @@ void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset(
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("hierarchyViewOptionsMenu.openFor(hierarchyFooter, hierarchyFooter.width, hierarchyFooter.height + 2);")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("\"label\": \"Expand All\"")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("\"label\": \"Collapse All\"")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("\"eventName\": \"hierarchy.expandAll\"")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("\"eventName\": \"hierarchy.collapseAll\"")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("toolbarItems: []")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("spacing: sidebarHierarchyView.toolbarButtonSpacing")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("width: 78")));
@@ -379,6 +381,11 @@ void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset(
         QStringLiteral("anchors.bottomMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.footerVisible ? hierarchyFooter.implicitHeight : 0)")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(true)")));
     QVERIFY(sidebarHierarchyView.contains(QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setAllItemsExpanded(false)")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("function handleHierarchyViewOptionsTrigger(index, eventName)")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("normalizedEventName === \"hierarchy.expandAll\"")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("normalizedEventName === \"hierarchy.collapseAll\"")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("onItemEventTriggered: function (eventName, payload, index, item)")));
+    QVERIFY(sidebarHierarchyView.contains(QStringLiteral("sidebarHierarchyView.handleHierarchyViewOptionsTrigger(index, eventName);")));
 }
 
 QTEST_APPLESS_MAIN(NavigationQmlFramesTest)

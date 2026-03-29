@@ -51,6 +51,12 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 - `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
   filtered projection immediately, so project assignment writes do not require a later hub reload
   before the projects note list catches up.
+- `noteDirectoryPathForNoteId(...)` now resolves directory paths canonically by falling back to the
+  readable `.wsnhead` location when the indexed directory path is missing or stale.
+- If `reloadNoteMetadataForNoteId(...)` cannot re-read the note header anymore (for example the
+  header file was removed), the viewmodel immediately clears that note's project membership in the
+  in-memory projection and refreshes the note list, preventing stale project rows from lingering in
+  the sidebar/list panel.
 
 ## Invariants
 

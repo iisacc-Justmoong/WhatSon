@@ -414,6 +414,37 @@ namespace
         return normalizedHeaderPath;
     }
 
+    QString resolveCanonicalNoteDirectoryPathForProjects(const LibraryNoteRecord& note)
+    {
+        const QString normalizedDirectoryPath = QDir::cleanPath(note.noteDirectoryPath.trimmed());
+        if (!normalizedDirectoryPath.isEmpty())
+        {
+            return normalizedDirectoryPath;
+        }
+
+        const QString canonicalHeaderPath = resolveCanonicalHeaderPathForProjects(note);
+        if (!canonicalHeaderPath.isEmpty())
+        {
+            const QString headerDirectoryPath = QFileInfo(canonicalHeaderPath).absolutePath().trimmed();
+            if (!headerDirectoryPath.isEmpty())
+            {
+                return QDir::cleanPath(headerDirectoryPath);
+            }
+        }
+
+        const QString indexedHeaderPath = QDir::cleanPath(note.noteHeaderPath.trimmed());
+        if (!indexedHeaderPath.isEmpty())
+        {
+            const QString indexedHeaderDirectoryPath = QFileInfo(indexedHeaderPath).absolutePath().trimmed();
+            if (!indexedHeaderDirectoryPath.isEmpty())
+            {
+                return QDir::cleanPath(indexedHeaderDirectoryPath);
+            }
+        }
+
+        return {};
+    }
+
     void synchronizeIndexedProjectLabelsFromHeaders(QVector<LibraryNoteRecord>* notes)
     {
         if (notes == nullptr)
@@ -428,12 +459,8 @@ namespace
             WhatSonLocalNoteDocument noteDocument;
             QString ioError;
             const QString normalizedNoteId = note.noteId.trimmed();
-            QString normalizedDirectoryPath = QDir::cleanPath(note.noteDirectoryPath.trimmed());
             const QString preferredHeaderPath = resolveCanonicalHeaderPathForProjects(note);
-            if (normalizedDirectoryPath.isEmpty() && !preferredHeaderPath.isEmpty())
-            {
-                normalizedDirectoryPath = QFileInfo(preferredHeaderPath).absolutePath();
-            }
+            const QString normalizedDirectoryPath = resolveCanonicalNoteDirectoryPathForProjects(note);
 
             bool loaded = false;
             if (!normalizedNoteId.isEmpty() && !preferredHeaderPath.isEmpty())
@@ -701,15 +728,36 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
         return false;
     }
 
+    const LibraryNoteRecord indexedNote = m_allNotes.at(noteIndex);
+    const QString preferredHeaderPath = resolveCanonicalHeaderPathForProjects(indexedNote);
+    const QString resolvedDirectoryPath = resolveCanonicalNoteDirectoryPathForProjects(indexedNote);
+
     WhatSonNoteFolderBindingRepository noteRepository;
     WhatSonLocalNoteDocument noteDocument;
     QString ioError;
-    if (!noteRepository.readDocument(m_allNotes.at(noteIndex), &noteDocument, &ioError))
+    bool loaded = false;
+    if (!normalizedNoteId.isEmpty() && !preferredHeaderPath.isEmpty())
+    {
+        loaded = noteRepository.readDocument(
+            normalizedNoteId,
+            resolvedDirectoryPath,
+            preferredHeaderPath,
+            &noteDocument,
+            &ioError);
+    }
+    if (!loaded)
+    {
+        loaded = noteRepository.readDocument(indexedNote, &noteDocument, &ioError);
+    }
+    if (!loaded)
     {
         WhatSon::Debug::traceSelf(this,
                                   QString::fromLatin1(kScope),
                                   QStringLiteral("reloadNoteMetadataForNoteId.failed"),
                                   QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
+        // Drop stale projection membership immediately when note metadata can no longer be read.
+        m_allNotes[noteIndex].project.clear();
+        refreshNoteListForSelection();
         return false;
     }
 
@@ -732,7 +780,7 @@ QString ProjectsHierarchyViewModel::noteDirectoryPathForNoteId(const QString& no
         return {};
     }
 
-    return m_allNotes.at(noteIndex).noteDirectoryPath.trimmed();
+    return resolveCanonicalNoteDirectoryPathForProjects(m_allNotes.at(noteIndex));
 }
 
 int ProjectsHierarchyViewModel::selectedIndex() const noexcept

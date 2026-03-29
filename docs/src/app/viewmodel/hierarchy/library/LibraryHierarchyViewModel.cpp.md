@@ -59,6 +59,12 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - If the previously selected key no longer exists after reload, the viewmodel falls back to the
   unselected state, which still resolves to the All Library bucket.
 
+## Hierarchy Expansion Signaling
+
+- `setItemExpanded(...)` updates both the internal `m_items` snapshot and the list model row state.
+- After an expansion toggle, it must emit `hierarchyModelChanged` so QML bindings driven by
+  `hierarchyNodes` (including sidebar footer `Expand All` / `Collapse All`) immediately redraw.
+
 ## Note Filtering And Assignment
 
 - `resolvedNoteFolderBindings(...)` reconstructs a note's effective folder membership and tracks
