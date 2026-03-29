@@ -11,10 +11,12 @@
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -46,12 +48,38 @@ namespace
         return QString::fromUtf8(file.readAll());
     }
 
+    bool createResourcePackage(
+        const QString& resourcesPath,
+        const QString& resourceId,
+        const QString& assetFileName,
+        const QString& assetPayload = QStringLiteral("payload"))
+    {
+        const QString packageDirectoryPath = QDir(resourcesPath).filePath(resourceId + QStringLiteral(".wsresource"));
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return false;
+        }
+
+        const QString resourcePath = QStringLiteral("%1/%2")
+                                         .arg(QFileInfo(resourcesPath).fileName(), QFileInfo(packageDirectoryPath).fileName());
+        WhatSon::Resources::ResourcePackageMetadata metadata = WhatSon::Resources::buildMetadataForAssetFile(
+            assetFileName,
+            resourceId,
+            resourcePath);
+
+        return writeUtf8File(QDir(packageDirectoryPath).filePath(assetFileName), assetPayload)
+            && writeUtf8File(
+                QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+                WhatSon::Resources::createResourcePackageMetadataXml(metadata));
+    }
+
     QString makeWsnHeadText(
         const QString& noteId,
         bool bookmarked,
         const QStringList& bookmarkColors,
         const QStringList& tags = {},
-        int progressValue = 0)
+        int progressValue = 0,
+        const QString& projectName = QStringLiteral("General"))
     {
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -63,7 +91,7 @@ namespace
         text += QStringLiteral("    <lastModified>2026-03-01-00-00-00</lastModified>\n");
         text += QStringLiteral("    <modifiedBy>Tester</modifiedBy>\n");
         text += QStringLiteral("    <folders></folders>\n");
-        text += QStringLiteral("    <project>General</project>\n");
+        text += QStringLiteral("    <project>%1</project>\n").arg(projectName);
         QString bookmarkTag = QStringLiteral("    <bookmarks state=\"%1\"").arg(
             bookmarked ? QStringLiteral("true") : QStringLiteral("false"));
         if (!bookmarkColors.isEmpty())
@@ -100,6 +128,15 @@ namespace
         root.insert(QStringLiteral("progress"), progressValue);
         root.insert(QStringLiteral("states"), stateArray);
 
+        return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
+
+    QString makeProjectsWsprojText(const QJsonArray& projects)
+    {
+        QJsonObject root;
+        root.insert(QStringLiteral("version"), 1);
+        root.insert(QStringLiteral("schema"), QStringLiteral("whatson.projects.list"));
+        root.insert(QStringLiteral("projects"), projects);
         return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
     }
 
@@ -162,8 +199,11 @@ namespace
         {
             return false;
         }
-        const QString bluePreviewPath = QDir(resourcesPath).filePath(QStringLiteral("blue-preview.png"));
-        if (!writeUtf8File(bluePreviewPath, QStringLiteral("png")))
+        if (!createResourcePackage(
+            resourcesPath,
+            QStringLiteral("blue-preview"),
+            QStringLiteral("blue-preview.png"),
+            QStringLiteral("png")))
         {
             return false;
         }
@@ -197,7 +237,7 @@ namespace
             QDir(noteAPath).filePath(QStringLiteral("Blue.wsnbody")),
             makeWsnBodyTextFromInnerXml(
                 QStringLiteral(
-                    "    <resource format=\".png\" resourcePath=\"BookmarksVmHub.wsresources/blue-preview.png\" />\n"
+                    "    <resource type=\"image\" format=\".png\" resourcePath=\"BookmarksVmHub.wsresources/blue-preview.wsresource\" />\n"
                     "    <paragraph>Blue summary</paragraph>\n"))))
         {
             return false;
@@ -328,6 +368,107 @@ namespace
         *outHubPath = hubPath;
         return true;
     }
+
+    bool prepareProjectsHub(QString* outHubPath)
+    {
+        if (outHubPath == nullptr)
+        {
+            return false;
+        }
+
+        static QTemporaryDir tempDir;
+        if (!tempDir.isValid())
+        {
+            return false;
+        }
+
+        const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("ProjectsVmHub.wshub"));
+        QDir(hubPath).removeRecursively();
+
+        const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("ProjectsVmHub.wscontents"));
+        const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+        const QString alphaAPath = QDir(libraryPath).filePath(QStringLiteral("AlphaA.wsnote"));
+        const QString alphaBPath = QDir(libraryPath).filePath(QStringLiteral("AlphaB.wsnote"));
+        const QString betaPath = QDir(libraryPath).filePath(QStringLiteral("Beta.wsnote"));
+        const QString orphanPath = QDir(libraryPath).filePath(QStringLiteral("Orphan.wsnote"));
+        if (!QDir().mkpath(alphaAPath)
+            || !QDir().mkpath(alphaBPath)
+            || !QDir().mkpath(betaPath)
+            || !QDir().mkpath(orphanPath))
+        {
+            return false;
+        }
+
+        const QString indexText = QStringLiteral(
+            "{\n"
+            "  \"version\": 1,\n"
+            "  \"schema\": \"whatson.library.index\",\n"
+            "  \"notes\": [\n"
+            "    {\"id\": \"note-alpha-a\"},\n"
+            "    {\"id\": \"note-alpha-b\"},\n"
+            "    {\"id\": \"note-beta\"},\n"
+            "    {\"id\": \"note-orphan\"}\n"
+            "  ]\n"
+            "}\n");
+        if (!writeUtf8File(QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")), indexText))
+        {
+            return false;
+        }
+
+        const QJsonArray projects = {
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("Alpha")}, {QStringLiteral("label"), QStringLiteral("Alpha")}},
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("Beta")}, {QStringLiteral("label"), QStringLiteral("Beta")}}
+        };
+        if (!writeUtf8File(
+                QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj")),
+                makeProjectsWsprojText(projects)))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(alphaAPath).filePath(QStringLiteral("AlphaA.wsnhead")),
+                makeWsnHeadText(QStringLiteral("note-alpha-a"), false, {}, {}, 0, QStringLiteral("Alpha")))
+            || !writeUtf8File(
+                QDir(alphaAPath).filePath(QStringLiteral("AlphaA.wsnbody")),
+                makeWsnBodyText(QStringLiteral("Alpha A summary"))))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(alphaBPath).filePath(QStringLiteral("AlphaB.wsnhead")),
+                makeWsnHeadText(QStringLiteral("note-alpha-b"), false, {}, {}, 0, QStringLiteral("Alpha")))
+            || !writeUtf8File(
+                QDir(alphaBPath).filePath(QStringLiteral("AlphaB.wsnbody")),
+                makeWsnBodyText(QStringLiteral("Alpha B summary"))))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(betaPath).filePath(QStringLiteral("Beta.wsnhead")),
+                makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QStringLiteral("Beta")))
+            || !writeUtf8File(
+                QDir(betaPath).filePath(QStringLiteral("Beta.wsnbody")),
+                makeWsnBodyText(QStringLiteral("Beta summary"))))
+        {
+            return false;
+        }
+
+        if (!writeUtf8File(
+                QDir(orphanPath).filePath(QStringLiteral("Orphan.wsnhead")),
+                makeWsnHeadText(QStringLiteral("note-orphan"), false, {}, {}, 0, QStringLiteral("Missing")))
+            || !writeUtf8File(
+                QDir(orphanPath).filePath(QStringLiteral("Orphan.wsnbody")),
+                makeWsnBodyText(QStringLiteral("Orphan summary"))))
+        {
+            return false;
+        }
+
+        *outHubPath = hubPath;
+        return true;
+    }
 } // namespace
 
 class HierarchyViewModelsTest final : public QObject
@@ -341,6 +482,7 @@ private
 
     void libraryViewModel_supportsCrudContract();
     void projectsViewModel_supportsCrudContract();
+    void projectsViewModel_loadFromWshub_populatesNoteListForSelectedProject();
     void projectsViewModel_reactsToModelMutation();
     void projectsViewModel_applyRuntimeSnapshot_preservesSelectionAcrossUnchangedSnapshot();
     void projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth();
@@ -417,6 +559,8 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     viewModel.setProjectNames({QStringLiteral("Alpha"), QStringLiteral("Beta")});
     QVERIFY(viewModel.renameEnabled());
     QVERIFY(viewModel.createFolderEnabled());
+    QVERIFY(viewModel.noteListModel() != nullptr);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ProjectsHierarchyModel::IconNameRole)
@@ -440,6 +584,46 @@ void HierarchyViewModelsTest::projectsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+}
+
+void HierarchyViewModelsTest::projectsViewModel_loadFromWshub_populatesNoteListForSelectedProject()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(viewModel.noteListModel() != nullptr);
+
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+
+    viewModel.setSelectedIndex(0);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::NoteIdRole).toString(),
+        QStringLiteral("note-alpha-a"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(1, 0),
+            LibraryNoteListModel::NoteIdRole).toString(),
+        QStringLiteral("note-alpha-b"));
+
+    viewModel.setSelectedIndex(1);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::NoteIdRole).toString(),
+        QStringLiteral("note-beta"));
+    QCOMPARE(
+        viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(0, 0),
+            LibraryNoteListModel::PrimaryTextRole).toString(),
+        QStringLiteral("Beta summary"));
 }
 
 void HierarchyViewModelsTest::projectsViewModel_reactsToModelMutation()
@@ -709,7 +893,8 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
             viewModel.noteListModel()->index(0, 0),
             BookmarksNoteListModel::ImageSourceRole).toString(),
         QUrl::fromLocalFile(
-            QDir(hubPath).filePath(QStringLiteral("BookmarksVmHub.wsresources/blue-preview.png"))).toString());
+            QDir(hubPath).filePath(
+                QStringLiteral("BookmarksVmHub.wsresources/blue-preview.wsresource/blue-preview.png"))).toString());
     QCOMPARE(
         viewModel.noteListModel()->data(
             viewModel.noteListModel()->index(0, 0),
@@ -843,88 +1028,175 @@ void HierarchyViewModelsTest::bookmarksViewModel_formatsDisplayDateWithSystemCal
 
 void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
 {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString resourcesPath = QDir(tempDir.path()).filePath(QStringLiteral("ResourcesVm.wsresources"));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("logo"),
+        QStringLiteral("logo.png"),
+        QStringLiteral("png")));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("brief"),
+        QStringLiteral("brief.pdf"),
+        QStringLiteral("pdf")));
+
     ResourcesHierarchyViewModel viewModel;
-    viewModel.setResourcePaths({QStringLiteral("assets/logo.png")});
+    viewModel.setResourcePaths({
+        QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource")),
+        QDir(resourcesPath).filePath(QStringLiteral("brief.wsresource"))
+    });
     QVERIFY(!viewModel.renameEnabled());
     QVERIFY(!viewModel.createFolderEnabled());
-    QCOMPARE(viewModel.resourcePaths(), QStringList{QStringLiteral("assets/logo.png")});
-    QVERIFY(viewModel.itemModel()->rowCount() > 9);
+    QCOMPARE(
+        viewModel.resourcePaths(),
+        QStringList({
+            QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource")),
+            QDir(resourcesPath).filePath(QStringLiteral("brief.wsresource"))
+        }));
+    QCOMPARE(viewModel.itemModel()->rowCount(), 6);
+
+    auto findIndexByKey = [&viewModel](const QString& key)
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(
+                    viewModel.itemModel()->index(row, 0),
+                    ResourcesHierarchyModel::KeyRole).toString() == key)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int documentBucketIndex = findIndexByKey(QStringLiteral("bucket:document"));
+    const int imageBucketIndex = findIndexByKey(QStringLiteral("bucket:image"));
+    const int imageFormatIndex = findIndexByKey(QStringLiteral("format:image:.png"));
+    const int imageAssetIndex = findIndexByKey(QStringLiteral("asset:ResourcesVm.wsresources/logo.wsresource"));
+    QVERIFY(documentBucketIndex >= 0);
+    QVERIFY(imageBucketIndex >= 0);
+    QVERIFY(imageFormatIndex >= 0);
+    QVERIFY(imageAssetIndex >= 0);
 
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::LabelRole).toString(),
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageBucketIndex, 0),
+            ResourcesHierarchyModel::LabelRole).toString(),
         QStringLiteral("Image"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::DepthRole).toInt(),
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageBucketIndex, 0),
+            ResourcesHierarchyModel::DepthRole).toInt(),
         0);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::ShowChevronRole)
-                 .toBool(),
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageBucketIndex, 0),
+            ResourcesHierarchyModel::ShowChevronRole).toBool(),
         true);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::IconNameRole)
-                 .toString(),
-        QStringLiteral("virtualFolder"));
-    QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::LabelRole).toString(),
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageFormatIndex, 0),
+            ResourcesHierarchyModel::LabelRole).toString(),
         QStringLiteral(".png"));
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::DepthRole).toInt(),
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageFormatIndex, 0),
+            ResourcesHierarchyModel::DepthRole).toInt(),
         1);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::ShowChevronRole)
-                 .toBool(),
-        false);
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageFormatIndex, 0),
+            ResourcesHierarchyModel::ShowChevronRole).toBool(),
+        true);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ResourcesHierarchyModel::IconNameRole)
-                 .toString(),
-        QStringLiteral("virtualFolder"));
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageAssetIndex, 0),
+            ResourcesHierarchyModel::LabelRole).toString(),
+        QStringLiteral("logo"));
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageAssetIndex, 0),
+            ResourcesHierarchyModel::DepthRole).toInt(),
+        2);
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageAssetIndex, 0),
+            ResourcesHierarchyModel::TypeRole).toString(),
+        QStringLiteral("image"));
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageAssetIndex, 0),
+            ResourcesHierarchyModel::ResourcePathRole).toString(),
+        QStringLiteral("ResourcesVm.wsresources/logo.wsresource"));
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageAssetIndex, 0),
+            ResourcesHierarchyModel::AssetPathRole).toString(),
+        QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource/logo.png")));
 
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
-    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("Image"));
-    QCOMPARE(hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
-    QCOMPARE(hierarchyModel.at(1).toMap().value(QStringLiteral("label")).toString(), QStringLiteral(".png"));
-
-    bool foundWebPage = false;
-    bool foundZip = false;
-    bool foundOther = false;
-    int otherIndex = -1;
-    for (const QVariant& entry : hierarchyModel)
+    auto findNodeByKey = [&hierarchyModel](const QString& key)
     {
-        const QVariantMap entryMap = entry.toMap();
-        const QString label = entryMap.value(QStringLiteral("label")).toString();
-        foundWebPage = foundWebPage || label == QStringLiteral("Web page");
-        foundZip = foundZip || label == QStringLiteral("ZIP");
-        if (label == QStringLiteral("Other"))
+        for (const QVariant& entry : hierarchyModel)
         {
-            foundOther = true;
-            otherIndex = hierarchyModel.indexOf(entry);
-            QCOMPARE(entryMap.value(QStringLiteral("depth")).toInt(), 0);
-            QCOMPARE(entryMap.value(QStringLiteral("showChevron")).toBool(), false);
+            const QVariantMap map = entry.toMap();
+            if (map.value(QStringLiteral("key")).toString() == key)
+            {
+                return map;
+            }
         }
-    }
-    QVERIFY(foundWebPage);
-    QVERIFY(foundZip);
-    QVERIFY(foundOther);
-    QVERIFY(otherIndex >= 0);
-    QCOMPARE(otherIndex, hierarchyModel.size() - 1);
+        return QVariantMap{};
+    };
 
-    viewModel.setSelectedIndex(0);
+    const QVariantMap imageNode = findNodeByKey(QStringLiteral("bucket:image"));
+    const QVariantMap formatNode = findNodeByKey(QStringLiteral("format:image:.png"));
+    const QVariantMap assetNode = findNodeByKey(QStringLiteral("asset:ResourcesVm.wsresources/logo.wsresource"));
+    QCOMPARE(imageNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
+    QCOMPARE(formatNode.value(QStringLiteral("label")).toString(), QStringLiteral(".png"));
+    QCOMPARE(assetNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("imageToImage"));
+    QCOMPARE(assetNode.value(QStringLiteral("resourceId")).toString(), QStringLiteral("logo"));
+    QCOMPARE(assetNode.value(QStringLiteral("bucket")).toString(), QStringLiteral("Image"));
+
+    viewModel.setSelectedIndex(imageBucketIndex);
     QVERIFY(!viewModel.deleteFolderEnabled());
-    QVERIFY(!viewModel.canRenameItem(0));
-    QVERIFY(!viewModel.renameItem(0, QStringLiteral("Image-Renamed")));
+    QVERIFY(!viewModel.canRenameItem(imageBucketIndex));
+    QVERIFY(!viewModel.renameItem(imageBucketIndex, QStringLiteral("Image-Renamed")));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
-    viewModel.setSelectedIndex(1);
-    QVERIFY(!viewModel.canRenameItem(1));
-    QVERIFY(!viewModel.renameItem(1, QStringLiteral(".png-renamed")));
+    viewModel.setSelectedIndex(imageFormatIndex);
+    QVERIFY(!viewModel.canRenameItem(imageFormatIndex));
+    QVERIFY(!viewModel.renameItem(imageFormatIndex, QStringLiteral(".png-renamed")));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()
 {
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString resourcesPath = QDir(tempDir.path()).filePath(QStringLiteral("RuntimeResources.wsresources"));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("logo"),
+        QStringLiteral("logo.png"),
+        QStringLiteral("png")));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("manual"),
+        QStringLiteral("manual.pdf"),
+        QStringLiteral("pdf")));
+
     ResourcesHierarchyViewModel viewModel;
-    viewModel.applyRuntimeSnapshot({QStringLiteral("assets/logo.png")}, QStringLiteral("/tmp/Resources.wsresources"), true);
+    viewModel.applyRuntimeSnapshot(
+        {QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource"))},
+        QStringLiteral("/tmp/Resources.wsresources"),
+        true);
 
     QVERIFY(viewModel.setItemExpanded(0, true));
     QCOMPARE(
@@ -933,12 +1205,29 @@ void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesE
         true);
 
     viewModel.applyRuntimeSnapshot(
-        {QStringLiteral("assets/logo.png"), QStringLiteral("docs/readme.pdf")},
+        {
+            QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource")),
+            QDir(resourcesPath).filePath(QStringLiteral("manual.wsresource"))
+        },
         QStringLiteral("/tmp/Resources.wsresources"),
         true);
 
+    int imageBucketIndex = -1;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        if (viewModel.itemModel()->data(
+                viewModel.itemModel()->index(row, 0),
+                ResourcesHierarchyModel::KeyRole).toString() == QStringLiteral("bucket:image"))
+        {
+            imageBucketIndex = row;
+            break;
+        }
+    }
+    QVERIFY(imageBucketIndex >= 0);
     QCOMPARE(
-        viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), ResourcesHierarchyModel::ExpandedRole)
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(imageBucketIndex, 0),
+            ResourcesHierarchyModel::ExpandedRole)
             .toBool(),
         true);
 }

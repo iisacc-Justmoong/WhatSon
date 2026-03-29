@@ -67,6 +67,14 @@ void WhatSonNoteHeaderParserTest::parse_readsWsnHeadFieldsWithExpectedTypes()
                  QStringLiteral("blue"), QStringLiteral("#EF4444"), QStringLiteral("purple")
              }));
     QCOMPARE(store.tags(), QStringList({QStringLiteral("creative"), QStringLiteral("launch")}));
+    QCOMPARE(
+        store.progressEnums(),
+        QStringList({
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        }));
     QCOMPARE(store.progress(), 2);
     QVERIFY(!store.isPreset());
 }
@@ -86,6 +94,14 @@ void WhatSonNoteHeaderParserTest::parse_mapsProgressEnumLabelToInteger()
     QString errorMessage;
     QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
 
+    QCOMPARE(
+        store.progressEnums(),
+        QStringList({
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        }));
     QCOMPARE(store.progress(), 2);
 }
 
@@ -104,6 +120,14 @@ void WhatSonNoteHeaderParserTest::parse_readsEmptyProgressAsClearedState()
     QString errorMessage;
     QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
 
+    QCOMPARE(
+        store.progressEnums(),
+        QStringList({
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        }));
     QCOMPARE(store.progress(), -1);
 }
 
@@ -197,6 +221,12 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
     seed.setBookmarked(true);
     seed.setBookmarkColors(QStringList({QStringLiteral("blue"), QStringLiteral("pink")}));
     seed.setTags(QStringList({QStringLiteral("tag1"), QStringLiteral("tag2")}));
+    seed.setProgressEnums(QStringList({
+        QStringLiteral("Queued"),
+        QStringLiteral("Review"),
+        QStringLiteral("Ship"),
+        QStringLiteral("Published")
+    }));
     seed.setProgress(3);
     seed.setPreset(true);
 
@@ -213,6 +243,7 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsThroughParser()
     QCOMPARE(decoded.folders(), seed.folders());
     QCOMPARE(decoded.bookmarkColors(), seed.bookmarkColors());
     QCOMPARE(decoded.tags(), seed.tags());
+    QCOMPARE(decoded.progressEnums(), seed.progressEnums());
     QCOMPARE(decoded.progress(), seed.progress());
     QCOMPARE(decoded.isBookmarked(), seed.isBookmarked());
     QCOMPARE(decoded.isPreset(), seed.isPreset());
@@ -233,6 +264,14 @@ void WhatSonNoteHeaderParserTest::createHeaderText_roundTripsClearedProgressStat
     QString errorMessage;
     QVERIFY2(parser.parse(encoded, &decoded, &errorMessage), qPrintable(errorMessage));
 
+    QCOMPARE(
+        decoded.progressEnums(),
+        QStringList({
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        }));
     QCOMPARE(decoded.progress(), -1);
 }
 

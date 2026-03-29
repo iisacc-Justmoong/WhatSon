@@ -1,7 +1,9 @@
 #include "hub/WhatSonHubRuntimeStore.hpp"
+#include "hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -15,6 +17,31 @@ namespace
             return false;
         }
         return file.write(text) == text.size();
+    }
+
+    bool createResourcePackage(
+        const QString& resourcesPath,
+        const QString& resourceId,
+        const QString& assetFileName,
+        const QByteArray& assetPayload = QByteArray("payload"))
+    {
+        const QString packageDirectoryPath = QDir(resourcesPath).filePath(resourceId + QStringLiteral(".wsresource"));
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return false;
+        }
+
+        const QString resourcePath = QStringLiteral("%1/%2")
+                                         .arg(QFileInfo(resourcesPath).fileName(), QFileInfo(packageDirectoryPath).fileName());
+        WhatSon::Resources::ResourcePackageMetadata metadata = WhatSon::Resources::buildMetadataForAssetFile(
+            assetFileName,
+            resourceId,
+            resourcePath);
+
+        return writeUtf8File(QDir(packageDirectoryPath).filePath(assetFileName), assetPayload)
+            && writeUtf8File(
+                QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+                WhatSon::Resources::createResourcePackageMetadataXml(metadata).toUtf8());
     }
 
     bool buildRequiredRuntimeHub(
@@ -104,9 +131,11 @@ namespace
         {
             return false;
         }
-        if (!writeUtf8File(
-            QDir(resourcesPath).filePath(QStringLiteral("image.png")),
-            "png"))
+        if (!createResourcePackage(
+            resourcesPath,
+            QStringLiteral("image"),
+            QStringLiteral("image.png"),
+            QByteArray("png")))
         {
             return false;
         }

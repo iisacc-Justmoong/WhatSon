@@ -23,6 +23,7 @@ their UUID counterparts so later filters can match notes by folder identity inst
 - Merging code pads or repairs UUID lists so a caller never receives mismatched folder path / UUID
   arrays.
 - Runtime body indexing now derives `bodyFirstLine` from `firstLineFromBodyDocument(...)`, which preserves inline titles that appear before the first paragraph block.
+- Resource thumbnail extraction also understands `.wsresource` package references in `.wsnbody`, so library note cards now preview the packaged asset instead of requiring a raw file path.
 
 ## Why This Matters
 

@@ -396,21 +396,21 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     });
     progressSource.setHierarchyModel({
         makeHierarchyEntry(
-            QStringLiteral("progress:4"),
-            QStringLiteral("Queued"),
-            QVariantMap{{QStringLiteral("itemId"), 4}}),
-        makeHierarchyEntry(
-            QStringLiteral("progress:7"),
-            QStringLiteral("Review"),
-            QVariantMap{{QStringLiteral("itemId"), 7}}),
-        makeHierarchyEntry(
             QStringLiteral("progress:9"),
             QStringLiteral("Ship"),
             QVariantMap{{QStringLiteral("itemId"), 9}}),
         makeHierarchyEntry(
+            QStringLiteral("progress:4"),
+            QStringLiteral("Queued"),
+            QVariantMap{{QStringLiteral("itemId"), 4}}),
+        makeHierarchyEntry(
             QStringLiteral("progress:11"),
             QStringLiteral("Published"),
-            QVariantMap{{QStringLiteral("itemId"), 11}})
+            QVariantMap{{QStringLiteral("itemId"), 11}}),
+        makeHierarchyEntry(
+            QStringLiteral("progress:7"),
+            QStringLiteral("Review"),
+            QVariantMap{{QStringLiteral("itemId"), 7}})
     });
 
     viewModel.setProjectSelectionSourceViewModel(&projectsSource);
@@ -448,7 +448,42 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     const QVariantList progressHierarchyModel = progressSelector->property("hierarchyModel").toList();
     QCOMPARE(projectHierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("No project"));
     QCOMPARE(bookmarkHierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("No bookmark"));
-    QCOMPARE(progressHierarchyModel.at(0).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("No progress"));
+    QCOMPARE(
+        progressHierarchyModel,
+        detailSelectorHierarchyModel(
+            QStringLiteral("detail:none:progress"),
+            QStringLiteral("No progress"),
+            QVariantList{
+                makeHierarchyEntry(
+                    QStringLiteral("progress:4"),
+                    QStringLiteral("Queued"),
+                    QVariantMap{
+                        {QStringLiteral("itemId"), 4},
+                        {QStringLiteral("progressValue"), 4}
+                    }),
+                makeHierarchyEntry(
+                    QStringLiteral("progress:7"),
+                    QStringLiteral("Review"),
+                    QVariantMap{
+                        {QStringLiteral("itemId"), 7},
+                        {QStringLiteral("progressValue"), 7}
+                    }),
+                makeHierarchyEntry(
+                    QStringLiteral("progress:9"),
+                    QStringLiteral("Ship"),
+                    QVariantMap{
+                        {QStringLiteral("itemId"), 9},
+                        {QStringLiteral("progressValue"), 9}
+                    }),
+                makeHierarchyEntry(
+                    QStringLiteral("progress:11"),
+                    QStringLiteral("Published"),
+                    QVariantMap{
+                        {QStringLiteral("itemId"), 11},
+                        {QStringLiteral("progressValue"), 11}
+                    })
+            },
+            QVariantMap{{QStringLiteral("progressValue"), -1}}));
 
     QVERIFY(viewModel.writeProjectSelection(3));
     QVERIFY(viewModel.writeBookmarkSelection(1));
@@ -493,6 +528,14 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QVERIFY(!header.isBookmarked());
     QCOMPARE(header.bookmarkColors(), QStringList{});
     QCOMPARE(header.tags(), QStringList{});
+    QCOMPARE(
+        header.progressEnums(),
+        QStringList({
+            QStringLiteral("Queued"),
+            QStringLiteral("Review"),
+            QStringLiteral("Ship"),
+            QStringLiteral("Published")
+        }));
     QCOMPARE(header.progress(), -1);
 }
 
@@ -650,22 +693,22 @@ void DetailPanelViewModelTest::detailSelectors_mustPreserveCurrentNoteContextAcr
     QVERIFY(progressSelector != nullptr);
     QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
     QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 2);
-    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 7);
 
     viewModel.setCurrentNoteListModel(nullptr);
     viewModel.setCurrentNoteDirectorySourceViewModel(&unsupportedSource);
 
     QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
     QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 2);
-    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 2);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 7);
 
     QVERIFY(viewModel.writeProjectSelection(2));
     QVERIFY(viewModel.writeBookmarkSelection(1));
-    QVERIFY(viewModel.writeProgressSelection(3));
+    QVERIFY(viewModel.writeProgressSelection(9));
 
     QCOMPARE(projectSelector->property("selectedIndex").toInt(), 2);
     QCOMPARE(bookmarkSelector->property("selectedIndex").toInt(), 1);
-    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 3);
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 9);
 
     QFile headerFile(headerFilePath);
     QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "sticky header file must remain readable");
@@ -1042,8 +1085,8 @@ void DetailPanelViewModelTest::detailProgressSelection_mustWriteCurrentModelValu
     QVERIFY(progressSelector != nullptr);
     QCOMPARE(progressSelector->property("selectedIndex").toInt(), 1);
 
-    QVERIFY(detailPanelViewModel.writeProgressSelection(7));
-    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 7);
+    QVERIFY(detailPanelViewModel.writeProgressSelection(4));
+    QCOMPARE(progressSelector->property("selectedIndex").toInt(), 4);
     QCOMPARE(detailPanelViewModel.propertiesViewModel()->property("currentProgress").toInt(), 6);
 
     QVERIFY(progressHierarchyViewModel.loadFromWshub(hubPath));

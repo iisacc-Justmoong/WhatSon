@@ -20,5 +20,8 @@ paths; that responsibility belongs to higher-level services that know the curren
 
 ## Progress Serialization Rules
 
+- The serializer now preserves `WhatSonNoteHeaderStore::progressEnums()` in the `<progress enums="...">`
+  attribute, so custom note-local progress labels round-trip without being rewritten to the default
+  `Ready/Pending/InProgress/Done` set.
 - Non-negative progress values are serialized as the `<progress>` element body.
 - A cleared progress state (`-1`) is serialized as an empty `<progress ...></progress>` element so the parser can round-trip the absence of progress instead of coercing it back to `0`.

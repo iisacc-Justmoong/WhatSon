@@ -22,4 +22,6 @@ can then upgrade the note header to the new attribute-based format.
 
 - Numeric `<progress>` content still maps directly to the stored enum integer.
 - Enum-label progress content still resolves through the `enums={...}` attribute.
+- The `enums={...}` attribute is now stored on `WhatSonNoteHeaderStore` through
+  `setProgressEnums(...)`, not discarded after integer resolution.
 - An empty `<progress>` element is now treated as an explicit cleared state and parses to `-1` instead of silently falling back to `0`.

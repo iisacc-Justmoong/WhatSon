@@ -188,6 +188,7 @@ void WhatSonNoteHeaderStore::clear()
     m_bookmarked = false;
     m_bookmarkColors.clear();
     m_tags.clear();
+    m_progressEnums.clear();
     m_progress = 0;
     m_preset = false;
 }
@@ -432,6 +433,24 @@ void WhatSonNoteHeaderStore::setTags(QStringList tags)
                               .arg(rawCount)
                               .arg(m_tags.size())
                               .arg(m_tags.join(QStringLiteral(", "))));
+}
+
+QStringList WhatSonNoteHeaderStore::progressEnums() const
+{
+    return m_progressEnums;
+}
+
+void WhatSonNoteHeaderStore::setProgressEnums(QStringList progressEnums)
+{
+    const int rawCount = progressEnums.size();
+    m_progressEnums = sanitizeStringList(std::move(progressEnums), QStringLiteral("progress"));
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setProgressEnums"),
+                              QStringLiteral("rawCount=%1 sanitizedCount=%2 values=[%3]")
+                              .arg(rawCount)
+                              .arg(m_progressEnums.size())
+                              .arg(m_progressEnums.join(QStringLiteral(", "))));
 }
 
 int WhatSonNoteHeaderStore::progress() const noexcept

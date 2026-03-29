@@ -216,6 +216,21 @@ bool WhatSonStartupRuntimeCoordinator::loadStartupHubIntoRuntime(const QString& 
     return true;
 }
 
+bool WhatSonStartupRuntimeCoordinator::reloadResourcesDomainIntoRuntime(const QString& hubPath, QString* errorMessage)
+{
+    WhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
+    requestedDomains.library = false;
+    requestedDomains.projects = false;
+    requestedDomains.bookmarks = false;
+    requestedDomains.tags = false;
+    requestedDomains.resources = true;
+    requestedDomains.progress = false;
+    requestedDomains.event = false;
+    requestedDomains.preset = false;
+    requestedDomains.hubRuntimeStore = true;
+    return loadHubIntoRuntimeWithRequestedDomains(hubPath, requestedDomains, errorMessage);
+}
+
 void WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int hierarchyIndex, const QString& reason)
 {
     const int normalizedIndex = WhatSon::Sidebar::normalizeHierarchyIndex(hierarchyIndex);

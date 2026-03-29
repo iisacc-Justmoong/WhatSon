@@ -1,19 +1,26 @@
 #include "ProjectsHierarchyViewModel.hpp"
 
+#include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/library/LibraryAll.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QSet>
 #include <utility>
+
+#include <algorithm>
 
 namespace
 {
     constexpr auto kScope = "projects.viewmodel";
+    constexpr int kMaxNoteListSummaryLines = 5;
 
     QVector<WhatSonFolderDepthEntry> projectEntriesFromItems(const QVector<ProjectsHierarchyItem>& items)
     {
@@ -146,6 +153,171 @@ namespace
         }
 
         return true;
+    }
+
+    QString truncateToMaxLines(const QString& value, int maxLines)
+    {
+        if (maxLines <= 0)
+        {
+            return {};
+        }
+
+        const QStringList lines = value.split(QLatin1Char('\n'));
+        if (lines.size() <= maxLines)
+        {
+            return value;
+        }
+
+        QStringList truncated;
+        truncated.reserve(maxLines);
+        for (int index = 0; index < maxLines; ++index)
+        {
+            truncated.push_back(lines.at(index));
+        }
+        return truncated.join(QLatin1Char('\n'));
+    }
+
+    QString notePrimaryText(const LibraryNoteRecord& note)
+    {
+        const QString firstLine = note.bodyFirstLine.trimmed();
+        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
+        if (!firstLine.isEmpty())
+        {
+            if (bodyPlainText.isEmpty())
+            {
+                return firstLine;
+            }
+
+            if (!bodyPlainText.startsWith(firstLine))
+            {
+                return firstLine + QLatin1Char('\n') + bodyPlainText;
+            }
+        }
+
+        if (!bodyPlainText.isEmpty())
+        {
+            return bodyPlainText;
+        }
+
+        return note.noteId.trimmed();
+    }
+
+    QStringList noteListFolders(const LibraryNoteRecord& note)
+    {
+        QStringList folders;
+        folders.reserve(note.folders.size());
+        for (const QString& folder : note.folders)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                folders.push_back(trimmed);
+            }
+        }
+        folders.removeDuplicates();
+        if (folders.isEmpty())
+        {
+            folders.push_back(QStringLiteral("Draft"));
+        }
+        return folders;
+    }
+
+    QStringList noteListTags(const LibraryNoteRecord& note)
+    {
+        QStringList tags;
+        tags.reserve(note.tags.size());
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                tags.push_back(trimmed);
+            }
+        }
+        tags.removeDuplicates();
+        return tags;
+    }
+
+    QString noteSearchableText(const LibraryNoteRecord& note, const QStringList& folderLabels)
+    {
+        QStringList parts;
+        const QString noteId = note.noteId.trimmed();
+        if (!noteId.isEmpty())
+        {
+            parts.push_back(noteId);
+        }
+
+        const QString firstLine = note.bodyFirstLine.trimmed();
+        if (!firstLine.isEmpty())
+        {
+            parts.push_back(firstLine);
+        }
+
+        const QString bodyPlainText = note.bodyPlainText.trimmed();
+        if (!bodyPlainText.isEmpty())
+        {
+            parts.push_back(bodyPlainText);
+        }
+
+        const QString project = note.project.trimmed();
+        if (!project.isEmpty())
+        {
+            parts.push_back(project);
+        }
+
+        for (const QString& folder : folderLabels)
+        {
+            const QString trimmed = folder.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        for (const QString& tag : note.tags)
+        {
+            const QString trimmed = tag.trimmed();
+            if (!trimmed.isEmpty())
+            {
+                parts.push_back(trimmed);
+            }
+        }
+
+        return parts.join(QLatin1Char('\n'));
+    }
+
+    QString bookmarkColorHexFromNote(const LibraryNoteRecord& note)
+    {
+        if (!note.bookmarkColors.isEmpty())
+        {
+            return WhatSon::Bookmarks::bookmarkColorToHex(note.bookmarkColors.first());
+        }
+        return WhatSon::Bookmarks::defaultBookmarkColorHex();
+    }
+
+    QString resolveWshubPathFromProjectsFile(const QString& projectsFilePath)
+    {
+        QFileInfo info(projectsFilePath.trimmed());
+        QString currentPath = info.isDir() ? info.absoluteFilePath() : info.absolutePath();
+        while (!currentPath.isEmpty())
+        {
+            const QFileInfo currentInfo(currentPath);
+            if (currentInfo.fileName().endsWith(QStringLiteral(".wshub")) && currentInfo.isDir())
+            {
+                return currentInfo.absoluteFilePath();
+            }
+
+            const QDir dir(currentPath);
+            const QString parentPath = dir.absolutePath() == dir.rootPath() ? QString() : dir.filePath(QStringLiteral(".."));
+            const QString normalizedParentPath = QFileInfo(parentPath).absoluteFilePath();
+            if (normalizedParentPath.isEmpty() || normalizedParentPath == currentPath)
+            {
+                break;
+            }
+            currentPath = normalizedParentPath;
+        }
+
+        return {};
     }
 
     enum class FolderDropPlacement
@@ -337,6 +509,11 @@ ProjectsHierarchyModel* ProjectsHierarchyViewModel::itemModel() noexcept
     return &m_itemModel;
 }
 
+LibraryNoteListModel* ProjectsHierarchyViewModel::noteListModel() noexcept
+{
+    return &m_noteListModel;
+}
+
 bool ProjectsHierarchyViewModel::supportsHierarchyNodeReorder() const noexcept
 {
     return true;
@@ -375,6 +552,7 @@ void ProjectsHierarchyViewModel::setSelectedIndex(int index)
                               QString::fromLatin1(kScope),
                               QStringLiteral("setSelectedIndex"),
                               QStringLiteral("value=%1").arg(m_selectedIndex));
+    refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
@@ -919,6 +1097,21 @@ bool ProjectsHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString
         setSelectedIndex(-1);
     }
 
+    QString noteLoadError;
+    if (!refreshIndexedNotesFromWshub(wshubPath, &noteLoadError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = noteLoadError;
+        }
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("loadFromWshub.failed.index"),
+                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, noteLoadError));
+        updateLoadState(false, noteLoadError);
+        return false;
+    }
+
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub"),
@@ -984,6 +1177,13 @@ void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
         setSelectedIndex(selectedProjectIndexForKey(m_items, preservedSelectionKey));
     }
 
+    QString noteLoadError;
+    if (!refreshIndexedNotesFromProjectsFilePath(&noteLoadError))
+    {
+        updateLoadState(false, noteLoadError);
+        return;
+    }
+
     updateLoadState(true);
 }
 
@@ -1016,6 +1216,7 @@ void ProjectsHierarchyViewModel::syncModel()
     m_itemModel.setItems(m_items);
     updateItemCount();
     emit hierarchyModelChanged();
+    refreshNoteListForSelection();
 }
 
 bool ProjectsHierarchyViewModel::commitHierarchyUpdate(QVector<ProjectsHierarchyItem> stagedItems, int selectedIndex)
@@ -1049,4 +1250,107 @@ void ProjectsHierarchyViewModel::syncDomainStoreFromItems()
 {
     m_store.setFolderEntries(projectEntriesFromItems(m_items));
     m_projectNames = m_store.projectNames();
+}
+
+LibraryNoteListItem ProjectsHierarchyViewModel::buildNoteListItem(const LibraryNoteRecord& note) const
+{
+    const QStringList folderLabels = noteListFolders(note);
+
+    LibraryNoteListItem item;
+    item.id = note.noteId.trimmed();
+    item.primaryText = notePrimaryText(note);
+    item.searchableText = noteSearchableText(note, folderLabels);
+    item.bodyText = note.bodyPlainText;
+    item.createdAt = note.createdAt;
+    item.lastModifiedAt = note.lastModifiedAt;
+    item.image = note.bodyHasResource;
+    item.imageSource = note.bodyFirstResourceThumbnailUrl;
+    item.displayDate = SystemCalendarStore::formatNoteDateForSystem(note.lastModifiedAt, note.createdAt);
+    item.folders = folderLabels;
+    item.tags = noteListTags(note);
+    item.bookmarked = note.bookmarked;
+    item.bookmarkColor = bookmarkColorHexFromNote(note);
+    return item;
+}
+
+void ProjectsHierarchyViewModel::refreshNoteListForSelection()
+{
+    const QString selectedProject =
+        (m_selectedIndex >= 0 && m_selectedIndex < m_items.size()) ? m_items.at(m_selectedIndex).label.trimmed() : QString();
+
+    QSet<QString> availableProjects;
+    availableProjects.reserve(m_items.size());
+    for (const ProjectsHierarchyItem& item : std::as_const(m_items))
+    {
+        if (item.accent && item.depth == 0)
+        {
+            continue;
+        }
+
+        const QString label = item.label.trimmed();
+        if (label.isEmpty())
+        {
+            continue;
+        }
+
+        availableProjects.insert(label.toCaseFolded());
+    }
+
+    QVector<LibraryNoteListItem> items;
+    items.reserve(m_allNotes.size());
+    for (const LibraryNoteRecord& note : std::as_const(m_allNotes))
+    {
+        const QString projectLabel = note.project.trimmed();
+        if (projectLabel.isEmpty())
+        {
+            continue;
+        }
+
+        const QString normalizedProjectLabel = projectLabel.toCaseFolded();
+        if (!availableProjects.contains(normalizedProjectLabel))
+        {
+            continue;
+        }
+
+        if (!selectedProject.isEmpty() && projectLabel.compare(selectedProject, Qt::CaseInsensitive) != 0)
+        {
+            continue;
+        }
+
+        items.push_back(buildNoteListItem(note));
+    }
+
+    m_noteListModel.setItems(std::move(items));
+}
+
+bool ProjectsHierarchyViewModel::refreshIndexedNotesFromWshub(const QString& wshubPath, QString* errorMessage)
+{
+    LibraryAll libraryAll;
+    if (!libraryAll.indexFromWshub(wshubPath, errorMessage))
+    {
+        m_allNotes.clear();
+        m_noteListModel.setItems({});
+        return false;
+    }
+
+    m_allNotes = libraryAll.notes();
+    refreshNoteListForSelection();
+    return true;
+}
+
+bool ProjectsHierarchyViewModel::refreshIndexedNotesFromProjectsFilePath(QString* errorMessage)
+{
+    const QString wshubPath = resolveWshubPathFromProjectsFile(m_projectsFilePath);
+    if (wshubPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Failed to resolve .wshub path from ProjectLists.wsproj.");
+        }
+        m_allNotes.clear();
+        m_noteListModel.setItems({});
+        return false;
+    }
+
+    return refreshIndexedNotesFromWshub(wshubPath, errorMessage);
 }

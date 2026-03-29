@@ -1,6 +1,7 @@
 #include "LibraryAll.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "note/WhatSonNoteBodyPersistence.hpp"
 #include "note/WhatSonNoteHeaderParser.hpp"
 #include "note/WhatSonNoteFolderSemantics.hpp"
@@ -352,65 +353,15 @@ namespace
 
     QString resolveResourceLocation(const QString& rawResourcePath, const LibraryNoteRecord& record)
     {
-        const QString normalizedPath = decodeXmlEntities(rawResourcePath).trimmed();
-        if (normalizedPath.isEmpty())
-        {
-            return {};
-        }
-
-        if (QFileInfo(normalizedPath).isAbsolute())
-        {
-            const QString absolutePath = QDir::cleanPath(normalizedPath);
-            return QFileInfo(absolutePath).isFile() ? absolutePath : QString();
-        }
-
-        const QUrl resourceUrl(normalizedPath);
-        if (resourceUrl.isValid() && !resourceUrl.scheme().isEmpty())
-        {
-            if (!resourceUrl.isLocalFile())
-            {
-                return resourceUrl.toString();
-            }
-
-            const QString localFilePath = QDir::cleanPath(resourceUrl.toLocalFile());
-            if (QFileInfo(localFilePath).isFile())
-            {
-                return localFilePath;
-            }
-            return {};
-        }
-
-        QStringList candidates;
-        if (!record.noteDirectoryPath.trimmed().isEmpty())
-        {
-            candidates.push_back(QDir(record.noteDirectoryPath).absoluteFilePath(normalizedPath));
-        }
-        if (!record.noteHeaderPath.trimmed().isEmpty())
-        {
-            candidates.push_back(
-                QDir(QFileInfo(record.noteHeaderPath).absolutePath()).absoluteFilePath(normalizedPath));
-        }
-
         const QString hubRootPath = findAncestorDirectoryWithSuffix(
             !record.noteDirectoryPath.trimmed().isEmpty() ? record.noteDirectoryPath : record.noteHeaderPath,
             QStringLiteral(".wshub"));
-        if (!hubRootPath.isEmpty())
-        {
-            candidates.push_back(QDir(hubRootPath).absoluteFilePath(normalizedPath));
-            candidates.push_back(QDir(QFileInfo(hubRootPath).absolutePath()).absoluteFilePath(normalizedPath));
-        }
-
-        candidates.removeDuplicates();
-        for (const QString& candidate : std::as_const(candidates))
-        {
-            const QString cleanedCandidate = QDir::cleanPath(candidate);
-            if (QFileInfo(cleanedCandidate).isFile())
-            {
-                return cleanedCandidate;
-            }
-        }
-
-        return {};
+        return WhatSon::Resources::resolveAssetLocationFromReference(
+            rawResourcePath,
+            WhatSon::Resources::resourceReferenceBasePathsForContext(
+                record.noteDirectoryPath,
+                record.noteHeaderPath,
+                hubRootPath));
     }
 
     bool isPreviewableImageResource(const QString& resolvedResourceLocation, const QString& resourceFormat)

@@ -1,37 +1,25 @@
 # `src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/resources/ResourcesHierarchyModel.cpp`
-- Source kind: C++ implementation
-- File name: `ResourcesHierarchyModel.cpp`
-- Approximate line count: 203
+리소스 하이어라키 row model은 단순 label/depth만 노출하지 않는다.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+이제 각 row는 다음 메타데이터 role도 가진다.
 
-### Classes and Structs
-- `ValidationIssue`
+- `key`
+- `kind`
+- `bucket`
+- `type`
+- `format`
+- `resourceId`
+- `resourcePath`
+- `assetPath`
 
-### Enums
-- None detected during scaffold generation.
+## Row Kinds
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+- `bucket`
+- `format`
+- `asset`
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+`ShowChevronRole`도 더 이상 depth 비교로 추론하지 않고, 뷰모델이 계산한 구조값을 그대로 사용한다.
+이 덕분에 `bucket -> format -> asset` 동적 트리가 안정적으로 유지된다.

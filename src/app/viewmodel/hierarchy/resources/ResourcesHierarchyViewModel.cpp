@@ -1,6 +1,7 @@
 #include "ResourcesHierarchyViewModel.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModelSupport.hpp"
@@ -12,6 +13,33 @@
 namespace
 {
     constexpr auto kScope = "resources.viewmodel";
+
+    QString resolveResourcesDirectory(const QString& wshubPath)
+    {
+        const QFileInfo hubInfo(wshubPath);
+        if (!hubInfo.isDir())
+        {
+            return {};
+        }
+
+        const QDir hubDir(wshubPath);
+        const QString fixedPath = hubDir.filePath(QStringLiteral(".wsresources"));
+        if (QFileInfo(fixedPath).isDir())
+        {
+            return WhatSon::Resources::normalizePath(fixedPath);
+        }
+
+        const QStringList candidates = hubDir.entryList(
+            QStringList{QStringLiteral("*.wsresources")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        if (candidates.isEmpty())
+        {
+            return {};
+        }
+
+        return WhatSon::Resources::normalizePath(hubDir.filePath(candidates.constFirst()));
+    }
 }
 
 ResourcesHierarchyViewModel::ResourcesHierarchyViewModel(QObject* parent)
@@ -103,7 +131,10 @@ QVariantList ResourcesHierarchyViewModel::depthItems() const
     {
         QVariantMap entry = serialized.at(index).toMap();
         entry.insert(QStringLiteral("itemId"), index);
-        entry.insert(QStringLiteral("key"), QStringLiteral("resources:%1").arg(index));
+        if (entry.value(QStringLiteral("key")).toString().trimmed().isEmpty())
+        {
+            entry.insert(QStringLiteral("key"), QStringLiteral("resources:%1").arg(index));
+        }
         serialized[index] = entry;
     }
     return serialized;
@@ -194,13 +225,12 @@ void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
                               QStringLiteral("rawCount=%1").arg(resourcePaths.size()));
     m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(resourcePaths));
     m_store.setResourcePaths(m_resourcePaths);
-    if (m_items.isEmpty())
-    {
-        m_items = WhatSon::Hierarchy::ResourcesSupport::buildSupportedTypeItems();
-        m_createdFolderSequence = WhatSon::Hierarchy::ResourcesSupport::nextGeneratedFolderSequence(m_items);
-        syncModel();
-        setSelectedIndex(-1);
-    }
+    m_items = WhatSon::Hierarchy::ResourcesSupport::buildHierarchyItems(
+        m_resourcePaths,
+        m_resourceResolutionBasePaths,
+        m_items);
+    syncModel();
+    setSelectedIndex(-1);
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setResourcePaths.success"),
@@ -252,6 +282,8 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         updateLoadState(false, resolveError);
         return false;
     }
+
+    setResourceResolutionBasePaths({WhatSon::Resources::normalizePath(wshubPath)});
 
     QStringList aggregated;
     bool fileFound = false;
@@ -313,6 +345,14 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         m_resourcesFilePath = QDir(contentsDirectories.first()).filePath(QStringLiteral("Resources.wsresources"));
     }
 
+    if (aggregated.isEmpty())
+    {
+        aggregated = WhatSon::Resources::listRelativeResourcePackagePaths(resolveResourcesDirectory(wshubPath));
+    }
+
+    setResourceResolutionBasePaths(
+        WhatSon::Resources::resourceReferenceBasePathsForResourcesFile(m_resourcesFilePath)
+        + QStringList{WhatSon::Resources::normalizePath(wshubPath)});
     setResourcePaths(aggregated);
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
@@ -336,6 +376,8 @@ void ResourcesHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
+    setResourceResolutionBasePaths(
+        WhatSon::Resources::resourceReferenceBasePathsForResourcesFile(m_resourcesFilePath));
     setResourcePaths(std::move(resourcePaths));
     updateLoadState(true);
 }
@@ -373,6 +415,16 @@ void ResourcesHierarchyViewModel::syncModel()
 
 void ResourcesHierarchyViewModel::syncDomainStoreFromItems()
 {
-    m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::extractDomainLabelsFromItems(m_items);
+    m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::extractResourcePathsFromItems(m_items);
     m_store.setResourcePaths(m_resourcePaths);
+}
+
+void ResourcesHierarchyViewModel::setResourceResolutionBasePaths(QStringList basePaths)
+{
+    basePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(basePaths));
+    if (m_resourceResolutionBasePaths == basePaths)
+    {
+        return;
+    }
+    m_resourceResolutionBasePaths = std::move(basePaths);
 }

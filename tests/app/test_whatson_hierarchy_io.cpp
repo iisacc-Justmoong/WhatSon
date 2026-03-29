@@ -21,6 +21,7 @@
 #include "projects/WhatSonProjectsHierarchyStore.hpp"
 #include "resources/WhatSonResourcesHierarchyCreator.hpp"
 #include "resources/WhatSonResourcesHierarchyParser.hpp"
+#include "resources/WhatSonResourcePackageSupport.hpp"
 #include "resources/WhatSonResourcesHierarchyStore.hpp"
 #include "tags/WhatSonTagDepthEntry.hpp"
 #include "tags/WhatSonTagsHierarchyCreator.hpp"
@@ -234,7 +235,10 @@ void WhatSonHierarchyIoTest::creatorParser_roundTrip()
 
     {
         WhatSonResourcesHierarchyStore store;
-        store.setResourcePaths({QStringLiteral("assets/logo.png"), QStringLiteral("assets/ui.css")});
+        store.setResourcePaths({
+            QStringLiteral("TestHub.wsresources/logo.wsresource"),
+            QStringLiteral("TestHub.wsresources/style.wsresource")
+        });
         WhatSonResourcesHierarchyCreator creator;
         const QString text = creator.createText(store);
 
@@ -242,6 +246,53 @@ void WhatSonHierarchyIoTest::creatorParser_roundTrip()
         WhatSonResourcesHierarchyParser parser;
         QVERIFY2(parser.parse(text, &decoded, &errorMessage), qPrintable(errorMessage));
         QCOMPARE(decoded.resourcePaths(), store.resourcePaths());
+    }
+
+    {
+        WhatSon::Resources::ResourcePackageMetadata metadata;
+        metadata.resourceId = QStringLiteral("logo");
+        metadata.resourcePath = QStringLiteral("TestHub.wsresources/logo.wsresource");
+        metadata.assetPath = QStringLiteral("logo.png");
+        metadata.bucket = QStringLiteral("Image");
+        metadata.type = QStringLiteral("image");
+        metadata.format = QStringLiteral(".png");
+
+        const QString text = WhatSon::Resources::createResourcePackageMetadataXml(metadata);
+        WhatSon::Resources::ResourcePackageMetadata decoded;
+        QVERIFY2(
+            WhatSon::Resources::parseResourcePackageMetadataXml(text, &decoded, &errorMessage),
+            qPrintable(errorMessage));
+        QCOMPARE(decoded.resourceId, metadata.resourceId);
+        QCOMPARE(decoded.resourcePath, metadata.resourcePath);
+        QCOMPARE(decoded.assetPath, metadata.assetPath);
+        QCOMPARE(decoded.bucket, metadata.bucket);
+        QCOMPARE(decoded.type, metadata.type);
+        QCOMPARE(decoded.format, metadata.format);
+    }
+
+    {
+        const WhatSon::Resources::ResourcePackageMetadata metadata =
+            WhatSon::Resources::buildMetadataForAssetFile(
+                QStringLiteral("/tmp/VisualAsset.PNG"),
+                QStringLiteral("visual-asset"),
+                QStringLiteral("TestHub.wsresources/visual-asset.wsresource"));
+        QCOMPARE(metadata.resourceId, QStringLiteral("visual-asset"));
+        QCOMPARE(metadata.resourcePath, QStringLiteral("TestHub.wsresources/visual-asset.wsresource"));
+        QCOMPARE(metadata.assetPath, QStringLiteral("VisualAsset.PNG"));
+        QCOMPARE(metadata.format, QStringLiteral(".PNG"));
+        QCOMPARE(metadata.type, QStringLiteral("image"));
+        QCOMPARE(metadata.bucket, QStringLiteral("Image"));
+    }
+
+    {
+        const WhatSon::Resources::ResourcePackageMetadata metadata =
+            WhatSon::Resources::buildMetadataForAssetFile(
+                QStringLiteral("archive.tar.gz"),
+                QStringLiteral("archive"),
+                QStringLiteral("TestHub.wsresources/archive.wsresource"));
+        QCOMPARE(metadata.format, QStringLiteral(".tar.gz"));
+        QCOMPARE(metadata.type, QStringLiteral("archive"));
+        QCOMPARE(metadata.bucket, QStringLiteral("ZIP"));
     }
 
     {

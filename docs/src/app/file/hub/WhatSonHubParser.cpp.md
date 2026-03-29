@@ -17,3 +17,13 @@ before the library hierarchy viewmodel or mutation services start filtering note
   upgrades them.
 - New hub packages preserve UUIDs end to end, so a folder rename performed in one session remains a
   rename rather than a delete-and-recreate event in the next session.
+
+## Resource Counting Rule
+
+리소스 도메인은 이제 raw file 개수가 아니라 flat `.wsresource` package 개수를 센다.
+
+- `resourceCount` fallback
+- domain payload의 `resourcePaths`
+- `resourceFileCount`
+
+모두 허브 루트 `*.wsresources` 디렉터리의 직계 패키지 기준으로 계산된다.

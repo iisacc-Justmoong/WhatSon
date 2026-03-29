@@ -1,5 +1,6 @@
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
 #include "file/hub/WhatSonHubStore.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDate>
@@ -132,6 +133,31 @@ namespace
             }
         }
         return noteIds;
+    }
+
+    bool createResourcePackage(
+        const QString& resourcesPath,
+        const QString& resourceId,
+        const QString& assetFileName,
+        const QString& assetPayload = QStringLiteral("payload"))
+    {
+        const QString packageDirectoryPath = QDir(resourcesPath).filePath(resourceId + QStringLiteral(".wsresource"));
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return false;
+        }
+
+        const QString resourcePath = QStringLiteral("%1/%2")
+                                         .arg(QFileInfo(resourcesPath).fileName(), QFileInfo(packageDirectoryPath).fileName());
+        WhatSon::Resources::ResourcePackageMetadata metadata = WhatSon::Resources::buildMetadataForAssetFile(
+            assetFileName,
+            resourceId,
+            resourcePath);
+
+        return writeUtf8File(QDir(packageDirectoryPath).filePath(assetFileName), assetPayload)
+            && writeUtf8File(
+                QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+                WhatSon::Resources::createResourcePackageMetadataXml(metadata));
     }
 
     QString makeWsnHeadText(
@@ -943,8 +969,13 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePrev
     const QString resourceDirectoryName = QStringLiteral("LibraryHub_Library.wslibrary.wsresources");
     const QString resourceDirectoryPath = QDir(hubPath).filePath(resourceDirectoryName);
     QVERIFY(QDir().mkpath(resourceDirectoryPath));
-    const QString resourceFilePath = QDir(resourceDirectoryPath).filePath(QStringLiteral("beta-preview.png"));
-    QVERIFY(writeUtf8File(resourceFilePath, QStringLiteral("png")));
+    QVERIFY(createResourcePackage(
+        resourceDirectoryPath,
+        QStringLiteral("beta-preview"),
+        QStringLiteral("beta-preview.png"),
+        QStringLiteral("png")));
+    const QString resourceFilePath = QDir(resourceDirectoryPath).filePath(
+        QStringLiteral("beta-preview.wsresource/beta-preview.png"));
 
     const QString bodyPath = QDir(hubPath).filePath(
         QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Beta.wsnote/Beta.wsnbody"));
@@ -952,7 +983,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePrev
         bodyPath,
         makeWsnBodyText(
             QStringLiteral(
-                "    <resource format=\".png\" resourcePath=\"LibraryHub_Library.wslibrary.wsresources/beta-preview.png\" />\n"
+                "    <resource type=\"image\" format=\".png\" resourcePath=\"LibraryHub_Library.wslibrary.wsresources/beta-preview.wsresource\" />\n"
                 "    <paragraph>Beta body summary.</paragraph>\n"))));
 
     LibraryHierarchyViewModel viewModel;

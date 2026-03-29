@@ -16,6 +16,7 @@
 #include "hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 #include "hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
+#include "hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
 #include "hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 
@@ -505,25 +506,7 @@ int WhatSonHubParser::countWsnbodyCharacters(const QString& libraryPath)
 
 QStringList WhatSonHubParser::listRelativeFilesRecursive(const QString& rootPath)
 {
-    QStringList relativeFiles;
-    if (rootPath.trimmed().isEmpty() || !QFileInfo(rootPath).isDir())
-    {
-        return relativeFiles;
-    }
-
-    const QDir rootDir(rootPath);
-    QDirIterator iterator(
-        rootPath,
-        QDir::Files | QDir::NoDotAndDotDot,
-        QDirIterator::Subdirectories);
-    while (iterator.hasNext())
-    {
-        iterator.next();
-        relativeFiles.push_back(rootDir.relativeFilePath(iterator.filePath()));
-    }
-    relativeFiles = sanitizeStringList(std::move(relativeFiles));
-    relativeFiles.sort();
-    return relativeFiles;
+    return WhatSon::Resources::listRelativeResourcePackagePaths(rootPath);
 }
 
 QVariantMap WhatSonHubParser::buildHubPayload(const WhatSonHubStore& store)
@@ -755,7 +738,7 @@ QVariantMap WhatSonHubParser::buildDomainPayload(
     }
     payload.insert(QStringLiteral("libraryNoteIds"), libraryStore.noteIds());
 
-    const QStringList resourcePaths = listRelativeFilesRecursive(resourcesPath);
+    const QStringList resourcePaths = WhatSon::Resources::listRelativeResourcePackagePaths(resourcesPath);
     payload.insert(QStringLiteral("resourcePaths"), resourcePaths);
     payload.insert(QStringLiteral("resourceFileCount"), resourcePaths.size());
     return payload;
@@ -898,7 +881,7 @@ bool WhatSonHubParser::parseStatText(
                                  }, -1);
     if (resourceCount < 0)
     {
-        resourceCount = countFilesRecursive(resourcesPath, {});
+        resourceCount = WhatSon::Resources::countResourcePackages(resourcesPath);
     }
 
     int characterCount = firstInt(root, {

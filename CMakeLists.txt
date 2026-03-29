@@ -769,8 +769,28 @@ if (TARGET whatson_package
         AND NOT CMAKE_CROSSCOMPILING
         AND NOT WHATSON_IS_TRIAL_BUILD
         AND WHATSON_ENABLE_TRIAL_BUILD_MIRROR)
+    set(_whatson_trial_cache_script "${CMAKE_BINARY_DIR}/CMakeFiles/whatson_trial_cache_init.cmake")
+    set(_whatson_trial_cache_lines "")
+    if (DEFINED CMAKE_PREFIX_PATH AND NOT CMAKE_PREFIX_PATH STREQUAL "")
+        string(APPEND _whatson_trial_cache_lines
+                "set(CMAKE_PREFIX_PATH [==[${CMAKE_PREFIX_PATH}]==] CACHE STRING \"Forwarded host prefix path list for the trial mirror.\" FORCE)\n")
+    endif ()
+    if (APPLE
+            AND DEFINED WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES
+            AND NOT WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES STREQUAL "")
+        string(APPEND _whatson_trial_cache_lines
+                "set(CMAKE_OSX_ARCHITECTURES [==[${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}]==] CACHE STRING \"Forwarded macOS architecture list for the trial mirror.\" FORCE)\n")
+    endif ()
+    if (NOT _whatson_trial_cache_lines STREQUAL "")
+        file(CONFIGURE OUTPUT "${_whatson_trial_cache_script}" CONTENT "${_whatson_trial_cache_lines}" @ONLY)
+    endif ()
+
     set(_whatson_trial_configure_command
-            "${CMAKE_COMMAND}"
+            "${CMAKE_COMMAND}")
+    if (NOT _whatson_trial_cache_lines STREQUAL "")
+        list(APPEND _whatson_trial_configure_command -C "${_whatson_trial_cache_script}")
+    endif ()
+    list(APPEND _whatson_trial_configure_command
             -G "${CMAKE_GENERATOR}")
     if (CMAKE_GENERATOR_PLATFORM)
         list(APPEND _whatson_trial_configure_command -A "${CMAKE_GENERATOR_PLATFORM}")
@@ -813,15 +833,7 @@ if (TARGET whatson_package
     if (DEFINED LVRS_DIR AND NOT LVRS_DIR STREQUAL "")
         list(APPEND _whatson_trial_configure_command "-DLVRS_DIR=${LVRS_DIR}")
     endif ()
-    if (DEFINED CMAKE_PREFIX_PATH AND NOT CMAKE_PREFIX_PATH STREQUAL "")
-        list(APPEND _whatson_trial_configure_command "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
-    endif ()
     if (APPLE)
-        if (DEFINED WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES
-                AND NOT WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES STREQUAL "")
-            list(APPEND _whatson_trial_configure_command
-                    "-DCMAKE_OSX_ARCHITECTURES=${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}")
-        endif ()
         if (DEFINED CMAKE_OSX_DEPLOYMENT_TARGET AND NOT CMAKE_OSX_DEPLOYMENT_TARGET STREQUAL "")
             list(APPEND _whatson_trial_configure_command
                     "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")

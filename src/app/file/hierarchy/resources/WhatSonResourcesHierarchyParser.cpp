@@ -45,6 +45,15 @@ namespace
                     values.push_back(text);
                 }
             }
+            else if (value.isObject())
+            {
+                const QJsonObject object = value.toObject();
+                const QString text = object.value(QStringLiteral("resourcePath")).toString().trimmed();
+                if (!text.isEmpty())
+                {
+                    values.push_back(text);
+                }
+            }
         }
 
         return values;

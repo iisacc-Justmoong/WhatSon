@@ -1,37 +1,20 @@
 # `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonResourcesHierarchyStore.cpp`
-- Approximate line count: 130
+리소스 목록 저장소는 이제 raw asset path가 아니라 `.wsresource` 패키지 경로를 보존한다.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Normalization
 
-### Classes and Structs
-- None detected during scaffold generation.
+`setResourcePaths(...)`는 입력값을 trim하는 것에서 끝나지 않고 경로 정규화도 수행한다.
+즉 저장소가 가지는 리스트는:
 
-### Enums
-- None detected during scaffold generation.
+- 비어 있지 않고
+- 중복이 없고
+- slash form이 정리된 패키지 경로 목록
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+이라는 조건을 유지한다.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Persistence
+
+`writeToFile(...)`는 `WhatSonResourcesHierarchyCreator`를 통해 `Resources.wsresources`를 새 object-array 포맷으로 기록한다.

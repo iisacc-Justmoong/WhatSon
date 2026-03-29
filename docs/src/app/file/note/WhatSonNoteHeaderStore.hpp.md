@@ -14,6 +14,14 @@ The store now exposes three levels of folder access:
 
 Modern code should prefer `setFolderBindings(...)` so both arrays stay synchronized.
 
+## Progress Metadata API
+
+- `progressEnums() / setProgressEnums(...)` carries the exact enum labels declared in the current
+  `.wsnhead` `<progress enums="{...}">` attribute.
+- `progress() / setProgress(...)` continues to store only the selected integer value.
+- The enum-label array and the selected integer are intentionally separated so callers can preserve
+  custom note-local progress taxonomies while still mutating the active selection.
+
 ## Persistence Shape
 
 At serialization time, folder bindings are written as:

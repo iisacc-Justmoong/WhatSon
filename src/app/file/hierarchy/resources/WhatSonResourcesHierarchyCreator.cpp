@@ -21,7 +21,9 @@ QString WhatSonResourcesHierarchyCreator::createText(const WhatSonResourcesHiera
     QJsonArray values;
     for (const QString& value : store.resourcePaths())
     {
-        values.push_back(value);
+        QJsonObject entry;
+        entry.insert(QStringLiteral("resourcePath"), value);
+        values.push_back(entry);
     }
 
     QJsonObject root;

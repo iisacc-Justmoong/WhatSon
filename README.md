@@ -358,6 +358,9 @@ target there.
 On macOS the nested trial tree pins `CMAKE_OSX_ARCHITECTURES` from the host/LVRS setup so an
 auxiliary x86_64 CMake process does not accidentally configure `build-trial` against an arm64-only
 LVRS install.
+The nested configure step forwards list-style cache values such as `CMAKE_PREFIX_PATH` and
+`CMAKE_OSX_ARCHITECTURES` through a generated preload cache script, so the forwarded Qt/LVRS
+prefixes keep their full path list instead of splitting into stray extra shell commands.
 
 If Qt is not auto-discovered on a native desktop build, pass the kit prefix explicitly:
 

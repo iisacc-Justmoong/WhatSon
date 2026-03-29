@@ -1,4 +1,6 @@
 #include "file/note/WhatSonLocalNoteFileStore.hpp"
+#include "file/note/WhatSonNoteHeaderCreator.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -6,6 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTemporaryDir>
+#include <QUrl>
 #include <QtTest/QtTest>
 
 namespace
@@ -45,6 +48,31 @@ namespace
         }
         return entries;
     }
+
+    bool createResourcePackage(
+        const QString& resourcesPath,
+        const QString& resourceId,
+        const QString& assetFileName,
+        const QString& assetPayload = QStringLiteral("payload"))
+    {
+        const QString packageDirectoryPath = QDir(resourcesPath).filePath(resourceId + QStringLiteral(".wsresource"));
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return false;
+        }
+
+        const QString resourcePath = QStringLiteral("%1/%2")
+                                         .arg(QFileInfo(resourcesPath).fileName(), QFileInfo(packageDirectoryPath).fileName());
+        WhatSon::Resources::ResourcePackageMetadata metadata = WhatSon::Resources::buildMetadataForAssetFile(
+            assetFileName,
+            resourceId,
+            resourcePath);
+
+        return writeUtf8File(QDir(packageDirectoryPath).filePath(assetFileName), assetPayload)
+            && writeUtf8File(
+                QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+                WhatSon::Resources::createResourcePackageMetadataXml(metadata));
+    }
 }
 
 class WhatSonLocalNoteFileStoreTest final : public QObject
@@ -53,6 +81,7 @@ class WhatSonLocalNoteFileStoreTest final : public QObject
 
 private slots:
     void createReadUpdateDelete_roundTripsLocalNoteFiles();
+    void readNote_resolvesWsresourceThumbnailFromBody();
     void readNote_preservesEmptyAndWhitespaceOnlyParagraphs();
     void updateNote_headerOnlyRewrite_preservesExistingBodyText();
 };
@@ -149,6 +178,66 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QString deleteError;
     QVERIFY2(store.deleteNote(std::move(deleteRequest), &deleteError), qPrintable(deleteError));
     QVERIFY(!QFileInfo(noteDirectoryPath).exists());
+}
+
+void WhatSonLocalNoteFileStoreTest::readNote_resolvesWsresourceThumbnailFromBody()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("PreviewHub.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("PreviewHub.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Preview.wsnote"));
+    const QString resourcesPath = QDir(hubPath).filePath(QStringLiteral("PreviewHub.wsresources"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("preview"),
+        QStringLiteral("preview.png"),
+        QStringLiteral("png")));
+
+    const QString bodyXml =
+        QStringLiteral(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            "<!DOCTYPE WHATSONNOTE>\n"
+            "<contents id=\"Preview\">\n"
+            "  <body>\n"
+            "    <resource type=\"image\" format=\".png\" resourcePath=\"PreviewHub.wsresources/preview.wsresource\" />\n"
+            "    <paragraph>Preview line</paragraph>\n"
+            "  </body>\n"
+            "</contents>\n");
+
+    WhatSonNoteHeaderStore headerStore;
+    headerStore.setNoteId(QStringLiteral("Preview"));
+    headerStore.setCreatedAt(QStringLiteral("2026-03-22-12-00-00"));
+    headerStore.setAuthor(QStringLiteral("Tester"));
+    headerStore.setLastModifiedAt(QStringLiteral("2026-03-22-12-00-00"));
+    headerStore.setModifiedBy(QStringLiteral("Tester"));
+    headerStore.setProgress(0);
+    headerStore.setPreset(false);
+
+    WhatSonNoteHeaderCreator headerCreator(hubPath);
+    QVERIFY(writeUtf8File(
+        QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhead")),
+        headerCreator.createHeaderText(headerStore)));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnbody")), bodyXml));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhistory")), QString()));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnversion")), QStringLiteral("{}")));
+
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    WhatSonLocalNoteFileStore store;
+    WhatSonLocalNoteDocument document;
+    QString errorMessage;
+    QVERIFY2(store.readNote(readRequest, &document, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(document.bodyHasResource);
+    QCOMPARE(
+        document.bodyFirstResourceThumbnailUrl,
+        QUrl::fromLocalFile(
+            QDir(resourcesPath).filePath(QStringLiteral("preview.wsresource/preview.png"))).toString());
 }
 
 void WhatSonLocalNoteFileStoreTest::updateNote_headerOnlyRewrite_preservesExistingBodyText()

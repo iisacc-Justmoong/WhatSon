@@ -1,6 +1,7 @@
 #include "WhatSonResourcesHierarchyStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
+#include "WhatSonResourcePackageSupport.hpp"
 #include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonResourcesHierarchyCreator.hpp"
 
@@ -18,7 +19,7 @@ namespace
 
         for (QString& value : values)
         {
-            value = value.trimmed();
+            value = WhatSon::Resources::normalizePath(value.trimmed());
             if (value.isEmpty())
             {
                 continue;

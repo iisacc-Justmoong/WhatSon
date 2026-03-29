@@ -28,3 +28,5 @@ a rename or drag-and-drop mutation.
 
 - The store still treats non-negative integers as concrete progress enum values.
 - `-1` is now a valid in-memory sentinel for “no progress selected”, so detail-panel clear actions can round-trip an empty progress field through `.wsnhead` without being forced back to `0`.
+- `setProgressEnums(...)` now preserves the raw enum-label list from `.wsnhead`, so later writes can
+  serialize the same progress taxonomy instead of falling back to the default product labels.

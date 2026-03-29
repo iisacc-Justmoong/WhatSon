@@ -2,13 +2,15 @@
 
 #include "ResourcesHierarchyModel.hpp"
 
-#include "file/hub/WhatSonHubPathUtils.hpp"
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "file/hub/WhatSonHubPathUtils.hpp"
 
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QRegularExpression>
+#include <QHash>
+#include <QMetaType>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -16,6 +18,12 @@
 
 namespace WhatSon::Hierarchy::ResourcesSupport
 {
+    struct MaterializedResourceEntry final
+    {
+        WhatSon::Resources::ResourcePackageMetadata metadata;
+        QString resolvedAssetPath;
+    };
+
     inline QString normalizePath(const QString& input)
     {
         return WhatSon::HubPath::normalizePath(input);
@@ -111,10 +119,6 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             {
                 *errorMessage = QStringLiteral("outText must not be null.");
             }
-            WhatSon::Debug::trace(
-                QStringLiteral("hierarchy.io.support"),
-                QStringLiteral("readUtf8File.failed"),
-                QStringLiteral("path=%1 reason=outText is null").arg(filePath));
             return false;
         }
 
@@ -125,19 +129,10 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             {
                 *errorMessage = QStringLiteral("Failed to open file: %1").arg(filePath);
             }
-            WhatSon::Debug::trace(
-                QStringLiteral("hierarchy.io.support"),
-                QStringLiteral("readUtf8File.failed"),
-                QStringLiteral("path=%1 reason=open failed").arg(filePath));
             return false;
         }
 
-        const QByteArray bytes = file.readAll();
-        *outText = QString::fromUtf8(bytes);
-        WhatSon::Debug::trace(
-            QStringLiteral("hierarchy.io.support"),
-            QStringLiteral("readUtf8File.success"),
-            QStringLiteral("path=%1 bytes=%2").arg(filePath).arg(bytes.size()));
+        *outText = QString::fromUtf8(file.readAll());
         return true;
     }
 
@@ -148,7 +143,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
 
         for (QString& value : values)
         {
-            value = value.trimmed();
+            value = normalizePath(value.trimmed());
             if (value.isEmpty())
             {
                 continue;
@@ -172,64 +167,41 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         return std::clamp(requested, -1, itemCount - 1);
     }
 
-    inline ResourcesHierarchyItem parseItemEntry(const QVariant& entry, int fallbackOrdinal,
-                                                 const QString& fallbackPrefix)
+    inline ResourcesHierarchyItem parseItemEntry(const QVariant& entry, int fallbackOrdinal, const QString&)
     {
         ResourcesHierarchyItem item;
 
         if (entry.metaType().id() == QMetaType::QVariantMap)
         {
             const QVariantMap map = entry.toMap();
-
-            QVariant depthValue;
-            if (map.contains(QStringLiteral("depth")))
-            {
-                depthValue = map.value(QStringLiteral("depth"));
-            }
-            else if (map.contains(QStringLiteral("dpeth")))
-            {
-                depthValue = map.value(QStringLiteral("dpeth"));
-            }
-            else if (map.contains(QStringLiteral("indentLevel")))
-            {
-                depthValue = map.value(QStringLiteral("indentLevel"));
-            }
-
-            bool converted = false;
-            const int parsedDepth = depthValue.toInt(&converted);
-            item.depth = converted ? std::max(0, parsedDepth) : 0;
+            item.depth = std::max(0, map.value(QStringLiteral("depth")).toInt());
             item.label = map.value(QStringLiteral("label")).toString().trimmed();
             item.accent = map.value(QStringLiteral("accent"), false).toBool();
             item.expanded = map.value(QStringLiteral("expanded"), false).toBool();
-            item.showChevron = map.value(QStringLiteral("showChevron"), true).toBool();
+            item.showChevron = map.value(QStringLiteral("showChevron"), false).toBool();
+            item.key = map.value(QStringLiteral("key")).toString().trimmed();
+            item.kind = map.value(QStringLiteral("kind")).toString().trimmed();
+            item.bucket = map.value(QStringLiteral("bucket")).toString().trimmed();
+            item.type = map.value(QStringLiteral("type")).toString().trimmed();
+            item.format = map.value(QStringLiteral("format")).toString().trimmed();
+            item.resourceId = map.value(QStringLiteral("resourceId")).toString().trimmed();
+            item.resourcePath = normalizePath(map.value(QStringLiteral("resourcePath")).toString());
+            item.assetPath = normalizePath(map.value(QStringLiteral("assetPath")).toString());
         }
         else
         {
-            bool converted = false;
-            const int depth = entry.toInt(&converted);
-            if (converted)
-            {
-                item.depth = std::max(0, depth);
-            }
             item.label = entry.toString().trimmed();
+            item.key = QStringLiteral("resources:%1").arg(fallbackOrdinal);
         }
 
-        if (item.label.isEmpty())
+        if (item.key.isEmpty())
         {
-            Q_UNUSED(fallbackPrefix);
-            Q_UNUSED(fallbackOrdinal);
-            WhatSon::Debug::trace(
-                QStringLiteral("hierarchy.io.support"),
-                QStringLiteral("parseItemEntry.emptyLabel"),
-                QStringLiteral("depth=%1").arg(item.depth));
+            item.key = QStringLiteral("resources:%1").arg(fallbackOrdinal);
         }
-
         return item;
     }
 
-    inline QVector<ResourcesHierarchyItem> parseDepthItems(
-        const QVariantList& depthItems,
-        const QString& fallbackPrefix)
+    inline QVector<ResourcesHierarchyItem> parseDepthItems(const QVariantList& depthItems, const QString& fallbackPrefix)
     {
         QVector<ResourcesHierarchyItem> items;
         items.reserve(depthItems.size());
@@ -240,14 +212,6 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             items.push_back(parseItemEntry(entry, ordinal, fallbackPrefix));
             ++ordinal;
         }
-
-        for (int index = 0; index < items.size(); ++index)
-        {
-            const int nextIndex = index + 1;
-            const bool hasChild = nextIndex < items.size() && items.at(nextIndex).depth > items.at(index).depth;
-            items[index].showChevron = hasChild;
-        }
-
         return items;
     }
 
@@ -264,256 +228,236 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 {QStringLiteral("accent"), item.accent},
                 {QStringLiteral("expanded"), item.expanded},
                 {QStringLiteral("showChevron"), item.showChevron},
-                {QStringLiteral("iconName"), resourcesHierarchyIconName(item)}
+                {QStringLiteral("iconName"), resourcesHierarchyIconName(item)},
+                {QStringLiteral("key"), item.key},
+                {QStringLiteral("kind"), item.kind},
+                {QStringLiteral("bucket"), item.bucket},
+                {QStringLiteral("type"), item.type},
+                {QStringLiteral("format"), item.format},
+                {QStringLiteral("resourceId"), item.resourceId},
+                {QStringLiteral("resourcePath"), item.resourcePath},
+                {QStringLiteral("assetPath"), item.assetPath}
             });
         }
 
         return serialized;
     }
 
-    inline QVector<ResourcesHierarchyItem> buildBucketItems(
-        const QString& bucketName,
-        const QStringList& values,
-        const QString& fallbackPrefix)
+    inline QHash<QString, bool> expansionStateByKey(const QVector<ResourcesHierarchyItem>& items)
     {
-        const QStringList sanitized = sanitizeStringList(values);
-
-        QVector<ResourcesHierarchyItem> items;
-        items.reserve(sanitized.size());
-
-        Q_UNUSED(bucketName);
-        Q_UNUSED(fallbackPrefix);
-        for (const QString& value : sanitized)
-        {
-            ResourcesHierarchyItem child;
-            child.depth = 0;
-            child.accent = false;
-            child.expanded = false;
-            child.label = value;
-            child.showChevron = false;
-            items.push_back(std::move(child));
-        }
-
-        for (int index = 0; index < items.size(); ++index)
-        {
-            const int nextIndex = index + 1;
-            const bool hasChild = nextIndex < items.size() && items.at(nextIndex).depth > items.at(index).depth;
-            items[index].showChevron = hasChild;
-        }
-
-        return items;
-    }
-
-    inline QVector<ResourcesHierarchyItem> buildSupportedTypeItems()
-    {
-        QVector<ResourcesHierarchyItem> items;
-
-        const auto appendCategory = [&items](const QString& label, std::initializer_list<const char*> extensions)
-        {
-            ResourcesHierarchyItem parent;
-            parent.depth = 0;
-            parent.accent = false;
-            parent.expanded = false;
-            parent.label = label;
-            parent.showChevron = true;
-            items.push_back(std::move(parent));
-
-            for (const char* extension : extensions)
-            {
-                ResourcesHierarchyItem child;
-                child.depth = 1;
-                child.accent = false;
-                child.expanded = false;
-                child.label = QString::fromLatin1(extension);
-                child.showChevron = false;
-                items.push_back(std::move(child));
-            }
-        };
-
-        appendCategory(
-            QStringLiteral("Image"),
-            {".png", ".jpeg", ".jpg", ".tiff", ".webp", ".gif", ".bmp", ".svg", ".heic", ".avif"});
-        appendCategory(
-            QStringLiteral("Video"),
-            {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"});
-        appendCategory(
-            QStringLiteral("Document"),
-            {".pdf", ".docx", ".txt", ".md", ".rtf", ".pptx", ".xlsx"});
-        appendCategory(
-            QStringLiteral("3D Model"),
-            {".fbx", ".obj", ".gltf", ".glb", ".usd", ".usdz", ".blend", ".stl"});
-        appendCategory(
-            QStringLiteral("Web page"),
-            {".html", ".htm", ".mhtml", ".webloc"});
-        appendCategory(
-            QStringLiteral("Music"),
-            {".mp3", ".aac", ".m4a", ".flac", ".alac", ".aiff"});
-        appendCategory(
-            QStringLiteral("Audio"),
-            {".wav", ".ogg", ".opus", ".caf", ".wma", ".amr"});
-        appendCategory(
-            QStringLiteral("ZIP"),
-            {".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"});
-
-        ResourcesHierarchyItem other;
-        other.depth = 0;
-        other.accent = false;
-        other.expanded = false;
-        other.label = QStringLiteral("Other");
-        other.showChevron = false;
-        items.push_back(std::move(other));
-        return items;
-    }
-
-    inline void applyChevronByDepth(QVector<ResourcesHierarchyItem>* items)
-    {
-        if (items == nullptr)
-        {
-            return;
-        }
-
-        for (int index = 0; index < items->size(); ++index)
-        {
-            const int nextIndex = index + 1;
-            const bool hasChild = nextIndex < items->size() && items->at(nextIndex).depth > items->at(index).depth;
-            (*items)[index].showChevron = hasChild;
-        }
-    }
-
-    inline int nextGeneratedFolderSequence(const QVector<ResourcesHierarchyItem>& items)
-    {
-        static const QRegularExpression folderPattern(QStringLiteral("^Folder(\\d+)$"));
-
-        int maxSequence = 0;
+        QHash<QString, bool> states;
         for (const ResourcesHierarchyItem& item : items)
         {
-            const QRegularExpressionMatch match = folderPattern.match(item.label);
-            if (!match.hasMatch())
+            if (!item.key.isEmpty() && item.showChevron)
+            {
+                states.insert(item.key, item.expanded);
+            }
+        }
+        return states;
+    }
+
+    inline QString itemKeyForBucket(const QString& bucket)
+    {
+        QString normalized = bucket.trimmed().toCaseFolded();
+        normalized.replace(QLatin1Char(' '), QLatin1Char('-'));
+        return QStringLiteral("bucket:%1").arg(normalized);
+    }
+
+    inline QString itemKeyForFormat(const QString& bucket, const QString& format)
+    {
+        QString normalizedBucket = bucket.trimmed().toCaseFolded();
+        normalizedBucket.replace(QLatin1Char(' '), QLatin1Char('-'));
+        const QString normalizedFormat = WhatSon::Resources::normalizedFormatLookupKey(format);
+        return QStringLiteral("format:%1:%2").arg(normalizedBucket, normalizedFormat);
+    }
+
+    inline QString itemKeyForAsset(const WhatSon::Resources::ResourcePackageMetadata& metadata)
+    {
+        const QString normalizedPath = normalizePath(metadata.resourcePath);
+        if (!normalizedPath.isEmpty())
+        {
+            return QStringLiteral("asset:%1").arg(normalizedPath);
+        }
+        return QStringLiteral("asset:%1").arg(metadata.resourceId.trimmed());
+    }
+
+    inline MaterializedResourceEntry materializeResourceEntry(
+        const QString& resourcePath,
+        const QStringList& resolutionBasePaths)
+    {
+        MaterializedResourceEntry entry;
+        entry.resolvedAssetPath = WhatSon::Resources::resolveAssetLocationFromReference(resourcePath, resolutionBasePaths);
+
+        const QString resolvedPackagePath = WhatSon::Resources::resolvePackageDirectoryFromReference(
+            resourcePath,
+            resolutionBasePaths);
+        if (!resolvedPackagePath.isEmpty())
+        {
+            WhatSon::Resources::ResourcePackageMetadata metadata;
+            QString errorMessage;
+            if (WhatSon::Resources::loadResourcePackageMetadata(resolvedPackagePath, &metadata, &errorMessage))
+            {
+                if (metadata.resourcePath.trimmed().isEmpty())
+                {
+                    metadata.resourcePath = normalizePath(resourcePath);
+                }
+                entry.metadata = metadata;
+                return entry;
+            }
+
+            WhatSon::Debug::trace(
+                QStringLiteral("resources.viewmodel"),
+                QStringLiteral("materializeResourceEntry.packageMetadataFailed"),
+                QStringLiteral("path=%1 reason=%2").arg(resourcePath, errorMessage));
+        }
+
+        entry.metadata = WhatSon::Resources::buildFallbackMetadataFromResourcePath(resourcePath, entry.resolvedAssetPath);
+        return entry;
+    }
+
+    inline QVector<ResourcesHierarchyItem> buildHierarchyItems(
+        const QStringList& resourcePaths,
+        const QStringList& resolutionBasePaths,
+        const QVector<ResourcesHierarchyItem>& previousItems = {})
+    {
+        const QHash<QString, bool> previousExpansionStates = expansionStateByKey(previousItems);
+
+        struct GroupedResources final
+        {
+            QString bucket;
+            QString format;
+            QVector<MaterializedResourceEntry> entries;
+        };
+
+        QVector<GroupedResources> groups;
+        for (const QString& resourcePath : resourcePaths)
+        {
+            const MaterializedResourceEntry materialized = materializeResourceEntry(resourcePath, resolutionBasePaths);
+            const QString bucket = materialized.metadata.bucket.trimmed().isEmpty()
+                                       ? QStringLiteral("Other")
+                                       : materialized.metadata.bucket.trimmed();
+            const QString format = materialized.metadata.format.trimmed().isEmpty()
+                                       ? QStringLiteral(".bin")
+                                       : materialized.metadata.format.trimmed();
+
+            auto it = std::find_if(
+                groups.begin(),
+                groups.end(),
+                [&bucket, &format](const GroupedResources& group)
+                {
+                    return group.bucket == bucket && group.format == format;
+                });
+
+            if (it == groups.end())
+            {
+                GroupedResources group;
+                group.bucket = bucket;
+                group.format = format;
+                groups.push_back(group);
+                it = std::prev(groups.end());
+            }
+
+            it->entries.push_back(materialized);
+        }
+
+        std::sort(
+            groups.begin(),
+            groups.end(),
+            [](const GroupedResources& left, const GroupedResources& right)
+            {
+                if (left.bucket != right.bucket)
+                {
+                    return left.bucket.localeAwareCompare(right.bucket) < 0;
+                }
+                return left.format.localeAwareCompare(right.format) < 0;
+            });
+
+        QVector<ResourcesHierarchyItem> items;
+        QString currentBucket;
+        for (GroupedResources& group : groups)
+        {
+            std::sort(
+                group.entries.begin(),
+                group.entries.end(),
+                [](const MaterializedResourceEntry& left, const MaterializedResourceEntry& right)
+                {
+                    const QString leftLabel = !left.metadata.resourceId.trimmed().isEmpty()
+                                                  ? left.metadata.resourceId.trimmed()
+                                                  : left.metadata.resourcePath.trimmed();
+                    const QString rightLabel = !right.metadata.resourceId.trimmed().isEmpty()
+                                                   ? right.metadata.resourceId.trimmed()
+                                                   : right.metadata.resourcePath.trimmed();
+                    return leftLabel.localeAwareCompare(rightLabel) < 0;
+                });
+
+            if (currentBucket != group.bucket)
+            {
+                ResourcesHierarchyItem bucketItem;
+                bucketItem.depth = 0;
+                bucketItem.label = group.bucket;
+                bucketItem.key = itemKeyForBucket(group.bucket);
+                bucketItem.kind = QStringLiteral("bucket");
+                bucketItem.bucket = group.bucket;
+                bucketItem.showChevron = true;
+                bucketItem.expanded = previousExpansionStates.value(bucketItem.key, false);
+                items.push_back(bucketItem);
+                currentBucket = group.bucket;
+            }
+
+            ResourcesHierarchyItem formatItem;
+            formatItem.depth = 1;
+            formatItem.label = group.format;
+            formatItem.key = itemKeyForFormat(group.bucket, group.format);
+            formatItem.kind = QStringLiteral("format");
+            formatItem.bucket = group.bucket;
+            formatItem.format = group.format;
+            formatItem.showChevron = !group.entries.isEmpty();
+            formatItem.expanded = previousExpansionStates.value(formatItem.key, false);
+            items.push_back(formatItem);
+
+            for (const MaterializedResourceEntry& entry : group.entries)
+            {
+                ResourcesHierarchyItem assetItem;
+                assetItem.depth = 2;
+                assetItem.label = !entry.metadata.resourceId.trimmed().isEmpty()
+                                      ? entry.metadata.resourceId.trimmed()
+                                      : entry.metadata.resourcePath.trimmed();
+                assetItem.key = itemKeyForAsset(entry.metadata);
+                assetItem.kind = QStringLiteral("asset");
+                assetItem.bucket = group.bucket;
+                assetItem.type = entry.metadata.type;
+                assetItem.format = group.format;
+                assetItem.resourceId = entry.metadata.resourceId;
+                assetItem.resourcePath = entry.metadata.resourcePath;
+                assetItem.assetPath = !entry.resolvedAssetPath.trimmed().isEmpty()
+                                          ? normalizePath(entry.resolvedAssetPath)
+                                          : entry.metadata.assetPath;
+                assetItem.showChevron = false;
+                assetItem.expanded = false;
+                items.push_back(assetItem);
+            }
+        }
+
+        return items;
+    }
+
+    inline QStringList extractResourcePathsFromItems(const QVector<ResourcesHierarchyItem>& items)
+    {
+        QStringList resourcePaths;
+        for (const ResourcesHierarchyItem& item : items)
+        {
+            if (item.kind != QStringLiteral("asset"))
             {
                 continue;
             }
 
-            bool converted = false;
-            const int value = match.captured(1).toInt(&converted);
-            if (converted)
-            {
-                maxSequence = std::max(maxSequence, value);
-            }
-        }
-
-        return maxSequence + 1;
-    }
-
-    inline bool renameHierarchyItem(QVector<ResourcesHierarchyItem>* items, int index, const QString& displayName)
-    {
-        if (items == nullptr || index < 0 || index >= items->size())
-        {
-            return false;
-        }
-
-        const QString trimmedName = displayName.trimmed();
-        if (trimmedName.isEmpty())
-        {
-            return false;
-        }
-
-        if (items->at(index).label == trimmedName)
-        {
-            return true;
-        }
-
-        (*items)[index].label = trimmedName;
-        return true;
-    }
-
-    inline bool isBucketHeaderItem(const ResourcesHierarchyItem& item)
-    {
-        return item.depth == 0 && item.accent;
-    }
-
-    inline int createHierarchyFolder(QVector<ResourcesHierarchyItem>* items, int selectedIndex, int* ioFolderSequence)
-    {
-        if (items == nullptr || ioFolderSequence == nullptr)
-        {
-            return -1;
-        }
-
-        int insertIndex = items->size();
-        int folderDepth = 0;
-
-        if (selectedIndex >= 0 && selectedIndex < items->size())
-        {
-            (*items)[selectedIndex].expanded = true;
-            const int selectedDepth = items->at(selectedIndex).depth;
-            folderDepth = selectedDepth + 1;
-
-            insertIndex = selectedIndex + 1;
-            while (insertIndex < items->size() && items->at(insertIndex).depth > selectedDepth)
-            {
-                ++insertIndex;
-            }
-        }
-
-        ResourcesHierarchyItem newItem;
-        newItem.depth = folderDepth;
-        newItem.label = QStringLiteral("Untitled");
-        ++(*ioFolderSequence);
-        newItem.accent = false;
-        newItem.expanded = false;
-        newItem.showChevron = true;
-
-        items->insert(insertIndex, std::move(newItem));
-        applyChevronByDepth(items);
-        return insertIndex;
-    }
-
-    inline int deleteHierarchySubtree(QVector<ResourcesHierarchyItem>* items, int selectedIndex)
-    {
-        if (items == nullptr || selectedIndex < 0 || selectedIndex >= items->size())
-        {
-            return -1;
-        }
-
-        const int startIndex = selectedIndex;
-        const int baseDepth = items->at(startIndex).depth;
-
-        int removeCount = 1;
-        while (startIndex + removeCount < items->size() && items->at(startIndex + removeCount).depth > baseDepth)
-        {
-            ++removeCount;
-        }
-
-        items->remove(startIndex, removeCount);
-        applyChevronByDepth(items);
-
-        if (items->isEmpty())
-        {
-            return -1;
-        }
-        return std::min(startIndex, static_cast<int>(items->size() - 1));
-    }
-
-    inline QStringList extractDomainLabelsFromItems(const QVector<ResourcesHierarchyItem>& items)
-    {
-        QStringList labels;
-        labels.reserve(items.size());
-
-        for (int index = 0; index < items.size(); ++index)
-        {
-            const ResourcesHierarchyItem& item = items.at(index);
-            if (index == 0 && item.depth == 0 && item.accent)
+            const QString resourcePath = normalizePath(item.resourcePath);
+            if (resourcePath.isEmpty() || resourcePaths.contains(resourcePath))
             {
                 continue;
             }
-
-            const QString label = item.label.trimmed();
-            if (label.isEmpty() || labels.contains(label))
-            {
-                continue;
-            }
-            labels.push_back(label);
+            resourcePaths.push_back(resourcePath);
         }
-
-        return labels;
+        return resourcePaths;
     }
 } // namespace WhatSon::Hierarchy::ResourcesSupport

@@ -43,6 +43,9 @@ public:
     QStringList tags() const;
     void setTags(QStringList tags);
 
+    QStringList progressEnums() const;
+    void setProgressEnums(QStringList progressEnums);
+
     int progress() const noexcept;
     void setProgress(int progress) noexcept;
 
@@ -61,6 +64,7 @@ private:
     bool m_bookmarked = false;
     QStringList m_bookmarkColors;
     QStringList m_tags;
+    QStringList m_progressEnums;
     int m_progress = 0;
     bool m_preset = false;
 };

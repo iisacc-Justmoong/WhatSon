@@ -12,6 +12,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
@@ -36,6 +37,33 @@ namespace
             return {};
         }
         return QDir(contentsDirectories.first()).filePath(fileName);
+    }
+
+    QString resolveResourcesDirectory(const QString& wshubPath)
+    {
+        const QFileInfo hubInfo(wshubPath);
+        if (!hubInfo.isDir())
+        {
+            return {};
+        }
+
+        const QDir hubDir(wshubPath);
+        const QString fixedPath = QDir(hubDir.path()).filePath(QStringLiteral(".wsresources"));
+        if (QFileInfo(fixedPath).isDir())
+        {
+            return WhatSon::Resources::normalizePath(fixedPath);
+        }
+
+        const QStringList candidates = hubDir.entryList(
+            QStringList{QStringLiteral("*.wsresources")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        if (candidates.isEmpty())
+        {
+            return {};
+        }
+
+        return WhatSon::Resources::normalizePath(hubDir.filePath(candidates.constFirst()));
     }
 } // namespace
 
@@ -266,6 +294,11 @@ WhatSonRuntimeDomainSnapshots::StringListSnapshot WhatSonRuntimeDomainSnapshots:
         {
             snapshot.values.push_back(value);
         }
+    }
+
+    if (snapshot.values.isEmpty())
+    {
+        snapshot.values = WhatSon::Resources::listRelativeResourcePackagePaths(resolveResourcesDirectory(wshubPath));
     }
 
     if (snapshot.sourceFilePath.isEmpty())

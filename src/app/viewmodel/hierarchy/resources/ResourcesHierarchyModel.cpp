@@ -51,14 +51,25 @@ QVariant ResourcesHierarchyModel::data(const QModelIndex& index, int role) const
     case ExpandedRole:
         return item.expanded;
     case ShowChevronRole:
-        {
-            const int nextIndex = index.row() + 1;
-            const bool hasChild = nextIndex < m_items.size()
-                && m_items.at(nextIndex).depth > item.depth;
-            return hasChild;
-        }
+        return item.showChevron;
     case IconNameRole:
         return resourcesHierarchyIconName(item);
+    case KeyRole:
+        return item.key;
+    case KindRole:
+        return item.kind;
+    case BucketRole:
+        return item.bucket;
+    case TypeRole:
+        return item.type;
+    case FormatRole:
+        return item.format;
+    case ResourceIdRole:
+        return item.resourceId;
+    case ResourcePathRole:
+        return item.resourcePath;
+    case AssetPathRole:
+        return item.assetPath;
     default:
         return {};
     }
@@ -73,7 +84,15 @@ QHash<int, QByteArray> ResourcesHierarchyModel::roleNames() const
         {AccentRole, "accent"},
         {ExpandedRole, "expanded"},
         {ShowChevronRole, "showChevron"},
-        {IconNameRole, "iconName"}
+        {IconNameRole, "iconName"},
+        {KeyRole, "key"},
+        {KindRole, "kind"},
+        {BucketRole, "bucket"},
+        {TypeRole, "type"},
+        {FormatRole, "format"},
+        {ResourceIdRole, "resourceId"},
+        {ResourcePathRole, "resourcePath"},
+        {AssetPathRole, "assetPath"}
     };
 }
 

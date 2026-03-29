@@ -1,37 +1,13 @@
 # `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonResourcesHierarchyCreator.cpp`
-- Approximate line count: 40
+`Resources.wsresources` 목록 파일을 직렬화한다.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+이제 `resources` 배열은 단순 문자열 배열이 아니라 각 엔트리를
+`{"resourcePath": "Hub.wsresources/id.wsresource"}` 형태의 object로 쓴다.
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Why
 
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+리소스의 canonical identity가 raw asset file이 아니라 `.wsresource` 패키지 경로가 되었기 때문이다.
+이 포맷은 이후 메타데이터 확장에도 유리하고, 기존 string-array 파서와도 하위 호환을 유지한다.

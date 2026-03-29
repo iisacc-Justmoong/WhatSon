@@ -1,37 +1,17 @@
 # `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonResourcesHierarchyParser.cpp`
-- Approximate line count: 122
+`Resources.wsresources`를 읽어 `.wsresource` 패키지 경로 목록으로 복원한다.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Accepted Input Forms
 
-### Classes and Structs
-- None detected during scaffold generation.
+- legacy string array
+- object root with `resources: [...]`
+- new object array entries with `resourcePath`
+- 마지막 fallback으로 line-based text
 
-### Enums
-- None detected during scaffold generation.
+## Compatibility
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+쓰기 포맷은 object array로 이동했지만, 파서는 기존 raw string 저장본도 그대로 읽는다.
+따라서 기존 허브의 `Resources.wsresources`를 즉시 마이그레이션하지 않아도 런타임 적재가 깨지지 않는다.

@@ -14,6 +14,7 @@
 - Keep iOS physical-device startup on the conservative LVRS windowing path by delegating windowing/insets back to the
   system and pinning the render tier to `LowTier`.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
+- Accept global file drag-and-drop imports and forward dropped local files into the resources import ViewModel.
 
 ## ViewModel Ownership
 The important architectural work in this file is not the layout math. It is the ownership hand-off.
@@ -48,6 +49,9 @@ The file keeps both desktop and mobile layout branches alive.
 - `viewHookRequested` is the root forwarding signal used by nested components that want to bubble interaction intent upward.
 - The root `Shortcut` for `StandardKey.New` is intentionally gated behind `isDesktopPlatform` so mobile route changes and
   panel navigation cannot fall into global note creation.
+- A root `DropArea` now covers the window and only becomes visually active when `resourcesImportViewModel` reports that
+  the dragged payload contains importable local files for the current hub.
+- Import success and failure are surfaced through a lightweight status banner instead of mutating sidebar layout state.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
 - `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
   startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.

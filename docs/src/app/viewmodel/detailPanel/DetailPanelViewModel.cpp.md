@@ -25,6 +25,12 @@ The exported `activeStateName()` now follows the corrected page ids:
 - Each selector model now prepends a synthetic clear entry (`No project`, `No bookmark`, `No progress`), and selecting that entry clears the corresponding field in the current `.wsnhead` file instead of writing the visible label text.
 - `assignFolderByName(...)` first resolves or creates the folder entry in `Folders.wsfolders`, then persists the resulting folder path/uuid binding into the active note header file, and finally re-applies the current header to the properties content view-model.
 - `removeActiveFolder()` and `removeActiveTag()` delete the active metadata entry from the current note header file through the same file-backed session store and then re-apply the updated header to the properties content view-model.
+- The progress selector now mirrors the active note header's `progress enums="{...}"` order before it
+  mirrors any injected Progress hierarchy source, so the detail panel stops presenting an unrelated
+  standalone taxonomy.
+- When a Progress hierarchy source is injected, the selector still reuses matching source metadata
+  such as `itemId`, `progressValue`, and icon data, so writes keep the owning hierarchy's numeric
+  mapping instead of collapsing back to plain row indices.
 - Progress persistence resolves the enum integer from hierarchy entry metadata such as `itemId` or a numeric `progress:*` key; it is no longer hard-coded to the default `Ready/Pending/InProgress/Done` labels.
 - Clearing progress writes the `.wsnhead` field as an explicit empty progress value, which round-trips back into the detail selector as `No progress`.
 - The properties form now mirrors `header.folders()` directly, so folder rows stay aligned with the persisted `.wsnhead` path strings instead of showing only the leaf segment.

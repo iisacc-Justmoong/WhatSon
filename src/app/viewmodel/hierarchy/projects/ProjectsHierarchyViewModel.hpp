@@ -1,8 +1,10 @@
 #pragma once
 
+#include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyModel.hpp"
 
 #include <QStringList>
@@ -19,6 +21,7 @@ class ProjectsHierarchyViewModel final : public IHierarchyViewModel,
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability IHierarchyReorderCapability)
 
     Q_PROPERTY(ProjectsHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -33,6 +36,7 @@ public:
     ~ProjectsHierarchyViewModel() override;
 
     ProjectsHierarchyModel* itemModel() noexcept override;
+    LibraryNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
     Q_INVOKABLE void setSelectedIndex(int index) override;
@@ -99,6 +103,10 @@ public
 private:
     void updateItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
+    LibraryNoteListItem buildNoteListItem(const LibraryNoteRecord& note) const;
+    void refreshNoteListForSelection();
+    bool refreshIndexedNotesFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    bool refreshIndexedNotesFromProjectsFilePath(QString* errorMessage = nullptr);
     void syncModel();
     bool commitHierarchyUpdate(QVector<ProjectsHierarchyItem> stagedItems, int selectedIndex);
     void syncDomainStoreFromItems();
@@ -107,6 +115,8 @@ private:
     QVector<ProjectsHierarchyItem> m_items;
     WhatSonProjectsHierarchyStore m_store;
     ProjectsHierarchyModel m_itemModel;
+    LibraryNoteListModel m_noteListModel;
+    QVector<LibraryNoteRecord> m_allNotes;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;

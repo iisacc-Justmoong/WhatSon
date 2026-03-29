@@ -113,6 +113,79 @@ namespace
     {
         return entry.value(QStringLiteral("clearSelection")).toBool();
     }
+
+    QVariantMap findProgressHierarchyEntryByLabel(const QVariantList& optionsHierarchyModel, const QString& label)
+    {
+        const QString trimmedLabel = label.trimmed();
+        for (const QVariant& option : optionsHierarchyModel)
+        {
+            const QVariantMap optionMap = option.toMap();
+            if (optionMap.value(QStringLiteral("label")).toString().trimmed().compare(
+                    trimmedLabel,
+                    Qt::CaseInsensitive) == 0)
+            {
+                return optionMap;
+            }
+        }
+
+        return {};
+    }
+
+    QVariantMap findProgressHierarchyEntryByValue(const QVariantList& optionsHierarchyModel, int progressValue)
+    {
+        for (const QVariant& option : optionsHierarchyModel)
+        {
+            const QVariantMap optionMap = option.toMap();
+            if (DetailNoteHeaderSelectionSourceViewModel::progressValueForHierarchyEntry(option, -1) == progressValue)
+            {
+                return optionMap;
+            }
+        }
+
+        return {};
+    }
+
+    QVariantList buildHeaderBackedProgressHierarchyModel(
+        const WhatSonNoteHeaderStore& header,
+        const QVariantList& optionsHierarchyModel)
+    {
+        QVariantList hierarchyModel;
+        const QStringList progressEnums = header.progressEnums();
+        hierarchyModel.reserve(progressEnums.size());
+
+        for (int index = 0; index < progressEnums.size(); ++index)
+        {
+            const QString label = progressEnums.at(index).trimmed();
+            if (label.isEmpty())
+            {
+                continue;
+            }
+
+            QVariantMap optionMap = findProgressHierarchyEntryByLabel(optionsHierarchyModel, label);
+            if (optionMap.isEmpty())
+            {
+                const int fallbackProgressValue = fallbackProgressValueForLabel(label);
+                if (fallbackProgressValue >= 0)
+                {
+                    optionMap = findProgressHierarchyEntryByValue(optionsHierarchyModel, fallbackProgressValue);
+                }
+            }
+
+            const int progressValue = optionMap.isEmpty()
+                                          ? index
+                                          : DetailNoteHeaderSelectionSourceViewModel::progressValueForHierarchyEntry(
+                                              optionMap,
+                                              index);
+            optionMap.remove(QStringLiteral("clearSelection"));
+            optionMap.insert(QStringLiteral("key"), QStringLiteral("progress:%1").arg(progressValue));
+            optionMap.insert(QStringLiteral("label"), label);
+            optionMap.insert(QStringLiteral("itemId"), progressValue);
+            optionMap.insert(QStringLiteral("progressValue"), progressValue);
+            hierarchyModel.push_back(optionMap);
+        }
+
+        return hierarchyModel;
+    }
 }
 
 DetailNoteHeaderSelectionSourceViewModel::DetailNoteHeaderSelectionSourceViewModel(Field field, QObject* parent)
@@ -224,26 +297,32 @@ void DetailNoteHeaderSelectionSourceViewModel::setSelectedIndex(int index)
 
 void DetailNoteHeaderSelectionSourceViewModel::synchronize(bool reloadSession)
 {
-    QVariantList nextHierarchyModel;
-    if (m_optionsSourceViewModel != nullptr)
+    if (m_sessionStore != nullptr && reloadSession && !m_noteId.isEmpty() && !m_noteDirectoryPath.isEmpty())
     {
-        nextHierarchyModel = buildHierarchyModelWithClearEntry(
-            m_optionsSourceViewModel->property("hierarchyModel").toList());
-    }
-    else
-    {
-        nextHierarchyModel = buildHierarchyModelWithClearEntry({});
+        m_sessionStore->ensureLoaded(m_noteId, m_noteDirectoryPath, nullptr);
     }
 
+    const QVariantList optionsHierarchyModel = m_optionsSourceViewModel != nullptr
+                                                   ? m_optionsSourceViewModel->property("hierarchyModel").toList()
+                                                   : QVariantList{};
+    QVariantList nextOptionsHierarchyModel = optionsHierarchyModel;
+    if (m_field == Field::Progress
+        && m_sessionStore != nullptr
+        && !m_noteId.isEmpty()
+        && m_sessionStore->hasEntry(m_noteId))
+    {
+        const WhatSonNoteHeaderStore header = m_sessionStore->header(m_noteId);
+        if (!header.progressEnums().isEmpty())
+        {
+            nextOptionsHierarchyModel = buildHeaderBackedProgressHierarchyModel(header, optionsHierarchyModel);
+        }
+    }
+
+    const QVariantList nextHierarchyModel = buildHierarchyModelWithClearEntry(nextOptionsHierarchyModel);
     if (m_hierarchyModel != nextHierarchyModel)
     {
         m_hierarchyModel = nextHierarchyModel;
         emit hierarchyModelChanged();
-    }
-
-    if (m_sessionStore != nullptr && reloadSession && !m_noteId.isEmpty() && !m_noteDirectoryPath.isEmpty())
-    {
-        m_sessionStore->ensureLoaded(m_noteId, m_noteDirectoryPath, nullptr);
     }
 
     const int nextSelectedIndex = resolveSelectedIndexForHeader(m_hierarchyModel);

@@ -10,6 +10,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - The decoder still detects `<resource ...>` tags for thumbnail metadata, but the editor text now comes from `WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(...)`.
 - The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
+- `<resource ... resourcePath="...">` now accepts `.wsresource` package paths.
+- When the reference points to a package directory, the store resolves `resource.xml`, follows its `asset path`, and uses the real packaged asset file for preview thumbnail URLs.
 
 ## Update Contract
 - `updateNote(...)` still serializes the edited plain text back into paragraph nodes when a real body write is requested.

@@ -88,13 +88,14 @@ private:
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void syncModel();
     void syncDomainStoreFromItems();
+    void setResourceResolutionBasePaths(QStringList basePaths);
 
     QStringList m_resourcePaths;
+    QStringList m_resourceResolutionBasePaths;
     QVector<ResourcesHierarchyItem> m_items;
     WhatSonResourcesHierarchyStore m_store;
     ResourcesHierarchyModel m_itemModel;
     int m_selectedIndex = -1;
-    int m_createdFolderSequence = 1;
     int m_itemCount = 0;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;

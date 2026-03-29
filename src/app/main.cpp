@@ -7,6 +7,7 @@
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesImportViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
@@ -143,6 +144,7 @@ int main(int argc, char* argv[])
     BookmarksHierarchyViewModel bookmarksHierarchyViewModel;
     TagsHierarchyViewModel tagsHierarchyViewModel;
     ResourcesHierarchyViewModel resourcesHierarchyViewModel;
+    ResourcesImportViewModel resourcesImportViewModel;
     ProgressHierarchyViewModel progressHierarchyViewModel;
     EventHierarchyViewModel eventHierarchyViewModel;
     PresetHierarchyViewModel presetHierarchyViewModel;
@@ -322,6 +324,16 @@ int main(int argc, char* argv[])
         &BookmarksHierarchyViewModel::hubFilesystemMutated,
         &hubSyncController,
         &WhatSonHubSyncController::acknowledgeLocalMutation);
+    resourcesImportViewModel.setReloadResourcesCallback(
+        [&startupRuntimeCoordinator, &hubSyncController](const QString& hubPath, QString* errorMessage) -> bool
+        {
+            const bool reloaded = startupRuntimeCoordinator.reloadResourcesDomainIntoRuntime(hubPath, errorMessage);
+            if (reloaded)
+            {
+                hubSyncController.acknowledgeLocalMutation();
+            }
+            return reloaded;
+        });
 
     onboardingHubController.setCreateHubCallback(
         [&hubCreator](const QString& requestedHubPath, QString* outPackagePath, QString* errorMessage) -> bool
@@ -339,13 +351,14 @@ int main(int argc, char* argv[])
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
-        [&onboardingHubController, &selectedHubStore, &updateWriteLeaseOwnership, &hubSyncController](const QString& hubPath)
+        [&onboardingHubController, &selectedHubStore, &updateWriteLeaseOwnership, &hubSyncController, &resourcesImportViewModel](const QString& hubPath)
         {
             selectedHubStore.setSelectedHubSelection(
                 hubPath,
                 onboardingHubController.currentHubAccessBookmark());
             updateWriteLeaseOwnership(hubPath);
             hubSyncController.setCurrentHubPath(hubPath);
+            resourcesImportViewModel.setCurrentHubPath(hubPath);
         });
 
     bool initialHubLoaded = false;
@@ -368,6 +381,7 @@ int main(int argc, char* argv[])
                 startupHubSelection.accessBookmark);
             updateWriteLeaseOwnership(startupHubSelection.hubPath);
             hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
+            resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {
@@ -425,6 +439,9 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(
         QStringLiteral("resourcesHierarchyViewModel"),
         &resourcesHierarchyViewModel);
+    engine.rootContext()->setContextProperty(
+        QStringLiteral("resourcesImportViewModel"),
+        &resourcesImportViewModel);
     engine.rootContext()->setContextProperty(
         QStringLiteral("progressHierarchyViewModel"),
         &progressHierarchyViewModel);

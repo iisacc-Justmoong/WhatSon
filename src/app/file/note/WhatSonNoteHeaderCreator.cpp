@@ -23,6 +23,35 @@ namespace
     {
         return value ? QStringLiteral("true") : QStringLiteral("false");
     }
+
+    QStringList defaultProgressEnums()
+    {
+        return {
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        };
+    }
+
+    QString serializeProgressEnumsAttribute(QStringList progressEnums)
+    {
+        for (int index = progressEnums.size() - 1; index >= 0; --index)
+        {
+            progressEnums[index] = progressEnums.at(index).trimmed();
+            if (progressEnums.at(index).isEmpty())
+            {
+                progressEnums.removeAt(index);
+            }
+        }
+
+        if (progressEnums.isEmpty())
+        {
+            progressEnums = defaultProgressEnums();
+        }
+
+        return QStringLiteral("{%1}").arg(progressEnums.join(QLatin1Char(',')));
+    }
 } // namespace
 
 WhatSonNoteHeaderCreator::WhatSonNoteHeaderCreator(QString workspaceRootPath, QString notesRootPath)
@@ -123,7 +152,9 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     text += QStringLiteral("    </tags>\n");
 
     const QString progressText = store.progress() < 0 ? QString() : QString::number(store.progress());
-    text += QStringLiteral("    <progress enums=\"{Ready,Pending,InProgress,Done}\">")
+    text += QStringLiteral("    <progress enums=\"")
+        + escapeXmlText(serializeProgressEnumsAttribute(store.progressEnums()))
+        + QStringLiteral("\">")
         + progressText + QStringLiteral("</progress>\n");
     text += QStringLiteral("    <isPreset>") + boolToText(store.isPreset()) + QStringLiteral("</isPreset>\n");
     text += QStringLiteral("  </head>\n");

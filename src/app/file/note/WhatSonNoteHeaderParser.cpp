@@ -325,6 +325,8 @@ bool WhatSonNoteHeaderParser::parse(
     outStore->setBookmarkColors(WhatSon::Bookmarks::parseBookmarkColorsAttribute(
         extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("colors"))));
     outStore->setTags(extractTagTexts(wsnHeadText, QStringLiteral("tag")));
+    outStore->setProgressEnums(parseProgressEnums(
+        extractAttributeValue(wsnHeadText, QStringLiteral("progress"), QStringLiteral("enums"))));
     outStore->setProgress(parseProgressValue(wsnHeadText));
 
     QString isPresetValue = extractTagText(wsnHeadText, QStringLiteral("isPreset"));
@@ -338,11 +340,12 @@ bool WhatSonNoteHeaderParser::parse(
                               QStringLiteral("note.header.parser"),
                               QStringLiteral("parse.success"),
                               QStringLiteral(
-                                  "id=%1 folderCount=%2 bookmarkColorCount=%3 tagCount=%4 progress=%5 bookmarked=%6 preset=%7")
+                                  "id=%1 folderCount=%2 bookmarkColorCount=%3 tagCount=%4 progressEnumCount=%5 progress=%6 bookmarked=%7 preset=%8")
                               .arg(outStore->noteId())
                               .arg(outStore->folders().size())
                               .arg(outStore->bookmarkColors().size())
                               .arg(outStore->tags().size())
+                              .arg(outStore->progressEnums().size())
                               .arg(outStore->progress())
                               .arg(outStore->isBookmarked() ? QStringLiteral("true") : QStringLiteral("false"))
                               .arg(outStore->isPreset() ? QStringLiteral("true") : QStringLiteral("false")));

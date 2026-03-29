@@ -116,6 +116,28 @@ target_link_libraries(whatson_hub_sync_controller_tests
 add_test(NAME whatson_hub_sync_controller_tests COMMAND whatson_hub_sync_controller_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_sync_controller_tests)
 
+add_executable(whatson_resources_import_viewmodel_tests
+        app/test_resources_import_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesImportViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp
+)
+set_target_properties(whatson_resources_import_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_resources_import_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/file
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel
+)
+target_link_libraries(whatson_resources_import_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_resources_import_viewmodel_tests COMMAND whatson_resources_import_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_resources_import_viewmodel_tests)
+
 add_executable(whatson_hub_parser_tests
         app/test_whatson_hub_parser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hub/WhatSonHubParser.cpp

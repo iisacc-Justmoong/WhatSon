@@ -68,7 +68,7 @@ class CMakeDesktopInstallTests(unittest.TestCase):
         self.assertIn('    "build/WhatSon.exe",', cli_text)
         self.assertIn('parser.add_argument("--host-build-dir", default=str(repo_root / "build"))', runner_text)
         self.assertIn('parser.add_argument("--trial-build-dir", default=str(repo_root / "build-trial"))', runner_text)
-        self.assertIn('destination=self.ios_project_dir / "WhatSon.app",', runner_text)
+        self.assertIn('default=str(repo_root / "build" / "ios-xcode-artifact")', runner_text)
         self.assertIn('destination=self.android_build_dir / "WhatSon.apk",', runner_text)
 
     def test_root_cmake_syncs_trial_build_tree_for_host_builds(self) -> None:
@@ -82,7 +82,11 @@ class CMakeDesktopInstallTests(unittest.TestCase):
         self.assertIn('add_dependencies(whatson_build_all whatson_sync_trial_build)', root_cmake_text)
         self.assertIn('add_dependencies(WhatSon whatson_sync_trial_build)', root_cmake_text)
         self.assertIn('add_custom_target(whatson_sync_trial_build_on_build ALL', root_cmake_text)
-        self.assertIn('"-DCMAKE_OSX_ARCHITECTURES=${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}"', root_cmake_text)
+        self.assertIn('set(_whatson_trial_cache_script "${CMAKE_BINARY_DIR}/CMakeFiles/whatson_trial_cache_init.cmake")', root_cmake_text)
+        self.assertIn('set(CMAKE_PREFIX_PATH [==[${CMAKE_PREFIX_PATH}]==] CACHE STRING', root_cmake_text)
+        self.assertIn('set(CMAKE_OSX_ARCHITECTURES [==[${WHATSON_TRIAL_BUILD_OSX_ARCHITECTURES}]==] CACHE STRING', root_cmake_text)
+        self.assertIn('file(CONFIGURE OUTPUT "${_whatson_trial_cache_script}" CONTENT "${_whatson_trial_cache_lines}" @ONLY)', root_cmake_text)
+        self.assertIn('list(APPEND _whatson_trial_configure_command -C "${_whatson_trial_cache_script}")', root_cmake_text)
 
     def test_readme_documents_root_build_creates_build_trial(self) -> None:
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
@@ -91,6 +95,7 @@ class CMakeDesktopInstallTests(unittest.TestCase):
         self.assertIn("plain `cmake --build build`, `cmake --build build --target WhatSon`, CLion's `WhatSon`", readme_text)
         self.assertIn("build, and `whatson_build_all` all configure `build-trial`", readme_text)
         self.assertIn("On macOS the nested trial tree pins `CMAKE_OSX_ARCHITECTURES` from the host/LVRS setup", readme_text)
+        self.assertIn("The nested configure step forwards list-style cache values such as `CMAKE_PREFIX_PATH`", readme_text)
         self.assertIn("The same `build-trial` mirror is also created by the root CMake build path", readme_text)
 
 

@@ -3,7 +3,7 @@
 ## Responsibility
 
 This file implements the dedicated projects hierarchy viewmodel. It parses and mutates
-`Projects.wsprojects`, builds the project sidebar rows, and keeps project selection stable across
+`ProjectLists.wsproj`, builds the project sidebar rows, and keeps project selection stable across
 runtime snapshot updates.
 
 ## Runtime Refresh Contract
@@ -25,13 +25,23 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 
 ## Mutation Flow
 
-- `loadFromWshub(...)` parses `Projects.wsprojects` into `WhatSonProjectsHierarchyStore`.
+- `loadFromWshub(...)` parses `ProjectLists.wsproj` into `WhatSonProjectsHierarchyStore` and also
+  indexes `Library.wslibrary` so the projects domain has its own note-list projection.
 - `renameItem(...)`, `createFolder()`, `deleteSelectedFolder()`, and reorder/move helpers mutate the
   store-backed folder entries and then rebuild the model.
 - `setItemExpanded(...)` and `setAllItemsExpanded(...)` mutate only in-memory expansion state. They do
   not rewrite `Projects.wsproj`, because fold state is a sidebar presentation concern.
 - `itemsFromProjectEntries(...)` is the translation boundary from persisted folder-depth records to
   sidebar rows.
+
+## Note List Projection
+
+- `noteListModel()` now returns a `LibraryNoteListModel` owned by the projects viewmodel instead of
+  the inherited null default.
+- The note list is rebuilt from indexed `LibraryNoteRecord` entries and filtered by the selected
+  project label stored in each note header's `.wsnhead <project>` field.
+- With no active sidebar selection, the model shows all notes whose project label is currently
+  present in the loaded project hierarchy.
 
 ## Invariants
 
