@@ -11,9 +11,10 @@ The file now delegates several responsibilities to sibling helper controllers.
 - `SidebarHierarchyNoteDropController`: hierarchy hit testing, drag payload decoding, note-drop preview, and drop commit.
 - `SidebarHierarchyBookmarkPaletteController`: bookmark color token lookup and canvas glyph drawing.
 
-Bookmark rows intentionally keep a single `bookmarksbookmark` icon token.
-Visual differentiation between bookmark colors belongs to the palette-applied label/icon tint path,
-not to per-row alternate icon sources.
+Bookmark rows intentionally keep a single `bookmarksbookmark` icon token, but the bookmark domain
+may also provide a color-specific `iconSource` override from C++.
+The QML palette controller is therefore a visual helper, not the source of truth for bookmark icon
+color identity.
 
 The root file still exposes wrapper functions for these helpers so callers and tests can use a stable interface.
 

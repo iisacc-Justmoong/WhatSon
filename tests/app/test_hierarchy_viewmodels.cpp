@@ -604,16 +604,20 @@ void HierarchyViewModelsTest::bookmarksViewModel_supportsCrudContract()
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), BookmarksHierarchyModel::IconNameRole)
                  .toString(),
         QStringLiteral("bookmarksbookmark"));
-    QVERIFY(
+    const QString redIconSource =
         viewModel.itemModel()->data(viewModel.itemModel()->index(0, 0), BookmarksHierarchyModel::IconSourceRole)
-            .toString()
-            .isEmpty());
+            .toString();
+    QVERIFY(!redIconSource.isEmpty());
+    QVERIFY(redIconSource.contains(QStringLiteral("%23EF4444")));
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
     QVERIFY(!hierarchyModel.isEmpty());
     QCOMPARE(
         hierarchyModel.at(0).toMap().value(QStringLiteral("iconName")).toString(),
         QStringLiteral("bookmarksbookmark"));
-    QVERIFY(!hierarchyModel.at(0).toMap().contains(QStringLiteral("iconSource")));
+    QVERIFY(hierarchyModel.at(0).toMap().contains(QStringLiteral("iconSource")));
+    QVERIFY(
+        hierarchyModel.at(0).toMap().value(QStringLiteral("iconSource")).toString().contains(
+            QStringLiteral("%23EF4444")));
     viewModel.setSelectedIndex(0);
     QVERIFY(!viewModel.deleteFolderEnabled());
     QVERIFY(!viewModel.renameItem(0, QStringLiteral("Bookmarks-Header")));
@@ -646,6 +650,14 @@ void HierarchyViewModelsTest::bookmarksViewModel_loadFromWshub_filtersBookmarked
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(9, 0), BookmarksHierarchyModel::LabelRole).toString(),
         QStringLiteral("Pink"));
+    QVERIFY(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(6, 0), BookmarksHierarchyModel::IconSourceRole)
+            .toString()
+            .contains(QStringLiteral("%233B82F6")));
+    QVERIFY(
+        viewModel.itemModel()->data(viewModel.itemModel()->index(9, 0), BookmarksHierarchyModel::IconSourceRole)
+            .toString()
+            .contains(QStringLiteral("%23EC4899")));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
     QCOMPARE(viewModel.noteListModel()->roleNames().value(BookmarksNoteListModel::NoteIdRole), QByteArray("noteId"));

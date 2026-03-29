@@ -11,6 +11,7 @@ struct BookmarksHierarchyItem
     bool accent = false;
     bool expanded = false;
     QString label;
+    QString iconSource;
     bool showChevron = true;
 };
 

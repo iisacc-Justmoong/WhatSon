@@ -7,10 +7,10 @@
 ## Runtime Contract
 - `BookmarksHierarchyModel` exposes a dedicated `iconName` role.
 - Every bookmark color row resolves that role through the shared `bookmarksbookmark` token.
-- The `iconSource` role is intentionally empty for bookmark color rows, so consumers do not replace
-  that shared glyph with per-label SVG overrides.
-- This keeps `QAbstractListModel` data and `BookmarksHierarchyViewModel::hierarchyModel()` aligned
-  while bookmark color remains a label/text concern.
+- The `iconSource` role now carries a color-specific SVG data URI generated in C++ for each
+  bookmark row.
+- This keeps the logical glyph token fixed while restoring per-label bookmark color symmetry
+  without depending on QML-side label parsing to decide the actual icon tint.
 
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyModel.cpp`

@@ -8,6 +8,7 @@
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QFileInfo>
+#include <QUrl>
 #include <QVariantMap>
 
 #include <algorithm>
@@ -200,6 +201,22 @@ namespace
         return {};
     }
 
+    QString bookmarkHierarchyIconSource(const QString& colorValue)
+    {
+        const QString colorHex = WhatSon::Bookmarks::bookmarkColorToHex(colorValue);
+        if (colorHex.isEmpty())
+        {
+            return {};
+        }
+
+        const QString svg = QStringLiteral(
+                                "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'>"
+                                "<path fill='%1' d='M4 1.5h8a.5.5 0 0 1 .5.5v11l-4.5-3-4.5 3V2a.5.5 0 0 1 .5-.5Z'/>"
+                                "</svg>")
+                                .arg(colorHex);
+        return QStringLiteral("data:image/svg+xml,%1").arg(QString::fromLatin1(QUrl::toPercentEncoding(svg)));
+    }
+
     void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document)
     {
         if (note == nullptr)
@@ -248,6 +265,7 @@ namespace
             item.accent = false;
             item.expanded = false;
             item.label = QString::fromLatin1(colorDef.displayName);
+            item.iconSource = bookmarkHierarchyIconSource(QString::fromLatin1(colorDef.hex));
             item.showChevron = false;
             items.push_back(std::move(item));
         }
@@ -423,7 +441,8 @@ QVariantList BookmarksHierarchyViewModel::depthItems() const
             {QStringLiteral("accent"), item.accent},
             {QStringLiteral("expanded"), item.expanded},
             {QStringLiteral("showChevron"), item.showChevron},
-            {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)}
+            {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)},
+            {QStringLiteral("iconSource"), item.iconSource}
         });
     }
 

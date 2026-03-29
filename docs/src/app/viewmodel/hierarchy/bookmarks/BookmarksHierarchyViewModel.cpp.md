@@ -15,8 +15,9 @@ policy as the runtime loader and library hierarchy viewmodel.
 color row.
 
 The current contract uses the shared `bookmarksbookmark` icon token for every bookmark color row.
-It no longer emits per-row `iconSource` SVG overrides, so downstream consumers keep one bookmark
-glyph while label color remains the only bookmark-color differentiator.
+It now also emits a per-row `iconSource` SVG override generated from
+`WhatSonBookmarkColorPalette.hpp`, so the rendered bookmark glyph color matches the bookmark label
+name even when QML palette helpers do not recolor the icon placeholder.
 
 ## Note List Projection
 
