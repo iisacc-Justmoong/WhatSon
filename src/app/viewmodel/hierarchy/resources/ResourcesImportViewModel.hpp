@@ -25,6 +25,8 @@ public:
 
     void setReloadResourcesCallback(std::function<bool(const QString&, QString*)> callback);
 
+    Q_INVOKABLE bool canImportUrls(const QVariantList& urls) const;
+    Q_INVOKABLE bool importUrls(const QVariantList& urls);
     Q_INVOKABLE bool canImportDroppedUrls(const QVariantList& urls) const;
     Q_INVOKABLE bool importDroppedUrls(const QVariantList& urls);
 

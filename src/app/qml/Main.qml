@@ -70,10 +70,6 @@ LV.ApplicationWindow {
         return LV.ViewModels.get("navigationModeViewModel");
     }
     readonly property var rootPanelViewModelRegistry: panelViewModelRegistry
-    readonly property var rootResourcesImportViewModel: {
-        const _ = applicationWindow.registeredViewModelKeys;
-        return LV.ViewModels.get("resourcesImportViewModel");
-    }
     readonly property var rootSidebarHierarchyViewModel: {
         const _ = applicationWindow.registeredViewModelKeys;
         return LV.ViewModels.get("sidebarHierarchyViewModel");
@@ -99,9 +95,6 @@ LV.ApplicationWindow {
     property int preferredRightPanelWidth: baseRightPanelWidth
     property int preferredSidebarWidth: baseSidebarWidth
     readonly property int rightPanelWidth: hideRightPanel ? 0 : Math.max(minRightPanelWidth, preferredRightPanelWidth)
-    property bool resourceImportDropActive: false
-    property bool resourceImportStatusError: false
-    property string resourceImportStatusText: ""
     readonly property int sidebarWidth: hideSidebar ? 0 : Math.max(minSidebarWidth, preferredSidebarWidth)
     readonly property int statusBarHeight: LV.Theme.controlHeightMd
     readonly property bool onboardingRouteCommitPending: onboardingRouteBootstrapController ? onboardingRouteBootstrapController.routeCommitPending : false
@@ -179,7 +172,6 @@ LV.ApplicationWindow {
         LV.ViewModels.set("bookmarksHierarchyViewModel", bookmarksHierarchyViewModel);
         LV.ViewModels.set("tagsHierarchyViewModel", tagsHierarchyViewModel);
         LV.ViewModels.set("resourcesHierarchyViewModel", resourcesHierarchyViewModel);
-        LV.ViewModels.set("resourcesImportViewModel", resourcesImportViewModel);
         LV.ViewModels.set("progressHierarchyViewModel", progressHierarchyViewModel);
         LV.ViewModels.set("eventHierarchyViewModel", eventHierarchyViewModel);
         LV.ViewModels.set("presetHierarchyViewModel", presetHierarchyViewModel);
@@ -204,26 +196,6 @@ LV.ApplicationWindow {
     }
     function nativeMenuPlaceholderText() {
         return " ";
-    }
-    function droppedUrls(dropEvent) {
-        if (!dropEvent || dropEvent.urls === undefined || dropEvent.urls === null)
-            return [];
-        return dropEvent.urls;
-    }
-    function canAcceptResourceDrop(dropEvent) {
-        if (!applicationWindow.rootResourcesImportViewModel)
-            return false;
-        return applicationWindow.rootResourcesImportViewModel.canImportDroppedUrls(applicationWindow.droppedUrls(dropEvent));
-    }
-    function showResourceImportStatus(message, error) {
-        const text = message !== undefined && message !== null ? String(message).trim() : "";
-        applicationWindow.resourceImportStatusText = text;
-        applicationWindow.resourceImportStatusError = error === true;
-        if (text.length === 0) {
-            resourceImportStatusTimer.stop();
-            return;
-        }
-        resourceImportStatusTimer.restart();
     }
     function showOnboardingWindow() {
         if (applicationWindow.useEmbeddedOnboardingRoute && applicationWindow.onboardingRouteBootstrapController) {
@@ -398,14 +370,6 @@ LV.ApplicationWindow {
         onTriggered: windowInteractions.finalizeResizeRenderQualityPolicy()
     }
     Timer {
-        id: resourceImportStatusTimer
-
-        interval: 3200
-        repeat: false
-
-        onTriggered: applicationWindow.showResourceImportStatus("", false)
-    }
-    Timer {
         id: startupRouteWatchdogTimer
 
         interval: 240
@@ -443,27 +407,6 @@ LV.ApplicationWindow {
         includeInputState: false
         includeUiHit: true
         trigger: "globalPressed"
-    }
-    Connections {
-        target: applicationWindow.rootResourcesImportViewModel
-
-        function onImportCompleted(importedCount) {
-            const count = Number(importedCount) || 0;
-            applicationWindow.showResourceImportStatus(
-                        count === 1
-                        ? "Imported 1 resource into the current hub."
-                        : "Imported " + count + " resources into the current hub.",
-                        false);
-        }
-
-        function onOperationFailed(message) {
-            const text = message !== undefined && message !== null ? String(message).trim() : "";
-            if (text.length > 0)
-                console.warn("[whatson:resources][import] " + text);
-            applicationWindow.showResourceImportStatus(
-                        text.length > 0 ? text : "Resource import failed.",
-                        true);
-        }
     }
     Connections {
         target: applicationWindow.onboardingRouteBootstrapController
@@ -570,89 +513,6 @@ LV.ApplicationWindow {
         }
     }
     Rectangle {
-        anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.18)
-        visible: applicationWindow.resourceImportDropActive
-                 || (applicationWindow.rootResourcesImportViewModel && applicationWindow.rootResourcesImportViewModel.busy)
-        z: 9060
-
-        LV.VStack {
-            anchors.centerIn: parent
-            spacing: LV.Theme.gap4
-            width: Math.max(0, Math.min(parent.width - LV.Theme.gap20 * 2, LV.Theme.gap20 * 16))
-
-            LV.Label {
-                color: LV.Theme.textPrimary
-                horizontalAlignment: Text.AlignHCenter
-                style: header2
-                text: applicationWindow.rootResourcesImportViewModel && applicationWindow.rootResourcesImportViewModel.busy
-                    ? "Importing resources..."
-                    : "Drop files to import resources"
-                width: parent.width
-                wrapMode: Text.WordWrap
-            }
-            LV.Label {
-                color: LV.Theme.descriptionColor
-                horizontalAlignment: Text.AlignHCenter
-                style: description
-                text: applicationWindow.rootResourcesImportViewModel && applicationWindow.rootResourcesImportViewModel.busy
-                    ? "WhatSon is packaging dropped files into the current hub."
-                    : "Dropped files will be copied into the current hub .wsresources storage."
-                width: parent.width
-                wrapMode: Text.WordWrap
-            }
-        }
-    }
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: LV.Theme.gap8
-        color: applicationWindow.resourceImportStatusError ? LV.Theme.danger : LV.Theme.success
-        opacity: 0.95
-        radius: LV.Theme.radiusMd
-        visible: applicationWindow.resourceImportStatusText.length > 0
-        z: 9061
-
-        implicitWidth: Math.min(applicationWindow.width - LV.Theme.gap20 * 2, statusText.implicitWidth + LV.Theme.gap8)
-        implicitHeight: statusText.implicitHeight + LV.Theme.gap4
-        width: implicitWidth
-        height: implicitHeight
-
-        LV.Label {
-            id: statusText
-
-            anchors.centerIn: parent
-            color: LV.Theme.textPrimary
-            horizontalAlignment: Text.AlignHCenter
-            style: description
-            text: applicationWindow.resourceImportStatusText
-            width: Math.max(0, parent.width - LV.Theme.gap6)
-            wrapMode: Text.WordWrap
-        }
-    }
-    DropArea {
-        anchors.fill: parent
-        z: 9062
-
-        onEntered: function (drag) {
-            const accepted = applicationWindow.canAcceptResourceDrop(drag);
-            applicationWindow.resourceImportDropActive = accepted;
-            drag.accepted = accepted;
-        }
-        onExited: applicationWindow.resourceImportDropActive = false
-        onPositionChanged: function (drag) {
-            const accepted = applicationWindow.canAcceptResourceDrop(drag);
-            applicationWindow.resourceImportDropActive = accepted;
-            drag.accepted = accepted;
-        }
-        onDropped: function (drop) {
-            applicationWindow.resourceImportDropActive = false;
-            if (!applicationWindow.rootResourcesImportViewModel || !applicationWindow.canAcceptResourceDrop(drop))
-                return;
-            applicationWindow.rootResourcesImportViewModel.importDroppedUrls(applicationWindow.droppedUrls(drop));
-        }
-    }
-    Rectangle {
         id: embeddedRouteStartupFallback
 
         anchors.fill: parent
@@ -691,8 +551,10 @@ LV.ApplicationWindow {
             : ""
 
         onLoaded: {
-            if (item)
+            if (item) {
                 item.hostWindow = applicationWindow
+                item.resourcesImportViewModel = resourcesImportViewModel
+            }
         }
     }
     Component {

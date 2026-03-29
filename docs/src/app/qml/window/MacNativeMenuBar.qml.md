@@ -1,39 +1,27 @@
 # `src/app/qml/window/MacNativeMenuBar.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
 
-## Source Metadata
-- Source path: `src/app/qml/window/MacNativeMenuBar.qml`
-- Source kind: QML view/component
-- File name: `MacNativeMenuBar.qml`
-- Approximate line count: 57
+This file defines the macOS global menu bar. It currently exposes two user-facing paths.
 
-## QML Surface Snapshot
-- Root type: `Platform.MenuBar`
+- `File > Import File...`
+  Opens a native multi-file picker and forwards the selected local files into the current hub resource import flow.
+- `Window > Onboarding`
+  Reopens the root window onboarding helper.
 
-### Object IDs
-- `root`
+## Required Properties
 
-### Required Properties
-- None detected during scaffold generation.
+- `hostWindow`
+  The root window object used by the `Window` menu actions.
+- `resourcesImportViewModel`
+  The resource import backend that accepts the selected local file URLs.
 
-### Signals
-- None detected during scaffold generation.
+## Import Flow
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+1. The user triggers `Import File...`.
+2. `FileDialog.OpenFiles` collects one or more local files.
+3. On accept, the menu bar calls `resourcesImportViewModel.importUrls(selectedFiles)`.
+4. If the import fails, it reads `lastError` and opens a modal failure dialog.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+Successful imports rely on the resource runtime reload to refresh the UI immediately, so this menu does not emit a
+separate success toast.

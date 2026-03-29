@@ -88,12 +88,13 @@ class ResourcesImportViewModelTest final : public QObject
     Q_OBJECT
 
 private slots:
-    void importDroppedUrls_importsFilesIntoCurrentHubAndRewritesResourcesList();
-    void importDroppedUrls_preservesExistingResourcesAndGeneratesUniqueIds();
-    void importDroppedUrls_withoutCurrentHubPath_fails();
+    void importUrls_importsFilesIntoCurrentHubAndRewritesResourcesList();
+    void importUrls_preservesExistingResourcesAndGeneratesUniqueIds();
+    void importUrls_withoutLocalFiles_failsWithSelectionMessage();
+    void importUrls_withoutCurrentHubPath_fails();
 };
 
-void ResourcesImportViewModelTest::importDroppedUrls_importsFilesIntoCurrentHubAndRewritesResourcesList()
+void ResourcesImportViewModelTest::importUrls_importsFilesIntoCurrentHubAndRewritesResourcesList()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -130,8 +131,8 @@ void ResourcesImportViewModelTest::importDroppedUrls_importsFilesIntoCurrentHubA
         QUrl::fromLocalFile(firstSourceFilePath),
         QUrl::fromLocalFile(secondSourceFilePath)
     };
-    QVERIFY(viewModel.canImportDroppedUrls(droppedUrls));
-    QVERIFY(viewModel.importDroppedUrls(droppedUrls));
+    QVERIFY(viewModel.canImportUrls(droppedUrls));
+    QVERIFY(viewModel.importUrls(droppedUrls));
 
     QCOMPARE(reloadCallCount, 1);
     QCOMPARE(reloadedHubPath, hubPath);
@@ -182,7 +183,7 @@ void ResourcesImportViewModelTest::importDroppedUrls_importsFilesIntoCurrentHubA
         }));
 }
 
-void ResourcesImportViewModelTest::importDroppedUrls_preservesExistingResourcesAndGeneratesUniqueIds()
+void ResourcesImportViewModelTest::importUrls_preservesExistingResourcesAndGeneratesUniqueIds()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -222,7 +223,7 @@ void ResourcesImportViewModelTest::importDroppedUrls_preservesExistingResourcesA
             return true;
         });
 
-    QVERIFY(viewModel.importDroppedUrls({QUrl::fromLocalFile(duplicateSourceFilePath)}));
+    QVERIFY(viewModel.importUrls({QUrl::fromLocalFile(duplicateSourceFilePath)}));
 
     const QString duplicatePackagePath = QDir(resourcesRootPath).filePath(QStringLiteral("poster-2.wsresource"));
     QVERIFY(QFileInfo(duplicatePackagePath).isDir());
@@ -243,7 +244,28 @@ void ResourcesImportViewModelTest::importDroppedUrls_preservesExistingResourcesA
         }));
 }
 
-void ResourcesImportViewModelTest::importDroppedUrls_withoutCurrentHubPath_fails()
+void ResourcesImportViewModelTest::importUrls_withoutLocalFiles_failsWithSelectionMessage()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("ImportHub.wshub"));
+    QVERIFY(createHubShell(hubPath));
+
+    ResourcesImportViewModel viewModel;
+    viewModel.setCurrentHubPath(hubPath);
+
+    QSignalSpy operationFailedSpy(&viewModel, &ResourcesImportViewModel::operationFailed);
+
+    const QVariantList nonLocalUrls{QUrl(QStringLiteral("https://example.com/poster.png"))};
+    QVERIFY(!viewModel.canImportUrls(nonLocalUrls));
+    QVERIFY(!viewModel.importUrls(nonLocalUrls));
+
+    QCOMPARE(operationFailedSpy.count(), 1);
+    QCOMPARE(viewModel.lastError(), QStringLiteral("Select at least one local file to import as a resource."));
+}
+
+void ResourcesImportViewModelTest::importUrls_withoutCurrentHubPath_fails()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -254,8 +276,8 @@ void ResourcesImportViewModelTest::importDroppedUrls_withoutCurrentHubPath_fails
     ResourcesImportViewModel viewModel;
     QSignalSpy operationFailedSpy(&viewModel, &ResourcesImportViewModel::operationFailed);
 
-    QVERIFY(!viewModel.canImportDroppedUrls({QUrl::fromLocalFile(sourceFilePath)}));
-    QVERIFY(!viewModel.importDroppedUrls({QUrl::fromLocalFile(sourceFilePath)}));
+    QVERIFY(!viewModel.canImportUrls({QUrl::fromLocalFile(sourceFilePath)}));
+    QVERIFY(!viewModel.importUrls({QUrl::fromLocalFile(sourceFilePath)}));
 
     QCOMPARE(operationFailedSpy.count(), 1);
     QCOMPARE(viewModel.lastError(), QStringLiteral("Current hub path is empty."));

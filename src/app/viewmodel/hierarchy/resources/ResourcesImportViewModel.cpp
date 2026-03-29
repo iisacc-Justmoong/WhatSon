@@ -407,7 +407,7 @@ void ResourcesImportViewModel::setReloadResourcesCallback(std::function<bool(con
     m_reloadResourcesCallback = std::move(callback);
 }
 
-bool ResourcesImportViewModel::canImportDroppedUrls(const QVariantList& urls) const
+bool ResourcesImportViewModel::canImportUrls(const QVariantList& urls) const
 {
     if (m_busy || m_currentHubPath.trimmed().isEmpty())
     {
@@ -417,12 +417,17 @@ bool ResourcesImportViewModel::canImportDroppedUrls(const QVariantList& urls) co
     return !extractDroppedLocalFiles(urls).isEmpty();
 }
 
-bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
+bool ResourcesImportViewModel::canImportDroppedUrls(const QVariantList& urls) const
+{
+    return canImportUrls(urls);
+}
+
+bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
 {
     WhatSon::Debug::traceSelf(
         this,
         QString::fromLatin1(kScope),
-        QStringLiteral("importDroppedUrls.begin"),
+        QStringLiteral("importUrls.begin"),
         QStringLiteral("urlCount=%1 hubPath=%2").arg(urls.size()).arg(m_currentHubPath));
 
     if (m_busy)
@@ -444,7 +449,7 @@ bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
     const QStringList sourceFiles = extractDroppedLocalFiles(urls);
     if (sourceFiles.isEmpty())
     {
-        const QString errorMessage = QStringLiteral("Drop at least one local file to import as a resource.");
+        const QString errorMessage = QStringLiteral("Select at least one local file to import as a resource.");
         setLastError(errorMessage);
         emit operationFailed(errorMessage);
         return false;
@@ -509,7 +514,7 @@ bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
             WhatSon::Debug::traceSelf(
                 this,
                 QString::fromLatin1(kScope),
-                QStringLiteral("importDroppedUrls.failed"),
+                QStringLiteral("importUrls.failed"),
                 QStringLiteral("reason=%1").arg(importError));
             return false;
         }
@@ -545,7 +550,7 @@ bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
         WhatSon::Debug::traceSelf(
             this,
             QString::fromLatin1(kScope),
-            QStringLiteral("importDroppedUrls.failed"),
+            QStringLiteral("importUrls.failed"),
             QStringLiteral("reason=%1").arg(writeError));
         return false;
     }
@@ -566,7 +571,7 @@ bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
             WhatSon::Debug::traceSelf(
                 this,
                 QString::fromLatin1(kScope),
-                QStringLiteral("importDroppedUrls.reloadFailed"),
+                QStringLiteral("importUrls.reloadFailed"),
                 QStringLiteral("reason=%1").arg(errorMessage));
             return false;
         }
@@ -578,9 +583,14 @@ bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
     WhatSon::Debug::traceSelf(
         this,
         QString::fromLatin1(kScope),
-        QStringLiteral("importDroppedUrls.success"),
+        QStringLiteral("importUrls.success"),
         QStringLiteral("importedCount=%1").arg(importedResourcePaths.size()));
     return true;
+}
+
+bool ResourcesImportViewModel::importDroppedUrls(const QVariantList& urls)
+{
+    return importUrls(urls);
 }
 
 void ResourcesImportViewModel::setBusy(const bool busy)

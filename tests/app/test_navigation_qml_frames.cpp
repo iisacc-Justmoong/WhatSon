@@ -34,6 +34,8 @@ private
     void navigationPanels_mustExposeFrameScopedPanelKeys();
     void mainQml_mustBindTabShortcutForNavigationModeCycling();
     void mainQml_mustBindNewShortcutForNoteCreation();
+    void mainQml_mustNotExposeGlobalResourceDropSurface();
+    void macNativeMenuBar_mustExposeResourceImportAction();
     void navigationBar_mustComposePropertiesFrame();
     void navigationBar_mustSwitchApplicationBarsByNavigationMode();
     void navigationPropertiesFrame_mustComposeSeparatedChildFrames();
@@ -137,6 +139,38 @@ void NavigationQmlFramesTest::mainQml_mustBindNewShortcutForNoteCreation()
     QVERIFY(mainQml.contains(QStringLiteral("return LV.ViewModels.get(\"libraryNoteMutationViewModel\");")));
     QVERIFY(mainQml.contains(QStringLiteral("return LV.ViewModels.get(\"sidebarHierarchyViewModel\");")));
     QVERIFY(mainQml.contains(QStringLiteral("bindOwnedViewModel(applicationWindow.libraryNoteMutationViewId, \"libraryNoteMutationViewModel\")")));
+}
+
+void NavigationQmlFramesTest::mainQml_mustNotExposeGlobalResourceDropSurface()
+{
+    const QString mainQml = readQml(QStringLiteral("Main.qml"));
+
+    QVERIFY(!mainQml.isEmpty());
+    QVERIFY(!mainQml.contains(QStringLiteral("rootResourcesImportViewModel")));
+    QVERIFY(!mainQml.contains(QStringLiteral("resourceImportDropActive")));
+    QVERIFY(!mainQml.contains(QStringLiteral("resourceImportStatusText")));
+    QVERIFY(!mainQml.contains(QStringLiteral("showResourceImportStatus(")));
+    QVERIFY(!mainQml.contains(QStringLiteral("canAcceptResourceDrop(")));
+    QVERIFY(!mainQml.contains(QStringLiteral("droppedUrls(")));
+    QVERIFY(!mainQml.contains(QStringLiteral("LV.ViewModels.set(\"resourcesImportViewModel\", resourcesImportViewModel);")));
+    QVERIFY(!mainQml.contains(QStringLiteral("Drop files to import resources")));
+}
+
+void NavigationQmlFramesTest::macNativeMenuBar_mustExposeResourceImportAction()
+{
+    const QString mainQml = readQml(QStringLiteral("Main.qml"));
+    const QString nativeMenuBar = readQml(QStringLiteral("window/MacNativeMenuBar.qml"));
+
+    QVERIFY(!mainQml.isEmpty());
+    QVERIFY(!nativeMenuBar.isEmpty());
+    QVERIFY(mainQml.contains(QStringLiteral("item.resourcesImportViewModel = resourcesImportViewModel")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("import QtQuick.Dialogs")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("property var resourcesImportViewModel: null")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("text: qsTr(\"Import File...\")")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("fileMode: FileDialog.OpenFiles")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("title: qsTr(\"Import Resource Files\")")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("root.resourcesImportViewModel.importUrls(selectedFiles)")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("importFailureDialog.open()")));
 }
 
 void NavigationQmlFramesTest::navigationBar_mustComposePropertiesFrame()
