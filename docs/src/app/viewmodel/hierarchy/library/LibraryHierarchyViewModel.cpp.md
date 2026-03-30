@@ -65,6 +65,17 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - After an expansion toggle, it must emit `hierarchyModelChanged` so QML bindings driven by
   `hierarchyNodes` (including sidebar footer `Expand All` / `Collapse All`) immediately redraw.
 
+## Hierarchy Count Projection
+
+- `depthItems()` now always emits an integer `count` field for each hierarchy node.
+- System buckets map directly to indexed note collections:
+  - `All Library` -> `allNotes().size()`
+  - `Draft` -> `draftNotes().size()`
+  - `Today` -> `todayNotes().size()`
+- Folder rows emit the number of notes effectively bound to that folder UUID, using the same
+  UUID-first resolution flow as folder-scope note filtering.
+- This keeps the LVRS hierarchy count slot aligned with what users see after selecting the same row.
+
 ## Note Filtering And Assignment
 
 - `resolvedNoteFolderBindings(...)` reconstructs a note's effective folder membership and tracks
@@ -119,6 +130,8 @@ when the rendered first line came from markup that is not preserved as the leadi
   but are not yet resolvable from the current `Folders.wsfolders` hierarchy snapshot. Resolved
   hierarchy paths stay first, but unresolved header-only paths are appended so the note list keeps
   mirroring the current note metadata instead of lagging behind the detail panel.
+- header-only folder tokens are normalized through `normalizeFolderPath(...)` before they are exposed
+  in note-list rows, so legacy values like `/Competitor` are surfaced as `Competitor`.
 
 ## Why This Matters
 

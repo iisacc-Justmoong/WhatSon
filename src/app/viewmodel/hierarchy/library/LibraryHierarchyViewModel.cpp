@@ -2129,10 +2129,64 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
 {
     QVariantList serializedItems;
     serializedItems.reserve(m_items.size());
+
+    QHash<QString, int> folderNoteCountByFolderUuid;
+    if (m_runtimeIndexLoaded && m_foldersHierarchyLoaded)
+    {
+        const FolderHierarchyLookup lookup = buildFolderHierarchyLookup(m_items);
+        folderNoteCountByFolderUuid.reserve(m_items.size());
+
+        for (const LibraryHierarchyItem& item : m_items)
+        {
+            const QString folderUuid = normalizeFolderUuid(item.folderUuid);
+            if (!folderUuid.isEmpty() && !folderNoteCountByFolderUuid.contains(folderUuid))
+            {
+                folderNoteCountByFolderUuid.insert(folderUuid, 0);
+            }
+        }
+
+        for (const LibraryNoteRecord& note : m_indexedState.allNotes())
+        {
+            const QStringList effectiveFolderUuids = effectiveNoteFolderUuids(note, lookup);
+            for (const QString& folderUuid : effectiveFolderUuids)
+            {
+                auto countIt = folderNoteCountByFolderUuid.find(folderUuid);
+                if (countIt != folderNoteCountByFolderUuid.end())
+                {
+                    ++countIt.value();
+                }
+            }
+        }
+    }
+
+    const auto noteCountForItem = [this, &folderNoteCountByFolderUuid](const LibraryHierarchyItem& item) -> int
+    {
+        if (!m_runtimeIndexLoaded)
+        {
+            return 0;
+        }
+
+        switch (item.systemBucket)
+        {
+        case LibraryHierarchyItem::SystemBucket::All:
+            return m_indexedState.allNotes().size();
+        case LibraryHierarchyItem::SystemBucket::Draft:
+            return m_indexedState.draftNotes().size();
+        case LibraryHierarchyItem::SystemBucket::Today:
+            return m_indexedState.todayNotes().size();
+        case LibraryHierarchyItem::SystemBucket::None:
+            break;
+        }
+
+        const QString folderUuid = normalizeFolderUuid(item.folderUuid);
+        return folderUuid.isEmpty() ? 0 : folderNoteCountByFolderUuid.value(folderUuid, 0);
+    };
+
     for (int index = 0; index < m_items.size(); ++index)
     {
         const LibraryHierarchyItem& item = m_items.at(index);
         const bool movable = canMoveFolder(index);
+        const int noteCount = std::max(0, noteCountForItem(item));
 
         serializedItems.push_back(QVariantMap{
             {"label", item.label},
@@ -2148,7 +2202,8 @@ QVariantList LibraryHierarchyViewModel::depthItems() const
             {"dragAllowed", movable},
             {"movable", movable},
             {"dragLocked", !movable},
-            {"showChevron", item.showChevron}
+            {"showChevron", item.showChevron},
+            {"count", noteCount}
         });
     }
     return serializedItems;

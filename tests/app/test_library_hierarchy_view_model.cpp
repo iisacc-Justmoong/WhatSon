@@ -1559,6 +1559,38 @@ void LibraryHierarchyViewModelTest::loadFromWshub_filtersNoteListBySelectedFolde
     QVERIFY(brandIndex >= 0);
     QVERIFY(allIndex >= 0);
 
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    auto countByLabel = [&hierarchyModel](const QString& label) -> int
+    {
+        for (const QVariant& nodeValue : hierarchyModel)
+        {
+            const QVariantMap node = nodeValue.toMap();
+            if (node.value(QStringLiteral("label")).toString() != label)
+            {
+                continue;
+            }
+            bool ok = false;
+            const int countValue = node.value(QStringLiteral("count")).toInt(&ok);
+            return ok ? countValue : -1;
+        }
+        return -1;
+    };
+
+    for (const QVariant& nodeValue : hierarchyModel)
+    {
+        const QVariantMap node = nodeValue.toMap();
+        QVERIFY(node.contains(QStringLiteral("count")));
+        bool ok = false;
+        const int countValue = node.value(QStringLiteral("count")).toInt(&ok);
+        QVERIFY(ok);
+        QVERIFY(countValue >= 0);
+    }
+
+    QCOMPARE(countByLabel(QStringLiteral("All Library")), 3);
+    QCOMPARE(countByLabel(QStringLiteral("Research")), 0);
+    QCOMPARE(countByLabel(QStringLiteral("Competitor")), 1);
+    QCOMPARE(countByLabel(QStringLiteral("Brand")), 1);
+
     viewModel.setSelectedIndex(allIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
 
@@ -2017,10 +2049,16 @@ loadFromWshub_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolde
         viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
                  .toString(),
         QStringLiteral("note-a"));
-    QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
-                 .toStringList(),
-        QStringList({QStringLiteral("Research/Competitor")}));
+    const QStringList firstCompetitorFolders =
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::FoldersRole)
+            .toStringList();
+    QCOMPARE(firstCompetitorFolders.size(), 3);
+    QVERIFY(firstCompetitorFolders.contains(QStringLiteral("Research/Competitor")));
+    QVERIFY(firstCompetitorFolders.contains(QStringLiteral("Research")));
+    QVERIFY(firstCompetitorFolders.contains(QStringLiteral("Competitor")));
+    QVERIFY(!firstCompetitorFolders.contains(QStringLiteral("/Competitor")));
 
     viewModel.setSelectedIndex(secondCompetitorIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
@@ -2028,10 +2066,16 @@ loadFromWshub_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLeafFolde
         viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
                  .toString(),
         QStringLiteral("note-b"));
-    QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
-                 .toStringList(),
-        QStringList({QStringLiteral("Operations/Competitor")}));
+    const QStringList secondCompetitorFolders =
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::FoldersRole)
+            .toStringList();
+    QCOMPARE(secondCompetitorFolders.size(), 3);
+    QVERIFY(secondCompetitorFolders.contains(QStringLiteral("Operations/Competitor")));
+    QVERIFY(secondCompetitorFolders.contains(QStringLiteral("Operations")));
+    QVERIFY(secondCompetitorFolders.contains(QStringLiteral("Competitor")));
+    QVERIFY(!secondCompetitorFolders.contains(QStringLiteral("/Competitor")));
 }
 
 void LibraryHierarchyViewModelTest::applyRuntimeSnapshot_preservesSelectedFolderScopeAcrossRefresh()
@@ -2730,10 +2774,16 @@ applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLe
         viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
                  .toString(),
         QStringLiteral("note-a"));
-    QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
-                 .toStringList(),
-        QStringList({QStringLiteral("Research/Competitor")}));
+    const QStringList firstSnapshotCompetitorFolders =
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::FoldersRole)
+            .toStringList();
+    QCOMPARE(firstSnapshotCompetitorFolders.size(), 3);
+    QVERIFY(firstSnapshotCompetitorFolders.contains(QStringLiteral("Research/Competitor")));
+    QVERIFY(firstSnapshotCompetitorFolders.contains(QStringLiteral("Research")));
+    QVERIFY(firstSnapshotCompetitorFolders.contains(QStringLiteral("Competitor")));
+    QVERIFY(!firstSnapshotCompetitorFolders.contains(QStringLiteral("/Competitor")));
 
     viewModel.setSelectedIndex(secondCompetitorIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
@@ -2741,10 +2791,16 @@ applyRuntimeSnapshot_resolvesNestedFolderSelection_whenHeadersStoreAncestorAndLe
         viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::IdRole)
                  .toString(),
         QStringLiteral("note-b"));
-    QCOMPARE(
-        viewModel.noteListModel()->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::FoldersRole)
-                 .toStringList(),
-        QStringList({QStringLiteral("Operations/Competitor")}));
+    const QStringList secondSnapshotCompetitorFolders =
+        viewModel.noteListModel()->data(
+                      viewModel.noteListModel()->index(0, 0),
+                      LibraryNoteListModel::FoldersRole)
+            .toStringList();
+    QCOMPARE(secondSnapshotCompetitorFolders.size(), 3);
+    QVERIFY(secondSnapshotCompetitorFolders.contains(QStringLiteral("Operations/Competitor")));
+    QVERIFY(secondSnapshotCompetitorFolders.contains(QStringLiteral("Operations")));
+    QVERIFY(secondSnapshotCompetitorFolders.contains(QStringLiteral("Competitor")));
+    QVERIFY(!secondSnapshotCompetitorFolders.contains(QStringLiteral("/Competitor")));
 }
 
 void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshesDraftSelection()
