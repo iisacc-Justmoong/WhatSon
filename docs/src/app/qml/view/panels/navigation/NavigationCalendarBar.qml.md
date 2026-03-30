@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/navigation/NavigationCalendarBar.qml`
 - Source kind: QML view/component
 - File name: `NavigationCalendarBar.qml`
-- Approximate line count: 45
+- Approximate line count: 47
 
 ## QML Surface Snapshot
 - Root type: `LV.HStack`
@@ -25,7 +25,11 @@
 - None detected during scaffold generation.
 
 ### Signals
-- `viewHookRequested`
+- `viewHookRequested(string reason)`
+
+## Interaction Contract
+- The year icon (`yearlyCalButton`) emits `open-yearly-calendar` through `requestViewHook(...)`.
+- The signal now carries the hook reason string so parent wrappers can route the action into content overlays.
 
 ## Intended Detailed Sections
 - Responsibility and business role

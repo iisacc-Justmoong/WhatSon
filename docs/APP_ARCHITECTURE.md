@@ -53,6 +53,11 @@ The compact control menu anchors from the trigger's bottom-right point. On the m
 
 Action-only control entries disable the default LVRS shortcut placeholder column so icon-only mobile actions keep their full available label width.
 
+Desktop navigation edge actions can toggle the hierarchy sidebar and detail panel while preserving the stored preferred widths.
+
+The yearly calendar action from navigation now routes into the content surface and opens the existing year-calendar
+view as an editor-area overlay instead of leaving the action as a passive hook trace.
+
 ## Hub Sync
 `WhatSonHubSyncController` is a filesystem watcher plus debounce/timer coordinator for the mounted `.wshub`.
 

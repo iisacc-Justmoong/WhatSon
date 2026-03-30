@@ -12,6 +12,7 @@ class MainShortcutTests(unittest.TestCase):
         controller_text = (
             REPO_ROOT / "src/app/qml/MainWindowInteractionController.qml"
         ).read_text(encoding="utf-8")
+        app_main_text = (REPO_ROOT / "src/app/main.cpp").read_text(encoding="utf-8")
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
 
@@ -38,6 +39,11 @@ class MainShortcutTests(unittest.TestCase):
         self.assertIn('addNewPanelViewModel.requestViewModelHook("create-note");', controller_text)
         self.assertIn("setActiveHierarchyIndex(interactionController.libraryHierarchyIndex);", controller_text)
         self.assertIn("return Boolean(noteMutationViewModel.createEmptyNote());", controller_text)
+        self.assertIn('if (reason.trimmed() != QStringLiteral("create-note"))', app_main_text)
+        self.assertIn('QStringLiteral("navigation.NavigationAddNewBar")', app_main_text)
+        self.assertIn('QStringLiteral("navigation.NavigationApplicationControlBar")', app_main_text)
+        self.assertIn('QStringLiteral("navigation.NavigationApplicationViewBar")', app_main_text)
+        self.assertIn('QStringLiteral("navigation.NavigationApplicationEditBar")', app_main_text)
         self.assertIn("global platform-native New shortcut", readme_text)
         self.assertIn("desktop-only ownership-aware New shortcut", readme_text)
         self.assertIn("Main.qml` binds the desktop-only New shortcut", architecture_text)

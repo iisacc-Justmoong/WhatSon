@@ -6,13 +6,13 @@ LV.HStack {
 
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationCalendarBar") : null
 
-    signal viewHookRequested
+    signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
-        viewHookRequested();
+        viewHookRequested(hookReason);
     }
 
     spacing: 2
@@ -41,5 +41,7 @@ LV.HStack {
         id: yearlyCalButton
 
         iconName: "runshowCurrentFrame"
+
+        onClicked: calendarBar.requestViewHook("open-yearly-calendar")
     }
 }

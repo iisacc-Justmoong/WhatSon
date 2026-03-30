@@ -40,6 +40,14 @@ Rectangle {
     signal toggleDetailPanelRequested
     signal toggleSidebarRequested
     signal viewHookRequested
+    signal yearCalendarRequested
+
+    function handleApplicationBarViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        navigationBar.requestViewHook(hookReason);
+        if (hookReason.indexOf("yearly-calendar") >= 0)
+            navigationBar.yearCalendarRequested();
+    }
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -195,6 +203,9 @@ Rectangle {
             detailPanelCollapsed: navigationBar.detailPanelCollapsed
 
             onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
+            onViewHookRequested: function (reason) {
+                navigationBar.handleApplicationBarViewHook(reason);
+            }
         }
     }
     Component {
@@ -205,6 +216,9 @@ Rectangle {
             detailPanelCollapsed: navigationBar.detailPanelCollapsed
 
             onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
+            onViewHookRequested: function (reason) {
+                navigationBar.handleApplicationBarViewHook(reason);
+            }
         }
     }
     Component {

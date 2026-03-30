@@ -61,8 +61,12 @@ Item {
     property string statusSearchText: ""
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property var windowInteractions: null
+    property bool yearCalendarOverlayVisible: false
+    property var yearCalendarViewModel: null
 
     signal viewHookRequested
+    signal yearCalendarRequested
+    signal yearCalendarOverlayDismissRequested
 
     function backSwipeViewportWidth() {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
@@ -461,6 +465,7 @@ Item {
             mobileHierarchyPage.statusSearchText = text;
         }
         onViewHookRequested: mobileHierarchyPage.requestViewHook()
+        onYearCalendarRequested: mobileHierarchyPage.yearCalendarRequested()
     }
     LV.PageTransitionController {
         id: pageTransitionController
@@ -607,8 +612,11 @@ Item {
             lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
+            yearCalendarOverlayVisible: mobileHierarchyPage.yearCalendarOverlayVisible
+            yearCalendarViewModel: mobileHierarchyPage.yearCalendarViewModel
 
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
+            onYearCalendarOverlayCloseRequested: mobileHierarchyPage.yearCalendarOverlayDismissRequested()
         }
     }
 }

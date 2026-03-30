@@ -43,6 +43,8 @@ private
     void navigationChildFrames_mustBindPanelViewModelContracts();
     void navigationSelectionBars_mustUseContextMenuCombos();
     void navigationApplicationControlBar_mustMatchFigmaChildOrder();
+    void navigationApplicationViewAndEditBars_mustMatchFigmaChildOrder();
+    void navigationYearCalendar_mustOpenContentOverlay();
     void hierarchySidebar_mustReceiveSharedHorizontalInset();
 };
 
@@ -207,16 +209,24 @@ void NavigationQmlFramesTest::navigationBar_mustSwitchApplicationBarsByNavigatio
         QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
     const QString applicationEditBar = readQml(
         QStringLiteral("view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
+    const QString applicationCalendarBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationCalendarBar.qml"));
+    const QString applicationPreferenceBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationPreferenceBar.qml"));
 
     QVERIFY(!navigationBarLayout.isEmpty());
     QVERIFY(!applicationViewBar.isEmpty());
     QVERIFY(!applicationEditBar.isEmpty());
+    QVERIFY(!applicationCalendarBar.isEmpty());
+    QVERIFY(!applicationPreferenceBar.isEmpty());
     QVERIFY(navigationBarLayout.contains(QStringLiteral("readonly property string activeNavigationModeName")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationViewMode.NavigationApplicationViewBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationEditMode.NavigationApplicationEditBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationControlMode.NavigationApplicationControlBar {")));
-    QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationShared.NavigationPreferenceBar {")));
-    QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationShared.NavigationPreferenceBar {")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationShared.NavigationApplicationPreferenceBar {")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationShared.NavigationApplicationPreferenceBar {")));
+    QVERIFY(applicationCalendarBar.contains(QStringLiteral("NavigationCalendarBar {")));
+    QVERIFY(applicationPreferenceBar.contains(QStringLiteral("NavigationPreferenceBar {")));
 }
 
 void NavigationQmlFramesTest::navigationPropertiesFrame_mustComposeSeparatedChildFrames()
@@ -365,6 +375,175 @@ void NavigationQmlFramesTest::navigationApplicationControlBar_mustMatchFigmaChil
     QVERIFY(applicationControlBar.contains(
         QStringLiteral("noteListApplicationControlMenuButton.height + applicationControlBar.menuYOffset")));
     QVERIFY(!applicationControlBar.contains(QStringLiteral("openFor(applicationControlMenuButton, 0,")));
+}
+
+void NavigationQmlFramesTest::navigationApplicationViewAndEditBars_mustMatchFigmaChildOrder()
+{
+    const QString applicationViewBar = readQml(
+        QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
+    const QString applicationEditBar = readQml(
+        QStringLiteral("view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
+    const QString applicationCalendarBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationCalendarBar.qml"));
+    const QString applicationAddNewBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationAddNewBar.qml"));
+    const QString applicationPreferenceBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationApplicationPreferenceBar.qml"));
+
+    QVERIFY(!applicationViewBar.isEmpty());
+    QVERIFY(!applicationEditBar.isEmpty());
+    QVERIFY(!applicationCalendarBar.isEmpty());
+    QVERIFY(!applicationAddNewBar.isEmpty());
+    QVERIFY(!applicationPreferenceBar.isEmpty());
+
+    const int viewCalendarIndex = applicationViewBar.indexOf(QStringLiteral("NavigationShared.NavigationApplicationCalendarBar {"));
+    const int viewAddNewIndex = applicationViewBar.indexOf(QStringLiteral("NavigationShared.NavigationApplicationAddNewBar {"));
+    const int viewPreferenceIndex = applicationViewBar.indexOf(QStringLiteral("NavigationShared.NavigationApplicationPreferenceBar {"));
+    QVERIFY(viewCalendarIndex >= 0);
+    QVERIFY(viewAddNewIndex >= 0);
+    QVERIFY(viewPreferenceIndex >= 0);
+    QVERIFY(viewCalendarIndex < viewAddNewIndex);
+    QVERIFY(viewAddNewIndex < viewPreferenceIndex);
+    QVERIFY(applicationViewBar.contains(QStringLiteral("LV.IconMenuButton {")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("id: applicationViewContextMenu")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("iconName: \"toolWindowCheckDetails\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"toolWindowCheckDetails\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"newUIlightThemeSelected\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"table\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"pnpm\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"runshowCurrentFrame\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"addFile\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"audioToAudio\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"columnIndex\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"Todo List\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"Daily Calendar\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"Weekly Calendar\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"Monthly Calendar\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"Yearly Calendar\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"New File\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"label\": \"Preferences\"")));
+    QVERIFY(applicationViewBar.contains(
+        QStringLiteral("applicationViewBar.detailPanelCollapsed ? \"Show Detail Panel\" : \"Hide Detail Panel\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("leftPadding: LV.Theme.gap2")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("rightPadding: LV.Theme.gap4")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("spacing: LV.Theme.gapNone")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("applicationViewMenuButton.width")));
+    QVERIFY(applicationViewBar.contains(
+        QStringLiteral("applicationViewMenuButton.height + applicationViewBar.menuYOffset")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("\"keyVisible\": false")));
+    QVERIFY(!applicationViewBar.contains(QStringLiteral("NavigationAppControlBar {")));
+    QVERIFY(!applicationViewBar.contains(QStringLiteral("NavigationExportBar {")));
+    QVERIFY(applicationCalendarBar.contains(QStringLiteral("NavigationCalendarBar {")));
+    QVERIFY(applicationAddNewBar.contains(QStringLiteral("NavigationAddNewBar {")));
+    QVERIFY(applicationPreferenceBar.contains(QStringLiteral("NavigationPreferenceBar {")));
+
+    const int editCalendarIndex = applicationEditBar.indexOf(QStringLiteral("NavigationShared.NavigationApplicationCalendarBar {"));
+    const int editAddNewIndex = applicationEditBar.indexOf(QStringLiteral("NavigationShared.NavigationApplicationAddNewBar {"));
+    const int editPreferenceIndex = applicationEditBar.indexOf(QStringLiteral("NavigationShared.NavigationApplicationPreferenceBar {"));
+    QVERIFY(editCalendarIndex >= 0);
+    QVERIFY(editAddNewIndex >= 0);
+    QVERIFY(editPreferenceIndex >= 0);
+    QVERIFY(editCalendarIndex < editAddNewIndex);
+    QVERIFY(editAddNewIndex < editPreferenceIndex);
+    QVERIFY(applicationEditBar.contains(QStringLiteral("LV.IconMenuButton {")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("id: applicationEditContextMenu")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("iconName: \"toolWindowCheckDetails\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"toolWindowCheckDetails\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"newUIlightThemeSelected\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"table\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"pnpm\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"runshowCurrentFrame\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"addFile\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"audioToAudio\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"columnIndex\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"Todo List\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"Daily Calendar\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"Weekly Calendar\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"Monthly Calendar\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"Yearly Calendar\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"New File\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"label\": \"Preferences\"")));
+    QVERIFY(applicationEditBar.contains(
+        QStringLiteral("applicationEditBar.detailPanelCollapsed ? \"Show Detail Panel\" : \"Hide Detail Panel\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("leftPadding: LV.Theme.gap2")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("rightPadding: LV.Theme.gap4")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("spacing: LV.Theme.gapNone")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("applicationEditMenuButton.width")));
+    QVERIFY(applicationEditBar.contains(
+        QStringLiteral("applicationEditMenuButton.height + applicationEditBar.menuYOffset")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("\"keyVisible\": false")));
+    QVERIFY(!applicationEditBar.contains(QStringLiteral("NavigationAppControlBar {")));
+    QVERIFY(!applicationEditBar.contains(QStringLiteral("NavigationExportBar {")));
+    QVERIFY(applicationCalendarBar.contains(QStringLiteral("NavigationCalendarBar {")));
+    QVERIFY(applicationAddNewBar.contains(QStringLiteral("NavigationAddNewBar {")));
+    QVERIFY(applicationPreferenceBar.contains(QStringLiteral("NavigationPreferenceBar {")));
+}
+
+void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
+{
+    const QString mainQml = readQml(QStringLiteral("Main.qml"));
+    const QString navigationBarLayout = readQml(QStringLiteral("view/panels/NavigationBarLayout.qml"));
+    const QString applicationViewBar = readQml(
+        QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
+    const QString applicationEditBar = readQml(
+        QStringLiteral("view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
+    const QString navigationCalendarBar = readQml(
+        QStringLiteral("view/panels/navigation/NavigationCalendarBar.qml"));
+    const QString bodyLayout = readQml(QStringLiteral("view/panels/BodyLayout.qml"));
+    const QString contentViewLayout = readQml(QStringLiteral("view/panels/ContentViewLayout.qml"));
+    const QString mobileScaffold = readQml(QStringLiteral("view/mobile/MobilePageScaffold.qml"));
+    const QString mobileHierarchyPage = readQml(QStringLiteral("view/mobile/pages/MobileHierarchyPage.qml"));
+
+    QVERIFY(!mainQml.isEmpty());
+    QVERIFY(!navigationBarLayout.isEmpty());
+    QVERIFY(!applicationViewBar.isEmpty());
+    QVERIFY(!applicationEditBar.isEmpty());
+    QVERIFY(!navigationCalendarBar.isEmpty());
+    QVERIFY(!bodyLayout.isEmpty());
+    QVERIFY(!contentViewLayout.isEmpty());
+    QVERIFY(!mobileScaffold.isEmpty());
+    QVERIFY(!mobileHierarchyPage.isEmpty());
+
+    QVERIFY(applicationViewBar.contains(QStringLiteral("signal viewHookRequested(string reason)")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("signal viewHookRequested(string reason)")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("onViewHookRequested: function (reason)")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("onViewHookRequested: function (reason)")));
+    QVERIFY(navigationCalendarBar.contains(QStringLiteral("signal viewHookRequested(string reason)")));
+    QVERIFY(navigationCalendarBar.contains(QStringLiteral(
+        "onClicked: calendarBar.requestViewHook(\"open-yearly-calendar\")")));
+
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("signal yearCalendarRequested")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "if (hookReason.indexOf(\"yearly-calendar\") >= 0)")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationBar.yearCalendarRequested();")));
+
+    QVERIFY(mainQml.contains(QStringLiteral("property bool yearCalendarOverlayVisible: false")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onYearCalendarRequested: applicationWindow.yearCalendarOverlayVisible = true")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false")));
+
+    QVERIFY(bodyLayout.contains(QStringLiteral("property bool yearCalendarOverlayVisible: false")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property var yearCalendarViewModel: null")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("signal yearCalendarOverlayDismissRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("import \"../calendar\" as CalendarView")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("signal yearCalendarOverlayCloseRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.YearCalendarPage {")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("yearCalendarViewModel: contentViewLayout.yearCalendarViewModel")));
+
+    QVERIFY(mobileScaffold.contains(QStringLiteral("signal yearCalendarRequested")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral(
+        "onYearCalendarRequested: mobilePageScaffold.yearCalendarRequested()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral("signal yearCalendarRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "signal yearCalendarOverlayDismissRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "yearCalendarOverlayVisible: mobileHierarchyPage.yearCalendarOverlayVisible")));
 }
 
 void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset()

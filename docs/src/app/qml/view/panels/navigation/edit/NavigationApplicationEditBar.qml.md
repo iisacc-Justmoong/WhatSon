@@ -1,40 +1,45 @@
 # `src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+`NavigationApplicationEditBar.qml` renders the right-side application toolbar cluster when the
+navigation mode is `Edit`.
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml`
-- Source kind: QML view/component
-- File name: `NavigationApplicationEditBar.qml`
-- Approximate line count: 31
+The Figma node mapping is:
+- `149:4102` `ApplicationEditBar`
+- child order: `CalendarBar -> AddNewBar -> PreferenceBar`
 
-## QML Surface Snapshot
-- Root type: `LV.HStack`
+## Layout Contract
+- Root object: `Item`
+- Public mode switch: `property bool compactMode`
+- Full mode (`compactMode: false`):
+  - `NavigationApplicationCalendarBar`
+  - `NavigationApplicationAddNewBar`
+  - `NavigationApplicationPreferenceBar`
+- Compact mode (`compactMode: true`):
+  - one `LV.IconMenuButton` trigger
+  - one `LV.ContextMenu` rendered on `Controls.Overlay.overlay`
 
-### Object IDs
-- `applicationEditBar`
+## Interaction Contract
+- Exposes `toggleDetailPanelRequested` and forwards it from `NavigationPreferenceBar`.
+- Exposes `viewHookRequested` and forwards mode-level hook reasons through
+  `panelViewModel.requestViewModelHook(reason)`.
+- Full-mode `NavigationApplicationCalendarBar` hooks are now forwarded back into
+  `requestViewHook(reason)`, so year-calendar clicks in icon mode and compact-menu mode share the
+  same reason pipeline.
+- Compact menu mirrors full-mode default tools:
+  - Todo / Daily / Weekly / Monthly / Yearly calendar entries
+  - New File
+  - Preferences
+  - Show/Hide Detail Panel
 
-### Required Properties
-- None detected during scaffold generation.
+## Panel ViewModel Binding
+- Panel key: `navigation.NavigationApplicationEditBar`
+- Binding: `panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar")`
 
-### Signals
-- `toggleDetailPanelRequested`
-- `viewHookRequested`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Notes
+- Full-mode child frames reuse shared wrappers from `navigation/` so view and edit modes avoid
+  duplicated mode-local wrapper files.
+- Compact trigger follows the shared menu-button padding contract used by control mode:
+  `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
+- The detail-panel menu label is dynamic:
+  `"Show Detail Panel"` when collapsed, `"Hide Detail Panel"` otherwise.

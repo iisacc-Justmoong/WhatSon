@@ -98,6 +98,37 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("toggle the hierarchy sidebar and detail panel", architecture_text)
         self.assertIn("preserving the stored preferred widths", architecture_text)
 
+    def test_year_calendar_navigation_opens_content_overlay_contract(self) -> None:
+        main_text = (REPO_ROOT / "src/app/qml/Main.qml").read_text(encoding="utf-8")
+        nav_bar_text = (
+            REPO_ROOT / "src/app/qml/view/panels/NavigationBarLayout.qml"
+        ).read_text(encoding="utf-8")
+        calendar_bar_text = (
+            REPO_ROOT / "src/app/qml/view/panels/navigation/NavigationCalendarBar.qml"
+        ).read_text(encoding="utf-8")
+        content_text = (
+            REPO_ROOT / "src/app/qml/view/panels/ContentViewLayout.qml"
+        ).read_text(encoding="utf-8")
+        app_main_text = (REPO_ROOT / "src/app/main.cpp").read_text(encoding="utf-8")
+        readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
+
+        self.assertIn("signal yearCalendarRequested", nav_bar_text)
+        self.assertIn("hookReason.indexOf(\"yearly-calendar\") >= 0", nav_bar_text)
+        self.assertIn('calendarBar.requestViewHook("open-yearly-calendar")', calendar_bar_text)
+
+        self.assertIn("property bool yearCalendarOverlayVisible: false", main_text)
+        self.assertIn("rootYearCalendarViewModel", main_text)
+        self.assertIn("onYearCalendarRequested: applicationWindow.yearCalendarOverlayVisible = true", main_text)
+        self.assertIn("onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false", main_text)
+        self.assertIn('import "../calendar" as CalendarView', content_text)
+        self.assertIn("CalendarView.YearCalendarPage {", content_text)
+        self.assertIn("signal yearCalendarOverlayCloseRequested", content_text)
+
+        self.assertIn('setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);', app_main_text)
+        self.assertIn("yearly calendar overlay", readme_text)
+        self.assertIn("yearly calendar action from navigation", architecture_text)
+
 
 if __name__ == "__main__":
     unittest.main()

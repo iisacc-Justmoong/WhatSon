@@ -34,6 +34,7 @@ Rectangle {
     signal statusSearchSubmitted(string text)
     signal statusSearchTextEdited(string text)
     signal viewHookRequested
+    signal yearCalendarRequested
 
     function requestViewHook() {
         viewHookRequested();
@@ -63,6 +64,7 @@ Rectangle {
             onCompactAddFolderRequested: mobilePageScaffold.compactAddFolderRequested()
             onCompactLeadingActionRequested: mobilePageScaffold.compactLeadingActionRequested()
             onViewHookRequested: mobilePageScaffold.requestViewHook()
+            onYearCalendarRequested: mobilePageScaffold.yearCalendarRequested()
         }
         LV.PageRouter {
             id: bodyRouter

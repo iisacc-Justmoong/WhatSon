@@ -170,6 +170,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/view/panels/ContentViewLayout.qml` is now a panel-level wrapper only; the actual Figma
   `ContentsDisplayView` editor implementation lives in
   `src/app/qml/view/content/editor/ContentsDisplayView.qml`.
+- The navigation yearly calendar action now opens a yearly calendar overlay directly on top of the content editor
+  surface, and the overlay is backed by the shared `yearCalendarViewModel` context object from `main.cpp`.
 - The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
   payload extracted from `.wsnbody` `<body>` content.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to
@@ -736,9 +738,17 @@ for hub/note hierarchy payloads.
   `NavigationAddNewBar.qml` and `NavigationPreferenceBar.qml` remain at the navigation root.
 - `navigation/control/NavigationApplicationControlBar.qml` follows the Figma child order `Calendar -> AppControl -> Export -> AddNew ->
   Preference`, keeping the create control on the right side of the control-mode application cluster.
-- `navigation/view/NavigationApplicationViewBar.qml` and
-  `navigation/edit/NavigationApplicationEditBar.qml` mount the same baseline `NavigationPreferenceBar.qml` used by the
-  control mode until mode-specific tools are added.
+- `navigation/view/NavigationApplicationViewBar.qml` follows Figma node `149:4000` and now composes
+  `NavigationCalendarBar -> NavigationAddNewBar -> NavigationPreferenceBar` in desktop/full mode.
+- `navigation/edit/NavigationApplicationEditBar.qml` follows Figma node `149:4102` and now composes
+  `NavigationCalendarBar -> NavigationAddNewBar -> NavigationPreferenceBar` in desktop/full mode.
+- View/edit child frames share one set of common wrappers under `navigation/` to avoid duplicate mode-local files:
+  `NavigationApplicationCalendarBar.qml`, `NavigationApplicationAddNewBar.qml`, and
+  `NavigationApplicationPreferenceBar.qml`.
+- Both view/edit bars use the same compact-mode shell pattern as control mode (`Loader` + `LV.IconMenuButton` +
+  `LV.ContextMenu`) so mobile/tight layouts still expose the mode tools through a single overflow trigger.
+- View/edit compact menus include calendar scope actions, `New File`, `Preferences`, and dynamic
+  `Show/Hide Detail Panel` entries while preserving `keyVisible: false` action rows.
 - `Main.qml` binds a global `Tab` shortcut that cycles `View/Edit/Control/Presentation` only when no text input or
   text editor currently owns focus.
 - `Main.qml` also binds a global platform-native New shortcut (`Cmd+N` on macOS, `Ctrl+N` elsewhere), but that

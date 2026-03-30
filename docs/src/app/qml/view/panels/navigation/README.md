@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/navigation`
 - Child directories: 3
-- Child files: 7
+- Child files: 10
 
 ## Child Directories
 - `control`
@@ -16,6 +16,9 @@
 
 ## Child Files
 - `NavigationAddNewBar.qml`
+- `NavigationApplicationAddNewBar.qml`
+- `NavigationApplicationCalendarBar.qml`
+- `NavigationApplicationPreferenceBar.qml`
 - `NavigationCalendarBar.qml`
 - `NavigationEditorViewBar.qml`
 - `NavigationInformationBar.qml`

@@ -74,6 +74,7 @@ LV.ApplicationWindow {
         const _ = applicationWindow.registeredViewModelKeys;
         return LV.ViewModels.get("sidebarHierarchyViewModel");
     }
+    readonly property var rootYearCalendarViewModel: typeof yearCalendarViewModel !== "undefined" ? yearCalendarViewModel : null
     readonly property int minSidebarWidth: {
         var toolbarWidth = (typeof hierarchyToolbarWidth === "number" && isFinite(hierarchyToolbarWidth)) ? hierarchyToolbarWidth : (LV.Theme.gap20 * 7 + LV.Theme.gap12);
         return toolbarWidth;
@@ -155,6 +156,7 @@ LV.ApplicationWindow {
             path: applicationWindow.workspaceRoutePath,
             component: workspacePageComponent
         })
+    property bool yearCalendarOverlayVisible: false
     property int startupRouteRecoveryAttempts: 0
     property string startupRouteRecoveryReason: ""
 
@@ -639,6 +641,7 @@ LV.ApplicationWindow {
 
                     onToggleDetailPanelRequested: applicationWindow.toggleDetailPanelVisibility()
                     onToggleSidebarRequested: applicationWindow.toggleSidebarVisibility()
+                    onYearCalendarRequested: applicationWindow.yearCalendarOverlayVisible = true
                 }
                 BodyPanelView.BodyLayout {
                     id: hStack
@@ -668,6 +671,8 @@ LV.ApplicationWindow {
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
+                    yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
+                    yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
 
                     onDrawerHeightDragRequested: function (value) {
                         if (value !== applicationWindow.preferredDrawerHeight)
@@ -685,6 +690,7 @@ LV.ApplicationWindow {
                         if (value !== applicationWindow.preferredSidebarWidth)
                             applicationWindow.preferredSidebarWidth = value;
                     }
+                    onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
                 }
             }
         }
@@ -702,6 +708,11 @@ LV.ApplicationWindow {
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
             windowInteractions: windowInteractions
+            yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
+            yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
+
+            onYearCalendarRequested: applicationWindow.yearCalendarOverlayVisible = true
+            onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
         }
     }
     WindowView.Onboarding {

@@ -15,6 +15,7 @@
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/calendar/YearCalendarViewModel.hpp"
 #include "viewmodel/onboarding/OnboardingHubController.hpp"
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
 #include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
@@ -208,6 +209,7 @@ int main(int argc, char* argv[])
     NavigationModeViewModel navigationModeViewModel;
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
+    YearCalendarViewModel yearCalendarViewModel;
     WhatSonHubRuntimeStore hubRuntimeStore;
     OnboardingHubController onboardingHubController;
     WhatSonHubCreator hubCreator(QDir::currentPath(), QStringLiteral("hubs"));
@@ -257,6 +259,24 @@ int main(int argc, char* argv[])
     {
         QObject::connect(
             applicationControlPanelViewModel,
+            &PanelViewModel::viewModelHookRequested,
+            &app,
+            handlePanelCreateNoteRequest);
+    }
+    if (auto* applicationViewPanelViewModel = qobject_cast<PanelViewModel*>(
+        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationViewBar"))))
+    {
+        QObject::connect(
+            applicationViewPanelViewModel,
+            &PanelViewModel::viewModelHookRequested,
+            &app,
+            handlePanelCreateNoteRequest);
+    }
+    if (auto* applicationEditPanelViewModel = qobject_cast<PanelViewModel*>(
+        panelViewModelRegistry.panelViewModel(QStringLiteral("navigation.NavigationApplicationEditBar"))))
+    {
+        QObject::connect(
+            applicationEditPanelViewModel,
             &PanelViewModel::viewModelHookRequested,
             &app,
             handlePanelCreateNoteRequest);
@@ -453,6 +473,7 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), &sidebarHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
     engine.rootContext()->setContextProperty(QStringLiteral("systemCalendarStore"), &systemCalendarStore);
+    engine.rootContext()->setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
     QObject::connect(
         &engine,

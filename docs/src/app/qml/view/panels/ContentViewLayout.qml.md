@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/ContentViewLayout.qml`
 - Source kind: QML view/component
 - File name: `ContentViewLayout.qml`
-- Approximate line count: 73
+- Approximate line count: 118
 
 ## QML Surface Snapshot
 - Root type: `Item`
@@ -23,6 +23,12 @@
 - `drawerHeightDragRequested`
 - `editorTextEdited`
 - `viewHookRequested`
+- `yearCalendarOverlayCloseRequested`
+
+## Overlay Contract
+- Imports `../calendar` as `CalendarView` and mounts `CalendarView.YearCalendarPage` over the editor surface.
+- Uses `yearCalendarOverlayVisible` / `yearCalendarViewModel` input properties to drive the year-grid overlay lifecycle.
+- Exposes `yearCalendarOverlayCloseRequested` so parent containers (`BodyLayout`, mobile editor route) own dismiss state.
 
 ## Intended Detailed Sections
 - Responsibility and business role

@@ -7,6 +7,7 @@
 - Dedicated hierarchy viewmodels for each hierarchy domain.
 - `LibraryNoteMutationViewModel` as a narrower write facade for note creation and deletion.
 - Navigation, detail-panel, onboarding, sidebar, calendar, and panel-registry viewmodels.
+- `YearCalendarViewModel` as the reusable year-grid source for the navigation-triggered calendar overlay.
 - In trial builds, a trial activation policy and a dedicated desktop trial-status window bootstrap path.
 - Runtime services such as async scheduling, hub sync, permission bootstrap, write lease management, and startup hub selection persistence.
 - QML bridge types such as `HierarchyDragDropBridge`, `HierarchyInteractionBridge`, and editor helper bridges.
@@ -37,6 +38,7 @@ This file exports the root runtime objects through `engine.rootContext()->setCon
 The practical split is this.
 - C++ owns object lifetime and initial graph assembly.
 - `Main.qml` owns view-facing registration and writable ownership claims.
+- The year-calendar overlay data source (`yearCalendarViewModel`) is exported as a context object and consumed directly by `ContentViewLayout.qml`.
 
 ## Failure and Recovery Behavior
 - If no startup hub can be resolved, the app still starts and logs the condition.

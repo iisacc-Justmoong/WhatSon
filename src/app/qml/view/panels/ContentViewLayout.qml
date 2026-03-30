@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "../calendar" as CalendarView
 
 Item {
     id: contentViewLayout
@@ -29,10 +30,13 @@ Item {
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
+    property bool yearCalendarOverlayVisible: false
+    property var yearCalendarViewModel: null
 
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal viewHookRequested
+    signal yearCalendarOverlayCloseRequested
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -68,6 +72,48 @@ Item {
         }
         onViewHookRequested: {
             contentViewLayout.viewHookRequested();
+        }
+    }
+    Item {
+        id: yearCalendarOverlay
+
+        anchors.fill: parent
+        visible: contentViewLayout.yearCalendarOverlayVisible
+        z: 40
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#6610151F"
+        }
+        MouseArea {
+            anchors.fill: parent
+
+            onClicked: contentViewLayout.yearCalendarOverlayCloseRequested()
+        }
+        Item {
+            id: yearCalendarHost
+
+            anchors.fill: parent
+            anchors.margins: LV.Theme.gap8
+            z: 1
+
+            CalendarView.YearCalendarPage {
+                id: yearCalendarPage
+
+                anchors.fill: parent
+                yearCalendarViewModel: contentViewLayout.yearCalendarViewModel
+
+                onViewHookRequested: function (reason) {
+                    contentViewLayout.viewHookRequested();
+                }
+            }
+            LV.LabelButton {
+                anchors.right: parent.right
+                anchors.top: parent.top
+                text: "Close"
+
+                onClicked: contentViewLayout.yearCalendarOverlayCloseRequested()
+            }
         }
     }
 }

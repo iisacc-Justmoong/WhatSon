@@ -39,12 +39,15 @@ Item {
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
+    property bool yearCalendarOverlayVisible: false
+    property var yearCalendarViewModel: null
 
     signal drawerHeightDragRequested(int value)
     signal listViewWidthDragRequested(int value)
     signal rightPanelWidthDragRequested(int value)
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
+    signal yearCalendarOverlayDismissRequested
 
     function clampListViewWidth(value) {
         const numericValue = Number(value);
@@ -188,10 +191,13 @@ Item {
                 noteListModel: hStack.activeNoteListModel
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness
+                yearCalendarOverlayVisible: hStack.yearCalendarOverlayVisible
+                yearCalendarViewModel: hStack.yearCalendarViewModel
 
                 onDrawerHeightDragRequested: function (value) {
                     hStack.drawerHeightDragRequested(value);
                 }
+                onYearCalendarOverlayCloseRequested: hStack.yearCalendarOverlayDismissRequested()
             }
             PanelEdgeSplitter {
                 id: rightSplitter
