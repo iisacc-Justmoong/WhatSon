@@ -977,16 +977,20 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "SidebarHierarchyView.qml must sync hierarchy selection from the LVRS listItemActivated callback.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property bool hierarchyExpansionActivationSuppressed: false")) &&
-            sidebarViewText.contains(QStringLiteral("function armHierarchyExpansionActivationSuppression()")) &&
-            sidebarViewText.contains(QStringLiteral("if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)")) &&
-            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.armHierarchyExpansionActivationSuppression();")),
+            sidebarViewText.contains(QStringLiteral("property int hierarchyActivationPendingSerial: 0")) &&
+            sidebarViewText.contains(QStringLiteral("property int hierarchyExpansionActivationBlockedItemId: -1")) &&
+            sidebarViewText.contains(QStringLiteral("function armHierarchyExpansionActivationSuppression(itemId)")) &&
+            sidebarViewText.contains(QStringLiteral("function shouldSuppressHierarchyActivation(itemId)")) &&
+            sidebarViewText.contains(QStringLiteral("hierarchyExpansionActivationBlockTimer.restart();")) &&
+            sidebarViewText.contains(QStringLiteral("if (sidebarHierarchyView.shouldSuppressHierarchyActivation(resolvedItemId))")) &&
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.armHierarchyExpansionActivationSuppression(itemId);")),
         "SidebarHierarchyView.qml must suppress expansion-driven LVRS activation re-emission so mobile chevron taps only fold or unfold folders instead of routing into note lists.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(itemId);")),
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(resolvedItemId);")),
         "SidebarHierarchyView.qml must mirror LVRS item activation into the shared hierarchy interface by stable itemId.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("signal hierarchyItemActivated(var item, int itemId, int index)")) &&
-            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyItemActivated(item, itemId, index);")),
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyItemActivated(item, resolvedItemId, index);")),
         "SidebarHierarchyView.qml must re-emit hierarchy row activation after syncing selection so mobile routing can subscribe without bypassing the bound view-model.");
     const QString lvrsHierarchyItemPath =
         QStringLiteral("/Users/ymy/.local/LVRS/src/LVRS/qml/components/navigation/HierarchyItem.qml");
@@ -1005,6 +1009,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             lvrsHierarchyItemText.contains(
                 QStringLiteral("if (!control.pointerDragRequiresLongPress && !control._chevronInteractionActive)")) &&
             lvrsHierarchyItemText.contains(QStringLiteral("control._chevronInteractionActive = true")) &&
+            lvrsHierarchyItemText.contains(QStringLiteral("if (control._chevronInteractionActive)")) &&
             lvrsHierarchyItemText.contains(QStringLiteral("anchors.rightMargin: control.chevronInteractionWidth")),
         "LVRS HierarchyItem.qml must reserve an activation-free chevron slot and suppress row activation while the chevron interaction is in progress, or mobile folder chevron taps will still open the note list.");
     QVERIFY2(

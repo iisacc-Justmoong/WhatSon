@@ -179,6 +179,8 @@ Rectangle {
     ]
     property bool hierarchyExpansionActivationSuppressed: false
     property int hierarchyExpansionActivationSuppressionSerial: 0
+    property int hierarchyActivationPendingSerial: 0
+    property int hierarchyExpansionActivationBlockedItemId: -1
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
     property int toolbarFrameWidth: 200
@@ -237,15 +239,29 @@ Rectangle {
         return noteDropController.hierarchyItemContainsPoint(item, x, y);
     }
 
-    function armHierarchyExpansionActivationSuppression() {
+    function armHierarchyExpansionActivationSuppression(itemId) {
+        const resolvedItemId = Math.floor(Number(itemId) || -1);
         const nextSerial = sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial + 1;
         sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial = nextSerial;
         sidebarHierarchyView.hierarchyExpansionActivationSuppressed = true;
+        sidebarHierarchyView.hierarchyExpansionActivationBlockedItemId = resolvedItemId;
+        hierarchyExpansionActivationBlockTimer.restart();
         Qt.callLater(function () {
             if (sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial !== nextSerial)
                 return;
             sidebarHierarchyView.hierarchyExpansionActivationSuppressed = false;
         });
+    }
+
+    function shouldSuppressHierarchyActivation(itemId) {
+        const resolvedItemId = Math.floor(Number(itemId) || -1);
+        if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)
+            return true;
+        if (!hierarchyExpansionActivationBlockTimer.running)
+            return false;
+        if (resolvedItemId < 0)
+            return false;
+        return resolvedItemId === sidebarHierarchyView.hierarchyExpansionActivationBlockedItemId;
     }
 
     function hierarchyItemAtPosition(x, y) {
@@ -519,6 +535,13 @@ Rectangle {
         hostView: sidebarHierarchyView
         itemLocator: noteDropController
     }
+    Timer {
+        id: hierarchyExpansionActivationBlockTimer
+
+        interval: 160
+        repeat: false
+        onTriggered: sidebarHierarchyView.hierarchyExpansionActivationBlockedItemId = -1
+    }
 
     clip: true
     color: panelColor
@@ -588,13 +611,24 @@ Rectangle {
         onListItemActivated: function (item, itemId, index) {
             if (!sidebarHierarchyView.hierarchyViewModel)
                 return;
-            if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)
+            const resolvedItemId = Math.floor(Number(itemId) || -1);
+            if (resolvedItemId < 0)
                 return;
-            sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(itemId);
-            sidebarHierarchyView.hierarchyItemActivated(item, itemId, index);
+            const pendingSerial = sidebarHierarchyView.hierarchyActivationPendingSerial + 1;
+            sidebarHierarchyView.hierarchyActivationPendingSerial = pendingSerial;
+            Qt.callLater(function () {
+                if (sidebarHierarchyView.hierarchyActivationPendingSerial !== pendingSerial)
+                    return;
+                if (!sidebarHierarchyView.hierarchyViewModel)
+                    return;
+                if (sidebarHierarchyView.shouldSuppressHierarchyActivation(resolvedItemId))
+                    return;
+                sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(resolvedItemId);
+                sidebarHierarchyView.hierarchyItemActivated(item, resolvedItemId, index);
+            });
         }
         onListItemExpanded: function (item, itemId, index, expanded) {
-            sidebarHierarchyView.armHierarchyExpansionActivationSuppression();
+            sidebarHierarchyView.armHierarchyExpansionActivationSuppression(itemId);
             if (!sidebarHierarchyView.hierarchyInteractionBridge)
                 return;
             sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(itemId, expanded);
