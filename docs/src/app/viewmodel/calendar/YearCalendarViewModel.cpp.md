@@ -1,37 +1,28 @@
 # `src/app/viewmodel/calendar/YearCalendarViewModel.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+Implements year-level calendar model generation, calendar-system switching, and board-store synchronization.
 
-## Source Metadata
-- Source path: `src/app/viewmodel/calendar/YearCalendarViewModel.cpp`
-- Source kind: C++ implementation
-- File name: `YearCalendarViewModel.cpp`
-- Approximate line count: 315
+## Behavior Summary
+- Initializes to current year in Gregorian mode.
+- Rebuilds the full year grid when:
+  - year changes,
+  - calendar system changes,
+  - shared board entries change.
+- Emits `yearViewRequested(reason)` for navigation/view hooks.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Year Grid Generation
+`rebuildYearModel()` produces month cards with 42-cell day grids, including adjacent-month spill cells.
+Each day model now carries entry counters (`eventCount`, `taskCount`, `entryCount`) resolved from
+`CalendarBoardStore::countsForDate(dateIso)`.
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Board Integration
+- `setCalendarBoardStore(...)` disconnects old store bindings and connects `entriesChanged()` to year-model rebuild.
+- Event/task mutation wrappers delegate directly to the shared store so month and year overlays stay consistent.
+- `entriesForDate(...)` provides per-date drill-down for future detail panels or popovers.
 
-### Enums
-- `value`
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Coverage
+- `tests/app/test_year_calendar_viewmodel.cpp` verifies:
+  - baseline year rendering behavior,
+  - calendar-system and year mutation contracts,
+  - board entry counters projected into the year day-grid cells.

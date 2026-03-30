@@ -1,3 +1,4 @@
+#include "calendar/CalendarBoardStore.hpp"
 #include "viewmodel/calendar/YearCalendarViewModel.hpp"
 
 #include <QDate>
@@ -9,15 +10,12 @@ class YearCalendarViewModelTest final : public QObject
 {
     Q_OBJECT
 
-private
-    slots  :
-
-
-
+private slots:
     void defaults_mustBuildGregorianYearView();
     void setCalendarSystemByValue_mustAcceptKnownEnumValuesOnly();
     void yearMutation_mustClampAndShiftYear();
     void requestYearView_mustEmitRequestSignal();
+    void boardEntries_mustExposeDayCountsInYearGrid();
 };
 
 void YearCalendarViewModelTest::defaults_mustBuildGregorianYearView()
@@ -96,6 +94,56 @@ void YearCalendarViewModelTest::requestYearView_mustEmitRequestSignal()
     const QList<QVariant> firstArgs = requestSpy.takeFirst();
     QCOMPARE(firstArgs.size(), 1);
     QCOMPARE(firstArgs.first().toString(), QStringLiteral("manual-refresh"));
+}
+
+void YearCalendarViewModelTest::boardEntries_mustExposeDayCountsInYearGrid()
+{
+    CalendarBoardStore boardStore;
+    YearCalendarViewModel viewModel;
+    viewModel.setCalendarBoardStore(&boardStore);
+    viewModel.setDisplayedYear(2026);
+
+    QVERIFY(viewModel.addEvent(
+        QStringLiteral("2026-07-04"),
+        QStringLiteral("10:15"),
+        QStringLiteral("Holiday event")));
+    QVERIFY(viewModel.addTask(
+        QStringLiteral("2026-07-04"),
+        QStringLiteral("14:30"),
+        QStringLiteral("Publish summary")));
+    QVERIFY(!viewModel.addEvent(
+        QStringLiteral("2026-07-04"),
+        QStringLiteral("invalid"),
+        QStringLiteral("Broken time")));
+
+    const QVariantList monthModels = viewModel.monthModels();
+    bool foundDayCell = false;
+    for (const QVariant& monthValue : monthModels)
+    {
+        const QVariantMap monthModel = monthValue.toMap();
+        if (monthModel.value(QStringLiteral("month")).toInt() != 7)
+        {
+            continue;
+        }
+
+        const QVariantList dayCells = monthModel.value(QStringLiteral("days")).toList();
+        for (const QVariant& dayValue : dayCells)
+        {
+            const QVariantMap day = dayValue.toMap();
+            if (day.value(QStringLiteral("dateIso")).toString() != QStringLiteral("2026-07-04"))
+            {
+                continue;
+            }
+
+            foundDayCell = true;
+            QCOMPARE(day.value(QStringLiteral("eventCount")).toInt(), 1);
+            QCOMPARE(day.value(QStringLiteral("taskCount")).toInt(), 1);
+            QCOMPARE(day.value(QStringLiteral("entryCount")).toInt(), 2);
+            break;
+        }
+    }
+
+    QVERIFY(foundDayCell);
 }
 
 QTEST_APPLESS_MAIN(YearCalendarViewModelTest)

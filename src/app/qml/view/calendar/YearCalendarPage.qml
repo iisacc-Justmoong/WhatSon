@@ -133,7 +133,7 @@ Rectangle {
                             }
                             Grid {
                                 columns: 7
-                                spacing: LV.Theme.gap1
+                                spacing: LV.Theme.gap2
 
                                 Repeater {
                                     model: yearCalendarPage.weekdayLabels
@@ -152,7 +152,7 @@ Rectangle {
                             }
                             Grid {
                                 columns: 7
-                                spacing: LV.Theme.gap1
+                                spacing: LV.Theme.gap2
 
                                 Repeater {
                                     model: monthCard.monthModel && monthCard.monthModel.days ? monthCard.monthModel.days : []
@@ -163,6 +163,9 @@ Rectangle {
                                         readonly property var dayModel: modelData
                                         readonly property bool isCurrentMonth: dayModel && dayModel.inCurrentMonth === true
                                         readonly property bool isToday: dayModel && dayModel.isToday === true
+                                        readonly property int entryCount: dayModel && dayModel.entryCount !== undefined
+                                                                          ? Number(dayModel.entryCount)
+                                                                          : 0
 
                                         color: isToday ? LV.Theme.primary : isCurrentMonth ? LV.Theme.panelBackground10 : LV.Theme.panelBackground06
                                         height: LV.Theme.gap12
@@ -173,6 +176,15 @@ Rectangle {
                                             anchors.centerIn: parent
                                             color: dayCell.isToday ? LV.Theme.panelBackground01 : dayCell.isCurrentMonth ? LV.Theme.titleHeaderColor : LV.Theme.descriptionColor
                                             text: dayCell.dayModel && dayCell.dayModel.day !== undefined ? String(dayCell.dayModel.day) : ""
+                                        }
+                                        LV.Label {
+                                            anchors.bottom: parent.bottom
+                                            anchors.right: parent.right
+                                            anchors.bottomMargin: LV.Theme.gap2
+                                            anchors.rightMargin: LV.Theme.gap2
+                                            color: dayCell.isToday ? LV.Theme.panelBackground01 : LV.Theme.descriptionColor
+                                            text: dayCell.entryCount > 0 ? String(dayCell.entryCount) : ""
+                                            visible: dayCell.entryCount > 0
                                         }
                                     }
                                 }

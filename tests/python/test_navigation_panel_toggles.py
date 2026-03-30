@@ -98,7 +98,7 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("toggle the hierarchy sidebar and detail panel", architecture_text)
         self.assertIn("preserving the stored preferred widths", architecture_text)
 
-    def test_year_calendar_navigation_opens_content_overlay_contract(self) -> None:
+    def test_calendar_navigation_opens_content_overlay_contract(self) -> None:
         main_text = (REPO_ROOT / "src/app/qml/Main.qml").read_text(encoding="utf-8")
         nav_bar_text = (
             REPO_ROOT / "src/app/qml/view/panels/NavigationBarLayout.qml"
@@ -113,21 +113,54 @@ class NavigationPanelToggleTests(unittest.TestCase):
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
 
+        self.assertIn("signal dayCalendarRequested", nav_bar_text)
+        self.assertIn("hookReason.indexOf(\"daily-calendar\") >= 0", nav_bar_text)
+        self.assertIn('calendarBar.requestViewHook("open-daily-calendar")', calendar_bar_text)
+        self.assertIn("signal monthCalendarRequested", nav_bar_text)
+        self.assertIn("hookReason.indexOf(\"monthly-calendar\") >= 0", nav_bar_text)
+        self.assertIn('calendarBar.requestViewHook("open-monthly-calendar")', calendar_bar_text)
+        self.assertIn("signal weekCalendarRequested", nav_bar_text)
+        self.assertIn("hookReason.indexOf(\"weekly-calendar\") >= 0", nav_bar_text)
+        self.assertIn('calendarBar.requestViewHook("open-weekly-calendar")', calendar_bar_text)
         self.assertIn("signal yearCalendarRequested", nav_bar_text)
         self.assertIn("hookReason.indexOf(\"yearly-calendar\") >= 0", nav_bar_text)
         self.assertIn('calendarBar.requestViewHook("open-yearly-calendar")', calendar_bar_text)
 
+        self.assertIn("property bool dayCalendarOverlayVisible: false", main_text)
+        self.assertIn("rootDayCalendarViewModel", main_text)
+        self.assertIn("onDayCalendarRequested: {", main_text)
+        self.assertIn("onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false", main_text)
+        self.assertIn("property bool monthCalendarOverlayVisible: false", main_text)
+        self.assertIn("rootMonthCalendarViewModel", main_text)
+        self.assertIn("onMonthCalendarRequested: {", main_text)
+        self.assertIn("onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false", main_text)
+        self.assertIn("property bool weekCalendarOverlayVisible: false", main_text)
+        self.assertIn("rootWeekCalendarViewModel", main_text)
+        self.assertIn("onWeekCalendarRequested: {", main_text)
+        self.assertIn("onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false", main_text)
         self.assertIn("property bool yearCalendarOverlayVisible: false", main_text)
         self.assertIn("rootYearCalendarViewModel", main_text)
-        self.assertIn("onYearCalendarRequested: applicationWindow.yearCalendarOverlayVisible = true", main_text)
+        self.assertIn("onYearCalendarRequested: {", main_text)
         self.assertIn("onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false", main_text)
         self.assertIn('import "../calendar" as CalendarView', content_text)
+        self.assertIn("CalendarView.DayCalendarPage {", content_text)
+        self.assertIn("signal dayCalendarOverlayCloseRequested", content_text)
+        self.assertIn("CalendarView.MonthCalendarPage {", content_text)
+        self.assertIn("signal monthCalendarOverlayCloseRequested", content_text)
+        self.assertIn("CalendarView.WeekCalendarPage {", content_text)
+        self.assertIn("signal weekCalendarOverlayCloseRequested", content_text)
         self.assertIn("CalendarView.YearCalendarPage {", content_text)
         self.assertIn("signal yearCalendarOverlayCloseRequested", content_text)
 
+        self.assertIn('setContextProperty(QStringLiteral("dayCalendarViewModel"), &dayCalendarViewModel);', app_main_text)
+        self.assertIn('setContextProperty(QStringLiteral("monthCalendarViewModel"), &monthCalendarViewModel);', app_main_text)
+        self.assertIn('setContextProperty(QStringLiteral("weekCalendarViewModel"), &weekCalendarViewModel);', app_main_text)
         self.assertIn('setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);', app_main_text)
+        self.assertIn("daily calendar overlay", readme_text)
+        self.assertIn("monthly calendar overlay", readme_text)
+        self.assertIn("weekly calendar overlay", readme_text)
         self.assertIn("yearly calendar overlay", readme_text)
-        self.assertIn("yearly calendar action from navigation", architecture_text)
+        self.assertIn("daily/weekly/monthly/yearly calendar actions from navigation", architecture_text)
 
 
 if __name__ == "__main__":

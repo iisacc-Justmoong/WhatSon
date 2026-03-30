@@ -55,8 +55,13 @@ Action-only control entries disable the default LVRS shortcut placeholder column
 
 Desktop navigation edge actions can toggle the hierarchy sidebar and detail panel while preserving the stored preferred widths.
 
-The yearly calendar action from navigation now routes into the content surface and opens the existing year-calendar
-view as an editor-area overlay instead of leaving the action as a passive hook trace.
+The daily/weekly/monthly/yearly calendar actions from navigation now route into the content surface and open the
+existing day/week/month/year calendar views as editor-area overlays instead of leaving those actions as passive hook
+traces.
+
+Calendar overlays now consume a shared `CalendarBoardStore`, and board mutations are modeled as explicit
+`date + time` payload APIs (`addEvent`, `addTask`) so future reminder/event assignment can stay consistent across
+day/week/month/year surfaces.
 
 ## Hub Sync
 `WhatSonHubSyncController` is a filesystem watcher plus debounce/timer coordinator for the mounted `.wshub`.

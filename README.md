@@ -74,6 +74,10 @@ WhatSon is an LVRS-based Qt Quick application.
 - The desktop navigation bar's left/right edge buttons now toggle the hierarchy sidebar and detail panel directly.
   Collapse only zeros the live panel width; the last preferred widths are preserved so expanding restores the previous
   splitter geometry instead of resetting panel sizes.
+- Navigation calendar actions now open a daily calendar overlay, weekly calendar overlay, monthly calendar overlay,
+  and yearly calendar overlay on top of the editor content surface, reusing shared calendar view-model backends.
+- Calendar overlays now share a `CalendarBoardStore` backend so events and tasks can be created with explicit
+  `date + time` arguments and projected back into day-cell counters across day/week/month/year views.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
   `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
   `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.
@@ -170,8 +174,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/view/panels/ContentViewLayout.qml` is now a panel-level wrapper only; the actual Figma
   `ContentsDisplayView` editor implementation lives in
   `src/app/qml/view/content/editor/ContentsDisplayView.qml`.
-- The navigation yearly calendar action now opens a yearly calendar overlay directly on top of the content editor
-  surface, and the overlay is backed by the shared `yearCalendarViewModel` context object from `main.cpp`.
+- The navigation daily/weekly/monthly/yearly calendar actions now open day/week/month/year overlays directly on top of
+  the content editor surface, and the overlays are backed by shared context objects from `main.cpp`
+  (`dayCalendarViewModel`, `weekCalendarViewModel`, `monthCalendarViewModel`, `yearCalendarViewModel`).
 - The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
   payload extracted from `.wsnbody` `<body>` content.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to

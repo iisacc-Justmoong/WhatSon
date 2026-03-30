@@ -1,5 +1,6 @@
 #include "YearCalendarViewModel.hpp"
 
+#include "calendar/CalendarBoardStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QCalendar>
@@ -67,6 +68,30 @@ QVariantList YearCalendarViewModel::calendarSystemOptions() const
             {QStringLiteral("label"), calendarSystemLabel(Custom)}
         }
     };
+}
+
+void YearCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
+{
+    if (m_calendarBoardStore == calendarBoardStore)
+    {
+        return;
+    }
+
+    if (m_calendarBoardStore)
+    {
+        disconnect(m_calendarBoardStore, nullptr, this, nullptr);
+    }
+
+    m_calendarBoardStore = calendarBoardStore;
+    if (m_calendarBoardStore)
+    {
+        connect(m_calendarBoardStore, &CalendarBoardStore::entriesChanged, this, [this]()
+        {
+            rebuildYearModel();
+        });
+    }
+
+    rebuildYearModel();
 }
 
 void YearCalendarViewModel::setDisplayedYear(int year)
@@ -149,6 +174,59 @@ void YearCalendarViewModel::requestYearView(const QString& reason)
     rebuildYearModel();
 }
 
+bool YearCalendarViewModel::addEvent(
+    const QString& dateIso,
+    const QString& timeText,
+    const QString& title,
+    const QString& detail)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+    return m_calendarBoardStore->addEvent(dateIso, timeText, title, detail);
+}
+
+bool YearCalendarViewModel::addTask(
+    const QString& dateIso,
+    const QString& timeText,
+    const QString& title,
+    const QString& detail)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+    return m_calendarBoardStore->addTask(dateIso, timeText, title, detail);
+}
+
+QVariantList YearCalendarViewModel::entriesForDate(const QString& dateIso) const
+{
+    if (!m_calendarBoardStore)
+    {
+        return {};
+    }
+    return m_calendarBoardStore->entriesForDate(dateIso);
+}
+
+bool YearCalendarViewModel::removeEntry(const QString& entryId)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+    return m_calendarBoardStore->removeEntry(entryId);
+}
+
+bool YearCalendarViewModel::setTaskCompleted(const QString& entryId, bool completed)
+{
+    if (!m_calendarBoardStore)
+    {
+        return false;
+    }
+    return m_calendarBoardStore->setTaskCompleted(entryId, completed);
+}
+
 void YearCalendarViewModel::rebuildYearModel()
 {
     const QCalendar calendar = resolveCalendarSystem();
@@ -228,12 +306,26 @@ void YearCalendarViewModel::rebuildYearModel()
             }
 
             const QDate cellDate = calendar.dateFromParts(targetYear, targetMonth, targetDay);
+            const QString dateIso = cellDate.isValid() ? cellDate.toString(Qt::ISODate) : QString();
+            const QVariantMap entryCounts = m_calendarBoardStore
+                                                ? m_calendarBoardStore->countsForDate(dateIso)
+                                                : QVariantMap{};
             QVariantMap cellModel;
             cellModel.insert(QStringLiteral("day"), targetDay);
             cellModel.insert(QStringLiteral("month"), targetMonth);
             cellModel.insert(QStringLiteral("year"), targetYear);
+            cellModel.insert(QStringLiteral("dateIso"), dateIso);
             cellModel.insert(QStringLiteral("inCurrentMonth"), inCurrentMonth);
             cellModel.insert(QStringLiteral("isToday"), cellDate.isValid() && cellDate == today);
+            cellModel.insert(
+                QStringLiteral("eventCount"),
+                entryCounts.value(QStringLiteral("eventCount"), 0).toInt());
+            cellModel.insert(
+                QStringLiteral("taskCount"),
+                entryCounts.value(QStringLiteral("taskCount"), 0).toInt());
+            cellModel.insert(
+                QStringLiteral("entryCount"),
+                entryCounts.value(QStringLiteral("entryCount"), 0).toInt());
             dayCells.push_back(cellModel);
         }
 

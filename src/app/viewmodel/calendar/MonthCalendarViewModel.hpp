@@ -8,16 +8,20 @@
 class CalendarBoardStore;
 class QCalendar;
 
-class YearCalendarViewModel final : public QObject
+class MonthCalendarViewModel final : public QObject
 {
     Q_OBJECT
 
     Q_PROPERTY(int displayedYear READ displayedYear WRITE setDisplayedYear NOTIFY displayedYearChanged)
+    Q_PROPERTY(int displayedMonth READ displayedMonth WRITE setDisplayedMonth NOTIFY displayedMonthChanged)
     Q_PROPERTY(
         CalendarSystem calendarSystem READ calendarSystem WRITE setCalendarSystemByEnum NOTIFY calendarSystemChanged)
     Q_PROPERTY(QString calendarSystemName READ calendarSystemName NOTIFY calendarSystemChanged)
-    Q_PROPERTY(QStringList weekdayLabels READ weekdayLabels NOTIFY yearViewChanged)
-    Q_PROPERTY(QVariantList monthModels READ monthModels NOTIFY yearViewChanged)
+    Q_PROPERTY(QString monthLabel READ monthLabel NOTIFY monthViewChanged)
+    Q_PROPERTY(QStringList weekdayLabels READ weekdayLabels NOTIFY monthViewChanged)
+    Q_PROPERTY(QVariantList dayModels READ dayModels NOTIFY monthViewChanged)
+    Q_PROPERTY(QString selectedDateIso READ selectedDateIso WRITE setSelectedDateIso NOTIFY selectedDateIsoChanged)
+    Q_PROPERTY(QVariantList selectedDateEntries READ selectedDateEntries NOTIFY selectedDateEntriesChanged)
     Q_PROPERTY(QVariantList calendarSystemOptions READ calendarSystemOptions CONSTANT)
 
 public:
@@ -31,23 +35,29 @@ public:
 
     Q_ENUM(CalendarSystem)
 
-    explicit YearCalendarViewModel(QObject* parent = nullptr);
+    explicit MonthCalendarViewModel(QObject* parent = nullptr);
 
     int displayedYear() const noexcept;
+    int displayedMonth() const noexcept;
     CalendarSystem calendarSystem() const noexcept;
     QString calendarSystemName() const;
+    QString monthLabel() const;
     QStringList weekdayLabels() const;
-    QVariantList monthModels() const;
+    QVariantList dayModels() const;
+    QString selectedDateIso() const;
+    QVariantList selectedDateEntries() const;
     QVariantList calendarSystemOptions() const;
     void setCalendarBoardStore(CalendarBoardStore* calendarBoardStore);
 
 public slots:
     void setDisplayedYear(int year);
+    void setDisplayedMonth(int month);
     void setCalendarSystemByEnum(CalendarSystem system);
+    void setSelectedDateIso(const QString& dateIso);
 
     Q_INVOKABLE void setCalendarSystemByValue(int value);
-    Q_INVOKABLE void shiftYear(int delta);
-    Q_INVOKABLE void requestYearView(const QString& reason = QString());
+    Q_INVOKABLE void shiftMonth(int delta);
+    Q_INVOKABLE void requestMonthView(const QString& reason = QString());
     Q_INVOKABLE bool addEvent(
         const QString& dateIso,
         const QString& timeText,
@@ -64,18 +74,26 @@ public slots:
 
 signals:
     void displayedYearChanged();
+    void displayedMonthChanged();
     void calendarSystemChanged();
-    void yearViewChanged();
-    void yearViewRequested(QString reason);
+    void monthViewChanged();
+    void monthViewRequested(QString reason);
+    void selectedDateIsoChanged();
+    void selectedDateEntriesChanged();
 
 private:
-    void rebuildYearModel();
+    void rebuildMonthModel();
+    void refreshSelectedDateEntries();
     QCalendar resolveCalendarSystem() const;
     static QString calendarSystemLabel(CalendarSystem system);
 
     int m_displayedYear = 1970;
+    int m_displayedMonth = 1;
     CalendarSystem m_calendarSystem = Gregorian;
+    QString m_monthLabel;
     QStringList m_weekdayLabels;
-    QVariantList m_monthModels;
+    QVariantList m_dayModels;
     CalendarBoardStore* m_calendarBoardStore = nullptr;
+    QString m_selectedDateIso;
+    QVariantList m_selectedDateEntries;
 };

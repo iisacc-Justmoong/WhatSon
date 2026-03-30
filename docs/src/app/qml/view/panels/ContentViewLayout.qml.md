@@ -1,14 +1,14 @@
 # `src/app/qml/view/panels/ContentViewLayout.qml`
 
 ## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+- Documentation phase: baseline updated from the live source tree.
+- Detail level: focused on calendar overlay routing and ownership.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ContentViewLayout.qml`
 - Source kind: QML view/component
 - File name: `ContentViewLayout.qml`
-- Approximate line count: 118
+- Approximate line count: 200+
 
 ## QML Surface Snapshot
 - Root type: `Item`
@@ -22,13 +22,32 @@
 ### Signals
 - `drawerHeightDragRequested`
 - `editorTextEdited`
+- `dayCalendarOverlayCloseRequested`
+- `monthCalendarOverlayCloseRequested`
+- `weekCalendarOverlayCloseRequested`
 - `viewHookRequested`
 - `yearCalendarOverlayCloseRequested`
 
 ## Overlay Contract
-- Imports `../calendar` as `CalendarView` and mounts `CalendarView.YearCalendarPage` over the editor surface.
-- Uses `yearCalendarOverlayVisible` / `yearCalendarViewModel` input properties to drive the year-grid overlay lifecycle.
-- Exposes `yearCalendarOverlayCloseRequested` so parent containers (`BodyLayout`, mobile editor route) own dismiss state.
+- Imports `../calendar` as `CalendarView` and mounts day/week/month/year pages through one overlay `Loader`.
+- Uses per-mode visibility/viewmodel pairs:
+  - `dayCalendarOverlayVisible` / `dayCalendarViewModel`
+  - `weekCalendarOverlayVisible` / `weekCalendarViewModel`
+  - `monthCalendarOverlayVisible` / `monthCalendarViewModel`
+  - `yearCalendarOverlayVisible` / `yearCalendarViewModel`
+- Resolves the active page by strict priority:
+  - day first
+  - then week
+  - then month
+  - then year
+- Exposes dedicated dismiss signals for each mode:
+  - `dayCalendarOverlayCloseRequested`
+  - `weekCalendarOverlayCloseRequested`
+  - `monthCalendarOverlayCloseRequested`
+  - `yearCalendarOverlayCloseRequested`
+- The overlay background click and close button both dispatch through
+  `requestActiveCalendarOverlayClose()` so parent containers (`BodyLayout`, `MobileHierarchyPage`) keep visibility
+  ownership and can enforce mutually exclusive mode flags.
 
 ## Intended Detailed Sections
 - Responsibility and business role

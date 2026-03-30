@@ -26,16 +26,22 @@ LV.HStack {
         id: dailyCalButton
 
         iconName: "newUIlightThemeSelected"
+
+        onClicked: calendarBar.requestViewHook("open-daily-calendar")
     }
     LV.IconButton {
         id: weeklyCalButton
 
         iconName: "table"
+
+        onClicked: calendarBar.requestViewHook("open-weekly-calendar")
     }
     LV.IconButton {
         id: monthlyCalButton
 
         iconName: "pnpm"
+
+        onClicked: calendarBar.requestViewHook("open-monthly-calendar")
     }
     LV.IconButton {
         id: yearlyCalButton

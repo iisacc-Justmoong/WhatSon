@@ -7,12 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/calendar`
 - Child directories: 0
-- Child files: 2
+- Child files: 4
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `CalendarBoardStore.cpp`
+- `CalendarBoardStore.hpp`
 - `SystemCalendarStore.cpp`
 - `SystemCalendarStore.hpp`
 

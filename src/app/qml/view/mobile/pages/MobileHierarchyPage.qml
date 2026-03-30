@@ -61,10 +61,22 @@ Item {
     property string statusSearchText: ""
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property var windowInteractions: null
+    property bool dayCalendarOverlayVisible: false
+    property var dayCalendarViewModel: null
+    property bool monthCalendarOverlayVisible: false
+    property var monthCalendarViewModel: null
+    property bool weekCalendarOverlayVisible: false
+    property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
 
+    signal dayCalendarRequested
+    signal dayCalendarOverlayDismissRequested
+    signal monthCalendarRequested
+    signal monthCalendarOverlayDismissRequested
     signal viewHookRequested
+    signal weekCalendarRequested
+    signal weekCalendarOverlayDismissRequested
     signal yearCalendarRequested
     signal yearCalendarOverlayDismissRequested
 
@@ -458,6 +470,8 @@ Item {
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
         onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()
         onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()
+        onDayCalendarRequested: mobileHierarchyPage.dayCalendarRequested()
+        onMonthCalendarRequested: mobileHierarchyPage.monthCalendarRequested()
         onStatusSearchSubmitted: function (text) {
             mobileHierarchyPage.statusSearchText = text;
         }
@@ -465,6 +479,7 @@ Item {
             mobileHierarchyPage.statusSearchText = text;
         }
         onViewHookRequested: mobileHierarchyPage.requestViewHook()
+        onWeekCalendarRequested: mobileHierarchyPage.weekCalendarRequested()
         onYearCalendarRequested: mobileHierarchyPage.yearCalendarRequested()
     }
     LV.PageTransitionController {
@@ -612,10 +627,19 @@ Item {
             lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
+            dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible
+            dayCalendarViewModel: mobileHierarchyPage.dayCalendarViewModel
+            monthCalendarOverlayVisible: mobileHierarchyPage.monthCalendarOverlayVisible
+            monthCalendarViewModel: mobileHierarchyPage.monthCalendarViewModel
+            weekCalendarOverlayVisible: mobileHierarchyPage.weekCalendarOverlayVisible
+            weekCalendarViewModel: mobileHierarchyPage.weekCalendarViewModel
             yearCalendarOverlayVisible: mobileHierarchyPage.yearCalendarOverlayVisible
             yearCalendarViewModel: mobileHierarchyPage.yearCalendarViewModel
 
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
+            onDayCalendarOverlayCloseRequested: mobileHierarchyPage.dayCalendarOverlayDismissRequested()
+            onMonthCalendarOverlayCloseRequested: mobileHierarchyPage.monthCalendarOverlayDismissRequested()
+            onWeekCalendarOverlayCloseRequested: mobileHierarchyPage.weekCalendarOverlayDismissRequested()
             onYearCalendarOverlayCloseRequested: mobileHierarchyPage.yearCalendarOverlayDismissRequested()
         }
     }

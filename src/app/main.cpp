@@ -15,6 +15,9 @@
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
+#include "viewmodel/calendar/DayCalendarViewModel.hpp"
+#include "viewmodel/calendar/MonthCalendarViewModel.hpp"
+#include "viewmodel/calendar/WeekCalendarViewModel.hpp"
 #include "viewmodel/calendar/YearCalendarViewModel.hpp"
 #include "viewmodel/onboarding/OnboardingHubController.hpp"
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
@@ -25,6 +28,7 @@
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
+#include "calendar/CalendarBoardStore.hpp"
 #include "calendar/SystemCalendarStore.hpp"
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
@@ -138,6 +142,7 @@ int main(int argc, char* argv[])
         .arg(launchOptions.onboardingOnly ? QStringLiteral("onboardingOnly") : QStringLiteral("workspace")));
 
     QQmlApplicationEngine engine;
+    CalendarBoardStore calendarBoardStore;
     SystemCalendarStore systemCalendarStore;
     LibraryHierarchyViewModel libraryHierarchyViewModel;
     LibraryNoteMutationViewModel libraryNoteMutationViewModel;
@@ -209,6 +214,9 @@ int main(int argc, char* argv[])
     NavigationModeViewModel navigationModeViewModel;
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
+    DayCalendarViewModel dayCalendarViewModel;
+    MonthCalendarViewModel monthCalendarViewModel;
+    WeekCalendarViewModel weekCalendarViewModel;
     YearCalendarViewModel yearCalendarViewModel;
     WhatSonHubRuntimeStore hubRuntimeStore;
     OnboardingHubController onboardingHubController;
@@ -226,6 +234,10 @@ int main(int argc, char* argv[])
     trialActivationPolicy.refresh();
 #endif
     libraryNoteMutationViewModel.setSourceViewModel(&libraryHierarchyViewModel);
+    dayCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
+    monthCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
+    weekCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
+    yearCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
 
     const auto requestNewLibraryNote = [&libraryNoteMutationViewModel, &sidebarHierarchyViewModel]()
     {
@@ -472,7 +484,11 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("navigationModeViewModel"), &navigationModeViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), &sidebarHierarchyViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
+    engine.rootContext()->setContextProperty(QStringLiteral("calendarBoardStore"), &calendarBoardStore);
     engine.rootContext()->setContextProperty(QStringLiteral("systemCalendarStore"), &systemCalendarStore);
+    engine.rootContext()->setContextProperty(QStringLiteral("dayCalendarViewModel"), &dayCalendarViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("monthCalendarViewModel"), &monthCalendarViewModel);
+    engine.rootContext()->setContextProperty(QStringLiteral("weekCalendarViewModel"), &weekCalendarViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);
     engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
     QObject::connect(

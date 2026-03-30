@@ -7,12 +7,15 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/calendar`
 - Child directories: 0
-- Child files: 1
+- Child files: 4
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `DayCalendarPage.qml`
+- `MonthCalendarPage.qml`
+- `WeekCalendarPage.qml`
 - `YearCalendarPage.qml`
 
 ## Intended Detailed Sections
@@ -22,3 +25,6 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Notes
+- Day/week/month/year pages now consume the shared calendar backend through dedicated calendar viewmodels.

@@ -559,8 +559,45 @@ target_link_libraries(whatson_async_scheduler_tests
 add_test(NAME whatson_async_scheduler_tests COMMAND whatson_async_scheduler_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_async_scheduler_tests)
 
+add_executable(whatson_day_calendar_viewmodel_tests
+        app/test_day_calendar_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/DayCalendarViewModel.cpp
+)
+set_target_properties(whatson_day_calendar_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_day_calendar_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_day_calendar_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_day_calendar_viewmodel_tests COMMAND whatson_day_calendar_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_day_calendar_viewmodel_tests)
+
+add_executable(whatson_week_calendar_viewmodel_tests
+        app/test_week_calendar_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/WeekCalendarViewModel.cpp
+)
+set_target_properties(whatson_week_calendar_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_week_calendar_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_week_calendar_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_week_calendar_viewmodel_tests COMMAND whatson_week_calendar_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_week_calendar_viewmodel_tests)
+
 add_executable(whatson_year_calendar_viewmodel_tests
         app/test_year_calendar_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/YearCalendarViewModel.cpp
 )
 set_target_properties(whatson_year_calendar_viewmodel_tests PROPERTIES AUTOMOC ON)
@@ -575,6 +612,41 @@ target_link_libraries(whatson_year_calendar_viewmodel_tests
 )
 add_test(NAME whatson_year_calendar_viewmodel_tests COMMAND whatson_year_calendar_viewmodel_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_year_calendar_viewmodel_tests)
+
+add_executable(whatson_month_calendar_viewmodel_tests
+        app/test_month_calendar_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/MonthCalendarViewModel.cpp
+)
+set_target_properties(whatson_month_calendar_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_month_calendar_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_month_calendar_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_month_calendar_viewmodel_tests COMMAND whatson_month_calendar_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_month_calendar_viewmodel_tests)
+
+add_executable(whatson_calendar_board_store_tests
+        app/test_calendar_board_store.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
+)
+set_target_properties(whatson_calendar_board_store_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_calendar_board_store_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_calendar_board_store_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_calendar_board_store_tests COMMAND whatson_calendar_board_store_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_calendar_board_store_tests)
 
 add_executable(whatson_system_calendar_store_tests
         app/test_system_calendar_store.cpp

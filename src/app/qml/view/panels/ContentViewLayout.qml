@@ -30,13 +30,53 @@ Item {
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
+    property bool dayCalendarOverlayVisible: false
+    property var dayCalendarViewModel: null
+    property bool monthCalendarOverlayVisible: false
+    property var monthCalendarViewModel: null
+    property bool weekCalendarOverlayVisible: false
+    property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
+    readonly property bool calendarOverlayVisible: contentViewLayout.dayCalendarOverlayVisible
+                                                 || contentViewLayout.weekCalendarOverlayVisible
+                                                 || contentViewLayout.monthCalendarOverlayVisible
+                                                 || contentViewLayout.yearCalendarOverlayVisible
+    readonly property bool showingDayCalendarOverlay: contentViewLayout.dayCalendarOverlayVisible
+    readonly property bool showingWeekCalendarOverlay: !contentViewLayout.dayCalendarOverlayVisible
+                                                       && contentViewLayout.weekCalendarOverlayVisible
+    readonly property bool showingMonthCalendarOverlay: !contentViewLayout.dayCalendarOverlayVisible
+                                                        && !contentViewLayout.weekCalendarOverlayVisible
+                                                        && contentViewLayout.monthCalendarOverlayVisible
+    readonly property bool showingYearCalendarOverlay: !contentViewLayout.dayCalendarOverlayVisible
+                                                       && !contentViewLayout.weekCalendarOverlayVisible
+                                                       && !contentViewLayout.monthCalendarOverlayVisible
+                                                       && contentViewLayout.yearCalendarOverlayVisible
 
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
+    signal dayCalendarOverlayCloseRequested
+    signal monthCalendarOverlayCloseRequested
+    signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
     signal yearCalendarOverlayCloseRequested
+
+    function requestActiveCalendarOverlayClose() {
+        if (contentViewLayout.showingDayCalendarOverlay) {
+            contentViewLayout.dayCalendarOverlayCloseRequested();
+            return;
+        }
+        if (contentViewLayout.showingWeekCalendarOverlay) {
+            contentViewLayout.weekCalendarOverlayCloseRequested();
+            return;
+        }
+        if (contentViewLayout.showingMonthCalendarOverlay) {
+            contentViewLayout.monthCalendarOverlayCloseRequested();
+            return;
+        }
+        if (contentViewLayout.showingYearCalendarOverlay)
+            contentViewLayout.yearCalendarOverlayCloseRequested();
+    }
 
     Layout.fillHeight: true
     Layout.fillWidth: true
@@ -75,10 +115,10 @@ Item {
         }
     }
     Item {
-        id: yearCalendarOverlay
+        id: calendarOverlay
 
         anchors.fill: parent
-        visible: contentViewLayout.yearCalendarOverlayVisible
+        visible: contentViewLayout.calendarOverlayVisible
         z: 40
 
         Rectangle {
@@ -88,31 +128,80 @@ Item {
         MouseArea {
             anchors.fill: parent
 
-            onClicked: contentViewLayout.yearCalendarOverlayCloseRequested()
+            onClicked: contentViewLayout.requestActiveCalendarOverlayClose()
         }
         Item {
-            id: yearCalendarHost
+            id: calendarOverlayHost
 
             anchors.fill: parent
             anchors.margins: LV.Theme.gap8
             z: 1
 
-            CalendarView.YearCalendarPage {
-                id: yearCalendarPage
-
+            Loader {
+                id: calendarOverlayPageLoader
                 anchors.fill: parent
-                yearCalendarViewModel: contentViewLayout.yearCalendarViewModel
-
-                onViewHookRequested: function (reason) {
-                    contentViewLayout.viewHookRequested();
-                }
+                sourceComponent: contentViewLayout.showingDayCalendarOverlay
+                                 ? dayCalendarPageComponent
+                                 : contentViewLayout.showingWeekCalendarOverlay
+                                   ? weekCalendarPageComponent
+                                   : contentViewLayout.showingMonthCalendarOverlay
+                                     ? monthCalendarPageComponent
+                                     : yearCalendarPageComponent
             }
             LV.LabelButton {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 text: "Close"
 
-                onClicked: contentViewLayout.yearCalendarOverlayCloseRequested()
+                onClicked: contentViewLayout.requestActiveCalendarOverlayClose()
+            }
+        }
+    }
+    Component {
+        id: dayCalendarPageComponent
+
+        CalendarView.DayCalendarPage {
+            anchors.fill: parent
+            dayCalendarViewModel: contentViewLayout.dayCalendarViewModel
+
+            onViewHookRequested: function (reason) {
+                contentViewLayout.viewHookRequested();
+            }
+        }
+    }
+    Component {
+        id: weekCalendarPageComponent
+
+        CalendarView.WeekCalendarPage {
+            anchors.fill: parent
+            weekCalendarViewModel: contentViewLayout.weekCalendarViewModel
+
+            onViewHookRequested: function (reason) {
+                contentViewLayout.viewHookRequested();
+            }
+        }
+    }
+    Component {
+        id: monthCalendarPageComponent
+
+        CalendarView.MonthCalendarPage {
+            anchors.fill: parent
+            monthCalendarViewModel: contentViewLayout.monthCalendarViewModel
+
+            onViewHookRequested: function (reason) {
+                contentViewLayout.viewHookRequested();
+            }
+        }
+    }
+    Component {
+        id: yearCalendarPageComponent
+
+        CalendarView.YearCalendarPage {
+            anchors.fill: parent
+            yearCalendarViewModel: contentViewLayout.yearCalendarViewModel
+
+            onViewHookRequested: function (reason) {
+                contentViewLayout.viewHookRequested();
             }
         }
     }

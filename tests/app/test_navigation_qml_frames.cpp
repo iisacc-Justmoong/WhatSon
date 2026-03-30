@@ -491,6 +491,8 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
         QStringLiteral("view/panels/navigation/NavigationCalendarBar.qml"));
     const QString bodyLayout = readQml(QStringLiteral("view/panels/BodyLayout.qml"));
     const QString contentViewLayout = readQml(QStringLiteral("view/panels/ContentViewLayout.qml"));
+    const QString dayCalendarPage = readQml(QStringLiteral("view/calendar/DayCalendarPage.qml"));
+    const QString weekCalendarPage = readQml(QStringLiteral("view/calendar/WeekCalendarPage.qml"));
     const QString mobileScaffold = readQml(QStringLiteral("view/mobile/MobilePageScaffold.qml"));
     const QString mobileHierarchyPage = readQml(QStringLiteral("view/mobile/pages/MobileHierarchyPage.qml"));
 
@@ -501,6 +503,8 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     QVERIFY(!navigationCalendarBar.isEmpty());
     QVERIFY(!bodyLayout.isEmpty());
     QVERIFY(!contentViewLayout.isEmpty());
+    QVERIFY(!dayCalendarPage.isEmpty());
+    QVERIFY(!weekCalendarPage.isEmpty());
     QVERIFY(!mobileScaffold.isEmpty());
     QVERIFY(!mobileHierarchyPage.isEmpty());
 
@@ -510,17 +514,73 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     QVERIFY(applicationEditBar.contains(QStringLiteral("onViewHookRequested: function (reason)")));
     QVERIFY(navigationCalendarBar.contains(QStringLiteral("signal viewHookRequested(string reason)")));
     QVERIFY(navigationCalendarBar.contains(QStringLiteral(
+        "onClicked: calendarBar.requestViewHook(\"open-daily-calendar\")")));
+    QVERIFY(navigationCalendarBar.contains(QStringLiteral(
+        "onClicked: calendarBar.requestViewHook(\"open-weekly-calendar\")")));
+    QVERIFY(navigationCalendarBar.contains(QStringLiteral(
+        "onClicked: calendarBar.requestViewHook(\"open-monthly-calendar\")")));
+    QVERIFY(navigationCalendarBar.contains(QStringLiteral(
         "onClicked: calendarBar.requestViewHook(\"open-yearly-calendar\")")));
 
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("signal dayCalendarRequested")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "if (hookReason.indexOf(\"daily-calendar\") >= 0)")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationBar.dayCalendarRequested();")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("signal monthCalendarRequested")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "if (hookReason.indexOf(\"monthly-calendar\") >= 0)")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationBar.monthCalendarRequested();")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("signal weekCalendarRequested")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "if (hookReason.indexOf(\"weekly-calendar\") >= 0)")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationBar.weekCalendarRequested();")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("signal yearCalendarRequested")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral(
         "if (hookReason.indexOf(\"yearly-calendar\") >= 0)")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral(
         "navigationBar.yearCalendarRequested();")));
 
+    QVERIFY(mainQml.contains(QStringLiteral("property bool dayCalendarOverlayVisible: false")));
+    QVERIFY(mainQml.contains(QStringLiteral("property bool monthCalendarOverlayVisible: false")));
+    QVERIFY(mainQml.contains(QStringLiteral("property bool weekCalendarOverlayVisible: false")));
     QVERIFY(mainQml.contains(QStringLiteral("property bool yearCalendarOverlayVisible: false")));
     QVERIFY(mainQml.contains(QStringLiteral(
-        "onYearCalendarRequested: applicationWindow.yearCalendarOverlayVisible = true")));
+        "onDayCalendarRequested: {")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "applicationWindow.dayCalendarOverlayVisible = true;")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "dayCalendarViewModel: applicationWindow.rootDayCalendarViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onMonthCalendarRequested: {")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "applicationWindow.monthCalendarOverlayVisible = true;")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "monthCalendarViewModel: applicationWindow.rootMonthCalendarViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onWeekCalendarRequested: {")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "applicationWindow.weekCalendarOverlayVisible = true;")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "weekCalendarOverlayVisible: applicationWindow.weekCalendarOverlayVisible")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "weekCalendarViewModel: applicationWindow.rootWeekCalendarViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onYearCalendarRequested: {")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "applicationWindow.yearCalendarOverlayVisible = true;")));
     QVERIFY(mainQml.contains(QStringLiteral(
         "yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible")));
     QVERIFY(mainQml.contains(QStringLiteral(
@@ -528,14 +588,65 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     QVERIFY(mainQml.contains(QStringLiteral(
         "onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false")));
 
+    QVERIFY(bodyLayout.contains(QStringLiteral("property bool dayCalendarOverlayVisible: false")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property var dayCalendarViewModel: null")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("signal dayCalendarOverlayDismissRequested")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property bool monthCalendarOverlayVisible: false")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property var monthCalendarViewModel: null")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("signal monthCalendarOverlayDismissRequested")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property bool weekCalendarOverlayVisible: false")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property var weekCalendarViewModel: null")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("signal weekCalendarOverlayDismissRequested")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property bool yearCalendarOverlayVisible: false")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property var yearCalendarViewModel: null")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal yearCalendarOverlayDismissRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("import \"../calendar\" as CalendarView")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("signal dayCalendarOverlayCloseRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("signal monthCalendarOverlayCloseRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("signal weekCalendarOverlayCloseRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal yearCalendarOverlayCloseRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.DayCalendarPage {")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral(
+        "dayCalendarViewModel: contentViewLayout.dayCalendarViewModel")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.MonthCalendarPage {")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral(
+        "monthCalendarViewModel: contentViewLayout.monthCalendarViewModel")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.WeekCalendarPage {")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("weekCalendarViewModel: contentViewLayout.weekCalendarViewModel")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.YearCalendarPage {")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("yearCalendarViewModel: contentViewLayout.yearCalendarViewModel")));
+    QVERIFY(dayCalendarPage.contains(QStringLiteral("text: \"Today\"")));
+    QVERIFY(dayCalendarPage.contains(QStringLiteral("model: dayCalendarPage.timeSlots")));
+    QVERIFY(dayCalendarPage.contains(QStringLiteral("requestViewHook(\"previous-day\")")));
+    QVERIFY(dayCalendarPage.contains(QStringLiteral("requestViewHook(\"next-day\")")));
+    QVERIFY(weekCalendarPage.contains(QStringLiteral("text: \"Today\"")));
+    QVERIFY(weekCalendarPage.contains(QStringLiteral("function entriesForHour(dayModel, hour)")));
+    QVERIFY(weekCalendarPage.contains(QStringLiteral("model: weekCalendarPage.hourSlots")));
 
+    QVERIFY(mobileScaffold.contains(QStringLiteral("signal dayCalendarRequested")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral(
+        "onDayCalendarRequested: mobilePageScaffold.dayCalendarRequested()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral("signal dayCalendarRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "signal dayCalendarOverlayDismissRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral("signal monthCalendarRequested")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral(
+        "onMonthCalendarRequested: mobilePageScaffold.monthCalendarRequested()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral("signal monthCalendarRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "signal monthCalendarOverlayDismissRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "monthCalendarOverlayVisible: mobileHierarchyPage.monthCalendarOverlayVisible")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral("signal weekCalendarRequested")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral(
+        "onWeekCalendarRequested: mobilePageScaffold.weekCalendarRequested()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral("signal weekCalendarRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "signal weekCalendarOverlayDismissRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "weekCalendarOverlayVisible: mobileHierarchyPage.weekCalendarOverlayVisible")));
     QVERIFY(mobileScaffold.contains(QStringLiteral("signal yearCalendarRequested")));
     QVERIFY(mobileScaffold.contains(QStringLiteral(
         "onYearCalendarRequested: mobilePageScaffold.yearCalendarRequested()")));

@@ -31,9 +31,12 @@ Rectangle {
     signal compactAddFolderRequested
     signal compactLeadingActionRequested
     signal createNoteRequested
+    signal dayCalendarRequested
+    signal monthCalendarRequested
     signal statusSearchSubmitted(string text)
     signal statusSearchTextEdited(string text)
     signal viewHookRequested
+    signal weekCalendarRequested
     signal yearCalendarRequested
 
     function requestViewHook() {
@@ -63,7 +66,10 @@ Rectangle {
 
             onCompactAddFolderRequested: mobilePageScaffold.compactAddFolderRequested()
             onCompactLeadingActionRequested: mobilePageScaffold.compactLeadingActionRequested()
+            onDayCalendarRequested: mobilePageScaffold.dayCalendarRequested()
+            onMonthCalendarRequested: mobilePageScaffold.monthCalendarRequested()
             onViewHookRequested: mobilePageScaffold.requestViewHook()
+            onWeekCalendarRequested: mobilePageScaffold.weekCalendarRequested()
             onYearCalendarRequested: mobilePageScaffold.yearCalendarRequested()
         }
         LV.PageRouter {

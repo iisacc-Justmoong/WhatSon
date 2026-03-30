@@ -37,14 +37,23 @@ Rectangle {
 
     signal compactAddFolderRequested
     signal compactLeadingActionRequested
+    signal dayCalendarRequested
+    signal monthCalendarRequested
     signal toggleDetailPanelRequested
     signal toggleSidebarRequested
     signal viewHookRequested
+    signal weekCalendarRequested
     signal yearCalendarRequested
 
     function handleApplicationBarViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         navigationBar.requestViewHook(hookReason);
+        if (hookReason.indexOf("daily-calendar") >= 0)
+            navigationBar.dayCalendarRequested();
+        if (hookReason.indexOf("weekly-calendar") >= 0)
+            navigationBar.weekCalendarRequested();
+        if (hookReason.indexOf("monthly-calendar") >= 0)
+            navigationBar.monthCalendarRequested();
         if (hookReason.indexOf("yearly-calendar") >= 0)
             navigationBar.yearCalendarRequested();
     }

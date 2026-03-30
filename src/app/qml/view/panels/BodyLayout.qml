@@ -38,7 +38,13 @@ Item {
     property color splitterColor: LV.Theme.panelBackground10
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
+    property bool dayCalendarOverlayVisible: false
+    property var dayCalendarViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
+    property bool monthCalendarOverlayVisible: false
+    property var monthCalendarViewModel: null
+    property bool weekCalendarOverlayVisible: false
+    property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
 
@@ -47,6 +53,9 @@ Item {
     signal rightPanelWidthDragRequested(int value)
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
+    signal dayCalendarOverlayDismissRequested
+    signal monthCalendarOverlayDismissRequested
+    signal weekCalendarOverlayDismissRequested
     signal yearCalendarOverlayDismissRequested
 
     function clampListViewWidth(value) {
@@ -191,12 +200,21 @@ Item {
                 noteListModel: hStack.activeNoteListModel
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness
+                dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
+                dayCalendarViewModel: hStack.dayCalendarViewModel
+                monthCalendarOverlayVisible: hStack.monthCalendarOverlayVisible
+                monthCalendarViewModel: hStack.monthCalendarViewModel
+                weekCalendarOverlayVisible: hStack.weekCalendarOverlayVisible
+                weekCalendarViewModel: hStack.weekCalendarViewModel
                 yearCalendarOverlayVisible: hStack.yearCalendarOverlayVisible
                 yearCalendarViewModel: hStack.yearCalendarViewModel
 
                 onDrawerHeightDragRequested: function (value) {
                     hStack.drawerHeightDragRequested(value);
                 }
+                onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
+                onMonthCalendarOverlayCloseRequested: hStack.monthCalendarOverlayDismissRequested()
+                onWeekCalendarOverlayCloseRequested: hStack.weekCalendarOverlayDismissRequested()
                 onYearCalendarOverlayCloseRequested: hStack.yearCalendarOverlayDismissRequested()
             }
             PanelEdgeSplitter {

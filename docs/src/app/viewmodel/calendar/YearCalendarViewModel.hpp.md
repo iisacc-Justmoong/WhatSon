@@ -1,38 +1,43 @@
 # `src/app/viewmodel/calendar/YearCalendarViewModel.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`YearCalendarViewModel` exposes the year-grid calendar surface used by the content overlay and now supports board-style
+event/task integration through a shared calendar backend.
 
-## Source Metadata
-- Source path: `src/app/viewmodel/calendar/YearCalendarViewModel.hpp`
-- Source kind: C++ header
-- File name: `YearCalendarViewModel.hpp`
-- Approximate line count: 72
+## Core Surface
+- `displayedYear`
+- `calendarSystem`, `calendarSystemName`
+- `weekdayLabels`
+- `monthModels`
+- `calendarSystemOptions`
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: yes
+## Mutation and Hooks
+- `setDisplayedYear(int)`
+- `setCalendarSystemByEnum(CalendarSystem)`
+- `setCalendarSystemByValue(int)`
+- `shiftYear(int delta)`
+- `requestYearView(reason)`
 
-### Classes and Structs
-- `QCalendar`
-- `YearCalendarViewModel`
+## Board API
+- `setCalendarBoardStore(CalendarBoardStore*)`
+- `addEvent(dateIso, timeText, title, detail)`
+- `addTask(dateIso, timeText, title, detail)`
+- `entriesForDate(dateIso)`
+- `removeEntry(entryId)`
+- `setTaskCompleted(entryId, completed)`
 
-### Enums
-- `CalendarSystem`
+## Day Cell Contract
+Each day cell in `monthModels[*].days[*]` includes:
+- `day`, `month`, `year`
+- `dateIso`
+- `inCurrentMonth`
+- `isToday`
+- `eventCount`, `taskCount`, `entryCount`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+This allows year cards to act as board summaries, not only passive date viewers.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Signals
+- `displayedYearChanged()`
+- `calendarSystemChanged()`
+- `yearViewChanged()`
+- `yearViewRequested(QString reason)`
