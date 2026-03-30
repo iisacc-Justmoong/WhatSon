@@ -34,6 +34,7 @@ private
     void navigationPanels_mustExposeFrameScopedPanelKeys();
     void mainQml_mustBindTabShortcutForNavigationModeCycling();
     void mainQml_mustBindNewShortcutForNoteCreation();
+    void mainQml_ios_mustForceEdgeToEdgeFullWindowArea();
     void mainQml_mustNotExposeGlobalResourceDropSurface();
     void macNativeMenuBar_mustExposeResourceImportAction();
     void navigationBar_mustComposePropertiesFrame();
@@ -139,6 +140,18 @@ void NavigationQmlFramesTest::mainQml_mustBindNewShortcutForNoteCreation()
     QVERIFY(mainQml.contains(QStringLiteral("return LV.ViewModels.get(\"libraryNoteMutationViewModel\");")));
     QVERIFY(mainQml.contains(QStringLiteral("return LV.ViewModels.get(\"sidebarHierarchyViewModel\");")));
     QVERIFY(mainQml.contains(QStringLiteral("bindOwnedViewModel(applicationWindow.libraryNoteMutationViewId, \"libraryNoteMutationViewModel\")")));
+}
+
+void NavigationQmlFramesTest::mainQml_ios_mustForceEdgeToEdgeFullWindowArea()
+{
+    const QString mainQml = readQml(QStringLiteral("Main.qml"));
+
+    QVERIFY(!mainQml.isEmpty());
+    QVERIFY(mainQml.contains(QStringLiteral("delegateMobileInsetsToSystem: false")));
+    QVERIFY(mainQml.contains(QStringLiteral("delegateMobileWindowingToSystem: false")));
+    QVERIFY(mainQml.contains(QStringLiteral("forceFullWindowAreaOnMobile: applicationWindow.isMobilePlatform")));
+    QVERIFY(mainQml.contains(QStringLiteral("usePlatformSafeMargin: false")));
+    QVERIFY(!mainQml.contains(QStringLiteral("readonly property bool useIosSystemWindowingPolicy")));
 }
 
 void NavigationQmlFramesTest::mainQml_mustNotExposeGlobalResourceDropSurface()

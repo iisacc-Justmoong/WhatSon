@@ -89,7 +89,6 @@ LV.ApplicationWindow {
     property var onboardingRouteBootstrapController: null
     readonly property int onboardingMinHeight: 420
     readonly property int onboardingMinWidth: 620
-    readonly property bool useIosSystemWindowingPolicy: applicationWindow.platform === "ios"
     property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
@@ -271,10 +270,10 @@ LV.ApplicationWindow {
     }
 
     autoAttachRuntimeEvents: true
-    delegateMobileInsetsToSystem: applicationWindow.useIosSystemWindowingPolicy
-    delegateMobileWindowingToSystem: applicationWindow.useIosSystemWindowingPolicy
-    forceFullWindowAreaOnMobile: applicationWindow.isMobilePlatform && !applicationWindow.useIosSystemWindowingPolicy
-    forcedDeviceTierPreset: applicationWindow.useIosSystemWindowingPolicy ? LV.RenderQuality.LowTier : -1
+    delegateMobileInsetsToSystem: false
+    delegateMobileWindowingToSystem: false
+    forceFullWindowAreaOnMobile: applicationWindow.isMobilePlatform
+    forcedDeviceTierPreset: applicationWindow.platform === "ios" ? LV.RenderQuality.LowTier : -1
     globalEventListenersEnabled: true
     height: windowDefaultHeight
     initialRoutePath: startupRoutePath
