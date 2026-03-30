@@ -30,6 +30,8 @@ the semantic folder identity.
   descendant folder.
 - UUID equality alone is not treated as “already synchronized”. The serialized folder path must also
   match the staged tree, otherwise the header is rewritten.
+- Header-only folder rewrites preserve existing `lastModified` and `modifiedBy` values; timestamp
+  changes are reserved for `.wsnbody` persistence.
 
 ## Persistence Order
 

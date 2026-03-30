@@ -782,7 +782,7 @@ void LibraryHierarchyViewModelTest::deleteSelectedFolder_clearsDeletedFolderBind
              qPrintable(parseError));
     QVERIFY(headerStore.folders().isEmpty());
     QVERIFY(headerStore.folderUuids().isEmpty());
-    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+    QCOMPARE(headerStore.lastModifiedAt(), QStringLiteral("2024-01-01-00-00-00"));
 
     QCOMPARE(viewModel.selectedIndex(), researchIndex);
     QCOMPARE(
@@ -2829,7 +2829,7 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
     QVERIFY2(headerParser.parse(QString::fromUtf8(alphaHeaderFile.readAll()), &headerStore, &parseError),
              qPrintable(parseError));
     QCOMPARE(headerStore.folders(), QStringList({QStringLiteral("Research/Competitor")}));
-    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+    QCOMPARE(headerStore.lastModifiedAt(), QStringLiteral("2024-01-01-00-00-00"));
 
     viewModel.setSelectedIndex(competitorIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
@@ -3449,7 +3449,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_renameItem_rewritesDescendantH
     QVERIFY2(headerParser.parse(QString::fromUtf8(alphaHeaderFile.readAll()), &headerStore, &parseError),
              qPrintable(parseError));
     QCOMPARE(headerStore.folders(), QStringList({QStringLiteral("Strategy/Competitor")}));
-    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+    QCOMPARE(headerStore.lastModifiedAt(), QStringLiteral("2024-01-01-00-00-00"));
 
     const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
     QVERIFY(competitorIndex >= 0);
@@ -3891,6 +3891,8 @@ void LibraryHierarchyViewModelTest::clearNoteFoldersById_rewritesHeaderAndRefres
                       LibraryNoteListModel::FoldersRole).
                   toStringList(),
         QStringList({QStringLiteral("Workspace")}));
+    const QString lastModifiedBeforeClear =
+        QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")) + QStringLiteral("-12-00-00");
 
     QSignalSpy filesystemSpy(&viewModel, &LibraryHierarchyViewModel::hubFilesystemMutated);
     QVERIFY(viewModel.clearNoteFoldersById(QStringLiteral("note-b")));
@@ -3905,7 +3907,7 @@ void LibraryHierarchyViewModelTest::clearNoteFoldersById_rewritesHeaderAndRefres
     QVERIFY2(headerParser.parse(QString::fromUtf8(betaHeaderFile.readAll()), &headerStore, &parseError),
              qPrintable(parseError));
     QVERIFY(headerStore.folders().isEmpty());
-    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+    QCOMPARE(headerStore.lastModifiedAt(), lastModifiedBeforeClear);
 
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
     QCOMPARE(
@@ -4070,7 +4072,7 @@ void LibraryHierarchyViewModelTest::loadFromWshub_moveFolderBefore_rewritesFolde
     QVERIFY2(
         headerStore.folders() == QStringList({QStringLiteral("Competitor")}),
         qPrintable(headerStore.folders().join(QStringLiteral("|"))));
-    QVERIFY(headerStore.lastModifiedAt().startsWith(QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"))));
+    QCOMPARE(headerStore.lastModifiedAt(), QStringLiteral("2024-01-01-00-00-00"));
 
     viewModel.setSelectedIndex(researchIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 0);

@@ -84,6 +84,8 @@ next launch, and note-folder matching would quietly fall back to path recovery a
   UUID but an outdated path string.
 - A note that is explicitly assigned to both a parent folder and one of its descendants remains
   visible in both folder scopes and keeps both serialized bindings.
+- Folder-only header mutations do not refresh `lastModifiedAt`; that timestamp now moves only when
+  `.wsnbody` text persistence runs.
 
 ## Note List Ordering
 

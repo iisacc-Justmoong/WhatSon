@@ -12,4 +12,4 @@ This header centralizes lightweight folder-path rules that must stay consistent 
 
 ## Notes
 - The helper does not change persistence. `.wsnhead` and `.wsfolders` continue to store normalized full paths.
-- Detail-panel folder presentation no longer depends on `leafFolderName(...)`; the properties form now mirrors the persisted `.wsnhead` folder paths directly so UI refreshes can match the file-backed state exactly.
+- Detail-panel folder presentation uses `leafFolderName(...)` for user-facing labels while `.wsnhead` and `.wsfolders` persistence stays on normalized full paths.

@@ -68,7 +68,6 @@ bool WhatSonHubNoteFolderClearService::clearFolders(
         if (!m_noteFolderBindingRepository.writeFolderBindings(
             std::move(noteDocument),
             noteFolderBindingService.bindings({}, {}),
-            WhatSon::NoteMutationSupport::currentNoteTimestamp(),
             &noteDocument,
             &writeError))
         {

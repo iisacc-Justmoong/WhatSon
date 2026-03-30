@@ -1,5 +1,7 @@
 #include "DetailPropertiesViewModel.hpp"
 
+#include "file/note/WhatSonNoteFolderSemantics.hpp"
+
 namespace
 {
     int normalizeIndex(const int requestedIndex, const int itemCount) noexcept
@@ -17,6 +19,26 @@ namespace
             return itemCount - 1;
         }
         return requestedIndex;
+    }
+
+    QStringList displayFolderItems(const QStringList& folderPaths)
+    {
+        QStringList items;
+        items.reserve(folderPaths.size());
+
+        for (const QString& folderPath : folderPaths)
+        {
+            const QString leafName = WhatSon::NoteFolders::leafFolderName(folderPath);
+            if (!leafName.isEmpty())
+            {
+                items.push_back(leafName);
+                continue;
+            }
+
+            items.push_back(WhatSon::NoteFolders::normalizeFolderPath(folderPath));
+        }
+
+        return items;
     }
 }
 
@@ -86,7 +108,7 @@ int DetailPropertiesViewModel::currentProgress() const noexcept
 
 void DetailPropertiesViewModel::applyHeader(const WhatSonNoteHeaderStore& header)
 {
-    m_folderItems = header.folders();
+    m_folderItems = displayFolderItems(header.folders());
     m_tagItems = header.tags();
     m_activeFolderIndex = normalizeMetadataIndex(m_activeFolderIndex, m_folderItems.size());
     m_activeTagIndex = normalizeMetadataIndex(m_activeTagIndex, m_tagItems.size());

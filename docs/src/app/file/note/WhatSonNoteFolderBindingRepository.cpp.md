@@ -10,6 +10,8 @@ This file implements folder-header I/O for note mutations.
 - It reads note documents through `WhatSonLocalNoteFileStore`.
 - It persists header-only updates so body content is untouched by folder operations.
 - It can write either a fully prepared document or only a new folder-binding set.
+- Folder-binding writes preserve existing header modification timestamps; they do not synthesize a
+  new `lastModified` value.
 
 ## Why It Matters
 

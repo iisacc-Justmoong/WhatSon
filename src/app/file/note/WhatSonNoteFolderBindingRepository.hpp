@@ -27,7 +27,6 @@ public:
     bool writeFolderBindings(
         WhatSonLocalNoteDocument document,
         const WhatSonNoteFolderBindingService::Bindings& bindings,
-        const QString& lastModifiedAt,
         WhatSonLocalNoteDocument* outDocument = nullptr,
         QString* errorMessage = nullptr) const;
 

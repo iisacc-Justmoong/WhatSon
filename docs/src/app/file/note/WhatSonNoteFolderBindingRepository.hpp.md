@@ -9,8 +9,8 @@ folder-management code no longer performs ad-hoc note header reads and writes in
 
 - `readDocument(...)` loads the note document needed for folder mutation flows.
 - `writeDocument(...)` persists a prepared header-only update.
-- `writeFolderBindings(...)` is the folder-specific convenience API that applies bindings and an
-  optional timestamp in one step.
+- `writeFolderBindings(...)` is the folder-specific convenience API that applies bindings while
+  preserving existing header timestamp fields.
 
 ## Architectural Role
 

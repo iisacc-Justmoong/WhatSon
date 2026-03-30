@@ -78,14 +78,9 @@ bool WhatSonNoteFolderBindingRepository::writeDocument(
 bool WhatSonNoteFolderBindingRepository::writeFolderBindings(
     WhatSonLocalNoteDocument document,
     const WhatSonNoteFolderBindingService::Bindings& bindings,
-    const QString& lastModifiedAt,
     WhatSonLocalNoteDocument* outDocument,
     QString* errorMessage) const
 {
     document.headerStore.setFolderBindings(bindings.folders, bindings.folderUuids);
-    if (!lastModifiedAt.trimmed().isEmpty())
-    {
-        document.headerStore.setLastModifiedAt(lastModifiedAt);
-    }
     return writeDocument(std::move(document), outDocument, errorMessage);
 }

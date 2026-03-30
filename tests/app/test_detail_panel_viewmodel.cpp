@@ -462,7 +462,7 @@ void DetailPanelViewModelTest::detailSelectors_mustMirrorCurrentNoteHeaderFileSt
     QCOMPARE(progressSelector->property("selectedIndex").toInt(), 4);
     QCOMPARE(
         propertiesViewModel->property("folderItems").toStringList(),
-        QStringList{QStringLiteral("Archive/Knowledge")});
+        QStringList{QStringLiteral("Knowledge")});
     QCOMPARE(propertiesViewModel->property("tagItems").toStringList(), QStringList{QStringLiteral("seed")});
     QCOMPARE(propertiesViewModel->property("currentProject").toString(), QStringLiteral("Beta"));
     QCOMPARE(propertiesViewModel->property("currentBookmark").toString(), QStringLiteral("amber"));
@@ -595,7 +595,7 @@ void DetailPanelViewModelTest::detailSelectors_mustReloadCurrentHeaderWhenNoteMe
     QVERIFY(propertiesViewModel != nullptr);
     QCOMPARE(
         propertiesViewModel->property("folderItems").toStringList(),
-        QStringList{QStringLiteral("Archive/Knowledge")});
+        QStringList{QStringLiteral("Knowledge")});
 
     const QString updatedHeaderText =
         QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -624,7 +624,7 @@ void DetailPanelViewModelTest::detailSelectors_mustReloadCurrentHeaderWhenNoteMe
 
     QCOMPARE(
         propertiesViewModel->property("folderItems").toStringList(),
-        QStringList({QStringLiteral("Workspace/Knowledge"), QStringLiteral("Research/Ideas")}));
+        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Ideas")}));
     QCOMPARE(
         propertiesViewModel->property("tagItems").toStringList(),
         QStringList({QStringLiteral("seed"), QStringLiteral("updated")}));
@@ -1383,7 +1383,7 @@ void DetailPanelViewModelTest::folderAssignments_mustSyncHeaderFoldersAndHierarc
     QVERIFY(viewModel.assignFolderByName(QStringLiteral("Research/Ideas")));
     QCOMPARE(
         propertiesViewModel->property("folderItems").toStringList(),
-        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Research/Ideas")}));
+        QStringList({QStringLiteral("Knowledge"), QStringLiteral("Ideas")}));
     QCOMPARE(propertiesViewModel->property("activeFolderIndex").toInt(), 1);
 
     QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "header file must remain readable");

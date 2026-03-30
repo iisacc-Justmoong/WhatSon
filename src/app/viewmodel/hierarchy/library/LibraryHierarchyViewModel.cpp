@@ -22,7 +22,6 @@
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
-#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -43,7 +42,6 @@
 namespace
 {
     constexpr int kMaxNoteListSummaryLines = 5;
-    constexpr auto kNoteTimestampFormat = "yyyy-MM-dd-hh-mm-ss";
     constexpr auto kLibraryDraftLabel = "Draft";
     constexpr auto kLibraryAllLabel = "All Library";
     constexpr auto kLibraryTodayLabel = "Today";
@@ -571,11 +569,6 @@ namespace
         }
 
         return false;
-    }
-
-    QString currentNoteTimestamp()
-    {
-        return QDateTime::currentDateTime().toString(QString::fromLatin1(kNoteTimestampFormat));
     }
 
     QStringList noteIdsFromRecords(const QVector<LibraryNoteRecord>& notes)
@@ -2789,7 +2782,6 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     if (!noteFolderBindingRepository.writeFolderBindings(
         std::move(noteDocument),
         assignedBindings,
-        currentNoteTimestamp(),
         &noteDocument,
         &writeError))
     {

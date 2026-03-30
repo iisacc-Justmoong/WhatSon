@@ -38,4 +38,4 @@ The exported `activeStateName()` now follows the corrected page ids:
   value instead of a note-local row index.
 - Progress persistence resolves the enum integer from hierarchy entry metadata such as `itemId` or a numeric `progress:*` key; it is no longer hard-coded to the default `Ready/Pending/InProgress/Done` labels.
 - Clearing progress writes the `.wsnhead` field as an explicit empty progress value, which round-trips back into the detail selector as `No progress`.
-- The properties form now mirrors `header.folders()` directly, so folder rows stay aligned with the persisted `.wsnhead` path strings instead of showing only the leaf segment.
+- The properties form now renders folder rows as leaf names extracted from `header.folders()` (for example `Archive/Knowledge` -> `Knowledge`) while preserving persisted `.wsnhead` full paths for write operations.

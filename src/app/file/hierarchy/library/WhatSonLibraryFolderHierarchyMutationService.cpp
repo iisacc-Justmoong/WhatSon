@@ -374,7 +374,6 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
     {
         const FolderHierarchyLookup originalLookup = buildFolderHierarchyLookup(request.currentFolderEntries);
         const FolderHierarchyLookup stagedLookup = buildFolderHierarchyLookup(request.stagedFolderEntries);
-        const QString rewriteTimestamp = WhatSon::NoteMutationSupport::currentNoteTimestamp();
 
         for (int noteIndex = 0; noteIndex < request.notes.size(); ++noteIndex)
         {
@@ -432,7 +431,6 @@ bool WhatSonLibraryFolderHierarchyMutationService::commitMutation(
 
             WhatSonLocalNoteDocument nextDocument = previousDocument;
             nextDocument.headerStore.setFolderBindings(remappedBindings.folders, remappedBindings.folderUuids);
-            nextDocument.headerStore.setLastModifiedAt(rewriteTimestamp);
 
             PendingNoteFolderRewrite rewrite;
             rewrite.noteIndex = noteIndex;
