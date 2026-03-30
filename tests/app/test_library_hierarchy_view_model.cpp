@@ -3788,6 +3788,7 @@ void LibraryHierarchyViewModelTest::createEmptyNote_whenFolderSelected_createsSc
     QCOMPARE(headerStore.author(), QStringLiteral("ProfileName"));
     QCOMPARE(headerStore.modifiedBy(), QStringLiteral("ProfileName"));
     QCOMPARE(headerStore.folders(), QStringList{QStringLiteral("Brand")});
+    QCOMPARE(headerStore.progress(), -1);
     QVERIFY(!headerStore.createdAt().isEmpty());
     QVERIFY(!headerStore.lastModifiedAt().isEmpty());
 

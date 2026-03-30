@@ -65,6 +65,6 @@ private:
     QStringList m_bookmarkColors;
     QStringList m_tags;
     QStringList m_progressEnums;
-    int m_progress = 0;
+    int m_progress = -1;
     bool m_preset = false;
 };

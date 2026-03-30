@@ -20,7 +20,7 @@ struct LibraryNoteRecord
     QStringList folderUuids;
     QStringList bookmarkColors;
     QStringList tags;
-    int progress = 0;
+    int progress = -1;
     bool bookmarked = false;
     bool preset = false;
     QString noteDirectoryPath;

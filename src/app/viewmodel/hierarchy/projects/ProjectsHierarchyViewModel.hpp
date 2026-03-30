@@ -87,10 +87,7 @@ public
 
 
 
-    void requestViewModelHook()
-    {
-        emit viewModelHookRequested();
-    }
+    void requestViewModelHook();
 
     signals  :
 

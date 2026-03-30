@@ -20,6 +20,7 @@ filtering and mutation logic rely on stable UUIDs.
 - Callers should keep `folders` and `folderUuids` aligned in order and count.
 - Missing UUIDs are tolerated only as legacy fallbacks during import; modern writes should preserve
   UUIDs.
+- `progress == -1` represents `No progress` and is the neutral default for new/cleared notes.
 
 ## Main Collaborators
 

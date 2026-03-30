@@ -491,6 +491,8 @@ private
     void projectsViewModel_selectionRefresh_mustDropNoteWhenHeaderProjectBecomesEmpty();
     void projectsViewModel_reactsToModelMutation();
     void projectsViewModel_applyRuntimeSnapshot_preservesSelectionAcrossUnchangedSnapshot();
+    void projectsViewModel_applyRuntimeSnapshot_whenHierarchyUnchanged_refreshesSelectedProjectNotes();
+    void projectsViewModel_requestViewModelHook_refreshesSelectedProjectProjection();
     void projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth();
     void projectsViewModel_applyHierarchyNodes_persistsLvrsEditableMove();
     void bookmarksViewModel_supportsCrudContract();
@@ -911,6 +913,81 @@ void HierarchyViewModelsTest::projectsViewModel_applyRuntimeSnapshot_preservesSe
     QCOMPARE(
         viewModel.itemModel()->data(viewModel.itemModel()->index(1, 0), ProjectsHierarchyModel::LabelRole).toString(),
         QStringLiteral("Brand"));
+}
+
+void HierarchyViewModelsTest::projectsViewModel_applyRuntimeSnapshot_whenHierarchyUnchanged_refreshesSelectedProjectNotes()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("ProjectsVmHub.wscontents"));
+    const QString projectsFilePath = QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj"));
+    const QString betaHeaderPath = QDir(contentsPath).filePath(
+        QStringLiteral("Library.wslibrary/Beta.wsnote/Beta.wsnhead"));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(0);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    QVERIFY(writeUtf8File(
+        betaHeaderPath,
+        makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QStringLiteral("Alpha"))));
+
+    viewModel.applyRuntimeSnapshot(
+        {
+            {QStringLiteral("Alpha"), QStringLiteral("Alpha"), 0},
+            {QStringLiteral("Beta"), QStringLiteral("Beta"), 0}
+        },
+        projectsFilePath,
+        true);
+
+    QCOMPARE(viewModel.selectedIndex(), 0);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+
+    bool containsBeta = false;
+    for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
+    {
+        if (viewModel.noteListModel()->data(
+            viewModel.noteListModel()->index(row, 0),
+            LibraryNoteListModel::NoteIdRole).toString() == QStringLiteral("note-beta"))
+        {
+            containsBeta = true;
+            break;
+        }
+    }
+    QVERIFY(containsBeta);
+}
+
+void HierarchyViewModelsTest::projectsViewModel_requestViewModelHook_refreshesSelectedProjectProjection()
+{
+    QString hubPath;
+    QVERIFY(prepareProjectsHub(&hubPath));
+
+    const QString betaHeaderPath = QDir(hubPath).filePath(
+        QStringLiteral("ProjectsVmHub.wscontents/Library.wslibrary/Beta.wsnote/Beta.wsnhead"));
+
+    ProjectsHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(1);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+
+    QVERIFY(writeUtf8File(
+        betaHeaderPath,
+        makeWsnHeadText(QStringLiteral("note-beta"), false, {}, {}, 0, QString())));
+
+    QSignalSpy hookSpy(&viewModel, &ProjectsHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
 }
 
 void HierarchyViewModelsTest::projectsViewModel_moveFolderBefore_persistsFoldersFileAndDepth()

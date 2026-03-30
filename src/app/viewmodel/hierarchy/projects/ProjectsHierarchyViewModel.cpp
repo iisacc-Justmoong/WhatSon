@@ -1416,29 +1416,26 @@ void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
         return;
     }
 
-    if (folderDepthEntriesEqual(projectEntriesFromItems(m_items), projectEntries))
+    if (!folderDepthEntriesEqual(projectEntriesFromItems(m_items), projectEntries))
     {
-        updateLoadState(true);
-        return;
-    }
-
-    if (projectEntries.isEmpty())
-    {
-        m_projectNames.clear();
-        m_store.setFolderEntries({});
-        m_items.clear();
-        m_createdFolderSequence = 1;
-        syncModel();
-        setSelectedIndex(-1);
-    }
-    else
-    {
-        m_store.setFolderEntries(projectEntries);
-        m_projectNames = m_store.projectNames();
-        m_items = itemsFromProjectEntries(m_store.folderEntries());
-        m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
-        syncModel();
-        setSelectedIndex(selectedProjectIndexForKey(m_items, preservedSelectionKey));
+        if (projectEntries.isEmpty())
+        {
+            m_projectNames.clear();
+            m_store.setFolderEntries({});
+            m_items.clear();
+            m_createdFolderSequence = 1;
+            syncModel();
+            setSelectedIndex(-1);
+        }
+        else
+        {
+            m_store.setFolderEntries(projectEntries);
+            m_projectNames = m_store.projectNames();
+            m_items = itemsFromProjectEntries(m_store.folderEntries());
+            m_createdFolderSequence = WhatSon::Hierarchy::ProjectsSupport::nextGeneratedFolderSequence(m_items);
+            syncModel();
+            setSelectedIndex(selectedProjectIndexForKey(m_items, preservedSelectionKey));
+        }
     }
 
     QString noteLoadError;
@@ -1449,6 +1446,26 @@ void ProjectsHierarchyViewModel::applyRuntimeSnapshot(
     }
 
     updateLoadState(true);
+}
+
+void ProjectsHierarchyViewModel::requestViewModelHook()
+{
+    if (m_projectsFilePath.trimmed().isEmpty())
+    {
+        emit viewModelHookRequested();
+        return;
+    }
+
+    QString noteLoadError;
+    if (!refreshIndexedNotesFromProjectsFilePath(&noteLoadError))
+    {
+        updateLoadState(false, noteLoadError);
+        emit viewModelHookRequested();
+        return;
+    }
+
+    updateLoadState(true);
+    emit viewModelHookRequested();
 }
 
 void ProjectsHierarchyViewModel::updateItemCount()

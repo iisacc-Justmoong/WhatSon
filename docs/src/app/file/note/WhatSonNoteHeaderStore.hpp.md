@@ -19,6 +19,7 @@ Modern code should prefer `setFolderBindings(...)` so both arrays stay synchroni
 - `progressEnums() / setProgressEnums(...)` carries the exact enum labels declared in the current
   `.wsnhead` `<progress enums="{...}">` attribute.
 - `progress() / setProgress(...)` continues to store only the selected integer value.
+- The in-memory default is `-1`, which represents `No progress`.
 - The enum-label array and the selected integer are intentionally separated so callers can preserve
   custom note-local progress taxonomies while still mutating the active selection.
 

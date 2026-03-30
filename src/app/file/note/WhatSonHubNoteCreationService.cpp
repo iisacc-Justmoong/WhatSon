@@ -155,7 +155,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     headerStore.setBookmarked(false);
     headerStore.setBookmarkColors({});
     headerStore.setTags({});
-    headerStore.setProgress(0);
+    headerStore.setProgress(-1);
     headerStore.setPreset(false);
 
     if (!WhatSon::NoteMutationSupport::writeUtf8File(
@@ -213,7 +213,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     newNote.modifiedBy = profileName;
     newNote.folders = assignedFolders;
     newNote.folderUuids = headerStore.folderUuids();
-    newNote.progress = 0;
+    newNote.progress = -1;
     newNote.bookmarked = false;
     newNote.preset = false;
     newNote.bodyPlainText = createdNoteDocument.bodyPlainText;

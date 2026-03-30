@@ -420,6 +420,13 @@ Rectangle {
         sidebarHierarchyView.requestViewHook("hierarchy.footer.delete");
     }
 
+    function requestHierarchyViewModelReload() {
+        const hierarchyViewModelObject = sidebarHierarchyView.hierarchyViewModel;
+        if (!hierarchyViewModelObject || hierarchyViewModelObject.requestViewModelHook === undefined)
+            return;
+        hierarchyViewModelObject.requestViewModelHook();
+    }
+
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -530,6 +537,7 @@ Rectangle {
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelHierarchyRename();
         sidebarHierarchyView.clearNoteDropPreview();
+        sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.viewModel.changed");
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
         });
@@ -545,6 +553,7 @@ Rectangle {
     }
     Component.onCompleted: {
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
+        sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.view.ready");
     }
 
     Connections {
@@ -552,6 +561,7 @@ Rectangle {
             if (sidebarHierarchyView.renameEditingActive && !sidebarHierarchyView.canRenameIndex(sidebarHierarchyView.editingHierarchyIndex))
                 sidebarHierarchyView.cancelHierarchyRename();
             sidebarHierarchyView.clearNoteDropPreview();
+            sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.nodes.changed");
             Qt.callLater(function () {
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
                 if (sidebarHierarchyView.renameEditingActive)

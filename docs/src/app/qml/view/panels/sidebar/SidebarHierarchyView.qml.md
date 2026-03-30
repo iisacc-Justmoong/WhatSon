@@ -40,6 +40,15 @@ The root file still exposes wrapper functions for these helpers so callers and t
 
 These signals make the file a reusable visual surface instead of a hard-coded one-off sidebar.
 
+## Entry and Event Reload Hooks
+
+- When `hierarchyViewModel` changes (domain entry/switch), the view now calls
+  `hierarchyViewModel.requestViewModelHook()` if the active domain provides it.
+- The same hook is also called from `onHierarchyNodesChanged` so model mutations tied to sidebar
+  actions can force a domain-level refresh path.
+- This keeps model-backed projections (for example projects note membership derived from
+  `.wsnhead`) synchronized when users re-enter the sidebar domain view.
+
 ## Footer View Options
 
 - The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.

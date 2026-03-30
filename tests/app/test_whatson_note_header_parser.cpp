@@ -15,6 +15,7 @@ private
     void parse_readsWsnHeadFieldsWithExpectedTypes();
     void parse_mapsProgressEnumLabelToInteger();
     void parse_readsEmptyProgressAsClearedState();
+    void parse_readsUnknownProgressAsClearedState();
     void parse_resolvesTemplateTokensInFolderAndTagArrays();
     void parse_dropsReservedTodayFolderTokens();
     void parse_resolvesTemplateTokensInSingleFields();
@@ -112,6 +113,32 @@ void WhatSonNoteHeaderParserTest::parse_readsEmptyProgressAsClearedState()
             "<contents id=note-002-empty>\n"
             "  <head>\n"
             "    <progress enums={Ready,Pending,InProgress,Done}></progress>\n"
+            "  </head>\n"
+            "</contents>\n");
+
+    WhatSonNoteHeaderStore store;
+    WhatSonNoteHeaderParser parser;
+    QString errorMessage;
+    QVERIFY2(parser.parse(input, &store, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(
+        store.progressEnums(),
+        QStringList({
+            QStringLiteral("Ready"),
+            QStringLiteral("Pending"),
+            QStringLiteral("InProgress"),
+            QStringLiteral("Done")
+        }));
+    QCOMPARE(store.progress(), -1);
+}
+
+void WhatSonNoteHeaderParserTest::parse_readsUnknownProgressAsClearedState()
+{
+    const QString input =
+        QStringLiteral(
+            "<contents id=note-002-unknown>\n"
+            "  <head>\n"
+            "    <progress enums={Ready,Pending,InProgress,Done}>UnknownState</progress>\n"
             "  </head>\n"
             "</contents>\n");
 

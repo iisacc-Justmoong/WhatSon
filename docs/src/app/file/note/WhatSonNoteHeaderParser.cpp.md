@@ -25,3 +25,5 @@ can then upgrade the note header to the new attribute-based format.
 - The `enums={...}` attribute is now stored on `WhatSonNoteHeaderStore` through
   `setProgressEnums(...)`, not discarded after integer resolution.
 - An empty `<progress>` element is now treated as an explicit cleared state and parses to `-1` instead of silently falling back to `0`.
+- Unknown `<progress>` text that cannot be resolved as a numeric value or enum label now also
+  resolves to `-1` (`No progress`) instead of coercing to `0` (`First draft`).

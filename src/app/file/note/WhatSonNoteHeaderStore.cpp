@@ -189,7 +189,7 @@ void WhatSonNoteHeaderStore::clear()
     m_bookmarkColors.clear();
     m_tags.clear();
     m_progressEnums.clear();
-    m_progress = 0;
+    m_progress = -1;
     m_preset = false;
 }
 

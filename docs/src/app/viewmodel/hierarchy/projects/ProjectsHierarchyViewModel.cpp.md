@@ -12,10 +12,12 @@ runtime snapshot updates.
 
 - The current selection is captured by a stable project row key before any mutation.
 - The incoming folder-depth entries are compared with the currently rendered project hierarchy.
-- If the project hierarchy source is unchanged, the function updates only load-state metadata and
-  returns.
-- If the source changed, the viewmodel rebuilds the project rows and restores the previous
-  selection by key instead of dropping the user back to the implicit default state.
+- If the project hierarchy source changed, the viewmodel rebuilds project rows and restores the
+  previous selection by key instead of dropping the user back to the implicit default state.
+- Regardless of whether the hierarchy rows changed, the function re-indexes project note
+  membership from live `.wsnhead` files so unchanged snapshots cannot keep stale note projection.
+- `requestViewModelHook()` now also performs the same project note re-index path. This is used by
+  sidebar entry/event hooks to force synchronization when the user re-enters the projects view.
 
 Projects now exposes the same expansion hooks used by the shared sidebar footer. When a projects
 snapshot eventually contains expandable rows, single-row and bulk expansion both mutate the
@@ -44,6 +46,8 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
   `index.wsnindex` still carries stale project labels.
 - The same header synchronization runs at each note-list refresh, so switching project selection
   after an external `.wsnhead` edit cannot keep a stale project member visible.
+- A view-triggered hook (`requestViewModelHook`) reuses the same refresh path, so projects note
+  projection can be re-synced on sidebar entry without waiting for a new runtime snapshot.
 - If an index row cannot be mapped to a readable note header, its project label is ignored for the
   Projects projection so index-only ghost rows do not leak into a selected project.
 - With no active sidebar selection, the model shows all notes whose project label is currently
