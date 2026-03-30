@@ -8,6 +8,7 @@ keeps action triggers separate from the drawer body.
 ## Frame Contract
 
 - Root frame identity is preserved through `objectName: "DrawerToolbar"` and `figmaNodeId: "155:4570"`.
+- Root id is `DrawerToolbar`, and action triggers dispatch through `DrawerToolbar.*` to keep delegate scope explicit.
 - The right-aligned action group is intentionally named `Sumit` because that is the exact Figma frame label
   (`155:4571`).
 - `ShowQuickNoteWindow` (`155:4572`) is the pop-out action for the Quick Note view.

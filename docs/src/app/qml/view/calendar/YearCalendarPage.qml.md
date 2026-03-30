@@ -1,8 +1,8 @@
 # `src/app/qml/view/calendar/YearCalendarPage.qml`
 
 ## Role
-`YearCalendarPage.qml` renders the annual calendar overlay and now surfaces board-style per-day entry counts so the
-year view acts as a high-level event/task heatmap.
+`YearCalendarPage.qml` renders the annual calendar content surface and now surfaces board-style per-day entry counts so
+the year view acts as a high-level event/task heatmap.
 
 ## View Contract
 - Input: `yearCalendarViewModel`
@@ -18,6 +18,12 @@ year view acts as a high-level event/task heatmap.
   - responsive month-card grid,
   - weekday header row per card,
   - 42-cell day grid per month.
+
+## LVRS/QML Standard Alignment
+- Enables `pragma ComponentBehavior: Bound` so nested delegates access outer IDs through explicit bound scope.
+- Repeater delegates use `required property var modelData` and ID-qualified mapping
+  (`calendarSystemButton.modelData`, `monthCard.modelData`, `dayCell.modelData`) instead of unqualified context reads.
+- This keeps the calendar page compatible with the stricter LVRS/QML lint contract used by the workspace.
 
 ## Board Extensions
 - Each day cell consumes `dayModel.entryCount` and displays a compact count badge when entries exist.

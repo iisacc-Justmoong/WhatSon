@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
@@ -75,7 +77,10 @@ Rectangle {
                         model: yearCalendarPage.calendarSystemOptions
 
                         LV.LabelButton {
-                            readonly property var optionModel: modelData
+                            id: calendarSystemButton
+
+                            required property var modelData
+                            readonly property var optionModel: calendarSystemButton.modelData
 
                             text: optionModel && optionModel.label ? String(optionModel.label) : "System"
                             tone: yearCalendarPage.calendarVm && optionModel && Number(optionModel.value) === Number(yearCalendarPage.calendarVm.calendarSystem) ? LV.AbstractButton.Primary : LV.AbstractButton.Borderless
@@ -114,7 +119,8 @@ Rectangle {
                     Rectangle {
                         id: monthCard
 
-                        readonly property var monthModel: modelData
+                        required property var modelData
+                        readonly property var monthModel: monthCard.modelData
 
                         color: LV.Theme.panelBackground09
                         height: monthColumn.implicitHeight + LV.Theme.gap8
@@ -139,13 +145,16 @@ Rectangle {
                                     model: yearCalendarPage.weekdayLabels
 
                                     Rectangle {
+                                        id: weekdayCell
+
+                                        required property var modelData
                                         color: LV.Theme.accentTransparent
                                         height: LV.Theme.gap12
                                         width: Math.max(20, Math.floor((monthCard.width - LV.Theme.gap10) / 7))
 
                                         LV.Label {
                                             anchors.centerIn: parent
-                                            text: String(modelData)
+                                            text: String(weekdayCell.modelData)
                                         }
                                     }
                                 }
@@ -160,7 +169,8 @@ Rectangle {
                                     Rectangle {
                                         id: dayCell
 
-                                        readonly property var dayModel: modelData
+                                        required property var modelData
+                                        readonly property var dayModel: dayCell.modelData
                                         readonly property bool isCurrentMonth: dayModel && dayModel.inCurrentMonth === true
                                         readonly property bool isToday: dayModel && dayModel.isToday === true
                                         readonly property int entryCount: dayModel && dayModel.entryCount !== undefined

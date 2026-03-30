@@ -296,6 +296,25 @@ namespace
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
 
+    int noteCountForProjectLabel(const QVector<LibraryNoteRecord>& notes, const QString& projectLabel)
+    {
+        const QString normalizedProjectLabel = projectLabel.trimmed();
+        if (normalizedProjectLabel.isEmpty())
+        {
+            return 0;
+        }
+
+        int noteCount = 0;
+        for (const LibraryNoteRecord& note : notes)
+        {
+            if (note.project.trimmed().compare(normalizedProjectLabel, Qt::CaseInsensitive) == 0)
+            {
+                ++noteCount;
+            }
+        }
+        return noteCount;
+    }
+
     int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
     {
         const QString normalizedNoteId = noteId.trimmed();
@@ -758,11 +777,13 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
         // Drop stale projection membership immediately when note metadata can no longer be read.
         m_allNotes[noteIndex].project.clear();
         refreshNoteListForSelection();
+        emit hierarchyModelChanged();
         return false;
     }
 
     syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
     refreshNoteListForSelection();
+    emit hierarchyModelChanged();
     return true;
 }
 
@@ -849,9 +870,11 @@ QVariantList ProjectsHierarchyViewModel::depthItems() const
     for (int index = 0; index < serialized.size() && index < m_items.size(); ++index)
     {
         QVariantMap entry = serialized.at(index).toMap();
+        const int noteCount = std::max(0, noteCountForProjectLabel(m_allNotes, m_items.at(index).label));
         entry.insert(QStringLiteral("draggable"), canMoveFolder(index));
         entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), projectsHierarchyItemKey(m_items, index));
+        entry.insert(QStringLiteral("count"), noteCount);
         serialized[index] = entry;
     }
     return serialized;
@@ -1615,12 +1638,14 @@ bool ProjectsHierarchyViewModel::refreshIndexedNotesFromWshub(const QString& wsh
     {
         m_allNotes.clear();
         m_noteListModel.setItems({});
+        emit hierarchyModelChanged();
         return false;
     }
 
     m_allNotes = libraryAll.notes();
     synchronizeIndexedProjectLabelsFromHeaders(&m_allNotes);
     refreshNoteListForSelection();
+    emit hierarchyModelChanged();
     return true;
 }
 
@@ -1635,6 +1660,7 @@ bool ProjectsHierarchyViewModel::refreshIndexedNotesFromProjectsFilePath(QString
         }
         m_allNotes.clear();
         m_noteListModel.setItems({});
+        emit hierarchyModelChanged();
         return false;
     }
 

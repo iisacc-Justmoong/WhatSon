@@ -43,3 +43,5 @@ The Figma node mapping is:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
 - The detail-panel menu label is dynamic:
   `"Show Detail Panel"` when collapsed, `"Hide Detail Panel"` otherwise.
+- `pragma ComponentBehavior: Bound` is enabled so compact/full nested `Component` branches can
+  access `applicationEditBar` id members without unqualified-scope warnings.

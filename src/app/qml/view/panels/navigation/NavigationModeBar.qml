@@ -73,7 +73,10 @@ LV.HStack {
         items: modeBar.modeMenuItems
         modal: false
         parent: Controls.Overlay.overlay
-        selectedIndex: navigationModeViewModel && navigationModeViewModel.activeMode !== undefined ? navigationModeViewModel.activeMode : 2
+        selectedIndex: modeBar.navigationModeViewModel
+                       && modeBar.navigationModeViewModel.activeMode !== undefined
+                       ? modeBar.navigationModeViewModel.activeMode
+                       : 2
 
         onItemTriggered: function (index) {
             if (modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.requestModeChange !== undefined)

@@ -62,6 +62,16 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
   in-memory projection and refreshes the note list, preventing stale project rows from lingering in
   the sidebar/list panel.
 
+## Hierarchy Count Badge
+
+- `depthItems()` now includes a numeric `count` value for each project row.
+- The count is derived from the current in-memory indexed notes (`m_allNotes`) by case-insensitive
+  match against the project label.
+- Any runtime note reindex path (`refreshIndexedNotesFromWshub(...)`,
+  `refreshIndexedNotesFromProjectsFilePath(...)`, `reloadNoteMetadataForNoteId(...)`) now emits
+  `hierarchyModelChanged()` after refreshing note membership so sidebar count badges refresh
+  without app restart.
+
 ## Invariants
 
 - Selection is semantic and should survive runtime snapshot churn.

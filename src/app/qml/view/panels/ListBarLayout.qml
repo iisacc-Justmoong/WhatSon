@@ -320,8 +320,9 @@ Rectangle {
         listBarLayout.syncingCurrentIndexFromModel = false;
     }
     function syncFocusedNoteDeletionState() {
-        if (noteListView.currentItem && noteListView.currentItem.noteId !== undefined) {
-            noteDeletionBridge.focusedNoteId = String(noteListView.currentItem.noteId).trim();
+        const noteModel = listBarLayout.resolvedNoteListModel;
+        if (noteModel && noteModel.currentNoteId !== undefined && noteModel.currentNoteId !== null) {
+            noteDeletionBridge.focusedNoteId = String(noteModel.currentNoteId).trim();
             return;
         }
         noteDeletionBridge.focusedNoteId = "";
@@ -559,8 +560,8 @@ Rectangle {
                                 listBarLayout.noteDragActive = active;
                                 if (active) {
                                     listBarLayout.noteDragCanceled = false;
-                                    noteItemDelegate.dragHotSpotX = Number(noteDragHandler.centroid.pressPosition.x) || width * 0.5;
-                                    noteItemDelegate.dragHotSpotY = Number(noteDragHandler.centroid.pressPosition.y) || height * 0.5;
+                                    noteItemDelegate.dragHotSpotX = Number(noteDragHandler.centroid.pressPosition.x) || noteItemDelegate.width * 0.5;
+                                    noteItemDelegate.dragHotSpotY = Number(noteDragHandler.centroid.pressPosition.y) || noteItemDelegate.height * 0.5;
                                     listBarLayout.beginNoteDragPreview(
                                                 noteItemDelegate,
                                                 noteItemDelegate.dragHotSpotX,

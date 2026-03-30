@@ -25,3 +25,8 @@ rebuild 시에는 이전 row들의 `key -> expanded` 상태를 복원한다.
 그 파일이 비어 있거나 없으면 허브 루트의 `*.wsresources` 디렉터리를 직접 스캔해 flat `.wsresource` 패키지 목록을 만든다.
 
 즉 리소스 도메인의 기준 경로는 항상 `.wsresource` 패키지 경로다.
+
+## Count Role Compatibility
+
+`depthItems()`는 이제 모든 row에 `count` 필드를 포함한다. 현재 리소스 도메인은 노트 인덱스 소유자가
+아니므로 `count`는 `0`으로 고정되며, 이는 공통 `LV.Hierarchy` 모델 스키마 정합성을 위한 계약이다.

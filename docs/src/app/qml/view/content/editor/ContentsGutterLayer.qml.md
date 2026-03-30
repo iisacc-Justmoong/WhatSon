@@ -24,6 +24,13 @@
 ### Signals
 - None detected during scaffold generation.
 
+## LVRS/QML Standard Alignment
+- Declares `pragma ComponentBehavior: Bound` for strict delegate scope.
+- Gutter marker delegates now map model payload through `required property var modelData` plus an ID-qualified
+  `markerSpec` projection (`gutterMarker.modelData`), avoiding unqualified delegate context reads.
+- Optional Y/height resolver callbacks now flow through `resolveNumericResolverValue(...)` before projection so var
+  callback dispatch remains explicit and lint-safe.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

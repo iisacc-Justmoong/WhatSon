@@ -14,6 +14,13 @@ Rectangle {
 
     signal sizeDragRequested(int value)
 
+    function resolveClampedSize(candidateSize) {
+        const clampResolver = splitter.clampSize;
+        if (typeof clampResolver === "function")
+            return clampResolver(candidateSize);
+        return candidateSize;
+    }
+
     Layout.fillHeight: true
     Layout.preferredWidth: splitterThickness
     color: splitterColor
@@ -38,8 +45,7 @@ Rectangle {
             var movePoint = splitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
             var deltaX = (movePoint.x - dragStartGlobalX) * splitter.dragDirection;
             var nextSize = dragStartSize + deltaX;
-            if (splitter.clampSize)
-                nextSize = splitter.clampSize(nextSize);
+            nextSize = splitter.resolveClampedSize(nextSize);
             if (isFinite(nextSize) && nextSize !== splitter.currentSize)
                 splitter.sizeDragRequested(Math.floor(nextSize));
         }

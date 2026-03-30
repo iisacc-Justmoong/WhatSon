@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/PanelEdgeSplitter.qml`
 - Source kind: QML view/component
 - File name: `PanelEdgeSplitter.qml`
-- Approximate line count: 52
+- Approximate line count: 58
 
 ## QML Surface Snapshot
 - Root type: `Rectangle`
@@ -22,6 +22,12 @@
 
 ### Signals
 - `sizeDragRequested`
+
+## Recent Updates
+- Added `resolveClampedSize(candidateSize)` helper that resolves optional clamp callbacks through a
+  local function reference before drag-size emission.
+- Drag-motion path now calls `splitter.resolveClampedSize(nextSize)` instead of invoking the var
+  property inline.
 
 ## Intended Detailed Sections
 - Responsibility and business role

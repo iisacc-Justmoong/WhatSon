@@ -78,7 +78,10 @@ LV.HStack {
         items: editorViewBar.editorViewMenuItems
         modal: false
         parent: Controls.Overlay.overlay
-        selectedIndex: editorViewModeViewModel && editorViewModeViewModel.activeViewMode !== undefined ? editorViewModeViewModel.activeViewMode : 0
+        selectedIndex: editorViewBar.editorViewModeViewModel
+                       && editorViewBar.editorViewModeViewModel.activeViewMode !== undefined
+                       ? editorViewBar.editorViewModeViewModel.activeViewMode
+                       : 0
 
         onItemTriggered: function (index) {
             if (editorViewBar.editorViewModeViewModel && editorViewBar.editorViewModeViewModel.requestViewModeChange !== undefined)

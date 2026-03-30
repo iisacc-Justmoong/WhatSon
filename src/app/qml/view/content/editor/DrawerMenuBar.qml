@@ -5,14 +5,14 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Rectangle {
-    id: drawerMenubar
+    id: DrawerMenubar
 
     readonly property string figmaNodeId: "155:4565"
     readonly property string quickNoteModeName: "QuickNote"
     readonly property string itemBoxModeName: "ItemBox"
     readonly property string dataSearchModeName: "DataSearch"
     readonly property string graphViewModeName: "GraphView"
-    property string activeDrawerMode: quickNoteModeName
+    property string activeDrawerMode: DrawerMenubar.quickNoteModeName
 
     signal drawerConfigActionRequested(string actionName)
     signal drawerModeRequested(string modeName)
@@ -39,7 +39,7 @@ Rectangle {
             spacing: LV.Theme.gapNone
 
             LV.IconSegmentedControl {
-                id: drawerModes
+                id: DrawerModes
 
                 readonly property string figmaNodeId: "155:4566"
                 objectName: "DrawerModes"
@@ -54,7 +54,7 @@ Rectangle {
                 verticalPadding: LV.Theme.gap4
 
                 LV.IconButton {
-                    id: quickNote
+                    id: QuickNote
 
                     readonly property string figmaNodeId: "I155:4566;206:4189"
                     objectName: "QuickNote"
@@ -71,7 +71,7 @@ Rectangle {
                     }
                 }
                 LV.IconButton {
-                    id: itemBox
+                    id: ItemBox
 
                     readonly property string figmaNodeId: "I155:4566;206:4190"
                     objectName: "ItemBox"
@@ -88,7 +88,7 @@ Rectangle {
                     }
                 }
                 LV.IconButton {
-                    id: dataSearch
+                    id: DataSearch
 
                     readonly property string figmaNodeId: "I155:4566;206:4194"
                     objectName: "DataSearch"
@@ -105,7 +105,7 @@ Rectangle {
                     }
                 }
                 LV.IconButton {
-                    id: graphView
+                    id: GraphView
 
                     readonly property string figmaNodeId: "I155:4566;206:4231"
                     objectName: "GraphView"
@@ -126,7 +126,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             LV.HStack {
-                id: drawerViewConfig
+                id: DrawerViewConfig
 
                 readonly property string figmaNodeId: "155:4567"
                 objectName: "DrawerViewConfig"
@@ -134,7 +134,7 @@ Rectangle {
                 spacing: LV.Theme.gap2
 
                 LV.IconButton {
-                    id: textAlign
+                    id: TextAlign
 
                     readonly property string figmaNodeId: "155:4568"
                     objectName: "TextAlign"
@@ -149,7 +149,7 @@ Rectangle {
                     }
                 }
                 LV.IconMenuButton {
-                    id: viewOptions
+                    id: ViewOptions
 
                     readonly property string figmaNodeId: "155:4569"
                     objectName: "ViewOptions"

@@ -44,7 +44,7 @@ private
     void navigationSelectionBars_mustUseContextMenuCombos();
     void navigationApplicationControlBar_mustMatchFigmaChildOrder();
     void navigationApplicationViewAndEditBars_mustMatchFigmaChildOrder();
-    void navigationYearCalendar_mustOpenContentOverlay();
+    void navigationCalendar_mustMountContentSurfaceInline();
     void hierarchySidebar_mustReceiveSharedHorizontalInset();
 };
 
@@ -479,7 +479,7 @@ void NavigationQmlFramesTest::navigationApplicationViewAndEditBars_mustMatchFigm
     QVERIFY(applicationPreferenceBar.contains(QStringLiteral("NavigationPreferenceBar {")));
 }
 
-void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
+void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
 {
     const QString mainQml = readQml(QStringLiteral("Main.qml"));
     const QString navigationBarLayout = readQml(QStringLiteral("view/panels/NavigationBarLayout.qml"));
@@ -492,6 +492,7 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     const QString bodyLayout = readQml(QStringLiteral("view/panels/BodyLayout.qml"));
     const QString contentViewLayout = readQml(QStringLiteral("view/panels/ContentViewLayout.qml"));
     const QString dayCalendarPage = readQml(QStringLiteral("view/calendar/DayCalendarPage.qml"));
+    const QString yearCalendarPage = readQml(QStringLiteral("view/calendar/YearCalendarPage.qml"));
     const QString weekCalendarPage = readQml(QStringLiteral("view/calendar/WeekCalendarPage.qml"));
     const QString mobileScaffold = readQml(QStringLiteral("view/mobile/MobilePageScaffold.qml"));
     const QString mobileHierarchyPage = readQml(QStringLiteral("view/mobile/pages/MobileHierarchyPage.qml"));
@@ -504,6 +505,7 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     QVERIFY(!bodyLayout.isEmpty());
     QVERIFY(!contentViewLayout.isEmpty());
     QVERIFY(!dayCalendarPage.isEmpty());
+    QVERIFY(!yearCalendarPage.isEmpty());
     QVERIFY(!weekCalendarPage.isEmpty());
     QVERIFY(!mobileScaffold.isEmpty());
     QVERIFY(!mobileHierarchyPage.isEmpty());
@@ -601,6 +603,13 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     QVERIFY(bodyLayout.contains(QStringLiteral("property var yearCalendarViewModel: null")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal yearCalendarOverlayDismissRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("import \"../calendar\" as CalendarView")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("visible: !contentViewLayout.calendarOverlayVisible")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("id: calendarContentSurface")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("function onCurrentNoteIdChanged()")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("contentViewLayout.requestActiveCalendarOverlayClose();")));
+    QVERIFY(!contentViewLayout.contains(QStringLiteral("id: calendarOverlay")));
+    QVERIFY(!contentViewLayout.contains(QStringLiteral("MouseArea {")));
+    QVERIFY(!contentViewLayout.contains(QStringLiteral("text: \"Close\"")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal dayCalendarOverlayCloseRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal monthCalendarOverlayCloseRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal weekCalendarOverlayCloseRequested")));
@@ -619,6 +628,11 @@ void NavigationQmlFramesTest::navigationYearCalendar_mustOpenContentOverlay()
     QVERIFY(dayCalendarPage.contains(QStringLiteral("model: dayCalendarPage.timeSlots")));
     QVERIFY(dayCalendarPage.contains(QStringLiteral("requestViewHook(\"previous-day\")")));
     QVERIFY(dayCalendarPage.contains(QStringLiteral("requestViewHook(\"next-day\")")));
+    QVERIFY(yearCalendarPage.contains(QStringLiteral("pragma ComponentBehavior: Bound")));
+    QVERIFY(yearCalendarPage.contains(QStringLiteral("required property var modelData")));
+    QVERIFY(yearCalendarPage.contains(QStringLiteral("readonly property var optionModel: calendarSystemButton.modelData")));
+    QVERIFY(yearCalendarPage.contains(QStringLiteral("readonly property var monthModel: monthCard.modelData")));
+    QVERIFY(yearCalendarPage.contains(QStringLiteral("readonly property var dayModel: dayCell.modelData")));
     QVERIFY(weekCalendarPage.contains(QStringLiteral("text: \"Today\"")));
     QVERIFY(weekCalendarPage.contains(QStringLiteral("function entriesForHour(dayModel, hour)")));
     QVERIFY(weekCalendarPage.contains(QStringLiteral("model: weekCalendarPage.hourSlots")));

@@ -135,6 +135,7 @@ QVariantList ResourcesHierarchyViewModel::depthItems() const
         {
             entry.insert(QStringLiteral("key"), QStringLiteral("resources:%1").arg(index));
         }
+        entry.insert(QStringLiteral("count"), 0);
         serialized[index] = entry;
     }
     return serialized;

@@ -82,12 +82,13 @@ Item {
     Layout.fillWidth: true
 
     ContentsDisplayView {
-        anchors.fill: parent
+        anchors.fill: contentViewLayout.parent
         contentViewModel: contentViewLayout.resolvedContentViewModel
         displayColor: contentViewLayout.displayColor
         drawerVisible: contentViewLayout.drawerVisible
         drawerColor: contentViewLayout.drawerColor
         drawerHeight: contentViewLayout.drawerHeight
+        enabled: contentViewLayout.visible
         editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
         frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
         gutterColor: contentViewLayout.gutterColor
@@ -103,6 +104,7 @@ Item {
         splitterColor: contentViewLayout.splitterColor
         splitterHandleThickness: contentViewLayout.splitterHandleThickness
         splitterThickness: contentViewLayout.splitterThickness
+        visible: !contentViewLayout.calendarOverlayVisible
 
         onDrawerHeightDragRequested: function (value) {
             contentViewLayout.drawerHeightDragRequested(value);
@@ -115,46 +117,36 @@ Item {
         }
     }
     Item {
-        id: calendarOverlay
+        id: calendarContentSurface
 
         anchors.fill: parent
+        enabled: visible
         visible: contentViewLayout.calendarOverlayVisible
-        z: 40
 
-        Rectangle {
+        Loader {
+            id: calendarPageLoader
+
             anchors.fill: parent
-            color: "#6610151F"
+            sourceComponent: contentViewLayout.showingDayCalendarOverlay
+                             ? dayCalendarPageComponent
+                             : contentViewLayout.showingWeekCalendarOverlay
+                               ? weekCalendarPageComponent
+                               : contentViewLayout.showingMonthCalendarOverlay
+                                 ? monthCalendarPageComponent
+                                 : yearCalendarPageComponent
         }
-        MouseArea {
-            anchors.fill: parent
+    }
+    Connections {
+        target: contentViewLayout.resolvedNoteListModel
+        ignoreUnknownSignals: true
 
-            onClicked: contentViewLayout.requestActiveCalendarOverlayClose()
-        }
-        Item {
-            id: calendarOverlayHost
-
-            anchors.fill: parent
-            anchors.margins: LV.Theme.gap8
-            z: 1
-
-            Loader {
-                id: calendarOverlayPageLoader
-                anchors.fill: parent
-                sourceComponent: contentViewLayout.showingDayCalendarOverlay
-                                 ? dayCalendarPageComponent
-                                 : contentViewLayout.showingWeekCalendarOverlay
-                                   ? weekCalendarPageComponent
-                                   : contentViewLayout.showingMonthCalendarOverlay
-                                     ? monthCalendarPageComponent
-                                     : yearCalendarPageComponent
-            }
-            LV.LabelButton {
-                anchors.right: parent.right
-                anchors.top: parent.top
-                text: "Close"
-
-                onClicked: contentViewLayout.requestActiveCalendarOverlayClose()
-            }
+        function onCurrentNoteIdChanged() {
+            const model = contentViewLayout.resolvedNoteListModel;
+            const currentNoteId = model && model.currentNoteId !== undefined
+                ? String(model.currentNoteId)
+                : "";
+            if (currentNoteId.length > 0 && contentViewLayout.calendarOverlayVisible)
+                contentViewLayout.requestActiveCalendarOverlayClose();
         }
     }
     Component {

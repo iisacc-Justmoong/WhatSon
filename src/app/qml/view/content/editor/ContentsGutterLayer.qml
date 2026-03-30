@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import LVRS 1.0 as LV
 
@@ -22,6 +24,16 @@ Rectangle {
     readonly property real viewportHeight: lineNumberViewport.height
     property var visibleLineNumbersModel: []
 
+    function resolveNumericResolverValue(resolver, fallbackValue, argument) {
+        const numericFallbackValue = Number(fallbackValue);
+        const safeFallbackValue = isFinite(numericFallbackValue) ? numericFallbackValue : 0;
+        if (typeof resolver !== "function")
+            return safeFallbackValue;
+        const resolvedValue = argument === undefined ? resolver() : resolver(argument);
+        const numericResolvedValue = Number(resolvedValue);
+        return isFinite(numericResolvedValue) ? numericResolvedValue : safeFallbackValue;
+    }
+
     color: gutterColor
 
     Item {
@@ -39,19 +51,27 @@ Rectangle {
             model: gutterLayer.effectiveGutterMarkers
 
             delegate: Rectangle {
-                readonly property var markerSpec: modelData || ({
+                id: gutterMarker
+
+                required property var modelData
+                readonly property var markerSpec: gutterMarker.modelData || ({
                         "color": gutterLayer.activeLineNumberColor,
                         "lineSpan": 1,
                         "startLine": 1
                     })
-                required property var modelData
 
                 color: markerSpec.color
-                height: gutterLayer.markerHeightResolver ? Number(gutterLayer.markerHeightResolver(markerSpec)) || 0 : 0
+                height: gutterLayer.resolveNumericResolverValue(
+                            gutterLayer.markerHeightResolver,
+                            0,
+                            markerSpec)
                 radius: width / 2
                 width: 4
                 x: gutterLayer.gutterCommentRailLeft + gutterLayer.gutterCommentMarkerOffset
-                y: gutterLayer.markerYResolver ? Number(gutterLayer.markerYResolver(markerSpec)) || 0 : 0
+                y: gutterLayer.resolveNumericResolverValue(
+                       gutterLayer.markerYResolver,
+                       0,
+                       markerSpec)
             }
         }
         Repeater {
@@ -72,7 +92,10 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
                 width: gutterLayer.lineNumberColumnTextWidth
                 x: gutterLayer.lineNumberColumnLeft
-                y: gutterLayer.lineYResolver ? Number(gutterLayer.lineYResolver(modelData)) || 0 : 0
+                y: gutterLayer.resolveNumericResolverValue(
+                       gutterLayer.lineYResolver,
+                       0,
+                       modelData)
             }
         }
     }

@@ -29,6 +29,15 @@ materializing the matching note list from `.wsnhead` metadata.
   progress filter so a detail-panel progress write can immediately remove or keep the note in the
   visible list according to its new enum value.
 
+## Hierarchy Count Badge
+
+- `depthItems()` now includes a `count` value per progress row.
+- The badge value is computed from indexed note metadata by counting notes whose `progress` integer
+  equals the row index.
+- Runtime metadata refresh paths (`refreshIndexedNotesFromWshub(...)`,
+  `refreshIndexedNotesFromProgressFilePath(...)`, `reloadNoteMetadataForNoteId(...)`) now emit
+  `hierarchyModelChanged()` after note refresh so progress counts are not stale until restart.
+
 ## Intentional Constraints
 
 - Rename, create, and delete remain disabled because progress rows are product-defined support

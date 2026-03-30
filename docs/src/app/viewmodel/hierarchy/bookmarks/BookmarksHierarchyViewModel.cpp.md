@@ -35,6 +35,15 @@ used by the library list without inventing sort order from the localized `displa
 - If the refreshed header is no longer bookmarked, the note is dropped from `m_bookmarkedNotes`
   immediately so the bookmarks list stays aligned with the detail panel write path.
 
+## Hierarchy Count Badge
+
+- `depthItems()` now publishes `count` for every bookmark color row.
+- The count value is computed from `m_bookmarkedNotes` by matching each note color against the row
+  color token.
+- Runtime note mutation paths that can alter color membership (`removeNoteById(...)`,
+  `reloadNoteMetadataForNoteId(...)`) now emit `hierarchyModelChanged()` after the refresh so
+  badge counts update immediately.
+
 ## Source Metadata
 - Source path: `src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp`
 - Source kind: C++ implementation

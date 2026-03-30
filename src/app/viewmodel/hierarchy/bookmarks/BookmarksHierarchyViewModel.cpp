@@ -201,6 +201,25 @@ namespace
         return {};
     }
 
+    int noteCountForBookmarkLabel(const QVector<LibraryNoteRecord>& notes, const QString& label)
+    {
+        const QString selectedColorHex = colorHexForLabel(label);
+        if (selectedColorHex.isEmpty())
+        {
+            return notes.size();
+        }
+
+        int noteCount = 0;
+        for (const LibraryNoteRecord& note : notes)
+        {
+            if (bookmarkColorHexForNote(note).compare(selectedColorHex, Qt::CaseInsensitive) == 0)
+            {
+                ++noteCount;
+            }
+        }
+        return noteCount;
+    }
+
     QString bookmarkHierarchyIconSource(const QString& colorValue)
     {
         const QString colorHex = WhatSon::Bookmarks::bookmarkColorToHex(colorValue);
@@ -433,6 +452,7 @@ QVariantList BookmarksHierarchyViewModel::depthItems() const
     for (int index = 0; index < m_items.size(); ++index)
     {
         const BookmarksHierarchyItem& item = m_items.at(index);
+        const int noteCount = std::max(0, noteCountForBookmarkLabel(m_bookmarkedNotes, item.label));
         serialized.push_back(QVariantMap{
             {QStringLiteral("itemId"), index},
             {QStringLiteral("key"), QStringLiteral("bookmarks:%1").arg(index)},
@@ -442,7 +462,8 @@ QVariantList BookmarksHierarchyViewModel::depthItems() const
             {QStringLiteral("expanded"), item.expanded},
             {QStringLiteral("showChevron"), item.showChevron},
             {QStringLiteral("iconName"), bookmarksHierarchyIconName(item)},
-            {QStringLiteral("iconSource"), item.iconSource}
+            {QStringLiteral("iconSource"), item.iconSource},
+            {QStringLiteral("count"), noteCount}
         });
     }
 
@@ -511,6 +532,7 @@ bool BookmarksHierarchyViewModel::removeNoteById(const QString& noteId)
 
     m_bookmarkedNotes.removeAt(noteIndex);
     refreshNoteListForSelection();
+    emit hierarchyModelChanged();
     if (removedCurrentVisibleNote)
     {
         const int nextIndex = m_noteListModel.items().isEmpty()
@@ -624,6 +646,7 @@ bool BookmarksHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& not
         m_bookmarkedNotes.removeAt(noteIndex);
     }
     refreshNoteListForSelection();
+    emit hierarchyModelChanged();
     return true;
 }
 

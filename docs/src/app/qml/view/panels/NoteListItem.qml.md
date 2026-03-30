@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/NoteListItem.qml`
 - Source kind: QML view/component
 - File name: `NoteListItem.qml`
-- Approximate line count: 308
+- Approximate line count: 320
 
 ## QML Surface Snapshot
 - Root type: `Item`
@@ -24,6 +24,11 @@
 
 ### Signals
 - `viewHookRequested`
+
+## Recent Updates
+- Added `pragma ComponentBehavior: Bound` to enforce bound delegate id access for nested metadata rows.
+- Folder/tag metadata `Repeater` delegates now declare `required property var modelData` and read
+  `folderLabelRow.modelData` / `tagLabelRow.modelData` explicitly.
 
 ## Intended Detailed Sections
 - Responsibility and business role

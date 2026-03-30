@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import LVRS 1.0 as LV
 
@@ -25,6 +27,20 @@ Item {
     readonly property real trackHeight: minimapTrack.height
     readonly property real trackWidth: minimapTrack.width
 
+    function resolveNumericResolverValue(resolver, fallbackValue, argument) {
+        const numericFallbackValue = Number(fallbackValue);
+        const safeFallbackValue = isFinite(numericFallbackValue) ? numericFallbackValue : 0;
+        if (typeof resolver !== "function")
+            return safeFallbackValue;
+        const resolvedValue = argument === undefined ? resolver() : resolver(argument);
+        const numericResolvedValue = Number(resolvedValue);
+        return isFinite(numericResolvedValue) ? numericResolvedValue : safeFallbackValue;
+    }
+    function invokeScrollToMinimapPosition(localY) {
+        const scrollHandler = minimapLayer.scrollToMinimapPositionHandler;
+        if (typeof scrollHandler === "function")
+            scrollHandler(localY);
+    }
     function requestRepaint() {
         minimapCanvas.requestPaint();
     }
@@ -40,7 +56,11 @@ Item {
         anchors.rightMargin: minimapLayer.minimapTrackInset
         anchors.top: parent.top
         anchors.topMargin: 8
-        height: Math.min(Math.max(1, parent.height - 16), minimapLayer.minimapSilhouetteHeightResolver ? Number(minimapLayer.minimapSilhouetteHeightResolver()) || 1 : 1)
+        height: Math.min(
+                    Math.max(1, parent.height - 16),
+                    minimapLayer.resolveNumericResolverValue(
+                        minimapLayer.minimapSilhouetteHeightResolver,
+                        1))
         width: minimapLayer.minimapTrackWidth
 
         Canvas {
@@ -57,38 +77,62 @@ Item {
                 for (let rowIndex = 0; rowIndex < rows.length; ++rowIndex) {
                     const row = rows[rowIndex];
                     const characterCount = Number(row.charCount) || 0;
-                    const barY = minimapLayer.minimapVisualRowPaintYResolver ? Number(minimapLayer.minimapVisualRowPaintYResolver(row)) || 0 : 0;
-                    const barHeight = minimapLayer.minimapVisualRowPaintHeightResolver ? Number(minimapLayer.minimapVisualRowPaintHeightResolver(row)) || 1 : 1;
+                    const barY = minimapLayer.resolveNumericResolverValue(
+                                minimapLayer.minimapVisualRowPaintYResolver,
+                                0,
+                                row);
+                    const barHeight = minimapLayer.resolveNumericResolverValue(
+                                minimapLayer.minimapVisualRowPaintHeightResolver,
+                                1,
+                                row);
                     if (barY > height || barY + barHeight < 0)
                         continue;
                     context.fillStyle = minimapLayer.minimapLineColor;
                     context.globalAlpha = characterCount > 0 ? 0.48 : 0.12;
-                    const barWidth = minimapLayer.minimapBarWidthResolver ? Number(minimapLayer.minimapBarWidthResolver(characterCount)) || 1 : 1;
+                    const barWidth = minimapLayer.resolveNumericResolverValue(
+                                minimapLayer.minimapBarWidthResolver,
+                                1,
+                                characterCount);
                     context.fillRect(0, barY, barWidth, barHeight);
                 }
                 context.globalAlpha = 1;
             }
         }
         Rectangle {
-            readonly property bool scrollable: minimapLayer.editorFlickable && minimapLayer.minimapContentHeightResolver && Number(minimapLayer.minimapContentHeightResolver()) > (Number(minimapLayer.editorFlickable.height) || 0)
+            readonly property bool scrollable: minimapLayer.editorFlickable
+                                               && minimapLayer.resolveNumericResolverValue(
+                                                   minimapLayer.minimapContentHeightResolver,
+                                                   0) > (Number(minimapLayer.editorFlickable.height) || 0)
 
             anchors.left: parent.left
             anchors.right: parent.right
             border.width: 0
             color: minimapLayer.minimapViewportFillColor
-            height: minimapLayer.minimapViewportHeightResolver ? Number(minimapLayer.minimapViewportHeightResolver()) || 0 : 0
+            height: minimapLayer.resolveNumericResolverValue(
+                        minimapLayer.minimapViewportHeightResolver,
+                        0)
             radius: 3
             visible: scrollable
-            y: minimapLayer.minimapViewportYResolver ? Number(minimapLayer.minimapViewportYResolver()) || 0 : 0
+            y: minimapLayer.resolveNumericResolverValue(
+                   minimapLayer.minimapViewportYResolver,
+                   0)
         }
         Rectangle {
             color: minimapLayer.minimapCurrentLineColor
-            height: Math.max(1, minimapLayer.minimapCurrentLineHeightResolver ? Number(minimapLayer.minimapCurrentLineHeightResolver()) || 1 : 1)
+            height: Math.max(
+                        1,
+                        minimapLayer.resolveNumericResolverValue(
+                            minimapLayer.minimapCurrentLineHeightResolver,
+                            1))
             opacity: 0.8
             radius: 1
-            width: minimapLayer.minimapCurrentLineWidthResolver ? Number(minimapLayer.minimapCurrentLineWidthResolver()) || 0 : 0
+            width: minimapLayer.resolveNumericResolverValue(
+                       minimapLayer.minimapCurrentLineWidthResolver,
+                       0)
             x: 0
-            y: minimapLayer.minimapCurrentLineYResolver ? Number(minimapLayer.minimapCurrentLineYResolver()) || 0 : 0
+            y: minimapLayer.resolveNumericResolverValue(
+                   minimapLayer.minimapCurrentLineYResolver,
+                   0)
         }
         MouseArea {
             acceptedButtons: Qt.LeftButton
@@ -99,11 +143,10 @@ Item {
             onPositionChanged: function (mouse) {
                 if (!(pressedButtons & Qt.LeftButton) || !minimapLayer.scrollToMinimapPositionHandler)
                     return;
-                minimapLayer.scrollToMinimapPositionHandler(mouse.y);
+                minimapLayer.invokeScrollToMinimapPosition(mouse.y);
             }
             onPressed: function (mouse) {
-                if (minimapLayer.scrollToMinimapPositionHandler)
-                    minimapLayer.scrollToMinimapPositionHandler(mouse.y);
+                minimapLayer.invokeScrollToMinimapPosition(mouse.y);
             }
         }
         LV.WheelScrollGuard {

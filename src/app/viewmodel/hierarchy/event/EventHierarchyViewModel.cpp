@@ -189,6 +189,7 @@ QVariantList EventHierarchyViewModel::depthItems() const
         QVariantMap entry = serialized.at(index).toMap();
         entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), QStringLiteral("event:%1").arg(index));
+        entry.insert(QStringLiteral("count"), 0);
         serialized[index] = entry;
     }
     return serialized;

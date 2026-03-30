@@ -4,11 +4,11 @@ import QtQuick
 import LVRS 1.0 as LV
 
 Item {
-    id: drawerContents
+    id: DrawerContents
 
     readonly property string figmaNodeId: "174:6352"
     readonly property string quickNoteModeName: "QuickNote"
-    property string activeDrawerMode: quickNoteModeName
+    property string activeDrawerMode: DrawerContents.quickNoteModeName
     property alias quickNoteText: quickNoteEditor.text
     property string quickNotePlaceholderText: "Quick note"
 
@@ -32,7 +32,7 @@ Item {
         anchors.bottomMargin: LV.Theme.gap8
 
         Item {
-            id: quickNotePage
+            id: QuickNotePage
 
             readonly property string figmaNodeId: "174:6350"
             objectName: "QuickNotePage"

@@ -23,6 +23,11 @@
 ### Signals
 - `drawerHeightDragRequested`
 
+## LVRS/QML Standard Alignment
+- Declares `pragma ComponentBehavior: Bound` for explicit scoped bindings.
+- Routes optional clamp callbacks through `resolveClampedDrawerHeight(candidateHeight)` before drag commit so var
+  resolver dispatch remains explicit and lint-safe.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

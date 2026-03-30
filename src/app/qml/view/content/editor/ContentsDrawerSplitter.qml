@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 
 Rectangle {
@@ -9,6 +11,15 @@ Rectangle {
     property int splitterHandleThickness: 0
 
     signal drawerHeightDragRequested(int value)
+
+    function resolveClampedDrawerHeight(candidateHeight) {
+        const numericCandidateHeight = Number(candidateHeight) || 0;
+        const clampResolver = drawerSplitter.clampDrawerHeightResolver;
+        if (typeof clampResolver !== "function")
+            return numericCandidateHeight;
+        const resolvedHeight = Number(clampResolver(numericCandidateHeight));
+        return isFinite(resolvedHeight) ? resolvedHeight : numericCandidateHeight;
+    }
 
     color: splitterColor
 
@@ -31,7 +42,7 @@ Rectangle {
                 return;
             const movePoint = drawerSplitterMouse.mapToGlobal(Qt.point(mouse.x, mouse.y));
             const deltaY = movePoint.y - dragStartGlobalY;
-            const nextDrawerHeight = Number(drawerSplitter.clampDrawerHeightResolver(dragStartDrawerHeight - deltaY)) || 0;
+            const nextDrawerHeight = drawerSplitter.resolveClampedDrawerHeight(dragStartDrawerHeight - deltaY);
             if (nextDrawerHeight !== drawerSplitter.drawerHeight)
                 drawerSplitter.drawerHeightDragRequested(nextDrawerHeight);
         }

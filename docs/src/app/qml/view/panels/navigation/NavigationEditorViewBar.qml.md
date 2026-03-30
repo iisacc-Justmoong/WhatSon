@@ -24,6 +24,10 @@
 ### Signals
 - `viewHookRequested`
 
+## Recent Updates
+- Context-menu `selectedIndex` now resolves through `editorViewBar.editorViewModeViewModel` to
+  keep nested menu bindings explicitly scoped to the root id.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

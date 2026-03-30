@@ -58,6 +58,7 @@ private
     void hierarchySidebarWiring_mustBindLoaderAndToolbarTarget();
     void mobileHierarchyPage_mustRouteHierarchyActivationIntoNoteListBody();
     void noteListDeleteShortcutWiring_mustStayCentralized();
+    void qmlPanels_mustKeepBoundComponentScopesAndSafeDelegateContracts();
 };
 
 void QmlBindingSyntaxGuardTest::bindingBlocks_mustNotContainStandaloneStringLiteral()
@@ -395,6 +396,11 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QFile minimapLayerFile(minimapLayerPath);
     QVERIFY2(minimapLayerFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(minimapLayerPath));
     const QString minimapLayerText = QString::fromUtf8(minimapLayerFile.readAll());
+    const QString drawerSplitterPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsDrawerSplitter.qml"));
+    QFile drawerSplitterFile(drawerSplitterPath);
+    QVERIFY2(drawerSplitterFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(drawerSplitterPath));
+    const QString drawerSplitterText = QString::fromUtf8(drawerSplitterFile.readAll());
     QVERIFY2(
         contentViewText.contains(QStringLiteral("ContentsGutterLayer {")),
         "ContentViewLayout.qml must compose the dedicated ContentsGutterLayer module for SRP-aligned gutter rendering.");
@@ -402,9 +408,13 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("ContentsMinimapLayer {")),
         "ContentViewLayout.qml must compose the dedicated ContentsMinimapLayer module for SRP-aligned minimap rendering.");
     QVERIFY2(
-        gutterLayerText.contains(
+        gutterLayerText.contains(QStringLiteral("function resolveNumericResolverValue(resolver, fallbackValue, argument)")) &&
+            (gutterLayerText.contains(
+                 QStringLiteral(
+                     "height: gutterLayer.resolveNumericResolverValue(")) ||
+             gutterLayerText.contains(
             QStringLiteral(
-                "height: gutterLayer.markerHeightResolver ? Number(gutterLayer.markerHeightResolver(markerSpec)) || 0 : 0")),
+                "height: gutterLayer.markerHeightResolver ? Number(gutterLayer.markerHeightResolver(markerSpec)) || 0 : 0"))),
         "ContentsGutterLayer.qml gutter marker delegate must resolve marker height via the injected markerHeight resolver.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color lineNumberColor: \"#4E5157\"")),
@@ -516,6 +526,18 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("function minimapTrackYForContentY(contentY)")),
         "ContentViewLayout.qml minimap must map document content Y into track Y so short notes stay top-aligned instead of filling the whole rail.");
     QVERIFY2(
+        minimapLayerText.contains(QStringLiteral("function resolveNumericResolverValue(resolver, fallbackValue, argument)")),
+        "ContentsMinimapLayer.qml must normalize var-based resolver callbacks through a dedicated numeric helper before use.");
+    QVERIFY2(
+        minimapLayerText.contains(QStringLiteral("function invokeScrollToMinimapPosition(localY)")),
+        "ContentsMinimapLayer.qml must centralize minimap drag/click scroll forwarding through a dedicated handler entrypoint.");
+    QVERIFY2(
+        drawerSplitterText.contains(QStringLiteral("function resolveClampedDrawerHeight(candidateHeight)")),
+        "ContentsDrawerSplitter.qml must normalize optional drawer-height resolver callbacks through a dedicated helper.");
+    QVERIFY2(
+        drawerSplitterText.contains(QStringLiteral("drawerSplitter.resolveClampedDrawerHeight(dragStartDrawerHeight - deltaY)")),
+        "ContentsDrawerSplitter.qml must route drag deltas through resolveClampedDrawerHeight(...) instead of directly invoking var callbacks.");
+    QVERIFY2(
         contentViewText.contains(
             QStringLiteral("readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(")),
         "ContentViewLayout.qml minimap must cache visual-row segments from the live editor layout instead of painting one carved block per logical line.");
@@ -553,6 +575,7 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentsDisplayView.qml or ContentsMinimapLayer.qml minimap viewport must use a subtle inline fill instead of a framed outline.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("width: contentsView.minimapCurrentLineWidth()")) ||
+        minimapLayerText.contains(QStringLiteral("width: minimapLayer.resolveNumericResolverValue(")) ||
         minimapLayerText.contains(QStringLiteral(
             "width: minimapLayer.minimapCurrentLineWidthResolver ? Number(minimapLayer.minimapCurrentLineWidthResolver()) || 0 : 0")),
         "ContentsDisplayView.qml or ContentsMinimapLayer.qml current-line minimap indicator must follow the active visual-row silhouette width instead of spanning the whole rail.");
@@ -733,7 +756,8 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
         "ContentsDisplayView.qml must bind the drawer contents page to the local quick-note draft state.");
 
     QVERIFY2(
-        drawerMenuBarText.contains(QStringLiteral("objectName: \"DrawerMenubar\"")) &&
+        drawerMenuBarText.contains(QStringLiteral("id: DrawerMenubar")) &&
+            drawerMenuBarText.contains(QStringLiteral("objectName: \"DrawerMenubar\"")) &&
             drawerMenuBarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4565\"")),
         "DrawerMenuBar.qml must preserve the Figma DrawerMenubar frame identity.");
     QVERIFY2(
@@ -756,7 +780,8 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
         "DrawerMenuBar.qml must keep the Figma-specified icon names for each drawer mode segment.");
 
     QVERIFY2(
-        drawerContentsText.contains(QStringLiteral("objectName: \"DrawerContents\"")) &&
+        drawerContentsText.contains(QStringLiteral("id: DrawerContents")) &&
+            drawerContentsText.contains(QStringLiteral("objectName: \"DrawerContents\"")) &&
             drawerContentsText.contains(QStringLiteral("readonly property string figmaNodeId: \"174:6352\"")),
         "DrawerContents.qml must preserve the Figma DrawerContents frame identity.");
     QVERIFY2(
@@ -778,7 +803,8 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
         "DrawerContents.qml must neutralize LVRS top padding so the quick-note page starts at the Figma top edge instead of vertically centering the text block.");
 
     QVERIFY2(
-        drawerToolbarText.contains(QStringLiteral("objectName: \"DrawerToolbar\"")) &&
+        drawerToolbarText.contains(QStringLiteral("id: DrawerToolbar")) &&
+            drawerToolbarText.contains(QStringLiteral("objectName: \"DrawerToolbar\"")) &&
             drawerToolbarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4570\"")),
         "DrawerToolbar.qml must preserve the Figma DrawerToolbar frame identity.");
     QVERIFY2(
@@ -2565,6 +2591,120 @@ void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("noteListView.forceActiveFocus();")),
         "ListBarLayout.qml must return keyboard focus to the note list after tap or delete actions so repeated keyboard deletion keeps working.");
+}
+
+void QmlBindingSyntaxGuardTest::qmlPanels_mustKeepBoundComponentScopesAndSafeDelegateContracts()
+{
+    const QDir testsDir(QStringLiteral(QT_TESTCASE_SOURCEDIR));
+    const QString qmlRoot = testsDir.absoluteFilePath(QStringLiteral("../src/app/qml"));
+
+    const QString navigationBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/NavigationBarLayout.qml"));
+    QFile navigationBarLayoutFile(navigationBarLayoutPath);
+    QVERIFY2(navigationBarLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text),
+             qPrintable(navigationBarLayoutPath));
+    const QString navigationBarLayoutText = QString::fromUtf8(navigationBarLayoutFile.readAll());
+    QVERIFY2(
+        navigationBarLayoutText.contains(QStringLiteral("pragma ComponentBehavior: Bound")),
+        "NavigationBarLayout.qml must enable Bound component behavior so nested mode Components can access root ids without unqualified scope warnings.");
+
+    const QString navigationControlBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/navigation/control/NavigationApplicationControlBar.qml"));
+    QFile navigationControlBarFile(navigationControlBarPath);
+    QVERIFY2(navigationControlBarFile.open(QIODevice::ReadOnly | QIODevice::Text),
+             qPrintable(navigationControlBarPath));
+    const QString navigationControlBarText = QString::fromUtf8(navigationControlBarFile.readAll());
+    QVERIFY2(
+        navigationControlBarText.contains(QStringLiteral("pragma ComponentBehavior: Bound")),
+        "NavigationApplicationControlBar.qml must enable Bound component behavior for compact/full menu delegates.");
+
+    const QString navigationEditBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/navigation/edit/NavigationApplicationEditBar.qml"));
+    QFile navigationEditBarFile(navigationEditBarPath);
+    QVERIFY2(navigationEditBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(navigationEditBarPath));
+    const QString navigationEditBarText = QString::fromUtf8(navigationEditBarFile.readAll());
+    QVERIFY2(
+        navigationEditBarText.contains(QStringLiteral("pragma ComponentBehavior: Bound")),
+        "NavigationApplicationEditBar.qml must enable Bound component behavior for compact/full menu delegates.");
+
+    const QString navigationViewBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/navigation/view/NavigationApplicationViewBar.qml"));
+    QFile navigationViewBarFile(navigationViewBarPath);
+    QVERIFY2(navigationViewBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(navigationViewBarPath));
+    const QString navigationViewBarText = QString::fromUtf8(navigationViewBarFile.readAll());
+    QVERIFY2(
+        navigationViewBarText.contains(QStringLiteral("pragma ComponentBehavior: Bound")),
+        "NavigationApplicationViewBar.qml must enable Bound component behavior for compact/full menu delegates.");
+
+    const QString sidebarHierarchyViewPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/sidebar/SidebarHierarchyView.qml"));
+    QFile sidebarHierarchyViewFile(sidebarHierarchyViewPath);
+    QVERIFY2(sidebarHierarchyViewFile.open(QIODevice::ReadOnly | QIODevice::Text),
+             qPrintable(sidebarHierarchyViewPath));
+    const QString sidebarHierarchyViewText = QString::fromUtf8(sidebarHierarchyViewFile.readAll());
+    QVERIFY2(
+        sidebarHierarchyViewText.contains(QStringLiteral("pragma ComponentBehavior: Bound")),
+        "SidebarHierarchyView.qml must enable Bound component behavior for toolbar delegate id access.");
+
+    const QString navigationModeBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/navigation/NavigationModeBar.qml"));
+    QFile navigationModeBarFile(navigationModeBarPath);
+    QVERIFY2(navigationModeBarFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(navigationModeBarPath));
+    const QString navigationModeBarText = QString::fromUtf8(navigationModeBarFile.readAll());
+    QVERIFY2(
+        navigationModeBarText.contains(QStringLiteral("selectedIndex: modeBar.navigationModeViewModel")),
+        "NavigationModeBar.qml must resolve context-menu selectedIndex through modeBar-scoped view-model access.");
+
+    const QString navigationEditorViewBarPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/navigation/NavigationEditorViewBar.qml"));
+    QFile navigationEditorViewBarFile(navigationEditorViewBarPath);
+    QVERIFY2(
+        navigationEditorViewBarFile.open(QIODevice::ReadOnly | QIODevice::Text),
+        qPrintable(navigationEditorViewBarPath));
+    const QString navigationEditorViewBarText = QString::fromUtf8(navigationEditorViewBarFile.readAll());
+    QVERIFY2(
+        navigationEditorViewBarText.contains(
+            QStringLiteral("selectedIndex: editorViewBar.editorViewModeViewModel")),
+        "NavigationEditorViewBar.qml must resolve context-menu selectedIndex through editorViewBar-scoped view-model access.");
+
+    const QString panelEdgeSplitterPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/PanelEdgeSplitter.qml"));
+    QFile panelEdgeSplitterFile(panelEdgeSplitterPath);
+    QVERIFY2(panelEdgeSplitterFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(panelEdgeSplitterPath));
+    const QString panelEdgeSplitterText = QString::fromUtf8(panelEdgeSplitterFile.readAll());
+    QVERIFY2(
+        panelEdgeSplitterText.contains(QStringLiteral("function resolveClampedSize(candidateSize)")) &&
+            panelEdgeSplitterText.contains(QStringLiteral("const clampResolver = splitter.clampSize;")) &&
+            panelEdgeSplitterText.contains(QStringLiteral("nextSize = splitter.resolveClampedSize(nextSize);")),
+        "PanelEdgeSplitter.qml must route clamp callbacks through a dedicated resolver helper instead of invoking a var property inline.");
+
+    const QString listBarLayoutPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ListBarLayout.qml"));
+    QFile listBarLayoutFile(listBarLayoutPath);
+    QVERIFY2(listBarLayoutFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(listBarLayoutPath));
+    const QString listBarLayoutText = QString::fromUtf8(listBarLayoutFile.readAll());
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("if (noteModel && noteModel.currentNoteId !== undefined && noteModel.currentNoteId !== null)")) &&
+            listBarLayoutText.contains(QStringLiteral("noteDeletionBridge.focusedNoteId = String(noteModel.currentNoteId).trim();")) &&
+            listBarLayoutText.contains(
+                QStringLiteral(
+                    "noteItemDelegate.dragHotSpotX = Number(noteDragHandler.centroid.pressPosition.x) || noteItemDelegate.width * 0.5;")) &&
+            listBarLayoutText.contains(
+                QStringLiteral(
+                    "noteItemDelegate.dragHotSpotY = Number(noteDragHandler.centroid.pressPosition.y) || noteItemDelegate.height * 0.5;")),
+        "ListBarLayout.qml must keep focused-note id lookup and drag hot-spot fallback scoped to the delegate contract.");
+
+    const QString noteListItemPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/NoteListItem.qml"));
+    QFile noteListItemFile(noteListItemPath);
+    QVERIFY2(noteListItemFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(noteListItemPath));
+    const QString noteListItemText = QString::fromUtf8(noteListItemFile.readAll());
+    QVERIFY2(
+        noteListItemText.contains(QStringLiteral("pragma ComponentBehavior: Bound")) &&
+            noteListItemText.contains(QStringLiteral("required property var modelData")) &&
+            noteListItemText.contains(QStringLiteral("String(folderLabelRow.modelData)")) &&
+            noteListItemText.contains(QStringLiteral("String(tagLabelRow.modelData)")),
+        "NoteListItem.qml metadata repeaters must use Bound scope plus explicit modelData role contracts to keep delegate bindings qualified.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)

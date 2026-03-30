@@ -8,6 +8,8 @@
 ## Frame Contract
 
 - Root frame identity is preserved through `objectName: "DrawerMenubar"` and `figmaNodeId: "155:4565"`.
+- Root id is `DrawerMenubar`, and mode/config actions route through id-scoped calls (`DrawerMenubar.*`) for stable
+  delegate scope binding.
 - The left segment group is `DrawerModes` (`155:4566`) and keeps four stable child ids:
   `QuickNote`, `ItemBox`, `DataSearch`, and `GraphView`.
 - The right control group is `DrawerViewConfig` (`155:4567`) and keeps `TextAlign`, `ViewOptions`, and

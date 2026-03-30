@@ -30,3 +30,7 @@ The desktop row preserves the Figma child order:
 - Compact hierarchy mode must not regress to the `generalprojectStructure` menu glyph.
 - Compact note-list mode must keep the order `sort -> visibility -> todo menu`.
 - Menu items remain action-only entries with `keyVisible: false` and `showChevron: false`.
+
+## Recent Updates
+- Added `pragma ComponentBehavior: Bound` so compact/full mode nested `Component` branches can
+  access `applicationControlBar` id members with LVRS-standard bound component scope.

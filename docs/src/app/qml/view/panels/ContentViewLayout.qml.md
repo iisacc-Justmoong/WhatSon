@@ -2,7 +2,7 @@
 
 ## Status
 - Documentation phase: baseline updated from the live source tree.
-- Detail level: focused on calendar overlay routing and ownership.
+- Detail level: focused on calendar content-surface routing and ownership.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ContentViewLayout.qml`
@@ -28,8 +28,8 @@
 - `viewHookRequested`
 - `yearCalendarOverlayCloseRequested`
 
-## Overlay Contract
-- Imports `../calendar` as `CalendarView` and mounts day/week/month/year pages through one overlay `Loader`.
+## Content Surface Contract
+- Imports `../calendar` as `CalendarView` and mounts day/week/month/year pages through one content-surface `Loader`.
 - Uses per-mode visibility/viewmodel pairs:
   - `dayCalendarOverlayVisible` / `dayCalendarViewModel`
   - `weekCalendarOverlayVisible` / `weekCalendarViewModel`
@@ -45,9 +45,13 @@
   - `weekCalendarOverlayCloseRequested`
   - `monthCalendarOverlayCloseRequested`
   - `yearCalendarOverlayCloseRequested`
-- The overlay background click and close button both dispatch through
+- The editor (`ContentsDisplayView`) and calendar content surface are mutually exclusive at the same anchor slot.
+- The active note-list model's `currentNoteIdChanged` signal dispatches through
   `requestActiveCalendarOverlayClose()` so parent containers (`BodyLayout`, `MobileHierarchyPage`) keep visibility
-  ownership and can enforce mutually exclusive mode flags.
+  ownership and calendar state returns to the editor when a different note is selected.
+- The composed `ContentsDisplayView` binding path now keeps explicit root-id qualification for
+  ownership-sensitive bindings (`anchors.fill`, `enabled`) to preserve deterministic panel-level
+  scope resolution.
 
 ## Intended Detailed Sections
 - Responsibility and business role

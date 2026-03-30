@@ -33,3 +33,9 @@ This stops note-save related runtime refreshes from collapsing the preset sideba
 
 - Preset hierarchy rows are keyed semantically, not by current row position.
 - Rebuilds are allowed only when the preset source materially changed.
+
+## Count Role Compatibility
+
+`depthItems()` now publishes a numeric `count` field on every preset row. The preset domain does
+not currently carry note-index membership by preset name, so the value is emitted as `0` while
+still satisfying the shared hierarchy payload contract.

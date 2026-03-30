@@ -90,3 +90,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Architectural Reading
 This file should be read as a composed view, not as the place where hierarchy business rules live. If a change requires concrete knowledge about whether a domain can rename, reorder, or accept notes, the answer should come from the bridges and capability interfaces, not from hard-coded QML assumptions.
+
+## Recent Updates
+- Added `pragma ComponentBehavior: Bound` at the file root so toolbar `Repeater` delegates can
+  reference `sidebarHierarchyView` id members with bound component scope.

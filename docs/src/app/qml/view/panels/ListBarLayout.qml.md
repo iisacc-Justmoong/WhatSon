@@ -69,6 +69,8 @@ itself.
   reasserts the pending user choice after the current event turn.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
 - `FocusedNoteDeletionBridge` keeps keyboard delete behavior aligned with whichever note card is visually focused.
+- Focused-note sync now reads `resolvedNoteListModel.currentNoteId` first, so keyboard-delete focus
+  follows the model-authoritative current note contract.
 
 ## Drag And Context Menu
 
@@ -77,6 +79,8 @@ itself.
 - The drag preview is reparented into the overlay layer so the carried note card can cross panel boundaries.
 - Note-card context menus are centralized at the root through `contextMenuNoteId` and `openNoteContextMenu(...)`,
   which keeps delegates free of per-row popup wiring.
+- Pointer-drag hot-spot fallback now uses `noteItemDelegate.width/height` explicitly, so drag-start
+  math remains bound to the delegate's own touch target.
 
 ## Tests
 

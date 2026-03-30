@@ -176,6 +176,19 @@ namespace
         return WhatSon::Bookmarks::defaultBookmarkColorHex();
     }
 
+    int noteCountForProgressValue(const QVector<LibraryNoteRecord>& notes, int progressValue)
+    {
+        int noteCount = 0;
+        for (const LibraryNoteRecord& note : notes)
+        {
+            if (note.progress == progressValue)
+            {
+                ++noteCount;
+            }
+        }
+        return noteCount;
+    }
+
     int indexOfNoteRecordById(const QVector<LibraryNoteRecord>& notes, const QString& noteId)
     {
         const QString normalizedNoteId = noteId.trimmed();
@@ -362,9 +375,11 @@ QVariantList ProgressHierarchyViewModel::depthItems() const
     for (int index = 0; index < serialized.size(); ++index)
     {
         QVariantMap entry = serialized.at(index).toMap();
+        const int noteCount = std::max(0, noteCountForProgressValue(m_allNotes, index));
         entry.insert(QStringLiteral("itemId"), index);
         entry.insert(QStringLiteral("key"), QStringLiteral("progress:%1").arg(index));
         entry.insert(QStringLiteral("progressValue"), index);
+        entry.insert(QStringLiteral("count"), noteCount);
         serialized[index] = entry;
     }
     return serialized;
@@ -579,6 +594,7 @@ bool ProgressHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
 
     syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
     refreshNoteListForSelection();
+    emit hierarchyModelChanged();
     return true;
 }
 
@@ -816,11 +832,13 @@ bool ProgressHierarchyViewModel::refreshIndexedNotesFromWshub(const QString& wsh
         m_allNotes.clear();
         m_noteListModel.setItems({});
         updateNoteItemCount();
+        emit hierarchyModelChanged();
         return false;
     }
 
     m_allNotes = libraryAll.notes();
     refreshNoteListForSelection();
+    emit hierarchyModelChanged();
     return true;
 }
 
@@ -836,6 +854,7 @@ bool ProgressHierarchyViewModel::refreshIndexedNotesFromProgressFilePath(QString
         m_allNotes.clear();
         m_noteListModel.setItems({});
         updateNoteItemCount();
+        emit hierarchyModelChanged();
         return false;
     }
 

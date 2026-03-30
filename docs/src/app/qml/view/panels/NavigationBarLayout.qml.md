@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/panels/NavigationBarLayout.qml`
 - Source kind: QML view/component
 - File name: `NavigationBarLayout.qml`
-- Approximate line count: 221
+- Approximate line count: 223
 
 ## QML Surface Snapshot
 - Root type: `Rectangle`
@@ -32,6 +32,10 @@
 - `toggleDetailPanelRequested`
 - `toggleSidebarRequested`
 - `viewHookRequested`
+
+## Recent Updates
+- Added `pragma ComponentBehavior: Bound` so nested mode `Component` branches can safely reference
+  `navigationBar` id members without unqualified-scope warnings.
 
 ## Intended Detailed Sections
 - Responsibility and business role

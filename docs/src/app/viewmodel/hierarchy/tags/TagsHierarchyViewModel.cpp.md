@@ -40,3 +40,9 @@ files change elsewhere in the hub.
 - Empty or malformed depth values are normalized before row creation.
 - Expansion and selection are keyed by stable tag identity rather than by row index.
 - A successful snapshot reload may refresh load-state metadata without forcing a visual reset.
+
+## Count Role Compatibility
+
+`depthItems()` now includes a numeric `count` role for every tag row. Because this viewmodel does
+not currently index note-to-tag membership, the emitted value is `0` as a schema-stability
+fallback for the shared hierarchy view.

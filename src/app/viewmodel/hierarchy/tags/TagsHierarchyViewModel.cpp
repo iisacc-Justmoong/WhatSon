@@ -278,7 +278,8 @@ QVariantList TagsHierarchyViewModel::depthItems() const
             {QStringLiteral("depth"), item.depth},
             {QStringLiteral("accent"), item.accent},
             {QStringLiteral("expanded"), item.expanded},
-            {QStringLiteral("showChevron"), item.showChevron}
+            {QStringLiteral("showChevron"), item.showChevron},
+            {QStringLiteral("count"), 0}
         });
     }
 

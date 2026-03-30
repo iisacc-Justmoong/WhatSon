@@ -24,6 +24,12 @@
 ### Signals
 - None detected during scaffold generation.
 
+## LVRS/QML Standard Alignment
+- Declares `pragma ComponentBehavior: Bound` to keep nested object scope deterministic.
+- Normalizes optional resolver callbacks through `resolveNumericResolverValue(...)` before numeric projection.
+- Centralizes drag/click scroll forwarding through `invokeScrollToMinimapPosition(localY)` so var callback dispatch is
+  explicit and lint-safe.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

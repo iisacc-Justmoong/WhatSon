@@ -98,7 +98,7 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("toggle the hierarchy sidebar and detail panel", architecture_text)
         self.assertIn("preserving the stored preferred widths", architecture_text)
 
-    def test_calendar_navigation_opens_content_overlay_contract(self) -> None:
+    def test_calendar_navigation_mounts_inline_content_surface_contract(self) -> None:
         main_text = (REPO_ROOT / "src/app/qml/Main.qml").read_text(encoding="utf-8")
         nav_bar_text = (
             REPO_ROOT / "src/app/qml/view/panels/NavigationBarLayout.qml"
@@ -108,6 +108,9 @@ class NavigationPanelToggleTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         content_text = (
             REPO_ROOT / "src/app/qml/view/panels/ContentViewLayout.qml"
+        ).read_text(encoding="utf-8")
+        year_calendar_text = (
+            REPO_ROOT / "src/app/qml/view/calendar/YearCalendarPage.qml"
         ).read_text(encoding="utf-8")
         app_main_text = (REPO_ROOT / "src/app/main.cpp").read_text(encoding="utf-8")
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
@@ -143,6 +146,12 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("onYearCalendarRequested: {", main_text)
         self.assertIn("onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false", main_text)
         self.assertIn('import "../calendar" as CalendarView', content_text)
+        self.assertIn("visible: !contentViewLayout.calendarOverlayVisible", content_text)
+        self.assertIn("id: calendarContentSurface", content_text)
+        self.assertIn("function onCurrentNoteIdChanged()", content_text)
+        self.assertIn("contentViewLayout.requestActiveCalendarOverlayClose()", content_text)
+        self.assertNotIn("id: calendarOverlay", content_text)
+        self.assertNotIn("MouseArea {", content_text)
         self.assertIn("CalendarView.DayCalendarPage {", content_text)
         self.assertIn("signal dayCalendarOverlayCloseRequested", content_text)
         self.assertIn("CalendarView.MonthCalendarPage {", content_text)
@@ -151,16 +160,28 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("signal weekCalendarOverlayCloseRequested", content_text)
         self.assertIn("CalendarView.YearCalendarPage {", content_text)
         self.assertIn("signal yearCalendarOverlayCloseRequested", content_text)
+        self.assertIn("pragma ComponentBehavior: Bound", year_calendar_text)
+        self.assertIn("required property var modelData", year_calendar_text)
+        self.assertIn(
+            "readonly property var optionModel: calendarSystemButton.modelData",
+            year_calendar_text,
+        )
+        self.assertIn(
+            "readonly property var dayModel: dayCell.modelData",
+            year_calendar_text,
+        )
 
         self.assertIn('setContextProperty(QStringLiteral("dayCalendarViewModel"), &dayCalendarViewModel);', app_main_text)
         self.assertIn('setContextProperty(QStringLiteral("monthCalendarViewModel"), &monthCalendarViewModel);', app_main_text)
         self.assertIn('setContextProperty(QStringLiteral("weekCalendarViewModel"), &weekCalendarViewModel);', app_main_text)
         self.assertIn('setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);', app_main_text)
-        self.assertIn("daily calendar overlay", readme_text)
-        self.assertIn("monthly calendar overlay", readme_text)
-        self.assertIn("weekly calendar overlay", readme_text)
-        self.assertIn("yearly calendar overlay", readme_text)
+        self.assertIn("daily calendar view", readme_text)
+        self.assertIn("monthly calendar view", readme_text)
+        self.assertIn("weekly calendar view", readme_text)
+        self.assertIn("yearly calendar view", readme_text)
+        self.assertIn("inline content slot", readme_text)
         self.assertIn("daily/weekly/monthly/yearly calendar actions from navigation", architecture_text)
+        self.assertIn("inline content surfaces", architecture_text)
 
 
 if __name__ == "__main__":

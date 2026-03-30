@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
@@ -225,6 +227,9 @@ Item {
                             model: noteListItem.visibleFolders
 
                             delegate: Row {
+                                id: folderLabelRow
+
+                                required property var modelData
                                 spacing: 8
 
                                 Item {
@@ -249,7 +254,9 @@ Item {
                                     lineHeight: noteListItem.metadataTextLineHeight
                                     lineHeightMode: Text.FixedHeight
                                     style: caption
-                                    text: modelData === undefined || modelData === null ? "" : String(modelData)
+                                    text: folderLabelRow.modelData === undefined || folderLabelRow.modelData === null
+                                          ? ""
+                                          : String(folderLabelRow.modelData)
                                 }
                             }
                         }
@@ -272,6 +279,9 @@ Item {
                             model: noteListItem.visibleTags
 
                             delegate: Row {
+                                id: tagLabelRow
+
+                                required property var modelData
                                 spacing: 8
 
                                 Item {
@@ -296,7 +306,9 @@ Item {
                                     lineHeight: noteListItem.metadataTextLineHeight
                                     lineHeightMode: Text.FixedHeight
                                     style: caption
-                                    text: modelData === undefined || modelData === null ? "" : String(modelData)
+                                    text: tagLabelRow.modelData === undefined || tagLabelRow.modelData === null
+                                          ? ""
+                                          : String(tagLabelRow.modelData)
                                 }
                             }
                         }

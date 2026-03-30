@@ -36,3 +36,9 @@ state.
 - Selection is preserved by semantic row key, never by stale row index.
 - Expansion resets only when the underlying event hierarchy truly changes in a way that removes the
   target row.
+
+## Count Role Compatibility
+
+`depthItems()` now always includes a numeric `count` field per row. The event domain currently does
+not own note-index membership state, so the value is emitted as `0` to keep the shared hierarchy
+model shape consistent across domains.

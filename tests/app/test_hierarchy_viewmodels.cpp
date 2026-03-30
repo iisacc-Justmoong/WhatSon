@@ -511,6 +511,7 @@ private
     void presetViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void tagsViewModel_supportsCrudContract();
     void hierarchyViewModels_exposeCapabilityInterfaces();
+    void hierarchyViewModels_hierarchyModel_exposesCountRoleAcrossDomains();
     void tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh();
     void libraryViewModel_reactsToNoteListModelMutation();
     void projectsModel_appliesCorrectionAndRaisesHookSignal();
@@ -680,6 +681,31 @@ void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_refr
     QString errorMessage;
     QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
 
+    const auto countByLabel = [&viewModel](const QString& label) -> int
+    {
+        const QVariantList hierarchyModel = viewModel.hierarchyModel();
+        for (const QVariant& entry : hierarchyModel)
+        {
+            const QVariantMap node = entry.toMap();
+            if (node.value(QStringLiteral("label")).toString() != label)
+            {
+                continue;
+            }
+
+            bool ok = false;
+            const int value = node.value(QStringLiteral("count")).toInt(&ok);
+            if (!ok)
+            {
+                return -1;
+            }
+            return value;
+        }
+        return -1;
+    };
+
+    QCOMPARE(countByLabel(QStringLiteral("Alpha")), 2);
+    QCOMPARE(countByLabel(QStringLiteral("Beta")), 1);
+
     viewModel.setSelectedIndex(0);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
 
@@ -698,6 +724,8 @@ void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_refr
             viewModel.noteListModel()->index(2, 0),
             LibraryNoteListModel::NoteIdRole).toString(),
         QStringLiteral("note-beta"));
+    QCOMPARE(countByLabel(QStringLiteral("Alpha")), 3);
+    QCOMPARE(countByLabel(QStringLiteral("Beta")), 0);
 }
 
 void HierarchyViewModelsTest::projectsViewModel_reloadNoteMetadataForNoteId_whenHeaderMissing_mustDropStaleProjection()
@@ -1817,6 +1845,69 @@ void HierarchyViewModelsTest::hierarchyViewModels_exposeCapabilityInterfaces()
     QVERIFY(qobject_cast<IHierarchyRenameCapability*>(&tagsViewModel) != nullptr);
     QVERIFY(qobject_cast<IHierarchyCrudCapability*>(&tagsViewModel) != nullptr);
     QVERIFY(qobject_cast<IHierarchyExpansionCapability*>(&tagsViewModel) != nullptr);
+}
+
+void HierarchyViewModelsTest::hierarchyViewModels_hierarchyModel_exposesCountRoleAcrossDomains()
+{
+    const auto assertCountRole = [](const QVariantList& hierarchyModel)
+    {
+        QVERIFY(!hierarchyModel.isEmpty());
+        for (const QVariant& entry : hierarchyModel)
+        {
+            const QVariantMap node = entry.toMap();
+            QVERIFY(node.contains(QStringLiteral("count")));
+            bool ok = false;
+            const int countValue = node.value(QStringLiteral("count")).toInt(&ok);
+            QVERIFY(ok);
+            QVERIFY(countValue >= 0);
+        }
+    };
+
+    LibraryHierarchyViewModel libraryViewModel;
+    libraryViewModel.setDepthItems(QVariantList{
+        QVariantMap{{QStringLiteral("label"), QStringLiteral("Root")}, {QStringLiteral("depth"), 0}}
+    });
+    assertCountRole(libraryViewModel.hierarchyModel());
+
+    ProjectsHierarchyViewModel projectsViewModel;
+    projectsViewModel.setProjectNames({QStringLiteral("Alpha")});
+    assertCountRole(projectsViewModel.hierarchyModel());
+
+    BookmarksHierarchyViewModel bookmarksViewModel;
+    assertCountRole(bookmarksViewModel.hierarchyModel());
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString resourcesPath = QDir(tempDir.path()).filePath(QStringLiteral("CountRole.wsresources"));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("logo"),
+        QStringLiteral("logo.png"),
+        QStringLiteral("png")));
+
+    ResourcesHierarchyViewModel resourcesViewModel;
+    resourcesViewModel.setResourcePaths({
+        QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource"))
+    });
+    assertCountRole(resourcesViewModel.hierarchyModel());
+
+    ProgressHierarchyViewModel progressViewModel;
+    assertCountRole(progressViewModel.hierarchyModel());
+
+    EventHierarchyViewModel eventViewModel;
+    eventViewModel.setEventNames({QStringLiteral("Kickoff")});
+    assertCountRole(eventViewModel.hierarchyModel());
+
+    PresetHierarchyViewModel presetViewModel;
+    presetViewModel.setPresetNames({QStringLiteral("Classic")});
+    assertCountRole(presetViewModel.hierarchyModel());
+
+    TagsHierarchyViewModel tagsViewModel;
+    tagsViewModel.setTagDepthEntries({
+        {QStringLiteral("brand"), QStringLiteral("Brand"), 0}
+    });
+    assertCountRole(tagsViewModel.hierarchyModel());
 }
 
 void HierarchyViewModelsTest::tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh()
