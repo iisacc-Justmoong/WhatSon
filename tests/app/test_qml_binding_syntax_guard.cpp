@@ -756,20 +756,20 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
         "ContentsDisplayView.qml must bind the drawer contents page to the local quick-note draft state.");
 
     QVERIFY2(
-        drawerMenuBarText.contains(QStringLiteral("id: DrawerMenubar")) &&
+        drawerMenuBarText.contains(QStringLiteral("id: drawerMenubar")) &&
             drawerMenuBarText.contains(QStringLiteral("objectName: \"DrawerMenubar\"")) &&
             drawerMenuBarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4565\"")),
-        "DrawerMenuBar.qml must preserve the Figma DrawerMenubar frame identity.");
+        "DrawerMenuBar.qml must preserve the Figma DrawerMenubar frame identity while keeping QML ids lowerCamelCase.");
     QVERIFY2(
         drawerMenuBarText.contains(QStringLiteral("LV.IconSegmentedControl {")) &&
-            drawerMenuBarText.contains(QStringLiteral("id: QuickNote")) &&
-            drawerMenuBarText.contains(QStringLiteral("id: ItemBox")) &&
-            drawerMenuBarText.contains(QStringLiteral("id: DataSearch")) &&
-            drawerMenuBarText.contains(QStringLiteral("id: GraphView")),
+            drawerMenuBarText.contains(QStringLiteral("id: quickNoteButton")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: itemBoxButton")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: dataSearchButton")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: graphViewButton")),
         "DrawerMenuBar.qml must expose the four Figma drawer mode segments as dedicated icon buttons.");
     QVERIFY2(
-        drawerMenuBarText.contains(QStringLiteral("id: TextAlign")) &&
-            drawerMenuBarText.contains(QStringLiteral("id: ViewOptions")) &&
+        drawerMenuBarText.contains(QStringLiteral("id: textAlignButton")) &&
+            drawerMenuBarText.contains(QStringLiteral("id: viewOptionsButton")) &&
             drawerMenuBarText.contains(QStringLiteral("id: editorPreviewVertical")),
         "DrawerMenuBar.qml must keep the three right-side drawer configuration controls from the Figma frame.");
     QVERIFY2(
@@ -780,12 +780,12 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
         "DrawerMenuBar.qml must keep the Figma-specified icon names for each drawer mode segment.");
 
     QVERIFY2(
-        drawerContentsText.contains(QStringLiteral("id: DrawerContents")) &&
+        drawerContentsText.contains(QStringLiteral("id: drawerContents")) &&
             drawerContentsText.contains(QStringLiteral("objectName: \"DrawerContents\"")) &&
             drawerContentsText.contains(QStringLiteral("readonly property string figmaNodeId: \"174:6352\"")),
-        "DrawerContents.qml must preserve the Figma DrawerContents frame identity.");
+        "DrawerContents.qml must preserve the Figma DrawerContents frame identity while keeping QML ids lowerCamelCase.");
     QVERIFY2(
-        drawerContentsText.contains(QStringLiteral("id: QuickNotePage")) &&
+        drawerContentsText.contains(QStringLiteral("id: quickNotePage")) &&
             drawerContentsText.contains(QStringLiteral("objectName: \"QuickNotePage\"")),
         "DrawerContents.qml must render the drawer quick-note body as an inline page surface, not as a separate window.");
     QVERIFY2(
@@ -803,14 +803,14 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
         "DrawerContents.qml must neutralize LVRS top padding so the quick-note page starts at the Figma top edge instead of vertically centering the text block.");
 
     QVERIFY2(
-        drawerToolbarText.contains(QStringLiteral("id: DrawerToolbar")) &&
+        drawerToolbarText.contains(QStringLiteral("id: drawerToolbar")) &&
             drawerToolbarText.contains(QStringLiteral("objectName: \"DrawerToolbar\"")) &&
             drawerToolbarText.contains(QStringLiteral("readonly property string figmaNodeId: \"155:4570\"")),
-        "DrawerToolbar.qml must preserve the Figma DrawerToolbar frame identity.");
+        "DrawerToolbar.qml must preserve the Figma DrawerToolbar frame identity while keeping QML ids lowerCamelCase.");
     QVERIFY2(
-        drawerToolbarText.contains(QStringLiteral("id: Sumit")) &&
-            drawerToolbarText.contains(QStringLiteral("id: ShowQuickNoteWindow")) &&
-            drawerToolbarText.contains(QStringLiteral("id: NewDraft")),
+        drawerToolbarText.contains(QStringLiteral("id: sumitGroup")) &&
+            drawerToolbarText.contains(QStringLiteral("id: showQuickNoteWindowButton")) &&
+            drawerToolbarText.contains(QStringLiteral("id: newDraftButton")),
         "DrawerToolbar.qml must keep the Figma toolbar group and both action controls with stable ids.");
     QVERIFY2(
         drawerToolbarText.contains(QStringLiteral("text: \"New Draft\"")) &&

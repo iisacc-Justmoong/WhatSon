@@ -5,14 +5,14 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Rectangle {
-    id: DrawerMenubar
+    id: drawerMenubar
 
     readonly property string figmaNodeId: "155:4565"
     readonly property string quickNoteModeName: "QuickNote"
     readonly property string itemBoxModeName: "ItemBox"
     readonly property string dataSearchModeName: "DataSearch"
     readonly property string graphViewModeName: "GraphView"
-    property string activeDrawerMode: DrawerMenubar.quickNoteModeName
+    property string activeDrawerMode: drawerMenubar.quickNoteModeName
 
     signal drawerConfigActionRequested(string actionName)
     signal drawerModeRequested(string modeName)
@@ -39,7 +39,7 @@ Rectangle {
             spacing: LV.Theme.gapNone
 
             LV.IconSegmentedControl {
-                id: DrawerModes
+                id: drawerModes
 
                 readonly property string figmaNodeId: "155:4566"
                 objectName: "DrawerModes"
@@ -54,71 +54,71 @@ Rectangle {
                 verticalPadding: LV.Theme.gap4
 
                 LV.IconButton {
-                    id: QuickNote
+                    id: quickNoteButton
 
                     readonly property string figmaNodeId: "I155:4566;206:4189"
                     objectName: "QuickNote"
                     horizontalPadding: LV.Theme.gap2
                     iconName: "textToImage"
-                    tone: DrawerMenubar.activeDrawerMode === DrawerMenubar.quickNoteModeName
+                    tone: drawerMenubar.activeDrawerMode === drawerMenubar.quickNoteModeName
                         ? LV.AbstractButton.Default
                         : LV.AbstractButton.Borderless
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerModeRequested(DrawerMenubar.quickNoteModeName);
-                        DrawerMenubar.requestViewHook("drawer-mode-quick-note");
+                        drawerMenubar.drawerModeRequested(drawerMenubar.quickNoteModeName);
+                        drawerMenubar.requestViewHook("drawer-mode-quick-note");
                     }
                 }
                 LV.IconButton {
-                    id: ItemBox
+                    id: itemBoxButton
 
                     readonly property string figmaNodeId: "I155:4566;206:4190"
                     objectName: "ItemBox"
                     horizontalPadding: LV.Theme.gap2
                     iconName: "swiftPackage"
-                    tone: DrawerMenubar.activeDrawerMode === DrawerMenubar.itemBoxModeName
+                    tone: drawerMenubar.activeDrawerMode === drawerMenubar.itemBoxModeName
                         ? LV.AbstractButton.Default
                         : LV.AbstractButton.Borderless
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerModeRequested(DrawerMenubar.itemBoxModeName);
-                        DrawerMenubar.requestViewHook("drawer-mode-item-box");
+                        drawerMenubar.drawerModeRequested(drawerMenubar.itemBoxModeName);
+                        drawerMenubar.requestViewHook("drawer-mode-item-box");
                     }
                 }
                 LV.IconButton {
-                    id: DataSearch
+                    id: dataSearchButton
 
                     readonly property string figmaNodeId: "I155:4566;206:4194"
                     objectName: "DataSearch"
                     horizontalPadding: LV.Theme.gap2
                     iconName: "shortcutFilter"
-                    tone: DrawerMenubar.activeDrawerMode === DrawerMenubar.dataSearchModeName
+                    tone: drawerMenubar.activeDrawerMode === drawerMenubar.dataSearchModeName
                         ? LV.AbstractButton.Default
                         : LV.AbstractButton.Borderless
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerModeRequested(DrawerMenubar.dataSearchModeName);
-                        DrawerMenubar.requestViewHook("drawer-mode-data-search");
+                        drawerMenubar.drawerModeRequested(drawerMenubar.dataSearchModeName);
+                        drawerMenubar.requestViewHook("drawer-mode-data-search");
                     }
                 }
                 LV.IconButton {
-                    id: GraphView
+                    id: graphViewButton
 
                     readonly property string figmaNodeId: "I155:4566;206:4231"
                     objectName: "GraphView"
                     horizontalPadding: LV.Theme.gap2
                     iconName: "graphMachineLearning"
-                    tone: DrawerMenubar.activeDrawerMode === DrawerMenubar.graphViewModeName
+                    tone: drawerMenubar.activeDrawerMode === drawerMenubar.graphViewModeName
                         ? LV.AbstractButton.Default
                         : LV.AbstractButton.Borderless
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerModeRequested(DrawerMenubar.graphViewModeName);
-                        DrawerMenubar.requestViewHook("drawer-mode-graph-view");
+                        drawerMenubar.drawerModeRequested(drawerMenubar.graphViewModeName);
+                        drawerMenubar.requestViewHook("drawer-mode-graph-view");
                     }
                 }
             }
@@ -126,7 +126,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             LV.HStack {
-                id: DrawerViewConfig
+                id: drawerViewConfig
 
                 readonly property string figmaNodeId: "155:4567"
                 objectName: "DrawerViewConfig"
@@ -134,7 +134,7 @@ Rectangle {
                 spacing: LV.Theme.gap2
 
                 LV.IconButton {
-                    id: TextAlign
+                    id: textAlignButton
 
                     readonly property string figmaNodeId: "155:4568"
                     objectName: "TextAlign"
@@ -144,12 +144,12 @@ Rectangle {
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerConfigActionRequested("TextAlign");
-                        DrawerMenubar.requestViewHook("drawer-text-align");
+                        drawerMenubar.drawerConfigActionRequested("TextAlign");
+                        drawerMenubar.requestViewHook("drawer-text-align");
                     }
                 }
                 LV.IconMenuButton {
-                    id: ViewOptions
+                    id: viewOptionsButton
 
                     readonly property string figmaNodeId: "155:4569"
                     objectName: "ViewOptions"
@@ -161,8 +161,8 @@ Rectangle {
                     topPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerConfigActionRequested("ViewOptions");
-                        DrawerMenubar.requestViewHook("drawer-view-options");
+                        drawerMenubar.drawerConfigActionRequested("ViewOptions");
+                        drawerMenubar.requestViewHook("drawer-view-options");
                     }
                 }
                 LV.IconButton {
@@ -176,8 +176,8 @@ Rectangle {
                     verticalPadding: LV.Theme.gap2
 
                     onClicked: {
-                        DrawerMenubar.drawerConfigActionRequested("editorPreviewVertical");
-                        DrawerMenubar.requestViewHook("drawer-preview-vertical");
+                        drawerMenubar.drawerConfigActionRequested("editorPreviewVertical");
+                        drawerMenubar.requestViewHook("drawer-preview-vertical");
                     }
                 }
             }

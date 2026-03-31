@@ -8,8 +8,8 @@ Quick Note mode from Figma frame `174:6352`.
 ## Frame Contract
 
 - Root frame identity is preserved through `objectName: "DrawerContents"` and `figmaNodeId: "174:6352"`.
-- Root id is `DrawerContents`, and internal bindings reference this id directly for mode state and hook dispatch.
-- The rendered page surface is `QuickNotePage` (`174:6350`), centered horizontally and capped at `511px` width.
+- Root id is `drawerContents`, and internal bindings reference this id directly for mode state and hook dispatch.
+- The rendered page surface is `quickNotePage` (`174:6350`), centered horizontally and capped at `511px` width.
 - The drawer content uses `16px` horizontal padding and `8px` vertical padding around the page surface.
 
 ## Quick Note Page
