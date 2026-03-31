@@ -27,6 +27,8 @@
 ## Recent Updates
 - Context-menu `selectedIndex` now resolves through `modeBar.navigationModeViewModel` to keep
   nested menu bindings explicitly scoped to the root id.
+- Mode label and context-menu fallback now default to `View` (`selectedIndex: 0`) when the bound
+  navigation mode viewmodel is not yet resolved.
 
 ## Intended Detailed Sections
 - Responsibility and business role

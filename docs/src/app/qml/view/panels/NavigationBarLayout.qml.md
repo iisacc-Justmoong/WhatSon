@@ -36,6 +36,9 @@
 ## Recent Updates
 - Added `pragma ComponentBehavior: Bound` so nested mode `Component` branches can safely reference
   `navigationBar` id members without unqualified-scope warnings.
+- Compact mobile right-group contract keeps two independent actions:
+  one `nodesnewFolder` add-folder button and one mode-specific context-menu button loaded from the
+  active View/Edit/Control application bar component.
 
 ## Intended Detailed Sections
 - Responsibility and business role

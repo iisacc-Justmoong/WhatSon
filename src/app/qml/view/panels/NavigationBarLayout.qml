@@ -11,7 +11,7 @@ import "navigation/view" as NavigationViewMode
 Rectangle {
     id: navigationBar
 
-    readonly property string activeNavigationModeName: navigationModeViewModel && navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : "Control"
+    readonly property string activeNavigationModeName: navigationModeViewModel && navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : "View"
     readonly property int bottomInset: LV.Theme.gap2
     readonly property int compactHorizontalInset: LV.Theme.gapNone
     readonly property int compactLeftGroupSpacing: LV.Theme.gap4

@@ -5,7 +5,7 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: modeBar
 
-    readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "Control"
+    readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "View"
     readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
     readonly property var modeMenuItems: [
         {
@@ -76,7 +76,7 @@ LV.HStack {
         selectedIndex: modeBar.navigationModeViewModel
                        && modeBar.navigationModeViewModel.activeMode !== undefined
                        ? modeBar.navigationModeViewModel.activeMode
-                       : 2
+                       : 0
 
         onItemTriggered: function (index) {
             if (modeBar.navigationModeViewModel && modeBar.navigationModeViewModel.requestModeChange !== undefined)

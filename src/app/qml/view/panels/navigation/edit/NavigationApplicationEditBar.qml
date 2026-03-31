@@ -159,7 +159,7 @@ Item {
                 id: applicationEditMenuButton
 
                 bottomPadding: LV.Theme.gap2
-                iconName: "toolWindowCheckDetails"
+                iconName: "toolwindowtodo"
                 leftPadding: LV.Theme.gap2
                 rightPadding: LV.Theme.gap4
                 spacing: LV.Theme.gapNone

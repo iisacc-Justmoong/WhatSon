@@ -48,6 +48,14 @@ class MobileShellLayoutTests(unittest.TestCase):
             REPO_ROOT
             / "src/app/qml/view/panels/navigation/control/NavigationApplicationControlBar.qml"
         ).read_text(encoding="utf-8")
+        view_bar_text = (
+            REPO_ROOT
+            / "src/app/qml/view/panels/navigation/view/NavigationApplicationViewBar.qml"
+        ).read_text(encoding="utf-8")
+        edit_bar_text = (
+            REPO_ROOT
+            / "src/app/qml/view/panels/navigation/edit/NavigationApplicationEditBar.qml"
+        ).read_text(encoding="utf-8")
 
         self.assertIn("signal compactAddFolderRequested", navigation_bar_text)
         self.assertIn("property bool compactAddFolderVisible: false", navigation_bar_text)
@@ -60,6 +68,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn('iconName: "settings"', navigation_bar_text)
         self.assertIn("showLabel: false", navigation_bar_text)
         self.assertIn('iconName: "nodesnewFolder"', navigation_bar_text)
+        self.assertIn("enabled: navigationBar.compactAddFolderEnabled", navigation_bar_text)
         self.assertIn("navigationBar.compactLeadingActionRequested()", navigation_bar_text)
         self.assertIn("navigationBar.compactAddFolderRequested();", navigation_bar_text)
         self.assertIn("visible: navigationBar.compactMode", navigation_bar_text)
@@ -77,6 +86,22 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("rightPadding: LV.Theme.gap4", control_bar_text)
         self.assertIn("spacing: LV.Theme.gapNone", control_bar_text)
         self.assertNotIn('iconName: "generalsearch"', control_bar_text)
+        self.assertIn("LV.IconMenuButton {", view_bar_text)
+        self.assertIn('iconName: "toolwindowtodo"', view_bar_text)
+        self.assertIn("applicationViewContextMenu.openFor(", view_bar_text)
+        self.assertIn("applicationViewMenuButton.width,", view_bar_text)
+        self.assertIn(
+            "applicationViewMenuButton.height + applicationViewBar.menuYOffset",
+            view_bar_text,
+        )
+        self.assertIn("LV.IconMenuButton {", edit_bar_text)
+        self.assertIn('iconName: "toolwindowtodo"', edit_bar_text)
+        self.assertIn("applicationEditContextMenu.openFor(", edit_bar_text)
+        self.assertIn("applicationEditMenuButton.width,", edit_bar_text)
+        self.assertIn(
+            "applicationEditMenuButton.height + applicationEditBar.menuYOffset",
+            edit_bar_text,
+        )
 
         self.assertIn("signal createNoteRequested", status_bar_text)
         self.assertIn("property int compactBottomInset: LV.Theme.gapNone", status_bar_text)
@@ -110,7 +135,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property bool footerVisible: true", hierarchy_view_text)
         self.assertIn("property bool hierarchyEditable: false", hierarchy_view_text)
         self.assertIn("property bool hierarchyExpansionActivationSuppressed: false", hierarchy_view_text)
-        self.assertIn("function armHierarchyExpansionActivationSuppression()", hierarchy_view_text)
+        self.assertIn("function armHierarchyExpansionActivationSuppression(itemId)", hierarchy_view_text)
         self.assertIn("property bool searchFieldVisible: false", hierarchy_view_text)
         self.assertIn("property int searchHeaderMinHeight: LV.Theme.gap24", hierarchy_view_text)
         self.assertIn("property int searchHeaderTopGap: LV.Theme.gap4", hierarchy_view_text)
@@ -120,7 +145,7 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_view_text)
         self.assertIn("if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)", hierarchy_view_text)
         self.assertIn(
-            "sidebarHierarchyView.armHierarchyExpansionActivationSuppression();",
+            "sidebarHierarchyView.armHierarchyExpansionActivationSuppression(itemId);",
             hierarchy_view_text,
         )
         self.assertIn("PanelView.ListBarHeader", hierarchy_view_text)

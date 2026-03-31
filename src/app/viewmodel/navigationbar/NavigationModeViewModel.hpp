@@ -56,7 +56,7 @@ public
 private:
     void applyActiveModeViewModel(NavigationMode activeMode);
 
-    NavigationMode m_activeMode = NavigationMode::Control;
+    NavigationMode m_activeMode = NavigationMode::View;
     NavigationModeSectionViewModel m_viewModeViewModel;
     NavigationModeSectionViewModel m_editModeViewModel;
     NavigationModeSectionViewModel m_controlModeViewModel;

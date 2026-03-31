@@ -20,6 +20,10 @@
 ### Enums
 - None detected during scaffold generation.
 
+## Recent Updates
+- Default active mode now initializes to `View` so first-render navigation matches the view-first
+  mobile/desktop toolbar contract.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

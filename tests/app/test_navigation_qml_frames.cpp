@@ -220,9 +220,18 @@ void NavigationQmlFramesTest::navigationBar_mustSwitchApplicationBarsByNavigatio
     QVERIFY(!applicationCalendarBar.isEmpty());
     QVERIFY(!applicationPreferenceBar.isEmpty());
     QVERIFY(navigationBarLayout.contains(QStringLiteral("readonly property string activeNavigationModeName")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationModeViewModel.activeModeName !== undefined ? navigationModeViewModel.activeModeName : \"View\"")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("iconName: \"nodesnewFolder\"")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("navigationBar.compactAddFolderRequested();")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationViewMode.NavigationApplicationViewBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationEditMode.NavigationApplicationEditBar {")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("NavigationControlMode.NavigationApplicationControlBar {")));
+    const int compactAddFolderButtonIndex = navigationBarLayout.indexOf(QStringLiteral("iconName: \"nodesnewFolder\""));
+    const int compactModeMenuLoaderIndex = navigationBarLayout.indexOf(QStringLiteral("Loader {"), compactAddFolderButtonIndex);
+    QVERIFY(compactAddFolderButtonIndex >= 0);
+    QVERIFY(compactModeMenuLoaderIndex >= 0);
+    QVERIFY(compactAddFolderButtonIndex < compactModeMenuLoaderIndex);
     QVERIFY(applicationViewBar.contains(QStringLiteral("NavigationShared.NavigationApplicationPreferenceBar {")));
     QVERIFY(applicationEditBar.contains(QStringLiteral("NavigationShared.NavigationApplicationPreferenceBar {")));
     QVERIFY(applicationCalendarBar.contains(QStringLiteral("NavigationCalendarBar {")));
@@ -284,7 +293,11 @@ void NavigationQmlFramesTest::navigationSelectionBars_mustUseContextMenuCombos()
 
     QVERIFY(modeBar.contains(QStringLiteral("LV.ComboBox {")));
     QVERIFY(modeBar.contains(QStringLiteral("text: modeBar.activeModeText")));
+    QVERIFY(modeBar.contains(QStringLiteral(
+        "activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : \"View\"")));
     QVERIFY(modeBar.contains(QStringLiteral("LV.ContextMenu {")));
+    QVERIFY(modeBar.contains(QStringLiteral("selectedIndex: modeBar.navigationModeViewModel")));
+    QVERIFY(modeBar.contains(QStringLiteral("? modeBar.navigationModeViewModel.activeMode\n                       : 0")));
     QVERIFY(modeBar.contains(QStringLiteral("requestModeChange(index)")));
     QVERIFY(modeBar.contains(QStringLiteral("iconName: \"generalshow\"")));
     QVERIFY(modeBar.contains(QStringLiteral("iconName: \"renameColumn\"")));
@@ -406,7 +419,7 @@ void NavigationQmlFramesTest::navigationApplicationViewAndEditBars_mustMatchFigm
     QVERIFY(viewAddNewIndex < viewPreferenceIndex);
     QVERIFY(applicationViewBar.contains(QStringLiteral("LV.IconMenuButton {")));
     QVERIFY(applicationViewBar.contains(QStringLiteral("id: applicationViewContextMenu")));
-    QVERIFY(applicationViewBar.contains(QStringLiteral("iconName: \"toolWindowCheckDetails\"")));
+    QVERIFY(applicationViewBar.contains(QStringLiteral("iconName: \"toolwindowtodo\"")));
     QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"toolWindowCheckDetails\"")));
     QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"newUIlightThemeSelected\"")));
     QVERIFY(applicationViewBar.contains(QStringLiteral("\"iconName\": \"table\"")));
@@ -447,7 +460,7 @@ void NavigationQmlFramesTest::navigationApplicationViewAndEditBars_mustMatchFigm
     QVERIFY(editAddNewIndex < editPreferenceIndex);
     QVERIFY(applicationEditBar.contains(QStringLiteral("LV.IconMenuButton {")));
     QVERIFY(applicationEditBar.contains(QStringLiteral("id: applicationEditContextMenu")));
-    QVERIFY(applicationEditBar.contains(QStringLiteral("iconName: \"toolWindowCheckDetails\"")));
+    QVERIFY(applicationEditBar.contains(QStringLiteral("iconName: \"toolwindowtodo\"")));
     QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"toolWindowCheckDetails\"")));
     QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"newUIlightThemeSelected\"")));
     QVERIFY(applicationEditBar.contains(QStringLiteral("\"iconName\": \"table\"")));

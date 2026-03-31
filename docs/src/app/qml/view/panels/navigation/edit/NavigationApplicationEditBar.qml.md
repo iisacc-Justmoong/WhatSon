@@ -39,6 +39,10 @@ The Figma node mapping is:
 ## Notes
 - Full-mode child frames reuse shared wrappers from `navigation/` so view and edit modes avoid
   duplicated mode-local wrapper files.
+- On mobile compact shell, this menu button is rendered alongside (not instead of) the shared
+  `nodesnewFolder` add-folder button from `NavigationBarLayout.qml`.
+- Compact trigger icon now matches control mode (`toolwindowtodo`) so mobile mode bars keep one
+  consistent menu affordance pattern.
 - Compact trigger follows the shared menu-button padding contract used by control mode:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
 - The detail-panel menu label is dynamic:
