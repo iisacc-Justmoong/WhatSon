@@ -1,7 +1,10 @@
 # `src/app/main.cpp`
 
 ## Role
-`main.cpp` is the application composition root. It is not a domain object and it is not supposed to hold business policy. Its job is to assemble long-lived runtime objects, run startup-time workspace loading, register QML bridge types, and expose the final object graph to the LVRS application shell.
+`main.cpp` is the application composition root. It is not a domain object and it is not supposed to
+hold business policy. Its job is to assemble long-lived runtime objects, run startup-time workspace
+loading, and delegate repetitive bootstrap wiring to dedicated helpers under
+`src/app/runtime/bootstrap`.
 
 ## What It Constructs
 - Dedicated hierarchy viewmodels for each hierarchy domain.
@@ -14,8 +17,10 @@
 - `YearCalendarViewModel` as the reusable year-grid source for the navigation-triggered calendar overlay.
 - In trial builds, a trial activation policy and a dedicated desktop trial-status window bootstrap path.
 - Runtime services such as async scheduling, hub sync, permission bootstrap, write lease management, and startup hub selection persistence.
-- QML bridge types such as `HierarchyDragDropBridge`, `HierarchyInteractionBridge`,
-  `NoteListModelContractBridge`, and editor helper bridges.
+- Bootstrap helper calls for:
+  - QML internal bridge registration (`WhatSonQmlInternalTypeRegistrar`)
+  - hub-sync mutation wiring (`WhatSonHubSyncWiring`)
+  - workspace context-property binding (`WhatSonQmlContextBinder`)
 
 ## Startup Flow
 1. Parse launch options such as onboarding-only mode.
@@ -34,13 +39,16 @@
 - `LibraryNoteMutationViewModel` wraps `LibraryHierarchyViewModel` so note mutation shortcuts no longer need the full library hierarchy surface.
 - `DetailPanelViewModel` owns dedicated selector-copy viewmodels for Projects, Bookmarks, and Progress. `main.cpp` injects the canonical hierarchy viewmodels only as read-only selector sources so detail-panel combo state stays decoupled from sidebar selection.
 - The detail panel current-note bridge must follow `SidebarHierarchyViewModel::activeNoteListModel` and `activeHierarchyViewModel`, not the library hierarchy unconditionally, because `.wsnhead` reads and writes must target the note identified by the current workspace view.
-- `qmlRegisterType(...)` is used for bridge-like objects that should be instantiated from QML rather than pushed as singletons.
-- `WhatSonHubSyncController::acknowledgeLocalMutation()` is wired from Library, Bookmarks, and Progress
-  `hubFilesystemMutated` signals so local `.wsnbody` writes do not trigger false-positive external sync reloads.
+- QML type registration is delegated to `WhatSonQmlInternalTypeRegistrar`, so `main.cpp` no longer
+  owns the raw registration list directly.
+- `WhatSonHubSyncController::acknowledgeLocalMutation()` wiring is delegated to
+  `WhatSonHubSyncWiring`, which centralizes mutation-source connection policy.
 - Trial builds keep the trial-status window out of the main workspace route graph. The composition root injects the activation policy through dedicated initial properties instead of exposing another global workspace context object.
 
 ## QML Exposure
-This file exports the root runtime objects through `engine.rootContext()->setContextProperty(...)`. `Main.qml` immediately re-registers the view-facing objects into `LV.ViewModels` and binds write ownership per view ID.
+This file exports the root runtime objects through `WhatSonQmlContextBinder`, which writes the
+context-property set into `engine.rootContext()`. `Main.qml` immediately re-registers the
+view-facing objects into `LV.ViewModels` and binds write ownership per view ID.
 
 The practical split is this.
 - C++ owns object lifetime and initial graph assembly.
@@ -58,6 +66,7 @@ The practical split is this.
 - Permission bootstrap starts after the foreground UI has been brought up, which keeps startup responsive.
 
 ## Why This File Is Still a Hotspot
-- It mixes application bootstrap, runtime loading, platform integration, and QML exposure in one translation unit.
+- It still owns startup orchestration, platform bootstrap, and window-loading flow, even after
+  extracting repetitive wiring blocks to dedicated bootstrap helpers.
 - The file is sensitive to architectural regressions because the policy lock, QML registration, and context-property export order all matter.
 - It is the first place to read when debugging missing runtime objects in QML, incorrect startup hub selection, or broken initialization order.

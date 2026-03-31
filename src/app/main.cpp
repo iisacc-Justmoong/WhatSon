@@ -12,19 +12,12 @@
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
-#include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
-#include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
-#include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 #include "viewmodel/calendar/DayCalendarViewModel.hpp"
 #include "viewmodel/calendar/MonthCalendarViewModel.hpp"
 #include "viewmodel/calendar/WeekCalendarViewModel.hpp"
 #include "viewmodel/calendar/YearCalendarViewModel.hpp"
 #include "viewmodel/onboarding/OnboardingHubController.hpp"
 #include "viewmodel/onboarding/OnboardingRouteBootstrapController.hpp"
-#include "viewmodel/panel/FocusedNoteDeletionBridge.hpp"
-#include "viewmodel/panel/HierarchyDragDropBridge.hpp"
-#include "viewmodel/panel/HierarchyInteractionBridge.hpp"
-#include "viewmodel/panel/NoteListModelContractBridge.hpp"
 #include "viewmodel/panel/PanelViewModelRegistry.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
 #include "viewmodel/sidebar/HierarchyViewModelProvider.hpp"
@@ -37,6 +30,9 @@
 #include "runtime/startup/WhatSonStartupRuntimeCoordinator.hpp"
 #include "runtime/startup/WhatSonStartupHubResolver.hpp"
 #include "runtime/bootstrap/WhatSonAppLaunchSupport.hpp"
+#include "runtime/bootstrap/WhatSonHubSyncWiring.hpp"
+#include "runtime/bootstrap/WhatSonQmlContextBinder.hpp"
+#include "runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
 #include "runtime/permissions/WhatSonPermissionBootstrapper.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
@@ -66,7 +62,6 @@
 #include <QVariant>
 #include <QVector>
 #include <QWindow>
-#include <qqml.h>
 #include <QtCore/qglobal.h>
 
 #include <cstdlib>
@@ -111,20 +106,7 @@ int main(int argc, char* argv[])
 #if !defined(WHATSON_USE_LVRS_DYNAMIC_QML_IMPORT)
     qml_register_types_LVRS();
 #endif
-    qmlRegisterType<ContentsEditorSelectionBridge>(
-        "WhatSon.App.Internal", 1, 0, "ContentsEditorSelectionBridge");
-    qmlRegisterType<ContentsLogicalTextBridge>(
-        "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
-    qmlRegisterType<ContentsGutterMarkerBridge>(
-        "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
-    qmlRegisterType<FocusedNoteDeletionBridge>(
-        "WhatSon.App.Internal", 1, 0, "FocusedNoteDeletionBridge");
-    qmlRegisterType<NoteListModelContractBridge>(
-        "WhatSon.App.Internal", 1, 0, "NoteListModelContractBridge");
-    qmlRegisterType<HierarchyDragDropBridge>(
-        "WhatSon.App.Internal", 1, 0, "HierarchyDragDropBridge");
-    qmlRegisterType<HierarchyInteractionBridge>(
-        "WhatSon.App.Internal", 1, 0, "HierarchyInteractionBridge");
+    WhatSon::Runtime::Bootstrap::registerInternalQmlTypes();
 #if !defined(Q_OS_MACOS) && !defined(Q_OS_IOS)
     app.setWindowIcon(QIcon(QStringLiteral(":/whatson/AppIcon.png")));
 #endif
@@ -338,32 +320,16 @@ int main(int argc, char* argv[])
         {
             return startupRuntimeCoordinator.loadHubIntoRuntime(hubPath, errorMessage);
         });
-    QObject::connect(
-        &hubSyncController,
-        &WhatSonHubSyncController::syncFailed,
-        &app,
-        [](const QString& errorMessage)
-        {
-            if (!errorMessage.trimmed().isEmpty())
+    const WhatSon::Runtime::Bootstrap::HubSyncWiringResult hubSyncWiring =
+        WhatSon::Runtime::Bootstrap::wireHubSyncController(
+            &hubSyncController,
+            &app,
             {
-                qWarning().noquote() << QStringLiteral("Hub sync failed: %1").arg(errorMessage.trimmed());
-            }
-        });
-    QObject::connect(
-        &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::hubFilesystemMutated,
-        &hubSyncController,
-        &WhatSonHubSyncController::acknowledgeLocalMutation);
-    QObject::connect(
-        &bookmarksHierarchyViewModel,
-        &BookmarksHierarchyViewModel::hubFilesystemMutated,
-        &hubSyncController,
-        &WhatSonHubSyncController::acknowledgeLocalMutation);
-    QObject::connect(
-        &progressHierarchyViewModel,
-        &ProgressHierarchyViewModel::hubFilesystemMutated,
-        &hubSyncController,
-        &WhatSonHubSyncController::acknowledgeLocalMutation);
+                &libraryHierarchyViewModel,
+                &bookmarksHierarchyViewModel,
+                &progressHierarchyViewModel
+            });
+    Q_UNUSED(hubSyncWiring);
     resourcesImportViewModel.setReloadResourcesCallback(
         [&startupRuntimeCoordinator, &hubSyncController](const QString& hubPath, QString* errorMessage) -> bool
         {
@@ -467,38 +433,30 @@ int main(int argc, char* argv[])
 
     WhatSon::Policy::ArchitecturePolicyLock::lock();
 
-    engine.rootContext()->setContextProperty(QStringLiteral("libraryHierarchyViewModel"), &libraryHierarchyViewModel);
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("libraryNoteMutationViewModel"),
-        &libraryNoteMutationViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("projectsHierarchyViewModel"), &projectsHierarchyViewModel);
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("bookmarksHierarchyViewModel"),
-        &bookmarksHierarchyViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("tagsHierarchyViewModel"), &tagsHierarchyViewModel);
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("resourcesHierarchyViewModel"),
-        &resourcesHierarchyViewModel);
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("resourcesImportViewModel"),
-        &resourcesImportViewModel);
-    engine.rootContext()->setContextProperty(
-        QStringLiteral("progressHierarchyViewModel"),
-        &progressHierarchyViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("eventHierarchyViewModel"), &eventHierarchyViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("presetHierarchyViewModel"), &presetHierarchyViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("detailPanelViewModel"), &detailPanelViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("editorViewModeViewModel"), &editorViewModeViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("navigationModeViewModel"), &navigationModeViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("sidebarHierarchyViewModel"), &sidebarHierarchyViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("asyncScheduler"), &asyncScheduler);
-    engine.rootContext()->setContextProperty(QStringLiteral("calendarBoardStore"), &calendarBoardStore);
-    engine.rootContext()->setContextProperty(QStringLiteral("systemCalendarStore"), &systemCalendarStore);
-    engine.rootContext()->setContextProperty(QStringLiteral("dayCalendarViewModel"), &dayCalendarViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("monthCalendarViewModel"), &monthCalendarViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("weekCalendarViewModel"), &weekCalendarViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);
-    engine.rootContext()->setContextProperty(QStringLiteral("panelViewModelRegistry"), &panelViewModelRegistry);
+    WhatSon::Runtime::Bootstrap::WorkspaceContextObjects workspaceContextObjects;
+    workspaceContextObjects.libraryHierarchyViewModel = &libraryHierarchyViewModel;
+    workspaceContextObjects.libraryNoteMutationViewModel = &libraryNoteMutationViewModel;
+    workspaceContextObjects.projectsHierarchyViewModel = &projectsHierarchyViewModel;
+    workspaceContextObjects.bookmarksHierarchyViewModel = &bookmarksHierarchyViewModel;
+    workspaceContextObjects.tagsHierarchyViewModel = &tagsHierarchyViewModel;
+    workspaceContextObjects.resourcesHierarchyViewModel = &resourcesHierarchyViewModel;
+    workspaceContextObjects.resourcesImportViewModel = &resourcesImportViewModel;
+    workspaceContextObjects.progressHierarchyViewModel = &progressHierarchyViewModel;
+    workspaceContextObjects.eventHierarchyViewModel = &eventHierarchyViewModel;
+    workspaceContextObjects.presetHierarchyViewModel = &presetHierarchyViewModel;
+    workspaceContextObjects.detailPanelViewModel = &detailPanelViewModel;
+    workspaceContextObjects.editorViewModeViewModel = &editorViewModeViewModel;
+    workspaceContextObjects.navigationModeViewModel = &navigationModeViewModel;
+    workspaceContextObjects.sidebarHierarchyViewModel = &sidebarHierarchyViewModel;
+    workspaceContextObjects.asyncScheduler = &asyncScheduler;
+    workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
+    workspaceContextObjects.systemCalendarStore = &systemCalendarStore;
+    workspaceContextObjects.dayCalendarViewModel = &dayCalendarViewModel;
+    workspaceContextObjects.monthCalendarViewModel = &monthCalendarViewModel;
+    workspaceContextObjects.weekCalendarViewModel = &weekCalendarViewModel;
+    workspaceContextObjects.yearCalendarViewModel = &yearCalendarViewModel;
+    workspaceContextObjects.panelViewModelRegistry = &panelViewModelRegistry;
+    WhatSon::Runtime::Bootstrap::bindWorkspaceContextObjects(engine.rootContext(), workspaceContextObjects);
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,

@@ -1,4 +1,4 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Test)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Test Qml)
 
 set(WHATSON_TEST_TARGETS)
 
@@ -115,6 +115,28 @@ target_link_libraries(whatson_hub_sync_controller_tests
 )
 add_test(NAME whatson_hub_sync_controller_tests COMMAND whatson_hub_sync_controller_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_hub_sync_controller_tests)
+
+add_executable(whatson_runtime_bootstrap_wiring_tests
+        app/test_runtime_bootstrap_wiring.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/runtime/bootstrap/WhatSonHubSyncWiring.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/runtime/bootstrap/WhatSonQmlContextBinder.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/sync/WhatSonHubSyncController.cpp
+)
+set_target_properties(whatson_runtime_bootstrap_wiring_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_runtime_bootstrap_wiring_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+        ${CMAKE_SOURCE_DIR}/src/app/runtime
+        ${CMAKE_SOURCE_DIR}/src/app/runtime/bootstrap
+)
+target_link_libraries(whatson_runtime_bootstrap_wiring_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Qml
+        Qt6::Test
+)
+add_test(NAME whatson_runtime_bootstrap_wiring_tests COMMAND whatson_runtime_bootstrap_wiring_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_runtime_bootstrap_wiring_tests)
 
 add_executable(whatson_resources_import_viewmodel_tests
         app/test_resources_import_viewmodel.cpp
