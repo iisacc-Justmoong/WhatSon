@@ -9,8 +9,10 @@
 - Hook forwarder: `requestViewHook(reason)` delegates to `dayCalendarViewModel.requestDayView(reason)`
 
 ## UI Composition
+- Surface:
+  - root page keeps `color: "transparent"` so the app background shows through.
 - Header:
-  - previous/today/next day navigation controls,
+  - shared `CalendarTodayControl` (`Prev/Today/Next`) aligned to Figma node `227:8807`,
   - localized day label,
   - entry count summary.
 - Body:
@@ -20,9 +22,10 @@
 
 ## Interaction Flow
 1. `Component.onCompleted` requests `page-open`.
-2. Header buttons mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
+2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
 3. Timeline binds directly to `timeSlots` from `DayCalendarViewModel`.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/DayCalendarViewModel.hpp/.cpp`
+- `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`

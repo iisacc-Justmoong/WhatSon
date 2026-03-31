@@ -9,8 +9,15 @@ QtObject {
     required property var hostView
     required property var standardHierarchyModel
 
+    function normalizedInteger(value, fallbackValue) {
+        const numericValue = Number(value);
+        if (!isFinite(numericValue))
+            return fallbackValue;
+        return Math.floor(numericValue);
+    }
+
     function beginRenameSelectedHierarchyItem() {
-        const renameIndex = Math.floor(Number(hostView.selectedFolderIndex) || -1);
+        const renameIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
         if (!renameController.canRenameIndex(renameIndex))
             return false;
         hostView.syncSelectedHierarchyItem(false);
@@ -116,7 +123,7 @@ QtObject {
         const normalizedModel = renameController.normalizeHierarchyModel(modelValue);
         if (!hostView.renameEditingActive)
             return normalizedModel;
-        const editingIndex = Math.floor(Number(hostView.editingHierarchyIndex) || -1);
+        const editingIndex = renameController.normalizedInteger(hostView.editingHierarchyIndex, -1);
         if (editingIndex < 0 || editingIndex >= normalizedModel.length)
             return normalizedModel;
         const projectedModel = normalizedModel.slice();
@@ -129,7 +136,7 @@ QtObject {
     }
 
     function selectedHierarchyItemLabel() {
-        const selectedIndex = Math.floor(Number(hostView.selectedFolderIndex) || -1);
+        const selectedIndex = renameController.normalizedInteger(hostView.selectedFolderIndex, -1);
         if (selectedIndex < 0)
             return "";
         const item = standardHierarchyModel[selectedIndex];

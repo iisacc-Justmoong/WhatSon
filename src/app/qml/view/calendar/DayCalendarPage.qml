@@ -27,7 +27,7 @@ Rectangle {
         dayCalendarPage.requestViewHook("today");
     }
 
-    color: LV.Theme.panelBackground07
+    color: "transparent"
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: requestViewHook("page-open")
@@ -48,31 +48,25 @@ Rectangle {
                 anchors.margins: LV.Theme.gap4
                 spacing: LV.Theme.gap4
 
-                LV.LabelButton {
-                    text: "Prev"
+                CalendarTodayControl {
+                    id: dayCalendarControl
 
-                    onClicked: {
+                    Layout.alignment: Qt.AlignVCenter
+
+                    onPreviousRequested: {
                         if (dayCalendarPage.calendarVm && dayCalendarPage.calendarVm.shiftDay)
                             dayCalendarPage.calendarVm.shiftDay(-1);
                         dayCalendarPage.requestViewHook("previous-day");
                     }
-                }
-                LV.LabelButton {
-                    text: "Today"
-
-                    onClicked: dayCalendarPage.jumpToToday()
-                }
-                LV.Label {
-                    text: dayCalendarPage.calendarVm ? String(dayCalendarPage.calendarVm.dayLabel) : "Day calendar"
-                }
-                LV.LabelButton {
-                    text: "Next"
-
-                    onClicked: {
+                    onTodayRequested: dayCalendarPage.jumpToToday()
+                    onNextRequested: {
                         if (dayCalendarPage.calendarVm && dayCalendarPage.calendarVm.shiftDay)
                             dayCalendarPage.calendarVm.shiftDay(1);
                         dayCalendarPage.requestViewHook("next-day");
                     }
+                }
+                LV.Label {
+                    text: dayCalendarPage.calendarVm ? String(dayCalendarPage.calendarVm.dayLabel) : "Day calendar"
                 }
                 Item {
                     Layout.fillWidth: true

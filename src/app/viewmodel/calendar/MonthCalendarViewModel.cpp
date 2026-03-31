@@ -265,6 +265,30 @@ void MonthCalendarViewModel::shiftMonth(int delta)
     rebuildMonthModel();
 }
 
+void MonthCalendarViewModel::focusToday()
+{
+    const QDate today = QDate::currentDate();
+    if (!today.isValid())
+    {
+        return;
+    }
+
+    const QCalendar calendar = resolveCalendarSystem();
+    const QCalendar::YearMonthDay parts = calendar.partsFromDate(today);
+    if (parts.isValid())
+    {
+        setDisplayedYear(parts.year);
+        setDisplayedMonth(parts.month);
+    }
+    else
+    {
+        setDisplayedYear(today.year());
+        setDisplayedMonth(today.month());
+    }
+
+    setSelectedDateIso(today.toString(Qt::ISODate));
+}
+
 void MonthCalendarViewModel::requestMonthView(const QString& reason)
 {
     const QString normalizedReason = reason.trimmed().isEmpty()

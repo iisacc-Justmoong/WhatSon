@@ -65,12 +65,17 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 ## Expansion Routing Guard
 
-- Chevron-driven expansion now records the expanded item id and starts a short activation-block timer.
+- Chevron-driven expansion now records a resolved hierarchy index (`index` first, then row metadata,
+  then active-row id fallback) and starts a short activation-block timer.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
-  `shouldSuppressHierarchyActivation(itemId)` before it can select the folder or emit
+  `shouldSuppressHierarchyActivation(item, itemId, index)` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
 - This keeps the suppression stable even when LVRS emits activation and expansion callbacks in
   different order on mobile touch input.
+- Activation and expansion bridge calls both use the same resolved hierarchy index, so rows like
+  `All Library` still route correctly even when LVRS `itemId` is absent or non-numeric.
+- Integer parsing now avoids `Number(value) || -1` in this surface, so valid zero-based ids/indexes
+  (notably first rows and progress `0`) no longer collapse into `-1`.
 - The underlying LVRS `HierarchyItem` also reserves a dedicated chevron interaction slot
   (`chevronInteractionWidth`) and blocks row activation while the chevron interaction flag is active.
   This keeps desktop and mobile on the same contract: chevron tap/click only expands or collapses.

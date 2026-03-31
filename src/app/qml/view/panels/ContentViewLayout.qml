@@ -92,6 +92,8 @@ Item {
             id: editorContentSurface
 
             enabled: visible
+            Layout.fillHeight: true
+            Layout.fillWidth: true
             visible: !contentViewLayout.calendarOverlayVisible
 
             ContentsDisplayView {
@@ -133,6 +135,8 @@ Item {
             id: calendarContentSurface
 
             enabled: visible
+            Layout.fillHeight: true
+            Layout.fillWidth: true
             visible: contentViewLayout.calendarOverlayVisible
 
             Loader {

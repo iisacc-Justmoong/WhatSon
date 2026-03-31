@@ -2,7 +2,10 @@
 
 ## Role
 `MonthCalendarPage.qml` renders a month-grid overlay surface for the editor area. It consumes
-`monthCalendarViewModel`, requests month navigation hooks, and renders a fixed 7x6 day grid with weekday labels.
+`monthCalendarViewModel`, requests month navigation hooks, and renders a conventional 7-column month calendar
+with weekday headers plus per-day schedule previews.
+The page is fully non-scrollable and fills the `ContentsView` slot responsively.
+All calendar surfaces keep transparent fills so the app background color is visible through the month page.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/calendar/MonthCalendarPage.qml`
@@ -18,24 +21,40 @@
 
 ## Render Structure
 - Header row:
-  - Previous/next month controls (`shiftMonth(-1)` / `shiftMonth(1)`).
-  - Active month/year/system label.
-  - Calendar-system selector buttons bound to `calendarSystemOptions`.
+  - shared `CalendarTodayControl` (`Prev/Today/Next`) aligned to Figma node `227:8807`.
+  - Active month title (`monthLabel, displayedYear`).
 - Body row:
-  - Weekday label row (`weekdayLabels`).
-  - Day cell grid (`dayModels`) with current-month/today visual states.
-  - Day cell entry-count badge sourced from `dayModel.entryCount`.
+  - Weekday header grid (`weekdayLabels`) with fixed height (`weekdayHeaderHeight`).
+    - Header labels are center-aligned per column for even width distribution.
+  - Fixed day grid (`visibleDayModels`) with:
+    - explicit cell sizing:
+      - `dayCellWidth = floor(monthDayGrid.width / 7)`
+      - `dayCellHeight = floor(monthDayGrid.height / visibleWeekRowCount)`
+    - each day delegate binds `Layout.preferredWidth/Height` to those computed values so the
+      date grid always fills the remaining area without row collapse,
+    - border emphasis for `isToday` and selected date,
+    - dimmed text opacity for out-of-month cells (`inCurrentMonth === false`),
+    - right-aligned day number label (`dayNumberPixelSize = 16`, `dayNumberHeight = LV.Theme.gap16`),
+    - per-day entry list preview (`entriesForDate(dateIso)`),
+    - overflow marker (`+N more`) when cell entries exceed in-cell capacity.
+  - Root, weekday cells, and day cells do not paint background fills (`color: "transparent"`).
+  - No `Flickable`/`ListView` usage in the page; both axes are constrained to the available
+    `ContentsView` frame.
+  - Day grid is anchored from `weekdayHeaderGrid.bottom` to `parent.bottom`, so the date area always fills the
+    remaining calendar body.
 
 ## Interaction and Data Flow
 1. On `Component.onCompleted`, page emits `requestViewHook("page-open")`.
-2. Prev/next buttons mutate the viewmodel month, then request hook (`previous-month`, `next-month`).
-3. System buttons call `setCalendarSystemByValue(...)`, then request hook (`calendar-system`).
-4. Day click sets `calendarVm.selectedDateIso` and requests hook (`select-date`).
-5. Recomputed labels/day models are reflected through QML bindings without local caching.
+2. Header control actions call `shiftMonth(-1|1)` and `focusToday()` (`current-month` hook).
+3. Day click sets `calendarVm.selectedDateIso` and requests hook (`select-date`).
+4. Each day cell computes `entryCapacity` from actual rendered cell height and clips entry rows accordingly.
+5. When rows exceed capacity, `+N more` is shown instead of adding scroll surfaces.
+6. Recomputed labels/day models are reflected through QML bindings without local caching.
 
 ## Collaborators
 - `src/app/calendar/CalendarBoardStore.hpp/.cpp`
 - `src/app/viewmodel/calendar/MonthCalendarViewModel.hpp/.cpp`
+- `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml` (overlay host via `CalendarView.MonthCalendarPage`)
 
 ## Testing

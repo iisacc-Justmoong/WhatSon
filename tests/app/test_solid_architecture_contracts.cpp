@@ -236,6 +236,7 @@ void SolidArchitectureContractsTest::sidebarState_mustStaySingleSourcedAndInterf
         "readonly property int activeHierarchyIndex: hStack.sidebarHierarchyViewModel ? hStack.sidebarHierarchyViewModel.resolvedActiveHierarchyIndex : 0")));
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral(
         "readonly property string resolvedHierarchyViewModelKey: hierarchyView.hierarchyViewModelKeyForIndex(hierarchyView.currentHierarchy)")));
+    QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("const activeHierarchyViewModel = hierarchyView.sidebarHierarchyViewModel")));
     QVERIFY(hierarchySidebarLayout.contains(QStringLiteral("LV.ViewModels.getForView(hierarchyView.hierarchyViewId)")));
 }
 

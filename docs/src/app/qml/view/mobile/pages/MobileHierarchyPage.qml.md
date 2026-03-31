@@ -33,6 +33,20 @@ Before opening `/mobile/editor`, `requestOpenEditor(...)` now calls
 `dismissCalendarOverlaysForEditorActivation()` and emits the per-mode dismiss signals. This ensures calendar state is
 cleared in the parent owner and prevents the editor route from remaining hidden behind stale calendar visibility flags.
 
+## Mobile Calendar Routing
+Calendar pages are rendered by `ContentViewLayout`, which is mounted on the `/mobile/editor` route.
+
+To keep calendar open behavior deterministic on mobile, the scaffold calendar hooks now route through:
+- `ensureCalendarSurfaceVisible()`
+- `requestOpenDayCalendar()`
+- `requestOpenWeekCalendar()`
+- `requestOpenMonthCalendar()`
+- `requestOpenYearCalendar()`
+
+`ensureCalendarSurfaceVisible()` canonicalizes the stack to the editor route when needed, then the corresponding
+calendar request signal is emitted. This prevents no-op calendar taps while the user is still on hierarchy or note-list
+routes.
+
 ## Selection Preservation
 `preservedNoteListSelectionIndex` caches the active hierarchy selection that produced the current note list.
 
@@ -48,6 +62,10 @@ The cache prevents a canonical rebuild from collapsing back to the implicit "All
 the router have both settled on `/mobile/hierarchy`, and only when the router stack depth is `<= 1`.
 This prevents transient editor-pop states from writing `-1` back into the shared hierarchy
 selection while the app is actually returning to a folder-scoped note list.
+
+All selection/session integer parsing in this file now uses an explicit finite-number normalization
+helper instead of `Number(value) || -1`. This preserves legitimate `0` values (for example the first
+hierarchy item index and touch session id `0`) and prevents accidental fallback to `-1`.
 
 ## Editor Pop Repair
 Interactive back navigation from the editor can temporarily leave `currentPath` and the rendered body out of sync.

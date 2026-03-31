@@ -16,11 +16,13 @@ Item {
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("HierarchySidebarLayout") : null
     readonly property var resolvedHierarchyViewModel: {
+        const activeHierarchyViewModel = hierarchyView.sidebarHierarchyViewModel
+            ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel
+            : null;
+        if (activeHierarchyViewModel)
+            return activeHierarchyViewModel;
         const _ = hierarchyView.hierarchyViewBindings;
-        const registeredViewModel = LV.ViewModels.getForView(hierarchyView.hierarchyViewId);
-        if (registeredViewModel)
-            return registeredViewModel;
-        return hierarchyView.sidebarHierarchyViewModel ? hierarchyView.sidebarHierarchyViewModel.resolvedHierarchyViewModel : null;
+        return LV.ViewModels.getForView(hierarchyView.hierarchyViewId);
     }
     required property var sidebarHierarchyViewModel
     property bool searchFieldVisible: false

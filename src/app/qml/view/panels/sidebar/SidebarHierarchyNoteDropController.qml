@@ -7,6 +7,18 @@ QtObject {
     required property var hierarchyTree
     required property var hostView
 
+    function normalizedInteger(value, fallbackValue) {
+        const numericValue = Number(value);
+        if (!isFinite(numericValue))
+            return fallbackValue;
+        return Math.floor(numericValue);
+    }
+
+    function normalizedNonNegativeInteger(value) {
+        const normalized = noteDropController.normalizedInteger(value, -1);
+        return normalized >= 0 ? normalized : -1;
+    }
+
     function clearNoteDropPreview() {
         hostView.noteDropHoverIndex = -1;
     }
@@ -91,7 +103,7 @@ QtObject {
                 const rawItemId = child.itemId !== undefined && child.itemId !== null
                     ? child.itemId
                     : child.resolvedItemId;
-                if (Math.floor(Number(rawItemId) || -1) === resolvedIndex)
+                if (noteDropController.normalizedInteger(rawItemId, -1) === resolvedIndex)
                     return child;
             }
             return null;
@@ -117,14 +129,14 @@ QtObject {
         const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null
             ? hierarchyItem.itemId
             : hierarchyItem.resolvedItemId;
-        const parsedIndex = Number(rawItemId);
-        if (!isFinite(parsedIndex))
+        const parsedIndex = noteDropController.normalizedNonNegativeInteger(rawItemId);
+        if (parsedIndex < 0)
             return ({
                     "index": -1,
                     "item": null
                 });
         return ({
-                "index": Math.max(-1, Math.floor(parsedIndex)),
+                "index": parsedIndex,
                 "item": hierarchyItem
             });
     }

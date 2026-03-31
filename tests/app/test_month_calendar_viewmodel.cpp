@@ -14,6 +14,7 @@ private slots:
     void defaults_mustBuildGregorianMonthView();
     void setCalendarSystemByValue_mustAcceptKnownEnumValuesOnly();
     void monthMutation_mustClampAndShiftMonth();
+    void focusToday_mustAlignWithCurrentDate();
     void requestMonthView_mustEmitRequestSignal();
     void boardEntries_mustExposeDayCountsAndSelectedDateEntries();
 };
@@ -80,6 +81,21 @@ void MonthCalendarViewModelTest::monthMutation_mustClampAndShiftMonth()
     viewModel.shiftMonth(-1);
     QCOMPARE(viewModel.displayedYear(), 1);
     QCOMPARE(viewModel.displayedMonth(), 1);
+}
+
+void MonthCalendarViewModelTest::focusToday_mustAlignWithCurrentDate()
+{
+    MonthCalendarViewModel viewModel;
+    viewModel.setDisplayedYear(1999);
+    viewModel.setDisplayedMonth(7);
+    viewModel.setSelectedDateIso(QStringLiteral("1999-07-01"));
+
+    viewModel.focusToday();
+
+    const QDate today = QDate::currentDate();
+    QCOMPARE(viewModel.displayedYear(), today.year());
+    QCOMPARE(viewModel.displayedMonth(), today.month());
+    QCOMPARE(viewModel.selectedDateIso(), today.toString(Qt::ISODate));
 }
 
 void MonthCalendarViewModelTest::requestMonthView_mustEmitRequestSignal()

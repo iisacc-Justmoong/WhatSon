@@ -843,8 +843,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarLayoutText.contains(
             QStringLiteral(
                 "readonly property string resolvedHierarchyViewModelKey: hierarchyView.hierarchyViewModelKeyForIndex(hierarchyView.currentHierarchy)")) &&
+            sidebarLayoutText.contains(
+                QStringLiteral(
+                    "const activeHierarchyViewModel = hierarchyView.sidebarHierarchyViewModel")) &&
+            sidebarLayoutText.contains(QStringLiteral("if (activeHierarchyViewModel)")) &&
             sidebarLayoutText.contains(QStringLiteral("LV.ViewModels.getForView(hierarchyView.hierarchyViewId)")),
-        "HierarchySidebarLayout.qml must bind the active hierarchy view-model through LVRS ViewModels ownership instead of reading it only from SidebarHierarchyViewModel.");
+        "HierarchySidebarLayout.qml must resolve the active hierarchy view-model from SidebarHierarchyViewModel first and keep LVRS ViewModels binding as a fallback path.");
     QVERIFY2(
         sidebarLayoutText.contains(QStringLiteral("readonly property var noteDropTargetView: sidebarView")),
         "HierarchySidebarLayout.qml must expose the composed SidebarHierarchyView as the canonical cross-panel note-drop target.");
@@ -1006,19 +1010,25 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("property bool hierarchyExpansionActivationSuppressed: false")) &&
             sidebarViewText.contains(QStringLiteral("property int hierarchyActivationPendingSerial: 0")) &&
-            sidebarViewText.contains(QStringLiteral("property int hierarchyExpansionActivationBlockedItemId: -1")) &&
-            sidebarViewText.contains(QStringLiteral("function armHierarchyExpansionActivationSuppression(itemId)")) &&
-            sidebarViewText.contains(QStringLiteral("function shouldSuppressHierarchyActivation(itemId)")) &&
+            sidebarViewText.contains(QStringLiteral("property int hierarchyExpansionActivationBlockedIndex: -1")) &&
+            sidebarViewText.contains(QStringLiteral("function normalizedInteger(value, fallbackValue)")) &&
+            sidebarViewText.contains(QStringLiteral("function normalizedNonNegativeInteger(value)")) &&
+            sidebarViewText.contains(QStringLiteral("function resolveHierarchyActivationIndex(item, itemId, index)")) &&
+            sidebarViewText.contains(QStringLiteral("function armHierarchyExpansionActivationSuppression(item, itemId, index)")) &&
+            sidebarViewText.contains(QStringLiteral("function shouldSuppressHierarchyActivation(item, itemId, index)")) &&
             sidebarViewText.contains(QStringLiteral("hierarchyExpansionActivationBlockTimer.restart();")) &&
-            sidebarViewText.contains(QStringLiteral("if (sidebarHierarchyView.shouldSuppressHierarchyActivation(resolvedItemId))")) &&
-            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.armHierarchyExpansionActivationSuppression(itemId);")),
+            sidebarViewText.contains(QStringLiteral("if (sidebarHierarchyView.shouldSuppressHierarchyActivation(item, itemId, index))")) &&
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.armHierarchyExpansionActivationSuppression(item, itemId, index);")),
         "SidebarHierarchyView.qml must suppress expansion-driven LVRS activation re-emission so mobile chevron taps only fold or unfold folders instead of routing into note lists.");
     QVERIFY2(
-        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(resolvedItemId);")),
-        "SidebarHierarchyView.qml must mirror LVRS item activation into the shared hierarchy interface by stable itemId.");
+        !sidebarViewText.contains(QStringLiteral("Math.floor(Number(sidebarHierarchyView.editingHierarchyIndex) || -1)")),
+        "SidebarHierarchyView.qml must not collapse valid zero-based hierarchy indexes into -1 through Number(... ) || -1 fallback parsing.");
+    QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(resolvedActivationIndex);")),
+        "SidebarHierarchyView.qml must mirror LVRS item activation into the shared hierarchy interface by stable hierarchy index.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("signal hierarchyItemActivated(var item, int itemId, int index)")) &&
-            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyItemActivated(item, resolvedItemId, index);")),
+            sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.hierarchyItemActivated(item, resolvedActivationIndex, resolvedActivationIndex);")),
         "SidebarHierarchyView.qml must re-emit hierarchy row activation after syncing selection so mobile routing can subscribe without bypassing the bound view-model.");
     const QString lvrsHierarchyItemPath =
         QStringLiteral("/Users/ymy/.local/LVRS/src/LVRS/qml/components/navigation/HierarchyItem.qml");
@@ -1268,7 +1278,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("onListItemExpanded: function (item, itemId, index, expanded)")) &&
         sidebarViewText.contains(
-            QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(itemId, expanded);")),
+            QStringLiteral("sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(resolvedExpansionIndex, expanded);")),
         "SidebarHierarchyView.qml must sync user-triggered expansion changes through the dedicated hierarchy interaction bridge instead of rebuilding unrelated hierarchy state.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("sequence: \"Escape\"")) &&
@@ -2425,9 +2435,15 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
         "MobileHierarchyPage.qml must drive scaffold body routing from the shared mobile PageRouter state while suppressing the compact folder affordance on routed note-list and editor views, keeping settings exclusive to the hierarchy route, and swapping the compact control cluster to the note-list variant when the routed note-list page is active.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("function requestBackToHierarchy()")) &&
+            mobilePageText.contains(QStringLiteral("function normalizedInteger(value, fallbackValue)")) &&
             mobilePageText.contains(QStringLiteral("function currentHierarchySelectionIndex()")) &&
             mobilePageText.contains(QStringLiteral("function rememberNoteListSelection(selectionIndex)")) &&
             mobilePageText.contains(QStringLiteral("function requestOpenEditor(noteId, index)")) &&
+            mobilePageText.contains(QStringLiteral("function ensureCalendarSurfaceVisible()")) &&
+            mobilePageText.contains(QStringLiteral("function requestOpenDayCalendar()")) &&
+            mobilePageText.contains(QStringLiteral("function requestOpenWeekCalendar()")) &&
+            mobilePageText.contains(QStringLiteral("function requestOpenMonthCalendar()")) &&
+            mobilePageText.contains(QStringLiteral("function requestOpenYearCalendar()")) &&
             mobilePageText.contains(QStringLiteral("function cancelPendingEditorPopRepair()")) &&
             mobilePageText.contains(QStringLiteral("function restoreNoteListSelection(selectionIndex)")) &&
             mobilePageText.contains(QStringLiteral("function verifyCommittedEditorPopState(requestId, attemptsRemaining)")) &&
@@ -2437,8 +2453,13 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("function syncRouteSelectionState()")) &&
             mobilePageText.contains(QStringLiteral("id: noteCreationCoordinator")) &&
             mobilePageText.contains(QStringLiteral("MobileView.MobileNoteCreationCoordinator {")) &&
-            mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")),
-        "MobileHierarchyPage.qml must keep routing and gesture helpers local while delegating created-note promotion into a dedicated mobile note-creation coordinator.");
+            mobilePageText.contains(QStringLiteral("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()")) &&
+            mobilePageText.contains(QStringLiteral("onDayCalendarRequested: mobileHierarchyPage.requestOpenDayCalendar()")) &&
+            mobilePageText.contains(QStringLiteral("onWeekCalendarRequested: mobileHierarchyPage.requestOpenWeekCalendar()")) &&
+            mobilePageText.contains(QStringLiteral("onMonthCalendarRequested: mobileHierarchyPage.requestOpenMonthCalendar()")) &&
+            mobilePageText.contains(QStringLiteral("onYearCalendarRequested: mobileHierarchyPage.requestOpenYearCalendar()")) &&
+            !mobilePageText.contains(QStringLiteral("Math.floor(Number(mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex) || -1)")),
+        "MobileHierarchyPage.qml must keep routing and gesture helpers local while delegating created-note promotion into a dedicated mobile note-creation coordinator, and calendar open requests must route through editor-surface guards before toggling calendar state.");
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("LV.PageTransitionController {")) &&
             mobilePageText.contains(QStringLiteral("router: mobileScaffold.activePageRouter")) &&

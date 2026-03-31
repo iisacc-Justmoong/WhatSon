@@ -32,6 +32,8 @@
 - Imports `../calendar` as `CalendarView` and mounts day/week/month/year pages through one content-surface `Loader`.
 - Uses a `StackLayout` (`currentIndex: activeSurfaceIndex`) so the editor surface and calendar surface are switched by
   route state, not by overlay stacking.
+- Both stack children (`editorContentSurface`, `calendarContentSurface`) explicitly apply
+  `Layout.fillWidth: true` and `Layout.fillHeight: true` so calendar pages occupy the full `ContentsView` slot.
 - Uses per-mode visibility/viewmodel pairs:
   - `dayCalendarOverlayVisible` / `dayCalendarViewModel`
   - `weekCalendarOverlayVisible` / `weekCalendarViewModel`

@@ -127,6 +127,9 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("function requestCreateFolder()", hierarchy_layout_text)
         self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_layout_text)
         self.assertIn("hierarchyView.hierarchyItemActivated(item, itemId, index);", hierarchy_layout_text)
+        self.assertIn("const activeHierarchyViewModel = hierarchyView.sidebarHierarchyViewModel", hierarchy_layout_text)
+        self.assertIn("if (activeHierarchyViewModel)", hierarchy_layout_text)
+        self.assertIn("LV.ViewModels.getForView(hierarchyView.hierarchyViewId)", hierarchy_layout_text)
         self.assertNotIn("property bool hierarchyEditable: true", hierarchy_layout_text)
         self.assertIn(
             "hierarchyEditable: hierarchyDragDropBridge.reorderContractAvailable",
@@ -135,7 +138,10 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property bool footerVisible: true", hierarchy_view_text)
         self.assertIn("property bool hierarchyEditable: false", hierarchy_view_text)
         self.assertIn("property bool hierarchyExpansionActivationSuppressed: false", hierarchy_view_text)
-        self.assertIn("function armHierarchyExpansionActivationSuppression(itemId)", hierarchy_view_text)
+        self.assertIn("function normalizedInteger(value, fallbackValue)", hierarchy_view_text)
+        self.assertIn("function normalizedNonNegativeInteger(value)", hierarchy_view_text)
+        self.assertIn("function resolveHierarchyActivationIndex(item, itemId, index)", hierarchy_view_text)
+        self.assertIn("function armHierarchyExpansionActivationSuppression(item, itemId, index)", hierarchy_view_text)
         self.assertIn("property bool searchFieldVisible: false", hierarchy_view_text)
         self.assertIn("property int searchHeaderMinHeight: LV.Theme.gap24", hierarchy_view_text)
         self.assertIn("property int searchHeaderTopGap: LV.Theme.gap4", hierarchy_view_text)
@@ -143,9 +149,13 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("property int searchHeaderVerticalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("property int verticalInset: LV.Theme.gap2", hierarchy_view_text)
         self.assertIn("signal hierarchyItemActivated(var item, int itemId, int index)", hierarchy_view_text)
-        self.assertIn("if (sidebarHierarchyView.hierarchyExpansionActivationSuppressed)", hierarchy_view_text)
+        self.assertIn("if (!hierarchyExpansionActivationBlockTimer.running)", hierarchy_view_text)
         self.assertIn(
-            "sidebarHierarchyView.armHierarchyExpansionActivationSuppression(itemId);",
+            "sidebarHierarchyView.armHierarchyExpansionActivationSuppression(item, itemId, index);",
+            hierarchy_view_text,
+        )
+        self.assertNotIn(
+            "Math.floor(Number(sidebarHierarchyView.editingHierarchyIndex) || -1)",
             hierarchy_view_text,
         )
         self.assertIn("PanelView.ListBarHeader", hierarchy_view_text)
@@ -267,15 +277,29 @@ class MobileShellLayoutTests(unittest.TestCase):
         self.assertIn("bodyRoutes: mobileHierarchyPage.mobileBodyRoutes", mobile_page_text)
         self.assertIn("onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()", mobile_page_text)
         self.assertIn("onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()", mobile_page_text)
+        self.assertIn("onDayCalendarRequested: mobileHierarchyPage.requestOpenDayCalendar()", mobile_page_text)
+        self.assertIn("onWeekCalendarRequested: mobileHierarchyPage.requestOpenWeekCalendar()", mobile_page_text)
+        self.assertIn("onMonthCalendarRequested: mobileHierarchyPage.requestOpenMonthCalendar()", mobile_page_text)
+        self.assertIn("onYearCalendarRequested: mobileHierarchyPage.requestOpenYearCalendar()", mobile_page_text)
         self.assertIn("onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()", mobile_page_text)
         self.assertIn("function beginBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("function cancelBackSwipeGesture(eventData)", mobile_page_text)
         self.assertIn("function clearActiveHierarchySelection()", mobile_page_text)
         self.assertIn("function currentHierarchySelectionIndex()", mobile_page_text)
+        self.assertIn("function normalizedInteger(value, fallbackValue)", mobile_page_text)
+        self.assertNotIn(
+            "Math.floor(Number(mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex) || -1)",
+            mobile_page_text,
+        )
         self.assertIn("function finishBackSwipeGesture(eventData, cancelled)", mobile_page_text)
         self.assertIn("function rememberNoteListSelection(selectionIndex)", mobile_page_text)
         self.assertIn("function requestBackToHierarchy()", mobile_page_text)
         self.assertIn("function requestOpenEditor(noteId, index)", mobile_page_text)
+        self.assertIn("function ensureCalendarSurfaceVisible()", mobile_page_text)
+        self.assertIn("function requestOpenDayCalendar()", mobile_page_text)
+        self.assertIn("function requestOpenWeekCalendar()", mobile_page_text)
+        self.assertIn("function requestOpenMonthCalendar()", mobile_page_text)
+        self.assertIn("function requestOpenYearCalendar()", mobile_page_text)
         self.assertIn("function requestOpenNoteList(item, itemId, index)", mobile_page_text)
         self.assertIn("function restoreNoteListSelection(selectionIndex)", mobile_page_text)
         self.assertIn("function routeToHierarchyRoot()", mobile_page_text)

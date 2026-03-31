@@ -47,6 +47,7 @@ public slots:
 
     Q_INVOKABLE void setCalendarSystemByValue(int value);
     Q_INVOKABLE void shiftYear(int delta);
+    Q_INVOKABLE void focusToday();
     Q_INVOKABLE void requestYearView(const QString& reason = QString());
     Q_INVOKABLE bool addEvent(
         const QString& dateIso,

@@ -14,6 +14,7 @@ private slots:
     void defaults_mustBuildGregorianYearView();
     void setCalendarSystemByValue_mustAcceptKnownEnumValuesOnly();
     void yearMutation_mustClampAndShiftYear();
+    void focusToday_mustAlignWithCurrentDate();
     void requestYearView_mustEmitRequestSignal();
     void boardEntries_mustExposeDayCountsInYearGrid();
 };
@@ -77,6 +78,16 @@ void YearCalendarViewModelTest::yearMutation_mustClampAndShiftYear()
 
     viewModel.shiftYear(-1);
     QCOMPARE(viewModel.displayedYear(), 9998);
+}
+
+void YearCalendarViewModelTest::focusToday_mustAlignWithCurrentDate()
+{
+    YearCalendarViewModel viewModel;
+    viewModel.setDisplayedYear(1988);
+
+    viewModel.focusToday();
+
+    QCOMPARE(viewModel.displayedYear(), QDate::currentDate().year());
 }
 
 void YearCalendarViewModelTest::requestYearView_mustEmitRequestSignal()

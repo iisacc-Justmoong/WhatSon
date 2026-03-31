@@ -83,13 +83,19 @@ Item {
     function backSwipeViewportWidth() {
         return Math.max(1, Math.round(Number(mobileScaffold.bodyWidth) || 0));
     }
+    function normalizedInteger(value, fallbackValue) {
+        const numericValue = Number(value);
+        if (!isFinite(numericValue))
+            return fallbackValue;
+        return Math.floor(numericValue);
+    }
     function backSwipeGestureEventData(localX, localY, totalDeltaX, totalDeltaY, sessionId) {
         const localPoint = Qt.point(Number(localX) || 0, Number(localY) || 0);
         const globalPoint = backSwipeEdgeZone.mapToGlobal(localPoint);
         return {
             "globalX": globalPoint.x,
             "globalY": globalPoint.y,
-            "sessionId": Math.floor(Number(sessionId) || -1),
+            "sessionId": mobileHierarchyPage.normalizedInteger(sessionId, -1),
             "startGlobalX": globalPoint.x - (Number(totalDeltaX) || 0),
             "startGlobalY": globalPoint.y - (Number(totalDeltaY) || 0),
             "totalDeltaX": Number(totalDeltaX) || 0,
@@ -109,7 +115,9 @@ Item {
         if (!mobileHierarchyPage.activeContentViewModel
                 || mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex === undefined)
             return mobileHierarchyPage.preservedNoteListSelectionIndex;
-        return Math.floor(Number(mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex) || -1);
+        return mobileHierarchyPage.normalizedInteger(
+                    mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex,
+                    -1);
     }
     function displayedBodyRoutePath() {
         const bodyItem = mobileScaffold.bodyItem;
@@ -128,7 +136,7 @@ Item {
     function beginBackSwipeGesture(eventData) {
         if (!mobileHierarchyPage.backNavigationAvailable || !eventData || pageTransitionController.active)
             return false;
-        const sessionId = Math.floor(Number(eventData.sessionId) || -1);
+        const sessionId = mobileHierarchyPage.normalizedInteger(eventData.sessionId, -1);
         const startGlobalX = Number(eventData.startGlobalX !== undefined ? eventData.startGlobalX : eventData.globalX);
         if (sessionId < 0
                 || sessionId === mobileHierarchyPage.backSwipeConsumedSessionId
@@ -144,7 +152,9 @@ Item {
         return true;
     }
     function cancelBackSwipeGesture(eventData) {
-        const sessionId = Math.floor(Number(eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1) || -1);
+        const sessionId = mobileHierarchyPage.normalizedInteger(
+                    eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1,
+                    -1);
         if (mobileHierarchyPage.backSwipeSessionId < 0)
             return false;
         if (sessionId >= 0 && sessionId !== mobileHierarchyPage.backSwipeSessionId)
@@ -348,6 +358,40 @@ Item {
         }
         mobileHierarchyPage.routeToCanonicalEditor(preservedSelectionIndex);
     }
+    function ensureCalendarSurfaceVisible() {
+        if (!mobileScaffold.activePageRouter)
+            return false;
+        if (mobileHierarchyPage.displayedBodyRoutePath() === mobileHierarchyPage.editorRoutePath)
+            return true;
+        if (!mobileHierarchyPage.activeNoteListModel)
+            return false;
+        mobileHierarchyPage.routeToCanonicalEditor();
+        return true;
+    }
+    function requestOpenDayCalendar() {
+        if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
+            return false;
+        mobileHierarchyPage.dayCalendarRequested();
+        return true;
+    }
+    function requestOpenWeekCalendar() {
+        if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
+            return false;
+        mobileHierarchyPage.weekCalendarRequested();
+        return true;
+    }
+    function requestOpenMonthCalendar() {
+        if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
+            return false;
+        mobileHierarchyPage.monthCalendarRequested();
+        return true;
+    }
+    function requestOpenYearCalendar() {
+        if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
+            return false;
+        mobileHierarchyPage.yearCalendarRequested();
+        return true;
+    }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         if (panelViewModel && panelViewModel.requestViewModelHook)
@@ -386,7 +430,9 @@ Item {
         return mobileHierarchyPage.clearActiveHierarchySelection();
     }
     function finishBackSwipeGesture(eventData, cancelled) {
-        const sessionId = Math.floor(Number(eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1) || -1);
+        const sessionId = mobileHierarchyPage.normalizedInteger(
+                    eventData && eventData.sessionId !== undefined ? eventData.sessionId : -1,
+                    -1);
         if (mobileHierarchyPage.backSwipeSessionId < 0)
             return false;
         if (sessionId >= 0 && sessionId !== mobileHierarchyPage.backSwipeSessionId)
@@ -409,7 +455,7 @@ Item {
     function updateBackSwipeGesture(eventData) {
         if (!eventData)
             return false;
-        const sessionId = Math.floor(Number(eventData.sessionId) || -1);
+        const sessionId = mobileHierarchyPage.normalizedInteger(eventData.sessionId, -1);
         if (sessionId < 0 || sessionId === mobileHierarchyPage.backSwipeConsumedSessionId)
             return false;
         if (mobileHierarchyPage.backSwipeSessionId < 0)
@@ -481,8 +527,8 @@ Item {
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
         onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()
         onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()
-        onDayCalendarRequested: mobileHierarchyPage.dayCalendarRequested()
-        onMonthCalendarRequested: mobileHierarchyPage.monthCalendarRequested()
+        onDayCalendarRequested: mobileHierarchyPage.requestOpenDayCalendar()
+        onMonthCalendarRequested: mobileHierarchyPage.requestOpenMonthCalendar()
         onStatusSearchSubmitted: function (text) {
             mobileHierarchyPage.statusSearchText = text;
         }
@@ -490,8 +536,8 @@ Item {
             mobileHierarchyPage.statusSearchText = text;
         }
         onViewHookRequested: mobileHierarchyPage.requestViewHook()
-        onWeekCalendarRequested: mobileHierarchyPage.weekCalendarRequested()
-        onYearCalendarRequested: mobileHierarchyPage.yearCalendarRequested()
+        onWeekCalendarRequested: mobileHierarchyPage.requestOpenWeekCalendar()
+        onYearCalendarRequested: mobileHierarchyPage.requestOpenYearCalendar()
     }
     LV.PageTransitionController {
         id: pageTransitionController

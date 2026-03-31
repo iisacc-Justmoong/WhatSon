@@ -156,6 +156,26 @@ void YearCalendarViewModel::shiftYear(int delta)
     setDisplayedYear(m_displayedYear + delta);
 }
 
+void YearCalendarViewModel::focusToday()
+{
+    const QDate today = QDate::currentDate();
+    if (!today.isValid())
+    {
+        return;
+    }
+
+    const QCalendar calendar = resolveCalendarSystem();
+    const QCalendar::YearMonthDay parts = calendar.partsFromDate(today);
+    if (parts.isValid())
+    {
+        setDisplayedYear(parts.year);
+    }
+    else
+    {
+        setDisplayedYear(today.year());
+    }
+}
+
 void YearCalendarViewModel::requestYearView(const QString& reason)
 {
     const QString normalizedReason = reason.trimmed().isEmpty()
