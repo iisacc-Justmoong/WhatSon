@@ -18,9 +18,11 @@ the year view acts as a high-level event/task heatmap.
 - Body:
   - desktop: fixed 4x3 month-card grid (`desktopYearGridColumnCount = 4`),
   - mobile: vertical scroll year list (`mobileYearGridColumnCount = 1`),
+  - month title color uses accent token (`monthTitleColor = LV.Theme.accent`) instead of fixed red,
   - desktop month cards scale responsively using `desktopResponsiveScale`, so grid gap/card padding/day-cell sizes
-    change with window size (`yearGridSpacing`, `monthCardPadding`, `monthSectionSpacing`, `monthTitlePixelSize`,
-    `monthWeekdayPixelSize`, `monthDayPixelSize`),
+    change with window size (`yearGridSpacing`, `monthCardPadding`, `monthSectionSpacing`, `monthTitlePixelSize`),
+  - weekday/day numeric labels are standardized to body typography (`monthWeekdayPixelSize = 12`,
+    `monthDayPixelSize = 12`, both `Font.Medium`),
   - weekday header row per card,
   - 42-cell day grid per month.
 

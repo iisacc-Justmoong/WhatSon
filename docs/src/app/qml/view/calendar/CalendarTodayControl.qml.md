@@ -8,8 +8,8 @@
 - Reference node: `227:8807`
 - Layout contract:
   - horizontal stack spacing: `LV.Theme.gap2`
-  - previous/next icon buttons: `horizontalPadding = LV.Theme.gap2`, `verticalPadding = LV.Theme.gap2`
-  - today button: `horizontalPadding = LV.Theme.gap8`, `verticalPadding = LV.Theme.gap4`, `font.pixelSize = 12`
+  - previous/next icon buttons: fixed `20x20` (`controlButtonExtent`), `horizontalPadding = LV.Theme.gap2`, `verticalPadding = LV.Theme.gap2`
+  - today button: fixed width `50` and height `20`, `horizontalPadding = LV.Theme.gap8`, `verticalPadding = LV.Theme.gap4`, `font.pixelSize = 12`
   - button tone uses `LV.AbstractButton.Default`
 
 ## Public QML Contract

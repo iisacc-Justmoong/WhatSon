@@ -7,6 +7,8 @@ LV.HStack {
     id: calendarTodayControl
 
     readonly property string figmaNodeId: "227:8807"
+    readonly property int controlButtonExtent: 20
+    readonly property int todayButtonWidth: 50
     property string todayText: "Today"
 
     signal previousRequested
@@ -24,9 +26,11 @@ LV.HStack {
     LV.IconButton {
         id: previousButton
 
+        height: calendarTodayControl.controlButtonExtent
         horizontalPadding: LV.Theme.gap2
         iconName: "generalchevronLeft"
         tone: LV.AbstractButton.Default
+        width: calendarTodayControl.controlButtonExtent
         verticalPadding: LV.Theme.gap2
 
         onClicked: {
@@ -38,9 +42,12 @@ LV.HStack {
         id: todayButton
 
         font.pixelSize: 12
+        font.weight: Font.Medium
+        height: calendarTodayControl.controlButtonExtent
         horizontalPadding: LV.Theme.gap8
         text: calendarTodayControl.todayText
         tone: LV.AbstractButton.Default
+        width: calendarTodayControl.todayButtonWidth
         verticalPadding: LV.Theme.gap4
 
         onClicked: {
@@ -51,11 +58,13 @@ LV.HStack {
     LV.IconButton {
         id: nextButton
 
+        height: calendarTodayControl.controlButtonExtent
         horizontalPadding: LV.Theme.gap2
         iconName: "generalchevronLeft"
         rotation: 180
         tone: LV.AbstractButton.Default
         transformOrigin: Item.Center
+        width: calendarTodayControl.controlButtonExtent
         verticalPadding: LV.Theme.gap2
 
         onClicked: {

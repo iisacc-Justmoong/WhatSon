@@ -20,10 +20,10 @@ Rectangle {
     readonly property int monthCardPadding: Math.max(4, Math.round(14 * yearCalendarPage.desktopResponsiveScale))
     readonly property int monthSectionSpacing: Math.max(2, Math.round(8 * yearCalendarPage.desktopResponsiveScale))
     readonly property int monthTitlePixelSize: Math.max(18, Math.round(44 * yearCalendarPage.desktopResponsiveScale / 2))
-    readonly property int monthWeekdayPixelSize: Math.max(10, Math.round(13 * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthDayPixelSize: Math.max(10, Math.round(16 * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthWeekdayPixelSize: 12
+    readonly property int monthDayPixelSize: 12
     readonly property int monthCellWidthFloor: Math.max(10, Math.round(14 * yearCalendarPage.desktopResponsiveScale))
-    readonly property color monthTitleColor: "#FF4B4B"
+    readonly property color monthTitleColor: LV.Theme.accent
     readonly property color weekdayTextColor: LV.Theme.descriptionColor
     readonly property color activeDayColor: LV.Theme.titleHeaderColor
     readonly property color adjacentDayColor: Qt.rgba(1.0, 1.0, 1.0, 0.28)
@@ -241,6 +241,7 @@ Rectangle {
                                             anchors.centerIn: parent
                                             color: yearCalendarPage.weekdayTextColor
                                             font.pixelSize: yearCalendarPage.monthWeekdayPixelSize
+                                            font.weight: Font.Medium
                                             text: yearCalendarPage.weekdaySymbol(weekdayCell.modelData)
                                         }
                                     }
@@ -276,7 +277,7 @@ Rectangle {
                                             anchors.centerIn: parent
                                             color: yearCalendarPage.dayTextColor(dayCell.dayModel, dayCell.isToday)
                                             font.pixelSize: yearCalendarPage.monthDayPixelSize
-                                            font.weight: dayCell.dayModel && dayCell.dayModel.inCurrentMonth === true ? Font.DemiBold : Font.Normal
+                                            font.weight: Font.Medium
                                             text: dayCell.dayModel && dayCell.dayModel.day !== undefined ? String(dayCell.dayModel.day) : ""
                                         }
                                     }

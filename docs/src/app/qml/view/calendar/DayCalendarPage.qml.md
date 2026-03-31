@@ -12,13 +12,12 @@
 - Surface:
   - root page keeps `color: "transparent"` so the app background shows through.
 - Header:
-  - shared `CalendarTodayControl` (`Prev/Today/Next`) aligned to Figma node `227:8807`,
-  - localized day label,
-  - entry count summary.
+  - shared `CalendarTodayControl` (`Prev/Today/Next`) only.
 - Body:
-  - scrollable 24-hour slot timeline,
+  - adaptive 24-hour slot timeline that fills the remaining `ContentsView` height,
   - hour column (`HH:mm`) on the left,
-  - entry cards grouped by hour on the right.
+  - entry cards grouped by hour on the right using shared `CalendarEventCell`,
+  - slot height is computed as `(remainingHeight - spacing) / 24`, so `00:00` starts at the top row and the final slot reaches the bottom edge.
 
 ## Interaction Flow
 1. `Component.onCompleted` requests `page-open`.
@@ -28,4 +27,5 @@
 ## Collaborators
 - `src/app/viewmodel/calendar/DayCalendarViewModel.hpp/.cpp`
 - `src/app/qml/view/calendar/CalendarTodayControl.qml`
+- `src/app/qml/view/calendar/CalendarEventCell.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`
