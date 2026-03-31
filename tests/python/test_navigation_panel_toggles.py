@@ -78,6 +78,9 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("onToggleDetailPanelRequested: applicationViewBar.toggleDetailPanelRequested()", view_text)
 
         self.assertIn("readonly property bool sidebarVisible: hStack.sidebarWidth > 0", body_text)
+        self.assertIn("signal noteActivated(int index, string noteId)", body_text)
+        self.assertIn("onNoteActivated: function (index, noteId) {", body_text)
+        self.assertIn("hStack.noteActivated(index, noteId);", body_text)
         self.assertIn("Layout.minimumWidth: hStack.sidebarVisible ? hStack.effectiveMinSidebarWidth : 0", body_text)
         self.assertIn("Layout.preferredWidth: hStack.sidebarVisible ? hStack.sidebarWidth : 0", body_text)
         self.assertIn("searchFieldVisible: true", body_text)
@@ -112,6 +115,9 @@ class NavigationPanelToggleTests(unittest.TestCase):
         year_calendar_text = (
             REPO_ROOT / "src/app/qml/view/calendar/YearCalendarPage.qml"
         ).read_text(encoding="utf-8")
+        mobile_page_text = (
+            REPO_ROOT / "src/app/qml/view/mobile/pages/MobileHierarchyPage.qml"
+        ).read_text(encoding="utf-8")
         app_main_text = (REPO_ROOT / "src/app/main.cpp").read_text(encoding="utf-8")
         readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
         architecture_text = (REPO_ROOT / "docs/APP_ARCHITECTURE.md").read_text(encoding="utf-8")
@@ -145,10 +151,15 @@ class NavigationPanelToggleTests(unittest.TestCase):
         self.assertIn("rootYearCalendarViewModel", main_text)
         self.assertIn("onYearCalendarRequested: {", main_text)
         self.assertIn("onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false", main_text)
+        self.assertIn("onNoteActivated: function (index, noteId) {", main_text)
         self.assertIn('import "../calendar" as CalendarView', content_text)
+        self.assertIn("StackLayout {", content_text)
+        self.assertIn("readonly property int activeSurfaceIndex: contentViewLayout.calendarOverlayVisible ? 1 : 0", content_text)
+        self.assertIn("currentIndex: contentViewLayout.activeSurfaceIndex", content_text)
         self.assertIn("visible: !contentViewLayout.calendarOverlayVisible", content_text)
         self.assertIn("id: calendarContentSurface", content_text)
         self.assertIn("function onCurrentNoteIdChanged()", content_text)
+        self.assertIn("function onCurrentIndexChanged()", content_text)
         self.assertIn("contentViewLayout.requestActiveCalendarOverlayClose()", content_text)
         self.assertNotIn("id: calendarOverlay", content_text)
         self.assertNotIn("MouseArea {", content_text)
@@ -170,11 +181,19 @@ class NavigationPanelToggleTests(unittest.TestCase):
             "readonly property var dayModel: dayCell.modelData",
             year_calendar_text,
         )
+        self.assertIn(
+            "function dismissCalendarOverlaysForEditorActivation()",
+            mobile_page_text,
+        )
+        self.assertIn(
+            "mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();",
+            mobile_page_text,
+        )
 
-        self.assertIn('setContextProperty(QStringLiteral("dayCalendarViewModel"), &dayCalendarViewModel);', app_main_text)
-        self.assertIn('setContextProperty(QStringLiteral("monthCalendarViewModel"), &monthCalendarViewModel);', app_main_text)
-        self.assertIn('setContextProperty(QStringLiteral("weekCalendarViewModel"), &weekCalendarViewModel);', app_main_text)
-        self.assertIn('setContextProperty(QStringLiteral("yearCalendarViewModel"), &yearCalendarViewModel);', app_main_text)
+        self.assertIn("workspaceContextObjects.dayCalendarViewModel = &dayCalendarViewModel;", app_main_text)
+        self.assertIn("workspaceContextObjects.monthCalendarViewModel = &monthCalendarViewModel;", app_main_text)
+        self.assertIn("workspaceContextObjects.weekCalendarViewModel = &weekCalendarViewModel;", app_main_text)
+        self.assertIn("workspaceContextObjects.yearCalendarViewModel = &yearCalendarViewModel;", app_main_text)
         self.assertIn("daily calendar view", readme_text)
         self.assertIn("monthly calendar view", readme_text)
         self.assertIn("weekly calendar view", readme_text)

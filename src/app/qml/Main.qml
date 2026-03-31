@@ -713,6 +713,17 @@ LV.ApplicationWindow {
                         if (value !== applicationWindow.preferredDrawerHeight)
                             applicationWindow.preferredDrawerHeight = value;
                     }
+                    onNoteActivated: function (index, noteId) {
+                        const normalizedNoteId = noteId === undefined || noteId === null
+                            ? ""
+                            : String(noteId).trim();
+                        if (normalizedNoteId.length === 0)
+                            return;
+                        applicationWindow.dayCalendarOverlayVisible = false;
+                        applicationWindow.weekCalendarOverlayVisible = false;
+                        applicationWindow.monthCalendarOverlayVisible = false;
+                        applicationWindow.yearCalendarOverlayVisible = false;
+                    }
                     onListViewWidthDragRequested: function (value) {
                         if (value !== applicationWindow.preferredListViewWidth)
                             applicationWindow.preferredListViewWidth = value;

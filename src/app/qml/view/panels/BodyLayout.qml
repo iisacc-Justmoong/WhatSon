@@ -50,6 +50,7 @@ Item {
 
     signal drawerHeightDragRequested(int value)
     signal listViewWidthDragRequested(int value)
+    signal noteActivated(int index, string noteId)
     signal rightPanelWidthDragRequested(int value)
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
@@ -164,6 +165,10 @@ Item {
                     noteListModel: hStack.activeNoteListModel
                     noteDropTarget: sideBar.noteDropTargetView
                     panelColor: hStack.listViewColor
+
+                    onNoteActivated: function (index, noteId) {
+                        hStack.noteActivated(index, noteId);
+                    }
                 }
             }
             PanelEdgeSplitter {

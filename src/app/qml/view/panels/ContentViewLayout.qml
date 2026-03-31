@@ -52,6 +52,7 @@ Item {
                                                        && !contentViewLayout.weekCalendarOverlayVisible
                                                        && !contentViewLayout.monthCalendarOverlayVisible
                                                        && contentViewLayout.yearCalendarOverlayVisible
+    readonly property int activeSurfaceIndex: contentViewLayout.calendarOverlayVisible ? 1 : 0
 
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
@@ -81,59 +82,71 @@ Item {
     Layout.fillHeight: true
     Layout.fillWidth: true
 
-    ContentsDisplayView {
-        anchors.fill: contentViewLayout.parent
-        contentViewModel: contentViewLayout.resolvedContentViewModel
-        displayColor: contentViewLayout.displayColor
-        drawerVisible: contentViewLayout.drawerVisible
-        drawerColor: contentViewLayout.drawerColor
-        drawerHeight: contentViewLayout.drawerHeight
-        enabled: contentViewLayout.visible
-        editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
-        frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
-        gutterColor: contentViewLayout.gutterColor
-        gutterWidthOverride: contentViewLayout.gutterWidthOverride
-        libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
-        lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
-        lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
-        minDisplayHeight: contentViewLayout.minDisplayHeight
-        minDrawerHeight: contentViewLayout.minDrawerHeight
-        minimapVisible: contentViewLayout.minimapVisible
-        noteListModel: contentViewLayout.resolvedNoteListModel
-        panelViewModel: contentViewLayout.panelViewModel
-        splitterColor: contentViewLayout.splitterColor
-        splitterHandleThickness: contentViewLayout.splitterHandleThickness
-        splitterThickness: contentViewLayout.splitterThickness
-        visible: !contentViewLayout.calendarOverlayVisible
-
-        onDrawerHeightDragRequested: function (value) {
-            contentViewLayout.drawerHeightDragRequested(value);
-        }
-        onEditorTextEdited: function (text) {
-            contentViewLayout.editorTextEdited(text);
-        }
-        onViewHookRequested: {
-            contentViewLayout.viewHookRequested();
-        }
-    }
-    Item {
-        id: calendarContentSurface
+    StackLayout {
+        id: contentSurfaceStack
 
         anchors.fill: parent
-        enabled: visible
-        visible: contentViewLayout.calendarOverlayVisible
+        currentIndex: contentViewLayout.activeSurfaceIndex
 
-        Loader {
-            id: calendarPageLoader
+        Item {
+            id: editorContentSurface
 
-            anchors.fill: parent
-            sourceComponent: contentViewLayout.showingDayCalendarOverlay
-                             ? dayCalendarPageComponent
-                             : contentViewLayout.showingWeekCalendarOverlay
-                               ? weekCalendarPageComponent
-                               : contentViewLayout.showingMonthCalendarOverlay
-                                 ? monthCalendarPageComponent
-                                 : yearCalendarPageComponent
+            enabled: visible
+            visible: !contentViewLayout.calendarOverlayVisible
+
+            ContentsDisplayView {
+                anchors.fill: parent
+                contentViewModel: contentViewLayout.resolvedContentViewModel
+                displayColor: contentViewLayout.displayColor
+                drawerVisible: contentViewLayout.drawerVisible
+                drawerColor: contentViewLayout.drawerColor
+                drawerHeight: contentViewLayout.drawerHeight
+                enabled: contentViewLayout.visible
+                editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
+                frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
+                gutterColor: contentViewLayout.gutterColor
+                gutterWidthOverride: contentViewLayout.gutterWidthOverride
+                libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
+                lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
+                lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
+                minDisplayHeight: contentViewLayout.minDisplayHeight
+                minDrawerHeight: contentViewLayout.minDrawerHeight
+                minimapVisible: contentViewLayout.minimapVisible
+                noteListModel: contentViewLayout.resolvedNoteListModel
+                panelViewModel: contentViewLayout.panelViewModel
+                splitterColor: contentViewLayout.splitterColor
+                splitterHandleThickness: contentViewLayout.splitterHandleThickness
+                splitterThickness: contentViewLayout.splitterThickness
+
+                onDrawerHeightDragRequested: function (value) {
+                    contentViewLayout.drawerHeightDragRequested(value);
+                }
+                onEditorTextEdited: function (text) {
+                    contentViewLayout.editorTextEdited(text);
+                }
+                onViewHookRequested: {
+                    contentViewLayout.viewHookRequested();
+                }
+            }
+        }
+        Item {
+            id: calendarContentSurface
+
+            enabled: visible
+            visible: contentViewLayout.calendarOverlayVisible
+
+            Loader {
+                id: calendarPageLoader
+
+                anchors.fill: parent
+                sourceComponent: contentViewLayout.showingDayCalendarOverlay
+                                 ? dayCalendarPageComponent
+                                 : contentViewLayout.showingWeekCalendarOverlay
+                                   ? weekCalendarPageComponent
+                                   : contentViewLayout.showingMonthCalendarOverlay
+                                     ? monthCalendarPageComponent
+                                     : yearCalendarPageComponent
+            }
         }
     }
     Connections {
@@ -146,6 +159,10 @@ Item {
                 ? String(model.currentNoteId)
                 : "";
             if (currentNoteId.length > 0 && contentViewLayout.calendarOverlayVisible)
+                contentViewLayout.requestActiveCalendarOverlayClose();
+        }
+        function onCurrentIndexChanged() {
+            if (contentViewLayout.calendarOverlayVisible)
                 contentViewLayout.requestActiveCalendarOverlayClose();
         }
     }

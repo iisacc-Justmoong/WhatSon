@@ -29,9 +29,15 @@
 ### Signals
 - `drawerHeightDragRequested`
 - `listViewWidthDragRequested`
+- `noteActivated`
 - `rightPanelWidthDragRequested`
 - `sidebarWidthDragRequested`
 - `viewHookRequested`
+
+## Route Bridging Notes
+- `ListBarLayout.noteActivated(...)` is re-emitted as `BodyLayout.noteActivated(...)`.
+- Root containers (for example `Main.qml`) can consume this bridge signal to reset calendar-route visibility and
+  guarantee editor resurfacing when a note is explicitly activated.
 
 ## Intended Detailed Sections
 - Responsibility and business role

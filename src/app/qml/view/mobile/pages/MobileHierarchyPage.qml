@@ -313,11 +313,22 @@ Item {
         }
         mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
+    function dismissCalendarOverlaysForEditorActivation() {
+        if (mobileHierarchyPage.dayCalendarOverlayVisible)
+            mobileHierarchyPage.dayCalendarOverlayDismissRequested();
+        if (mobileHierarchyPage.weekCalendarOverlayVisible)
+            mobileHierarchyPage.weekCalendarOverlayDismissRequested();
+        if (mobileHierarchyPage.monthCalendarOverlayVisible)
+            mobileHierarchyPage.monthCalendarOverlayDismissRequested();
+        if (mobileHierarchyPage.yearCalendarOverlayVisible)
+            mobileHierarchyPage.yearCalendarOverlayDismissRequested();
+    }
     function requestOpenEditor(noteId, index) {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
         if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();

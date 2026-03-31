@@ -29,6 +29,10 @@ The important rule is that the route stack is only canonicalized when the visibl
 Chevron-only expansion in `SidebarHierarchyView.qml` is intentionally suppressed before that signal is
 re-emitted, so tapping a folder chevron on mobile does not push `/mobile/note-list`.
 
+Before opening `/mobile/editor`, `requestOpenEditor(...)` now calls
+`dismissCalendarOverlaysForEditorActivation()` and emits the per-mode dismiss signals. This ensures calendar state is
+cleared in the parent owner and prevents the editor route from remaining hidden behind stale calendar visibility flags.
+
 ## Selection Preservation
 `preservedNoteListSelectionIndex` caches the active hierarchy selection that produced the current note list.
 

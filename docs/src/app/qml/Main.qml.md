@@ -48,6 +48,8 @@ The file keeps both desktop and mobile layout branches alive.
 - `viewHookRequested` is the root forwarding signal used by nested components that want to bubble interaction intent upward.
 - The root `Shortcut` for `StandardKey.New` is intentionally gated behind `isDesktopPlatform` so mobile route changes and
   panel navigation cannot fall into global note creation.
+- Desktop `BodyLayout.noteActivated(...)` now clears all calendar visibility flags in `Main.qml`, so explicit note
+  activation always restores the editor surface even when calendar mode was previously opened.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
 - `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
   startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.

@@ -593,6 +593,9 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(bodyLayout.contains(QStringLiteral("property bool dayCalendarOverlayVisible: false")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property var dayCalendarViewModel: null")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal dayCalendarOverlayDismissRequested")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("signal noteActivated(int index, string noteId)")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("onNoteActivated: function (index, noteId)")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("hStack.noteActivated(index, noteId);")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property bool monthCalendarOverlayVisible: false")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property var monthCalendarViewModel: null")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal monthCalendarOverlayDismissRequested")));
@@ -603,9 +606,14 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(bodyLayout.contains(QStringLiteral("property var yearCalendarViewModel: null")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal yearCalendarOverlayDismissRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("import \"../calendar\" as CalendarView")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("StackLayout {")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral(
+        "readonly property int activeSurfaceIndex: contentViewLayout.calendarOverlayVisible ? 1 : 0")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("currentIndex: contentViewLayout.activeSurfaceIndex")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("visible: !contentViewLayout.calendarOverlayVisible")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("id: calendarContentSurface")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("function onCurrentNoteIdChanged()")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("function onCurrentIndexChanged()")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("contentViewLayout.requestActiveCalendarOverlayClose();")));
     QVERIFY(!contentViewLayout.contains(QStringLiteral("id: calendarOverlay")));
     QVERIFY(!contentViewLayout.contains(QStringLiteral("MouseArea {")));
@@ -669,6 +677,10 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
         "signal yearCalendarOverlayDismissRequested")));
     QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
         "yearCalendarOverlayVisible: mobileHierarchyPage.yearCalendarOverlayVisible")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "function dismissCalendarOverlaysForEditorActivation()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();")));
 }
 
 void NavigationQmlFramesTest::hierarchySidebar_mustReceiveSharedHorizontalInset()

@@ -30,11 +30,16 @@
 
 ## Content Surface Contract
 - Imports `../calendar` as `CalendarView` and mounts day/week/month/year pages through one content-surface `Loader`.
+- Uses a `StackLayout` (`currentIndex: activeSurfaceIndex`) so the editor surface and calendar surface are switched by
+  route state, not by overlay stacking.
 - Uses per-mode visibility/viewmodel pairs:
   - `dayCalendarOverlayVisible` / `dayCalendarViewModel`
   - `weekCalendarOverlayVisible` / `weekCalendarViewModel`
   - `monthCalendarOverlayVisible` / `monthCalendarViewModel`
   - `yearCalendarOverlayVisible` / `yearCalendarViewModel`
+- Derives `activeSurfaceIndex` from `calendarOverlayVisible`:
+  - `0` => editor (`ContentsDisplayView`)
+  - `1` => calendar content surface
 - Resolves the active page by strict priority:
   - day first
   - then week
@@ -49,6 +54,8 @@
 - The active note-list model's `currentNoteIdChanged` signal dispatches through
   `requestActiveCalendarOverlayClose()` so parent containers (`BodyLayout`, `MobileHierarchyPage`) keep visibility
   ownership and calendar state returns to the editor when a different note is selected.
+- The active note-list model's `currentIndexChanged` path also dispatches through
+  `requestActiveCalendarOverlayClose()` so route recovery does not depend only on note-id churn.
 - The composed `ContentsDisplayView` binding path now keeps explicit root-id qualification for
   ownership-sensitive bindings (`anchors.fill`, `enabled`) to preserve deterministic panel-level
   scope resolution.

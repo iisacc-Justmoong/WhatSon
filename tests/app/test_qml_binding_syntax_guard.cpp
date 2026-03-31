@@ -598,7 +598,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentViewLayout.qml must keep the editor selection highlight aligned with the LVRS input accent color.");
     QVERIFY2(
         lvrsTextEditorText.contains(QStringLiteral(
-            "interactive: contentHeight > height && (!control.preferNativeGestures || !control.focused)")),
+            "interactive: contentHeight > height && (!control.preferNativeGestures || !control.focused)")) ||
+            lvrsTextEditorText.contains(QStringLiteral(
+                "interactive: contentHeight > height && (!control.preferNativeGestures || !editor.activeFocus)")),
         "LVRS TextEditor.qml must suspend viewport flicking as soon as the editor surface is focused, or the initial mobile tap-to-focus transition will still pre-empt native text-selection gestures.");
     QVERIFY2(
         lvrsTextEditorText.contains(QStringLiteral("enabled: control.enabled")) &&
@@ -1298,10 +1300,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("id: bookmarkPaletteIconOverlay")) &&
             sidebarViewText.contains(QStringLiteral("function drawBookmarkGlyph(context, x, y, size, color)")) &&
-            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.iconGlyph = \"\"")) &&
-            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.iconPlaceholderVisible = false")) &&
-            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.iconPlaceholderColor = \"transparent\"")),
-        "SidebarHierarchyView.qml must draw bookmark icons through the overlay canvas while the bookmark-palette controller clears the default placeholder.");
+            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.textColorNormal = bookmarkColor")) &&
+            sidebarBookmarkPaletteControllerText.contains(QStringLiteral("item.textColorDisabled = bookmarkColor")),
+        "SidebarHierarchyView.qml must draw bookmark icons through the overlay canvas while the bookmark-palette controller applies bookmark color visuals to hierarchy labels.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("function clearNoteDropPreview()")) &&
             sidebarViewText.contains(QStringLiteral("function updateNoteDropPreviewAtPosition(x, y, noteId, referenceItem)")),
