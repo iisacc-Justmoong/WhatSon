@@ -109,6 +109,8 @@ Rectangle {
     function applySearchTextToModel() {
         if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)
             return;
+        if (noteListContractBridge.applySearchText(listBarLayout.searchText))
+            return;
 
         if (listBarLayout.noteListModel.searchText !== undefined) {
             listBarLayout.noteListModel.searchText = listBarLayout.searchText;
@@ -163,6 +165,9 @@ Rectangle {
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return -1;
+        const bridgeCurrentIndex = Number(noteListContractBridge.readCurrentIndex());
+        if (isFinite(bridgeCurrentIndex))
+            return bridgeCurrentIndex;
         if (listBarLayout.noteListModel.currentIndex !== undefined)
             return Number(listBarLayout.noteListModel.currentIndex);
         return -1;
@@ -285,6 +290,10 @@ Rectangle {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return;
         const normalizedIndex = Number(index);
+        if (!isFinite(normalizedIndex))
+            return;
+        if (noteListContractBridge.pushCurrentIndex(Math.max(-1, Math.floor(normalizedIndex))))
+            return;
         if (listBarLayout.noteListModel.currentIndex !== undefined) {
             if (Number(listBarLayout.noteListModel.currentIndex) === normalizedIndex)
                 return;
@@ -320,6 +329,11 @@ Rectangle {
         listBarLayout.syncingCurrentIndexFromModel = false;
     }
     function syncFocusedNoteDeletionState() {
+        const bridgeNoteId = noteListContractBridge.readCurrentNoteId();
+        if (bridgeNoteId.length > 0) {
+            noteDeletionBridge.focusedNoteId = bridgeNoteId;
+            return;
+        }
         const noteModel = listBarLayout.resolvedNoteListModel;
         if (noteModel && noteModel.currentNoteId !== undefined && noteModel.currentNoteId !== null) {
             noteDeletionBridge.focusedNoteId = String(noteModel.currentNoteId).trim();
@@ -385,6 +399,11 @@ Rectangle {
         id: noteDeletionBridge
 
         deletionTarget: listBarLayout.noteDeletionViewModel
+        noteListModel: listBarLayout.resolvedNoteListModel
+    }
+    NoteListModelContractBridge {
+        id: noteListContractBridge
+
         noteListModel: listBarLayout.resolvedNoteListModel
     }
     LV.ContextMenu {

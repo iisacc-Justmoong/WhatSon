@@ -2,9 +2,8 @@
 
 ## Responsibility
 
-`ListBarLayout.qml` is the shared note-list surface for desktop and mobile routes. It owns note selection authority,
-search propagation, context-menu targeting, internal note drag preview, and the viewport behavior of the note list
-itself.
+`ListBarLayout.qml` is the shared note-list surface for desktop and mobile routes. It owns interaction flow
+(tap/drag/context-menu/viewport), while note-list contract probing is delegated to C++ bridge objects.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
@@ -20,6 +19,7 @@ itself.
 - `noteSelectionState`
 - `noteDragPreviewState`
 - `noteDeletionBridge`
+- `noteListContractBridge`
 - `noteContextMenu`
 - `noteDragPreview`
 - `topToolbar`
@@ -68,6 +68,8 @@ itself.
   authoritative selection back into the bound note-list model, captures `focusedNoteId` for keyboard deletion, and
   reasserts the pending user choice after the current event turn.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
+- `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
+  not need to own all dynamic contract detection.
 - `FocusedNoteDeletionBridge` keeps keyboard delete behavior aligned with whichever note card is visually focused.
 - Focused-note sync now reads `resolvedNoteListModel.currentNoteId` first, so keyboard-delete focus
   follows the model-authoritative current note contract.

@@ -14,7 +14,8 @@
 - `YearCalendarViewModel` as the reusable year-grid source for the navigation-triggered calendar overlay.
 - In trial builds, a trial activation policy and a dedicated desktop trial-status window bootstrap path.
 - Runtime services such as async scheduling, hub sync, permission bootstrap, write lease management, and startup hub selection persistence.
-- QML bridge types such as `HierarchyDragDropBridge`, `HierarchyInteractionBridge`, and editor helper bridges.
+- QML bridge types such as `HierarchyDragDropBridge`, `HierarchyInteractionBridge`,
+  `NoteListModelContractBridge`, and editor helper bridges.
 
 ## Startup Flow
 1. Parse launch options such as onboarding-only mode.
@@ -34,6 +35,8 @@
 - `DetailPanelViewModel` owns dedicated selector-copy viewmodels for Projects, Bookmarks, and Progress. `main.cpp` injects the canonical hierarchy viewmodels only as read-only selector sources so detail-panel combo state stays decoupled from sidebar selection.
 - The detail panel current-note bridge must follow `SidebarHierarchyViewModel::activeNoteListModel` and `activeHierarchyViewModel`, not the library hierarchy unconditionally, because `.wsnhead` reads and writes must target the note identified by the current workspace view.
 - `qmlRegisterType(...)` is used for bridge-like objects that should be instantiated from QML rather than pushed as singletons.
+- `WhatSonHubSyncController::acknowledgeLocalMutation()` is wired from Library, Bookmarks, and Progress
+  `hubFilesystemMutated` signals so local `.wsnbody` writes do not trigger false-positive external sync reloads.
 - Trial builds keep the trial-status window out of the main workspace route graph. The composition root injects the activation policy through dedicated initial properties instead of exposing another global workspace context object.
 
 ## QML Exposure

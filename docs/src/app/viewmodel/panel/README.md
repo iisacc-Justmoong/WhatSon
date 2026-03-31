@@ -12,6 +12,7 @@ These classes are not the core domain state. They are adaptation layers between:
 - `HierarchyInteractionBridge`: rename, create, delete, and expansion access through capabilities.
 - `HierarchyDragDropBridge`: reorder and note-drop access through capabilities.
 - `FocusedNoteDeletionBridge`: focused-note deletion helper.
+- `NoteListModelContractBridge`: dynamic note-list search/selection contract adapter used by `ListBarLayout.qml`.
 - `PanelViewModel` and `PanelViewModelRegistry`: panel-specific viewmodel routing and hook dispatch.
 
 ## Why This Layer Exists

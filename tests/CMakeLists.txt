@@ -796,6 +796,23 @@ target_link_libraries(whatson_note_deletion_bridge_tests
 add_test(NAME whatson_note_deletion_bridge_tests COMMAND whatson_note_deletion_bridge_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_note_deletion_bridge_tests)
 
+add_executable(whatson_note_list_contract_bridge_tests
+        app/test_note_list_model_contract_bridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/panel/NoteListModelContractBridge.cpp
+)
+set_target_properties(whatson_note_list_contract_bridge_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_note_list_contract_bridge_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_note_list_contract_bridge_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_note_list_contract_bridge_tests COMMAND whatson_note_list_contract_bridge_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_note_list_contract_bridge_tests)
+
 add_executable(whatson_hierarchy_drag_drop_bridge_tests
         app/test_hierarchy_drag_drop_bridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/IHierarchyViewModel.cpp

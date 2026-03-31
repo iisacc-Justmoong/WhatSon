@@ -85,7 +85,7 @@ public
         emit viewModelHookRequested();
     }
 
-    signals  :
+signals  :
 
 
 
@@ -95,6 +95,7 @@ public
     void noteItemCountChanged();
     void loadStateChanged();
     void viewModelHookRequested();
+    void hubFilesystemMutated();
 
 private:
     void updateItemCount();

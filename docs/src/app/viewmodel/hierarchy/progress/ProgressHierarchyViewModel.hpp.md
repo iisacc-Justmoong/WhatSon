@@ -13,6 +13,8 @@ list.
   `applyRuntimeSnapshot(...)` for startup/runtime refreshes.
 - Exposes body persistence helpers and note-directory lookup so the active progress note can remain
   editable in shared editor flows.
+- Emits `hubFilesystemMutated()` after successful `.wsnbody` writes so hub sync can treat progress-domain edits as
+  local mutations without full user-interaction hints.
 - Exposes `reloadNoteMetadataForNoteId(QString)` so detail-panel writes can refresh the current
   progress-filtered note list without waiting for a full runtime reload.
 - Declares every inherited capability method with explicit `override`, keeping the header aligned

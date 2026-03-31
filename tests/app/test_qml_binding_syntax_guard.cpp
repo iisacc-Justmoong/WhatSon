@@ -1514,6 +1514,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("function applySearchTextToModel()")),
         "ListBarLayout.qml must centralize note-list search propagation through applySearchTextToModel().");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("noteListContractBridge.applySearchText(listBarLayout.searchText)")),
+        "ListBarLayout.qml must delegate note-list search propagation into a backend bridge before falling back to direct dynamic property writes.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined")),
         "ListBarLayout.qml must expose an explicit note-list model presence contract.");
@@ -1542,6 +1545,10 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("FocusedNoteDeletionBridge {")),
         "ListBarLayout.qml must compose FocusedNoteDeletionBridge so delete-key handling tracks the visually focused note directly.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("NoteListModelContractBridge {")) &&
+            listBarLayoutText.contains(QStringLiteral("id: noteListContractBridge")),
+        "ListBarLayout.qml must compose NoteListModelContractBridge so note-list contract checks no longer stay fully in QML.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("deletionTarget: listBarLayout.noteDeletionViewModel")),
         "ListBarLayout.qml delete bridge must bind to the injected delete-note command source.");
@@ -1623,6 +1630,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function pushCurrentIndexToModel(index)")),
         "ListBarLayout.qml must expose an explicit helper that pushes ListView selection into the note model.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("noteListContractBridge.pushCurrentIndex(Math.max(-1, Math.floor(normalizedIndex)))")),
+        "ListBarLayout.qml selection propagation must delegate to NoteListModelContractBridge before fallback contract probing.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function activateNoteIndex(index, noteId)")),
         "ListBarLayout.qml must centralize immediate note activation through an explicit helper that also captures the visually focused note id.");
@@ -1872,6 +1882,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncFocusedNoteDeletionState()")),
         "ListBarLayout.qml must expose a helper that resyncs focused note deletion state from the visible current card.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("const bridgeNoteId = noteListContractBridge.readCurrentNoteId();")),
+        "ListBarLayout.qml focused-note synchronization must read current-note authority from NoteListModelContractBridge first.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("listBarLayout.noteListModel.currentIndex = index;")),
         "ListBarLayout.qml must push tapped note selection into noteModel.currentIndex.");

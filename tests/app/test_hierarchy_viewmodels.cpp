@@ -504,6 +504,7 @@ private
     void resourcesViewModel_exposesSupportedTypeTree();
     void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void progressViewModel_supportsCrudContract();
+    void progressViewModel_saveCurrentBodyText_emitsHubFilesystemMutated();
     void progressViewModel_applyRuntimeSnapshot_preservesSelectionAndVisibleNotes();
     void eventViewModel_supportsCrudContract();
     void eventViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
@@ -1657,6 +1658,25 @@ void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemModel()->rowCount(), 10);
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 10);
+}
+
+void HierarchyViewModelsTest::progressViewModel_saveCurrentBodyText_emitsHubFilesystemMutated()
+{
+    QString hubPath;
+    QVERIFY(prepareProgressHub(&hubPath));
+
+    ProgressHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(3);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    viewModel.noteListModel()->setCurrentIndex(0);
+    QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-pending"));
+
+    QSignalSpy filesystemSpy(&viewModel, &ProgressHierarchyViewModel::hubFilesystemMutated);
+    QVERIFY(viewModel.saveCurrentBodyText(QStringLiteral("Pending summary updated")));
+    QCOMPARE(filesystemSpy.count(), 1);
 }
 
 void HierarchyViewModelsTest::progressViewModel_applyRuntimeSnapshot_preservesSelectionAndVisibleNotes()

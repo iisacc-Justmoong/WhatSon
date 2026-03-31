@@ -547,6 +547,7 @@ bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, cons
     }
 
     refreshNoteListForSelection();
+    emit hubFilesystemMutated();
     return true;
 }
 
