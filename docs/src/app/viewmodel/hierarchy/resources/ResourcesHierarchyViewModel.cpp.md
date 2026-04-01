@@ -14,6 +14,10 @@ into three flattened hierarchy levels:
 - `format`
 - `asset`
 
+When the input path list is empty, the viewmodel now publishes default top-level bucket rows
+(`Image`, `Video`, `Document`, `3D Model`, `Web page`, `Music`, `Audio`, `ZIP`, `Other`) so the
+resources sidebar does not render as a fully empty panel.
+
 ## Expansion Preservation
 
 During rebuild, the previous `key -> expanded` state is restored so runtime snapshot updates do not

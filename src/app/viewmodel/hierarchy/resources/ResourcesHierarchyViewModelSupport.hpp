@@ -281,6 +281,21 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         return QStringLiteral("asset:%1").arg(metadata.resourceId.trimmed());
     }
 
+    inline QStringList defaultBucketLabels()
+    {
+        return {
+            QStringLiteral("Image"),
+            QStringLiteral("Video"),
+            QStringLiteral("Document"),
+            QStringLiteral("3D Model"),
+            QStringLiteral("Web page"),
+            QStringLiteral("Music"),
+            QStringLiteral("Audio"),
+            QStringLiteral("ZIP"),
+            QStringLiteral("Other")
+        };
+    }
+
     inline MaterializedResourceEntry materializeResourceEntry(
         const QString& resourcePath,
         const QStringList& resolutionBasePaths)
@@ -371,6 +386,26 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 }
                 return left.format.localeAwareCompare(right.format) < 0;
             });
+
+        if (groups.isEmpty())
+        {
+            QVector<ResourcesHierarchyItem> fallbackItems;
+            const QStringList buckets = defaultBucketLabels();
+            fallbackItems.reserve(buckets.size());
+            for (const QString& bucket : buckets)
+            {
+                ResourcesHierarchyItem bucketItem;
+                bucketItem.depth = 0;
+                bucketItem.label = bucket;
+                bucketItem.key = itemKeyForBucket(bucket);
+                bucketItem.kind = QStringLiteral("bucket");
+                bucketItem.bucket = bucket;
+                bucketItem.showChevron = false;
+                bucketItem.expanded = false;
+                fallbackItems.push_back(bucketItem);
+            }
+            return fallbackItems;
+        }
 
         QVector<ResourcesHierarchyItem> items;
         QString currentBucket;

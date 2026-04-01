@@ -48,7 +48,7 @@ namespace
     QString extractResourcePathAttribute(const QString& resourceTagText)
     {
         const QRegularExpression quotedDouble(
-            QStringLiteral(R"((?:resourcePath|path)\s*=\s*"([^"]+)")"),
+            QStringLiteral("(?:resourcePath|path)\\s*=\\s*\"([^\"]+)\""),
             QRegularExpression::CaseInsensitiveOption);
         const QRegularExpressionMatch quotedDoubleMatch = quotedDouble.match(resourceTagText);
         if (quotedDoubleMatch.hasMatch())
@@ -57,7 +57,7 @@ namespace
         }
 
         const QRegularExpression quotedSingle(
-            QStringLiteral(R"((?:resourcePath|path)\s*=\s*'([^']+)')"),
+            QStringLiteral("(?:resourcePath|path)\\s*=\\s*'([^']+)'"),
             QRegularExpression::CaseInsensitiveOption);
         const QRegularExpressionMatch quotedSingleMatch = quotedSingle.match(resourceTagText);
         if (quotedSingleMatch.hasMatch())
@@ -66,7 +66,7 @@ namespace
         }
 
         const QRegularExpression bare(
-            QStringLiteral(R"((?:resourcePath|path)\s*=\s*([^\s"'/>]+))"),
+            QStringLiteral("(?:resourcePath|path)\\s*=\\s*([^\\s\"'/>]+)"),
             QRegularExpression::CaseInsensitiveOption);
         const QRegularExpressionMatch bareMatch = bare.match(resourceTagText);
         if (bareMatch.hasMatch())

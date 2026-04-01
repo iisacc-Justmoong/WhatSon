@@ -2,20 +2,35 @@
 
 ## Responsibility
 
-`Resources.wsresources`를 읽어 `.wsresource` 패키지 경로 목록으로 복원한다.
+Reads `Resources.wsresources` payloads and restores a normalized `.wsresource` package-path list.
 
 ## Accepted Input Forms
 
-- legacy string array
-- object root with `resources: [...]`
-- new object array entries with `resourcePath`
-- legacy object array entries with `path` (대소문자 무시)
-- root object direct path key (`resourcePath`/`path`)
-- XML-like `<resource ... path=...>` 또는 `<resource ... resourcePath=...>` tag text
-- 마지막 fallback으로 line-based text
+- Legacy JSON string arrays.
+- Object root with `resources: [...]`.
+- Object array entries with `resourcePath` or legacy `path` (case-insensitive key match).
+- Root object direct path key (`resourcePath` / `path`).
+- XML-like tag text such as `<resource ... path=...>` or `<resource ... resourcePath=...>`.
+- Final fallback: line-based plain text.
+
+Attribute values inside `<resource ...>` tags are parsed in all supported forms:
+
+- Double-quoted (`path="..."`).
+- Single-quoted (`path='...'`).
+- Bare values (`resourcePath=...`).
+
+The parser also accepts mixed casing for attribute keys (for example `PATH`).
 
 ## Compatibility
 
-쓰기 포맷은 object array로 이동했지만, 파서는 기존 raw string 저장본도 그대로 읽는다.
-따라서 기존 허브의 `Resources.wsresources`를 즉시 마이그레이션하지 않아도 런타임 적재가 깨지지 않는다.
-`<resources>` wrapper 같은 markup 라인은 fallback 단계에서 경로로 취급하지 않고 건너뛴다.
+Writer output now prefers object-array format, but parser compatibility remains backward-safe for
+legacy hubs, so immediate migration is not required for runtime loading.
+
+`<resources>`-style wrapper lines are ignored during fallback line parsing and are not treated as
+resource paths.
+
+## Regex Literal Safety Note
+
+Resource-tag attribute regex literals use escaped `QStringLiteral(...)` strings instead of C++ raw
+string literals to avoid accidental raw-literal terminator collisions in patterns containing
+attribute quotes.

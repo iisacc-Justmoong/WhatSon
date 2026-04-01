@@ -385,6 +385,7 @@ void WhatSonHierarchyIoTest::resourcesParser_supportsLegacyPathAndResourceTagFor
             "<resources>\n"
             "    <resource type=\"image\" format=\".png\" path=\"TagHub.wsresources/poster.wsresource\" />\n"
             "    <resource type=audio format=.mp3 resourcePath=TagHub.wsresources/voice.wsresource />\n"
+            "    <resource type='image' format='.jpg' PATH = \"TagHub.wsresources/cover.wsresource\" />\n"
             "</resources>\n");
 
         WhatSonResourcesHierarchyStore parsedStore;
@@ -393,7 +394,8 @@ void WhatSonHierarchyIoTest::resourcesParser_supportsLegacyPathAndResourceTagFor
             parsedStore.resourcePaths(),
             QStringList{
                 QStringLiteral("TagHub.wsresources/poster.wsresource"),
-                QStringLiteral("TagHub.wsresources/voice.wsresource")
+                QStringLiteral("TagHub.wsresources/voice.wsresource"),
+                QStringLiteral("TagHub.wsresources/cover.wsresource")
             });
     }
 }

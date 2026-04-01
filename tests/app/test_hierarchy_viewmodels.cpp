@@ -540,6 +540,7 @@ private
     void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
     void bookmarksViewModel_requestViewModelHook_refreshesBookmarkedProjection();
     void resourcesViewModel_exposesSupportedTypeTree();
+    void resourcesViewModel_whenResourcePathsEmpty_exposesDefaultBuckets();
     void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
     void resourcesViewModel_requestViewModelHook_reloadsResourcePathsFromFile();
     void progressViewModel_supportsCrudContract();
@@ -1600,6 +1601,40 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
     QVERIFY(!viewModel.renameItem(imageFormatIndex, QStringLiteral(".png-renamed")));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
+}
+
+void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesDefaultBuckets()
+{
+    ResourcesHierarchyViewModel viewModel;
+    viewModel.setResourcePaths({});
+
+    QCOMPARE(viewModel.resourcePaths(), QStringList{});
+    QCOMPARE(viewModel.itemModel()->rowCount(), 9);
+
+    bool imageBucketFound = false;
+    bool otherBucketFound = false;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QModelIndex index = viewModel.itemModel()->index(row, 0);
+        const QString key = viewModel.itemModel()->data(index, ResourcesHierarchyModel::KeyRole).toString();
+        const QString kind = viewModel.itemModel()->data(index, ResourcesHierarchyModel::KindRole).toString();
+        const bool showChevron = viewModel.itemModel()->data(index, ResourcesHierarchyModel::ShowChevronRole).toBool();
+
+        QCOMPARE(kind, QStringLiteral("bucket"));
+        QCOMPARE(showChevron, false);
+
+        if (key == QStringLiteral("bucket:image"))
+        {
+            imageBucketFound = true;
+        }
+        if (key == QStringLiteral("bucket:other"))
+        {
+            otherBucketFound = true;
+        }
+    }
+
+    QVERIFY(imageBucketFound);
+    QVERIFY(otherBucketFound);
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()

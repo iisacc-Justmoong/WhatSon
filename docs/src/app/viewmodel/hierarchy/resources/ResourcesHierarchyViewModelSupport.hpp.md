@@ -27,3 +27,21 @@
 
 이 key가 `ResourcesHierarchyViewModel`의 expansion-preserve 동작의 기준이다.
 포맷 key는 원본 메타데이터 포맷 표기와 별개로 case-folded lookup 값을 써서, `.PNG`와 `.png`가 같은 분류 노드로 합쳐진다.
+
+## Empty-State Fallback
+
+When `resourcePaths` is empty, `buildHierarchyItems(...)` now returns a non-empty default bucket list
+instead of an empty hierarchy.
+
+- `Image`
+- `Video`
+- `Document`
+- `3D Model`
+- `Web page`
+- `Music`
+- `Audio`
+- `ZIP`
+- `Other`
+
+These fallback rows are bucket-only nodes (`kind="bucket"`, `showChevron=false`) so the sidebar keeps
+a stable visual structure even before the first resource import.
