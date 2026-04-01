@@ -11,6 +11,7 @@
 #include <QFileInfo>
 #include <QHash>
 #include <QMetaType>
+#include <QSet>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -256,19 +257,27 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         return states;
     }
 
-    inline QString itemKeyForBucket(const QString& bucket)
+    inline QString itemKeyForType(const QString& type)
     {
-        QString normalized = bucket.trimmed().toCaseFolded();
-        normalized.replace(QLatin1Char(' '), QLatin1Char('-'));
-        return QStringLiteral("bucket:%1").arg(normalized);
+        QString normalizedTypeKey = WhatSon::Resources::normalizedType(type);
+        if (normalizedTypeKey.isEmpty())
+        {
+            normalizedTypeKey = QStringLiteral("other");
+        }
+        return QStringLiteral("type:%1").arg(normalizedTypeKey);
     }
 
-    inline QString itemKeyForFormat(const QString& bucket, const QString& format)
+    inline QString itemKeyForFormat(const QString& type, const QString& format)
     {
-        QString normalizedBucket = bucket.trimmed().toCaseFolded();
-        normalizedBucket.replace(QLatin1Char(' '), QLatin1Char('-'));
+        QString normalizedTypeKey = WhatSon::Resources::normalizedType(type);
+        if (normalizedTypeKey.isEmpty())
+        {
+            normalizedTypeKey = QStringLiteral("other");
+        }
         const QString normalizedFormat = WhatSon::Resources::normalizedFormatLookupKey(format);
-        return QStringLiteral("format:%1:%2").arg(normalizedBucket, normalizedFormat);
+        return QStringLiteral("format:%1:%2").arg(
+            normalizedTypeKey,
+            normalizedFormat.isEmpty() ? QStringLiteral(".bin") : normalizedFormat);
     }
 
     inline QString itemKeyForAsset(const WhatSon::Resources::ResourcePackageMetadata& metadata)
@@ -281,18 +290,78 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         return QStringLiteral("asset:%1").arg(metadata.resourceId.trimmed());
     }
 
-    inline QStringList defaultBucketLabels()
+    inline QString typeKeyForMetadata(const WhatSon::Resources::ResourcePackageMetadata& metadata)
+    {
+        QString typeKey = WhatSon::Resources::normalizedTypeFromBucketAndFormat(
+            metadata.type,
+            metadata.bucket,
+            metadata.format);
+        typeKey = WhatSon::Resources::normalizedType(typeKey);
+        if (typeKey == QStringLiteral("image")
+            || typeKey == QStringLiteral("video")
+            || typeKey == QStringLiteral("document")
+            || typeKey == QStringLiteral("model")
+            || typeKey == QStringLiteral("link")
+            || typeKey == QStringLiteral("music")
+            || typeKey == QStringLiteral("audio")
+            || typeKey == QStringLiteral("archive"))
+        {
+            return typeKey;
+        }
+        return QStringLiteral("other");
+    }
+
+    inline QString displayLabelForTypeKey(const QString& typeKey)
+    {
+        const QString normalizedTypeKey = WhatSon::Resources::normalizedType(typeKey);
+        if (normalizedTypeKey == QStringLiteral("image"))
+        {
+            return QStringLiteral("Image");
+        }
+        if (normalizedTypeKey == QStringLiteral("video"))
+        {
+            return QStringLiteral("Video");
+        }
+        if (normalizedTypeKey == QStringLiteral("document"))
+        {
+            return QStringLiteral("Document");
+        }
+        if (normalizedTypeKey == QStringLiteral("model"))
+        {
+            return QStringLiteral("3D Model");
+        }
+        if (normalizedTypeKey == QStringLiteral("link"))
+        {
+            return QStringLiteral("Web page");
+        }
+        if (normalizedTypeKey == QStringLiteral("music"))
+        {
+            return QStringLiteral("Music");
+        }
+        if (normalizedTypeKey == QStringLiteral("audio"))
+        {
+            return QStringLiteral("Audio");
+        }
+        if (normalizedTypeKey == QStringLiteral("archive"))
+        {
+            return QStringLiteral("ZIP");
+        }
+
+        return QStringLiteral("Other");
+    }
+
+    inline QStringList defaultTypeKeys()
     {
         return {
-            QStringLiteral("Image"),
-            QStringLiteral("Video"),
-            QStringLiteral("Document"),
-            QStringLiteral("3D Model"),
-            QStringLiteral("Web page"),
-            QStringLiteral("Music"),
-            QStringLiteral("Audio"),
-            QStringLiteral("ZIP"),
-            QStringLiteral("Other")
+            QStringLiteral("image"),
+            QStringLiteral("video"),
+            QStringLiteral("document"),
+            QStringLiteral("model"),
+            QStringLiteral("link"),
+            QStringLiteral("music"),
+            QStringLiteral("audio"),
+            QStringLiteral("archive"),
+            QStringLiteral("other")
         };
     }
 
@@ -337,139 +406,60 @@ namespace WhatSon::Hierarchy::ResourcesSupport
     {
         const QHash<QString, bool> previousExpansionStates = expansionStateByKey(previousItems);
 
-        struct GroupedResources final
-        {
-            QString bucket;
-            QString format;
-            QVector<MaterializedResourceEntry> entries;
-        };
-
-        QVector<GroupedResources> groups;
+        QHash<QString, QSet<QString>> typeFormats;
         for (const QString& resourcePath : resourcePaths)
         {
             const MaterializedResourceEntry materialized = materializeResourceEntry(resourcePath, resolutionBasePaths);
-            const QString bucket = materialized.metadata.bucket.trimmed().isEmpty()
-                                       ? QStringLiteral("Other")
-                                       : materialized.metadata.bucket.trimmed();
-            const QString format = materialized.metadata.format.trimmed().isEmpty()
-                                       ? QStringLiteral(".bin")
-                                       : materialized.metadata.format.trimmed();
-
-            auto it = std::find_if(
-                groups.begin(),
-                groups.end(),
-                [&bucket, &format](const GroupedResources& group)
-                {
-                    return group.bucket == bucket && group.format == format;
-                });
-
-            if (it == groups.end())
+            const QString typeKey = typeKeyForMetadata(materialized.metadata);
+            QString format = materialized.metadata.format.trimmed().isEmpty()
+                                 ? QStringLiteral(".bin")
+                                 : materialized.metadata.format.trimmed();
+            format = WhatSon::Resources::normalizedFormatLookupKey(format);
+            if (format.isEmpty())
             {
-                GroupedResources group;
-                group.bucket = bucket;
-                group.format = format;
-                groups.push_back(group);
-                it = std::prev(groups.end());
+                format = QStringLiteral(".bin");
             }
-
-            it->entries.push_back(materialized);
-        }
-
-        std::sort(
-            groups.begin(),
-            groups.end(),
-            [](const GroupedResources& left, const GroupedResources& right)
-            {
-                if (left.bucket != right.bucket)
-                {
-                    return left.bucket.localeAwareCompare(right.bucket) < 0;
-                }
-                return left.format.localeAwareCompare(right.format) < 0;
-            });
-
-        if (groups.isEmpty())
-        {
-            QVector<ResourcesHierarchyItem> fallbackItems;
-            const QStringList buckets = defaultBucketLabels();
-            fallbackItems.reserve(buckets.size());
-            for (const QString& bucket : buckets)
-            {
-                ResourcesHierarchyItem bucketItem;
-                bucketItem.depth = 0;
-                bucketItem.label = bucket;
-                bucketItem.key = itemKeyForBucket(bucket);
-                bucketItem.kind = QStringLiteral("bucket");
-                bucketItem.bucket = bucket;
-                bucketItem.showChevron = false;
-                bucketItem.expanded = false;
-                fallbackItems.push_back(bucketItem);
-            }
-            return fallbackItems;
+            typeFormats[typeKey].insert(format);
         }
 
         QVector<ResourcesHierarchyItem> items;
-        QString currentBucket;
-        for (GroupedResources& group : groups)
+        const QStringList orderedTypes = defaultTypeKeys();
+        for (const QString& typeKey : orderedTypes)
         {
+            const QSet<QString> formats = typeFormats.value(typeKey);
+            QStringList sortedFormats = QStringList(formats.begin(), formats.end());
             std::sort(
-                group.entries.begin(),
-                group.entries.end(),
-                [](const MaterializedResourceEntry& left, const MaterializedResourceEntry& right)
+                sortedFormats.begin(),
+                sortedFormats.end(),
+                [](const QString& left, const QString& right)
                 {
-                    const QString leftLabel = !left.metadata.resourceId.trimmed().isEmpty()
-                                                  ? left.metadata.resourceId.trimmed()
-                                                  : left.metadata.resourcePath.trimmed();
-                    const QString rightLabel = !right.metadata.resourceId.trimmed().isEmpty()
-                                                   ? right.metadata.resourceId.trimmed()
-                                                   : right.metadata.resourcePath.trimmed();
-                    return leftLabel.localeAwareCompare(rightLabel) < 0;
+                    return left.localeAwareCompare(right) < 0;
                 });
 
-            if (currentBucket != group.bucket)
-            {
-                ResourcesHierarchyItem bucketItem;
-                bucketItem.depth = 0;
-                bucketItem.label = group.bucket;
-                bucketItem.key = itemKeyForBucket(group.bucket);
-                bucketItem.kind = QStringLiteral("bucket");
-                bucketItem.bucket = group.bucket;
-                bucketItem.showChevron = true;
-                bucketItem.expanded = previousExpansionStates.value(bucketItem.key, false);
-                items.push_back(bucketItem);
-                currentBucket = group.bucket;
-            }
+            ResourcesHierarchyItem typeItem;
+            typeItem.depth = 0;
+            typeItem.label = displayLabelForTypeKey(typeKey);
+            typeItem.key = itemKeyForType(typeKey);
+            typeItem.kind = QStringLiteral("type");
+            typeItem.type = typeKey;
+            typeItem.bucket = WhatSon::Resources::inferBucket(typeKey, QString());
+            typeItem.showChevron = !sortedFormats.isEmpty();
+            typeItem.expanded = previousExpansionStates.value(typeItem.key, false);
+            items.push_back(typeItem);
 
-            ResourcesHierarchyItem formatItem;
-            formatItem.depth = 1;
-            formatItem.label = group.format;
-            formatItem.key = itemKeyForFormat(group.bucket, group.format);
-            formatItem.kind = QStringLiteral("format");
-            formatItem.bucket = group.bucket;
-            formatItem.format = group.format;
-            formatItem.showChevron = !group.entries.isEmpty();
-            formatItem.expanded = previousExpansionStates.value(formatItem.key, false);
-            items.push_back(formatItem);
-
-            for (const MaterializedResourceEntry& entry : group.entries)
+            for (const QString& format : sortedFormats)
             {
-                ResourcesHierarchyItem assetItem;
-                assetItem.depth = 2;
-                assetItem.label = !entry.metadata.resourceId.trimmed().isEmpty()
-                                      ? entry.metadata.resourceId.trimmed()
-                                      : entry.metadata.resourcePath.trimmed();
-                assetItem.key = itemKeyForAsset(entry.metadata);
-                assetItem.kind = QStringLiteral("asset");
-                assetItem.bucket = group.bucket;
-                assetItem.type = entry.metadata.type;
-                assetItem.format = group.format;
-                assetItem.resourceId = entry.metadata.resourceId;
-                assetItem.resourcePath = entry.metadata.resourcePath;
-                assetItem.assetPath = !entry.resolvedAssetPath.trimmed().isEmpty()
-                                          ? normalizePath(entry.resolvedAssetPath)
-                                          : entry.metadata.assetPath;
-                assetItem.showChevron = false;
-                assetItem.expanded = false;
-                items.push_back(assetItem);
+                ResourcesHierarchyItem formatItem;
+                formatItem.depth = 1;
+                formatItem.label = format;
+                formatItem.key = itemKeyForFormat(typeKey, format);
+                formatItem.kind = QStringLiteral("format");
+                formatItem.bucket = WhatSon::Resources::inferBucket(typeKey, format);
+                formatItem.type = typeKey;
+                formatItem.format = format;
+                formatItem.showChevron = false;
+                formatItem.expanded = false;
+                items.push_back(formatItem);
             }
         }
 

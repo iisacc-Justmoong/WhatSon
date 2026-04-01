@@ -540,8 +540,8 @@ private
     void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
     void bookmarksViewModel_requestViewModelHook_refreshesBookmarkedProjection();
     void resourcesViewModel_exposesSupportedTypeTree();
-    void resourcesViewModel_whenResourcePathsEmpty_exposesDefaultBuckets();
-    void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
+    void resourcesViewModel_whenResourcePathsEmpty_exposesDefaultTypes();
+    void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedTypeState();
     void resourcesViewModel_requestViewModelHook_reloadsResourcePathsFromFile();
     void progressViewModel_supportsCrudContract();
     void progressViewModel_saveCurrentBodyText_emitsHubFilesystemMutated();
@@ -1486,7 +1486,7 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
             QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource")),
             QDir(resourcesPath).filePath(QStringLiteral("brief.wsresource"))
         }));
-    QCOMPARE(viewModel.itemModel()->rowCount(), 6);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 11);
 
     auto findIndexByKey = [&viewModel](const QString& key)
     {
@@ -1502,28 +1502,28 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
         return -1;
     };
 
-    const int documentBucketIndex = findIndexByKey(QStringLiteral("bucket:document"));
-    const int imageBucketIndex = findIndexByKey(QStringLiteral("bucket:image"));
+    const int documentTypeIndex = findIndexByKey(QStringLiteral("type:document"));
+    const int imageTypeIndex = findIndexByKey(QStringLiteral("type:image"));
+    const int documentFormatIndex = findIndexByKey(QStringLiteral("format:document:.pdf"));
     const int imageFormatIndex = findIndexByKey(QStringLiteral("format:image:.png"));
-    const int imageAssetIndex = findIndexByKey(QStringLiteral("asset:ResourcesVm.wsresources/logo.wsresource"));
-    QVERIFY(documentBucketIndex >= 0);
-    QVERIFY(imageBucketIndex >= 0);
+    QVERIFY(documentTypeIndex >= 0);
+    QVERIFY(imageTypeIndex >= 0);
+    QVERIFY(documentFormatIndex >= 0);
     QVERIFY(imageFormatIndex >= 0);
-    QVERIFY(imageAssetIndex >= 0);
 
     QCOMPARE(
         viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageBucketIndex, 0),
+            viewModel.itemModel()->index(imageTypeIndex, 0),
             ResourcesHierarchyModel::LabelRole).toString(),
         QStringLiteral("Image"));
     QCOMPARE(
         viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageBucketIndex, 0),
+            viewModel.itemModel()->index(imageTypeIndex, 0),
             ResourcesHierarchyModel::DepthRole).toInt(),
         0);
     QCOMPARE(
         viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageBucketIndex, 0),
+            viewModel.itemModel()->index(imageTypeIndex, 0),
             ResourcesHierarchyModel::ShowChevronRole).toBool(),
         true);
     QCOMPARE(
@@ -1540,32 +1540,17 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
         viewModel.itemModel()->data(
             viewModel.itemModel()->index(imageFormatIndex, 0),
             ResourcesHierarchyModel::ShowChevronRole).toBool(),
-        true);
+        false);
     QCOMPARE(
         viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageAssetIndex, 0),
-            ResourcesHierarchyModel::LabelRole).toString(),
-        QStringLiteral("logo"));
-    QCOMPARE(
-        viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageAssetIndex, 0),
-            ResourcesHierarchyModel::DepthRole).toInt(),
-        2);
-    QCOMPARE(
-        viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageAssetIndex, 0),
+            viewModel.itemModel()->index(imageFormatIndex, 0),
             ResourcesHierarchyModel::TypeRole).toString(),
         QStringLiteral("image"));
     QCOMPARE(
         viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageAssetIndex, 0),
-            ResourcesHierarchyModel::ResourcePathRole).toString(),
-        QStringLiteral("ResourcesVm.wsresources/logo.wsresource"));
-    QCOMPARE(
-        viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageAssetIndex, 0),
-            ResourcesHierarchyModel::AssetPathRole).toString(),
-        QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource/logo.png")));
+            viewModel.itemModel()->index(documentFormatIndex, 0),
+            ResourcesHierarchyModel::TypeRole).toString(),
+        QStringLiteral("document"));
 
     const QVariantList hierarchyModel = viewModel.hierarchyModel();
     auto findNodeByKey = [&hierarchyModel](const QString& key)
@@ -1581,19 +1566,19 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
         return QVariantMap{};
     };
 
-    const QVariantMap imageNode = findNodeByKey(QStringLiteral("bucket:image"));
+    const QVariantMap imageNode = findNodeByKey(QStringLiteral("type:image"));
     const QVariantMap formatNode = findNodeByKey(QStringLiteral("format:image:.png"));
-    const QVariantMap assetNode = findNodeByKey(QStringLiteral("asset:ResourcesVm.wsresources/logo.wsresource"));
+    const QVariantMap documentFormatNode = findNodeByKey(QStringLiteral("format:document:.pdf"));
     QCOMPARE(imageNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
     QCOMPARE(formatNode.value(QStringLiteral("label")).toString(), QStringLiteral(".png"));
-    QCOMPARE(assetNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("imageToImage"));
-    QCOMPARE(assetNode.value(QStringLiteral("resourceId")).toString(), QStringLiteral("logo"));
-    QCOMPARE(assetNode.value(QStringLiteral("bucket")).toString(), QStringLiteral("Image"));
+    QCOMPARE(formatNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
+    QCOMPARE(documentFormatNode.value(QStringLiteral("label")).toString(), QStringLiteral(".pdf"));
+    QVERIFY(findNodeByKey(QStringLiteral("asset:ResourcesVm.wsresources/logo.wsresource")).isEmpty());
 
-    viewModel.setSelectedIndex(imageBucketIndex);
+    viewModel.setSelectedIndex(imageTypeIndex);
     QVERIFY(!viewModel.deleteFolderEnabled());
-    QVERIFY(!viewModel.canRenameItem(imageBucketIndex));
-    QVERIFY(!viewModel.renameItem(imageBucketIndex, QStringLiteral("Image-Renamed")));
+    QVERIFY(!viewModel.canRenameItem(imageTypeIndex));
+    QVERIFY(!viewModel.renameItem(imageTypeIndex, QStringLiteral("Image-Renamed")));
     viewModel.createFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
     viewModel.setSelectedIndex(imageFormatIndex);
@@ -1603,7 +1588,7 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
     QCOMPARE(viewModel.itemModel()->rowCount(), hierarchyModel.size());
 }
 
-void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesDefaultBuckets()
+void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesDefaultTypes()
 {
     ResourcesHierarchyViewModel viewModel;
     viewModel.setResourcePaths({});
@@ -1611,8 +1596,8 @@ void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesD
     QCOMPARE(viewModel.resourcePaths(), QStringList{});
     QCOMPARE(viewModel.itemModel()->rowCount(), 9);
 
-    bool imageBucketFound = false;
-    bool otherBucketFound = false;
+    bool imageTypeFound = false;
+    bool otherTypeFound = false;
     for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
     {
         const QModelIndex index = viewModel.itemModel()->index(row, 0);
@@ -1620,24 +1605,24 @@ void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesD
         const QString kind = viewModel.itemModel()->data(index, ResourcesHierarchyModel::KindRole).toString();
         const bool showChevron = viewModel.itemModel()->data(index, ResourcesHierarchyModel::ShowChevronRole).toBool();
 
-        QCOMPARE(kind, QStringLiteral("bucket"));
+        QCOMPARE(kind, QStringLiteral("type"));
         QCOMPARE(showChevron, false);
 
-        if (key == QStringLiteral("bucket:image"))
+        if (key == QStringLiteral("type:image"))
         {
-            imageBucketFound = true;
+            imageTypeFound = true;
         }
-        if (key == QStringLiteral("bucket:other"))
+        if (key == QStringLiteral("type:other"))
         {
-            otherBucketFound = true;
+            otherTypeFound = true;
         }
     }
 
-    QVERIFY(imageBucketFound);
-    QVERIFY(otherBucketFound);
+    QVERIFY(imageTypeFound);
+    QVERIFY(otherTypeFound);
 }
 
-void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState()
+void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesExpandedTypeState()
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
@@ -1675,21 +1660,21 @@ void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesE
         QStringLiteral("/tmp/Resources.wsresources"),
         true);
 
-    int imageBucketIndex = -1;
+    int imageTypeIndex = -1;
     for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
     {
         if (viewModel.itemModel()->data(
                 viewModel.itemModel()->index(row, 0),
-                ResourcesHierarchyModel::KeyRole).toString() == QStringLiteral("bucket:image"))
+                ResourcesHierarchyModel::KeyRole).toString() == QStringLiteral("type:image"))
         {
-            imageBucketIndex = row;
+            imageTypeIndex = row;
             break;
         }
     }
-    QVERIFY(imageBucketIndex >= 0);
+    QVERIFY(imageTypeIndex >= 0);
     QCOMPARE(
         viewModel.itemModel()->data(
-            viewModel.itemModel()->index(imageBucketIndex, 0),
+            viewModel.itemModel()->index(imageTypeIndex, 0),
             ResourcesHierarchyModel::ExpandedRole)
             .toBool(),
         true);
@@ -1731,24 +1716,24 @@ void HierarchyViewModelsTest::resourcesViewModel_requestViewModelHook_reloadsRes
     QVERIFY(viewModel.loadSucceeded());
     QCOMPARE(viewModel.resourcePaths(), QStringList({QStringLiteral("HookResources.wsresources/manual.wsresource")}));
 
-    bool manualNodeFound = false;
-    bool logoNodeFound = false;
+    bool manualFormatFound = false;
+    bool logoFormatFound = false;
     for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
     {
         const QString key = viewModel.itemModel()->data(
             viewModel.itemModel()->index(row, 0),
             ResourcesHierarchyModel::KeyRole).toString();
-        if (key == QStringLiteral("asset:HookResources.wsresources/manual.wsresource"))
+        if (key == QStringLiteral("format:document:.pdf"))
         {
-            manualNodeFound = true;
+            manualFormatFound = true;
         }
-        if (key == QStringLiteral("asset:HookResources.wsresources/logo.wsresource"))
+        if (key == QStringLiteral("format:image:.png"))
         {
-            logoNodeFound = true;
+            logoFormatFound = true;
         }
     }
-    QVERIFY(manualNodeFound);
-    QVERIFY(!logoNodeFound);
+    QVERIFY(manualFormatFound);
+    QVERIFY(!logoFormatFound);
 }
 
 void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()

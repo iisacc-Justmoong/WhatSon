@@ -21,7 +21,7 @@ metadata-driven LVRS hierarchy while tracking the current resource-path payload 
 
 ## Refresh Rules
 
-- Runtime updates may change bucket/format/asset rows according to current package metadata.
+- Runtime updates may change type/format rows according to current package metadata.
 - Expansion state must survive `setResourcePaths(...)`, `applyRuntimeSnapshot(...)`, and
   `requestViewModelHook()` reloads.
 

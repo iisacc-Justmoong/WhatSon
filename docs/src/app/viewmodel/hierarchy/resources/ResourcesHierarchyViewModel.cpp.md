@@ -8,20 +8,19 @@ This implementation exposes the resources sidebar as a metadata-driven hierarchy
 ## Tree Contract
 
 `setResourcePaths(...)` does not only store path strings. It materializes each resource reference
-into three flattened hierarchy levels:
+into a two-level hierarchy:
 
-- `bucket`
+- `type`
 - `format`
-- `asset`
 
-When the input path list is empty, the viewmodel now publishes default top-level bucket rows
+When the input path list is empty, the viewmodel now publishes default top-level type rows
 (`Image`, `Video`, `Document`, `3D Model`, `Web page`, `Music`, `Audio`, `ZIP`, `Other`) so the
 resources sidebar does not render as a fully empty panel.
 
 ## Expansion Preservation
 
 During rebuild, the previous `key -> expanded` state is restored so runtime snapshot updates do not
-collapse already opened bucket/format rows.
+collapse already opened type/format rows.
 
 ## Load Fallback
 

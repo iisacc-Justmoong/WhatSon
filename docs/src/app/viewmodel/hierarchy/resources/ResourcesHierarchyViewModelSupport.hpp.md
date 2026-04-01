@@ -6,7 +6,7 @@
 
 - `Resources.wsresources`와 `.wshub` contents 경로 해석
 - `.wsresource` 메타데이터 materialize
-- materialized entry를 `bucket -> format -> asset` flattened row로 변환
+- materialized entry를 `type -> format` flattened row로 변환
 
 ## Materialization Rule
 
@@ -21,16 +21,15 @@
 
 확장 상태 복원을 위해 row key를 명시적으로 만든다.
 
-- `bucket:image`
+- `type:image`
 - `format:image:.png`
-- `asset:Hub.wsresources/logo.wsresource`
 
 이 key가 `ResourcesHierarchyViewModel`의 expansion-preserve 동작의 기준이다.
 포맷 key는 원본 메타데이터 포맷 표기와 별개로 case-folded lookup 값을 써서, `.PNG`와 `.png`가 같은 분류 노드로 합쳐진다.
 
 ## Empty-State Fallback
 
-When `resourcePaths` is empty, `buildHierarchyItems(...)` now returns a non-empty default bucket list
+When `resourcePaths` is empty, `buildHierarchyItems(...)` now returns a non-empty default type list
 instead of an empty hierarchy.
 
 - `Image`
@@ -43,5 +42,5 @@ instead of an empty hierarchy.
 - `ZIP`
 - `Other`
 
-These fallback rows are bucket-only nodes (`kind="bucket"`, `showChevron=false`) so the sidebar keeps
+These fallback rows are type-only nodes (`kind="type"`, `showChevron=false`) so the sidebar keeps
 a stable visual structure even before the first resource import.

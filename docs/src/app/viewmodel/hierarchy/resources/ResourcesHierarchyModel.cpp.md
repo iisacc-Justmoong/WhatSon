@@ -17,9 +17,8 @@
 
 ## Row Kinds
 
-- `bucket`
+- `type`
 - `format`
-- `asset`
 
 `ShowChevronRole`도 더 이상 depth 비교로 추론하지 않고, 뷰모델이 계산한 구조값을 그대로 사용한다.
-이 덕분에 `bucket -> format -> asset` 동적 트리가 안정적으로 유지된다.
+이 덕분에 `type -> format` 동적 트리가 안정적으로 유지된다.
