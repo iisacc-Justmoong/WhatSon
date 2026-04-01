@@ -21,6 +21,9 @@
 ### Enums
 - `Role`
 
+### Role Notes
+- `CountRole`가 추가되어 각 하이어라키 row의 집계 count를 직접 노출한다.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

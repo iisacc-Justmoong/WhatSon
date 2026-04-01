@@ -11,6 +11,7 @@ struct ResourcesHierarchyItem
     bool accent = false;
     bool expanded = false;
     QString label;
+    int count = 0;
     bool showChevron = true;
     QString key;
     QString kind;
@@ -71,6 +72,7 @@ public:
     enum Role
     {
         LabelRole = Qt::UserRole + 1,
+        CountRole,
         DepthRole,
         IndentLevelRole,
         AccentRole,

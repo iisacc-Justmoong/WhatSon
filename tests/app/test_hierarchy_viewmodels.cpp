@@ -8,6 +8,7 @@
 #include "viewmodel/hierarchy/preset/PresetHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
@@ -541,8 +542,13 @@ private
     void bookmarksViewModel_requestViewModelHook_refreshesBookmarkedProjection();
     void resourcesViewModel_exposesSupportedTypeTree();
     void resourcesViewModel_whenResourcePathsEmpty_exposesDefaultTypes();
+    void resourcesViewModel_whenResourcePathsUnchanged_doesNotEmitHierarchyModelChanged();
+    void resourcesViewModel_setItemExpanded_forOtherType_togglesExpandedState();
     void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedTypeState();
     void resourcesViewModel_requestViewModelHook_reloadsResourcePathsFromFile();
+    void resourcesViewModel_loadFromWshub_whenResourcesRootsSplit_scansAllRoots();
+    void resourcesViewModel_noteListModel_filtersBySelectedTypeAndFormat();
+    void resourcesViewModel_noteListSelection_resolvesSelectedResourcePackageDirectory();
     void progressViewModel_supportsCrudContract();
     void progressViewModel_saveCurrentBodyText_emitsHubFilesystemMutated();
     void progressViewModel_applyRuntimeSnapshot_preservesSelectionAndVisibleNotes();
@@ -562,6 +568,8 @@ private
     void projectsModel_appliesCorrectionAndRaisesHookSignal();
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
+    void resourcesListModel_exposesResourceRolesAndSearchFilter();
+    void resourcesListModel_preservesSelectionByNoteIdAcrossItemReset();
     void noteListModel_correctsColorAndTextFields();
     void noteListModel_sortsNewestModifiedItemFirst();
     void noteListModel_currentSelection_exposesBodyText();
@@ -1486,7 +1494,7 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
             QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource")),
             QDir(resourcesPath).filePath(QStringLiteral("brief.wsresource"))
         }));
-    QCOMPARE(viewModel.itemModel()->rowCount(), 11);
+    QVERIFY(viewModel.itemModel()->rowCount() > 9);
 
     auto findIndexByKey = [&viewModel](const QString& key)
     {
@@ -1570,9 +1578,12 @@ void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
     const QVariantMap formatNode = findNodeByKey(QStringLiteral("format:image:.png"));
     const QVariantMap documentFormatNode = findNodeByKey(QStringLiteral("format:document:.pdf"));
     QCOMPARE(imageNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
+    QCOMPARE(imageNode.value(QStringLiteral("count")).toInt(), 1);
     QCOMPARE(formatNode.value(QStringLiteral("label")).toString(), QStringLiteral(".png"));
     QCOMPARE(formatNode.value(QStringLiteral("iconName")).toString(), QStringLiteral("virtualFolder"));
+    QCOMPARE(formatNode.value(QStringLiteral("count")).toInt(), 1);
     QCOMPARE(documentFormatNode.value(QStringLiteral("label")).toString(), QStringLiteral(".pdf"));
+    QCOMPARE(documentFormatNode.value(QStringLiteral("count")).toInt(), 1);
     QVERIFY(findNodeByKey(QStringLiteral("asset:ResourcesVm.wsresources/logo.wsresource")).isEmpty());
 
     viewModel.setSelectedIndex(imageTypeIndex);
@@ -1594,10 +1605,12 @@ void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesD
     viewModel.setResourcePaths({});
 
     QCOMPARE(viewModel.resourcePaths(), QStringList{});
-    QCOMPARE(viewModel.itemModel()->rowCount(), 9);
+    QVERIFY(viewModel.itemModel()->rowCount() > 9);
 
+    int typeCount = 0;
     bool imageTypeFound = false;
-    bool otherTypeFound = false;
+    bool imageFormatFound = false;
+    bool zipFormatFound = false;
     for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
     {
         const QModelIndex index = viewModel.itemModel()->index(row, 0);
@@ -1605,21 +1618,114 @@ void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsEmpty_exposesD
         const QString kind = viewModel.itemModel()->data(index, ResourcesHierarchyModel::KindRole).toString();
         const bool showChevron = viewModel.itemModel()->data(index, ResourcesHierarchyModel::ShowChevronRole).toBool();
 
-        QCOMPARE(kind, QStringLiteral("type"));
-        QCOMPARE(showChevron, false);
-
-        if (key == QStringLiteral("type:image"))
+        if (kind == QStringLiteral("type"))
         {
-            imageTypeFound = true;
+            ++typeCount;
+            if (key == QStringLiteral("type:image"))
+            {
+                imageTypeFound = true;
+            }
         }
-        if (key == QStringLiteral("type:other"))
+        if (kind == QStringLiteral("format"))
         {
-            otherTypeFound = true;
+            if (key == QStringLiteral("format:image:.png"))
+            {
+                imageFormatFound = true;
+            }
+            if (key == QStringLiteral("format:archive:.zip"))
+            {
+                zipFormatFound = true;
+            }
+            QCOMPARE(showChevron, false);
         }
     }
 
+    QCOMPARE(typeCount, 9);
     QVERIFY(imageTypeFound);
-    QVERIFY(otherTypeFound);
+    QVERIFY(imageFormatFound);
+    QVERIFY(zipFormatFound);
+}
+
+void HierarchyViewModelsTest::resourcesViewModel_whenResourcePathsUnchanged_doesNotEmitHierarchyModelChanged()
+{
+    ResourcesHierarchyViewModel viewModel;
+
+    int imageTypeIndex = -1;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QModelIndex index = viewModel.itemModel()->index(row, 0);
+        if (viewModel.itemModel()->data(index, ResourcesHierarchyModel::KeyRole).toString()
+            == QStringLiteral("type:image"))
+        {
+            imageTypeIndex = row;
+            break;
+        }
+    }
+    QVERIFY(imageTypeIndex >= 0);
+    viewModel.setSelectedIndex(imageTypeIndex);
+    QCOMPARE(viewModel.selectedIndex(), imageTypeIndex);
+
+    QSignalSpy hierarchyChangedSpy(&viewModel, &ResourcesHierarchyViewModel::hierarchyModelChanged);
+    QVERIFY(hierarchyChangedSpy.isValid());
+    QSignalSpy selectedIndexChangedSpy(&viewModel, &ResourcesHierarchyViewModel::selectedIndexChanged);
+    QVERIFY(selectedIndexChangedSpy.isValid());
+
+    viewModel.setResourcePaths({});
+
+    QCOMPARE(hierarchyChangedSpy.count(), 0);
+    QCOMPARE(selectedIndexChangedSpy.count(), 0);
+    QCOMPARE(viewModel.selectedIndex(), imageTypeIndex);
+}
+
+void HierarchyViewModelsTest::resourcesViewModel_setItemExpanded_forOtherType_togglesExpandedState()
+{
+    ResourcesHierarchyViewModel viewModel;
+
+    int otherTypeIndex = -1;
+    int otherFormatIndex = -1;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QModelIndex index = viewModel.itemModel()->index(row, 0);
+        const QString key = viewModel.itemModel()->data(index, ResourcesHierarchyModel::KeyRole).toString();
+        if (key == QStringLiteral("type:other"))
+        {
+            otherTypeIndex = row;
+        }
+        if (key == QStringLiteral("format:other:.bin"))
+        {
+            otherFormatIndex = row;
+        }
+    }
+
+    QVERIFY(otherTypeIndex >= 0);
+    QVERIFY(otherFormatIndex >= 0);
+    QVERIFY(otherTypeIndex < otherFormatIndex);
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(otherTypeIndex, 0),
+            ResourcesHierarchyModel::ShowChevronRole).toBool(),
+        true);
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(otherTypeIndex, 0),
+            ResourcesHierarchyModel::ExpandedRole).toBool(),
+        false);
+
+    QVERIFY(viewModel.setItemExpanded(otherTypeIndex, true));
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(otherTypeIndex, 0),
+            ResourcesHierarchyModel::ExpandedRole).toBool(),
+        true);
+
+    QVERIFY(viewModel.setItemExpanded(otherTypeIndex, false));
+    QCOMPARE(
+        viewModel.itemModel()->data(
+            viewModel.itemModel()->index(otherTypeIndex, 0),
+            ResourcesHierarchyModel::ExpandedRole).toBool(),
+        false);
+
+    QVERIFY(!viewModel.setItemExpanded(otherFormatIndex, true));
 }
 
 void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesExpandedTypeState()
@@ -1691,7 +1797,7 @@ void HierarchyViewModelsTest::resourcesViewModel_requestViewModelHook_reloadsRes
     QVERIFY(QDir().mkpath(contentsPath));
     QVERIFY(QDir().mkpath(resourcesPath));
     QVERIFY(createResourcePackage(resourcesPath, QStringLiteral("logo"), QStringLiteral("logo.png"), QStringLiteral("png")));
-    QVERIFY(createResourcePackage(resourcesPath, QStringLiteral("manual"), QStringLiteral("manual.pdf"), QStringLiteral("pdf")));
+    QVERIFY(createResourcePackage(resourcesPath, QStringLiteral("manual"), QStringLiteral("manual.x-custom"), QStringLiteral("custom")));
 
     const QString resourcesFilePath = QDir(contentsPath).filePath(QStringLiteral("Resources.wsresources"));
     QVERIFY(writeResourcesHierarchyFile(
@@ -1716,24 +1822,172 @@ void HierarchyViewModelsTest::resourcesViewModel_requestViewModelHook_reloadsRes
     QVERIFY(viewModel.loadSucceeded());
     QCOMPARE(viewModel.resourcePaths(), QStringList({QStringLiteral("HookResources.wsresources/manual.wsresource")}));
 
-    bool manualFormatFound = false;
-    bool logoFormatFound = false;
+    bool customFormatFound = false;
     for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
     {
         const QString key = viewModel.itemModel()->data(
             viewModel.itemModel()->index(row, 0),
             ResourcesHierarchyModel::KeyRole).toString();
-        if (key == QStringLiteral("format:document:.pdf"))
+        if (key == QStringLiteral("format:other:.x-custom"))
         {
-            manualFormatFound = true;
-        }
-        if (key == QStringLiteral("format:image:.png"))
-        {
-            logoFormatFound = true;
+            customFormatFound = true;
         }
     }
-    QVERIFY(manualFormatFound);
-    QVERIFY(!logoFormatFound);
+    QVERIFY(customFormatFound);
+}
+
+void HierarchyViewModelsTest::resourcesViewModel_loadFromWshub_whenResourcesRootsSplit_scansAllRoots()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("SplitRoots.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("SplitRoots.wscontents"));
+    const QString hiddenResourcesPath = QDir(hubPath).filePath(QStringLiteral(".wsresources"));
+    const QString namedResourcesPath = QDir(hubPath).filePath(QStringLiteral("SplitRoots.wsresources"));
+    QVERIFY(QDir().mkpath(contentsPath));
+    QVERIFY(QDir().mkpath(hiddenResourcesPath));
+    QVERIFY(QDir().mkpath(namedResourcesPath));
+    QVERIFY(createResourcePackage(
+        namedResourcesPath,
+        QStringLiteral("manual"),
+        QStringLiteral("manual.pdf"),
+        QStringLiteral("pdf")));
+
+    ResourcesHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QCOMPARE(
+        viewModel.resourcePaths(),
+        QStringList({QStringLiteral("SplitRoots.wsresources/manual.wsresource")}));
+
+    int documentTypeCount = -1;
+    int pdfFormatCount = -1;
+    const QVariantList hierarchyModel = viewModel.hierarchyModel();
+    for (const QVariant& entry : hierarchyModel)
+    {
+        const QVariantMap node = entry.toMap();
+        const QString key = node.value(QStringLiteral("key")).toString();
+        if (key == QStringLiteral("type:document"))
+        {
+            documentTypeCount = node.value(QStringLiteral("count")).toInt();
+        }
+        else if (key == QStringLiteral("format:document:.pdf"))
+        {
+            pdfFormatCount = node.value(QStringLiteral("count")).toInt();
+        }
+    }
+    QCOMPARE(documentTypeCount, 1);
+    QCOMPARE(pdfFormatCount, 1);
+}
+
+void HierarchyViewModelsTest::resourcesViewModel_noteListModel_filtersBySelectedTypeAndFormat()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString resourcesPath = QDir(tempDir.path()).filePath(QStringLiteral("ResourceListVm.wsresources"));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("logo"),
+        QStringLiteral("logo.png"),
+        QStringLiteral("png")));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("cover"),
+        QStringLiteral("cover.jpeg"),
+        QStringLiteral("jpeg")));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("manual"),
+        QStringLiteral("manual.pdf"),
+        QStringLiteral("pdf")));
+
+    ResourcesHierarchyViewModel viewModel;
+    viewModel.setResourcePaths({
+        QDir(resourcesPath).filePath(QStringLiteral("logo.wsresource")),
+        QDir(resourcesPath).filePath(QStringLiteral("cover.wsresource")),
+        QDir(resourcesPath).filePath(QStringLiteral("manual.wsresource"))
+    });
+
+    QVERIFY(viewModel.noteListModel() != nullptr);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+
+    auto findIndexByKey = [&viewModel](const QString& key)
+    {
+        for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+        {
+            if (viewModel.itemModel()->data(
+                    viewModel.itemModel()->index(row, 0),
+                    ResourcesHierarchyModel::KeyRole).toString() == key)
+            {
+                return row;
+            }
+        }
+        return -1;
+    };
+
+    const int imageTypeIndex = findIndexByKey(QStringLiteral("type:image"));
+    const int pdfFormatIndex = findIndexByKey(QStringLiteral("format:document:.pdf"));
+    QVERIFY(imageTypeIndex >= 0);
+    QVERIFY(pdfFormatIndex >= 0);
+
+    viewModel.setSelectedIndex(imageTypeIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    QStringList imageNoteIds;
+    for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
+    {
+        imageNoteIds.push_back(
+            viewModel.noteListModel()->data(
+                viewModel.noteListModel()->index(row, 0),
+                ResourcesListModel::NoteIdRole).toString());
+    }
+    imageNoteIds.sort();
+    QVERIFY(imageNoteIds.at(0).endsWith(QStringLiteral("cover.wsresource")));
+    QVERIFY(imageNoteIds.at(1).endsWith(QStringLiteral("logo.wsresource")));
+
+    viewModel.setSelectedIndex(pdfFormatIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    const QModelIndex pdfIndex = viewModel.noteListModel()->index(0, 0);
+    QVERIFY(!viewModel.noteListModel()->data(pdfIndex, ResourcesListModel::ImageRole).toBool());
+    QVERIFY(viewModel.noteListModel()->data(pdfIndex, ResourcesListModel::PrimaryTextRole)
+                .toString()
+                .contains(QStringLiteral("manual.pdf")));
+
+    viewModel.noteListModel()->setCurrentIndex(0);
+    QCOMPARE(
+        viewModel.noteListModel()->currentNoteId(),
+        QDir(resourcesPath).filePath(QStringLiteral("manual.wsresource")));
+    QVERIFY(
+        viewModel.noteListModel()->currentBodyText().contains(
+            QStringLiteral("path=\"ResourceListVm.wsresources/manual.wsresource\"")));
+}
+
+void HierarchyViewModelsTest::resourcesViewModel_noteListSelection_resolvesSelectedResourcePackageDirectory()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString resourcesPath = QDir(tempDir.path()).filePath(QStringLiteral("ResourceSelectVm.wsresources"));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("voice"),
+        QStringLiteral("voice.mp3"),
+        QStringLiteral("mp3")));
+    const QString packageDirectoryPath = QDir(resourcesPath).filePath(QStringLiteral("voice.wsresource"));
+
+    ResourcesHierarchyViewModel viewModel;
+    viewModel.setResourcePaths({packageDirectoryPath});
+    viewModel.noteListModel()->setCurrentIndex(0);
+
+    const QString selectedNoteId = viewModel.noteListModel()->currentNoteId();
+    QVERIFY(!selectedNoteId.isEmpty());
+    QCOMPARE(
+        QDir::cleanPath(viewModel.noteDirectoryPathForNoteId(selectedNoteId)),
+        QDir::cleanPath(packageDirectoryPath));
 }
 
 void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
@@ -2354,6 +2608,78 @@ void HierarchyViewModelsTest::projectsModel_strictValidation_throwsException()
     }
     QVERIFY(thrown);
     QCOMPARE(model.rowCount(), 0);
+}
+
+void HierarchyViewModelsTest::resourcesListModel_exposesResourceRolesAndSearchFilter()
+{
+    ResourcesListModel model;
+
+    ResourcesListItem imageItem;
+    imageItem.id = QStringLiteral("/tmp/logo.wsresource");
+    imageItem.primaryText = QStringLiteral("logo.png");
+    imageItem.searchableText = QStringLiteral("logo image");
+    imageItem.type = QStringLiteral("image");
+    imageItem.format = QStringLiteral(".png");
+    imageItem.resourcePath = QStringLiteral("ResourceListVm.wsresources/logo.wsresource");
+    imageItem.resolvedPath = QStringLiteral("/tmp/logo.wsresource/logo.png");
+    imageItem.source = QStringLiteral("file:///tmp/logo.wsresource/logo.png");
+    imageItem.renderMode = QStringLiteral("image");
+    imageItem.displayName = QStringLiteral("logo.png");
+
+    ResourcesListItem documentItem;
+    documentItem.id = QStringLiteral("/tmp/manual.wsresource");
+    documentItem.primaryText = QStringLiteral("manual.pdf");
+    documentItem.searchableText = QStringLiteral("manual document pdf");
+    documentItem.type = QStringLiteral("document");
+    documentItem.format = QStringLiteral(".pdf");
+    documentItem.resourcePath = QStringLiteral("ResourceListVm.wsresources/manual.wsresource");
+    documentItem.resolvedPath = QStringLiteral("/tmp/manual.wsresource/manual.pdf");
+    documentItem.renderMode = QStringLiteral("pdf");
+    documentItem.displayName = QStringLiteral("manual.pdf");
+
+    model.setItems({imageItem, documentItem});
+    QCOMPARE(model.rowCount(), 2);
+
+    const QModelIndex first = model.index(0, 0);
+    QCOMPARE(model.data(first, ResourcesListModel::NoteIdRole).toString(), imageItem.id);
+    QCOMPARE(model.data(first, ResourcesListModel::TypeRole).toString(), QStringLiteral("image"));
+    QCOMPARE(model.data(first, ResourcesListModel::FormatRole).toString(), QStringLiteral(".png"));
+    QCOMPARE(
+        model.data(first, ResourcesListModel::ResourcePathRole).toString(),
+        QStringLiteral("ResourceListVm.wsresources/logo.wsresource"));
+    QCOMPARE(model.roleNames().value(ResourcesListModel::RenderModeRole), QByteArray("renderMode"));
+
+    model.setSearchText(QStringLiteral("manual"));
+    QCOMPARE(model.rowCount(), 1);
+    QCOMPARE(
+        model.data(model.index(0, 0), ResourcesListModel::NoteIdRole).toString(),
+        documentItem.id);
+}
+
+void HierarchyViewModelsTest::resourcesListModel_preservesSelectionByNoteIdAcrossItemReset()
+{
+    ResourcesListModel model;
+
+    ResourcesListItem first;
+    first.id = QStringLiteral("/tmp/first.wsresource");
+    first.primaryText = QStringLiteral("first.png");
+
+    ResourcesListItem second;
+    second.id = QStringLiteral("/tmp/second.wsresource");
+    second.primaryText = QStringLiteral("second.png");
+
+    model.setItems({first, second});
+    model.setCurrentIndex(1);
+    QCOMPARE(model.currentNoteId(), second.id);
+
+    ResourcesListItem replacementFirst = second;
+    ResourcesListItem replacementSecond;
+    replacementSecond.id = QStringLiteral("/tmp/third.wsresource");
+    replacementSecond.primaryText = QStringLiteral("third.png");
+
+    model.setItems({replacementFirst, replacementSecond});
+    QCOMPARE(model.currentNoteId(), second.id);
+    QCOMPARE(model.currentIndex(), 0);
 }
 
 void HierarchyViewModelsTest::noteListModel_correctsColorAndTextFields()

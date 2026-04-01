@@ -36,7 +36,7 @@ session-local identity map.
 ## Resource Snapshot Fallback
 
 리소스 스냅샷 로더는 먼저 `.wscontents/Resources.wsresources`를 읽는다.
-그 결과가 비어 있으면 허브 루트 `*.wsresources` 디렉터리를 직접 스캔해서 flat `.wsresource`
-패키지 목록을 `snapshot.values`로 채운다.
+그 결과가 비어 있으면 허브의 모든 리소스 루트(`.wsresources` + `*.wsresources`)를 직접 스캔해서 flat
+`.wsresource` 패키지 목록을 `snapshot.values`로 채운다.
 
 즉 startup path 역시 raw asset file이 아니라 `.wsresource` package path를 기준으로 움직인다.

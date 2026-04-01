@@ -246,6 +246,11 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QFile contentViewSessionFile(contentViewSessionPath);
     QVERIFY2(contentViewSessionFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentViewSessionPath));
     const QString contentViewSessionText = QString::fromUtf8(contentViewSessionFile.readAll());
+    const QString contentResourceViewerPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/content/editor/ContentsResourceViewer.qml"));
+    QFile contentResourceViewerFile(contentResourceViewerPath);
+    QVERIFY2(contentResourceViewerFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(contentResourceViewerPath));
+    const QString contentResourceViewerText = QString::fromUtf8(contentResourceViewerFile.readAll());
     const QString lvrsTextEditorPath =
         QStringLiteral("/Users/ymy/.local/LVRS/src/LVRS/qml/components/control/input/TextEditor.qml");
     QFile lvrsTextEditorFile(lvrsTextEditorPath);
@@ -313,6 +318,36 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("noteId: contentsView.selectedNoteId")),
         "ContentsDisplayView.qml body-resource renderer bridge must track the currently selected note id.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property string resourceModeTitle: {")) &&
+            contentViewText.contains(QStringLiteral("resourceRenderCard.resourceRenderMode === \"text\"")),
+        "ContentsDisplayView.qml resource card delegate must branch per render mode so image/text/audio/video/pdf entries are labeled by file viewer type.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("Qt.openUrlExternally(resourceRenderCard.resourceSource)")),
+        "ContentsDisplayView.qml resource cards must expose an open-resource action for non-image file viewers.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property bool selectedNoteIsResourcePackage:")) &&
+            contentViewText.contains(QStringLiteral("contentsView.selectedNoteId.trim().toLowerCase().endsWith(\".wsresource\")")),
+        "ContentsDisplayView.qml must detect direct .wsresource selection and branch to a dedicated resource viewer surface.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property bool showDedicatedResourceViewer:")) &&
+            contentViewText.contains(QStringLiteral("contentsView.selectedNoteIsResourcePackage")),
+        "ContentsDisplayView.qml must expose dedicated resource-viewer visibility from selected resource-package state.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("ContentsResourceViewer {")) &&
+            contentViewText.contains(QStringLiteral("resourceEntry: contentsView.selectedResourceEntry")) &&
+            contentViewText.contains(QStringLiteral("visible: contentsView.showDedicatedResourceViewer")),
+        "ContentsDisplayView.qml must mount a dedicated resource viewer component for selected resource packages.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("visible: !contentsView.showDedicatedResourceViewer")) &&
+            contentViewText.contains(QStringLiteral("visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer")),
+        "ContentsDisplayView.qml must hide text-editor/minimap chrome while dedicated resource viewers are active.");
+    QVERIFY2(
+        contentResourceViewerText.contains(QStringLiteral("import QtQuick.Pdf")) &&
+            contentResourceViewerText.contains(QStringLiteral("PdfMultiPageView {")) &&
+            contentResourceViewerText.contains(QStringLiteral("resourceViewer.resourceRenderMode === \"pdf\"")) &&
+            contentResourceViewerText.contains(QStringLiteral("resourceViewer.resourceRenderMode === \"image\"")),
+        "ContentsResourceViewer.qml must provide in-app PDF and bitmap image rendering paths by resource render mode.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("ContentsEditorSession {")),
         "ContentsDisplayView.qml must compose a dedicated editor-session object for debounce and selection sync.");
@@ -1044,6 +1079,25 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             sidebarViewText.contains(QStringLiteral("if (sidebarHierarchyView.shouldSuppressHierarchyActivation(item, itemId, index))")) &&
             sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.armHierarchyExpansionActivationSuppression(item, itemId, index);")),
         "SidebarHierarchyView.qml must suppress expansion-driven LVRS activation re-emission so mobile chevron taps only fold or unfold folders instead of routing into note lists.");
+    const QString resolveHierarchyActivationIndexBody = extractFunctionBody(
+        sidebarViewText,
+        QStringLiteral("function resolveHierarchyActivationIndex(item, itemId, index)"));
+    QVERIFY2(
+        !resolveHierarchyActivationIndexBody.isEmpty() &&
+            resolveHierarchyActivationIndexBody.contains(QStringLiteral("item.itemId")) &&
+            resolveHierarchyActivationIndexBody.contains(QStringLiteral("item.resolvedItemId")) &&
+            resolveHierarchyActivationIndexBody.contains(
+                QStringLiteral("const resolvedItemId = sidebarHierarchyView.normalizedNonNegativeInteger(itemId);")) &&
+            resolveHierarchyActivationIndexBody.contains(
+                QStringLiteral("const resolvedIndex = sidebarHierarchyView.normalizedNonNegativeInteger(index);")) &&
+            resolveHierarchyActivationIndexBody.indexOf(QStringLiteral("item.itemId"))
+                < resolveHierarchyActivationIndexBody.indexOf(
+                    QStringLiteral("const resolvedIndex = sidebarHierarchyView.normalizedNonNegativeInteger(index);")) &&
+            resolveHierarchyActivationIndexBody.indexOf(
+                QStringLiteral("const resolvedItemId = sidebarHierarchyView.normalizedNonNegativeInteger(itemId);"))
+                < resolveHierarchyActivationIndexBody.indexOf(
+                    QStringLiteral("const resolvedIndex = sidebarHierarchyView.normalizedNonNegativeInteger(index);")),
+        "SidebarHierarchyView.qml must resolve hierarchy activation/expansion targets from model item ids before the visual row index so deep rows like Resources/Other map to the correct view-model entry.");
     QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("Math.floor(Number(sidebarHierarchyView.editingHierarchyIndex) || -1)")),
         "SidebarHierarchyView.qml must not collapse valid zero-based hierarchy indexes into -1 through Number(... ) || -1 fallback parsing.");

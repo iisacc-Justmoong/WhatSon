@@ -20,6 +20,7 @@ positions from the same document origin.
 
 - `ContentsEditorSelectionBridge`: exposes the selected note body and persistence contracts.
 - `ContentsBodyResourceRenderer`: extracts `<resource ...>` tag render payloads from the selected note body document.
+- `ContentsResourceViewer`: renders direct `.wsresource` selections in-place (`image` bitmap / `pdf` reader).
 - `ContentsLogicalTextBridge`: maps plain-text offsets to logical line numbers and line starts.
 - `ContentsGutterMarkerBridge`: normalizes external marker specifications into a gutter-friendly model.
 - `ContentsEditorSession`: owns local-authority tracking, debounced saves, and note-switch synchronization.
@@ -33,6 +34,12 @@ positions from the same document origin.
 - Model-driven note swaps call `editorSession.syncEditorTextFromSelection(...)` and flush pending edits when the bound
   note changes.
 - The editor viewport now overlays resource cards rendered from `ContentsBodyResourceRenderer.renderedResources`, so image packages referenced in `.wsnbody` are visible without switching to a separate panel.
+- When the selected note id is a direct `.wsresource` package, the surface switches to a dedicated in-editor resource
+  viewer and hides text-editor/minimap chrome.
+- Resource cards are render-mode aware (`image`, `video`, `audio`, `pdf`, `text`, `document`):
+  - image: inline thumbnail
+  - text: inline snippet preview (`previewText`)
+  - non-inline formats: mode label + open action (`Qt.openUrlExternally(...)`)
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.

@@ -20,7 +20,8 @@ This ViewModel translates external local file URLs into resource package imports
 ## Hooks And Signals
 
 - `canImportUrls(...)`
-  Returns whether a file-picker-style URL list can be imported into the current hub.
+  Returns whether a file-picker-style URL list can be imported into the current hub. The input may
+  be flat or nested (for example picker payloads wrapped inside one `QVariant` entry).
 - `importUrls(...)`
   The main file import entrypoint.
 - `importUrlsForEditor(...)`

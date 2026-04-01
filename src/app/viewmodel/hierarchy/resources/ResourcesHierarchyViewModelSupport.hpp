@@ -176,6 +176,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         {
             const QVariantMap map = entry.toMap();
             item.depth = std::max(0, map.value(QStringLiteral("depth")).toInt());
+            item.count = std::max(0, map.value(QStringLiteral("count")).toInt());
             item.label = map.value(QStringLiteral("label")).toString().trimmed();
             item.accent = map.value(QStringLiteral("accent"), false).toBool();
             item.expanded = map.value(QStringLiteral("expanded"), false).toBool();
@@ -225,6 +226,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         {
             serialized.push_back(QVariantMap{
                 {QStringLiteral("label"), item.label},
+                {QStringLiteral("count"), item.count},
                 {QStringLiteral("depth"), item.depth},
                 {QStringLiteral("accent"), item.accent},
                 {QStringLiteral("expanded"), item.expanded},
@@ -365,6 +367,114 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         };
     }
 
+    inline QSet<QString> defaultFormatsForTypeKey(const QString& typeKey)
+    {
+        const QString normalizedTypeKey = WhatSon::Resources::normalizedType(typeKey);
+        if (normalizedTypeKey == QStringLiteral("image"))
+        {
+            return {
+                QStringLiteral(".png"),
+                QStringLiteral(".jpeg"),
+                QStringLiteral(".jpg"),
+                QStringLiteral(".tiff"),
+                QStringLiteral(".webp"),
+                QStringLiteral(".gif"),
+                QStringLiteral(".bmp"),
+                QStringLiteral(".svg"),
+                QStringLiteral(".heic"),
+                QStringLiteral(".avif")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("video"))
+        {
+            return {
+                QStringLiteral(".mp4"),
+                QStringLiteral(".mov"),
+                QStringLiteral(".avi"),
+                QStringLiteral(".mkv"),
+                QStringLiteral(".webm"),
+                QStringLiteral(".m4v")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("document"))
+        {
+            return {
+                QStringLiteral(".pdf"),
+                QStringLiteral(".doc"),
+                QStringLiteral(".docx"),
+                QStringLiteral(".txt"),
+                QStringLiteral(".md"),
+                QStringLiteral(".rtf"),
+                QStringLiteral(".ppt"),
+                QStringLiteral(".pptx"),
+                QStringLiteral(".xls"),
+                QStringLiteral(".xlsx"),
+                QStringLiteral(".csv")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("model"))
+        {
+            return {
+                QStringLiteral(".fbx"),
+                QStringLiteral(".obj"),
+                QStringLiteral(".gltf"),
+                QStringLiteral(".glb"),
+                QStringLiteral(".usd"),
+                QStringLiteral(".usdz"),
+                QStringLiteral(".blend"),
+                QStringLiteral(".stl")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("link"))
+        {
+            return {
+                QStringLiteral(".html"),
+                QStringLiteral(".htm"),
+                QStringLiteral(".mhtml"),
+                QStringLiteral(".webloc"),
+                QStringLiteral(".url")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("music"))
+        {
+            return {
+                QStringLiteral(".mp3"),
+                QStringLiteral(".aac"),
+                QStringLiteral(".m4a"),
+                QStringLiteral(".flac"),
+                QStringLiteral(".alac"),
+                QStringLiteral(".aiff")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("audio"))
+        {
+            return {
+                QStringLiteral(".wav"),
+                QStringLiteral(".ogg"),
+                QStringLiteral(".opus"),
+                QStringLiteral(".caf"),
+                QStringLiteral(".wma"),
+                QStringLiteral(".amr")
+            };
+        }
+        if (normalizedTypeKey == QStringLiteral("archive"))
+        {
+            return {
+                QStringLiteral(".zip"),
+                QStringLiteral(".rar"),
+                QStringLiteral(".7z"),
+                QStringLiteral(".tar"),
+                QStringLiteral(".gz"),
+                QStringLiteral(".bz2"),
+                QStringLiteral(".xz")
+            };
+        }
+
+        return {
+            QStringLiteral(".bin")
+        };
+    }
+
     inline MaterializedResourceEntry materializeResourceEntry(
         const QString& resourcePath,
         const QStringList& resolutionBasePaths)
@@ -407,6 +517,8 @@ namespace WhatSon::Hierarchy::ResourcesSupport
         const QHash<QString, bool> previousExpansionStates = expansionStateByKey(previousItems);
 
         QHash<QString, QSet<QString>> typeFormats;
+        QHash<QString, int> typeCounts;
+        QHash<QString, QHash<QString, int>> formatCountsByType;
         for (const QString& resourcePath : resourcePaths)
         {
             const MaterializedResourceEntry materialized = materializeResourceEntry(resourcePath, resolutionBasePaths);
@@ -420,13 +532,17 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 format = QStringLiteral(".bin");
             }
             typeFormats[typeKey].insert(format);
+            typeCounts[typeKey] = typeCounts.value(typeKey) + 1;
+            QHash<QString, int>& formatCounts = formatCountsByType[typeKey];
+            formatCounts[format] = formatCounts.value(format) + 1;
         }
 
         QVector<ResourcesHierarchyItem> items;
         const QStringList orderedTypes = defaultTypeKeys();
         for (const QString& typeKey : orderedTypes)
         {
-            const QSet<QString> formats = typeFormats.value(typeKey);
+            QSet<QString> formats = defaultFormatsForTypeKey(typeKey);
+            formats.unite(typeFormats.value(typeKey));
             QStringList sortedFormats = QStringList(formats.begin(), formats.end());
             std::sort(
                 sortedFormats.begin(),
@@ -441,6 +557,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             typeItem.label = displayLabelForTypeKey(typeKey);
             typeItem.key = itemKeyForType(typeKey);
             typeItem.kind = QStringLiteral("type");
+            typeItem.count = typeCounts.value(typeKey);
             typeItem.type = typeKey;
             typeItem.bucket = WhatSon::Resources::inferBucket(typeKey, QString());
             typeItem.showChevron = !sortedFormats.isEmpty();
@@ -454,6 +571,7 @@ namespace WhatSon::Hierarchy::ResourcesSupport
                 formatItem.label = format;
                 formatItem.key = itemKeyForFormat(typeKey, format);
                 formatItem.kind = QStringLiteral("format");
+                formatItem.count = formatCountsByType.value(typeKey).value(format);
                 formatItem.bucket = WhatSon::Resources::inferBucket(typeKey, format);
                 formatItem.type = typeKey;
                 formatItem.format = format;
@@ -484,5 +602,40 @@ namespace WhatSon::Hierarchy::ResourcesSupport
             resourcePaths.push_back(resourcePath);
         }
         return resourcePaths;
+    }
+
+    inline bool hierarchyItemsEqual(
+        const QVector<ResourcesHierarchyItem>& lhs,
+        const QVector<ResourcesHierarchyItem>& rhs)
+    {
+        if (lhs.size() != rhs.size())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < lhs.size(); ++index)
+        {
+            const ResourcesHierarchyItem& left = lhs.at(index);
+            const ResourcesHierarchyItem& right = rhs.at(index);
+            if (left.depth != right.depth
+                || left.count != right.count
+                || left.accent != right.accent
+                || left.expanded != right.expanded
+                || left.label != right.label
+                || left.showChevron != right.showChevron
+                || left.key != right.key
+                || left.kind != right.kind
+                || left.bucket != right.bucket
+                || left.type != right.type
+                || left.format != right.format
+                || left.resourceId != right.resourceId
+                || left.resourcePath != right.resourcePath
+                || left.assetPath != right.assetPath)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 } // namespace WhatSon::Hierarchy::ResourcesSupport

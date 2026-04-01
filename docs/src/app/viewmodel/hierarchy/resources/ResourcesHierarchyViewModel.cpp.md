@@ -13,9 +13,44 @@ into a two-level hierarchy:
 - `type`
 - `format`
 
-When the input path list is empty, the viewmodel now publishes default top-level type rows
-(`Image`, `Video`, `Document`, `3D Model`, `Web page`, `Music`, `Audio`, `ZIP`, `Other`) so the
-resources sidebar does not render as a fully empty panel.
+The hierarchy keeps the legacy interaction contract:
+
+- top-level rows are resource types
+- expanding a type reveals format rows
+
+Even when the input path list is empty, the viewmodel still publishes the type parents with their
+default format catalog, so the resources sidebar is never a flat type-only list.
+
+## Right-Panel List Contract
+
+This viewmodel now owns a dedicated `ResourcesListModel` projection for the shared right panel.
+
+- `selectedIndex = -1`: all resources are projected.
+- selected `kind="type"` row: only resources of that type are projected.
+- selected `kind="format"` row: only resources that match type+format are projected.
+
+Each projected row carries:
+
+- `noteId`: resolved `.wsresource` package directory path (absolute when possible)
+- `primaryText`: resolved asset display name
+- `bodyText`: normalized `<resource ...>` tag text used by the editor surface
+- `image/imageSource`: image resources only, so list cards can show inline thumbnails
+- `type/format/resourcePath/resolvedPath/source/renderMode/displayName`: resource viewer metadata
+  used by renderer and list delegates
+
+This is the bridge that fixes the previous `No list data` behavior in the resources domain.
+
+## Idempotent Update Guard
+
+`setResourcePaths(...)` is idempotent. After sanitizing paths and rebuilding hierarchy rows, it
+returns early when both are unchanged:
+
+- no `syncModel()` reset
+- no `hierarchyModelChanged` signal
+- no forced `setSelectedIndex(-1)`
+
+This guard prevents hook-driven reload loops in `SidebarHierarchyView` when the resources payload is
+stable (for example repeated `rawCount=0` reloads).
 
 ## Expansion Preservation
 
@@ -25,7 +60,8 @@ collapse already opened type/format rows.
 ## Load Fallback
 
 `loadFromWshub(...)` first parses `.wscontents/Resources.wsresources`. When that file is missing or
-contains no paths, it falls back to scanning the hub-level `*.wsresources` directory for
+contains no paths, it falls back to scanning all hub-level resource roots (`.wsresources` and
+`*.wsresources`) for
 `.wsresource` packages.
 
 The canonical payload for this domain therefore remains a normalized list of `.wsresource` package
@@ -40,8 +76,15 @@ paths.
   reflects on-disk resources.
 - It recomputes resource reference base paths (including the resolved `.wshub` root) before
   rebuilding rows, keeping preview/asset resolution stable after hook refresh.
+- Base-path changes also trigger resource list re-materialization so right-panel paths stay
+  resolved when hub layout roots change.
 
 ## Count Role Compatibility
 
-`depthItems()` includes a numeric `count` field on every row. The resources domain is not the owner
-of note-index membership, so it emits `0` to preserve shared `LV.Hierarchy` payload compatibility.
+`depthItems()` includes a numeric `count` field on every row and forwards the materialized hierarchy
+count from `ResourcesHierarchyItem`.
+
+- `type` rows expose the number of resources classified into that type.
+- `format` rows expose the number of resources classified into that format.
+
+This value is consumed directly by the right-side count renderer in `LV.Hierarchy`.

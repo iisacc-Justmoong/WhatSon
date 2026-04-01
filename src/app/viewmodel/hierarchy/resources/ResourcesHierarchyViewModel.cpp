@@ -8,38 +8,13 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QUrl>
+#include <algorithm>
 #include <utility>
 
 namespace
 {
     constexpr auto kScope = "resources.viewmodel";
-
-    QString resolveResourcesDirectory(const QString& wshubPath)
-    {
-        const QFileInfo hubInfo(wshubPath);
-        if (!hubInfo.isDir())
-        {
-            return {};
-        }
-
-        const QDir hubDir(wshubPath);
-        const QString fixedPath = hubDir.filePath(QStringLiteral(".wsresources"));
-        if (QFileInfo(fixedPath).isDir())
-        {
-            return WhatSon::Resources::normalizePath(fixedPath);
-        }
-
-        const QStringList candidates = hubDir.entryList(
-            QStringList{QStringLiteral("*.wsresources")},
-            QDir::Dirs | QDir::NoDotAndDotDot,
-            QDir::Name);
-        if (candidates.isEmpty())
-        {
-            return {};
-        }
-
-        return WhatSon::Resources::normalizePath(hubDir.filePath(candidates.constFirst()));
-    }
 
     QString resolveWshubPathFromResourcesFile(const QString& resourcesFilePath)
     {
@@ -66,6 +41,269 @@ namespace
 
         return {};
     }
+
+    QString encodeXmlAttributeValue(QString value)
+    {
+        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
+        value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
+        value.replace(QStringLiteral("'"), QStringLiteral("&apos;"));
+        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
+        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
+        return value;
+    }
+
+    QString normalizeSourceUrl(const QString& resolvedAssetPath)
+    {
+        const QString normalizedAssetPath = WhatSon::Resources::normalizePath(resolvedAssetPath.trimmed());
+        if (normalizedAssetPath.isEmpty())
+        {
+            return {};
+        }
+
+        if (QFileInfo(normalizedAssetPath).isAbsolute())
+        {
+            return QUrl::fromLocalFile(QDir::cleanPath(normalizedAssetPath)).toString();
+        }
+
+        const QUrl assetUrl(normalizedAssetPath);
+        if (assetUrl.isValid() && !assetUrl.scheme().isEmpty())
+        {
+            if (assetUrl.isLocalFile())
+            {
+                return QUrl::fromLocalFile(QDir::cleanPath(assetUrl.toLocalFile())).toString();
+            }
+            return assetUrl.toString();
+        }
+
+        return {};
+    }
+
+    bool isImageTypeOrFormat(const QString& typeKey, const QString& formatKey)
+    {
+        if (typeKey == QStringLiteral("image"))
+        {
+            return true;
+        }
+
+        static const QStringList kImageFormatKeys = {
+            QStringLiteral(".png"),
+            QStringLiteral(".jpeg"),
+            QStringLiteral(".jpg"),
+            QStringLiteral(".tiff"),
+            QStringLiteral(".webp"),
+            QStringLiteral(".gif"),
+            QStringLiteral(".bmp"),
+            QStringLiteral(".svg"),
+            QStringLiteral(".heic"),
+            QStringLiteral(".avif")
+        };
+        return !formatKey.isEmpty() && kImageFormatKeys.contains(formatKey);
+    }
+
+    QString renderModeForResourceListItem(
+        const QString& typeKey,
+        const QString& formatKey,
+        const QString& sourceUrl)
+    {
+        if (isImageTypeOrFormat(typeKey, formatKey) && !sourceUrl.isEmpty())
+        {
+            return QStringLiteral("image");
+        }
+
+        if (typeKey == QStringLiteral("video") && !sourceUrl.isEmpty())
+        {
+            return QStringLiteral("video");
+        }
+
+        if ((typeKey == QStringLiteral("audio") || typeKey == QStringLiteral("music")) && !sourceUrl.isEmpty())
+        {
+            return QStringLiteral("audio");
+        }
+
+        if (formatKey == QStringLiteral(".pdf"))
+        {
+            return QStringLiteral("pdf");
+        }
+
+        static const QStringList kTextFormats = {
+            QStringLiteral(".txt"),
+            QStringLiteral(".md"),
+            QStringLiteral(".csv"),
+            QStringLiteral(".json"),
+            QStringLiteral(".xml"),
+            QStringLiteral(".yaml"),
+            QStringLiteral(".yml"),
+            QStringLiteral(".ini"),
+            QStringLiteral(".log"),
+            QStringLiteral(".rtf")
+        };
+        if (kTextFormats.contains(formatKey))
+        {
+            return QStringLiteral("text");
+        }
+
+        return QStringLiteral("document");
+    }
+
+    QString buildResourceTagBodyText(
+        const QString& typeKey,
+        const QString& formatKey,
+        const QString& resourcePath)
+    {
+        const QString normalizedType = typeKey.trimmed().isEmpty() ? QStringLiteral("other") : typeKey.trimmed();
+        const QString normalizedFormat = WhatSon::Resources::normalizeFormat(formatKey.trimmed()).isEmpty()
+                                             ? QStringLiteral(".bin")
+                                             : WhatSon::Resources::normalizeFormat(formatKey.trimmed());
+        const QString normalizedPath = WhatSon::Resources::normalizePath(resourcePath.trimmed());
+        if (normalizedPath.isEmpty())
+        {
+            return {};
+        }
+
+        return QStringLiteral("<resource type=\"%1\" format=\"%2\" path=\"%3\">")
+            .arg(
+                encodeXmlAttributeValue(normalizedType),
+                encodeXmlAttributeValue(normalizedFormat),
+                encodeXmlAttributeValue(normalizedPath));
+    }
+
+    bool resourceMatchesSelection(
+        const QString& typeKey,
+        const QString& formatKey,
+        const ResourcesHierarchyItem* selectedItem)
+    {
+        if (selectedItem == nullptr)
+        {
+            return true;
+        }
+
+        if (selectedItem->kind == QStringLiteral("type"))
+        {
+            const QString selectedType = WhatSon::Resources::normalizedType(selectedItem->type);
+            return selectedType.isEmpty() || typeKey == selectedType;
+        }
+
+        if (selectedItem->kind == QStringLiteral("format"))
+        {
+            const QString selectedType = WhatSon::Resources::normalizedType(selectedItem->type);
+            const QString selectedFormat = WhatSon::Resources::normalizedFormatLookupKey(selectedItem->format);
+            const bool typeMatched = selectedType.isEmpty() || typeKey == selectedType;
+            const bool formatMatched = selectedFormat.isEmpty() || formatKey == selectedFormat;
+            return typeMatched && formatMatched;
+        }
+
+        return true;
+    }
+
+    QString displayNameForResource(
+        const WhatSon::Hierarchy::ResourcesSupport::MaterializedResourceEntry& materialized,
+        const QString& resolvedPackagePath,
+        const QString& resourcePath)
+    {
+        const QString resolvedAssetName = QFileInfo(materialized.resolvedAssetPath).fileName().trimmed();
+        if (!resolvedAssetName.isEmpty())
+        {
+            return resolvedAssetName;
+        }
+
+        const QString packageStem = QFileInfo(resolvedPackagePath).completeBaseName().trimmed();
+        if (!packageStem.isEmpty())
+        {
+            return packageStem;
+        }
+
+        if (!materialized.metadata.resourceId.trimmed().isEmpty())
+        {
+            return materialized.metadata.resourceId.trimmed();
+        }
+
+        const QString resourcePathName = QFileInfo(resourcePath).fileName().trimmed();
+        if (!resourcePathName.isEmpty())
+        {
+            return resourcePathName;
+        }
+        return resourcePath;
+    }
+
+    QVector<ResourcesListItem> buildResourceNoteListItems(
+        const QStringList& resourcePaths,
+        const QStringList& resolutionBasePaths,
+        const ResourcesHierarchyItem* selectedItem = nullptr)
+    {
+        QVector<ResourcesListItem> listItems;
+        listItems.reserve(resourcePaths.size());
+
+        for (const QString& rawResourcePath : resourcePaths)
+        {
+            const QString normalizedResourcePath = WhatSon::Resources::normalizePath(rawResourcePath.trimmed());
+            if (normalizedResourcePath.isEmpty())
+            {
+                continue;
+            }
+
+            const WhatSon::Hierarchy::ResourcesSupport::MaterializedResourceEntry materialized =
+                WhatSon::Hierarchy::ResourcesSupport::materializeResourceEntry(
+                    normalizedResourcePath,
+                    resolutionBasePaths);
+            const QString typeKey = WhatSon::Hierarchy::ResourcesSupport::typeKeyForMetadata(materialized.metadata);
+            QString formatKey = WhatSon::Resources::normalizedFormatLookupKey(materialized.metadata.format);
+            if (formatKey.isEmpty())
+            {
+                formatKey = QStringLiteral(".bin");
+            }
+
+            if (!resourceMatchesSelection(typeKey, formatKey, selectedItem))
+            {
+                continue;
+            }
+
+            const QString resolvedPackagePath = WhatSon::Resources::resolvePackageDirectoryFromReference(
+                normalizedResourcePath,
+                resolutionBasePaths);
+            const QString resourceReferencePath = materialized.metadata.resourcePath.trimmed().isEmpty()
+                                                     ? normalizedResourcePath
+                                                     : WhatSon::Resources::normalizePath(materialized.metadata.resourcePath);
+            const QString noteId = !resolvedPackagePath.trimmed().isEmpty()
+                                       ? WhatSon::Resources::normalizePath(resolvedPackagePath)
+                                       : resourceReferencePath;
+            const QString resourceTagBodyText = buildResourceTagBodyText(
+                typeKey,
+                formatKey,
+                resourceReferencePath);
+            const QString sourceUrl = normalizeSourceUrl(materialized.resolvedAssetPath);
+            const bool imageResource = isImageTypeOrFormat(typeKey, formatKey) && !sourceUrl.isEmpty();
+
+            ResourcesListItem listItem;
+            listItem.id = noteId;
+            listItem.primaryText = displayNameForResource(materialized, resolvedPackagePath, normalizedResourcePath);
+            listItem.searchableText = QStringLiteral("%1 %2 %3 %4")
+                                          .arg(
+                                              listItem.primaryText,
+                                              WhatSon::Resources::normalizeBucket(materialized.metadata.bucket),
+                                              typeKey,
+                                              formatKey)
+                                      + QLatin1Char(' ')
+                                      + resourceReferencePath;
+            listItem.bodyText = resourceTagBodyText;
+            listItem.image = imageResource;
+            listItem.imageSource = imageResource ? sourceUrl : QString();
+            listItem.displayDate = WhatSon::Resources::normalizeBucket(materialized.metadata.bucket).trimmed();
+            listItem.folders = {
+                WhatSon::Hierarchy::ResourcesSupport::displayLabelForTypeKey(typeKey)
+            };
+            listItem.tags = {formatKey};
+            listItem.type = typeKey;
+            listItem.format = formatKey;
+            listItem.resourcePath = resourceReferencePath;
+            listItem.resolvedPath = WhatSon::Resources::normalizePath(materialized.resolvedAssetPath);
+            listItem.source = sourceUrl;
+            listItem.renderMode = renderModeForResourceListItem(typeKey, formatKey, sourceUrl);
+            listItem.displayName = listItem.primaryText;
+            listItems.push_back(std::move(listItem));
+        }
+
+        return listItems;
+    }
 }
 
 ResourcesHierarchyViewModel::ResourcesHierarchyViewModel(QObject* parent)
@@ -91,6 +329,11 @@ ResourcesHierarchyViewModel::~ResourcesHierarchyViewModel() = default;
 ResourcesHierarchyModel* ResourcesHierarchyViewModel::itemModel() noexcept
 {
     return &m_itemModel;
+}
+
+ResourcesListModel* ResourcesHierarchyViewModel::noteListModel() noexcept
+{
+    return &m_noteListModel;
 }
 
 int ResourcesHierarchyViewModel::selectedIndex() const noexcept
@@ -126,6 +369,7 @@ void ResourcesHierarchyViewModel::setSelectedIndex(int index)
                               QString::fromLatin1(kScope),
                               QStringLiteral("setSelectedIndex"),
                               QStringLiteral("value=%1").arg(m_selectedIndex));
+    refreshNoteListForSelection();
     emit selectedIndexChanged();
 }
 
@@ -138,7 +382,12 @@ void ResourcesHierarchyViewModel::setDepthItems(const QVariantList& depthItems)
     m_items = WhatSon::Hierarchy::ResourcesSupport::parseDepthItems(depthItems, QStringLiteral("Resource"));
     syncDomainStoreFromItems();
     syncModel();
+    const int previousSelectedIndex = m_selectedIndex;
     setSelectedIndex(-1);
+    if (previousSelectedIndex == -1)
+    {
+        refreshNoteListForSelection();
+    }
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setDepthItems.success"),
@@ -161,7 +410,7 @@ QVariantList ResourcesHierarchyViewModel::depthItems() const
         {
             entry.insert(QStringLiteral("key"), QStringLiteral("resources:%1").arg(index));
         }
-        entry.insert(QStringLiteral("count"), 0);
+        entry.insert(QStringLiteral("count"), std::max(0, m_items.at(index).count));
         serialized[index] = entry;
     }
     return serialized;
@@ -244,20 +493,58 @@ void ResourcesHierarchyViewModel::deleteSelectedFolder()
                                   startIndex));
 }
 
+QString ResourcesHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = WhatSon::Resources::normalizePath(noteId.trimmed());
+    if (normalizedNoteId.isEmpty())
+    {
+        return {};
+    }
+
+    const QFileInfo directInfo(normalizedNoteId);
+    if (directInfo.isDir() && WhatSon::Resources::isResourcePackageDirectoryName(directInfo.fileName()))
+    {
+        return directInfo.absoluteFilePath();
+    }
+
+    const QString resolvedPackagePath = WhatSon::Resources::resolvePackageDirectoryFromReference(
+        normalizedNoteId,
+        m_resourceResolutionBasePaths);
+    return resolvedPackagePath;
+}
+
 void ResourcesHierarchyViewModel::setResourcePaths(QStringList resourcePaths)
 {
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setResourcePaths.begin"),
                               QStringLiteral("rawCount=%1").arg(resourcePaths.size()));
-    m_resourcePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(resourcePaths));
-    m_store.setResourcePaths(m_resourcePaths);
-    m_items = WhatSon::Hierarchy::ResourcesSupport::buildHierarchyItems(
-        m_resourcePaths,
+    QStringList sanitizedPaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(resourcePaths));
+    QVector<ResourcesHierarchyItem> nextItems = WhatSon::Hierarchy::ResourcesSupport::buildHierarchyItems(
+        sanitizedPaths,
         m_resourceResolutionBasePaths,
         m_items);
+
+    if (m_resourcePaths == sanitizedPaths
+        && WhatSon::Hierarchy::ResourcesSupport::hierarchyItemsEqual(m_items, nextItems))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("setResourcePaths.skipped"),
+                                  QStringLiteral("reason=unchangedPayload count=%1").arg(sanitizedPaths.size()));
+        return;
+    }
+
+    m_resourcePaths = std::move(sanitizedPaths);
+    m_store.setResourcePaths(m_resourcePaths);
+    m_items = std::move(nextItems);
     syncModel();
+    const int previousSelectedIndex = m_selectedIndex;
     setSelectedIndex(-1);
+    if (previousSelectedIndex == -1)
+    {
+        refreshNoteListForSelection();
+    }
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("setResourcePaths.success"),
@@ -374,7 +661,7 @@ bool ResourcesHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
 
     if (aggregated.isEmpty())
     {
-        aggregated = WhatSon::Resources::listRelativeResourcePackagePaths(resolveResourcesDirectory(wshubPath));
+        aggregated = WhatSon::Resources::listRelativeResourcePackagePathsForHub(wshubPath);
     }
 
     setResourceResolutionBasePaths(
@@ -473,8 +760,7 @@ bool ResourcesHierarchyViewModel::reloadFromResourcesFilePath(QString* errorMess
     const QString resolvedWshubPath = resolveWshubPathFromResourcesFile(normalizedFilePath);
     if (refreshedResourcePaths.isEmpty())
     {
-        refreshedResourcePaths = WhatSon::Resources::listRelativeResourcePackagePaths(
-            resolveResourcesDirectory(resolvedWshubPath));
+        refreshedResourcePaths = WhatSon::Resources::listRelativeResourcePackagePathsForHub(resolvedWshubPath);
     }
 
     QStringList resolutionBasePaths = WhatSon::Resources::resourceReferenceBasePathsForResourcesFile(normalizedFilePath);
@@ -528,6 +814,21 @@ void ResourcesHierarchyViewModel::syncDomainStoreFromItems()
     m_store.setResourcePaths(m_resourcePaths);
 }
 
+void ResourcesHierarchyViewModel::refreshNoteListForSelection()
+{
+    const ResourcesHierarchyItem* selectedItem = nullptr;
+    if (m_selectedIndex >= 0 && m_selectedIndex < m_items.size())
+    {
+        selectedItem = &m_items.at(m_selectedIndex);
+    }
+
+    QVector<ResourcesListItem> listItems = buildResourceNoteListItems(
+        m_resourcePaths,
+        m_resourceResolutionBasePaths,
+        selectedItem);
+    m_noteListModel.setItems(std::move(listItems));
+}
+
 void ResourcesHierarchyViewModel::setResourceResolutionBasePaths(QStringList basePaths)
 {
     basePaths = WhatSon::Hierarchy::ResourcesSupport::sanitizeStringList(std::move(basePaths));
@@ -536,4 +837,5 @@ void ResourcesHierarchyViewModel::setResourceResolutionBasePaths(QStringList bas
         return;
     }
     m_resourceResolutionBasePaths = std::move(basePaths);
+    refreshNoteListForSelection();
 }

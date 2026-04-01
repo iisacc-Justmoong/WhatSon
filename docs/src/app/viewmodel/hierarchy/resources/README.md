@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/hierarchy/resources`
 - Child directories: 0
-- Child files: 5
+- Child files: 9
 
 ## Child Directories
 - No child directories.
@@ -18,6 +18,10 @@
 - `ResourcesHierarchyViewModel.cpp`
 - `ResourcesHierarchyViewModel.hpp`
 - `ResourcesHierarchyViewModelSupport.hpp`
+- `ResourcesImportViewModel.cpp`
+- `ResourcesImportViewModel.hpp`
+- `ResourcesListModel.cpp`
+- `ResourcesListModel.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

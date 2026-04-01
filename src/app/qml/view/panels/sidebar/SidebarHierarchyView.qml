@@ -254,21 +254,24 @@ Rectangle {
     }
 
     function resolveHierarchyActivationIndex(item, itemId, index) {
-        const resolvedIndex = sidebarHierarchyView.normalizedNonNegativeInteger(index);
-        if (resolvedIndex >= 0)
-            return resolvedIndex;
-        const resolvedFlatIndex = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.flatIndex) : -1;
-        if (resolvedFlatIndex >= 0)
-            return resolvedFlatIndex;
+        const resolvedModelItemId = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.itemId) : -1;
+        if (resolvedModelItemId >= 0)
+            return resolvedModelItemId;
         const resolvedItemPropertyId = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.resolvedItemId) : -1;
         if (resolvedItemPropertyId >= 0)
             return resolvedItemPropertyId;
-        const resolvedActiveItemId = sidebarHierarchyView.normalizedNonNegativeInteger(hierarchyTree.activeListItemId);
-        if (resolvedActiveItemId >= 0)
-            return resolvedActiveItemId;
         const resolvedItemId = sidebarHierarchyView.normalizedNonNegativeInteger(itemId);
         if (resolvedItemId >= 0)
             return resolvedItemId;
+        const resolvedFlatIndex = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.flatIndex) : -1;
+        if (resolvedFlatIndex >= 0)
+            return resolvedFlatIndex;
+        const resolvedActiveItemId = sidebarHierarchyView.normalizedNonNegativeInteger(hierarchyTree.activeListItemId);
+        if (resolvedActiveItemId >= 0)
+            return resolvedActiveItemId;
+        const resolvedIndex = sidebarHierarchyView.normalizedNonNegativeInteger(index);
+        if (resolvedIndex >= 0)
+            return resolvedIndex;
         return -1;
     }
 

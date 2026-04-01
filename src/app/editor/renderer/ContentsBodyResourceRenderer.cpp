@@ -258,6 +258,221 @@ namespace
         };
         return !extension.isEmpty() && kPreviewableImageExtensions.contains(extension);
     }
+
+    QString effectiveExtension(
+        const QString& format,
+        const QString& resolvedResourceLocation,
+        const QString& rawResourcePath)
+    {
+        QString extension = extensionFromFormat(format);
+        if (extension.isEmpty())
+        {
+            extension = extensionFromResourceLocation(resolvedResourceLocation);
+        }
+        if (extension.isEmpty())
+        {
+            extension = extensionFromResourceLocation(rawResourcePath);
+        }
+        return extension.toCaseFolded();
+    }
+
+    bool isVideoResource(
+        const QString& type,
+        const QString& format,
+        const QString& resolvedResourceLocation,
+        const QString& rawResourcePath)
+    {
+        const QString normalizedType = type.trimmed().toCaseFolded();
+        if (normalizedType == QStringLiteral("video"))
+        {
+            return true;
+        }
+
+        static const QStringList kPreviewableVideoExtensions = {
+            QStringLiteral("mp4"),
+            QStringLiteral("mov"),
+            QStringLiteral("m4v"),
+            QStringLiteral("avi"),
+            QStringLiteral("mkv"),
+            QStringLiteral("webm")
+        };
+        const QString extension = effectiveExtension(format, resolvedResourceLocation, rawResourcePath);
+        return !extension.isEmpty() && kPreviewableVideoExtensions.contains(extension);
+    }
+
+    bool isAudioResource(
+        const QString& type,
+        const QString& format,
+        const QString& resolvedResourceLocation,
+        const QString& rawResourcePath)
+    {
+        const QString normalizedType = type.trimmed().toCaseFolded();
+        if (normalizedType == QStringLiteral("audio") || normalizedType == QStringLiteral("music"))
+        {
+            return true;
+        }
+
+        static const QStringList kPreviewableAudioExtensions = {
+            QStringLiteral("mp3"),
+            QStringLiteral("aac"),
+            QStringLiteral("m4a"),
+            QStringLiteral("flac"),
+            QStringLiteral("alac"),
+            QStringLiteral("aiff"),
+            QStringLiteral("wav"),
+            QStringLiteral("ogg"),
+            QStringLiteral("opus"),
+            QStringLiteral("caf"),
+            QStringLiteral("wma"),
+            QStringLiteral("amr")
+        };
+        const QString extension = effectiveExtension(format, resolvedResourceLocation, rawResourcePath);
+        return !extension.isEmpty() && kPreviewableAudioExtensions.contains(extension);
+    }
+
+    bool isPdfResource(
+        const QString& format,
+        const QString& resolvedResourceLocation,
+        const QString& rawResourcePath)
+    {
+        return effectiveExtension(format, resolvedResourceLocation, rawResourcePath) == QStringLiteral("pdf");
+    }
+
+    bool isTextResource(
+        const QString& type,
+        const QString& format,
+        const QString& resolvedResourceLocation,
+        const QString& rawResourcePath)
+    {
+        const QString normalizedType = type.trimmed().toCaseFolded();
+        if (normalizedType == QStringLiteral("text"))
+        {
+            return true;
+        }
+
+        static const QStringList kTextExtensions = {
+            QStringLiteral("txt"),
+            QStringLiteral("md"),
+            QStringLiteral("csv"),
+            QStringLiteral("json"),
+            QStringLiteral("xml"),
+            QStringLiteral("yaml"),
+            QStringLiteral("yml"),
+            QStringLiteral("ini"),
+            QStringLiteral("log"),
+            QStringLiteral("rtf")
+        };
+        const QString extension = effectiveExtension(format, resolvedResourceLocation, rawResourcePath);
+        return !extension.isEmpty() && kTextExtensions.contains(extension);
+    }
+
+    QString renderModeForResource(
+        const QString& type,
+        const QString& format,
+        const QString& resolvedResourceLocation,
+        const QString& rawResourcePath,
+        const QString& sourceUrl)
+    {
+        if (isImageResource(type, format, resolvedResourceLocation, rawResourcePath) && !sourceUrl.isEmpty())
+        {
+            return QStringLiteral("image");
+        }
+        if (isVideoResource(type, format, resolvedResourceLocation, rawResourcePath) && !sourceUrl.isEmpty())
+        {
+            return QStringLiteral("video");
+        }
+        if (isAudioResource(type, format, resolvedResourceLocation, rawResourcePath) && !sourceUrl.isEmpty())
+        {
+            return QStringLiteral("audio");
+        }
+        if (isPdfResource(format, resolvedResourceLocation, rawResourcePath))
+        {
+            return QStringLiteral("pdf");
+        }
+        if (isTextResource(type, format, resolvedResourceLocation, rawResourcePath))
+        {
+            return QStringLiteral("text");
+        }
+        return QStringLiteral("document");
+    }
+
+    QString previewTextForResource(const QString& renderMode, const QString& resolvedResourceLocation)
+    {
+        if (renderMode != QStringLiteral("text"))
+        {
+            return {};
+        }
+
+        const QString normalizedResourceLocation = normalizePath(resolvedResourceLocation);
+        if (normalizedResourceLocation.isEmpty() || !QFileInfo(normalizedResourceLocation).isFile())
+        {
+            return {};
+        }
+
+        QFile file(normalizedResourceLocation);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            return {};
+        }
+
+        QString preview = QString::fromUtf8(file.read(1024));
+        preview.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        preview.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        preview = preview.trimmed();
+        if (preview.size() > 400)
+        {
+            preview = preview.left(400) + QStringLiteral("...");
+        }
+        return preview;
+    }
+
+    QString displayNameFromResourcePaths(
+        const QString& resolvedResourceLocation,
+        const QString& resourcePath,
+        const QString& fallbackResourceId)
+    {
+        const QString assetName = QFileInfo(resolvedResourceLocation).fileName().trimmed();
+        if (!assetName.isEmpty())
+        {
+            return assetName;
+        }
+
+        const QString resourceName = QFileInfo(resourcePath).completeBaseName().trimmed();
+        if (!resourceName.isEmpty())
+        {
+            return resourceName;
+        }
+
+        return fallbackResourceId.trimmed();
+    }
+
+    QVariantMap buildRenderedResourceMap(
+        int resourceIndex,
+        const QString& type,
+        const QString& format,
+        const QString& resourcePath,
+        const QString& resolvedResourceLocation,
+        const QString& sourceUrl,
+        const QString& resourceId = QString())
+    {
+        const QString renderMode = renderModeForResource(type, format, resolvedResourceLocation, resourcePath, sourceUrl);
+        QVariantMap resource;
+        resource.insert(QStringLiteral("index"), resourceIndex);
+        resource.insert(QStringLiteral("type"), type);
+        resource.insert(QStringLiteral("format"), format);
+        resource.insert(QStringLiteral("resourcePath"), resourcePath);
+        resource.insert(QStringLiteral("resolvedPath"), resolvedResourceLocation);
+        resource.insert(QStringLiteral("source"), sourceUrl);
+        resource.insert(QStringLiteral("renderMode"), renderMode);
+        resource.insert(QStringLiteral("resourceId"), resourceId);
+        resource.insert(
+            QStringLiteral("displayName"),
+            displayNameFromResourcePaths(resolvedResourceLocation, resourcePath, resourceId));
+        resource.insert(
+            QStringLiteral("previewText"),
+            previewTextForResource(renderMode, resolvedResourceLocation));
+        return resource;
+    }
 } // namespace
 
 ContentsBodyResourceRenderer::ContentsBodyResourceRenderer(QObject* parent)
@@ -414,6 +629,48 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(const QString&
         return {};
     }
 
+    const QFileInfo noteDirectoryInfo(normalizedNoteDirectoryPath);
+    if (noteDirectoryInfo.isDir()
+        && WhatSon::Resources::isResourcePackageDirectoryName(noteDirectoryInfo.fileName()))
+    {
+        WhatSon::Resources::ResourcePackageMetadata metadata;
+        QString metadataError;
+        if (!WhatSon::Resources::loadResourcePackageMetadata(
+            normalizedNoteDirectoryPath,
+            &metadata,
+            &metadataError))
+        {
+            return {};
+        }
+
+        const QString resourcePath = metadata.resourcePath.trimmed().isEmpty()
+                                         ? WhatSon::Resources::resourcePathForPackageDirectory(normalizedNoteDirectoryPath)
+                                         : normalizePath(metadata.resourcePath);
+        const QString resolvedResourceLocation = normalizePath(
+            WhatSon::Resources::resolveAssetPathFromMetadata(normalizedNoteDirectoryPath, metadata));
+        const QString sourceUrl = normalizeSourceUrl(resolvedResourceLocation);
+        const QString type = WhatSon::Resources::normalizedTypeFromBucketAndFormat(
+            metadata.type,
+            metadata.bucket,
+            metadata.format);
+        QString format = normalizedFormat(metadata.format);
+        if (format.isEmpty())
+        {
+            format = normalizedFormat(WhatSon::Resources::formatFromAssetFilePath(resolvedResourceLocation));
+        }
+
+        return {
+            buildRenderedResourceMap(
+                0,
+                type,
+                format,
+                resourcePath,
+                resolvedResourceLocation,
+                sourceUrl,
+                metadata.resourceId)
+        };
+    }
+
     const QString bodyPath = resolveBodyPathFromNoteDirectory(normalizedNoteDirectoryPath);
     if (bodyPath.isEmpty())
     {
@@ -475,19 +732,14 @@ QVariantList ContentsBodyResourceRenderer::buildRenderedResources(const QString&
             resourcePath,
             basePaths);
         const QString sourceUrl = normalizeSourceUrl(resolvedResourceLocation);
-        const bool imageResource = isImageResource(type, format, resolvedResourceLocation, resourcePath);
-
-        QVariantMap resource;
-        resource.insert(QStringLiteral("index"), resourceIndex);
-        resource.insert(QStringLiteral("type"), type);
-        resource.insert(QStringLiteral("format"), format);
-        resource.insert(QStringLiteral("resourcePath"), resourcePath);
-        resource.insert(QStringLiteral("resolvedPath"), resolvedResourceLocation);
-        resource.insert(QStringLiteral("source"), sourceUrl);
-        resource.insert(
-            QStringLiteral("renderMode"),
-            imageResource && !sourceUrl.isEmpty() ? QStringLiteral("image") : QStringLiteral("unsupported"));
-        resources.push_back(resource);
+        resources.push_back(
+            buildRenderedResourceMap(
+                resourceIndex,
+                type,
+                format,
+                resourcePath,
+                resolvedResourceLocation,
+                sourceUrl));
         ++resourceIndex;
     }
 

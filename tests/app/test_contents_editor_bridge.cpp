@@ -184,6 +184,7 @@ private
     void gutterMarkers_mustNormalizeSupportedMarkerTypes();
     void persistence_mustDelegateToContentViewModel();
     void resourceRenderer_mustResolveResourceTagsFromCurrentNoteBody();
+    void resourceRenderer_mustRenderDirectResourcePackageSelection();
 };
 
 void ContentsEditorAdapterTest::textMetrics_mustTrackLogicalOffsetsAndLineQueries()
@@ -336,7 +337,7 @@ void ContentsEditorAdapterTest::resourceRenderer_mustResolveResourceTagsFromCurr
             QDir(resourcesPath).filePath(QStringLiteral("preview.wsresource/preview.png"))).toString());
 
     const QVariantMap secondResource = renderedResources.at(1).toMap();
-    QCOMPARE(secondResource.value(QStringLiteral("renderMode")).toString(), QStringLiteral("unsupported"));
+    QCOMPARE(secondResource.value(QStringLiteral("renderMode")).toString(), QStringLiteral("audio"));
     QCOMPARE(secondResource.value(QStringLiteral("type")).toString(), QStringLiteral("audio"));
     QCOMPARE(secondResource.value(QStringLiteral("format")).toString(), QStringLiteral(".mp3"));
 
@@ -347,6 +348,45 @@ void ContentsEditorAdapterTest::resourceRenderer_mustResolveResourceTagsFromCurr
     renderer.setNoteId(QString());
     QCOMPARE(renderer.resourceCount(), 0);
     QVERIFY(!renderer.hasRenderableResource());
+}
+
+void ContentsEditorAdapterTest::resourceRenderer_mustRenderDirectResourcePackageSelection()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString resourcesPath = QDir(tempDir.path()).filePath(QStringLiteral("DirectRender.wsresources"));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("manual"),
+        QStringLiteral("manual.pdf"),
+        QStringLiteral("pdf")));
+    const QString packageDirectoryPath = QDir(resourcesPath).filePath(QStringLiteral("manual.wsresource"));
+
+    FakeContentViewModel contentViewModel;
+    contentViewModel.noteDirectoryPathByNoteId.insert(QStringLiteral("resource-manual"), packageDirectoryPath);
+
+    ContentsBodyResourceRenderer renderer;
+    renderer.setContentViewModel(&contentViewModel);
+    renderer.setNoteId(QStringLiteral("resource-manual"));
+
+    const QVariantList renderedResources = renderer.renderedResources();
+    QCOMPARE(renderer.resourceCount(), 1);
+    QVERIFY(renderer.hasRenderableResource());
+    QCOMPARE(renderedResources.size(), 1);
+
+    const QVariantMap resource = renderedResources.at(0).toMap();
+    QCOMPARE(resource.value(QStringLiteral("renderMode")).toString(), QStringLiteral("pdf"));
+    QCOMPARE(resource.value(QStringLiteral("type")).toString(), QStringLiteral("document"));
+    QCOMPARE(resource.value(QStringLiteral("format")).toString(), QStringLiteral(".pdf"));
+    QCOMPARE(
+        resource.value(QStringLiteral("resourcePath")).toString(),
+        QStringLiteral("DirectRender.wsresources/manual.wsresource"));
+    QCOMPARE(
+        resource.value(QStringLiteral("source")).toString(),
+        QUrl::fromLocalFile(
+            QDir(resourcesPath).filePath(QStringLiteral("manual.wsresource/manual.pdf"))).toString());
 }
 
 QTEST_MAIN(ContentsEditorAdapterTest)

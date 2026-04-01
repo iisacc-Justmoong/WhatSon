@@ -2,35 +2,36 @@
 
 ## Responsibility
 
-리소스 하이어라키 support 헤더는 세 가지를 맡는다.
+The resources hierarchy support header owns three responsibilities:
 
-- `Resources.wsresources`와 `.wshub` contents 경로 해석
-- `.wsresource` 메타데이터 materialize
-- materialized entry를 `type -> format` flattened row로 변환
+- `Resources.wsresources` and `.wshub` contents-path resolution
+- `.wsresource` metadata materialization
+- conversion from materialized entries to flattened `type -> format` hierarchy rows
 
 ## Materialization Rule
 
-각 `resourcePath`는 먼저 `WhatSonResourcePackageSupport.hpp`를 통해 해석된다.
+Each `resourcePath` is resolved through `WhatSonResourcePackageSupport.hpp` first.
 
-- 패키지 메타데이터가 정상적이면 그 값을 사용하고
-- 그렇지 않으면 legacy raw path에서 fallback metadata를 만든다
+- If package metadata is valid, it is used directly.
+- Otherwise, fallback metadata is synthesized from the legacy raw path.
 
-이 단계에서 `resourceId`, `bucket`, `type`, `format`, `assetPath`가 확정된다.
+This stage normalizes `resourceId`, `bucket`, `type`, `format`, and `assetPath`.
 
 ## Stable Keys
 
-확장 상태 복원을 위해 row key를 명시적으로 만든다.
+Rows use explicit keys so expansion state can be restored safely.
 
 - `type:image`
 - `format:image:.png`
 
-이 key가 `ResourcesHierarchyViewModel`의 expansion-preserve 동작의 기준이다.
-포맷 key는 원본 메타데이터 포맷 표기와 별개로 case-folded lookup 값을 써서, `.PNG`와 `.png`가 같은 분류 노드로 합쳐진다.
+These keys are the persistence anchor for `ResourcesHierarchyViewModel` expansion-restore logic.
+Format keys use a normalized lookup form, so `.PNG` and `.png` collapse into the same format node.
 
 ## Empty-State Fallback
 
-When `resourcePaths` is empty, `buildHierarchyItems(...)` now returns a non-empty default type list
-instead of an empty hierarchy.
+`buildHierarchyItems(...)` always renders a type-parent tree and attaches a default format catalog
+to each type. Imported resource metadata extends this catalog with extra formats, but the baseline
+format list is visible even when `resourcePaths` is empty.
 
 - `Image`
 - `Video`
@@ -42,5 +43,26 @@ instead of an empty hierarchy.
 - `ZIP`
 - `Other`
 
-These fallback rows are type-only nodes (`kind="type"`, `showChevron=false`) so the sidebar keeps
-a stable visual structure even before the first resource import.
+These type rows are expandable (`kind="type"`) and each expands into format children (`kind="format"`),
+so the sidebar keeps the legacy "type parent -> format children" interaction from the old hierarchy UI.
+
+## Count Aggregation
+
+`buildHierarchyItems(...)`는 materialized 리소스를 순회하면서 count를 같이 집계한다.
+
+- `type.count`: 해당 타입으로 분류된 리소스 총 개수
+- `format.count`: 해당 타입/포맷 조합에 속한 리소스 개수
+
+이 값은 `ResourcesHierarchyViewModel::depthItems()`를 통해 QML count role로 전달된다.
+
+## Equality Contract
+
+`hierarchyItemsEqual(...)` compares every structural field used by QML rendering:
+
+- depth/label
+- expansion and chevron flags
+- key/kind/bucket/type/format
+- resource identity and resolved paths
+
+`ResourcesHierarchyViewModel::setResourcePaths(...)` uses this comparator to skip no-op model resets
+when the rebuilt hierarchy is identical to the previous one.

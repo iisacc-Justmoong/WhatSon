@@ -13,6 +13,29 @@ Platform.MenuBar {
 
     window: root.hostWindow
 
+    function selectedImportUrls() {
+        const urls = [];
+
+        const selectedFilesValue = importResourcesDialog.selectedFiles;
+        if (selectedFilesValue !== undefined && selectedFilesValue !== null) {
+            if (Array.isArray(selectedFilesValue))
+                urls.push(...selectedFilesValue);
+            else if (selectedFilesValue.length !== undefined)
+                urls.push(...Array.from(selectedFilesValue));
+            else
+                urls.push(selectedFilesValue);
+        }
+
+        const selectedFileValue = importResourcesDialog.selectedFile;
+        if (selectedFileValue !== undefined
+                && selectedFileValue !== null
+                && String(selectedFileValue).trim().length > 0
+                && !urls.includes(selectedFileValue))
+            urls.push(selectedFileValue);
+
+        return urls;
+    }
+
     MessageDialog {
         id: importFailureDialog
 
@@ -31,6 +54,7 @@ Platform.MenuBar {
             if (!root.resourcesImportViewModel)
                 return;
 
+            const selectedFiles = root.selectedImportUrls();
             const succeeded = root.resourcesImportViewModel.importUrls(selectedFiles);
             if (!succeeded) {
                 const failureText = root.resourcesImportViewModel.lastError !== undefined

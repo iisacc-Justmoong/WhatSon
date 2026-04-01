@@ -90,8 +90,10 @@ class ResourcesImportViewModelTest final : public QObject
 
 private slots:
     void importUrls_importsFilesIntoCurrentHubAndRewritesResourcesList();
+    void importUrls_acceptsNestedFileDialogSelectionPayload();
     void importUrlsForEditor_returnsImportedResourceMetadataEntries();
     void importUrls_preservesExistingResourcesAndGeneratesUniqueIds();
+    void importUrls_prefersReferencedResourcesDirectoryWhenMultipleRootsExist();
     void importUrls_withoutLocalFiles_failsWithSelectionMessage();
     void importUrls_withoutCurrentHubPath_fails();
 };
@@ -185,6 +187,54 @@ void ResourcesImportViewModelTest::importUrls_importsFilesIntoCurrentHubAndRewri
         }));
 }
 
+void ResourcesImportViewModelTest::importUrls_acceptsNestedFileDialogSelectionPayload()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("ImportHub.wshub"));
+    QVERIFY(createHubShell(hubPath));
+
+    const QString sourceFilePath = QDir(tempDir.path()).filePath(QStringLiteral("Hero.png"));
+    QVERIFY(writeUtf8File(sourceFilePath, QStringLiteral("png-bytes")));
+
+    ResourcesImportViewModel viewModel;
+    viewModel.setCurrentHubPath(hubPath);
+    viewModel.setReloadResourcesCallback(
+        [](const QString&, QString* errorMessage) -> bool
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        });
+
+    const QVariantList fileDialogSelection{
+        QUrl::fromLocalFile(sourceFilePath)
+    };
+    const QVariantList nestedPayload{
+        fileDialogSelection
+    };
+
+    QVERIFY(viewModel.canImportUrls(nestedPayload));
+    QVERIFY(viewModel.importUrls(nestedPayload));
+
+    WhatSonResourcesHierarchyStore resourcesStore;
+    QString parseError;
+    QVERIFY2(
+        readResourcesStore(
+            QDir(hubPath).filePath(QStringLiteral("ImportHub.wscontents/Resources.wsresources")),
+            &resourcesStore,
+            &parseError),
+        qPrintable(parseError));
+    QCOMPARE(
+        resourcesStore.resourcePaths(),
+        QStringList({
+            QStringLiteral("ImportHub.wsresources/hero.wsresource")
+        }));
+}
+
 void ResourcesImportViewModelTest::importUrls_preservesExistingResourcesAndGeneratesUniqueIds()
 {
     QTemporaryDir tempDir;
@@ -243,6 +293,71 @@ void ResourcesImportViewModelTest::importUrls_preservesExistingResourcesAndGener
         QStringList({
             QStringLiteral("ImportHub.wsresources/poster.wsresource"),
             QStringLiteral("ImportHub.wsresources/poster-2.wsresource")
+        }));
+}
+
+void ResourcesImportViewModelTest::importUrls_prefersReferencedResourcesDirectoryWhenMultipleRootsExist()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("ImportHub.wshub"));
+    QVERIFY(createHubShell(hubPath));
+    const QString hiddenResourcesRootPath = QDir(hubPath).filePath(QStringLiteral(".wsresources"));
+    QVERIFY(QDir().mkpath(hiddenResourcesRootPath));
+
+    const QString namedResourcesRootPath = QDir(hubPath).filePath(QStringLiteral("ImportHub.wsresources"));
+    QVERIFY(createExistingResourcePackage(
+        namedResourcesRootPath,
+        QStringLiteral("existing"),
+        QStringLiteral("existing.pdf"),
+        QStringLiteral("existing-pdf")));
+
+    WhatSonResourcesHierarchyStore existingStore;
+    existingStore.setHubPath(hubPath);
+    existingStore.setResourcePaths({QStringLiteral("ImportHub.wsresources/existing.wsresource")});
+    QString writeError;
+    QVERIFY2(
+        existingStore.writeToFile(
+            QDir(hubPath).filePath(QStringLiteral("ImportHub.wscontents/Resources.wsresources")),
+            &writeError),
+        qPrintable(writeError));
+
+    const QString sourceFilePath = QDir(tempDir.path()).filePath(QStringLiteral("manual.pdf"));
+    QVERIFY(writeUtf8File(sourceFilePath, QStringLiteral("manual-pdf")));
+
+    ResourcesImportViewModel viewModel;
+    viewModel.setCurrentHubPath(hubPath);
+    viewModel.setReloadResourcesCallback(
+        [](const QString&, QString* errorMessage) -> bool
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        });
+
+    QVERIFY(viewModel.importUrls({QUrl::fromLocalFile(sourceFilePath)}));
+
+    const QString namedPackagePath = QDir(namedResourcesRootPath).filePath(QStringLiteral("manual.wsresource"));
+    const QString hiddenPackagePath = QDir(hiddenResourcesRootPath).filePath(QStringLiteral("manual.wsresource"));
+    QVERIFY(QFileInfo(namedPackagePath).isDir());
+    QVERIFY(!QFileInfo(hiddenPackagePath).isDir());
+
+    WhatSonResourcesHierarchyStore resourcesStore;
+    QString parseError;
+    QVERIFY2(
+        readResourcesStore(
+            QDir(hubPath).filePath(QStringLiteral("ImportHub.wscontents/Resources.wsresources")),
+            &resourcesStore,
+            &parseError),
+        qPrintable(parseError));
+    QCOMPARE(
+        resourcesStore.resourcePaths(),
+        QStringList({
+            QStringLiteral("ImportHub.wsresources/existing.wsresource"),
+            QStringLiteral("ImportHub.wsresources/manual.wsresource")
         }));
 }
 

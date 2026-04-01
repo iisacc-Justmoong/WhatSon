@@ -184,6 +184,8 @@ void NavigationQmlFramesTest::macNativeMenuBar_mustExposeResourceImportAction()
     QVERIFY(nativeMenuBar.contains(QStringLiteral("text: qsTr(\"Import File...\")")));
     QVERIFY(nativeMenuBar.contains(QStringLiteral("fileMode: FileDialog.OpenFiles")));
     QVERIFY(nativeMenuBar.contains(QStringLiteral("title: qsTr(\"Import Resource Files\")")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("function selectedImportUrls()")));
+    QVERIFY(nativeMenuBar.contains(QStringLiteral("const selectedFiles = root.selectedImportUrls();")));
     QVERIFY(nativeMenuBar.contains(QStringLiteral("root.resourcesImportViewModel.importUrls(selectedFiles)")));
     QVERIFY(nativeMenuBar.contains(QStringLiteral("importFailureDialog.open()")));
 }

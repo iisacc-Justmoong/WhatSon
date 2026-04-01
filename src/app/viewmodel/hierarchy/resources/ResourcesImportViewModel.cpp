@@ -10,8 +10,10 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QMetaType>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSequentialIterable>
 #include <QSet>
 #include <QUrl>
 #include <QVariantMap>
@@ -66,15 +68,6 @@ namespace
         return {};
     }
 
-    QString resolveResourcesDirectory(const QString& hubPath, QString* errorMessage = nullptr)
-    {
-        return resolvePrimaryHubDirectory(
-            hubPath,
-            QStringLiteral(".wsresources"),
-            QStringLiteral("*.wsresources"),
-            errorMessage);
-    }
-
     QString resolveContentsDirectory(const QString& hubPath, QString* errorMessage = nullptr)
     {
         return resolvePrimaryHubDirectory(
@@ -82,6 +75,65 @@ namespace
             QStringLiteral(".wscontents"),
             QStringLiteral("*.wscontents"),
             errorMessage);
+    }
+
+    QString resourceRootNameFromResourcePath(const QString& resourcePath)
+    {
+        const QString normalizedPath = WhatSon::Resources::normalizePath(resourcePath.trimmed());
+        const int separatorIndex = normalizedPath.indexOf(QLatin1Char('/'));
+        if (separatorIndex <= 0)
+        {
+            return {};
+        }
+
+        const QString rootName = normalizedPath.left(separatorIndex).trimmed();
+        if (!rootName.endsWith(QStringLiteral(".wsresources"), Qt::CaseInsensitive))
+        {
+            return {};
+        }
+        return rootName;
+    }
+
+    QString resolveResourcesDirectory(
+        const QString& hubPath,
+        const QStringList& existingResourcePaths = {},
+        QString* errorMessage = nullptr)
+    {
+        const QStringList candidates = WhatSon::Resources::resolveResourceRootDirectories(hubPath);
+        if (candidates.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Required hub directory is missing: *.wsresources inside %1").arg(
+                    WhatSon::HubPath::normalizeAbsolutePath(hubPath));
+            }
+            return {};
+        }
+
+        QSet<QString> referencedRootNames;
+        for (const QString& resourcePath : existingResourcePaths)
+        {
+            const QString rootName = resourceRootNameFromResourcePath(resourcePath);
+            if (rootName.isEmpty())
+            {
+                continue;
+            }
+            referencedRootNames.insert(rootName.toCaseFolded());
+        }
+
+        if (!referencedRootNames.isEmpty())
+        {
+            for (const QString& candidatePath : candidates)
+            {
+                const QString candidateDirectoryName = QFileInfo(candidatePath).fileName().trimmed().toCaseFolded();
+                if (referencedRootNames.contains(candidateDirectoryName))
+                {
+                    return WhatSon::Resources::normalizePath(candidatePath);
+                }
+            }
+        }
+
+        return candidates.constFirst();
     }
 
     QString sanitizeResourceId(QString value)
@@ -179,38 +231,93 @@ namespace
         return true;
     }
 
+    void appendLocalFilePath(const QString& filePath, QStringList* localFiles)
+    {
+        if (localFiles == nullptr)
+        {
+            return;
+        }
+
+        const QString absolutePath = WhatSon::HubPath::normalizeAbsolutePath(filePath);
+        const QFileInfo fileInfo(absolutePath);
+        if (!fileInfo.exists() || !fileInfo.isFile())
+        {
+            return;
+        }
+
+        if (!localFiles->contains(absolutePath))
+        {
+            localFiles->push_back(absolutePath);
+        }
+    }
+
+    void appendLocalFilesFromVariant(const QVariant& entry, QStringList* localFiles)
+    {
+        if (localFiles == nullptr || !entry.isValid())
+        {
+            return;
+        }
+
+        if (entry.metaType().id() == QMetaType::QVariantList)
+        {
+            const QVariantList nestedValues = entry.toList();
+            for (const QVariant& nestedValue : nestedValues)
+            {
+                appendLocalFilesFromVariant(nestedValue, localFiles);
+            }
+            return;
+        }
+
+        if (entry.metaType().id() == QMetaType::QStringList)
+        {
+            const QStringList nestedValues = entry.toStringList();
+            for (const QString& nestedValue : nestedValues)
+            {
+                appendLocalFilesFromVariant(nestedValue, localFiles);
+            }
+            return;
+        }
+
+        if (entry.canConvert<QSequentialIterable>())
+        {
+            const QSequentialIterable iterable = entry.value<QSequentialIterable>();
+            bool iteratedAny = false;
+            for (auto it = iterable.begin(); it != iterable.end(); ++it)
+            {
+                iteratedAny = true;
+                appendLocalFilesFromVariant(*it, localFiles);
+            }
+            if (iteratedAny)
+            {
+                return;
+            }
+        }
+
+        QUrl url = entry.toUrl();
+        if (!url.isValid() || url.isEmpty())
+        {
+            const QString rawText = entry.toString().trimmed();
+            if (rawText.isEmpty())
+            {
+                return;
+            }
+            url = QUrl::fromUserInput(rawText);
+        }
+
+        if (!url.isValid() || !url.isLocalFile())
+        {
+            return;
+        }
+
+        appendLocalFilePath(url.toLocalFile(), localFiles);
+    }
+
     QStringList extractDroppedLocalFiles(const QVariantList& urls)
     {
         QStringList localFiles;
         for (const QVariant& entry : urls)
         {
-            QUrl url = entry.toUrl();
-            if (!url.isValid() || url.isEmpty())
-            {
-                const QString rawText = entry.toString().trimmed();
-                if (rawText.isEmpty())
-                {
-                    continue;
-                }
-                url = QUrl::fromUserInput(rawText);
-            }
-
-            if (!url.isValid() || !url.isLocalFile())
-            {
-                continue;
-            }
-
-            const QString absolutePath = WhatSon::HubPath::normalizeAbsolutePath(url.toLocalFile());
-            const QFileInfo fileInfo(absolutePath);
-            if (!fileInfo.exists() || !fileInfo.isFile())
-            {
-                continue;
-            }
-
-            if (!localFiles.contains(absolutePath))
-            {
-                localFiles.push_back(absolutePath);
-            }
+            appendLocalFilesFromVariant(entry, &localFiles);
         }
         return localFiles;
     }
@@ -488,16 +595,7 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
         return false;
     }
 
-    QString resourcesDirectoryPath;
     QString resolveError;
-    resourcesDirectoryPath = resolveResourcesDirectory(m_currentHubPath, &resolveError);
-    if (resourcesDirectoryPath.isEmpty())
-    {
-        setLastError(resolveError);
-        emit operationFailed(resolveError);
-        return false;
-    }
-
     QString contentsDirectoryPath = resolveContentsDirectory(m_currentHubPath, &resolveError);
     if (contentsDirectoryPath.isEmpty())
     {
@@ -510,6 +608,14 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
 
     QStringList existingResourcePaths;
     if (!loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
+    {
+        setLastError(resolveError);
+        emit operationFailed(resolveError);
+        return false;
+    }
+
+    const QString resourcesDirectoryPath = resolveResourcesDirectory(m_currentHubPath, existingResourcePaths, &resolveError);
+    if (resourcesDirectoryPath.isEmpty())
     {
         setLastError(resolveError);
         emit operationFailed(resolveError);

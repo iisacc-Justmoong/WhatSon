@@ -6,6 +6,7 @@
 
 이제 각 row는 다음 메타데이터 role도 가진다.
 
+- `count`
 - `key`
 - `kind`
 - `bucket`

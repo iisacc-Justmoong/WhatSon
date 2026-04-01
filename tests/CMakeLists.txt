@@ -394,6 +394,7 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesListModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/progress/ProgressHierarchyViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/event/EventHierarchyViewModel.cpp

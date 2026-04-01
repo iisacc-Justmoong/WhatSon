@@ -43,6 +43,8 @@ QVariant ResourcesHierarchyModel::data(const QModelIndex& index, int role) const
     {
     case LabelRole:
         return item.label;
+    case CountRole:
+        return item.count;
     case DepthRole:
     case IndentLevelRole:
         return item.depth;
@@ -79,6 +81,7 @@ QHash<int, QByteArray> ResourcesHierarchyModel::roleNames() const
 {
     return {
         {LabelRole, "label"},
+        {CountRole, "count"},
         {DepthRole, "depth"},
         {IndentLevelRole, "indentLevel"},
         {AccentRole, "accent"},

@@ -14,8 +14,12 @@ The implementation completes three steps in order.
 - The package id is derived from the file base name and receives a suffix when it would collide with an existing
   package.
 - `type`, `bucket`, and `format` are assigned by the rules in `WhatSonResourcePackageSupport.hpp`.
+- If multiple resource roots exist (`.wsresources` and `*.wsresources`), import prefers the root already referenced
+  by existing `Resources.wsresources` entries so new packages stay in the same lineage.
 - `importUrlsForEditor(...)` reuses the same import pipeline as `importUrls(...)` but also returns normalized metadata
   maps so the editor can insert `<resource ...>` tags without reparsing `Resources.wsresources`.
+- URL extraction accepts both flat URL arrays and nested picker payload variants (for example a
+  `QVariantList` that wraps a file-dialog URL list), then flattens them into unique local files.
 
 ## Failure Rule
 

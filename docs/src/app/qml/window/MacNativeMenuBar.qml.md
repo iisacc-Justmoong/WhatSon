@@ -20,8 +20,12 @@ This file defines the macOS global menu bar. It currently exposes two user-facin
 
 1. The user triggers `Import File...`.
 2. `FileDialog.OpenFiles` collects one or more local files.
-3. On accept, the menu bar calls `resourcesImportViewModel.importUrls(selectedFiles)`.
+3. On accept, the menu bar normalizes picker output through `selectedImportUrls()`, then calls
+   `resourcesImportViewModel.importUrls(selectedFiles)`.
 4. If the import fails, it reads `lastError` and opens a modal failure dialog.
+
+`selectedImportUrls()` intentionally merges both `selectedFiles` and `selectedFile` paths so import
+works across picker payload shape differences on macOS native dialog backends.
 
 Successful imports rely on the resource runtime reload to refresh the UI immediately, so this menu does not emit a
 separate success toast.

@@ -9,9 +9,13 @@ metadata-driven LVRS hierarchy while tracking the current resource-path payload 
 ## Public Contract
 
 - Publishes the usual hierarchy row model, selection, count, and load-state properties.
+- Publishes `noteListModel` (`ResourcesListModel`) so the resources domain can drive the shared
+  `ListBarLayout` note-card surface.
 - Implements `IHierarchyExpansionCapability` so open/closed state is owned by the viewmodel.
 - Exposes `setResourcePaths(...)` for direct input and `applyRuntimeSnapshot(...)` for runtime
   snapshot loads.
+- Exposes `noteDirectoryPathForNoteId(...)` for editor-side resource rendering: when a list item id
+  points to a `.wsresource` package, the renderer can resolve that package directory directly.
 - Exposes `requestViewModelHook()` as a file-backed refresh hook that re-reads
   `Resources.wsresources` (and fallback package scans) when the source path is known.
 - Still exposes rename/create/delete entry points because it conforms to the shared hierarchy
@@ -29,4 +33,5 @@ metadata-driven LVRS hierarchy while tracking the current resource-path payload 
 
 - `m_resourcePaths` stores the latest parsed file list.
 - `m_items` stores the current materialized hierarchy rows plus UI expansion state.
+- `m_noteListModel` stores right-panel resource cards filtered by current hierarchy selection.
 - `m_resourcesFilePath` identifies the source `Resources.wsresources` file.

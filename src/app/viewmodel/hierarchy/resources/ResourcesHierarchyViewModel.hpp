@@ -3,6 +3,7 @@
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/resources/ResourcesListModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyModel.hpp"
 
 #include <QStringList>
@@ -18,6 +19,7 @@ class ResourcesHierarchyViewModel final : public IHierarchyViewModel,
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
     Q_PROPERTY(ResourcesHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(ResourcesListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -32,6 +34,7 @@ public:
     ~ResourcesHierarchyViewModel() override;
 
     ResourcesHierarchyModel* itemModel() noexcept override;
+    ResourcesListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
     Q_INVOKABLE void setSelectedIndex(int index) override;
@@ -48,6 +51,7 @@ public:
     Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;
     Q_INVOKABLE void createFolder() override;
     Q_INVOKABLE void deleteSelectedFolder() override;
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
 
     void setResourcePaths(QStringList resourcePaths);
     QStringList resourcePaths() const;
@@ -86,6 +90,7 @@ private:
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void syncModel();
     void syncDomainStoreFromItems();
+    void refreshNoteListForSelection();
     void setResourceResolutionBasePaths(QStringList basePaths);
 
     QStringList m_resourcePaths;
@@ -93,6 +98,7 @@ private:
     QVector<ResourcesHierarchyItem> m_items;
     WhatSonResourcesHierarchyStore m_store;
     ResourcesHierarchyModel m_itemModel;
+    ResourcesListModel m_noteListModel;
     int m_selectedIndex = -1;
     int m_itemCount = 0;
     bool m_loadSucceeded = false;

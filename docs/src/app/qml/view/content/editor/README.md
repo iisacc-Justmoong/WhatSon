@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 8
+- Child files: 9
 
 ## Child Directories
 - No child directories.
@@ -18,6 +18,7 @@
 - `ContentsEditorSession.qml`
 - `ContentsGutterLayer.qml`
 - `ContentsMinimapLayer.qml`
+- `ContentsResourceViewer.qml`
 - `DrawerContents.qml`
 - `DrawerMenuBar.qml`
 - `DrawerToolbar.qml`

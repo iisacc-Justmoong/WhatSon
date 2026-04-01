@@ -838,6 +838,41 @@ namespace WhatSon::Resources
         return {};
     }
 
+    inline QStringList resolveResourceRootDirectories(const QString& wshubPath)
+    {
+        QStringList directories;
+        const QString normalizedWshubPath = normalizePath(wshubPath.trimmed());
+        if (normalizedWshubPath.isEmpty())
+        {
+            return directories;
+        }
+
+        const QFileInfo hubInfo(normalizedWshubPath);
+        if (!hubInfo.isDir())
+        {
+            return directories;
+        }
+
+        const QDir hubDir(normalizedWshubPath);
+        const QString fixedPath = hubDir.filePath(QStringLiteral(".wsresources"));
+        if (QFileInfo(fixedPath).isDir())
+        {
+            directories.push_back(normalizePath(fixedPath));
+        }
+
+        const QStringList wildcardDirectories = hubDir.entryList(
+            QStringList{QStringLiteral("*.wsresources")},
+            QDir::Dirs | QDir::NoDotAndDotDot,
+            QDir::Name);
+        for (const QString& directoryName : wildcardDirectories)
+        {
+            directories.push_back(normalizePath(hubDir.filePath(directoryName)));
+        }
+
+        directories.removeDuplicates();
+        return directories;
+    }
+
     inline QStringList listRelativeResourcePackagePaths(const QString& resourcesRootPath)
     {
         QStringList values;
@@ -861,6 +896,24 @@ namespace WhatSon::Resources
                 QStringLiteral("%1/%2").arg(resourcesDir.dirName(), packageInfo.fileName())));
         }
 
+        return values;
+    }
+
+    inline QStringList listRelativeResourcePackagePathsForHub(const QString& wshubPath)
+    {
+        QStringList values;
+        const QStringList resourceRoots = resolveResourceRootDirectories(wshubPath);
+        for (const QString& resourceRoot : resourceRoots)
+        {
+            const QStringList rootValues = listRelativeResourcePackagePaths(resourceRoot);
+            for (const QString& rootValue : rootValues)
+            {
+                if (!values.contains(rootValue))
+                {
+                    values.push_back(rootValue);
+                }
+            }
+        }
         return values;
     }
 

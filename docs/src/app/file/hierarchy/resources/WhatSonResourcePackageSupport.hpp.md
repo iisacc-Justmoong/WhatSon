@@ -45,5 +45,11 @@
 
 ## Hub Storage Rules
 
-`listRelativeResourcePackagePaths(...)`와 `countResourcePackages(...)`는 허브 루트의
-`*.wsresources` 디렉터리를 flat 저장소로 보고, 직계 자식 `.wsresource` 디렉터리만 집계한다.
+단일 루트 집계 함수와 함께 허브 단위 멀티 루트 집계 함수가 제공된다.
+
+- `resolveResourceRootDirectories(...)`: 허브 내부 `.wsresources` + `*.wsresources` 디렉터리를 모두 반환
+- `listRelativeResourcePackagePaths(...)`: 특정 리소스 루트 1개에서 `.wsresource`를 집계
+- `listRelativeResourcePackagePathsForHub(...)`: 허브의 모든 리소스 루트를 순회해 상대 경로를 중복 제거 후 집계
+- `countResourcePackages(...)`: 단일 루트 기준 개수 집계
+
+이 규칙으로 리소스가 여러 루트로 분산된 허브에서도 런타임/뷰모델이 동일한 패키지 집합을 재구성할 수 있다.
