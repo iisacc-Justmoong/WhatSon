@@ -40,6 +40,8 @@
 ## Current Public Contract Addendum
 - The header now exposes `reloadNoteMetadataForNoteId(QString)` so the active bookmarks note list
   can refresh its current row after the detail panel mutates `.wsnhead` metadata.
+- `requestViewModelHook()` is now a declared slot (not inline signal forwarding only) so the
+  implementation can trigger a file-backed bookmarks projection refresh.
 - The capability methods inherited from `IHierarchyRenameCapability` and
   `IHierarchyCrudCapability` are explicitly marked `override` so warning-clean builds and contract
   drift detection stay aligned.

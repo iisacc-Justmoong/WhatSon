@@ -18,6 +18,16 @@ store, and protects selection and expansion state from runtime refresh churn.
 This prevents unrelated file activity from collapsing the event hierarchy to its default closed
 state.
 
+## ViewModel Hook Contract
+
+`requestViewModelHook()` is no longer a signal-only bridge.
+
+- When `m_eventFilePath` is available, it reloads `Event.wsevent` from disk through
+  `reloadFromEventFilePath(...)`.
+- Successful reloads apply a fresh runtime snapshot and update load-state metadata.
+- Reload failures now surface through `loadStateChanged` with a concrete parser/read error while
+  still emitting `viewModelHookRequested()` for hook-chain compatibility.
+
 ## Expansion Handling
 
 - `setItemExpanded(...)` updates the stored row state for valid expandable rows.

@@ -35,6 +35,19 @@ used by the library list without inventing sort order from the localized `displa
 - If the refreshed header is no longer bookmarked, the note is dropped from `m_bookmarkedNotes`
   immediately so the bookmarks list stays aligned with the detail panel write path.
 
+## ViewModel Hook Contract
+
+`requestViewModelHook()` now performs file-backed self-refresh when a hub path has been loaded.
+
+- `loadFromWshub(...)` stores the normalized `.wshub` path in viewmodel state.
+- `reloadFromWshubPath(...)` reindexes bookmark notes from disk through
+  `WhatSonLibraryIndexedState`.
+- The hook refresh restores the previously selected bookmark color label when possible, then
+  reapplies note-list projection so sidebar and list stay synchronized after external note-header
+  writes.
+- Hook reload failures update load-state error metadata and still emit `viewModelHookRequested()`
+  for deterministic hook-chain signaling.
+
 ## Hierarchy Count Badge
 
 - `depthItems()` now publishes `count` for every bookmark color row.

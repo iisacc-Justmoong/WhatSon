@@ -19,6 +19,18 @@ aligned with those rows, and preserves user navigation state across runtime refr
 This prevents watcher-driven runtime loads from collapsing the entire tag tree when note or header
 files change elsewhere in the hub.
 
+## ViewModel Hook Contract
+
+`requestViewModelHook()` now refreshes from the persisted `Tags.wstags` source instead of behaving
+as a passive notification only.
+
+- `reloadFromTagsFilePath(...)` reparses the file and routes the result through
+  `applyRuntimeSnapshot(...)`.
+- The viewmodel therefore keeps one refresh path for both runtime bootstrap snapshots and manual
+  hook-driven reloads.
+- Parse/read failures update load-state error metadata and still emit `viewModelHookRequested()`
+  so downstream hook listeners do not lose synchronization events.
+
 ## Expansion Ownership
 
 - `setItemExpanded(...)` mutates `m_items[index].expanded` only for valid expandable rows.

@@ -2,31 +2,43 @@
 
 ## Responsibility
 
-이 구현은 리소스 사이드바를 static taxonomy가 아니라 실제 `.wsresource` 메타데이터 트리로 노출한다.
+This implementation exposes the resources sidebar as a metadata-driven hierarchy built from
+`.wsresource` packages rather than as a hardcoded static tree.
 
 ## Tree Contract
 
-`setResourcePaths(...)`는 이제 path list만 저장하지 않는다. 각 리소스 참조를 materialize해서:
+`setResourcePaths(...)` does not only store path strings. It materializes each resource reference
+into three flattened hierarchy levels:
 
 - `bucket`
 - `format`
 - `asset`
 
-3단 flattened row 벡터를 다시 만든다.
-
 ## Expansion Preservation
 
-rebuild 시에는 이전 row들의 `key -> expanded` 상태를 복원한다.
-그래서 런타임 스냅샷 갱신 이후에도 같은 bucket/format이 접힌 채나 펼쳐진 채로 유지된다.
+During rebuild, the previous `key -> expanded` state is restored so runtime snapshot updates do not
+collapse already opened bucket/format rows.
 
 ## Load Fallback
 
-`loadFromWshub(...)`는 우선 `.wscontents/Resources.wsresources`를 읽고,
-그 파일이 비어 있거나 없으면 허브 루트의 `*.wsresources` 디렉터리를 직접 스캔해 flat `.wsresource` 패키지 목록을 만든다.
+`loadFromWshub(...)` first parses `.wscontents/Resources.wsresources`. When that file is missing or
+contains no paths, it falls back to scanning the hub-level `*.wsresources` directory for
+`.wsresource` packages.
 
-즉 리소스 도메인의 기준 경로는 항상 `.wsresource` 패키지 경로다.
+The canonical payload for this domain therefore remains a normalized list of `.wsresource` package
+paths.
+
+## ViewModel Hook Contract
+
+`requestViewModelHook()` performs file-backed reload when `m_resourcesFilePath` is known.
+
+- `reloadFromResourcesFilePath(...)` reparses `Resources.wsresources` when present.
+- If the parsed path list is empty, it re-applies the package scan fallback so the hierarchy still
+  reflects on-disk resources.
+- It recomputes resource reference base paths (including the resolved `.wshub` root) before
+  rebuilding rows, keeping preview/asset resolution stable after hook refresh.
 
 ## Count Role Compatibility
 
-`depthItems()`는 이제 모든 row에 `count` 필드를 포함한다. 현재 리소스 도메인은 노트 인덱스 소유자가
-아니므로 `count`는 `0`으로 고정되며, 이는 공통 `LV.Hierarchy` 모델 스키마 정합성을 위한 계약이다.
+`depthItems()` includes a numeric `count` field on every row. The resources domain is not the owner
+of note-index membership, so it emits `0` to preserve shared `LV.Hierarchy` payload compatibility.

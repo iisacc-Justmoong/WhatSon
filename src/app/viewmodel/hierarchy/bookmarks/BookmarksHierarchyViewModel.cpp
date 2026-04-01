@@ -7,6 +7,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QUrl>
 #include <QVariantMap>
@@ -672,13 +673,16 @@ bool BookmarksHierarchyViewModel::viewOptionsEnabled() const noexcept
 
 bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QString* errorMessage)
 {
+    m_wshubPath.clear();
+    const QString normalizedWshubPath = QDir::cleanPath(wshubPath.trimmed());
+
     WhatSon::Debug::traceSelf(this,
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub.begin"),
-                              QStringLiteral("path=%1").arg(wshubPath));
+                              QStringLiteral("path=%1").arg(normalizedWshubPath));
     WhatSonLibraryIndexedState indexedState;
     QString indexError;
-    if (!indexedState.indexFromWshub(wshubPath, &indexError))
+    if (!indexedState.indexFromWshub(normalizedWshubPath, &indexError))
     {
         if (errorMessage != nullptr)
         {
@@ -687,11 +691,12 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
         WhatSon::Debug::traceSelf(this,
                                   QString::fromLatin1(kScope),
                                   QStringLiteral("loadFromWshub.failed.index"),
-                                  QStringLiteral("path=%1 reason=%2").arg(wshubPath, indexError));
+                                  QStringLiteral("path=%1 reason=%2").arg(normalizedWshubPath, indexError));
         updateLoadState(false, indexError);
         return false;
     }
 
+    m_wshubPath = normalizedWshubPath;
     m_bookmarkedNotes = WhatSonLibraryIndexedState::collectBookmarkedNotes(indexedState.allNotes());
     rebuildColorFolders();
     setSelectedIndex(-1);
@@ -701,7 +706,7 @@ bool BookmarksHierarchyViewModel::loadFromWshub(const QString& wshubPath, QStrin
                               QString::fromLatin1(kScope),
                               QStringLiteral("loadFromWshub"),
                               QStringLiteral("path=%1 source=wsnhead count=%2")
-                              .arg(wshubPath)
+                              .arg(normalizedWshubPath)
                               .arg(m_bookmarkedNotes.size()));
     updateLoadState(true);
     return true;
@@ -727,6 +732,81 @@ void BookmarksHierarchyViewModel::applyRuntimeSnapshot(
     setSelectedIndex(-1);
     refreshNoteListForSelection();
     updateLoadState(true);
+}
+
+void BookmarksHierarchyViewModel::requestViewModelHook()
+{
+    if (m_wshubPath.trimmed().isEmpty())
+    {
+        emit viewModelHookRequested();
+        return;
+    }
+
+    QString reloadError;
+    if (!reloadFromWshubPath(&reloadError))
+    {
+        updateLoadState(false, reloadError);
+        emit viewModelHookRequested();
+        return;
+    }
+
+    updateLoadState(true);
+    emit viewModelHookRequested();
+}
+
+bool BookmarksHierarchyViewModel::reloadFromWshubPath(QString* errorMessage)
+{
+    const QString normalizedWshubPath = QDir::cleanPath(m_wshubPath.trimmed());
+    if (normalizedWshubPath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    const QString preservedColorLabel = selectedColorLabel();
+
+    WhatSonLibraryIndexedState indexedState;
+    QString indexError;
+    if (!indexedState.indexFromWshub(normalizedWshubPath, &indexError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = indexError;
+        }
+        return false;
+    }
+
+    m_bookmarkedNotes = WhatSonLibraryIndexedState::collectBookmarkedNotes(indexedState.allNotes());
+    rebuildColorFolders();
+
+    int restoredSelectionIndex = -1;
+    if (!preservedColorLabel.trimmed().isEmpty())
+    {
+        for (int index = 0; index < m_items.size(); ++index)
+        {
+            if (m_items.at(index).label.compare(preservedColorLabel, Qt::CaseInsensitive) == 0)
+            {
+                restoredSelectionIndex = index;
+                break;
+            }
+        }
+    }
+
+    const int previousSelectedIndex = m_selectedIndex;
+    setSelectedIndex(restoredSelectionIndex);
+    if (m_selectedIndex == previousSelectedIndex)
+    {
+        refreshNoteListForSelection();
+    }
+
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
 }
 
 void BookmarksHierarchyViewModel::updateItemCount()

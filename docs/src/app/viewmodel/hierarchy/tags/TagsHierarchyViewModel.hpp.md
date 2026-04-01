@@ -15,6 +15,8 @@ UI-facing row model, selection state, CRUD entry points, and LVRS expansion hook
   back into the viewmodel instead of treating expansion as transient view-only state.
 - Accepts both imperative `setDepthItems(...)` input and runtime loader input through
   `applyRuntimeSnapshot(...)`.
+- Exposes `requestViewModelHook()` to trigger a file-backed `Tags.wstags` reload through the same
+  snapshot-application path.
 - Declares inherited capability methods with explicit `override` markers so compiler diagnostics
   catch interface drift immediately and builds stay warning-clean.
 

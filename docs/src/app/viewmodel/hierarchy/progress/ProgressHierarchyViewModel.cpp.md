@@ -14,6 +14,18 @@ materializing the matching note list from `.wsnhead` metadata.
 - `setProgressState(...)` keeps the persisted payload synchronized while rebuilding the fixed
   ten-row sidebar taxonomy and immediately reapplies note filtering.
 
+## ViewModel Hook Contract
+
+`requestViewModelHook()` now performs a real self-refresh when the progress file path is known.
+
+- `reloadFromProgressFilePath(...)` reparses `Progress.wsprogress` and reapplies
+  `setProgressState(...)`.
+- The same hook reload also reindexes library notes via
+  `refreshIndexedNotesFromProgressFilePath(...)`, so progress counts and filtered note rows update
+  together.
+- Reload errors surface as load-state failures while still emitting `viewModelHookRequested()` to
+  preserve hook-notification sequencing.
+
 ## Note List Semantics
 
 - `noteListModel()` exposes a `LibraryNoteListModel` so the progress domain can drive the shared

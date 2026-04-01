@@ -79,10 +79,7 @@ public
 
 
 
-    void requestViewModelHook()
-    {
-        emit viewModelHookRequested();
-    }
+    void requestViewModelHook();
 
     signals  :
 
@@ -97,6 +94,7 @@ public
     void viewModelHookRequested();
 
 private:
+    bool reloadFromWshubPath(QString* errorMessage = nullptr);
     void updateItemCount();
     void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
@@ -115,6 +113,7 @@ private:
     int m_noteItemCount = 0;
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
+    QString m_wshubPath;
     QPointer<SystemCalendarStore> m_systemCalendarStore;
     QMetaObject::Connection m_systemCalendarStoreChangedConnection;
 };

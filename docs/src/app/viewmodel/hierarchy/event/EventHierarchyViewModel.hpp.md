@@ -13,6 +13,8 @@ views.
   `IHierarchyViewModel`.
 - Exposes `setEventNames(...)` for direct data injection and `applyRuntimeSnapshot(...)` for
   runtime-loader driven refreshes.
+- Exposes `requestViewModelHook()` as a file-backed hook entry point that can reload
+  `Event.wsevent` from the persisted source path.
 - Exposes `setItemExpanded(int, bool)` so fold state belongs to the viewmodel instead of to a
   transient delegate instance.
 - Marks inherited capability methods with explicit `override` so the interface contract remains

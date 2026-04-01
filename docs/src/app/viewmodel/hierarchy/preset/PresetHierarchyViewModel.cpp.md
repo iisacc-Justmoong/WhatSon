@@ -16,6 +16,16 @@ and state preservation across runtime snapshot refreshes.
 
 This stops note-save related runtime refreshes from collapsing the preset sidebar tree.
 
+## ViewModel Hook Contract
+
+`requestViewModelHook()` performs file-backed self-refresh when the preset source path is known.
+
+- It reloads `Preset.wspreset` through `reloadFromPresetFilePath(...)`.
+- On success, the viewmodel re-applies the snapshot pipeline and emits `loadStateChanged` only when
+  state actually changed.
+- On read/parse failure, it keeps the current rows, records the failure in load-state, and still
+  emits `viewModelHookRequested()` so external hook listeners remain deterministic.
+
 ## Expansion Ownership
 
 - `setItemExpanded(...)` mutates the stored row state for valid expandable items.
