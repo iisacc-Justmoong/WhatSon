@@ -192,7 +192,8 @@ void QmlBindingSyntaxGuardTest::criticalViewHelpers_mustReturnExplicitValues()
     QVERIFY2(
         !flushPendingBody.isEmpty() &&
         flushPendingBody.contains(QStringLiteral("return true;")) &&
-        flushPendingBody.contains(QStringLiteral("return false;")),
+        flushPendingBody.contains(QStringLiteral("return false;")) &&
+        flushPendingBody.contains(QStringLiteral("editorSession.localEditorAuthority = false;")),
         "ContentsEditorSession.qml flushPendingEditorText() must return an explicit success/failure value on every path.");
 
     const QString markerColorBody = extractFunctionBody(
@@ -330,10 +331,16 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("sourceText: contentsView.editorText")),
         "ContentsDisplayView.qml must compose a dedicated text-format renderer bridge from editor text.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("function normalizeBodySourceForRichTextEditor(sourceText)")) &&
+            contentViewText.contains(QStringLiteral("contentsView.richTextHighlightOpenTag")) &&
+            contentViewText.contains(QStringLiteral("editorSession.syncEditorTextFromSelection(")) &&
+            contentViewText.contains(QStringLiteral("contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText)")),
+        "ContentsDisplayView.qml must normalize stored inline style aliases into editable rich-text tags before syncing selected note body text into the editor session.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property var resolvedEditorViewModeViewModel: {")) &&
             contentViewText.contains(QStringLiteral("LV.ViewModels.get(\"editorViewModeViewModel\")")) &&
             contentViewText.contains(QStringLiteral("readonly property bool showFormattedTextRenderer:")),
-        "ContentsDisplayView.qml must resolve editorViewModeViewModel and expose non-Plain formatted-renderer visibility.");
+        "ContentsDisplayView.qml must resolve editorViewModeViewModel and expose formatted-renderer visibility wiring.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property int pageEditorViewModeValue: 1")) &&
             contentViewText.contains(QStringLiteral("readonly property int printEditorViewModeValue: 2")) &&
@@ -352,11 +359,8 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("return contentsView.effectiveEditorTopInset;")),
         "ContentsDisplayView.qml must collapse document top inset in paper layouts while preserving the shared top inset for plain mode.");
     QVERIFY2(
-        contentViewText.contains(
-            QStringLiteral("&& contentsView.activeEditorViewModeValue !== contentsView.pageEditorViewModeValue")) &&
-        contentViewText.contains(
-            QStringLiteral("&& contentsView.activeEditorViewModeValue !== contentsView.printEditorViewModeValue")),
-        "ContentsDisplayView.qml formatted preview visibility must exclude both page and print paper modes.");
+        contentViewText.contains(QStringLiteral("readonly property bool showFormattedTextRenderer: false")),
+        "ContentsDisplayView.qml formatted preview replacement layer must stay disabled while the rich-text editor itself renders formatted content.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("id: printEditorCanvas")) &&
             contentViewText.contains(QStringLiteral("id: printEditorPage")) &&
@@ -366,9 +370,21 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("Number(contentsView.printGuideHorizontalInset)")),
         "ContentsDisplayView.qml page/print modes must render inside a centered paper scaffold, and print mode must add dashed print-margin guides.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property real horizontalInset: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("readonly property real topInset: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("readonly property real textWidth: {")) &&
+            contentViewText.contains(QStringLiteral("formattedPreviewViewport.topInset")) &&
+            contentViewText.contains(QStringLiteral("formattedPreviewViewport.textWidth")) &&
+            contentViewText.contains(QStringLiteral("x: formattedPreviewViewport.horizontalInset")) &&
+            contentViewText.contains(QStringLiteral("y: formattedPreviewViewport.topInset")),
+        "ContentsDisplayView.qml formatted preview must reuse paper-page geometry so rich text aligns with page/print scaffolds.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("text: textFormatRenderer.renderedHtml")) &&
             contentViewText.contains(QStringLiteral("textFormat: Text.RichText")),
         "ContentsDisplayView.qml formatted preview surface must bind Text.RichText output from the renderer bridge.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("textFormat: TextEdit.RichText")),
+        "ContentsDisplayView.qml LV.TextEditor must operate in RichText mode so formatted note content remains editable across all editor modes.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("enabled: !contentsView.showDedicatedResourceViewer")) &&
             contentViewText.contains(QStringLiteral("&& !contentsView.showFormattedTextRenderer")),
@@ -832,13 +848,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText, QStringLiteral("onSelectedNoteBodyTextChanged:"));
     QVERIFY2(
         selectedNoteBodyChangedBody.contains(
-            QStringLiteral("editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, contentsView.selectedNoteBodyText)")),
-        "ContentsDisplayView.qml must gate same-note model reloads through the local-authority session helper.");
+            QStringLiteral("const normalizedBodyText = contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText);")) &&
+            selectedNoteBodyChangedBody.contains(
+                QStringLiteral("editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, normalizedBodyText)")),
+        "ContentsDisplayView.qml must normalize incoming body text and gate same-note model reloads through the local-authority session helper.");
     QVERIFY2(
         selectedNoteBodyChangedBody.contains(
             QStringLiteral(
-                "editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);")),
-        "ContentViewLayout.qml must sync incoming note bodies through the guarded editor session.");
+                "editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, normalizedBodyText);")),
+        "ContentViewLayout.qml must sync normalized incoming note bodies through the guarded editor session.");
     QVERIFY2(
         selectedNoteBodyChangedBody.contains(QStringLiteral("editorSession.scheduleEditorPersistence();")),
         "ContentsDisplayView.qml must reassert the local editor body when storage pushes a divergent same-note payload.");
@@ -849,8 +867,8 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText, QStringLiteral("onSelectedNoteIdChanged:"));
     QVERIFY2(
         selectedNoteIdChangedBody.contains(QStringLiteral(
-            "editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);")),
-        "ContentViewLayout.qml must resync editor text on note-id changes so switching between empty notes does not keep stale editor content.");
+            "contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText)")),
+        "ContentViewLayout.qml must resync editor text on note-id changes through the rich-text normalization path so switching between notes does not keep stale style aliases.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("if (contentsView.syncingEditorTextFromModel)")),
         "ContentViewLayout.qml must skip file persistence while replaying model-driven editor text.");
@@ -1755,6 +1773,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             "readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null")),
         "ListBarLayout.qml must normalize the active note-list model through a resolved contract property.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("readonly property bool resourceListMode: listBarLayout.noteListMode")) &&
+            listBarLayoutText.contains(
+                QStringLiteral("listBarLayout.resolvedNoteListModel.currentResourceEntry !== undefined")),
+        "ListBarLayout.qml must detect resources-list mode from the currentResourceEntry model contract so resource rows can switch to the dedicated visual component.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function deleteCurrentNote()")),
         "ListBarLayout.qml must centralize current-note deletion through an explicit helper.");
     const QString deleteCurrentNoteBody = extractFunctionBody(
@@ -1796,14 +1819,30 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("required property string primaryText")),
         "ListBarLayout.qml note delegates must declare the visible preview text as an explicit required role contract.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("height: noteCard.implicitHeight")),
-        "ListBarLayout.qml note delegates must expose the card implicit height on the delegate root so rows stay visible.");
+        listBarLayoutText.contains(
+            QStringLiteral("height: listBarLayout.resourceListMode ? resourceCard.implicitHeight : noteCard.implicitHeight")),
+        "ListBarLayout.qml note delegates must expose a card implicit-height contract on the delegate root so rows stay visible in both note and resource list modes.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("width: ListView.view ? ListView.view.width : listBarLayout.width")),
         "ListBarLayout.qml note delegates must stretch to the active ListView width so the bound NoteListItem can render.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("NoteListItem {")),
         "ListBarLayout.qml note delegates must wrap the visual card in a dedicated NoteListItem composition surface.");
+    QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("ResourceListItem {")) &&
+            listBarLayoutText.contains(QStringLiteral("id: resourceCard")) &&
+            listBarLayoutText.contains(QStringLiteral("visible: listBarLayout.resourceListMode")),
+        "ListBarLayout.qml resources delegates must use the dedicated ResourceListItem component instead of inheriting NoteListItem visuals.");
+    QVERIFY2(
+        listBarLayoutText.contains(
+            QStringLiteral("height: listBarLayout.resourceListMode ? resourceCard.implicitHeight : noteCard.implicitHeight")),
+        "ListBarLayout.qml delegate height must branch between note-card and resource-card implicit sizes.");
+    QVERIFY2(
+        listBarLayoutText.contains(
+            QStringLiteral("titleText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? \"\" : String(noteItemDelegate.primaryText)")) &&
+            listBarLayoutText.contains(
+                QStringLiteral("previewSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? \"\" : noteItemDelegate.imageSource")),
+        "ListBarLayout.qml resource cards must bind title/thumbnail directly from the list-model delegate contracts.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(")),
         "ListBarLayout.qml must expose the committed note selection separately from transient ListView currentIndex changes.");
@@ -2068,7 +2107,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         "ListBarLayout.qml mobile note cards must defer drag pickup to a dedicated long-press area with a 1000ms hold interval.");
     QVERIFY2(
         listBarLayoutText.contains(
-            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
+            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")) ||
+            listBarLayoutText.contains(
+                QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
         "ListBarLayout.qml note-card tap handler must route authoritative activation through activateNoteIndex().");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("function syncFocusedNoteDeletionState()")),
@@ -2813,7 +2854,9 @@ void QmlBindingSyntaxGuardTest::noteListDeleteShortcutWiring_mustStayCentralized
         "ListBarLayout.qml must route destructive note deletion through FocusedNoteDeletionBridge.");
     QVERIFY2(
         listBarLayoutText.contains(
-            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
+            QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteItemDelegate.noteId);")) ||
+            listBarLayoutText.contains(
+                QStringLiteral("listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);")),
         "ListBarLayout.qml must capture the tapped note id immediately so keyboard deletion follows the visual note focus without latency.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete")),
@@ -2935,6 +2978,32 @@ void QmlBindingSyntaxGuardTest::qmlPanels_mustKeepBoundComponentScopesAndSafeDel
             noteListItemText.contains(QStringLiteral("String(folderLabelRow.modelData)")) &&
             noteListItemText.contains(QStringLiteral("String(tagLabelRow.modelData)")),
         "NoteListItem.qml metadata repeaters must use Bound scope plus explicit modelData role contracts to keep delegate bindings qualified.");
+
+    const QString resourceListItemPath = QDir(qmlRoot).absoluteFilePath(
+        QStringLiteral("view/panels/ResourceListItem.qml"));
+    QFile resourceListItemFile(resourceListItemPath);
+    QVERIFY2(resourceListItemFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(resourceListItemPath));
+    const QString resourceListItemText = QString::fromUtf8(resourceListItemFile.readAll());
+    QVERIFY2(
+        resourceListItemText.contains(QStringLiteral("pragma ComponentBehavior: Bound")) &&
+            resourceListItemText.contains(QStringLiteral("implicitWidth: 194")) &&
+            resourceListItemText.contains(QStringLiteral("implicitHeight: resourceListItem.thumbnailSize + resourceListItem.framePadding * 2")),
+        "ResourceListItem.qml must keep the Figma 194px width and 8px padded 48px thumbnail row geometry.");
+    QVERIFY2(
+        resourceListItemText.contains(QStringLiteral("readonly property color activeCardColor: \"#25324D\"")) &&
+            resourceListItemText.contains(QStringLiteral("readonly property color hoverCardColor: LV.Theme.panelBackground06")) &&
+            resourceListItemText.contains(QStringLiteral("readonly property color pressedCardColor: resourceListItem.hoverCardColor")),
+        "ResourceListItem.qml must expose dedicated default/hover/active state colors instead of inheriting NoteListItem palette state.");
+    QVERIFY2(
+        resourceListItemText.contains(QStringLiteral("Layout.preferredHeight: resourceListItem.thumbnailSize")) &&
+            resourceListItemText.contains(QStringLiteral("Layout.preferredWidth: resourceListItem.thumbnailSize")) &&
+            resourceListItemText.contains(QStringLiteral("source: resourceListItem.previewSource")),
+        "ResourceListItem.qml must keep a fixed 48px thumbnail frame and optional preview image binding.");
+    QVERIFY2(
+        resourceListItemText.contains(QStringLiteral("font.pixelSize: resourceListItem.titlePixelSize")) &&
+            resourceListItemText.contains(QStringLiteral("font.weight: Font.DemiBold")) &&
+            resourceListItemText.contains(QStringLiteral("text: resourceListItem.titleText")),
+        "ResourceListItem.qml must keep the 12px semibold resource title contract.");
 }
 
 QTEST_APPLESS_MAIN(QmlBindingSyntaxGuardTest)

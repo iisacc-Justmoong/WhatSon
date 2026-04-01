@@ -88,6 +88,8 @@ private slots:
     void updateNote_headerOnlyRewrite_preservesExistingBodyText();
     void noteBodyPersistence_richTextFromBodyDocument_mapsCustomStyleTags();
     void noteBodyPersistence_richTextFromBodyDocument_supportsAliasTagsAndLineBreaks();
+    void noteBodyPersistence_serializeBodyDocument_mapsInlineStyleSourceTags();
+    void noteBodyPersistence_serializeBodyDocument_convertsQtRichHtmlSource();
 };
 
 void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFiles()
@@ -142,6 +144,7 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QCOMPARE(readDocument.headerStore.noteId(), QStringLiteral("Alpha"));
     QCOMPARE(readDocument.headerStore.folders(), QStringList{QStringLiteral("Projects/One")});
     QCOMPARE(readDocument.bodyPlainText, QStringLiteral("alpha\nbeta"));
+    QCOMPARE(readDocument.bodySourceText, QStringLiteral("alpha<br/>beta"));
     QCOMPARE(readDocument.bodyFirstLine, QStringLiteral("alpha"));
     QCOMPARE(readDocument.noteHistoryPath, createdDocument.noteHistoryPath);
     QCOMPARE(readDocument.noteVersionPath, createdDocument.noteVersionPath);
@@ -160,6 +163,7 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QString updateError;
     QVERIFY2(store.updateNote(std::move(updateRequest), &updatedDocument, &updateError), qPrintable(updateError));
     QCOMPARE(updatedDocument.bodyPlainText, QStringLiteral("gamma\ndelta"));
+    QCOMPARE(updatedDocument.bodySourceText, QStringLiteral("gamma<br/>delta"));
     QCOMPARE(updatedDocument.bodyFirstLine, QStringLiteral("gamma"));
     QCOMPARE(updatedDocument.headerStore.folders(), QStringList{QStringLiteral("Projects/Two")});
     QVERIFY(!updatedDocument.headerStore.lastModifiedAt().trimmed().isEmpty());
@@ -416,16 +420,18 @@ void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_richTextFromBodyDocument
         "<!DOCTYPE WHATSONNOTE>\n"
         "<contents id=\"Styled\">\n"
         "  <body>\n"
-        "    <paragraph><bold>Hello</bold>, <italic>World</italic> <underline>Underline</underline> <strikethrough>Strike</strikethrough></paragraph>\n"
+        "    <paragraph><bold>Hello</bold>, <italic>World</italic> <underline>Underline</underline> <strikethrough>Strike</strikethrough> <highlight>Glow</highlight></paragraph>\n"
         "  </body>\n"
         "</contents>\n");
 
     QCOMPARE(
         WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyXml),
-        QStringLiteral("Hello, World Underline Strike"));
+        QStringLiteral("Hello, World Underline Strike Glow"));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyXml),
-        QStringLiteral("<strong>Hello</strong>, <em>World</em> <u>Underline</u> <s>Strike</s>"));
+        QStringLiteral(
+            "<strong>Hello</strong>, <em>World</em> <u>Underline</u> <s>Strike</s> "
+            "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">Glow</span>"));
 }
 
 void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_richTextFromBodyDocument_supportsAliasTagsAndLineBreaks()
@@ -436,16 +442,65 @@ void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_richTextFromBodyDocument
         "<contents id=\"StyledAlias\">\n"
         "  <body>\n"
         "    <paragraph><B>Alpha</B><br/><I>Beta</I></paragraph>\n"
-        "    <paragraph><u>Line</u> and <strike>Gone</strike></paragraph>\n"
+        "    <paragraph><u>Line</u> and <strike>Gone</strike> <mark>Hot</mark></paragraph>\n"
         "  </body>\n"
         "</contents>\n");
 
     QCOMPARE(
         WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyXml),
-        QStringLiteral("Alpha\nBeta\nLine and Gone"));
+        QStringLiteral("Alpha\nBeta\nLine and Gone Hot"));
     QCOMPARE(
         WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyXml),
-        QStringLiteral("<strong>Alpha</strong><br/><em>Beta</em><br/><u>Line</u> and <s>Gone</s>"));
+        QStringLiteral(
+            "<strong>Alpha</strong><br/><em>Beta</em><br/><u>Line</u> and <s>Gone</s> "
+            "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">Hot</span>"));
+}
+
+void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_serializeBodyDocument_mapsInlineStyleSourceTags()
+{
+    const QString bodyXml = WhatSon::NoteBodyPersistence::serializeBodyDocument(
+        QStringLiteral("InlineSource"),
+        QStringLiteral(
+            "Alpha <bold>Bold</bold> <resource type=\"image\" path=resources.wsresources/alpha.wsresource>\n"
+            "<highlight>Glow</highlight>"));
+
+    QVERIFY(bodyXml.contains(
+        QStringLiteral(
+            "<paragraph>Alpha <bold>Bold</bold> <resource type=\"image\" path=\"resources.wsresources/alpha.wsresource\" /></paragraph>")));
+    QVERIFY(bodyXml.contains(QStringLiteral("<paragraph><highlight>Glow</highlight></paragraph>")));
+    QCOMPARE(WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(bodyXml), QStringLiteral("Alpha Bold"));
+
+    const QString renderedRichText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyXml);
+    QVERIFY(renderedRichText.contains(QStringLiteral("<strong>Bold</strong>")));
+    QVERIFY(
+        renderedRichText.contains(
+            QStringLiteral("<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">Glow</span>")));
+    QVERIFY(!renderedRichText.contains(QStringLiteral("resource type")));
+}
+
+void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_serializeBodyDocument_convertsQtRichHtmlSource()
+{
+    const QString richHtml = QStringLiteral(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" "
+        "\"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+        "<html><head><meta name=\"qrichtext\" content=\"1\" /></head>"
+        "<body>"
+        "<p>Alpha <span style=\" font-weight:700;\">Bold</span></p>"
+        "<p><span style=\" background-color:#8A4B00; color:#FFD9A3; font-weight:600;\">Glow</span> "
+        "<span style=\" text-decoration: underline;\">Line</span></p>"
+        "</body></html>");
+
+    const QString bodyXml =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("QtRich"), richHtml);
+    QVERIFY(bodyXml.contains(QStringLiteral("<bold>Bold</bold>")));
+    QVERIFY(bodyXml.contains(QStringLiteral("<highlight>Glow</highlight>")));
+    QVERIFY(bodyXml.contains(QStringLiteral("<underline>Line</underline>")));
+    QCOMPARE(WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyXml), QStringLiteral("Alpha Bold\nGlow Line"));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyXml),
+        QStringLiteral(
+            "Alpha <strong>Bold</strong><br/><span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">Glow</span> "
+            "<u>Line</u>"));
 }
 
 QTEST_MAIN(WhatSonLocalNoteFileStoreTest)

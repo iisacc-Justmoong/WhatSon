@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QVector>
 #include <QXmlStreamReader>
 
 namespace
@@ -33,6 +34,8 @@ namespace
         text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
         text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
         text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&#39;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
         text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
         return text;
     }
@@ -47,45 +50,100 @@ namespace
         return value;
     }
 
-    QString normalizedInlineStyleTagForElement(const QString& elementName)
+    struct InlineStyleHtmlTag final
+    {
+        QString openingTag;
+        QString closingTag;
+
+        bool isEmpty() const
+        {
+            return openingTag.isEmpty() || closingTag.isEmpty();
+        }
+    };
+
+    QString canonicalInlineStyleTagName(const QString& elementName)
     {
         const QString normalizedName = elementName.trimmed().toCaseFolded();
         if (normalizedName == QStringLiteral("bold")
             || normalizedName == QStringLiteral("b")
             || normalizedName == QStringLiteral("strong"))
         {
-            return QStringLiteral("strong");
+            return QStringLiteral("bold");
         }
         if (normalizedName == QStringLiteral("italic")
             || normalizedName == QStringLiteral("i")
             || normalizedName == QStringLiteral("em"))
         {
-            return QStringLiteral("em");
+            return QStringLiteral("italic");
         }
         if (normalizedName == QStringLiteral("underline")
             || normalizedName == QStringLiteral("u"))
         {
-            return QStringLiteral("u");
+            return QStringLiteral("underline");
         }
         if (normalizedName == QStringLiteral("strikethrough")
             || normalizedName == QStringLiteral("strike")
             || normalizedName == QStringLiteral("s")
             || normalizedName == QStringLiteral("del"))
         {
-            return QStringLiteral("s");
+            return QStringLiteral("strikethrough");
+        }
+        if (normalizedName == QStringLiteral("highlight")
+            || normalizedName == QStringLiteral("mark"))
+        {
+            return QStringLiteral("highlight");
         }
         return {};
     }
 
-    void appendInlineStyleTag(QString* target, const QString& tagName, bool opening)
+    InlineStyleHtmlTag inlineStyleHtmlTagForElement(const QString& elementName)
     {
-        if (target == nullptr || tagName.isEmpty())
+        const QString normalizedName = canonicalInlineStyleTagName(elementName);
+        if (normalizedName == QStringLiteral("bold"))
+        {
+            return {
+                QStringLiteral("<strong>"),
+                QStringLiteral("</strong>")
+            };
+        }
+        if (normalizedName == QStringLiteral("italic"))
+        {
+            return {
+                QStringLiteral("<em>"),
+                QStringLiteral("</em>")
+            };
+        }
+        if (normalizedName == QStringLiteral("underline"))
+        {
+            return {
+                QStringLiteral("<u>"),
+                QStringLiteral("</u>")
+            };
+        }
+        if (normalizedName == QStringLiteral("strikethrough"))
+        {
+            return {
+                QStringLiteral("<s>"),
+                QStringLiteral("</s>")
+            };
+        }
+        if (normalizedName == QStringLiteral("highlight"))
+        {
+            return {
+                QStringLiteral("<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">"),
+                QStringLiteral("</span>")
+            };
+        }
+        return {};
+    }
+
+    void appendInlineStyleTag(QString* target, const InlineStyleHtmlTag& styleTag, bool opening)
+    {
+        if (target == nullptr || styleTag.isEmpty())
         {
             return;
         }
-        *target += opening
-                       ? QStringLiteral("<%1>").arg(tagName)
-                       : QStringLiteral("</%1>").arg(tagName);
+        *target += opening ? styleTag.openingTag : styleTag.closingTag;
     }
 
     QString richTextFromRichLines(const QStringList& richLines)
@@ -174,6 +232,384 @@ namespace
         return bodyDocumentText;
     }
 
+    bool isClosingTagToken(const QString& token)
+    {
+        for (int index = 1; index < token.size(); ++index)
+        {
+            const QChar ch = token.at(index);
+            if (!ch.isSpace())
+            {
+                return ch == QLatin1Char('/');
+            }
+        }
+        return false;
+    }
+
+    bool isSelfClosingTagToken(QString token)
+    {
+        token = token.trimmed();
+        return token.endsWith(QStringLiteral("/>"));
+    }
+
+    void closeMatchingInlineStyleTag(
+        QString* output,
+        QStringList* openStyleTags,
+        const QString& styleTag)
+    {
+        if (output == nullptr || openStyleTags == nullptr || styleTag.isEmpty())
+        {
+            return;
+        }
+
+        const int openIndex = openStyleTags->lastIndexOf(styleTag);
+        if (openIndex < 0)
+        {
+            return;
+        }
+
+        for (int index = openStyleTags->size() - 1; index >= openIndex; --index)
+        {
+            *output += QStringLiteral("</%1>").arg(openStyleTags->at(index));
+            openStyleTags->removeAt(index);
+        }
+    }
+
+    QStringList spanInlineStyleTagsFromCssDeclaration(const QString& cssDeclaration)
+    {
+        const QString normalizedCss = cssDeclaration.toCaseFolded();
+        if (normalizedCss.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList tags;
+
+        bool hasHighlight = false;
+        const QRegularExpression backgroundColorPattern(
+            QStringLiteral(R"(background-color\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch backgroundColorMatch = backgroundColorPattern.match(normalizedCss);
+        if (backgroundColorMatch.hasMatch())
+        {
+            const QString backgroundValue = backgroundColorMatch.captured(1).trimmed().toCaseFolded();
+            if (!backgroundValue.isEmpty()
+                && backgroundValue != QStringLiteral("transparent")
+                && backgroundValue != QStringLiteral("none")
+                && backgroundValue != QStringLiteral("initial")
+                && backgroundValue != QStringLiteral("inherit"))
+            {
+                tags.push_back(QStringLiteral("highlight"));
+                hasHighlight = true;
+            }
+        }
+
+        const QRegularExpression fontWeightPattern(
+            QStringLiteral(R"(font-weight\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch fontWeightMatch = fontWeightPattern.match(normalizedCss);
+        if (!hasHighlight && fontWeightMatch.hasMatch())
+        {
+            const QString weightValue = fontWeightMatch.captured(1).trimmed();
+            bool numericWeightParsed = false;
+            const int numericWeight = weightValue.toInt(&numericWeightParsed);
+            if (weightValue.contains(QStringLiteral("bold"))
+                || (numericWeightParsed && numericWeight >= 600))
+            {
+                tags.push_back(QStringLiteral("bold"));
+            }
+        }
+
+        const QRegularExpression fontStylePattern(
+            QStringLiteral(R"(font-style\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch fontStyleMatch = fontStylePattern.match(normalizedCss);
+        if (fontStyleMatch.hasMatch()
+            && fontStyleMatch.captured(1).contains(QStringLiteral("italic"), Qt::CaseInsensitive))
+        {
+            tags.push_back(QStringLiteral("italic"));
+        }
+
+        const QRegularExpression textDecorationPattern(
+            QStringLiteral(R"(text-decoration(?:-line)?\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch textDecorationMatch = textDecorationPattern.match(normalizedCss);
+        if (textDecorationMatch.hasMatch())
+        {
+            const QString decorationValue = textDecorationMatch.captured(1).toCaseFolded();
+            if (decorationValue.contains(QStringLiteral("underline")))
+            {
+                tags.push_back(QStringLiteral("underline"));
+            }
+            if (decorationValue.contains(QStringLiteral("line-through")))
+            {
+                tags.push_back(QStringLiteral("strikethrough"));
+            }
+        }
+
+        return tags;
+    }
+
+    QString cssStyleAttributeFromTagToken(const QString& tagToken)
+    {
+        static const QRegularExpression stylePattern(
+            QStringLiteral(R"ATTR(\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch styleMatch = stylePattern.match(tagToken);
+        if (!styleMatch.hasMatch())
+        {
+            return {};
+        }
+        for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
+        {
+            const QString value = decodeXmlEntities(styleMatch.captured(captureIndex));
+            if (!value.isEmpty())
+            {
+                return value;
+            }
+        }
+        return {};
+    }
+
+    bool isTextBlockElement(const QString& elementName);
+
+    QString normalizeEditorSourceToInlineTaggedText(const QString& sourceText)
+    {
+        QString normalizedSource = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
+        if (normalizedSource.isEmpty())
+        {
+            return {};
+        }
+
+        normalizedSource.remove(QRegularExpression(QStringLiteral(R"(<\?xml[\s\S]*?\?>)")));
+        normalizedSource.remove(
+            QRegularExpression(
+                QStringLiteral(R"(<!DOCTYPE[\s\S]*?>)"),
+                QRegularExpression::CaseInsensitiveOption));
+        const bool hasExplicitBodyTag = normalizedSource.contains(
+            QRegularExpression(QStringLiteral(R"(<\s*body\b)"), QRegularExpression::CaseInsensitiveOption));
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+
+        QString output;
+        qsizetype cursor = 0;
+        bool insideBody = !hasExplicitBodyTag;
+        QVector<QStringList> spanStyleStack;
+
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedSource);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype tagStart = match.capturedStart(0);
+            const qsizetype tagEnd = match.capturedEnd(0);
+            if (tagStart < 0 || tagEnd <= tagStart)
+            {
+                continue;
+            }
+
+            if (insideBody && tagStart > cursor)
+            {
+                output += decodeXmlEntities(normalizedSource.mid(cursor, tagStart - cursor));
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = isClosingTagToken(fullTagToken);
+
+            if (normalizedTagName == QStringLiteral("body"))
+            {
+                if (!closingTag)
+                {
+                    insideBody = true;
+                }
+                else
+                {
+                    insideBody = false;
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (!insideBody)
+            {
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isTextBlockElement(rawTagName))
+            {
+                if (closingTag && !output.endsWith(QLatin1Char('\n')))
+                {
+                    output += QLatin1Char('\n');
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("br"))
+            {
+                output += QLatin1Char('\n');
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("resource"))
+            {
+                if (!closingTag)
+                {
+                    output += normalizeResourceStartTag(fullTagToken);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("span"))
+            {
+                if (!closingTag)
+                {
+                    const QStringList spanTags = spanInlineStyleTagsFromCssDeclaration(
+                        cssStyleAttributeFromTagToken(fullTagToken));
+                    for (const QString& spanTag : spanTags)
+                    {
+                        output += QStringLiteral("<%1>").arg(spanTag);
+                    }
+                    spanStyleStack.push_back(spanTags);
+                }
+                else if (!spanStyleStack.isEmpty())
+                {
+                    const QStringList spanTags = spanStyleStack.takeLast();
+                    for (int index = spanTags.size() - 1; index >= 0; --index)
+                    {
+                        output += QStringLiteral("</%1>").arg(spanTags.at(index));
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            const QString inlineStyleTag = canonicalInlineStyleTagName(rawTagName);
+            if (!inlineStyleTag.isEmpty())
+            {
+                output += closingTag
+                              ? QStringLiteral("</%1>").arg(inlineStyleTag)
+                              : QStringLiteral("<%1>").arg(inlineStyleTag);
+                cursor = tagEnd;
+                continue;
+            }
+
+            output += fullTagToken;
+            cursor = tagEnd;
+        }
+
+        if (insideBody && cursor < normalizedSource.size())
+        {
+            output += decodeXmlEntities(normalizedSource.mid(cursor));
+        }
+
+        while (!spanStyleStack.isEmpty())
+        {
+            const QStringList spanTags = spanStyleStack.takeLast();
+            for (int index = spanTags.size() - 1; index >= 0; --index)
+            {
+                output += QStringLiteral("</%1>").arg(spanTags.at(index));
+            }
+        }
+
+        output = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
+        if (output.endsWith(QLatin1Char('\n')))
+        {
+            output.chop(1);
+        }
+        return output;
+    }
+
+    QString serializeInlineTaggedLine(const QString& lineText)
+    {
+        if (lineText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+
+        QString output;
+        QStringList openStyleTags;
+        qsizetype cursor = 0;
+
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(lineText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype tagStart = match.capturedStart(0);
+            const qsizetype tagEnd = match.capturedEnd(0);
+            if (tagStart < 0 || tagEnd <= tagStart)
+            {
+                continue;
+            }
+
+            if (tagStart > cursor)
+            {
+                output += escapeXmlAttributeValue(lineText.mid(cursor, tagStart - cursor));
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = isClosingTagToken(fullTagToken);
+            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+
+            if (normalizedTagName == QStringLiteral("resource"))
+            {
+                if (!closingTag)
+                {
+                    output += normalizeResourceStartTag(fullTagToken);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("br"))
+            {
+                output += QStringLiteral("<br/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            const QString inlineStyleTag = canonicalInlineStyleTagName(rawTagName);
+            if (!inlineStyleTag.isEmpty())
+            {
+                if (closingTag)
+                {
+                    closeMatchingInlineStyleTag(&output, &openStyleTags, inlineStyleTag);
+                }
+                else if (!selfClosingTag)
+                {
+                    output += QStringLiteral("<%1>").arg(inlineStyleTag);
+                    openStyleTags.push_back(inlineStyleTag);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            output += escapeXmlAttributeValue(fullTagToken);
+            cursor = tagEnd;
+        }
+
+        if (cursor < lineText.size())
+        {
+            output += escapeXmlAttributeValue(lineText.mid(cursor));
+        }
+
+        for (int index = openStyleTags.size() - 1; index >= 0; --index)
+        {
+            output += QStringLiteral("</%1>").arg(openStyleTags.at(index));
+        }
+
+        return output;
+    }
+
     QString normalizePath(QString path)
     {
         path = path.trimmed();
@@ -236,7 +672,7 @@ namespace
                     continue;
                 }
 
-                const QString inlineStyleTag = normalizedInlineStyleTagForElement(elementName);
+                const InlineStyleHtmlTag inlineStyleTag = inlineStyleHtmlTagForElement(elementName);
                 if (!inlineStyleTag.isEmpty())
                 {
                     if (blockDepth > 0)
@@ -305,7 +741,7 @@ namespace
             }
 
             const QString elementName = reader.name().toString();
-            const QString inlineStyleTag = normalizedInlineStyleTagForElement(elementName);
+            const InlineStyleHtmlTag inlineStyleTag = inlineStyleHtmlTagForElement(elementName);
             if (!inlineStyleTag.isEmpty())
             {
                 if (blockDepth > 0)
@@ -357,6 +793,37 @@ namespace WhatSon::NoteBodyPersistence
     {
         text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return text;
+    }
+
+    QString serializeBodyDocument(const QString& noteId, const QString& bodySourceText)
+    {
+        const QString normalizedId = noteId.trimmed().isEmpty()
+                                         ? QStringLiteral("note")
+                                         : escapeXmlAttributeValue(noteId.trimmed());
+        const QString inlineTaggedText = normalizeEditorSourceToInlineTaggedText(bodySourceText);
+
+        QString text;
+        text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
+        text += QStringLiteral("<contents id=\"") + normalizedId + QStringLiteral("\">\n");
+        text += QStringLiteral("  <body>\n");
+        if (inlineTaggedText.isEmpty())
+        {
+            text += QStringLiteral("  </body>\n");
+            text += QStringLiteral("</contents>\n");
+            return text;
+        }
+
+        const QStringList lines = inlineTaggedText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        for (const QString& line : lines)
+        {
+            text += QStringLiteral("    <paragraph>");
+            text += serializeInlineTaggedLine(line);
+            text += QStringLiteral("</paragraph>\n");
+        }
+        text += QStringLiteral("  </body>\n");
+        text += QStringLiteral("</contents>\n");
         return text;
     }
 
@@ -546,6 +1013,7 @@ namespace WhatSon::NoteBodyPersistence
         const QString& noteHeaderPath,
         const QString& bodyPlainText,
         QString* outNormalizedBodyText,
+        QString* outNormalizedBodySourceText,
         QString* outLastModifiedAt,
         QString* errorMessage)
     {
@@ -566,12 +1034,19 @@ namespace WhatSon::NoteBodyPersistence
             return false;
         }
 
-        const QString normalizedBodyText = normalizeBodyPlainText(bodyPlainText);
-        if (normalizedBodyText == document.bodyPlainText)
+        const QString serializedBodyDocument = serializeBodyDocument(noteId, bodyPlainText);
+        const QString normalizedBodyText = plainTextFromBodyDocument(serializedBodyDocument);
+        const QString normalizedBodySourceText = richTextFromBodyDocument(serializedBodyDocument);
+        if (normalizedBodyText == document.bodyPlainText
+            && normalizedBodySourceText == document.bodySourceText)
         {
             if (outNormalizedBodyText != nullptr)
             {
                 *outNormalizedBodyText = normalizedBodyText;
+            }
+            if (outNormalizedBodySourceText != nullptr)
+            {
+                *outNormalizedBodySourceText = normalizedBodySourceText;
             }
             if (outLastModifiedAt != nullptr)
             {
@@ -581,6 +1056,7 @@ namespace WhatSon::NoteBodyPersistence
         }
 
         document.bodyPlainText = normalizedBodyText;
+        document.bodySourceText = normalizedBodySourceText;
 
         WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
         updateRequest.document = document;
@@ -601,6 +1077,10 @@ namespace WhatSon::NoteBodyPersistence
         if (outNormalizedBodyText != nullptr)
         {
             *outNormalizedBodyText = document.bodyPlainText;
+        }
+        if (outNormalizedBodySourceText != nullptr)
+        {
+            *outNormalizedBodySourceText = document.bodySourceText;
         }
         if (outLastModifiedAt != nullptr)
         {

@@ -29,6 +29,7 @@ namespace
     struct BodyContentExtract final
     {
         QString plainText;
+        QString sourceText;
         QString firstLine;
         bool hasResource = false;
         QString firstResourceThumbnailUrl;
@@ -473,6 +474,11 @@ namespace
         }
 
         content.plainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(wsnbodyText);
+        content.sourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(wsnbodyText);
+        if (content.sourceText.isEmpty())
+        {
+            content.sourceText = content.plainText;
+        }
         content.firstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(wsnbodyText);
         return content;
     }
@@ -766,6 +772,10 @@ namespace
         overwriteIfNonEmpty(&base->modifiedBy, overlay.modifiedBy);
         overwriteIfNonEmpty(&base->project, overlay.project);
         overwriteIfNonEmpty(&base->bodyPlainText, overlay.bodyPlainText);
+        if (!overlay.bodySourceText.isEmpty())
+        {
+            base->bodySourceText = overlay.bodySourceText;
+        }
         overwriteIfNonEmpty(&base->bodyFirstLine, overlay.bodyFirstLine);
         if (overlay.bodyHasResource)
         {
@@ -848,8 +858,14 @@ namespace
 
         record->noteId = record->noteId.trimmed();
         record->bodyPlainText = record->bodyPlainText.trimmed();
+        record->bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(record->bodySourceText);
         record->bodyFirstLine = record->bodyFirstLine.trimmed();
         record->bodyFirstResourceThumbnailUrl = record->bodyFirstResourceThumbnailUrl.trimmed();
+
+        if (record->bodySourceText.isEmpty())
+        {
+            record->bodySourceText = record->bodyPlainText;
+        }
 
         if (record->bodyFirstLine.isEmpty() && !record->bodyPlainText.isEmpty())
         {
@@ -1135,6 +1151,10 @@ bool LibraryAll::indexFromWshub(const QString& wshubPath, QString* errorMessage)
         normalizeRecordFallbacks(&record);
         const BodyContentExtract bodyContent = readBodyContent(record);
         overwriteIfNonEmpty(&record.bodyPlainText, bodyContent.plainText);
+        if (!bodyContent.sourceText.isEmpty())
+        {
+            record.bodySourceText = bodyContent.sourceText;
+        }
         overwriteIfNonEmpty(&record.bodyFirstLine, bodyContent.firstLine);
         if (bodyContent.hasResource)
         {

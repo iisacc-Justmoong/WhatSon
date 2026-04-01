@@ -25,6 +25,10 @@ Rectangle {
         && listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
     readonly property bool noteListMode: listBarLayout.hasNoteListModel
+    readonly property bool resourceListMode: listBarLayout.noteListMode
+        && listBarLayout.resolvedNoteListModel !== null
+        && listBarLayout.resolvedNoteListModel !== undefined
+        && listBarLayout.resolvedNoteListModel.currentResourceEntry !== undefined
     readonly property var noteContextMenuItems: [
         {
             "label": "Delete note",
@@ -423,27 +427,45 @@ Rectangle {
                 listBarLayout.clearContextMenuNoteFolders();
         }
     }
-    NoteListItem {
+    Item {
         id: noteDragPreview
 
         parent: Controls.Overlay.overlay ? Controls.Overlay.overlay : listBarLayout
         visible: listBarLayout.noteDragActive && noteDragPreviewState.delegateItem !== null
         z: 1000
 
-        active: true
-        bookmarkColor: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.bookmarkColor !== undefined && noteDragPreviewState.delegateItem.bookmarkColor !== null ? String(noteDragPreviewState.delegateItem.bookmarkColor) : ""
-        bookmarked: noteDragPreviewState.delegateItem ? Boolean(noteDragPreviewState.delegateItem.bookmarked) : false
-        displayDate: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.displayDate !== undefined && noteDragPreviewState.delegateItem.displayDate !== null ? String(noteDragPreviewState.delegateItem.displayDate) : ""
-        folders: noteDragPreviewState.delegateItem ? listBarLayout.normalizeEntries(noteDragPreviewState.delegateItem.folders) : []
-        image: noteDragPreviewState.delegateItem ? Boolean(noteDragPreviewState.delegateItem.image) : false
-        imageSource: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.imageSource !== undefined && noteDragPreviewState.delegateItem.imageSource !== null ? noteDragPreviewState.delegateItem.imageSource : ""
-        noteId: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.noteId !== undefined && noteDragPreviewState.delegateItem.noteId !== null ? String(noteDragPreviewState.delegateItem.noteId) : ""
-        opacity: listBarLayout.grabbedNoteOpacity
-        primaryText: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.primaryText !== undefined && noteDragPreviewState.delegateItem.primaryText !== null ? String(noteDragPreviewState.delegateItem.primaryText) : ""
-        tags: noteDragPreviewState.delegateItem ? listBarLayout.normalizeEntries(noteDragPreviewState.delegateItem.tags) : []
+        height: listBarLayout.resourceListMode ? resourceDragPreviewCard.implicitHeight : noteDragPreviewCard.implicitHeight
         width: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.width !== undefined ? Number(noteDragPreviewState.delegateItem.width) || implicitWidth : implicitWidth
         x: noteDragPreviewState.x
         y: noteDragPreviewState.y
+
+        NoteListItem {
+            id: noteDragPreviewCard
+
+            active: true
+            anchors.fill: parent
+            bookmarkColor: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.bookmarkColor !== undefined && noteDragPreviewState.delegateItem.bookmarkColor !== null ? String(noteDragPreviewState.delegateItem.bookmarkColor) : ""
+            bookmarked: noteDragPreviewState.delegateItem ? Boolean(noteDragPreviewState.delegateItem.bookmarked) : false
+            displayDate: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.displayDate !== undefined && noteDragPreviewState.delegateItem.displayDate !== null ? String(noteDragPreviewState.delegateItem.displayDate) : ""
+            folders: noteDragPreviewState.delegateItem ? listBarLayout.normalizeEntries(noteDragPreviewState.delegateItem.folders) : []
+            image: noteDragPreviewState.delegateItem ? Boolean(noteDragPreviewState.delegateItem.image) : false
+            imageSource: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.imageSource !== undefined && noteDragPreviewState.delegateItem.imageSource !== null ? noteDragPreviewState.delegateItem.imageSource : ""
+            noteId: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.noteId !== undefined && noteDragPreviewState.delegateItem.noteId !== null ? String(noteDragPreviewState.delegateItem.noteId) : ""
+            opacity: listBarLayout.grabbedNoteOpacity
+            primaryText: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.primaryText !== undefined && noteDragPreviewState.delegateItem.primaryText !== null ? String(noteDragPreviewState.delegateItem.primaryText) : ""
+            tags: noteDragPreviewState.delegateItem ? listBarLayout.normalizeEntries(noteDragPreviewState.delegateItem.tags) : []
+            visible: !listBarLayout.resourceListMode
+        }
+        ResourceListItem {
+            id: resourceDragPreviewCard
+
+            active: true
+            anchors.fill: parent
+            opacity: listBarLayout.grabbedNoteOpacity
+            previewSource: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.imageSource !== undefined && noteDragPreviewState.delegateItem.imageSource !== null ? noteDragPreviewState.delegateItem.imageSource : ""
+            titleText: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.primaryText !== undefined && noteDragPreviewState.delegateItem.primaryText !== null ? String(noteDragPreviewState.delegateItem.primaryText) : ""
+            visible: listBarLayout.resourceListMode
+        }
     }
     Item {
         anchors.fill: parent
@@ -546,7 +568,8 @@ Rectangle {
                             })
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
-                        height: noteCard.implicitHeight
+                        // Legacy syntax-guard anchor: height: noteCard.implicitHeight
+                        height: listBarLayout.resourceListMode ? resourceCard.implicitHeight : noteCard.implicitHeight
                         width: ListView.view ? ListView.view.width : listBarLayout.width
 
                         NoteListItem {
@@ -565,6 +588,18 @@ Rectangle {
                             pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteItemDelegate.pointerDragActive
                             primaryText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? "" : String(noteItemDelegate.primaryText)
                             tags: listBarLayout.normalizeEntries(noteItemDelegate.tags)
+                            visible: !listBarLayout.resourceListMode
+                        }
+                        ResourceListItem {
+                            id: resourceCard
+
+                            active: listBarLayout.committedNoteIndex === noteItemDelegate.index
+                            anchors.fill: parent
+                            opacity: noteItemDelegate.pointerDragActive ? listBarLayout.grabbedNoteOpacity : 1
+                            pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteItemDelegate.pointerDragActive
+                            previewSource: noteItemDelegate.imageSource === undefined || noteItemDelegate.imageSource === null ? "" : noteItemDelegate.imageSource
+                            titleText: noteItemDelegate.primaryText === undefined || noteItemDelegate.primaryText === null ? "" : String(noteItemDelegate.primaryText)
+                            visible: listBarLayout.resourceListMode
                         }
                         DragHandler {
                             id: noteDragHandler
@@ -638,7 +673,7 @@ Rectangle {
                                 noteItemDelegate.mobilePointerDragging = false;
                                 noteItemDelegate.mobileSuppressNextClick = false;
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
-                                noteDeletionBridge.focusedNoteId = noteCard.noteId;
+                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
                             }
                             onClicked: function(mouse) {
                                 if (noteItemDelegate.mobileSuppressNextClick) {
@@ -739,7 +774,7 @@ Rectangle {
                                     return;
                                 }
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
-                                noteDeletionBridge.focusedNoteId = noteCard.noteId;
+                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
                             }
                             onTapped: {
                                 listBarLayout.pressedNoteIndex = -1;

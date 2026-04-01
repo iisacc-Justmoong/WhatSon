@@ -29,6 +29,8 @@
 - Added `pragma ComponentBehavior: Bound` to enforce bound delegate id access for nested metadata rows.
 - Folder/tag metadata `Repeater` delegates now declare `required property var modelData` and read
   `folderLabelRow.modelData` / `tagLabelRow.modelData` explicitly.
+- Resources rows no longer reuse this component; `ListBarLayout.qml` now mounts dedicated
+  `ResourceListItem.qml` when the bound model exposes `currentResourceEntry`.
 
 ## Intended Detailed Sections
 - Responsibility and business role

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels`
 - Child directories: 4
-- Child files: 11
+- Child files: 12
 
 ## Child Directories
 - `detail`
@@ -25,6 +25,7 @@
 - `NavigationBarLayout.qml`
 - `NoteListItem.qml`
 - `PanelEdgeSplitter.qml`
+- `ResourceListItem.qml`
 - `StatusBarLayout.qml`
 
 ## Intended Detailed Sections

@@ -956,7 +956,9 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesCurrentBo
     viewModel.noteListModel()->setCurrentIndex(0);
     QCOMPARE(viewModel.noteListModel()->currentIndex(), 0);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-b"));
-    QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Beta body summary."));
+    QCOMPARE(
+        viewModel.noteListModel()->currentBodyText(),
+        QStringLiteral("Beta <strong>body</strong> summary."));
     viewModel.noteListModel()->setCurrentIndex(1);
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), QStringLiteral("Alpha body summary."));
@@ -1105,7 +1107,9 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
 
     const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");
     QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-a"), editedBody));
-    QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
+    QCOMPARE(
+        viewModel.noteListModel()->currentBodyText(),
+        QStringLiteral("<br/>Edited first line<br/>Edited second line<br/>"));
 
     int editedNoteRow = -1;
     for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
@@ -1200,7 +1204,7 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_unchangedPlainText_prese
     QCOMPARE(viewModel.noteListModel()->currentNoteId(), QStringLiteral("note-a"));
     QCOMPARE(
         viewModel.noteListModel()->currentBodyText(),
-        QStringLiteral("Alpha body summary.\n\n   \nTail paragraph."));
+        QStringLiteral("Alpha body summary.<br/><br/>   <br/>Tail paragraph."));
 
     QVERIFY(viewModel.saveBodyTextForNote(
         QStringLiteral("note-a"),

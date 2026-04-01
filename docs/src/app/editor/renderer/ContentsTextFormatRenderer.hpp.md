@@ -3,6 +3,9 @@
 ## Responsibility
 Declares the editor-side rich-text renderer bridge that converts `.wsnbody` inline style tags into QML RichText HTML.
 
+Highlight styling is delegated to the dedicated `ContentsTextHighlightRenderer` module so palette logic does not stay
+embedded in the generic inline-tag parser.
+
 ## Public Contract
 - `sourceText`
   Raw editor text payload (plain text plus inline tags such as `<bold>...</bold>`).
@@ -18,3 +21,4 @@ Declares the editor-side rich-text renderer bridge that converts `.wsnbody` inli
 - Italic aliases: `italic`, `i`, `em` -> `<em>`
 - Underline aliases: `underline`, `u` -> `<u>`
 - Strike aliases: `strikethrough`, `strike`, `s`, `del` -> `<s>`
+- Highlight aliases: `highlight`, `mark` -> Apple Notes-inspired styled `<span ...>`

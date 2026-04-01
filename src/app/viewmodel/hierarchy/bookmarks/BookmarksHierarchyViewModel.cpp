@@ -251,6 +251,7 @@ namespace
         }
         note->storageKind = updatedRecord.storageKind;
         note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodySourceText = updatedRecord.bodySourceText;
         note->bodyFirstLine = updatedRecord.bodyFirstLine;
         note->bodyHasResource = updatedRecord.bodyHasResource;
         note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
@@ -563,6 +564,7 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
 
     LibraryNoteRecord& note = m_bookmarkedNotes[noteIndex];
     QString normalizedBodyText;
+    QString normalizedBodySourceText;
     QString lastModifiedAt;
     QString saveError;
     if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
@@ -571,6 +573,7 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
         note.noteHeaderPath,
         text,
         &normalizedBodyText,
+        &normalizedBodySourceText,
         &lastModifiedAt,
         &saveError))
     {
@@ -582,6 +585,7 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
     }
 
     note.bodyPlainText = normalizedBodyText;
+    note.bodySourceText = normalizedBodySourceText;
     note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
     if (!lastModifiedAt.isEmpty())
     {
@@ -856,7 +860,7 @@ BookmarksNoteListItem BookmarksHierarchyViewModel::buildBookmarksListItem(const 
     item.id = note.noteId.trimmed();
     item.primaryText = bookmarkPrimaryText(note);
     item.searchableText = bookmarkSearchableText(note);
-    item.bodyText = note.bodyPlainText;
+    item.bodyText = note.bodySourceText.isEmpty() ? note.bodyPlainText : note.bodySourceText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

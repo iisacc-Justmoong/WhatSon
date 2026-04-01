@@ -5,6 +5,7 @@
 namespace WhatSon::NoteBodyPersistence
 {
     QString normalizeBodyPlainText(QString text);
+    QString serializeBodyDocument(const QString& noteId, const QString& bodySourceText);
     QString plainTextFromBodyDocument(const QString& bodyDocumentText);
     QString richTextFromBodyDocument(const QString& bodyDocumentText);
     QString firstLineFromBodyDocument(const QString& bodyDocumentText);
@@ -17,6 +18,7 @@ namespace WhatSon::NoteBodyPersistence
         const QString& noteHeaderPath,
         const QString& bodyPlainText,
         QString* outNormalizedBodyText = nullptr,
+        QString* outNormalizedBodySourceText = nullptr,
         QString* outLastModifiedAt = nullptr,
         QString* errorMessage = nullptr);
 } // namespace WhatSon::NoteBodyPersistence

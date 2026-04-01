@@ -7,7 +7,10 @@ It creates notes, reads materialized note directories, updates persisted body/he
 
 ## Body Parsing Contract
 - `applyBodyDocumentText(...)` is the read-side body decoder.
-- The decoder still detects `<resource ...>` tags for thumbnail metadata, but the editor text now comes from `WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(...)`.
+- The decoder still detects `<resource ...>` tags for thumbnail metadata.
+- It now projects both:
+  - `bodyPlainText` (search/list summary text)
+  - `bodySourceText` (editor-facing rich/source text from `.wsnbody`)
 - The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
 - `<resource ... resourcePath="...">` now accepts `.wsresource` package paths.
@@ -15,8 +18,12 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - When the reference points to a package directory, the store resolves `resource.xml`, follows its `asset path`, and uses the real packaged asset file for preview thumbnail URLs.
 
 ## Update Contract
-- `updateNote(...)` still serializes the edited plain text back into paragraph nodes when a real body write is requested.
-- The important guard is that no-op saves now compare against a faithful plain-text reconstruction of the existing `.wsnbody`, so the store is not forced into an unsolicited rewrite simply because the read path trimmed the body differently.
+- `updateNote(...)` now canonicalizes body writes through `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
+- This allows RichText editor payloads to be accepted while still writing canonical `.wsnbody` inline tags.
+- During update, the store keeps `bodyPlainText` and `bodySourceText` synchronized from the serialized body so viewmodel/list binding and search/index projections do not drift.
 
 ## Regression Coverage
-- `tests/app/test_whatson_local_note_file_store.cpp` now verifies that a body containing empty and whitespace-only paragraphs round-trips through `readNote(...)`.
+- `tests/app/test_whatson_local_note_file_store.cpp` verifies:
+  - empty/whitespace paragraph round-trip
+  - inline-tag source serialization
+  - Qt Rich HTML source serialization into canonical `.wsnbody` tags

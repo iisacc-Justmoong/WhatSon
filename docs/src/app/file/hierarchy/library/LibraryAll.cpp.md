@@ -26,6 +26,7 @@ their UUID counterparts so later filters can match notes by folder identity inst
   empty. This clears stale project labels that may still be cached in `index.wsnindex`, so project
   hierarchy filters do not accidentally surface "No project" notes under a named project bucket.
 - Runtime body indexing now derives `bodyFirstLine` from `firstLineFromBodyDocument(...)`, which preserves inline titles that appear before the first paragraph block.
+- Runtime body indexing now also carries a dedicated editor-source projection (`bodySourceText`) built from `.wsnbody` rich text parsing, while keeping `bodyPlainText` for search/preview filtering.
 - Resource thumbnail extraction also understands `.wsresource` package references in `.wsnbody`, including unquoted shorthand resource tags like `path=Hub.wsresources/image.wsresource`, so library note cards now preview packaged assets instead of requiring raw file paths.
 
 ## Why This Matters

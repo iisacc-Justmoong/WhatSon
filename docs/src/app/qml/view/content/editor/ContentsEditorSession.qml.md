@@ -23,6 +23,11 @@
 ### Signals
 - `editorTextSynchronized`
 
+## Persistence Guard Notes
+- `flushPendingEditorText()` now clears `localEditorAuthority` on successful save.
+- This prevents repeated save loops when the model returns a canonicalized body payload (for example normalized rich/source text) that differs from the in-flight editor buffer.
+- The next model update can then be accepted by `shouldAcceptModelBodyText(...)` and re-synchronize the editor state cleanly.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

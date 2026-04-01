@@ -80,16 +80,6 @@ namespace
         return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
     }
 
-    QString escapeXmlText(QString value)
-    {
-        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
-        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
-        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
-        value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
-        value.replace(QStringLiteral("'"), QStringLiteral("&apos;"));
-        return value;
-    }
-
     QString decodeXmlEntities(QString text)
     {
         text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
@@ -102,30 +92,7 @@ namespace
 
     QString serializeBodyDocument(const QString& noteId, const QString& plainText)
     {
-        const QString normalizedId = noteId.trimmed().isEmpty()
-                                         ? QStringLiteral("note")
-                                         : escapeXmlText(noteId.trimmed());
-        const QStringList lines = plainText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-
-        QString text;
-        text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        text += QStringLiteral("<!DOCTYPE WHATSONNOTE>\n");
-        text += QStringLiteral("<contents id=\"") + normalizedId + QStringLiteral("\">\n");
-        text += QStringLiteral("  <body>\n");
-        if (plainText.isEmpty())
-        {
-            text += QStringLiteral("  </body>\n");
-            text += QStringLiteral("</contents>\n");
-            return text;
-        }
-
-        for (const QString& line : lines)
-        {
-            text += QStringLiteral("    <paragraph>") + escapeXmlText(line) + QStringLiteral("</paragraph>\n");
-        }
-        text += QStringLiteral("  </body>\n");
-        text += QStringLiteral("</contents>\n");
-        return text;
+        return WhatSon::NoteBodyPersistence::serializeBodyDocument(noteId, plainText);
     }
 
     QString findAncestorDirectoryWithSuffix(const QString& startPath, const QString& suffix)
@@ -482,6 +449,7 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
     document->bodyHasResource = false;
     document->bodyFirstResourceThumbnailUrl.clear();
     document->bodyPlainText.clear();
+    document->bodySourceText.clear();
     document->bodyFirstLine.clear();
 
     static const QRegularExpression bodyPattern(
@@ -525,6 +493,11 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
     }
 
     document->bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
+    document->bodySourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyDocumentText);
+    if (document->bodySourceText.isEmpty())
+    {
+        document->bodySourceText = document->bodyPlainText;
+    }
     document->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(bodyDocumentText);
 }
 
@@ -591,7 +564,13 @@ bool WhatSonLocalNoteFileStore::createNote(
     {
         request.headerStore.setNoteId(resolvedNoteId);
     }
-    const QString normalizedBodyText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.bodyPlainText);
+    const QString bodyDocumentText = serializeBodyDocument(request.headerStore.noteId(), request.bodyPlainText);
+    const QString normalizedBodyText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
+    QString normalizedBodySourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyDocumentText);
+    if (normalizedBodySourceText.isEmpty())
+    {
+        normalizedBodySourceText = normalizedBodyText;
+    }
 
     WhatSonNoteHeaderCreator headerCreator(noteDirectoryPath, QString());
     QString writeError;
@@ -607,7 +586,7 @@ bool WhatSonLocalNoteFileStore::createNote(
     const QString historyRecordedAt = request.headerStore.lastModifiedAt().trimmed().isEmpty()
                                           ? currentNoteTimestamp()
                                           : request.headerStore.lastModifiedAt().trimmed();
-    if (!m_ioGateway.writeUtf8File(bodyPath, serializeBodyDocument(request.headerStore.noteId(), normalizedBodyText), &writeError))
+    if (!m_ioGateway.writeUtf8File(bodyPath, bodyDocumentText, &writeError))
     {
         if (errorMessage != nullptr)
         {
@@ -643,6 +622,7 @@ bool WhatSonLocalNoteFileStore::createNote(
         outDocument->noteVersionPath = versionPath;
         outDocument->headerStore = request.headerStore;
         outDocument->bodyPlainText = normalizedBodyText;
+        outDocument->bodySourceText = normalizedBodySourceText;
         outDocument->bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
         outDocument->bodyHasResource = false;
         outDocument->bodyFirstResourceThumbnailUrl.clear();
@@ -803,7 +783,28 @@ bool WhatSonLocalNoteFileStore::updateNote(
     {
         request.document.headerStore.setNoteId(resolvedNoteId);
     }
-    request.document.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodyPlainText);
+    QString serializedBodyDocument;
+    if (persistBody)
+    {
+        QString bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodySourceText);
+        if (bodySourceText.isEmpty())
+        {
+            bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodyPlainText);
+        }
+
+        serializedBodyDocument = serializeBodyDocument(request.document.headerStore.noteId(), bodySourceText);
+        request.document.bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
+        request.document.bodySourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(serializedBodyDocument);
+    }
+    else
+    {
+        request.document.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodyPlainText);
+        request.document.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodySourceText);
+    }
+    if (request.document.bodySourceText.isEmpty())
+    {
+        request.document.bodySourceText = request.document.bodyPlainText;
+    }
     request.document.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(request.document.bodyPlainText);
 
     QString previousBodyText;
@@ -853,7 +854,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
     {
         if (!m_ioGateway.writeUtf8File(
             bodyPath,
-            serializeBodyDocument(request.document.headerStore.noteId(), request.document.bodyPlainText),
+            serializedBodyDocument,
             &writeError))
         {
             if (errorMessage != nullptr)

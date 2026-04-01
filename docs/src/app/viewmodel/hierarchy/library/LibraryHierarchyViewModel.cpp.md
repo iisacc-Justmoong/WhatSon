@@ -110,6 +110,10 @@ most recently modified note first after load, refresh, and save.
 Primary note preview text also restores `bodyFirstLine` ahead of the truncated plain-text summary
 when the rendered first line came from markup that is not preserved as the leading plain-text line.
 
+`LibraryNoteListItem.bodyText` now binds to `LibraryNoteRecord.bodySourceText` (editor source/rich projection) with
+`bodyPlainText` fallback. This keeps the editor surface synchronized with formatted body content without changing
+search/index behavior that still depends on plain text.
+
 ## Backend Boundary
 
 - note creation, deletion, folder clearing, folder assignment, and body persistence now update the

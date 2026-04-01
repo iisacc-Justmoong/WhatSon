@@ -1,4 +1,5 @@
 #include "ContentsTextFormatRenderer.hpp"
+#include "ContentsTextHighlightRenderer.hpp"
 
 #include <QRegularExpression>
 #include <QStringList>
@@ -141,6 +142,22 @@ namespace
             if (normalizedTagName == QStringLiteral("br"))
             {
                 html += QStringLiteral("<br/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            {
+                const QString highlightStackTagName = ContentsTextHighlightRenderer::highlightStackTagName();
+                if (closingTag)
+                {
+                    closeMatchingTag(&openStyleTags, &html, highlightStackTagName);
+                }
+                else if (!selfClosingTag)
+                {
+                    html += ContentsTextHighlightRenderer::highlightOpenHtmlTag();
+                    openStyleTags.append(highlightStackTagName);
+                }
                 cursor = tagEnd;
                 continue;
             }

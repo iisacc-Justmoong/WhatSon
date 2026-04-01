@@ -48,21 +48,33 @@ positions from the same document origin.
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
-- Inline formatting shortcuts wrap selected text with `.wsnbody` style tags:
-  - `Cmd/Ctrl+B` -> `<bold>...</bold>`
-  - `Cmd/Ctrl+I` -> `<italic>...</italic>`
-  - `Cmd/Ctrl+U` -> `<underline>...</underline>`
-  - `Shift+Cmd/Ctrl+X` -> `<strikethrough>...</strikethrough>`
+- Inline formatting shortcuts wrap selected text with editable RichText tags:
+  - `Cmd/Ctrl+B` -> `<b>...</b>`
+  - `Cmd/Ctrl+I` -> `<i>...</i>`
+  - `Cmd/Ctrl+U` -> `<u>...</u>`
+  - `Shift+Cmd/Ctrl+X` -> `<s>...</s>`
 - The editor now resolves `editorViewModeViewModel` (from injected property or `LV.ViewModels`) and switches renderer
   surfaces by mode:
-  - `Plain` (`activeViewMode == 0`): editable `LV.TextEditor`
-  - `Page` (`activeViewMode == 1`): editable plain paper-layout editor surface (PDF-like page canvas, no print guides)
-  - `Print` (`activeViewMode == 2`): editable paper-layout editor surface + dashed print-margin guides
-  - `Web/Presentation`: read-only RichText preview (`ContentsTextFormatRenderer` + `Text.RichText`)
-- While `Page`/`Print` modes are active, the editor keeps text mutation paths enabled but hides gutter/minimap chrome
-  so the page-focused layout behaves like a word processor surface.
-- While RichText preview mode is active (`Web/Presentation`), mutation surfaces are disabled (`DropArea`, edit
-  shortcuts, gutter/minimap chrome), preserving mode-specific read-only behavior.
+  - `Plain` (`activeViewMode == 0`):
+    - `LV.TextEditor` RichText editing surface (cursor/input always enabled for note editing).
+  - `Page` (`activeViewMode == 1`): paper-layout RichText editing surface (PDF-like page canvas, no print guides)
+  - `Print` (`activeViewMode == 2`): paper-layout RichText editing surface + dashed print-margin guides
+  - `Web/Presentation`: same editable RichText surface, keeping document editing consistent across all editor views.
+- `showFormattedTextRenderer` is intentionally pinned to `false`; the legacy read-only replacement layer remains
+  disabled so the editor never drops into a non-editable state.
+- Stored inline aliases (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`, `<mark>`) are
+  normalized into editable RichText tags before session sync:
+  - `bold` -> `<b>`
+  - `italic` -> `<i>`
+  - `underline` -> `<u>`
+  - `strikethrough` -> `<s>`
+  - `highlight`/`mark` -> orange styled `<span ...>`
+- As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
+  tag text.
+- In `Page`/`Print`, the preview text geometry is aligned to the centered paper scaffold (`printEditorPage`) and uses
+  page padding insets for both horizontal and vertical placement.
+- Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally
+  always editable for note-taking workflows.
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
 - `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
   mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.

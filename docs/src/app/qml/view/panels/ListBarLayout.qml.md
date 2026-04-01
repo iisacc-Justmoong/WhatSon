@@ -2,14 +2,15 @@
 
 ## Responsibility
 
-`ListBarLayout.qml` is the shared note-list surface for desktop and mobile routes. It owns interaction flow
-(tap/drag/context-menu/viewport), while note-list contract probing is delegated to C++ bridge objects.
+`ListBarLayout.qml` is the shared list surface for desktop and mobile routes. It owns interaction flow
+(tap/drag/context-menu/viewport) and now branches visual delegates between `NoteListItem` and
+`ResourceListItem` by model contract, while note-list probing is delegated to C++ bridge objects.
 
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
 - Source kind: QML view/component
 - File name: `ListBarLayout.qml`
-- Approximate line count: 707
+- Approximate line count: 756
 
 ## QML Surface Snapshot
 - Root type: `Rectangle`
@@ -22,10 +23,13 @@
 - `noteListContractBridge`
 - `noteContextMenu`
 - `noteDragPreview`
+- `noteDragPreviewCard`
+- `resourceDragPreviewCard`
 - `topToolbar`
 - `noteListView`
 - `noteItemDelegate`
 - `noteCard`
+- `resourceCard`
 - `noteDragHandler`
 - `mobileLongPressDragArea`
 
@@ -64,6 +68,8 @@
 - The panel enters note-list mode whenever an actual `noteListModel` is injected. It must not hard-code
   hierarchy toolbar indexes such as `Library` or `Bookmarks`, because domains like `Projects` also own
   note-list projections.
+- `resourceListMode` is detected from `resolvedNoteListModel.currentResourceEntry`, then delegates switch to
+  `ResourceListItem` so resources rows no longer inherit note-card visuals.
 - `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
   authoritative selection back into the bound note-list model, captures `focusedNoteId` for keyboard deletion, and
   reasserts the pending user choice after the current event turn.

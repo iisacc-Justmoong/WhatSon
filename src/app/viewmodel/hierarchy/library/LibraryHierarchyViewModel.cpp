@@ -991,6 +991,7 @@ namespace
         }
         note->storageKind = updatedRecord.storageKind;
         note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodySourceText = updatedRecord.bodySourceText;
         note->bodyFirstLine = updatedRecord.bodyFirstLine;
         note->bodyHasResource = updatedRecord.bodyHasResource;
         note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
@@ -3223,6 +3224,7 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
 
     LibraryNoteRecord& note = allNotes[noteIndex];
     QString normalizedBodyText;
+    QString normalizedBodySourceText;
     QString lastModifiedAt;
     QString saveError;
     if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
@@ -3231,6 +3233,7 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
         note.noteHeaderPath,
         text,
         &normalizedBodyText,
+        &normalizedBodySourceText,
         &lastModifiedAt,
         &saveError))
     {
@@ -3242,6 +3245,7 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
     }
 
     note.bodyPlainText = normalizedBodyText;
+    note.bodySourceText = normalizedBodySourceText;
     note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
     if (!lastModifiedAt.isEmpty())
     {
@@ -3443,7 +3447,7 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
     item.id = noteId;
     item.primaryText = notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = note.bodyPlainText;
+    item.bodyText = note.bodySourceText.isEmpty() ? note.bodyPlainText : note.bodySourceText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

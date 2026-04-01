@@ -1364,7 +1364,9 @@ void HierarchyViewModelsTest::bookmarksViewModel_saveCurrentBodyText_rewritesWsn
 
     const QString editedBody = QStringLiteral("\nBlue edited first line\nBlue edited second line\n");
     QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-blue"), editedBody));
-    QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
+    QCOMPARE(
+        viewModel.noteListModel()->currentBodyText(),
+        QStringLiteral("<br/>Blue edited first line<br/>Blue edited second line<br/>"));
 
     const QString bodyPath = QDir(hubPath).filePath(
         QStringLiteral("BookmarksVmHub.wscontents/Library.wslibrary/Blue.wsnote/Blue.wsnbody"));

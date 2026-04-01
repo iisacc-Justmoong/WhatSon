@@ -15,6 +15,7 @@ class ContentsTextFormatRendererTest final : public QObject
 private slots:
     void renderer_mustMapSupportedInlineStyleTags();
     void renderer_mustSupportAliasTagsAndLineBreaks();
+    void renderer_mustRenderHighlightTagWithAppleNotesStyle();
     void renderer_mustIgnoreResourceTagsAndEscapeUnknownTags();
 };
 
@@ -36,6 +37,19 @@ void ContentsTextFormatRendererTest::renderer_mustSupportAliasTagsAndLineBreaks(
     QCOMPARE(
         renderer.renderedHtml(),
         QStringLiteral("<strong>A</strong><br/><u>B</u><br/><s>C</s>"));
+}
+
+void ContentsTextFormatRendererTest::renderer_mustRenderHighlightTagWithAppleNotesStyle()
+{
+    ContentsTextFormatRenderer renderer;
+    renderer.setSourceText(
+        QStringLiteral("Plain <highlight>Hello</highlight> and <mark>World</mark>."));
+
+    QCOMPARE(
+        renderer.renderedHtml(),
+        QStringLiteral(
+            "Plain <span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">Hello</span> and "
+            "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">World</span>."));
 }
 
 void ContentsTextFormatRendererTest::renderer_mustIgnoreResourceTagsAndEscapeUnknownTags()

@@ -823,6 +823,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_contents_editor_bridge_tests)
 
 add_executable(whatson_contents_text_format_renderer_tests
         app/test_contents_text_format_renderer.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsTextHighlightRenderer.cpp
         ${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsTextFormatRenderer.cpp
 )
 set_target_properties(whatson_contents_text_format_renderer_tests PROPERTIES AUTOMOC ON)

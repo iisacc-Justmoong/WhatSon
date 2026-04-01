@@ -7,12 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/editor/renderer`
 - Child directories: 0
-- Child files: 2
+- Child files: 4
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `ContentsTextHighlightRenderer.cpp`
+- `ContentsTextHighlightRenderer.hpp`
 - `ContentsTextFormatRenderer.cpp`
 - `ContentsTextFormatRenderer.hpp`
 

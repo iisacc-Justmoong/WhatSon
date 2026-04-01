@@ -11,6 +11,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - `italic`/`i`/`em` -> `em`
   - `underline`/`u` -> `u`
   - `strikethrough`/`strike`/`s`/`del` -> `s`
+- Routes `highlight` / `mark` tags through `ContentsTextHighlightRenderer` and renders an Apple Notes-inspired
+  highlight span (`#8A4B00` background, `#FFD9A3` foreground, semibold text).
 - Converts `<br>` style tags and newline characters to `<br/>`.
 - Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.

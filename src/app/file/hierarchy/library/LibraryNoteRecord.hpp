@@ -8,6 +8,7 @@ struct LibraryNoteRecord
     QString noteId;
     QString storageKind;
     QString bodyPlainText;
+    QString bodySourceText;
     QString bodyFirstLine;
     bool bodyHasResource = false;
     QString bodyFirstResourceThumbnailUrl;

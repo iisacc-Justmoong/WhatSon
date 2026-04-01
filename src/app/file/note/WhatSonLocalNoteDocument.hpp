@@ -15,6 +15,7 @@ struct WhatSonLocalNoteDocument
     QString noteVersionPath;
     WhatSonNoteHeaderStore headerStore;
     QString bodyPlainText;
+    QString bodySourceText;
     QString bodyFirstLine;
     bool bodyHasResource = false;
     QString bodyFirstResourceThumbnailUrl;
@@ -25,6 +26,11 @@ struct WhatSonLocalNoteDocument
         record.noteId = headerStore.noteId();
         record.storageKind = QStringLiteral("wsnote");
         record.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodyPlainText);
+        record.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(bodySourceText);
+        if (record.bodySourceText.isEmpty())
+        {
+            record.bodySourceText = record.bodyPlainText;
+        }
         record.bodyFirstLine = bodyFirstLine.trimmed().isEmpty()
                                    ? WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(record.bodyPlainText)
                                    : bodyFirstLine.trimmed();

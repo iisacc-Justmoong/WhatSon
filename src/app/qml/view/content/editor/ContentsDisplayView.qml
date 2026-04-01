@@ -142,6 +142,7 @@ Item {
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 3
+    readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">"
     property var resourcesImportViewModel: null
     readonly property int saveDebounceMs: 120
     readonly property var selectedResourceEntry: {
@@ -176,11 +177,7 @@ Item {
                                                 && contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
     readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
-    readonly property bool showFormattedTextRenderer: contentsView.hasSelectedNote
-                                                      && !contentsView.showDedicatedResourceViewer
-                                                      && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
-                                                      && contentsView.activeEditorViewModeValue !== contentsView.pageEditorViewModeValue
-                                                      && contentsView.activeEditorViewModeValue !== contentsView.printEditorViewModeValue
+    readonly property bool showFormattedTextRenderer: false
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
     readonly property color printCanvasColor: "#F1F3F6"
     readonly property int printPaperHorizontalMargin: LV.Theme.gap12
@@ -730,15 +727,73 @@ Item {
     }
     function normalizeInlineStyleTag(tagName) {
         const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
-        if (normalizedTagName === "bold")
+        if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
             return "bold";
-        if (normalizedTagName === "italic")
+        if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
             return "italic";
-        if (normalizedTagName === "underline")
+        if (normalizedTagName === "underline" || normalizedTagName === "u")
             return "underline";
-        if (normalizedTagName === "strikethrough")
+        if (normalizedTagName === "strikethrough" || normalizedTagName === "strike" || normalizedTagName === "s"
+                || normalizedTagName === "del")
             return "strikethrough";
+        if (normalizedTagName === "highlight" || normalizedTagName === "mark")
+            return "highlight";
         return "";
+    }
+    function inlineStyleWrapTags(styleTag) {
+        switch (styleTag) {
+        case "bold":
+            return ({
+                    "openTag": "<b>",
+                    "closeTag": "</b>"
+                });
+        case "italic":
+            return ({
+                    "openTag": "<i>",
+                    "closeTag": "</i>"
+                });
+        case "underline":
+            return ({
+                    "openTag": "<u>",
+                    "closeTag": "</u>"
+                });
+        case "strikethrough":
+            return ({
+                    "openTag": "<s>",
+                    "closeTag": "</s>"
+                });
+        case "highlight":
+            return ({
+                    "openTag": contentsView.richTextHighlightOpenTag,
+                    "closeTag": "</span>"
+                });
+        default:
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
+        }
+    }
+    function normalizeBodySourceForRichTextEditor(sourceText) {
+        const source = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        if (source.length === 0)
+            return "";
+        const inlineTagPattern = /<\s*(\/?)\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>/gi;
+        return source.replace(inlineTagPattern, function (token, slashToken, rawTagName) {
+            const normalizedTagName = rawTagName === undefined || rawTagName === null
+                    ? ""
+                    : String(rawTagName).trim().toLowerCase();
+            const isClosingTag = slashToken !== undefined && slashToken !== null && String(slashToken).length > 0;
+            if (normalizedTagName === "br")
+                return "<br/>";
+            const styleTag = contentsView.normalizeInlineStyleTag(normalizedTagName);
+            if (styleTag.length === 0)
+                return token;
+            const wrapTags = contentsView.inlineStyleWrapTags(styleTag);
+            if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
+                return token;
+            return isClosingTag ? wrapTags.closeTag : wrapTags.openTag;
+        });
     }
     function wrapSelectedEditorTextWithTag(tagName) {
         if (!contentsView.hasSelectedNote
@@ -748,27 +803,40 @@ Item {
         const normalizedTagName = contentsView.normalizeInlineStyleTag(tagName);
         if (normalizedTagName.length === 0)
             return false;
+        const wrapTags = contentsView.inlineStyleWrapTags(normalizedTagName);
+        if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
+            return false;
         const selectionRange = contentsView.selectedEditorRange();
         if (selectionRange.end <= selectionRange.start)
             return false;
-
-        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const openTag = "<" + normalizedTagName + ">";
-        const closeTag = "</" + normalizedTagName + ">";
-        const selectedText = currentText.slice(selectionRange.start, selectionRange.end);
-        const nextText = currentText.slice(0, selectionRange.start)
-                + openTag
-                + selectedText
-                + closeTag
-                + currentText.slice(selectionRange.end);
-        contentsView.editorText = nextText;
+        const editorItem = contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null;
+        const selectedText = editorItem && editorItem.selectedText !== undefined
+                ? String(editorItem.selectedText)
+                : (contentsView.editorText === undefined || contentsView.editorText === null
+                       ? ""
+                       : String(contentsView.editorText).slice(selectionRange.start, selectionRange.end));
+        if (selectedText.length === 0)
+            return false;
+        if (editorItem && editorItem.remove !== undefined && editorItem.insert !== undefined) {
+            editorItem.remove(selectionRange.start, selectionRange.end);
+            editorItem.insert(selectionRange.start, wrapTags.openTag + selectedText + wrapTags.closeTag);
+        } else {
+            const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+            const nextText = currentText.slice(0, selectionRange.start)
+                    + wrapTags.openTag
+                    + selectedText
+                    + wrapTags.closeTag
+                    + currentText.slice(selectionRange.end);
+            contentsView.editorText = nextText;
+        }
+        const nextText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
 
         editorSession.markLocalEditorAuthority();
         const saved = contentsView.persistEditorTextImmediately(nextText);
         if (!saved)
             editorSession.scheduleEditorPersistence();
 
-        const wrappedSelectionStart = selectionRange.start + openTag.length;
+        const wrappedSelectionStart = selectionRange.start;
         const wrappedSelectionEnd = wrappedSelectionStart + selectedText.length;
         if (contentEditor.select !== undefined)
             contentEditor.select(wrappedSelectionStart, wrappedSelectionEnd);
@@ -816,7 +884,9 @@ Item {
     clip: true
 
     Component.onCompleted: {
-        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        editorSession.syncEditorTextFromSelection(
+                    contentsView.selectedNoteId,
+                    contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
         contentsView.scheduleGutterRefresh(4);
     }
     Component.onDestruction: editorSession.flushPendingEditorText()
@@ -827,8 +897,9 @@ Item {
     }
     onHeightChanged: contentsView.scheduleGutterRefresh(2)
     onSelectedNoteBodyTextChanged: {
-        if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, contentsView.selectedNoteBodyText)) {
-            editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        const normalizedBodyText = contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText);
+        if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, normalizedBodyText)) {
+            editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, normalizedBodyText);
         } else {
             editorSession.scheduleEditorPersistence();
         }
@@ -837,7 +908,9 @@ Item {
     onSelectedNoteIdChanged: {
         if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
             editorSession.flushPendingEditorText();
-        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        editorSession.syncEditorTextFromSelection(
+                    contentsView.selectedNoteId,
+                    contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
@@ -1108,7 +1181,7 @@ Item {
                         showScrollBar: false
                         text: contentsView.editorText
                         textColor: LV.Theme.bodyColor
-                        textFormat: TextEdit.PlainText
+                        textFormat: TextEdit.RichText
                         visible: !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
@@ -1132,11 +1205,27 @@ Item {
 
                         anchors.fill: parent
                         clip: true
+                        readonly property real horizontalInset: contentsView.showPrintEditorLayout
+                                                               ? (Number(printEditorPage.x) || 0) + contentsView.printPaperPaddingHorizontal
+                                                               : contentsView.editorHorizontalInset
+                        readonly property real topInset: contentsView.showPrintEditorLayout
+                                                        ? (Number(printEditorPage.y) || 0) + contentsView.printPaperPaddingVertical
+                                                        : contentsView.editorDocumentStartY
+                        readonly property real bottomInset: contentsView.showPrintEditorLayout
+                                                           ? contentsView.printPaperPaddingVertical
+                                                           : contentsView.editorBottomInset
+                        readonly property real textWidth: {
+                            if (contentsView.showPrintEditorLayout) {
+                                const pageWidth = Number(printEditorPage.width) || 0;
+                                return Math.max(0, pageWidth - contentsView.printPaperPaddingHorizontal * 2);
+                            }
+                            return Math.max(0, formattedPreviewViewport.width - contentsView.editorHorizontalInset * 2);
+                        }
                         contentHeight: Math.max(
                                            height,
                                            Math.max(0, Number(formattedPreviewText.paintedHeight) || 0)
-                                               + contentsView.editorDocumentStartY
-                                               + contentsView.editorBottomInset)
+                                               + formattedPreviewViewport.topInset
+                                               + formattedPreviewViewport.bottomInset)
                         contentWidth: width
                         interactive: contentHeight > height
                         visible: contentsView.showFormattedTextRenderer
@@ -1152,10 +1241,10 @@ Item {
                             font.weight: Font.Medium
                             text: textFormatRenderer.renderedHtml
                             textFormat: Text.RichText
-                            width: Math.max(0, formattedPreviewViewport.width - contentsView.editorHorizontalInset * 2)
+                            width: formattedPreviewViewport.textWidth
                             wrapMode: Text.Wrap
-                            x: contentsView.editorHorizontalInset
-                            y: contentsView.editorDocumentStartY
+                            x: formattedPreviewViewport.horizontalInset
+                            y: formattedPreviewViewport.topInset
                         }
                     }
                     Rectangle {

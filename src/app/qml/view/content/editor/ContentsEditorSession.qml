@@ -30,6 +30,7 @@ Item {
         if (saved) {
             editorSession.pendingBodySave = false;
             bodySaveTimer.stop();
+            editorSession.localEditorAuthority = false;
             return true;
         }
         return false;

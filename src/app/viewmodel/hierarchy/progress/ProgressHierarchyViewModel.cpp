@@ -247,6 +247,7 @@ namespace
         }
         note->storageKind = updatedRecord.storageKind;
         note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodySourceText = updatedRecord.bodySourceText;
         note->bodyFirstLine = updatedRecord.bodyFirstLine;
         note->bodyHasResource = updatedRecord.bodyHasResource;
         note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
@@ -521,16 +522,18 @@ bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, cons
 
     LibraryNoteRecord& note = m_allNotes[noteIndex];
     QString normalizedBodyText;
+    QString normalizedBodySourceText;
     QString lastModifiedAt;
     QString saveError;
     if (!WhatSon::NoteBodyPersistence::persistBodyPlainText(
-            note.noteId,
-            note.noteDirectoryPath,
-            note.noteHeaderPath,
-            text,
-            &normalizedBodyText,
-            &lastModifiedAt,
-            &saveError))
+        note.noteId,
+        note.noteDirectoryPath,
+        note.noteHeaderPath,
+        text,
+        &normalizedBodyText,
+        &normalizedBodySourceText,
+        &lastModifiedAt,
+        &saveError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QString::fromLatin1(kScope),
@@ -540,6 +543,7 @@ bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, cons
     }
 
     note.bodyPlainText = normalizedBodyText;
+    note.bodySourceText = normalizedBodySourceText;
     note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
     if (!lastModifiedAt.isEmpty())
     {
@@ -881,7 +885,7 @@ LibraryNoteListItem ProgressHierarchyViewModel::buildNoteListItem(const LibraryN
     item.id = note.noteId.trimmed();
     item.primaryText = notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = note.bodyPlainText;
+    item.bodyText = note.bodySourceText.isEmpty() ? note.bodyPlainText : note.bodySourceText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;

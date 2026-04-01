@@ -217,6 +217,7 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     newNote.bookmarked = false;
     newNote.preset = false;
     newNote.bodyPlainText = createdNoteDocument.bodyPlainText;
+    newNote.bodySourceText = createdNoteDocument.bodySourceText;
     newNote.noteDirectoryPath = noteDirectoryPath;
     newNote.noteHeaderPath = headerPath;
     nextAllNotes.push_back(newNote);

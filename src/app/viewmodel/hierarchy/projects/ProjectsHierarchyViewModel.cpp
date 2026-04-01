@@ -348,6 +348,7 @@ namespace
         }
         note->storageKind = updatedRecord.storageKind;
         note->bodyPlainText = updatedRecord.bodyPlainText;
+        note->bodySourceText = updatedRecord.bodySourceText;
         note->bodyFirstLine = updatedRecord.bodyFirstLine;
         note->bodyHasResource = updatedRecord.bodyHasResource;
         note->bodyFirstResourceThumbnailUrl = updatedRecord.bodyFirstResourceThumbnailUrl;
@@ -1564,7 +1565,7 @@ LibraryNoteListItem ProjectsHierarchyViewModel::buildNoteListItem(const LibraryN
     item.id = note.noteId.trimmed();
     item.primaryText = notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
-    item.bodyText = note.bodyPlainText;
+    item.bodyText = note.bodySourceText.isEmpty() ? note.bodyPlainText : note.bodySourceText;
     item.createdAt = note.createdAt;
     item.lastModifiedAt = note.lastModifiedAt;
     item.image = note.bodyHasResource;
