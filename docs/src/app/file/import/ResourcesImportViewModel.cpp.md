@@ -1,4 +1,4 @@
-# `src/app/viewmodel/hierarchy/resources/ResourcesImportViewModel.cpp`
+# `src/app/file/import/ResourcesImportViewModel.cpp`
 
 ## Responsibility
 

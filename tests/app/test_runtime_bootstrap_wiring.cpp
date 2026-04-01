@@ -71,7 +71,7 @@ void RuntimeBootstrapWiringTest::qmlContextBinder_mustBindWorkspaceContextObject
     QObject calendarBoardStore;
     QObject systemCalendarStore;
     QObject dayCalendarViewModel;
-    QObject todoListViewModel;
+    QObject agendaViewModel;
     QObject monthCalendarViewModel;
     QObject weekCalendarViewModel;
     QObject yearCalendarViewModel;
@@ -96,7 +96,7 @@ void RuntimeBootstrapWiringTest::qmlContextBinder_mustBindWorkspaceContextObject
     objects.calendarBoardStore = &calendarBoardStore;
     objects.systemCalendarStore = &systemCalendarStore;
     objects.dayCalendarViewModel = &dayCalendarViewModel;
-    objects.todoListViewModel = &todoListViewModel;
+    objects.agendaViewModel = &agendaViewModel;
     objects.monthCalendarViewModel = &monthCalendarViewModel;
     objects.weekCalendarViewModel = &weekCalendarViewModel;
     objects.yearCalendarViewModel = &yearCalendarViewModel;
@@ -127,7 +127,7 @@ void RuntimeBootstrapWiringTest::qmlContextBinder_mustBindWorkspaceContextObject
     assertContextObject("calendarBoardStore", &calendarBoardStore);
     assertContextObject("systemCalendarStore", &systemCalendarStore);
     assertContextObject("dayCalendarViewModel", &dayCalendarViewModel);
-    assertContextObject("todoListViewModel", &todoListViewModel);
+    assertContextObject("agendaViewModel", &agendaViewModel);
     assertContextObject("monthCalendarViewModel", &monthCalendarViewModel);
     assertContextObject("weekCalendarViewModel", &weekCalendarViewModel);
     assertContextObject("yearCalendarViewModel", &yearCalendarViewModel);

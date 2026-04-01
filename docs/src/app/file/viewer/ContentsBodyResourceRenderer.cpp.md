@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsBodyResourceRenderer.cpp`
+# `src/app/file/viewer/ContentsBodyResourceRenderer.cpp`
 
 ## Responsibility
 Implements note-body resource rendering data extraction for the editor surface.

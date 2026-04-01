@@ -1,13 +1,13 @@
-# `src/app/qml/view/calendar/TodoListPage.qml`
+# `src/app/qml/view/calendar/AgendaPage.qml`
 
 ## Role
-`TodoListPage.qml` renders the Todo calendar route with date navigation, weather/location summary, all-day events,
-timed events, and task completion rows.
+`AgendaPage.qml` renders the Agenda calendar route with date navigation, weather/location summary, all-day events,
+timed events, and agenda-item completion rows.
 
 ## View Contract
-- Input: `todoListViewModel`
+- Input: `agendaViewModel`
 - Hook signal: `viewHookRequested(string reason)`
-- Hook forwarder: `requestViewHook(reason)` delegates to `todoListViewModel.requestTodoListView(reason)`
+- Hook forwarder: `requestViewHook(reason)` delegates to `agendaViewModel.requestAgendaView(reason)`
 
 ## UI Composition
 - Surface:
@@ -20,15 +20,15 @@ timed events, and task completion rows.
 - Body sections:
   - `All day`
   - `Timed`
-  - `Tasks` (checkbox-like task toggle interactions)
+  - `Agenda` (checkbox-like agenda-item toggle interactions)
 
 ## Interaction Flow
 1. `Component.onCompleted` requests `page-open`.
 2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
-3. Task toggles call `todoListViewModel.toggleTaskCompleted(...)`.
+3. Agenda-item toggles call `agendaViewModel.toggleAgendaItemCompleted(...)`.
 4. Empty sections show dedicated placeholder labels.
 
 ## Collaborators
-- `src/app/viewmodel/calendar/TodoListViewModel.hpp/.cpp`
+- `src/app/viewmodel/calendar/AgendaViewModel.hpp/.cpp`
 - `src/app/qml/view/calendar/CalendarTodayControl.qml`
 - `src/app/qml/view/panels/ContentViewLayout.qml`

@@ -5,7 +5,7 @@ Implements root context-property binding for the workspace runtime graph.
 
 ## Bound Properties
 The implementation binds all existing workspace properties used by `Main.qml` and panel/view
-modules, including hierarchy viewmodels, calendar stores/viewmodels (`todoListViewModel`, day/week/month/year),
+modules, including hierarchy viewmodels, calendar stores/viewmodels (`agendaViewModel`, day/week/month/year),
 scheduler, and panel registry.
 
 ## Test Coverage

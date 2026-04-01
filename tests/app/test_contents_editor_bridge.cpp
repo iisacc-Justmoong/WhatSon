@@ -1,4 +1,4 @@
-#include "editor/renderer/ContentsBodyResourceRenderer.hpp"
+#include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"

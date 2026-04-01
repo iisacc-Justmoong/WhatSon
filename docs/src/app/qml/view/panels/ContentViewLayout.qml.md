@@ -23,20 +23,20 @@
 - `drawerHeightDragRequested`
 - `editorTextEdited`
 - `dayCalendarOverlayCloseRequested`
-- `todoListOverlayCloseRequested`
+- `agendaOverlayCloseRequested`
 - `monthCalendarOverlayCloseRequested`
 - `weekCalendarOverlayCloseRequested`
 - `viewHookRequested`
 - `yearCalendarOverlayCloseRequested`
 
 ## Content Surface Contract
-- Imports `../calendar` as `CalendarView` and mounts todo/day/week/month/year pages through one content-surface `Loader`.
+- Imports `../calendar` as `CalendarView` and mounts agenda/day/week/month/year pages through one content-surface `Loader`.
 - Uses a `StackLayout` (`currentIndex: activeSurfaceIndex`) so the editor surface and calendar surface are switched by
   route state, not by overlay stacking.
 - Both stack children (`editorContentSurface`, `calendarContentSurface`) explicitly apply
   `Layout.fillWidth: true` and `Layout.fillHeight: true` so calendar pages occupy the full `ContentsView` slot.
 - Uses per-mode visibility/viewmodel pairs:
-  - `todoListOverlayVisible` / `todoListViewModel`
+  - `agendaOverlayVisible` / `agendaViewModel`
   - `dayCalendarOverlayVisible` / `dayCalendarViewModel`
   - `weekCalendarOverlayVisible` / `weekCalendarViewModel`
   - `monthCalendarOverlayVisible` / `monthCalendarViewModel`
@@ -45,13 +45,13 @@
   - `0` => editor (`ContentsDisplayView`)
   - `1` => calendar content surface
 - Resolves the active page by strict priority:
-  - todo
+  - agenda
   - then day
   - then week
   - then month
   - then year
 - Exposes dedicated dismiss signals for each mode:
-  - `todoListOverlayCloseRequested`
+  - `agendaOverlayCloseRequested`
   - `dayCalendarOverlayCloseRequested`
   - `weekCalendarOverlayCloseRequested`
   - `monthCalendarOverlayCloseRequested`

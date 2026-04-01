@@ -17,8 +17,8 @@
 - `DayCalendarViewModel.hpp`
 - `MonthCalendarViewModel.cpp`
 - `MonthCalendarViewModel.hpp`
-- `TodoListViewModel.cpp`
-- `TodoListViewModel.hpp`
+- `AgendaViewModel.cpp`
+- `AgendaViewModel.hpp`
 - `WeekCalendarViewModel.cpp`
 - `WeekCalendarViewModel.hpp`
 - `YearCalendarViewModel.cpp`
@@ -35,5 +35,5 @@
 ## Notes
 - `DayCalendarViewModel`, `WeekCalendarViewModel`, `MonthCalendarViewModel`, and `YearCalendarViewModel` are wired to
   the shared `src/app/calendar/CalendarBoardStore.*` backend for date/time-based event/task board semantics.
-- `TodoListViewModel` projects one date into Todo-focused section models (`allDayEvents`, `timedEvents`, `tasks`) and
-  surfaces sample location/weather payloads for the Todo route card layout.
+- `AgendaViewModel` projects one date into Agenda-focused section models (`allDayEvents`, `timedEvents`, `agendaItems`) and
+  surfaces sample location/weather payloads for the Agenda route card layout.

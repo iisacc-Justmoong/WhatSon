@@ -1,4 +1,4 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Test Qml)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Test Qml)
 
 set(WHATSON_TEST_TARGETS)
 
@@ -140,7 +140,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_runtime_bootstrap_wiring_tests)
 
 add_executable(whatson_resources_import_viewmodel_tests
         app/test_resources_import_viewmodel.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/hierarchy/resources/ResourcesImportViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/import/ResourcesImportViewModel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/hierarchy/resources/WhatSonResourcesHierarchyCreator.cpp
@@ -600,23 +600,23 @@ target_link_libraries(whatson_day_calendar_viewmodel_tests
 add_test(NAME whatson_day_calendar_viewmodel_tests COMMAND whatson_day_calendar_viewmodel_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_day_calendar_viewmodel_tests)
 
-add_executable(whatson_todo_list_viewmodel_tests
-        app/test_todo_list_viewmodel.cpp
+add_executable(whatson_agenda_viewmodel_tests
+        app/test_agenda_viewmodel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/TodoListViewModel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/AgendaViewModel.cpp
 )
-set_target_properties(whatson_todo_list_viewmodel_tests PROPERTIES AUTOMOC ON)
-target_include_directories(whatson_todo_list_viewmodel_tests
+set_target_properties(whatson_agenda_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_agenda_viewmodel_tests
         PRIVATE
         ${CMAKE_SOURCE_DIR}/src/app
 )
-target_link_libraries(whatson_todo_list_viewmodel_tests
+target_link_libraries(whatson_agenda_viewmodel_tests
         PRIVATE
         Qt6::Core
         Qt6::Test
 )
-add_test(NAME whatson_todo_list_viewmodel_tests COMMAND whatson_todo_list_viewmodel_tests)
-list(APPEND WHATSON_TEST_TARGETS whatson_todo_list_viewmodel_tests)
+add_test(NAME whatson_agenda_viewmodel_tests COMMAND whatson_agenda_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_agenda_viewmodel_tests)
 
 add_executable(whatson_week_calendar_viewmodel_tests
         app/test_week_calendar_viewmodel.cpp
@@ -803,7 +803,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_hierarchy_module_tests)
 
 add_executable(whatson_contents_editor_bridge_tests
         app/test_contents_editor_bridge.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsBodyResourceRenderer.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/viewer/ContentsBodyResourceRenderer.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsLogicalTextBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsGutterMarkerBridge.cpp
@@ -820,6 +820,25 @@ target_link_libraries(whatson_contents_editor_bridge_tests
 )
 add_test(NAME whatson_contents_editor_bridge_tests COMMAND whatson_contents_editor_bridge_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_contents_editor_bridge_tests)
+
+add_executable(whatson_resource_bitmap_viewer_tests
+        app/test_resource_bitmap_viewer.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/viewer/ImageFormatCompatibilityLayer.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/file/viewer/ResourceBitmapViewer.cpp
+)
+set_target_properties(whatson_resource_bitmap_viewer_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_resource_bitmap_viewer_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_resource_bitmap_viewer_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Test
+)
+add_test(NAME whatson_resource_bitmap_viewer_tests COMMAND whatson_resource_bitmap_viewer_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_resource_bitmap_viewer_tests)
 
 add_executable(whatson_note_deletion_bridge_tests
         app/test_focused_note_deletion_bridge.cpp

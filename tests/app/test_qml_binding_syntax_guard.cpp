@@ -349,6 +349,12 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentResourceViewerText.contains(QStringLiteral("resourceViewer.resourceRenderMode === \"image\"")),
         "ContentsResourceViewer.qml must provide in-app PDF and bitmap image rendering paths by resource render mode.");
     QVERIFY2(
+        contentResourceViewerText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")) &&
+            contentResourceViewerText.contains(QStringLiteral("ResourceBitmapViewer {")) &&
+            contentResourceViewerText.contains(QStringLiteral("bitmapViewer.bitmapRenderable")) &&
+            contentResourceViewerText.contains(QStringLiteral("bitmapViewer.incompatibilityReason")),
+        "ContentsResourceViewer.qml must route image rendering through the file/viewer bitmap-compatibility bridge.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("ContentsEditorSession {")),
         "ContentsDisplayView.qml must compose a dedicated editor-session object for debounce and selection sync.");
     QVERIFY2(

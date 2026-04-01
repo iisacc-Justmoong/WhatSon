@@ -64,8 +64,8 @@ Item {
     property var windowInteractions: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
-    property bool todoListOverlayVisible: false
-    property var todoListViewModel: null
+    property bool agendaOverlayVisible: false
+    property var agendaViewModel: null
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
     property bool weekCalendarOverlayVisible: false
@@ -73,8 +73,8 @@ Item {
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
 
-    signal todoListRequested
-    signal todoListOverlayDismissRequested
+    signal agendaRequested
+    signal agendaOverlayDismissRequested
     signal dayCalendarRequested
     signal dayCalendarOverlayDismissRequested
     signal monthCalendarRequested
@@ -329,8 +329,8 @@ Item {
         mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
     function dismissCalendarOverlaysForEditorActivation() {
-        if (mobileHierarchyPage.todoListOverlayVisible)
-            mobileHierarchyPage.todoListOverlayDismissRequested();
+        if (mobileHierarchyPage.agendaOverlayVisible)
+            mobileHierarchyPage.agendaOverlayDismissRequested();
         if (mobileHierarchyPage.dayCalendarOverlayVisible)
             mobileHierarchyPage.dayCalendarOverlayDismissRequested();
         if (mobileHierarchyPage.weekCalendarOverlayVisible)
@@ -375,10 +375,10 @@ Item {
         mobileHierarchyPage.routeToCanonicalEditor();
         return true;
     }
-    function requestOpenTodoList() {
+    function requestOpenAgenda() {
         if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
             return false;
-        mobileHierarchyPage.todoListRequested();
+        mobileHierarchyPage.agendaRequested();
         return true;
     }
     function requestOpenDayCalendar() {
@@ -540,7 +540,7 @@ Item {
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
         onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()
         onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()
-        onTodoListRequested: mobileHierarchyPage.requestOpenTodoList()
+        onAgendaRequested: mobileHierarchyPage.requestOpenAgenda()
         onDayCalendarRequested: mobileHierarchyPage.requestOpenDayCalendar()
         onMonthCalendarRequested: mobileHierarchyPage.requestOpenMonthCalendar()
         onStatusSearchSubmitted: function (text) {
@@ -699,8 +699,8 @@ Item {
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
             resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel
-            todoListOverlayVisible: mobileHierarchyPage.todoListOverlayVisible
-            todoListViewModel: mobileHierarchyPage.todoListViewModel
+            agendaOverlayVisible: mobileHierarchyPage.agendaOverlayVisible
+            agendaViewModel: mobileHierarchyPage.agendaViewModel
             dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible
             dayCalendarViewModel: mobileHierarchyPage.dayCalendarViewModel
             monthCalendarOverlayVisible: mobileHierarchyPage.monthCalendarOverlayVisible
@@ -711,7 +711,7 @@ Item {
             yearCalendarViewModel: mobileHierarchyPage.yearCalendarViewModel
 
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
-            onTodoListOverlayCloseRequested: mobileHierarchyPage.todoListOverlayDismissRequested()
+            onAgendaOverlayCloseRequested: mobileHierarchyPage.agendaOverlayDismissRequested()
             onDayCalendarOverlayCloseRequested: mobileHierarchyPage.dayCalendarOverlayDismissRequested()
             onMonthCalendarOverlayCloseRequested: mobileHierarchyPage.monthCalendarOverlayDismissRequested()
             onWeekCalendarOverlayCloseRequested: mobileHierarchyPage.weekCalendarOverlayDismissRequested()

@@ -1,23 +1,23 @@
-# `src/app/viewmodel/calendar/TodoListViewModel.cpp`
+# `src/app/viewmodel/calendar/AgendaViewModel.cpp`
 
 ## Role
-Implements Todo list section projection (`all-day`, `timed`, `tasks`) and sample location/weather payload generation for
-`TodoListViewModel`.
+Implements Agenda list section projection (`all-day`, `timed`, `agendaItems`) and sample location/weather payload generation for
+`AgendaViewModel`.
 
 ## Behavior Summary
 - Initializes date cursor to `QDate::currentDate()`.
-- Rebuilds Todo payload when:
+- Rebuilds Agenda payload when:
   - displayed date changes,
   - board store pointer changes,
   - board emits `entriesChanged()`,
-  - `requestTodoListView(...)` is invoked.
-- Emits debug traces for Todo view requests under the `calendar.todo` scope.
+  - `requestAgendaView(...)` is invoked.
+- Emits debug traces for Agenda view requests under the `calendar.agenda` scope.
 
 ## Section Projection Rules
 - `allDayEvents`: only `event` entries at `00:00`.
 - `timedEvents`: `event` entries except all-day rows.
-- `tasks`: all `task` entries with computed status labels.
-- `summary`: per-section counters plus completed/remaining task counts.
+- `agendaItems`: all `task` entries with computed status labels.
+- `summary`: per-section counters plus completed/remaining agenda-item counts.
 
 ## Weather/Location Objects
 - Location is stored as a dedicated internal model and exposed as a QML-facing `QVariantMap`.
@@ -25,5 +25,5 @@ Implements Todo list section projection (`all-day`, `timed`, `tasks`) and sample
 - Optional manual override is supported through `setWeather(...)`.
 
 ## Coverage
-- `tests/app/test_todo_list_viewmodel.cpp` validates defaults, section splitting, request signal emission, and
+- `tests/app/test_agenda_viewmodel.cpp` validates defaults, section splitting, request signal emission, and
   completion toggling.

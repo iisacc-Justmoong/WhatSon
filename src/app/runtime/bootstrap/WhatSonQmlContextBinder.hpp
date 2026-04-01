@@ -25,7 +25,7 @@ namespace WhatSon::Runtime::Bootstrap
         QObject* calendarBoardStore = nullptr;
         QObject* systemCalendarStore = nullptr;
         QObject* dayCalendarViewModel = nullptr;
-        QObject* todoListViewModel = nullptr;
+        QObject* agendaViewModel = nullptr;
         QObject* monthCalendarViewModel = nullptr;
         QObject* weekCalendarViewModel = nullptr;
         QObject* yearCalendarViewModel = nullptr;

@@ -1,4 +1,4 @@
-#include "TodoListViewModel.hpp"
+#include "AgendaViewModel.hpp"
 
 #include "calendar/CalendarBoardStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
@@ -10,7 +10,7 @@
 #include <QVariantMap>
 #include <QtGlobal>
 
-TodoListViewModel::TodoListViewModel(QObject* parent)
+AgendaViewModel::AgendaViewModel(QObject* parent)
     : QObject(parent)
       , m_displayedDateIso(QDate::currentDate().toString(Qt::ISODate))
 {
@@ -19,50 +19,50 @@ TodoListViewModel::TodoListViewModel(QObject* parent)
     m_locationModel.countryCode = QStringLiteral("KR");
     m_locationModel.timeZoneId = QStringLiteral("Asia/Seoul");
 
-    rebuildTodoList();
+    rebuildAgenda();
 }
 
-QString TodoListViewModel::displayedDateIso() const
+QString AgendaViewModel::displayedDateIso() const
 {
     return m_displayedDateIso;
 }
 
-QString TodoListViewModel::dateLabel() const
+QString AgendaViewModel::dateLabel() const
 {
     return m_dateLabel;
 }
 
-QVariantMap TodoListViewModel::location() const
+QVariantMap AgendaViewModel::location() const
 {
     return toLocationVariant(m_locationModel);
 }
 
-QVariantMap TodoListViewModel::weather() const
+QVariantMap AgendaViewModel::weather() const
 {
     return toWeatherVariant(m_weatherModel);
 }
 
-QVariantList TodoListViewModel::allDayEvents() const
+QVariantList AgendaViewModel::allDayEvents() const
 {
     return m_allDayEvents;
 }
 
-QVariantList TodoListViewModel::timedEvents() const
+QVariantList AgendaViewModel::timedEvents() const
 {
     return m_timedEvents;
 }
 
-QVariantList TodoListViewModel::tasks() const
+QVariantList AgendaViewModel::agendaItems() const
 {
-    return m_tasks;
+    return m_agendaItems;
 }
 
-QVariantMap TodoListViewModel::summary() const
+QVariantMap AgendaViewModel::summary() const
 {
     return m_summary;
 }
 
-void TodoListViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
+void AgendaViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
 {
     if (m_calendarBoardStore == calendarBoardStore)
     {
@@ -79,14 +79,14 @@ void TodoListViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardS
     {
         connect(m_calendarBoardStore, &CalendarBoardStore::entriesChanged, this, [this]()
         {
-            rebuildTodoList();
+            rebuildAgenda();
         });
     }
 
-    rebuildTodoList();
+    rebuildAgenda();
 }
 
-void TodoListViewModel::setDisplayedDateIso(const QString& dateIso)
+void AgendaViewModel::setDisplayedDateIso(const QString& dateIso)
 {
     QDate parsedDate;
     if (!parseIsoDate(dateIso, &parsedDate))
@@ -102,10 +102,10 @@ void TodoListViewModel::setDisplayedDateIso(const QString& dateIso)
 
     m_displayedDateIso = normalizedDateIso;
     emit displayedDateIsoChanged();
-    rebuildTodoList();
+    rebuildAgenda();
 }
 
-void TodoListViewModel::shiftDay(int deltaDays)
+void AgendaViewModel::shiftDay(int deltaDays)
 {
     if (deltaDays == 0)
     {
@@ -121,7 +121,7 @@ void TodoListViewModel::shiftDay(int deltaDays)
     setDisplayedDateIso(baseDate.addDays(deltaDays).toString(Qt::ISODate));
 }
 
-void TodoListViewModel::requestTodoListView(const QString& reason)
+void AgendaViewModel::requestAgendaView(const QString& reason)
 {
     const QString normalizedReason = reason.trimmed().isEmpty()
                                          ? QStringLiteral("manual")
@@ -129,15 +129,15 @@ void TodoListViewModel::requestTodoListView(const QString& reason)
 
     WhatSon::Debug::traceSelf(
         this,
-        QStringLiteral("calendar.todo"),
-        QStringLiteral("todoList.request"),
+        QStringLiteral("calendar.agenda"),
+        QStringLiteral("agenda.request"),
         QStringLiteral("date=%1 reason=%2").arg(m_displayedDateIso, normalizedReason));
 
-    emit todoListRequested(normalizedReason);
-    rebuildTodoList();
+    emit agendaRequested(normalizedReason);
+    rebuildAgenda();
 }
 
-bool TodoListViewModel::addEvent(
+bool AgendaViewModel::addEvent(
     const QString& dateIso,
     const QString& timeText,
     const QString& title,
@@ -152,7 +152,7 @@ bool TodoListViewModel::addEvent(
     return m_calendarBoardStore->addEvent(resolvedDateIso, timeText, title, detail);
 }
 
-bool TodoListViewModel::addTask(
+bool AgendaViewModel::addAgendaItem(
     const QString& dateIso,
     const QString& timeText,
     const QString& title,
@@ -167,7 +167,7 @@ bool TodoListViewModel::addTask(
     return m_calendarBoardStore->addTask(resolvedDateIso, timeText, title, detail);
 }
 
-QVariantList TodoListViewModel::entriesForDate(const QString& dateIso) const
+QVariantList AgendaViewModel::entriesForDate(const QString& dateIso) const
 {
     if (!m_calendarBoardStore)
     {
@@ -178,7 +178,7 @@ QVariantList TodoListViewModel::entriesForDate(const QString& dateIso) const
     return m_calendarBoardStore->entriesForDate(resolvedDateIso);
 }
 
-bool TodoListViewModel::removeEntry(const QString& entryId)
+bool AgendaViewModel::removeEntry(const QString& entryId)
 {
     if (!m_calendarBoardStore)
     {
@@ -188,7 +188,7 @@ bool TodoListViewModel::removeEntry(const QString& entryId)
     return m_calendarBoardStore->removeEntry(entryId);
 }
 
-bool TodoListViewModel::setTaskCompleted(const QString& entryId, bool completed)
+bool AgendaViewModel::setAgendaItemCompleted(const QString& entryId, bool completed)
 {
     if (!m_calendarBoardStore)
     {
@@ -198,7 +198,7 @@ bool TodoListViewModel::setTaskCompleted(const QString& entryId, bool completed)
     return m_calendarBoardStore->setTaskCompleted(entryId, completed);
 }
 
-bool TodoListViewModel::toggleTaskCompleted(const QString& entryId)
+bool AgendaViewModel::toggleAgendaItemCompleted(const QString& entryId)
 {
     if (!m_calendarBoardStore)
     {
@@ -225,13 +225,13 @@ bool TodoListViewModel::toggleTaskCompleted(const QString& entryId)
     return false;
 }
 
-void TodoListViewModel::setLocation(
+void AgendaViewModel::setLocation(
     const QString& cityName,
     const QString& regionName,
     const QString& countryCode,
     const QString& timeZoneId)
 {
-    const TodoLocationModel nextModel{
+    const AgendaLocationModel nextModel{
         cityName.trimmed(),
         regionName.trimmed(),
         countryCode.trimmed().toUpper(),
@@ -246,17 +246,17 @@ void TodoListViewModel::setLocation(
     }
 
     m_locationModel = nextModel;
-    emit todoListChanged();
+    emit agendaChanged();
 }
 
-void TodoListViewModel::setWeather(
+void AgendaViewModel::setWeather(
     const QString& conditionText,
     int temperatureCelsius,
     int highCelsius,
     int lowCelsius,
     int precipitationPercent)
 {
-    TodoWeatherModel nextWeather;
+    AgendaWeatherModel nextWeather;
     nextWeather.conditionText = conditionText.trimmed();
     nextWeather.iconName = QStringLiteral("weatherManual");
     nextWeather.temperatureCelsius = temperatureCelsius;
@@ -276,10 +276,10 @@ void TodoListViewModel::setWeather(
 
     m_customWeatherEnabled = true;
     m_weatherModel = nextWeather;
-    emit todoListChanged();
+    emit agendaChanged();
 }
 
-bool TodoListViewModel::parseIsoDate(const QString& dateIso, QDate* outDate)
+bool AgendaViewModel::parseIsoDate(const QString& dateIso, QDate* outDate)
 {
     if (!outDate)
     {
@@ -296,7 +296,7 @@ bool TodoListViewModel::parseIsoDate(const QString& dateIso, QDate* outDate)
     return true;
 }
 
-QString TodoListViewModel::formatDateLabel(const QDate& date, const QLocale& locale)
+QString AgendaViewModel::formatDateLabel(const QDate& date, const QLocale& locale)
 {
     QString label = locale.toString(date, QStringLiteral("dddd, MMMM d")).trimmed();
     if (!label.isEmpty())
@@ -313,7 +313,7 @@ QString TodoListViewModel::formatDateLabel(const QDate& date, const QLocale& loc
     return date.toString(Qt::ISODate);
 }
 
-bool TodoListViewModel::isAllDayEvent(const QVariantMap& entry)
+bool AgendaViewModel::isAllDayEvent(const QVariantMap& entry)
 {
     if (entry.value(QStringLiteral("type")).toString() != QStringLiteral("event"))
     {
@@ -324,7 +324,7 @@ bool TodoListViewModel::isAllDayEvent(const QVariantMap& entry)
     return entryTime.isValid() && entryTime.hour() == 0 && entryTime.minute() == 0;
 }
 
-QVariantMap TodoListViewModel::toEventModel(const QVariantMap& entry, bool allDay)
+QVariantMap AgendaViewModel::toEventModel(const QVariantMap& entry, bool allDay)
 {
     QVariantMap model = entry;
     model.insert(QStringLiteral("isAllDay"), allDay);
@@ -334,7 +334,7 @@ QVariantMap TodoListViewModel::toEventModel(const QVariantMap& entry, bool allDa
     return model;
 }
 
-QVariantMap TodoListViewModel::toTaskModel(const QVariantMap& entry)
+QVariantMap AgendaViewModel::toAgendaItemModel(const QVariantMap& entry)
 {
     QVariantMap model = entry;
     model.insert(
@@ -345,7 +345,7 @@ QVariantMap TodoListViewModel::toTaskModel(const QVariantMap& entry)
     return model;
 }
 
-QVariantMap TodoListViewModel::toLocationVariant(const TodoLocationModel& model)
+QVariantMap AgendaViewModel::toLocationVariant(const AgendaLocationModel& model)
 {
     const QString locationTitle = !model.regionName.isEmpty()
                                       ? QStringLiteral("%1, %2").arg(model.cityName, model.regionName)
@@ -360,7 +360,7 @@ QVariantMap TodoListViewModel::toLocationVariant(const TodoLocationModel& model)
     };
 }
 
-QVariantMap TodoListViewModel::toWeatherVariant(const TodoWeatherModel& model)
+QVariantMap AgendaViewModel::toWeatherVariant(const AgendaWeatherModel& model)
 {
     const QString temperatureText = QStringLiteral("%1C").arg(model.temperatureCelsius);
     const QString highLowText = QStringLiteral("H:%1C  L:%2C").arg(model.highCelsius).arg(model.lowCelsius);
@@ -379,7 +379,7 @@ QVariantMap TodoListViewModel::toWeatherVariant(const TodoWeatherModel& model)
     };
 }
 
-TodoListViewModel::TodoWeatherModel TodoListViewModel::buildSampleWeatherForDate(const QDate& date)
+AgendaViewModel::AgendaWeatherModel AgendaViewModel::buildSampleWeatherForDate(const QDate& date)
 {
     static const QStringList conditions{
         QStringLiteral("Sunny"),
@@ -393,7 +393,7 @@ TodoListViewModel::TodoWeatherModel TodoListViewModel::buildSampleWeatherForDate
     const int daySeed = qMax(1, date.dayOfYear());
     const int conditionIndex = daySeed % conditions.size();
 
-    TodoWeatherModel model;
+    AgendaWeatherModel model;
     model.conditionText = conditions.at(conditionIndex);
     model.temperatureCelsius = 14 + (daySeed % 12);
     model.highCelsius = model.temperatureCelsius + 3;
@@ -424,7 +424,7 @@ TodoListViewModel::TodoWeatherModel TodoListViewModel::buildSampleWeatherForDate
     return model;
 }
 
-void TodoListViewModel::rebuildTodoList()
+void AgendaViewModel::rebuildAgenda()
 {
     QDate displayedDate;
     if (!parseIsoDate(m_displayedDateIso, &displayedDate))
@@ -441,8 +441,8 @@ void TodoListViewModel::rebuildTodoList()
 
     QVariantList nextAllDayEvents;
     QVariantList nextTimedEvents;
-    QVariantList nextTasks;
-    int completedTaskCount = 0;
+    QVariantList nextAgendaItems;
+    int completedAgendaItemCount = 0;
 
     for (const QVariant& entryValue : entries)
     {
@@ -467,22 +467,22 @@ void TodoListViewModel::rebuildTodoList()
         {
             if (entry.value(QStringLiteral("completed")).toBool())
             {
-                completedTaskCount += 1;
+                completedAgendaItemCount += 1;
             }
-            nextTasks.push_back(toTaskModel(entry));
+            nextAgendaItems.push_back(toAgendaItemModel(entry));
         }
     }
 
     const QString nextDateLabel = formatDateLabel(displayedDate, locale);
-    const TodoWeatherModel nextWeatherModel = m_customWeatherEnabled
-                                                  ? m_weatherModel
-                                                  : buildSampleWeatherForDate(displayedDate);
+    const AgendaWeatherModel nextWeatherModel = m_customWeatherEnabled
+                                                    ? m_weatherModel
+                                                    : buildSampleWeatherForDate(displayedDate);
     const QVariantMap nextSummary{
         {QStringLiteral("allDayEventCount"), nextAllDayEvents.size()},
         {QStringLiteral("timedEventCount"), nextTimedEvents.size()},
-        {QStringLiteral("taskCount"), nextTasks.size()},
-        {QStringLiteral("completedTaskCount"), completedTaskCount},
-        {QStringLiteral("remainingTaskCount"), qMax(0, nextTasks.size() - completedTaskCount)},
+        {QStringLiteral("agendaItemCount"), nextAgendaItems.size()},
+        {QStringLiteral("completedAgendaItemCount"), completedAgendaItemCount},
+        {QStringLiteral("remainingAgendaItemCount"), qMax(0, nextAgendaItems.size() - completedAgendaItemCount)},
         {QStringLiteral("entryCount"), entries.size()}
     };
 
@@ -495,18 +495,18 @@ void TodoListViewModel::rebuildTodoList()
         || m_weatherModel.precipitationPercent != nextWeatherModel.precipitationPercent
         || m_allDayEvents != nextAllDayEvents
         || m_timedEvents != nextTimedEvents
-        || m_tasks != nextTasks
+        || m_agendaItems != nextAgendaItems
         || m_summary != nextSummary;
 
     m_dateLabel = nextDateLabel;
     m_weatherModel = nextWeatherModel;
     m_allDayEvents = nextAllDayEvents;
     m_timedEvents = nextTimedEvents;
-    m_tasks = nextTasks;
+    m_agendaItems = nextAgendaItems;
     m_summary = nextSummary;
 
     if (changed)
     {
-        emit todoListChanged();
+        emit agendaChanged();
     }
 }

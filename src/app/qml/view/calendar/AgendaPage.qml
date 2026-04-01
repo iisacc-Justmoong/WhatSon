@@ -5,29 +5,29 @@ import QtQuick.Layouts
 import LVRS 1.0 as LV
 
 Rectangle {
-    id: todoListPage
+    id: agendaPage
 
-    readonly property var allDayModels: todoVm && todoVm.allDayEvents ? todoVm.allDayEvents : []
-    readonly property var locationModel: todoVm && todoVm.location ? todoVm.location : ({})
-    readonly property var summaryModel: todoVm && todoVm.summary ? todoVm.summary : ({})
-    readonly property var taskModels: todoVm && todoVm.tasks ? todoVm.tasks : []
-    readonly property var timedModels: todoVm && todoVm.timedEvents ? todoVm.timedEvents : []
-    readonly property var todoVm: todoListViewModel
-    readonly property var weatherModel: todoVm && todoVm.weather ? todoVm.weather : ({})
-    property var todoListViewModel: null
+    readonly property var allDayModels: agendaVm && agendaVm.allDayEvents ? agendaVm.allDayEvents : []
+    readonly property var locationModel: agendaVm && agendaVm.location ? agendaVm.location : ({})
+    readonly property var summaryModel: agendaVm && agendaVm.summary ? agendaVm.summary : ({})
+    readonly property var agendaItemModels: agendaVm && agendaVm.agendaItems ? agendaVm.agendaItems : []
+    readonly property var timedModels: agendaVm && agendaVm.timedEvents ? agendaVm.timedEvents : []
+    readonly property var agendaVm: agendaViewModel
+    readonly property var weatherModel: agendaVm && agendaVm.weather ? agendaVm.weather : ({})
+    property var agendaViewModel: null
 
     signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (todoVm && todoVm.requestTodoListView)
-            todoVm.requestTodoListView(hookReason);
+        if (agendaVm && agendaVm.requestAgendaView)
+            agendaVm.requestAgendaView(hookReason);
         viewHookRequested(hookReason);
     }
     function jumpToToday() {
-        if (todoVm && todoVm.setDisplayedDateIso)
-            todoVm.setDisplayedDateIso(Qt.formatDateTime(new Date(), "yyyy-MM-dd"));
-        todoListPage.requestViewHook("today");
+        if (agendaVm && agendaVm.setDisplayedDateIso)
+            agendaVm.setDisplayedDateIso(Qt.formatDateTime(new Date(), "yyyy-MM-dd"));
+        agendaPage.requestViewHook("today");
     }
     function summaryCountValue(key) {
         if (!summaryModel || summaryModel[key] === undefined)
@@ -40,11 +40,11 @@ Rectangle {
         const text = String(value).trim();
         return text.length > 0 ? text : fallback;
     }
-    function toggleTask(taskModel) {
-        if (!todoVm || !todoVm.toggleTaskCompleted || !taskModel || taskModel.id === undefined)
+    function toggleAgendaItem(agendaItemModel) {
+        if (!agendaVm || !agendaVm.toggleAgendaItemCompleted || !agendaItemModel || agendaItemModel.id === undefined)
             return;
-        todoVm.toggleTaskCompleted(String(taskModel.id));
-        todoListPage.requestViewHook("toggle-task");
+        agendaVm.toggleAgendaItemCompleted(String(agendaItemModel.id));
+        agendaPage.requestViewHook("toggle-agenda-item");
     }
 
     color: "transparent"
@@ -74,27 +74,27 @@ Rectangle {
                     spacing: LV.Theme.gap4
 
                     CalendarTodayControl {
-                        id: todoTodayControl
+                        id: agendaTodayControl
 
                         Layout.alignment: Qt.AlignVCenter
 
                         onPreviousRequested: {
-                            if (todoVm && todoVm.shiftDay)
-                                todoVm.shiftDay(-1);
-                            todoListPage.requestViewHook("previous-day");
+                            if (agendaVm && agendaVm.shiftDay)
+                                agendaVm.shiftDay(-1);
+                            agendaPage.requestViewHook("previous-day");
                         }
-                        onTodayRequested: todoListPage.jumpToToday()
+                        onTodayRequested: agendaPage.jumpToToday()
                         onNextRequested: {
-                            if (todoVm && todoVm.shiftDay)
-                                todoVm.shiftDay(1);
-                            todoListPage.requestViewHook("next-day");
+                            if (agendaVm && agendaVm.shiftDay)
+                                agendaVm.shiftDay(1);
+                            agendaPage.requestViewHook("next-day");
                         }
                     }
                     LV.Label {
                         Layout.alignment: Qt.AlignVCenter
                         color: LV.Theme.titleHeaderColor
                         font.weight: Font.Medium
-                        text: todoVm && todoVm.dateLabel ? String(todoVm.dateLabel) : "Todo"
+                        text: agendaVm && agendaVm.dateLabel ? String(agendaVm.dateLabel) : "Agenda"
                     }
                     Item {
                         Layout.fillWidth: true
@@ -102,7 +102,7 @@ Rectangle {
                     LV.Label {
                         Layout.alignment: Qt.AlignVCenter
                         color: LV.Theme.descriptionColor
-                        text: todoListPage.stringValue(todoListPage.locationModel.displayName, "")
+                        text: agendaPage.stringValue(agendaPage.locationModel.displayName, "")
                     }
                 }
                 Rectangle {
@@ -122,18 +122,18 @@ Rectangle {
                             color: LV.Theme.titleHeaderColor
                             font.pixelSize: 20
                             font.weight: Font.Medium
-                            text: todoListPage.stringValue(todoListPage.weatherModel.temperatureText, "--C")
+                            text: agendaPage.stringValue(agendaPage.weatherModel.temperatureText, "--C")
                         }
                         LV.VStack {
                             spacing: LV.Theme.gapNone
 
                             LV.Label {
                                 color: LV.Theme.descriptionColor
-                                text: todoListPage.stringValue(todoListPage.weatherModel.conditionText, "Weather")
+                                text: agendaPage.stringValue(agendaPage.weatherModel.conditionText, "Weather")
                             }
                             LV.Label {
                                 color: LV.Theme.descriptionColor
-                                text: todoListPage.stringValue(todoListPage.weatherModel.highLowText, "")
+                                text: agendaPage.stringValue(agendaPage.weatherModel.highLowText, "")
                             }
                         }
                         Item {
@@ -141,7 +141,7 @@ Rectangle {
                         }
                         LV.Label {
                             color: LV.Theme.descriptionColor
-                            text: "Rain " + todoListPage.stringValue(todoListPage.weatherModel.precipitationText, "0%")
+                            text: "Rain " + agendaPage.stringValue(agendaPage.weatherModel.precipitationText, "0%")
                         }
                     }
                 }
@@ -187,16 +187,16 @@ Rectangle {
                             }
                             LV.Label {
                                 color: LV.Theme.descriptionColor
-                                text: "(" + String(todoListPage.summaryCountValue("allDayEventCount")) + ")"
+                                text: "(" + String(agendaPage.summaryCountValue("allDayEventCount")) + ")"
                             }
                         }
                         LV.Label {
                             color: LV.Theme.descriptionColor
                             text: "No all day events"
-                            visible: todoListPage.allDayModels.length === 0
+                            visible: agendaPage.allDayModels.length === 0
                         }
                         Repeater {
-                            model: todoListPage.allDayModels
+                            model: agendaPage.allDayModels
 
                             Rectangle {
                                 id: allDayItem
@@ -214,7 +214,7 @@ Rectangle {
                                     anchors.fill: parent
                                     anchors.margins: LV.Theme.gap3
                                     color: LV.Theme.titleHeaderColor
-                                    text: todoListPage.stringValue(
+                                    text: agendaPage.stringValue(
                                               allDayItem.modelData && allDayItem.modelData.title,
                                               "Untitled")
                                     wrapMode: Text.WordWrap
@@ -246,16 +246,16 @@ Rectangle {
                             }
                             LV.Label {
                                 color: LV.Theme.descriptionColor
-                                text: "(" + String(todoListPage.summaryCountValue("timedEventCount")) + ")"
+                                text: "(" + String(agendaPage.summaryCountValue("timedEventCount")) + ")"
                             }
                         }
                         LV.Label {
                             color: LV.Theme.descriptionColor
                             text: "No timed events"
-                            visible: todoListPage.timedModels.length === 0
+                            visible: agendaPage.timedModels.length === 0
                         }
                         Repeater {
-                            model: todoListPage.timedModels
+                            model: agendaPage.timedModels
 
                             Rectangle {
                                 id: timedItem
@@ -276,14 +276,14 @@ Rectangle {
 
                                     LV.Label {
                                         color: LV.Theme.descriptionColor
-                                        text: todoListPage.stringValue(
+                                        text: agendaPage.stringValue(
                                                   timedItem.modelData && timedItem.modelData.timeLabel,
                                                   "")
                                         width: LV.Theme.gap24 * 2
                                     }
                                     LV.Label {
                                         color: LV.Theme.titleHeaderColor
-                                        text: todoListPage.stringValue(
+                                        text: agendaPage.stringValue(
                                                   timedItem.modelData && timedItem.modelData.title,
                                                   "Untitled")
                                         wrapMode: Text.WordWrap
@@ -295,12 +295,12 @@ Rectangle {
                 }
                 Rectangle {
                     color: LV.Theme.panelBackground10
-                    height: taskColumn.implicitHeight + LV.Theme.gap6
+                    height: agendaItemColumn.implicitHeight + LV.Theme.gap6
                     radius: LV.Theme.radiusSm
                     width: parent.width
 
                     Column {
-                        id: taskColumn
+                        id: agendaItemColumn
 
                         anchors.fill: parent
                         anchors.margins: LV.Theme.gap4
@@ -312,48 +312,48 @@ Rectangle {
                             LV.Label {
                                 color: LV.Theme.titleHeaderColor
                                 font.weight: Font.Medium
-                                text: "Tasks"
+                                text: "Agenda"
                             }
                             LV.Label {
                                 color: LV.Theme.descriptionColor
-                                text: String(todoListPage.summaryCountValue("completedTaskCount"))
+                                text: String(agendaPage.summaryCountValue("completedAgendaItemCount"))
                                       + "/"
-                                      + String(todoListPage.summaryCountValue("taskCount"))
+                                      + String(agendaPage.summaryCountValue("agendaItemCount"))
                             }
                         }
                         LV.Label {
                             color: LV.Theme.descriptionColor
-                            text: "No tasks"
-                            visible: todoListPage.taskModels.length === 0
+                            text: "No agenda items"
+                            visible: agendaPage.agendaItemModels.length === 0
                         }
                         Repeater {
-                            model: todoListPage.taskModels
+                            model: agendaPage.agendaItemModels
 
                             Rectangle {
-                                id: taskItem
+                                id: agendaItem
 
                                 required property var modelData
-                                readonly property bool completed: taskItem.modelData
-                                                                 && taskItem.modelData.completed === true
+                                readonly property bool completed: agendaItem.modelData
+                                                                 && agendaItem.modelData.completed === true
 
-                                color: taskItem.completed ? LV.Theme.panelBackground08 : LV.Theme.panelBackground11
-                                height: taskRow.implicitHeight + LV.Theme.gap4
+                                color: agendaItem.completed ? LV.Theme.panelBackground08 : LV.Theme.panelBackground11
+                                height: agendaItemRow.implicitHeight + LV.Theme.gap4
                                 radius: LV.Theme.radiusSm
                                 width: parent.width
 
                                 LV.HStack {
-                                    id: taskRow
+                                    id: agendaItemRow
 
                                     anchors.fill: parent
                                     anchors.margins: LV.Theme.gap3
                                     spacing: LV.Theme.gap3
 
                                     Rectangle {
-                                        id: taskToggle
+                                        id: agendaItemToggle
 
                                         border.color: LV.Theme.descriptionColor
                                         border.width: Math.max(1, LV.Theme.strokeThin)
-                                        color: taskItem.completed ? LV.Theme.primary : "transparent"
+                                        color: agendaItem.completed ? LV.Theme.primary : "transparent"
                                         height: LV.Theme.gap8
                                         radius: height / 2
                                         width: LV.Theme.gap8
@@ -362,13 +362,13 @@ Rectangle {
                                             anchors.centerIn: parent
                                             color: LV.Theme.panelBackground01
                                             font.pixelSize: 10
-                                            text: taskItem.completed ? "\u2713" : ""
+                                            text: agendaItem.completed ? "\u2713" : ""
                                         }
                                         MouseArea {
                                             anchors.fill: parent
 
                                             onClicked: {
-                                                todoListPage.toggleTask(taskItem.modelData);
+                                                agendaPage.toggleAgendaItem(agendaItem.modelData);
                                             }
                                         }
                                     }
@@ -377,15 +377,15 @@ Rectangle {
 
                                         LV.Label {
                                             color: LV.Theme.titleHeaderColor
-                                            text: todoListPage.stringValue(
-                                                      taskItem.modelData && taskItem.modelData.title,
+                                            text: agendaPage.stringValue(
+                                                      agendaItem.modelData && agendaItem.modelData.title,
                                                       "Untitled")
                                             wrapMode: Text.WordWrap
                                         }
                                         LV.Label {
                                             color: LV.Theme.descriptionColor
-                                            text: todoListPage.stringValue(
-                                                      taskItem.modelData && taskItem.modelData.time,
+                                            text: agendaPage.stringValue(
+                                                      agendaItem.modelData && agendaItem.modelData.time,
                                                       "")
                                         }
                                     }

@@ -29,7 +29,7 @@
 ### Signals
 - `compactAddFolderRequested`
 - `compactLeadingActionRequested`
-- `todoListRequested`
+- `agendaRequested`
 - `toggleDetailPanelRequested`
 - `toggleSidebarRequested`
 - `viewHookRequested`
@@ -40,8 +40,8 @@
 - Compact mobile right-group contract keeps two independent actions:
   one `nodesnewFolder` add-folder button and one mode-specific context-menu button loaded from the
   active View/Edit/Control application bar component.
-- `handleApplicationBarViewHook(...)` now maps `todo-list` reasons into `todoListRequested()` so both
-  View/Edit menus and the calendar icon row can open the Todo route through shared wiring.
+- `handleApplicationBarViewHook(...)` now maps `agenda` reasons into `agendaRequested()` so both
+  View/Edit menus and the calendar icon row can open the Agenda route through shared wiring.
 
 ## Intended Detailed Sections
 - Responsibility and business role

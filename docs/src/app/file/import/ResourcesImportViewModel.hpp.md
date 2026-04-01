@@ -1,4 +1,4 @@
-# `src/app/viewmodel/hierarchy/resources/ResourcesImportViewModel.hpp`
+# `src/app/file/import/ResourcesImportViewModel.hpp`
 
 ## Role
 

@@ -1,4 +1,4 @@
-# `src/app/editor/renderer/ContentsBodyResourceRenderer.hpp`
+# `src/app/file/viewer/ContentsBodyResourceRenderer.hpp`
 
 ## Responsibility
 Declares the body-resource renderer bridge that maps note-local `<resource ...>` tags into a QML-facing render model.

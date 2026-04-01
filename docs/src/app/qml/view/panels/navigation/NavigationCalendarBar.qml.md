@@ -15,7 +15,7 @@
 
 ### Object IDs
 - `calendarBar`
-- `todoListButton`
+- `agendaButton`
 - `dailyCalButton`
 - `weeklyCalButton`
 - `monthlyCalButton`
@@ -28,7 +28,7 @@
 - `viewHookRequested(string reason)`
 
 ## Interaction Contract
-- The left-most Todo icon (`todoListButton`) emits `open-todo-list` through `requestViewHook(...)`.
+- The left-most Agenda icon (`agendaButton`) emits `open-agenda` through `requestViewHook(...)`.
 - The year icon (`yearlyCalButton`) emits `open-yearly-calendar` through `requestViewHook(...)`.
 - The signal now carries the hook reason string so parent wrappers can route the action into content overlays.
 

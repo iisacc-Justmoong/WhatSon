@@ -6,7 +6,7 @@
 
 ## Scope
 - Mirrored source directory: `src/app/file`
-- Child directories: 11
+- Child directories: 12
 - Child files: 1
 
 ## Child Directories
@@ -21,6 +21,7 @@
 - `statistic`
 - `sync`
 - `validator`
+- `viewer`
 
 ## Child Files
 - `WhatSonDebugTrace.hpp`

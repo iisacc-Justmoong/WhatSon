@@ -33,30 +33,30 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
-    property bool todoListOverlayVisible: false
-    property var todoListViewModel: null
+    property bool agendaOverlayVisible: false
+    property var agendaViewModel: null
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
-    readonly property bool calendarOverlayVisible: contentViewLayout.todoListOverlayVisible
+    readonly property bool calendarOverlayVisible: contentViewLayout.agendaOverlayVisible
                                                  || contentViewLayout.dayCalendarOverlayVisible
                                                  || contentViewLayout.weekCalendarOverlayVisible
                                                  || contentViewLayout.monthCalendarOverlayVisible
                                                  || contentViewLayout.yearCalendarOverlayVisible
-    readonly property bool showingTodoListOverlay: contentViewLayout.todoListOverlayVisible
-    readonly property bool showingDayCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+    readonly property bool showingAgendaOverlay: contentViewLayout.agendaOverlayVisible
+    readonly property bool showingDayCalendarOverlay: !contentViewLayout.agendaOverlayVisible
                                                       && contentViewLayout.dayCalendarOverlayVisible
-    readonly property bool showingWeekCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+    readonly property bool showingWeekCalendarOverlay: !contentViewLayout.agendaOverlayVisible
                                                        && !contentViewLayout.dayCalendarOverlayVisible
                                                        && contentViewLayout.weekCalendarOverlayVisible
-    readonly property bool showingMonthCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+    readonly property bool showingMonthCalendarOverlay: !contentViewLayout.agendaOverlayVisible
                                                         && !contentViewLayout.dayCalendarOverlayVisible
                                                         && !contentViewLayout.weekCalendarOverlayVisible
                                                         && contentViewLayout.monthCalendarOverlayVisible
-    readonly property bool showingYearCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+    readonly property bool showingYearCalendarOverlay: !contentViewLayout.agendaOverlayVisible
                                                        && !contentViewLayout.dayCalendarOverlayVisible
                                                        && !contentViewLayout.weekCalendarOverlayVisible
                                                        && !contentViewLayout.monthCalendarOverlayVisible
@@ -66,15 +66,15 @@ Item {
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal dayCalendarOverlayCloseRequested
-    signal todoListOverlayCloseRequested
+    signal agendaOverlayCloseRequested
     signal monthCalendarOverlayCloseRequested
     signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
     signal yearCalendarOverlayCloseRequested
 
     function requestActiveCalendarOverlayClose() {
-        if (contentViewLayout.showingTodoListOverlay) {
-            contentViewLayout.todoListOverlayCloseRequested();
+        if (contentViewLayout.showingAgendaOverlay) {
+            contentViewLayout.agendaOverlayCloseRequested();
             return;
         }
         if (contentViewLayout.showingDayCalendarOverlay) {
@@ -158,8 +158,8 @@ Item {
                 id: calendarPageLoader
 
                 anchors.fill: parent
-                sourceComponent: contentViewLayout.showingTodoListOverlay
-                                 ? todoListPageComponent
+                sourceComponent: contentViewLayout.showingAgendaOverlay
+                                 ? agendaPageComponent
                                  : contentViewLayout.showingDayCalendarOverlay
                                    ? dayCalendarPageComponent
                                    : contentViewLayout.showingWeekCalendarOverlay
@@ -200,11 +200,11 @@ Item {
         }
     }
     Component {
-        id: todoListPageComponent
+        id: agendaPageComponent
 
-        CalendarView.TodoListPage {
+        CalendarView.AgendaPage {
             anchors.fill: parent
-            todoListViewModel: contentViewLayout.todoListViewModel
+            agendaViewModel: contentViewLayout.agendaViewModel
 
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();

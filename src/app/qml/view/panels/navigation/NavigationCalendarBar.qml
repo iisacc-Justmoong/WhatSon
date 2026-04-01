@@ -18,11 +18,11 @@ LV.HStack {
     spacing: 2
 
     LV.IconButton {
-        id: todoListButton
+        id: agendaButton
 
         iconName: "toolWindowCheckDetails"
 
-        onClicked: calendarBar.requestViewHook("open-todo-list")
+        onClicked: calendarBar.requestViewHook("open-agenda")
     }
     LV.IconButton {
         id: dailyCalButton

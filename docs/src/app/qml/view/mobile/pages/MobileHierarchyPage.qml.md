@@ -32,14 +32,14 @@ re-emitted, so tapping a folder chevron on mobile does not push `/mobile/note-li
 Before opening `/mobile/editor`, `requestOpenEditor(...)` now calls
 `dismissCalendarOverlaysForEditorActivation()` and emits the per-mode dismiss signals. This ensures calendar state is
 cleared in the parent owner and prevents the editor route from remaining hidden behind stale calendar visibility flags.
-The dismiss set includes `todoListOverlayDismissRequested()` in addition to day/week/month/year routes.
+The dismiss set includes `agendaOverlayDismissRequested()` in addition to day/week/month/year routes.
 
 ## Mobile Calendar Routing
 Calendar pages are rendered by `ContentViewLayout`, which is mounted on the `/mobile/editor` route.
 
 To keep calendar open behavior deterministic on mobile, the scaffold calendar hooks now route through:
 - `ensureCalendarSurfaceVisible()`
-- `requestOpenTodoList()`
+- `requestOpenAgenda()`
 - `requestOpenDayCalendar()`
 - `requestOpenWeekCalendar()`
 - `requestOpenMonthCalendar()`

@@ -11,10 +11,10 @@ Item {
 
     property var applicationViewMenuItems: [
         {
-            "label": "Todo List",
+            "label": "Agenda",
             "iconName": "toolWindowCheckDetails",
             "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-todo-list");
+                applicationViewBar.requestViewHook("view-open-agenda");
             },
             "keyVisible": false,
             "showChevron": false

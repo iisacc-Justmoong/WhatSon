@@ -1,4 +1,4 @@
-#include "viewmodel/hierarchy/resources/ResourcesImportViewModel.hpp"
+#include "file/import/ResourcesImportViewModel.hpp"
 
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"

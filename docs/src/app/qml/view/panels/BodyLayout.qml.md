@@ -33,7 +33,7 @@
 - `rightPanelWidthDragRequested`
 - `sidebarWidthDragRequested`
 - `viewHookRequested`
-- `todoListOverlayDismissRequested`
+- `agendaOverlayDismissRequested`
 - `dayCalendarOverlayDismissRequested`
 - `monthCalendarOverlayDismissRequested`
 - `weekCalendarOverlayDismissRequested`
@@ -43,7 +43,7 @@
 - `ListBarLayout.noteActivated(...)` is re-emitted as `BodyLayout.noteActivated(...)`.
 - Root containers (for example `Main.qml`) can consume this bridge signal to reset calendar-route visibility and
   guarantee editor resurfacing when a note is explicitly activated.
-- Todo/day/week/month/year overlay visibility and viewmodel handles are forwarded to `ContentViewLayout` so panel-level
+- Agenda/day/week/month/year overlay visibility and viewmodel handles are forwarded to `ContentViewLayout` so panel-level
   routing remains centralized in the root shell.
 - `resourcesImportViewModel` is accepted on the desktop shell and forwarded to `ContentViewLayout`, so file drops on
   the note editor reuse the same `.wsresource` import path as menu-based imports.

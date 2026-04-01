@@ -9,21 +9,21 @@ class CalendarBoardStore;
 class QDate;
 class QLocale;
 
-class TodoListViewModel final : public QObject
+class AgendaViewModel final : public QObject
 {
     Q_OBJECT
 
     Q_PROPERTY(QString displayedDateIso READ displayedDateIso WRITE setDisplayedDateIso NOTIFY displayedDateIsoChanged)
-    Q_PROPERTY(QString dateLabel READ dateLabel NOTIFY todoListChanged)
-    Q_PROPERTY(QVariantMap location READ location NOTIFY todoListChanged)
-    Q_PROPERTY(QVariantMap weather READ weather NOTIFY todoListChanged)
-    Q_PROPERTY(QVariantList allDayEvents READ allDayEvents NOTIFY todoListChanged)
-    Q_PROPERTY(QVariantList timedEvents READ timedEvents NOTIFY todoListChanged)
-    Q_PROPERTY(QVariantList tasks READ tasks NOTIFY todoListChanged)
-    Q_PROPERTY(QVariantMap summary READ summary NOTIFY todoListChanged)
+    Q_PROPERTY(QString dateLabel READ dateLabel NOTIFY agendaChanged)
+    Q_PROPERTY(QVariantMap location READ location NOTIFY agendaChanged)
+    Q_PROPERTY(QVariantMap weather READ weather NOTIFY agendaChanged)
+    Q_PROPERTY(QVariantList allDayEvents READ allDayEvents NOTIFY agendaChanged)
+    Q_PROPERTY(QVariantList timedEvents READ timedEvents NOTIFY agendaChanged)
+    Q_PROPERTY(QVariantList agendaItems READ agendaItems NOTIFY agendaChanged)
+    Q_PROPERTY(QVariantMap summary READ summary NOTIFY agendaChanged)
 
 public:
-    explicit TodoListViewModel(QObject* parent = nullptr);
+    explicit AgendaViewModel(QObject* parent = nullptr);
 
     QString displayedDateIso() const;
     QString dateLabel() const;
@@ -31,7 +31,7 @@ public:
     QVariantMap weather() const;
     QVariantList allDayEvents() const;
     QVariantList timedEvents() const;
-    QVariantList tasks() const;
+    QVariantList agendaItems() const;
     QVariantMap summary() const;
     void setCalendarBoardStore(CalendarBoardStore* calendarBoardStore);
 
@@ -39,21 +39,21 @@ public slots:
     void setDisplayedDateIso(const QString& dateIso);
 
     Q_INVOKABLE void shiftDay(int deltaDays);
-    Q_INVOKABLE void requestTodoListView(const QString& reason = QString());
+    Q_INVOKABLE void requestAgendaView(const QString& reason = QString());
     Q_INVOKABLE bool addEvent(
         const QString& dateIso,
         const QString& timeText,
         const QString& title,
         const QString& detail = QString());
-    Q_INVOKABLE bool addTask(
+    Q_INVOKABLE bool addAgendaItem(
         const QString& dateIso,
         const QString& timeText,
         const QString& title,
         const QString& detail = QString());
     Q_INVOKABLE QVariantList entriesForDate(const QString& dateIso) const;
     Q_INVOKABLE bool removeEntry(const QString& entryId);
-    Q_INVOKABLE bool setTaskCompleted(const QString& entryId, bool completed);
-    Q_INVOKABLE bool toggleTaskCompleted(const QString& entryId);
+    Q_INVOKABLE bool setAgendaItemCompleted(const QString& entryId, bool completed);
+    Q_INVOKABLE bool toggleAgendaItemCompleted(const QString& entryId);
     Q_INVOKABLE void setLocation(
         const QString& cityName,
         const QString& regionName,
@@ -68,11 +68,11 @@ public slots:
 
 signals:
     void displayedDateIsoChanged();
-    void todoListChanged();
-    void todoListRequested(QString reason);
+    void agendaChanged();
+    void agendaRequested(QString reason);
 
 private:
-    struct TodoLocationModel
+    struct AgendaLocationModel
     {
         QString cityName;
         QString regionName;
@@ -80,7 +80,7 @@ private:
         QString timeZoneId;
     };
 
-    struct TodoWeatherModel
+    struct AgendaWeatherModel
     {
         QString conditionText;
         QString iconName;
@@ -94,21 +94,21 @@ private:
     static QString formatDateLabel(const QDate& date, const QLocale& locale);
     static bool isAllDayEvent(const QVariantMap& entry);
     static QVariantMap toEventModel(const QVariantMap& entry, bool allDay);
-    static QVariantMap toTaskModel(const QVariantMap& entry);
-    static QVariantMap toLocationVariant(const TodoLocationModel& model);
-    static QVariantMap toWeatherVariant(const TodoWeatherModel& model);
-    static TodoWeatherModel buildSampleWeatherForDate(const QDate& date);
+    static QVariantMap toAgendaItemModel(const QVariantMap& entry);
+    static QVariantMap toLocationVariant(const AgendaLocationModel& model);
+    static QVariantMap toWeatherVariant(const AgendaWeatherModel& model);
+    static AgendaWeatherModel buildSampleWeatherForDate(const QDate& date);
 
-    void rebuildTodoList();
+    void rebuildAgenda();
 
     CalendarBoardStore* m_calendarBoardStore = nullptr;
     QString m_displayedDateIso;
     QString m_dateLabel;
-    TodoLocationModel m_locationModel;
-    TodoWeatherModel m_weatherModel;
+    AgendaLocationModel m_locationModel;
+    AgendaWeatherModel m_weatherModel;
     bool m_customWeatherEnabled = false;
     QVariantList m_allDayEvents;
     QVariantList m_timedEvents;
-    QVariantList m_tasks;
+    QVariantList m_agendaItems;
     QVariantMap m_summary;
 };

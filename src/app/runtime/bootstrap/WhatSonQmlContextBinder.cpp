@@ -29,7 +29,7 @@ namespace WhatSon::Runtime::Bootstrap
         context->setContextProperty(QStringLiteral("calendarBoardStore"), objects.calendarBoardStore);
         context->setContextProperty(QStringLiteral("systemCalendarStore"), objects.systemCalendarStore);
         context->setContextProperty(QStringLiteral("dayCalendarViewModel"), objects.dayCalendarViewModel);
-        context->setContextProperty(QStringLiteral("todoListViewModel"), objects.todoListViewModel);
+        context->setContextProperty(QStringLiteral("agendaViewModel"), objects.agendaViewModel);
         context->setContextProperty(QStringLiteral("monthCalendarViewModel"), objects.monthCalendarViewModel);
         context->setContextProperty(QStringLiteral("weekCalendarViewModel"), objects.weekCalendarViewModel);
         context->setContextProperty(QStringLiteral("yearCalendarViewModel"), objects.yearCalendarViewModel);

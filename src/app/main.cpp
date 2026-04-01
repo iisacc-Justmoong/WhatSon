@@ -7,13 +7,13 @@
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
-#include "viewmodel/hierarchy/resources/ResourcesImportViewModel.hpp"
+#include "file/import/ResourcesImportViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "viewmodel/navigationbar/EditorViewModeViewModel.hpp"
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
 #include "viewmodel/calendar/DayCalendarViewModel.hpp"
-#include "viewmodel/calendar/TodoListViewModel.hpp"
+#include "viewmodel/calendar/AgendaViewModel.hpp"
 #include "viewmodel/calendar/MonthCalendarViewModel.hpp"
 #include "viewmodel/calendar/WeekCalendarViewModel.hpp"
 #include "viewmodel/calendar/YearCalendarViewModel.hpp"
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     DayCalendarViewModel dayCalendarViewModel;
-    TodoListViewModel todoListViewModel;
+    AgendaViewModel agendaViewModel;
     MonthCalendarViewModel monthCalendarViewModel;
     WeekCalendarViewModel weekCalendarViewModel;
     YearCalendarViewModel yearCalendarViewModel;
@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
 #endif
     libraryNoteMutationViewModel.setSourceViewModel(&libraryHierarchyViewModel);
     dayCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
-    todoListViewModel.setCalendarBoardStore(&calendarBoardStore);
+    agendaViewModel.setCalendarBoardStore(&calendarBoardStore);
     monthCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
     weekCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
     yearCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
@@ -455,7 +455,7 @@ int main(int argc, char* argv[])
     workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
     workspaceContextObjects.systemCalendarStore = &systemCalendarStore;
     workspaceContextObjects.dayCalendarViewModel = &dayCalendarViewModel;
-    workspaceContextObjects.todoListViewModel = &todoListViewModel;
+    workspaceContextObjects.agendaViewModel = &agendaViewModel;
     workspaceContextObjects.monthCalendarViewModel = &monthCalendarViewModel;
     workspaceContextObjects.weekCalendarViewModel = &weekCalendarViewModel;
     workspaceContextObjects.yearCalendarViewModel = &yearCalendarViewModel;

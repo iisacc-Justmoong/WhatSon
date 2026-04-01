@@ -24,7 +24,7 @@
 - `compactAddFolderRequested`
 - `compactLeadingActionRequested`
 - `createNoteRequested`
-- `todoListRequested`
+- `agendaRequested`
 - `dayCalendarRequested`
 - `weekCalendarRequested`
 - `monthCalendarRequested`
@@ -34,7 +34,7 @@
 - `viewHookRequested`
 
 ## Recent Updates
-- Forwards `NavigationBarLayout` Todo/day/week/month/year hook signals so mobile calendar routing can open overlays on
+- Forwards `NavigationBarLayout` Agenda/day/week/month/year hook signals so mobile calendar routing can open overlays on
   the editor surface through `MobileHierarchyPage`.
 
 ## Intended Detailed Sections

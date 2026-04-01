@@ -41,8 +41,8 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
-    property bool todoListOverlayVisible: false
-    property var todoListViewModel: null
+    property bool agendaOverlayVisible: false
+    property var agendaViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
@@ -58,7 +58,7 @@ Item {
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
     signal dayCalendarOverlayDismissRequested
-    signal todoListOverlayDismissRequested
+    signal agendaOverlayDismissRequested
     signal monthCalendarOverlayDismissRequested
     signal weekCalendarOverlayDismissRequested
     signal yearCalendarOverlayDismissRequested
@@ -212,8 +212,8 @@ Item {
                 splitterThickness: hStack.splitterThickness
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarViewModel: hStack.dayCalendarViewModel
-                todoListOverlayVisible: hStack.todoListOverlayVisible
-                todoListViewModel: hStack.todoListViewModel
+                agendaOverlayVisible: hStack.agendaOverlayVisible
+                agendaViewModel: hStack.agendaViewModel
                 monthCalendarOverlayVisible: hStack.monthCalendarOverlayVisible
                 monthCalendarViewModel: hStack.monthCalendarViewModel
                 weekCalendarOverlayVisible: hStack.weekCalendarOverlayVisible
@@ -225,7 +225,7 @@ Item {
                     hStack.drawerHeightDragRequested(value);
                 }
                 onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
-                onTodoListOverlayCloseRequested: hStack.todoListOverlayDismissRequested()
+                onAgendaOverlayCloseRequested: hStack.agendaOverlayDismissRequested()
                 onMonthCalendarOverlayCloseRequested: hStack.monthCalendarOverlayDismissRequested()
                 onWeekCalendarOverlayCloseRequested: hStack.weekCalendarOverlayDismissRequested()
                 onYearCalendarOverlayCloseRequested: hStack.yearCalendarOverlayDismissRequested()

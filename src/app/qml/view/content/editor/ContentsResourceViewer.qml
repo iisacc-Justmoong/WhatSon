@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Pdf
 import LVRS 1.0 as LV
+import WhatSon.App.Internal 1.0
 
 Item {
     id: resourceViewer
@@ -14,14 +15,9 @@ Item {
     readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
     readonly property string resourceSource: resourceEntry.source !== undefined ? String(resourceEntry.source) : ""
     readonly property string resourceResolvedPath: resourceEntry.resolvedPath !== undefined ? String(resourceEntry.resolvedPath) : ""
-    readonly property string resourceOpenTarget: {
-        const sourceValue = resourceViewer.resourceSource.trim();
-        if (sourceValue.length > 0)
-            return sourceValue;
-        return resourceViewer.toViewerTarget(resourceViewer.resourceResolvedPath);
-    }
+    readonly property string resourceOpenTarget: bitmapViewer.openTarget
     readonly property bool imageRenderable: resourceViewer.resourceRenderMode === "image"
-                                            && resourceViewer.resourceOpenTarget.length > 0
+                                            && bitmapViewer.bitmapRenderable
     readonly property bool pdfRenderable: resourceViewer.resourceRenderMode === "pdf"
                                           && resourceViewer.resourceOpenTarget.length > 0
     readonly property bool openable: resourceViewer.resourceOpenTarget.length > 0
@@ -39,18 +35,13 @@ Item {
         return "Document Resource";
     }
 
-    function toViewerTarget(pathOrUrl) {
-        const value = pathOrUrl === undefined || pathOrUrl === null ? "" : String(pathOrUrl).trim();
-        if (value.length === 0)
-            return "";
-        if (value.indexOf("://") >= 0 || value.startsWith("qrc:/"))
-            return value;
-        if (value.startsWith("/"))
-            return "file://" + value;
-        return value;
-    }
-
     clip: true
+
+    ResourceBitmapViewer {
+        id: bitmapViewer
+
+        resourceEntry: resourceViewer.resourceEntry
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -73,7 +64,7 @@ Item {
         cache: true
         fillMode: Image.PreserveAspectFit
         mipmap: true
-        source: resourceViewer.imageRenderable ? resourceViewer.resourceOpenTarget : ""
+        source: resourceViewer.imageRenderable ? bitmapViewer.viewerSource : ""
         visible: resourceViewer.imageRenderable
     }
 
@@ -106,6 +97,9 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             style: body
             text: resourceViewer.modeTitle
+                  + (resourceViewer.resourceRenderMode === "image" && bitmapViewer.incompatibilityReason.length > 0
+                         ? " - " + bitmapViewer.incompatibilityReason
+                         : "")
             width: 320
         }
         LV.IconButton {

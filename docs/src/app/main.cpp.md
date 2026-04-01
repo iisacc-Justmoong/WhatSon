@@ -12,7 +12,7 @@ loading, and delegate repetitive bootstrap wiring to dedicated helpers under
 - Navigation, detail-panel, onboarding, sidebar, calendar, and panel-registry viewmodels.
 - `CalendarBoardStore` as the shared in-memory board backend for date/time-bound events and tasks.
 - `DayCalendarViewModel` as the reusable day timeline source for the navigation-triggered calendar overlay.
-- `TodoListViewModel` as the reusable Todo route source for all-day/timed/task/weather sections.
+- `AgendaViewModel` as the reusable Agenda route source for all-day/timed/agenda-item/weather sections.
 - `WeekCalendarViewModel` as the reusable week timeline source for the navigation-triggered calendar overlay.
 - `MonthCalendarViewModel` as the reusable month-grid source for the navigation-triggered calendar overlay.
 - `YearCalendarViewModel` as the reusable year-grid source for the navigation-triggered calendar overlay.
@@ -55,7 +55,7 @@ The practical split is this.
 - C++ owns object lifetime and initial graph assembly.
 - `Main.qml` owns view-facing registration and writable ownership claims.
 - The calendar overlay data sources (`dayCalendarViewModel`, `weekCalendarViewModel`, `monthCalendarViewModel`,
-  `yearCalendarViewModel`, `todoListViewModel`) are exported as context objects and consumed directly by
+  `yearCalendarViewModel`, `agendaViewModel`) are exported as context objects and consumed directly by
   `ContentViewLayout.qml`.
 - The shared calendar board backend (`calendarBoardStore`) is exported so future QML calendar interactions can call
   event/task mutation APIs with explicit date/time payloads.
