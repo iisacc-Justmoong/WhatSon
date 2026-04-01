@@ -3,6 +3,7 @@
 #include <QAbstractListModel>
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 #include <QVector>
 
 struct ResourcesListItem
@@ -35,6 +36,7 @@ class ResourcesListModel final : public QAbstractListModel
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged)
     Q_PROPERTY(QString currentNoteId READ currentNoteId NOTIFY currentNoteIdChanged)
     Q_PROPERTY(QString currentBodyText READ currentBodyText NOTIFY currentBodyTextChanged)
+    Q_PROPERTY(QVariantMap currentResourceEntry READ currentResourceEntry NOTIFY currentResourceEntryChanged)
     Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
 
 public:
@@ -73,6 +75,7 @@ public:
     int currentIndex() const noexcept;
     QString currentNoteId() const;
     QString currentBodyText() const;
+    QVariantMap currentResourceEntry() const;
     Q_INVOKABLE void setCurrentIndex(int index);
     QString searchText() const;
     void setSearchText(const QString& text);
@@ -100,6 +103,7 @@ public
     void currentIndexChanged();
     void currentNoteIdChanged();
     void currentBodyTextChanged();
+    void currentResourceEntryChanged();
     void searchTextChanged();
     void modelHookRequested();
 
@@ -111,4 +115,3 @@ private:
     QString m_searchText;
     int m_currentIndex = -1;
 };
-

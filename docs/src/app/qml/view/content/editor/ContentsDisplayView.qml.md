@@ -36,6 +36,10 @@ positions from the same document origin.
 - The editor viewport now overlays resource cards rendered from `ContentsBodyResourceRenderer.renderedResources`, so image packages referenced in `.wsnbody` are visible without switching to a separate panel.
 - When the selected note id is a direct `.wsresource` package, the surface switches to a dedicated in-editor resource
   viewer and hides text-editor/minimap chrome.
+- The dedicated resource viewer now fills the entire editor viewport (`anchors.fill: parent`) so no editor inset
+  scaffold remains around inline resource rendering.
+- Dedicated resource viewer payload selection now prefers `noteListModel.currentResourceEntry` (resource-list
+  selection source) and falls back to `ContentsBodyResourceRenderer` only when list payload is unavailable.
 - Resource cards are render-mode aware (`image`, `video`, `audio`, `pdf`, `text`, `document`):
   - image: inline thumbnail
   - text: inline snippet preview (`previewText`)

@@ -11,6 +11,8 @@ Implements filtering and selection state for the Resources right-panel list mode
 - Supports search filtering via `searchText` (case-folded term matching).
 - Preserves selection by `currentNoteId` across filter and reset operations when possible.
 - Retains the selected resource id when the item payload is replaced and the same id still exists.
+- Mirrors the selected row into `currentResourceEntry` (`type`, `format`, `resourcePath`, `resolvedPath`,
+  `source`, `renderMode`, `displayName`, `previewText`) for dedicated resource viewer pipelines.
 - Emits shared selection signals required by:
   - `NoteListModelContractBridge`
   - `ContentsEditorSelectionBridge`

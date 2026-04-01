@@ -569,6 +569,7 @@ private
     void projectsModel_recomputesChevronByDepth();
     void projectsModel_strictValidation_throwsException();
     void resourcesListModel_exposesResourceRolesAndSearchFilter();
+    void resourcesListModel_exposesCurrentResourceEntryForViewer();
     void resourcesListModel_preservesSelectionByNoteIdAcrossItemReset();
     void noteListModel_correctsColorAndTextFields();
     void noteListModel_sortsNewestModifiedItemFirst();
@@ -2654,6 +2655,55 @@ void HierarchyViewModelsTest::resourcesListModel_exposesResourceRolesAndSearchFi
     QCOMPARE(
         model.data(model.index(0, 0), ResourcesListModel::NoteIdRole).toString(),
         documentItem.id);
+}
+
+void HierarchyViewModelsTest::resourcesListModel_exposesCurrentResourceEntryForViewer()
+{
+    ResourcesListModel model;
+
+    ResourcesListItem imageItem;
+    imageItem.id = QStringLiteral("/tmp/logo.wsresource");
+    imageItem.primaryText = QStringLiteral("logo.png");
+    imageItem.type = QStringLiteral("image");
+    imageItem.format = QStringLiteral(".png");
+    imageItem.resourcePath = QStringLiteral("ResourceListVm.wsresources/logo.wsresource");
+    imageItem.resolvedPath = QStringLiteral("/tmp/logo.wsresource/logo.png");
+    imageItem.source = QStringLiteral("file:///tmp/logo.wsresource/logo.png");
+    imageItem.renderMode = QStringLiteral("image");
+    imageItem.displayName = QStringLiteral("logo.png");
+
+    ResourcesListItem documentItem;
+    documentItem.id = QStringLiteral("/tmp/manual.wsresource");
+    documentItem.primaryText = QStringLiteral("manual.pdf");
+    documentItem.type = QStringLiteral("document");
+    documentItem.format = QStringLiteral(".pdf");
+    documentItem.resourcePath = QStringLiteral("ResourceListVm.wsresources/manual.wsresource");
+    documentItem.resolvedPath = QStringLiteral("/tmp/manual.wsresource/manual.pdf");
+    documentItem.source = QStringLiteral("file:///tmp/manual.wsresource/manual.pdf");
+    documentItem.renderMode = QStringLiteral("pdf");
+    documentItem.displayName = QStringLiteral("manual.pdf");
+
+    QSignalSpy currentResourceEntryChangedSpy(&model, &ResourcesListModel::currentResourceEntryChanged);
+
+    model.setItems({imageItem, documentItem});
+    QCOMPARE(model.currentResourceEntry(), QVariantMap());
+
+    model.setCurrentIndex(1);
+    QVariantMap currentEntry = model.currentResourceEntry();
+    QCOMPARE(currentEntry.value(QStringLiteral("noteId")).toString(), documentItem.id);
+    QCOMPARE(currentEntry.value(QStringLiteral("renderMode")).toString(), QStringLiteral("pdf"));
+    QCOMPARE(
+        currentEntry.value(QStringLiteral("resourcePath")).toString(),
+        QStringLiteral("ResourceListVm.wsresources/manual.wsresource"));
+    QVERIFY(currentResourceEntryChangedSpy.count() >= 1);
+
+    model.setSearchText(QStringLiteral("logo"));
+    currentEntry = model.currentResourceEntry();
+    QCOMPARE(currentEntry.value(QStringLiteral("noteId")).toString(), imageItem.id);
+    QCOMPARE(currentEntry.value(QStringLiteral("renderMode")).toString(), QStringLiteral("image"));
+    QCOMPARE(
+        currentEntry.value(QStringLiteral("source")).toString(),
+        QStringLiteral("file:///tmp/logo.wsresource/logo.png"));
 }
 
 void HierarchyViewModelsTest::resourcesListModel_preservesSelectionByNoteIdAcrossItemReset()

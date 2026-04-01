@@ -81,6 +81,27 @@ namespace
         return items.at(index).bodyText;
     }
 
+    QVariantMap itemResourceEntryAt(const QVector<ResourcesListItem>& items, int index)
+    {
+        if (index < 0 || index >= items.size())
+        {
+            return {};
+        }
+
+        const ResourcesListItem& item = items.at(index);
+        QVariantMap entry;
+        entry.insert(QStringLiteral("noteId"), item.id);
+        entry.insert(QStringLiteral("type"), item.type);
+        entry.insert(QStringLiteral("format"), item.format);
+        entry.insert(QStringLiteral("resourcePath"), item.resourcePath);
+        entry.insert(QStringLiteral("resolvedPath"), item.resolvedPath);
+        entry.insert(QStringLiteral("source"), item.source);
+        entry.insert(QStringLiteral("renderMode"), item.renderMode);
+        entry.insert(QStringLiteral("displayName"), item.displayName);
+        entry.insert(QStringLiteral("previewText"), item.previewText);
+        return entry;
+    }
+
     int indexOfItemById(const QVector<ResourcesListItem>& items, const QString& id)
     {
         const QString normalizedId = id.trimmed();
@@ -282,6 +303,11 @@ QString ResourcesListModel::currentBodyText() const
     return itemBodyTextAt(m_items, m_currentIndex);
 }
 
+QVariantMap ResourcesListModel::currentResourceEntry() const
+{
+    return itemResourceEntryAt(m_items, m_currentIndex);
+}
+
 void ResourcesListModel::setCurrentIndex(int index)
 {
     int nextIndex = index;
@@ -301,6 +327,7 @@ void ResourcesListModel::setCurrentIndex(int index)
 
     const QString previousNoteId = currentNoteId();
     const QString previousBodyText = currentBodyText();
+    const QVariantMap previousResourceEntry = currentResourceEntry();
 
     m_currentIndex = nextIndex;
     emit currentIndexChanged();
@@ -311,6 +338,10 @@ void ResourcesListModel::setCurrentIndex(int index)
     if (currentBodyText() != previousBodyText)
     {
         emit currentBodyTextChanged();
+    }
+    if (currentResourceEntry() != previousResourceEntry)
+    {
+        emit currentResourceEntryChanged();
     }
 }
 
@@ -377,6 +408,7 @@ void ResourcesListModel::applySearchFilter()
 {
     const QString previousNoteId = currentNoteId();
     const QString previousBodyText = currentBodyText();
+    const QVariantMap previousResourceEntry = currentResourceEntry();
     const int previousIndex = m_currentIndex;
     const int previousCount = m_items.size();
     const QStringList terms = searchTerms(m_searchText);
@@ -426,6 +458,9 @@ void ResourcesListModel::applySearchFilter()
     {
         emit currentBodyTextChanged();
     }
+    if (currentResourceEntry() != previousResourceEntry)
+    {
+        emit currentResourceEntryChanged();
+    }
     emit itemsChanged();
 }
-

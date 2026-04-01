@@ -339,6 +339,16 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("visible: contentsView.showDedicatedResourceViewer")),
         "ContentsDisplayView.qml must mount a dedicated resource viewer component for selected resource packages.");
     QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("ContentsResourceViewer {\n                        id: dedicatedResourceViewer\n\n                        anchors.fill: parent")) &&
+            !contentViewText.contains(
+                QStringLiteral("id: dedicatedResourceViewer\n\n                        anchors.bottom: parent.bottom")),
+        "ContentsDisplayView.qml dedicated resource viewer must fill the full editor viewport without inset scaffold anchors.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("contentsView.noteListModel.currentResourceEntry")) &&
+            contentViewText.contains(QStringLiteral("&& contentsView.noteListModel.currentResourceEntry !== undefined")),
+        "ContentsDisplayView.qml must prefer the resources-list currentResourceEntry payload for dedicated resource viewer rendering.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("visible: !contentsView.showDedicatedResourceViewer")) &&
             contentViewText.contains(QStringLiteral("visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer")),
         "ContentsDisplayView.qml must hide text-editor/minimap chrome while dedicated resource viewers are active.");
@@ -352,8 +362,19 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentResourceViewerText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")) &&
             contentResourceViewerText.contains(QStringLiteral("ResourceBitmapViewer {")) &&
             contentResourceViewerText.contains(QStringLiteral("bitmapViewer.bitmapRenderable")) &&
-            contentResourceViewerText.contains(QStringLiteral("bitmapViewer.incompatibilityReason")),
+            contentResourceViewerText.contains(QStringLiteral("bitmapViewer.viewerSource")) &&
+            contentResourceViewerText.contains(
+                QStringLiteral("readonly property string resourceOpenTarget: bitmapViewer.openTarget")),
         "ContentsResourceViewer.qml must route image rendering through the file/viewer bitmap-compatibility bridge.");
+    QVERIFY2(
+        !contentResourceViewerText.contains(
+            QStringLiteral("resourceViewer.resourceType.length > 0 || resourceViewer.resourceFormat.length > 0")),
+        "ContentsResourceViewer.qml must not render the legacy top-left type/format label strip over dedicated resource previews.");
+    QVERIFY2(
+        !contentResourceViewerText.contains(QStringLiteral("LV.VStack {")) &&
+            !contentResourceViewerText.contains(QStringLiteral("Qt.openUrlExternally(resourceViewer.resourceOpenTarget)")) &&
+            !contentResourceViewerText.contains(QStringLiteral("anchors.margins: LV.Theme.gap2")),
+        "ContentsResourceViewer.qml must not keep fallback scaffolds, external-open buttons, or inset frame margins.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("ContentsEditorSession {")),
         "ContentsDisplayView.qml must compose a dedicated editor-session object for debounce and selection sync.");

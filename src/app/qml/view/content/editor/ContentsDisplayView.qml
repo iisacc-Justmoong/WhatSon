@@ -123,6 +123,19 @@ Item {
     property var resourcesImportViewModel: null
     readonly property int saveDebounceMs: 120
     readonly property var selectedResourceEntry: {
+        if (contentsView.showDedicatedResourceViewer
+                && contentsView.noteListModel
+                && contentsView.noteListModel.currentResourceEntry !== undefined) {
+            const currentEntry = contentsView.noteListModel.currentResourceEntry;
+            if (currentEntry && typeof currentEntry === "object") {
+                const entrySource = currentEntry.source !== undefined ? String(currentEntry.source).trim() : "";
+                const entryResolvedPath = currentEntry.resolvedPath !== undefined ? String(currentEntry.resolvedPath).trim() : "";
+                const entryRenderMode = currentEntry.renderMode !== undefined ? String(currentEntry.renderMode).trim() : "";
+                if (entrySource.length > 0 || entryResolvedPath.length > 0 || entryRenderMode.length > 0)
+                    return currentEntry;
+            }
+        }
+
         const resources = bodyResourceRenderer.renderedResources;
         if (!Array.isArray(resources) || resources.length === 0)
             return ({});
@@ -962,14 +975,7 @@ Item {
                     ContentsResourceViewer {
                         id: dedicatedResourceViewer
 
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: contentsView.editorBottomInset
-                        anchors.left: parent.left
-                        anchors.leftMargin: contentsView.editorHorizontalInset
-                        anchors.right: parent.right
-                        anchors.rightMargin: contentsView.editorHorizontalInset
-                        anchors.top: parent.top
-                        anchors.topMargin: contentsView.editorDocumentStartY
+                        anchors.fill: parent
                         resourceEntry: contentsView.selectedResourceEntry
                         visible: contentsView.showDedicatedResourceViewer
                         z: 3

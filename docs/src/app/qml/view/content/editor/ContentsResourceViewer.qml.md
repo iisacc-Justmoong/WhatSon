@@ -10,7 +10,7 @@
 - `image` render mode: routes through `ResourceBitmapViewer` and renders inline only when
   `ImageFormatCompatibilityLayer` confirms runtime bitmap decoder compatibility.
 - `pdf` render mode: shows an in-app PDF reader through `PdfDocument` + `PdfMultiPageView`.
-- other modes: shows a mode-specific fallback card with an explicit open action.
+- other modes: renders no fallback scaffold in this surface.
 
 ## Inputs
 
@@ -22,7 +22,4 @@
 
 ## Interaction
 
-- Preserves a direct open action (`Qt.openUrlExternally(...)`) for unsupported inline render modes.
-- Renders a compact header strip so users can confirm resource name/type/format while previewing.
-- Shows a compatibility-layer reason string when image render mode is selected but the bitmap
-  format is unsupported by the current runtime.
+- Renders only the resource viewport itself (bitmap image or PDF surface) with no extra metadata strip, button, or fallback card scaffold.
