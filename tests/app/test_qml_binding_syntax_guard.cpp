@@ -301,6 +301,13 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             QStringLiteral("resourcesImportViewModel: contentViewLayout.resourcesImportViewModel")),
         "ContentViewLayout.qml must forward resourcesImportViewModel into ContentsDisplayView for resource drop import.");
     QVERIFY2(
+        contentViewLayoutText.contains(QStringLiteral("property var editorViewModeViewModel: null")),
+        "ContentViewLayout.qml must expose an explicit editorViewModeViewModel contract for render-mode switching.");
+    QVERIFY2(
+        contentViewLayoutText.contains(
+            QStringLiteral("editorViewModeViewModel: contentViewLayout.editorViewModeViewModel")),
+        "ContentViewLayout.qml must forward editorViewModeViewModel into ContentsDisplayView.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")),
         "ContentsDisplayView.qml must import the internal backend bridge module for editor-side state delegation.");
     QVERIFY2(
@@ -318,6 +325,54 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("noteId: contentsView.selectedNoteId")),
         "ContentsDisplayView.qml body-resource renderer bridge must track the currently selected note id.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("ContentsTextFormatRenderer {")) &&
+            contentViewText.contains(QStringLiteral("sourceText: contentsView.editorText")),
+        "ContentsDisplayView.qml must compose a dedicated text-format renderer bridge from editor text.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property var resolvedEditorViewModeViewModel: {")) &&
+            contentViewText.contains(QStringLiteral("LV.ViewModels.get(\"editorViewModeViewModel\")")) &&
+            contentViewText.contains(QStringLiteral("readonly property bool showFormattedTextRenderer:")),
+        "ContentsDisplayView.qml must resolve editorViewModeViewModel and expose non-Plain formatted-renderer visibility.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property int pageEditorViewModeValue: 1")) &&
+            contentViewText.contains(QStringLiteral("readonly property int printEditorViewModeValue: 2")) &&
+            contentViewText.contains(QStringLiteral("readonly property bool showPageEditorLayout:")) &&
+            contentViewText.contains(QStringLiteral("readonly property bool showPrintModeActive:")) &&
+            contentViewText.contains(QStringLiteral("readonly property bool showPrintEditorLayout:")) &&
+            contentViewText.contains(QStringLiteral("readonly property bool showPrintMarginGuides:")) &&
+            contentViewText.contains(
+                QStringLiteral("contentsView.activeEditorViewModeValue === contentsView.pageEditorViewModeValue")) &&
+            contentViewText.contains(
+                QStringLiteral("contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue")),
+        "ContentsDisplayView.qml must map Page/Print modes to dedicated paper editor layouts and reserve print guides for print mode.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("if (contentsView.showPrintEditorLayout)")) &&
+            contentViewText.contains(QStringLiteral("return 0;")) &&
+            contentViewText.contains(QStringLiteral("return contentsView.effectiveEditorTopInset;")),
+        "ContentsDisplayView.qml must collapse document top inset in paper layouts while preserving the shared top inset for plain mode.");
+    QVERIFY2(
+        contentViewText.contains(
+            QStringLiteral("&& contentsView.activeEditorViewModeValue !== contentsView.pageEditorViewModeValue")) &&
+        contentViewText.contains(
+            QStringLiteral("&& contentsView.activeEditorViewModeValue !== contentsView.printEditorViewModeValue")),
+        "ContentsDisplayView.qml formatted preview visibility must exclude both page and print paper modes.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("id: printEditorCanvas")) &&
+            contentViewText.contains(QStringLiteral("id: printEditorPage")) &&
+            contentViewText.contains(
+                QStringLiteral("anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent")) &&
+            contentViewText.contains(QStringLiteral("visible: contentsView.showPrintMarginGuides")) &&
+            contentViewText.contains(QStringLiteral("Number(contentsView.printGuideHorizontalInset)")),
+        "ContentsDisplayView.qml page/print modes must render inside a centered paper scaffold, and print mode must add dashed print-margin guides.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("text: textFormatRenderer.renderedHtml")) &&
+            contentViewText.contains(QStringLiteral("textFormat: Text.RichText")),
+        "ContentsDisplayView.qml formatted preview surface must bind Text.RichText output from the renderer bridge.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("enabled: !contentsView.showDedicatedResourceViewer")) &&
+            contentViewText.contains(QStringLiteral("&& !contentsView.showFormattedTextRenderer")),
+        "ContentsDisplayView.qml drop/input shortcuts must disable editor mutation paths while formatted renderer mode is active.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property string resourceModeTitle: {")) &&
             contentViewText.contains(QStringLiteral("resourceRenderCard.resourceRenderMode === \"text\"")),
@@ -350,8 +405,9 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentsDisplayView.qml must prefer the resources-list currentResourceEntry payload for dedicated resource viewer rendering.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("visible: !contentsView.showDedicatedResourceViewer")) &&
-            contentViewText.contains(QStringLiteral("visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer")),
-        "ContentsDisplayView.qml must hide text-editor/minimap chrome while dedicated resource viewers are active.");
+            contentViewText.contains(QStringLiteral("visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer")) &&
+            contentViewText.contains(QStringLiteral("&& !contentsView.showPrintEditorLayout")),
+        "ContentsDisplayView.qml must keep gutter/minimap chrome hidden for dedicated resource viewers and paper-layout modes.");
     QVERIFY2(
         contentResourceViewerText.contains(QStringLiteral("import QtQuick.Pdf")) &&
             contentResourceViewerText.contains(QStringLiteral("PdfMultiPageView {")) &&
@@ -408,6 +464,22 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("importUrlsForEditor(dropUrls)")) &&
             contentViewText.contains(QStringLiteral("function resourceTagTextForImportedEntry(entry)")),
         "ContentsDisplayView.qml must package dropped files through resourcesImportViewModel and inject <resource ...> links into editor text.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function wrapSelectedEditorTextWithTag(tagName)")) &&
+            contentViewText.contains(QStringLiteral("function selectedEditorRange()")) &&
+            contentViewText.contains(QStringLiteral("function normalizeInlineStyleTag(tagName)")),
+        "ContentsDisplayView.qml must expose explicit selection-range and inline-style tag helpers for .wsnbody formatting shortcuts.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("sequence: StandardKey.Bold")) &&
+            contentViewText.contains(QStringLiteral("sequence: StandardKey.Italic")) &&
+            contentViewText.contains(QStringLiteral("sequence: StandardKey.Underline")) &&
+            contentViewText.contains(QStringLiteral("sequence: \"Meta+Shift+X\"")) &&
+            contentViewText.contains(QStringLiteral("sequence: \"Ctrl+Shift+X\"")) &&
+            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"bold\")")) &&
+            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"italic\")")) &&
+            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"underline\")")) &&
+            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"strikethrough\")")),
+        "ContentsDisplayView.qml must map editor shortcuts (Cmd/Ctrl+B/I/U and Shift+Cmd/Ctrl+X) to inline .wsnbody style tags.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral(
             "readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable")),
@@ -1004,6 +1076,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("resourcesImportViewModel: resourcesImportViewModel")),
         "Main.qml must forward resourcesImportViewModel into desktop/mobile content shells so editor drop-import uses the shared resource package pipeline.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel")),
+        "Main.qml must forward the shared editorViewModeViewModel into desktop/mobile content shells.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("MainWindowInteractionController {")),
         "Main.qml must delegate root interaction policy to a dedicated MainWindowInteractionController.");
@@ -2123,6 +2198,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         bodyLayoutText.contains(QStringLiteral("property var resourcesImportViewModel: null")),
         "BodyLayout.qml must expose resourcesImportViewModel so editor resource drops can package files through the shared import pipeline.");
     QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("property var editorViewModeViewModel: null")),
+        "BodyLayout.qml must expose editorViewModeViewModel so content rendering mode follows navigation selection.");
+    QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("activeToolbarIndex: hStack.activeHierarchyIndex")),
         "BodyLayout.qml must feed child hierarchy/list views from the resolved active hierarchy index.");
     QVERIFY2(
@@ -2143,6 +2221,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("resourcesImportViewModel: hStack.resourcesImportViewModel")),
         "BodyLayout.qml must forward resourcesImportViewModel into ContentViewLayout for editor drop-target imports.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("editorViewModeViewModel: hStack.editorViewModeViewModel")),
+        "BodyLayout.qml must forward editorViewModeViewModel into ContentViewLayout.");
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("searchFieldVisible: true")),
         "BodyLayout.qml desktop hierarchy route must keep the shared hierarchy search field visible.");
@@ -2629,6 +2710,7 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
             mobilePageText.contains(QStringLiteral("contentViewModel: mobileHierarchyPage.activeContentViewModel")) &&
             mobilePageText.contains(QStringLiteral("noteListModel: mobileHierarchyPage.activeNoteListModel")) &&
             mobilePageText.contains(QStringLiteral("resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel")) &&
+            mobilePageText.contains(QStringLiteral("editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel")) &&
             mobilePageText.contains(QStringLiteral("drawerVisible: false")) &&
             mobilePageText.contains(QStringLiteral("minimapVisible: false")) &&
             mobilePageText.contains(QStringLiteral("gutterColor: \"transparent\"")) &&

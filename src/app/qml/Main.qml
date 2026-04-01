@@ -695,6 +695,7 @@ LV.ApplicationWindow {
                     contentsDisplayColor: applicationWindow.desktopPanelSurfaceColor
                     drawerColor: applicationWindow.desktopPanelSurfaceColor
                     drawerHeight: applicationWindow.drawerHeight
+                    editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
                     listViewColor: applicationWindow.desktopPanelSurfaceColor
                     listViewWidth: applicationWindow.listViewWidth
                     libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel

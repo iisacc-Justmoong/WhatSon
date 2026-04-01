@@ -97,6 +97,8 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `ContentViewLayout.qml`: renders the editor route body.
 - `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
   `<resource ...>` links through the same import pipeline.
+- `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
+  plain/print/preview rendering policy as desktop.
 - `SidebarHierarchyViewModel`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
 - `windowInteractions`: routes the dedicated create-note action and resolves the writable note-mutation capability.
 

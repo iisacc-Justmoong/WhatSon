@@ -821,6 +821,23 @@ target_link_libraries(whatson_contents_editor_bridge_tests
 add_test(NAME whatson_contents_editor_bridge_tests COMMAND whatson_contents_editor_bridge_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_contents_editor_bridge_tests)
 
+add_executable(whatson_contents_text_format_renderer_tests
+        app/test_contents_text_format_renderer.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsTextFormatRenderer.cpp
+)
+set_target_properties(whatson_contents_text_format_renderer_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_contents_text_format_renderer_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_contents_text_format_renderer_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_contents_text_format_renderer_tests COMMAND whatson_contents_text_format_renderer_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_contents_text_format_renderer_tests)
+
 add_executable(whatson_resource_bitmap_viewer_tests
         app/test_resource_bitmap_viewer.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/viewer/ImageFormatCompatibilityLayer.cpp

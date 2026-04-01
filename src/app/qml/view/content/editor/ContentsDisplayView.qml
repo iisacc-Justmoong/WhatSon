@@ -10,6 +10,7 @@ Item {
     readonly property color activeLineNumberColor: "#9DA0A8"
     readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable
     property var contentViewModel: null
+    property var editorViewModeViewModel: null
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
     property color displayColor: "transparent"
@@ -27,6 +28,8 @@ Item {
         return Number(contentEditor.editorItem.parent.y) || 0;
     }
     readonly property real editorDocumentStartY: {
+        if (contentsView.showPrintEditorLayout)
+            return 0;
         return contentsView.effectiveEditorTopInset;
     }
     readonly property int editorDocumentTopPadding: 0
@@ -82,6 +85,25 @@ Item {
     property int gutterWidthOverride: -1
     readonly property int effectiveGutterWidth: contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
+    readonly property int plainEditorViewModeValue: 0
+    readonly property int pageEditorViewModeValue: 1
+    readonly property int printEditorViewModeValue: 2
+    readonly property var resolvedEditorViewModeViewModel: {
+        if (contentsView.editorViewModeViewModel)
+            return contentsView.editorViewModeViewModel;
+        if (LV.ViewModels && LV.ViewModels.get !== undefined)
+            return LV.ViewModels.get("editorViewModeViewModel");
+        return null;
+    }
+    readonly property int activeEditorViewModeValue: {
+        const viewModeModel = contentsView.resolvedEditorViewModeViewModel;
+        if (viewModeModel && viewModeModel.activeViewMode !== undefined) {
+            const activeValue = Number(viewModeModel.activeViewMode);
+            if (isFinite(activeValue))
+                return Math.max(0, Math.floor(activeValue));
+        }
+        return contentsView.plainEditorViewModeValue;
+    }
     readonly property color lineNumberColor: "#4E5157"
     readonly property int lineNumberColumnLeft: 14
     readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
@@ -146,7 +168,29 @@ Item {
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
+    readonly property bool showPageEditorLayout: contentsView.hasSelectedNote
+                                                 && !contentsView.showDedicatedResourceViewer
+                                                 && contentsView.activeEditorViewModeValue === contentsView.pageEditorViewModeValue
+    readonly property bool showPrintModeActive: contentsView.hasSelectedNote
+                                                && !contentsView.showDedicatedResourceViewer
+                                                && contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue
+    readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
+    readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
+    readonly property bool showFormattedTextRenderer: contentsView.hasSelectedNote
+                                                      && !contentsView.showDedicatedResourceViewer
+                                                      && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
+                                                      && contentsView.activeEditorViewModeValue !== contentsView.pageEditorViewModeValue
+                                                      && contentsView.activeEditorViewModeValue !== contentsView.printEditorViewModeValue
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
+    readonly property color printCanvasColor: "#F1F3F6"
+    readonly property int printPaperHorizontalMargin: LV.Theme.gap12
+    readonly property int printPaperMaxWidth: 880
+    readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
+    readonly property int printPaperPaddingVertical: LV.Theme.gap8
+    readonly property color printPaperColor: "#FFFFFF"
+    readonly property color printPaperBorderColor: "#19000000"
+    readonly property int printGuideHorizontalInset: LV.Theme.gap12 * 2
+    readonly property int printGuideVerticalInset: LV.Theme.gap12 * 2
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
@@ -637,6 +681,8 @@ Item {
     function canAcceptResourceDropUrls(urls) {
         if (!contentsView.hasSelectedNote || !contentsView.resourcesImportViewModel)
             return false;
+        if (contentsView.showDedicatedResourceViewer || contentsView.showFormattedTextRenderer)
+            return false;
         if (!Array.isArray(urls) || urls.length === 0)
             return false;
         if (contentsView.resourcesImportViewModel.canImportUrls === undefined)
@@ -652,6 +698,87 @@ Item {
         if (!selectionBridge || selectionBridge.persistEditorTextForNote === undefined || !contentsView.contentPersistenceContractAvailable)
             return false;
         return !!selectionBridge.persistEditorTextForNote(noteId, nextText);
+    }
+    function selectedEditorRange() {
+        if (!contentEditor)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const text = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        let start = contentEditor.selectionStart !== undefined ? Number(contentEditor.selectionStart) : NaN;
+        let end = contentEditor.selectionEnd !== undefined ? Number(contentEditor.selectionEnd) : NaN;
+        if (!isFinite(start) || !isFinite(end)) {
+            if (contentEditor.editorItem) {
+                if (!isFinite(start) && contentEditor.editorItem.selectionStart !== undefined)
+                    start = Number(contentEditor.editorItem.selectionStart);
+                if (!isFinite(end) && contentEditor.editorItem.selectionEnd !== undefined)
+                    end = Number(contentEditor.editorItem.selectionEnd);
+            }
+        }
+        if (!isFinite(start) || !isFinite(end))
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const rangeStart = Math.max(0, Math.min(text.length, Math.floor(Math.min(start, end))));
+        const rangeEnd = Math.max(0, Math.min(text.length, Math.floor(Math.max(start, end))));
+        return ({
+                "start": rangeStart,
+                "end": rangeEnd
+            });
+    }
+    function normalizeInlineStyleTag(tagName) {
+        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
+        if (normalizedTagName === "bold")
+            return "bold";
+        if (normalizedTagName === "italic")
+            return "italic";
+        if (normalizedTagName === "underline")
+            return "underline";
+        if (normalizedTagName === "strikethrough")
+            return "strikethrough";
+        return "";
+    }
+    function wrapSelectedEditorTextWithTag(tagName) {
+        if (!contentsView.hasSelectedNote
+                || contentsView.showDedicatedResourceViewer
+                || contentsView.showFormattedTextRenderer)
+            return false;
+        const normalizedTagName = contentsView.normalizeInlineStyleTag(tagName);
+        if (normalizedTagName.length === 0)
+            return false;
+        const selectionRange = contentsView.selectedEditorRange();
+        if (selectionRange.end <= selectionRange.start)
+            return false;
+
+        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const openTag = "<" + normalizedTagName + ">";
+        const closeTag = "</" + normalizedTagName + ">";
+        const selectedText = currentText.slice(selectionRange.start, selectionRange.end);
+        const nextText = currentText.slice(0, selectionRange.start)
+                + openTag
+                + selectedText
+                + closeTag
+                + currentText.slice(selectionRange.end);
+        contentsView.editorText = nextText;
+
+        editorSession.markLocalEditorAuthority();
+        const saved = contentsView.persistEditorTextImmediately(nextText);
+        if (!saved)
+            editorSession.scheduleEditorPersistence();
+
+        const wrappedSelectionStart = selectionRange.start + openTag.length;
+        const wrappedSelectionEnd = wrappedSelectionStart + selectedText.length;
+        if (contentEditor.select !== undefined)
+            contentEditor.select(wrappedSelectionStart, wrappedSelectionEnd);
+        if (contentEditor.cursorPosition !== undefined)
+            contentEditor.cursorPosition = wrappedSelectionEnd;
+        if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined)
+            contentEditor.editorItem.cursorPosition = wrappedSelectionEnd;
+
+        contentsView.editorTextEdited(nextText);
+        return true;
     }
     function insertImportedResourceTags(importedEntries) {
         if (!Array.isArray(importedEntries) || importedEntries.length === 0)
@@ -734,6 +861,11 @@ Item {
         contentViewModel: contentsView.contentViewModel
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId
+    }
+    ContentsTextFormatRenderer {
+        id: textFormatRenderer
+
+        sourceText: contentsView.editorText
     }
     ContentsLogicalTextBridge {
         id: textMetricsBridge
@@ -852,6 +984,8 @@ Item {
                         return contentsView.markerY(markerSpec);
                     }
                     visible: !contentsView.showDedicatedResourceViewer
+                             && !contentsView.showPrintEditorLayout
+                             && !contentsView.showFormattedTextRenderer
                     visibleLineNumbersModel: contentsView.visibleLineNumbers()
                 }
                 Item {
@@ -861,28 +995,110 @@ Item {
                     Layout.fillWidth: true
                     Layout.minimumHeight: contentsView.minEditorHeight
 
+                    Rectangle {
+                        id: printEditorCanvas
+
+                        anchors.fill: parent
+                        color: contentsView.printCanvasColor
+                        visible: contentsView.showPrintEditorLayout
+                        z: 0
+
+                        Rectangle {
+                            id: printEditorPage
+
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: LV.Theme.gap4
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.top: parent.top
+                            anchors.topMargin: LV.Theme.gap4
+                            border.color: contentsView.printPaperBorderColor
+                            border.width: 1
+                            color: contentsView.printPaperColor
+                            radius: LV.Theme.radiusSm
+                            width: Math.max(
+                                       360,
+                                       Math.min(
+                                           contentsView.printPaperMaxWidth,
+                                           parent.width - contentsView.printPaperHorizontalMargin * 2))
+
+                            Canvas {
+                                anchors.fill: parent
+                                visible: contentsView.showPrintMarginGuides
+
+                                onHeightChanged: requestPaint()
+                                onVisibleChanged: {
+                                    if (visible)
+                                        requestPaint();
+                                }
+                                onWidthChanged: requestPaint()
+                                onPaint: {
+                                    const ctx = getContext("2d");
+                                    ctx.clearRect(0, 0, width, height);
+                                    if (!visible)
+                                        return;
+
+                                    const leftInset = Math.max(1, Number(contentsView.printGuideHorizontalInset) || 1);
+                                    const rightInset = Math.max(1, Number(contentsView.printGuideHorizontalInset) || 1);
+                                    const topInset = Math.max(1, Number(contentsView.printGuideVerticalInset) || 1);
+                                    const bottomInset = Math.max(1, Number(contentsView.printGuideVerticalInset) || 1);
+                                    const left = leftInset;
+                                    const top = topInset;
+                                    const right = Math.max(left + 1, width - rightInset);
+                                    const bottom = Math.max(top + 1, height - bottomInset);
+
+                                    ctx.lineWidth = 1;
+                                    ctx.strokeStyle = "#66727D";
+                                    ctx.beginPath();
+                                    const segment = 6;
+                                    const gap = 4;
+
+                                    for (let x = left; x < right; x += segment + gap) {
+                                        const x2 = Math.min(right, x + segment);
+                                        ctx.moveTo(x, top);
+                                        ctx.lineTo(x2, top);
+                                        ctx.moveTo(x, bottom);
+                                        ctx.lineTo(x2, bottom);
+                                    }
+                                    for (let y = top; y < bottom; y += segment + gap) {
+                                        const y2 = Math.min(bottom, y + segment);
+                                        ctx.moveTo(left, y);
+                                        ctx.lineTo(left, y2);
+                                        ctx.moveTo(right, y);
+                                        ctx.lineTo(right, y2);
+                                    }
+                                    ctx.stroke();
+                                }
+                            }
+                        }
+                    }
                     LV.TextEditor {
                         id: contentEditor
 
-                        anchors.fill: parent
+                        anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent
                         anchors.topMargin: contentsView.editorDocumentStartY
                         autoFocusOnPress: true
-                        backgroundColor: contentsView.displayColor
-                        backgroundColorDisabled: contentsView.displayColor
-                        backgroundColorFocused: contentsView.displayColor
-                        backgroundColorHover: contentsView.displayColor
-                        backgroundColorPressed: contentsView.displayColor
+                        backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
+                        backgroundColorDisabled: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
+                        backgroundColorFocused: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
+                        backgroundColorHover: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
+                        backgroundColorPressed: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         centeredTextHeight: contentsView.editorTextLineBoxHeight
                         cornerRadius: 0
-                        editorHeight: contentsView.editorSurfaceHeight
+                        editorHeight: contentsView.showPrintEditorLayout
+                                      ? Math.max(0, Number(printEditorPage.height) || 0)
+                                      : contentsView.editorSurfaceHeight
                         enforceModeDefaults: false
                         fieldMinHeight: Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
                         fontFamily: LV.Theme.fontBody
                         fontLetterSpacing: 0
                         fontPixelSize: 12
                         fontWeight: Font.Medium
-                        insetHorizontal: contentsView.editorHorizontalInset
-                        insetVertical: contentsView.editorBottomInset
+                        insetHorizontal: contentsView.showPrintEditorLayout
+                                         ? contentsView.printPaperPaddingHorizontal
+                                         : contentsView.editorHorizontalInset
+                        insetVertical: contentsView.showPrintEditorLayout
+                                       ? contentsView.printPaperPaddingVertical
+                                       : contentsView.editorBottomInset
                         placeholderText: ""
                         selectByMouse: true
                         selectedTextColor: LV.Theme.textPrimary
@@ -894,6 +1110,7 @@ Item {
                         textColor: LV.Theme.bodyColor
                         textFormat: TextEdit.PlainText
                         visible: !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
 
                         onFocusedChanged: {
@@ -910,6 +1127,37 @@ Item {
                             contentsView.editorTextEdited(text);
                         }
                     }
+                    Flickable {
+                        id: formattedPreviewViewport
+
+                        anchors.fill: parent
+                        clip: true
+                        contentHeight: Math.max(
+                                           height,
+                                           Math.max(0, Number(formattedPreviewText.paintedHeight) || 0)
+                                               + contentsView.editorDocumentStartY
+                                               + contentsView.editorBottomInset)
+                        contentWidth: width
+                        interactive: contentHeight > height
+                        visible: contentsView.showFormattedTextRenderer
+                        z: 1
+
+                        Text {
+                            id: formattedPreviewText
+
+                            color: LV.Theme.bodyColor
+                            font.family: LV.Theme.fontBody
+                            font.letterSpacing: 0
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            text: textFormatRenderer.renderedHtml
+                            textFormat: Text.RichText
+                            width: Math.max(0, formattedPreviewViewport.width - contentsView.editorHorizontalInset * 2)
+                            wrapMode: Text.Wrap
+                            x: contentsView.editorHorizontalInset
+                            y: contentsView.editorDocumentStartY
+                        }
+                    }
                     Rectangle {
                         anchors.fill: parent
                         border.color: LV.Theme.primary
@@ -917,10 +1165,14 @@ Item {
                         color: contentsView.resourceDropActive ? "#1A9DA0A8" : "transparent"
                         radius: LV.Theme.radiusSm
                         visible: contentsView.resourceDropActive
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
                         z: 4
                     }
                     DropArea {
                         anchors.fill: parent
+                        enabled: !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
                         keys: ["text/uri-list"]
                         z: 5
 
@@ -956,6 +1208,56 @@ Item {
                             contentsView.resourceDropActive = false;
                         }
                     }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentEditor.focused
+                        sequence: StandardKey.Bold
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("bold")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentEditor.focused
+                        sequence: StandardKey.Italic
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("italic")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentEditor.focused
+                        sequence: StandardKey.Underline
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("underline")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentEditor.focused
+                        sequence: "Meta+Shift+X"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("strikethrough")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentEditor.focused
+                        sequence: "Ctrl+Shift+X"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("strikethrough")
+                    }
                     // Shared desktop/mobile contract: the outer editor surface owns the 16px top spacer, so LVRS top centering stays disabled.
                     Binding {
                         property: "topPadding"
@@ -964,13 +1266,20 @@ Item {
                     }
                     LV.Label {
                         anchors.left: parent.left
-                        anchors.leftMargin: contentsView.editorHorizontalInset
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                           ? printEditorPage.x + contentsView.printPaperPaddingHorizontal
+                                           : contentsView.editorHorizontalInset
                         anchors.top: parent.top
-                        anchors.topMargin: contentsView.editorDocumentStartY
+                        anchors.topMargin: contentsView.showPrintEditorLayout
+                                          ? printEditorPage.y + contentsView.printPaperPaddingVertical
+                                          : contentsView.editorDocumentStartY
                         color: LV.Theme.textTertiary
                         style: body
                         text: "Start typing here"
-                        visible: contentEditor.empty && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer
+                        visible: contentEditor.empty
+                                 && contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
                     }
                     ContentsResourceViewer {
                         id: dedicatedResourceViewer
@@ -992,6 +1301,7 @@ Item {
                         enabled: visible
                         visible: contentsView.hasSelectedNote
                                  && bodyResourceRenderer.resourceCount > 0
+                                 && !contentsView.showPrintEditorLayout
                                  && !contentsView.showDedicatedResourceViewer
                         z: 2
 
@@ -1162,6 +1472,8 @@ Item {
                         contentsView.scrollEditorViewportToMinimapPosition(localY);
                     }
                     visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer
+                             && !contentsView.showPrintEditorLayout
+                             && !contentsView.showFormattedTextRenderer
                 }
             }
         }

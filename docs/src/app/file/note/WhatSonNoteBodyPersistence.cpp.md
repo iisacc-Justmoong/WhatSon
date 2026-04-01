@@ -8,6 +8,11 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 ## Key Behaviors
 - `normalizeBodyPlainText(...)` normalizes only `CRLF` / `CR` into `LF`.
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
+- `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to canonical tags:
+  - `bold` / `b` / `strong` -> `strong`
+  - `italic` / `i` / `em` -> `em`
+  - `underline` / `u` -> `u`
+  - `strikethrough` / `strike` / `s` / `del` -> `s`
 - Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
 - `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
 - Empty paragraphs are emitted as empty lines instead of being dropped.

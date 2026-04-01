@@ -13,6 +13,7 @@ Item {
     property bool drawerVisible: true
     property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
+    property var editorViewModeViewModel: null
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
     property color gutterColor: "transparent"
@@ -117,6 +118,7 @@ Item {
                 drawerVisible: contentViewLayout.drawerVisible
                 drawerColor: contentViewLayout.drawerColor
                 drawerHeight: contentViewLayout.drawerHeight
+                editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
                 enabled: contentViewLayout.visible
                 editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
                 frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride

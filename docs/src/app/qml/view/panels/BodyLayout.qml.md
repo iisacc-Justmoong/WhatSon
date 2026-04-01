@@ -47,6 +47,8 @@
   routing remains centralized in the root shell.
 - `resourcesImportViewModel` is accepted on the desktop shell and forwarded to `ContentViewLayout`, so file drops on
   the note editor reuse the same `.wsresource` import path as menu-based imports.
+- `editorViewModeViewModel` is accepted on the desktop shell and forwarded to `ContentViewLayout`, so editor render
+  modes (`Plain/Page/Print/Web/Presentation`) stay consistent between navigation controls and the content surface.
 
 ## Intended Detailed Sections
 - Responsibility and business role

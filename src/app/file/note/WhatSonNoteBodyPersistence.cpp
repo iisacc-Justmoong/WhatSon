@@ -12,7 +12,9 @@ namespace
     struct BodyDocumentTextFragments final
     {
         QString fallbackText;
+        QString fallbackRichText;
         QStringList blockLines;
+        QStringList blockRichLines;
     };
 
     QString escapeXmlAttributeValue(QString value)
@@ -33,6 +35,66 @@ namespace
         text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
         text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
         return text;
+    }
+
+    QString escapeHtmlText(QString value)
+    {
+        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
+        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
+        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
+        value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
+        value.replace(QStringLiteral("'"), QStringLiteral("&#39;"));
+        return value;
+    }
+
+    QString normalizedInlineStyleTagForElement(const QString& elementName)
+    {
+        const QString normalizedName = elementName.trimmed().toCaseFolded();
+        if (normalizedName == QStringLiteral("bold")
+            || normalizedName == QStringLiteral("b")
+            || normalizedName == QStringLiteral("strong"))
+        {
+            return QStringLiteral("strong");
+        }
+        if (normalizedName == QStringLiteral("italic")
+            || normalizedName == QStringLiteral("i")
+            || normalizedName == QStringLiteral("em"))
+        {
+            return QStringLiteral("em");
+        }
+        if (normalizedName == QStringLiteral("underline")
+            || normalizedName == QStringLiteral("u"))
+        {
+            return QStringLiteral("u");
+        }
+        if (normalizedName == QStringLiteral("strikethrough")
+            || normalizedName == QStringLiteral("strike")
+            || normalizedName == QStringLiteral("s")
+            || normalizedName == QStringLiteral("del"))
+        {
+            return QStringLiteral("s");
+        }
+        return {};
+    }
+
+    void appendInlineStyleTag(QString* target, const QString& tagName, bool opening)
+    {
+        if (target == nullptr || tagName.isEmpty())
+        {
+            return;
+        }
+        *target += opening
+                       ? QStringLiteral("<%1>").arg(tagName)
+                       : QStringLiteral("</%1>").arg(tagName);
+    }
+
+    QString richTextFromRichLines(const QStringList& richLines)
+    {
+        if (richLines.isEmpty())
+        {
+            return {};
+        }
+        return richLines.join(QStringLiteral("<br/>"));
     }
 
     QString normalizeResourceStartTag(const QString& rawTagText)
@@ -152,6 +214,7 @@ namespace
         bool encounteredBlockElement = false;
         int blockDepth = 0;
         QString currentBlockText;
+        QString currentBlockRichText;
 
         while (!reader.atEnd())
         {
@@ -173,15 +236,31 @@ namespace
                     continue;
                 }
 
+                const QString inlineStyleTag = normalizedInlineStyleTagForElement(elementName);
+                if (!inlineStyleTag.isEmpty())
+                {
+                    if (blockDepth > 0)
+                    {
+                        appendInlineStyleTag(&currentBlockRichText, inlineStyleTag, true);
+                    }
+                    else if (!encounteredBlockElement)
+                    {
+                        appendInlineStyleTag(&fragments.fallbackRichText, inlineStyleTag, true);
+                    }
+                    continue;
+                }
+
                 if (elementName.compare(QStringLiteral("br"), Qt::CaseInsensitive) == 0)
                 {
                     if (blockDepth > 0)
                     {
                         currentBlockText += QLatin1Char('\n');
+                        currentBlockRichText += QLatin1Char('\n');
                     }
                     else if (!encounteredBlockElement)
                     {
                         fragments.fallbackText += QLatin1Char('\n');
+                        fragments.fallbackRichText += QLatin1Char('\n');
                     }
                     continue;
                 }
@@ -192,6 +271,7 @@ namespace
                     if (blockDepth == 0)
                     {
                         currentBlockText.clear();
+                        currentBlockRichText.clear();
                     }
                     ++blockDepth;
                 }
@@ -209,10 +289,12 @@ namespace
                 if (blockDepth > 0)
                 {
                     currentBlockText += text;
+                    currentBlockRichText += escapeHtmlText(text);
                 }
                 else if (!encounteredBlockElement || !text.trimmed().isEmpty())
                 {
                     fragments.fallbackText += text;
+                    fragments.fallbackRichText += escapeHtmlText(text);
                 }
                 continue;
             }
@@ -223,6 +305,20 @@ namespace
             }
 
             const QString elementName = reader.name().toString();
+            const QString inlineStyleTag = normalizedInlineStyleTagForElement(elementName);
+            if (!inlineStyleTag.isEmpty())
+            {
+                if (blockDepth > 0)
+                {
+                    appendInlineStyleTag(&currentBlockRichText, inlineStyleTag, false);
+                }
+                else if (!encounteredBlockElement)
+                {
+                    appendInlineStyleTag(&fragments.fallbackRichText, inlineStyleTag, false);
+                }
+                continue;
+            }
+
             if (elementName.compare(QStringLiteral("body"), Qt::CaseInsensitive) == 0)
             {
                 break;
@@ -240,11 +336,17 @@ namespace
                     WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockText).split(
                         QLatin1Char('\n'),
                         Qt::KeepEmptyParts));
+                fragments.blockRichLines.append(
+                    WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockRichText).split(
+                        QLatin1Char('\n'),
+                        Qt::KeepEmptyParts));
                 currentBlockText.clear();
+                currentBlockRichText.clear();
             }
         }
 
         fragments.fallbackText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackText);
+        fragments.fallbackRichText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackRichText);
         return fragments;
     }
 } // namespace
@@ -266,6 +368,18 @@ namespace WhatSon::NoteBodyPersistence
             return fragments.blockLines.join(QLatin1Char('\n'));
         }
         return fragments.fallbackText;
+    }
+
+    QString richTextFromBodyDocument(const QString& bodyDocumentText)
+    {
+        const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
+        if (!fragments.blockRichLines.isEmpty())
+        {
+            return richTextFromRichLines(fragments.blockRichLines);
+        }
+
+        return richTextFromRichLines(
+            fragments.fallbackRichText.split(QLatin1Char('\n'), Qt::KeepEmptyParts));
     }
 
     QString firstLineFromBodyDocument(const QString& bodyDocumentText)

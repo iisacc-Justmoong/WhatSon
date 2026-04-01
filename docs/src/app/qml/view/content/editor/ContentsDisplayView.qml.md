@@ -19,6 +19,7 @@ positions from the same document origin.
 ## Key Collaborators
 
 - `ContentsEditorSelectionBridge`: exposes the selected note body and persistence contracts.
+- `ContentsTextFormatRenderer`: converts inline style tags in editor text into RichText HTML for preview modes.
 - `ContentsBodyResourceRenderer`: extracts `<resource ...>` tag render payloads from the selected note body document.
 - `ContentsResourceViewer`: renders direct `.wsresource` selections in-place (`image` bitmap / `pdf` reader).
 - `ContentsLogicalTextBridge`: maps plain-text offsets to logical line numbers and line starts.
@@ -47,6 +48,21 @@ positions from the same document origin.
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
+- Inline formatting shortcuts wrap selected text with `.wsnbody` style tags:
+  - `Cmd/Ctrl+B` -> `<bold>...</bold>`
+  - `Cmd/Ctrl+I` -> `<italic>...</italic>`
+  - `Cmd/Ctrl+U` -> `<underline>...</underline>`
+  - `Shift+Cmd/Ctrl+X` -> `<strikethrough>...</strikethrough>`
+- The editor now resolves `editorViewModeViewModel` (from injected property or `LV.ViewModels`) and switches renderer
+  surfaces by mode:
+  - `Plain` (`activeViewMode == 0`): editable `LV.TextEditor`
+  - `Page` (`activeViewMode == 1`): editable plain paper-layout editor surface (PDF-like page canvas, no print guides)
+  - `Print` (`activeViewMode == 2`): editable paper-layout editor surface + dashed print-margin guides
+  - `Web/Presentation`: read-only RichText preview (`ContentsTextFormatRenderer` + `Text.RichText`)
+- While `Page`/`Print` modes are active, the editor keeps text mutation paths enabled but hides gutter/minimap chrome
+  so the page-focused layout behaves like a word processor surface.
+- While RichText preview mode is active (`Web/Presentation`), mutation surfaces are disabled (`DropArea`, edit
+  shortcuts, gutter/minimap chrome), preserving mode-specific read-only behavior.
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
 - `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
   mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.

@@ -1,5 +1,6 @@
 #include "WhatSonQmlInternalTypeRegistrar.hpp"
 
+#include "editor/renderer/ContentsTextFormatRenderer.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
@@ -22,6 +23,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
         qmlRegisterType<ContentsGutterMarkerBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
+        qmlRegisterType<ContentsTextFormatRenderer>(
+            "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
         qmlRegisterType<ContentsBodyResourceRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsBodyResourceRenderer");
         qmlRegisterType<ResourceBitmapViewer>(

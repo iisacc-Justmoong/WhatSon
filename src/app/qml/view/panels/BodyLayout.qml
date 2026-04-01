@@ -13,6 +13,7 @@ Item {
     property color contentsDisplayColor: "transparent"
     property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
+    property var editorViewModeViewModel: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property color gutterColor: "transparent"
     property var libraryHierarchyViewModel: null
@@ -202,6 +203,7 @@ Item {
                 displayColor: hStack.contentsDisplayColor
                 drawerColor: hStack.drawerColor
                 drawerHeight: hStack.drawerHeight
+                editorViewModeViewModel: hStack.editorViewModeViewModel
                 gutterColor: hStack.gutterColor
                 libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
                 minDisplayHeight: hStack.minDisplayHeight

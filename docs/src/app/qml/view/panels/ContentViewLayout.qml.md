@@ -67,6 +67,9 @@
   scope resolution.
 - `resourcesImportViewModel` is now part of the wrapper contract and is forwarded into
   `ContentsDisplayView`, enabling editor-side drag/drop packaging through the shared resource import pipeline.
+- `editorViewModeViewModel` is now part of the wrapper contract and is forwarded into
+  `ContentsDisplayView`, so editor mode selection in the navigation bar directly controls plain/print/preview rendering
+  behavior inside the text surface.
 
 ## Intended Detailed Sections
 - Responsibility and business role

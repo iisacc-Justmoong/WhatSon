@@ -1,4 +1,5 @@
 #include "file/note/WhatSonLocalNoteFileStore.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
@@ -85,6 +86,8 @@ private slots:
     void readNote_resolvesUnquotedClosedResourceTagFromBody();
     void readNote_preservesEmptyAndWhitespaceOnlyParagraphs();
     void updateNote_headerOnlyRewrite_preservesExistingBodyText();
+    void noteBodyPersistence_richTextFromBodyDocument_mapsCustomStyleTags();
+    void noteBodyPersistence_richTextFromBodyDocument_supportsAliasTagsAndLineBreaks();
 };
 
 void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFiles()
@@ -404,6 +407,45 @@ void WhatSonLocalNoteFileStoreTest::readNote_preservesEmptyAndWhitespaceOnlyPara
     QVERIFY2(store.readNote(readRequest, &readDocument, &readError), qPrintable(readError));
     QCOMPARE(readDocument.bodyPlainText, QStringLiteral("alpha\n\n   \nbeta"));
     QCOMPARE(readDocument.bodyFirstLine, QStringLiteral("alpha"));
+}
+
+void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_richTextFromBodyDocument_mapsCustomStyleTags()
+{
+    const QString bodyXml = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"Styled\">\n"
+        "  <body>\n"
+        "    <paragraph><bold>Hello</bold>, <italic>World</italic> <underline>Underline</underline> <strikethrough>Strike</strikethrough></paragraph>\n"
+        "  </body>\n"
+        "</contents>\n");
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyXml),
+        QStringLiteral("Hello, World Underline Strike"));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyXml),
+        QStringLiteral("<strong>Hello</strong>, <em>World</em> <u>Underline</u> <s>Strike</s>"));
+}
+
+void WhatSonLocalNoteFileStoreTest::noteBodyPersistence_richTextFromBodyDocument_supportsAliasTagsAndLineBreaks()
+{
+    const QString bodyXml = QStringLiteral(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE WHATSONNOTE>\n"
+        "<contents id=\"StyledAlias\">\n"
+        "  <body>\n"
+        "    <paragraph><B>Alpha</B><br/><I>Beta</I></paragraph>\n"
+        "    <paragraph><u>Line</u> and <strike>Gone</strike></paragraph>\n"
+        "  </body>\n"
+        "</contents>\n");
+
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyXml),
+        QStringLiteral("Alpha\nBeta\nLine and Gone"));
+    QCOMPARE(
+        WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyXml),
+        QStringLiteral("<strong>Alpha</strong><br/><em>Beta</em><br/><u>Line</u> and <s>Gone</s>"));
 }
 
 QTEST_MAIN(WhatSonLocalNoteFileStoreTest)

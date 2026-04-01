@@ -17,6 +17,9 @@
 - Lazy-load the macOS native menu bar and hand it the root window plus the resources import ViewModel.
 - Forward `resourcesImportViewModel` into both desktop `BodyLayout` and mobile `MobileHierarchyPage` so note-editor
   drag/drop imports and menu-driven imports share the same packaging/runtime-refresh backend.
+- Forward `editorViewModeViewModel` into both desktop `BodyLayout` and mobile `MobileHierarchyPage` so navigation-bar
+  editor mode selection (`Plain/Page/Print/Web/Presentation`) drives the same content-surface render policy on every
+  platform branch.
 - Own Agenda/day/week/month/year overlay visibility flags and keep them mutually exclusive across desktop and mobile
   route handlers.
 
