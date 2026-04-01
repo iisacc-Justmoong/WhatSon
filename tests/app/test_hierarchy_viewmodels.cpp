@@ -11,7 +11,11 @@
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
+#include "file/hierarchy/event/WhatSonEventHierarchyStore.hpp"
+#include "file/hierarchy/preset/WhatSonPresetHierarchyStore.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
+#include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 
 #include <QDir>
@@ -24,6 +28,7 @@
 #include <QUrl>
 #include <QtTest>
 #include <stdexcept>
+#include <utility>
 
 namespace
 {
@@ -138,6 +143,38 @@ namespace
         root.insert(QStringLiteral("schema"), QStringLiteral("whatson.projects.list"));
         root.insert(QStringLiteral("projects"), projects);
         return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
+
+    bool writeEventHierarchyFile(const QString& filePath, const QStringList& eventNames)
+    {
+        WhatSonEventHierarchyStore store;
+        store.setEventNames(eventNames);
+        QString errorMessage;
+        return store.writeToFile(filePath, &errorMessage);
+    }
+
+    bool writePresetHierarchyFile(const QString& filePath, const QStringList& presetNames)
+    {
+        WhatSonPresetHierarchyStore store;
+        store.setPresetNames(presetNames);
+        QString errorMessage;
+        return store.writeToFile(filePath, &errorMessage);
+    }
+
+    bool writeTagsHierarchyFile(const QString& filePath, QVector<WhatSonTagDepthEntry> entries)
+    {
+        WhatSonTagsHierarchyStore store;
+        store.setTagEntries(std::move(entries));
+        QString errorMessage;
+        return store.writeToFile(filePath, &errorMessage);
+    }
+
+    bool writeResourcesHierarchyFile(const QString& filePath, const QStringList& resourcePaths)
+    {
+        WhatSonResourcesHierarchyStore store;
+        store.setResourcePaths(resourcePaths);
+        QString errorMessage;
+        return store.writeToFile(filePath, &errorMessage);
     }
 
     QString makeWsnBodyText(const QString& summaryText)
@@ -501,16 +538,22 @@ private
     void bookmarksViewModel_saveCurrentBodyText_rewritesWsnbody();
     void bookmarksViewModel_removeNoteById_reselectsVisibleNeighbor();
     void bookmarksViewModel_formatsDisplayDateWithSystemCalendarStore();
+    void bookmarksViewModel_requestViewModelHook_refreshesBookmarkedProjection();
     void resourcesViewModel_exposesSupportedTypeTree();
     void resourcesViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
+    void resourcesViewModel_requestViewModelHook_reloadsResourcePathsFromFile();
     void progressViewModel_supportsCrudContract();
     void progressViewModel_saveCurrentBodyText_emitsHubFilesystemMutated();
     void progressViewModel_applyRuntimeSnapshot_preservesSelectionAndVisibleNotes();
+    void progressViewModel_requestViewModelHook_refreshesStateAndNotes();
     void eventViewModel_supportsCrudContract();
     void eventViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
+    void eventViewModel_requestViewModelHook_reloadsNamesFromFile();
     void presetViewModel_supportsCrudContract();
     void presetViewModel_applyRuntimeSnapshot_preservesExpandedBucketState();
+    void presetViewModel_requestViewModelHook_reloadsNamesFromFile();
     void tagsViewModel_supportsCrudContract();
+    void tagsViewModel_requestViewModelHook_reloadsEntriesFromFile();
     void hierarchyViewModels_exposeCapabilityInterfaces();
     void hierarchyViewModels_hierarchyModel_exposesCountRoleAcrossDomains();
     void tagsViewModel_applyRuntimeSnapshot_preservesExpandedStateAcrossHierarchyRefresh();
@@ -1367,6 +1410,50 @@ void HierarchyViewModelsTest::bookmarksViewModel_formatsDisplayDateWithSystemCal
         calendarStore.formatNoteDate(note.lastModifiedAt, note.createdAt));
 }
 
+void HierarchyViewModelsTest::bookmarksViewModel_requestViewModelHook_refreshesBookmarkedProjection()
+{
+    QString hubPath;
+    QVERIFY(prepareBookmarksHub(&hubPath));
+
+    const QString hiddenHeaderPath = QDir(hubPath).filePath(
+        QStringLiteral("BookmarksVmHub.wscontents/Library.wslibrary/Hidden.wsnote/Hidden.wsnhead"));
+
+    BookmarksHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(6); // blue
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+
+    QVERIFY(writeUtf8File(
+        hiddenHeaderPath,
+        makeWsnHeadText(
+            QStringLiteral("note-hidden"),
+            true,
+            {QStringLiteral("blue")})));
+
+    QSignalSpy hookSpy(&viewModel, &BookmarksHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.selectedIndex(), 6);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+
+    QStringList noteIds;
+    for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
+    {
+        noteIds.push_back(
+            viewModel.noteListModel()->data(
+                viewModel.noteListModel()->index(row, 0),
+                BookmarksNoteListModel::NoteIdRole).toString());
+    }
+    noteIds.sort();
+    QCOMPARE(noteIds, QStringList({QStringLiteral("note-blue"), QStringLiteral("note-hidden")}));
+}
+
 void HierarchyViewModelsTest::resourcesViewModel_exposesSupportedTypeTree()
 {
     QTemporaryDir tempDir;
@@ -1573,6 +1660,62 @@ void HierarchyViewModelsTest::resourcesViewModel_applyRuntimeSnapshot_preservesE
         true);
 }
 
+void HierarchyViewModelsTest::resourcesViewModel_requestViewModelHook_reloadsResourcePathsFromFile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("HookResources.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("HookResources.wscontents"));
+    const QString resourcesPath = QDir(hubPath).filePath(QStringLiteral("HookResources.wsresources"));
+    QVERIFY(QDir().mkpath(contentsPath));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(resourcesPath, QStringLiteral("logo"), QStringLiteral("logo.png"), QStringLiteral("png")));
+    QVERIFY(createResourcePackage(resourcesPath, QStringLiteral("manual"), QStringLiteral("manual.pdf"), QStringLiteral("pdf")));
+
+    const QString resourcesFilePath = QDir(contentsPath).filePath(QStringLiteral("Resources.wsresources"));
+    QVERIFY(writeResourcesHierarchyFile(
+        resourcesFilePath,
+        {QStringLiteral("HookResources.wsresources/logo.wsresource")}));
+
+    ResourcesHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+    QCOMPARE(viewModel.resourcePaths(), QStringList({QStringLiteral("HookResources.wsresources/logo.wsresource")}));
+
+    QVERIFY(writeResourcesHierarchyFile(
+        resourcesFilePath,
+        {QStringLiteral("HookResources.wsresources/manual.wsresource")}));
+
+    QSignalSpy hookSpy(&viewModel, &ResourcesHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.resourcePaths(), QStringList({QStringLiteral("HookResources.wsresources/manual.wsresource")}));
+
+    bool manualNodeFound = false;
+    bool logoNodeFound = false;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QString key = viewModel.itemModel()->data(
+            viewModel.itemModel()->index(row, 0),
+            ResourcesHierarchyModel::KeyRole).toString();
+        if (key == QStringLiteral("asset:HookResources.wsresources/manual.wsresource"))
+        {
+            manualNodeFound = true;
+        }
+        if (key == QStringLiteral("asset:HookResources.wsresources/logo.wsresource"))
+        {
+            logoNodeFound = true;
+        }
+    }
+    QVERIFY(manualNodeFound);
+    QVERIFY(!logoNodeFound);
+}
+
 void HierarchyViewModelsTest::progressViewModel_supportsCrudContract()
 {
     QString hubPath;
@@ -1721,6 +1864,46 @@ void HierarchyViewModelsTest::progressViewModel_applyRuntimeSnapshot_preservesSe
         QStringLiteral("note-done"));
 }
 
+void HierarchyViewModelsTest::progressViewModel_requestViewModelHook_refreshesStateAndNotes()
+{
+    QString hubPath;
+    QVERIFY(prepareProgressHub(&hubPath));
+
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("ProgressVmHub.wscontents"));
+    const QString progressFilePath = QDir(contentsPath).filePath(QStringLiteral("Progress.wsprogress"));
+    const QString readyHeaderPath = QDir(contentsPath).filePath(
+        QStringLiteral("Library.wslibrary/Ready.wsnote/Ready.wsnhead"));
+
+    ProgressHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    viewModel.setSelectedIndex(0);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+
+    QVERIFY(writeUtf8File(
+        progressFilePath,
+        makeProgressWsprogressText({
+            QStringLiteral("Plan"),
+            QStringLiteral("Queued"),
+            QStringLiteral("Doing"),
+            QStringLiteral("Closed")
+        })));
+    QVERIFY(writeUtf8File(
+        readyHeaderPath,
+        makeWsnHeadText(QStringLiteral("note-ready"), false, {}, {}, 1)));
+
+    QSignalSpy hookSpy(&viewModel, &ProgressHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Plan"));
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
+}
+
 void HierarchyViewModelsTest::eventViewModel_supportsCrudContract()
 {
     EventHierarchyViewModel viewModel;
@@ -1756,6 +1939,31 @@ void HierarchyViewModelsTest::eventViewModel_applyRuntimeSnapshot_preservesExpan
             viewModel.itemModel()->index(viewModel.selectedIndex(), 0),
             EventHierarchyModel::LabelRole).toString(),
         QStringLiteral("Launch"));
+}
+
+void HierarchyViewModelsTest::eventViewModel_requestViewModelHook_reloadsNamesFromFile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString eventFilePath = tempDir.filePath(QStringLiteral("Event.wsevent"));
+    QVERIFY(writeEventHierarchyFile(eventFilePath, {QStringLiteral("Launch")}));
+
+    EventHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot({QStringLiteral("Launch")}, eventFilePath, true);
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Launch"));
+
+    QVERIFY(writeEventHierarchyFile(eventFilePath, {QStringLiteral("Workshop"), QStringLiteral("Townhall")}));
+
+    QSignalSpy hookSpy(&viewModel, &EventHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Workshop"));
 }
 
 void HierarchyViewModelsTest::presetViewModel_supportsCrudContract()
@@ -1795,6 +2003,31 @@ void HierarchyViewModelsTest::presetViewModel_applyRuntimeSnapshot_preservesExpa
         QStringLiteral("Classic"));
 }
 
+void HierarchyViewModelsTest::presetViewModel_requestViewModelHook_reloadsNamesFromFile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString presetFilePath = tempDir.filePath(QStringLiteral("Preset.wspreset"));
+    QVERIFY(writePresetHierarchyFile(presetFilePath, {QStringLiteral("Classic")}));
+
+    PresetHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot({QStringLiteral("Classic")}, presetFilePath, true);
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Classic"));
+
+    QVERIFY(writePresetHierarchyFile(presetFilePath, {QStringLiteral("Minimal"), QStringLiteral("Editorial")}));
+
+    QSignalSpy hookSpy(&viewModel, &PresetHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(0), QStringLiteral("Minimal"));
+}
+
 void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
 {
     TagsHierarchyViewModel viewModel;
@@ -1820,6 +2053,41 @@ void HierarchyViewModelsTest::tagsViewModel_supportsCrudContract()
     QCOMPARE(viewModel.itemLabel(viewModel.selectedIndex()), QStringLiteral("Untitled"));
     viewModel.deleteSelectedFolder();
     QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+}
+
+void HierarchyViewModelsTest::tagsViewModel_requestViewModelHook_reloadsEntriesFromFile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString tagsFilePath = tempDir.filePath(QStringLiteral("Tags.wstags"));
+    QVERIFY(writeTagsHierarchyFile(
+        tagsFilePath,
+        {{QStringLiteral("brand"), QStringLiteral("Brand"), 0}}));
+
+    TagsHierarchyViewModel viewModel;
+    viewModel.applyRuntimeSnapshot(
+        {{QStringLiteral("brand"), QStringLiteral("Brand"), 0}},
+        tagsFilePath,
+        true);
+    QCOMPARE(viewModel.itemModel()->rowCount(), 1);
+
+    QVERIFY(writeTagsHierarchyFile(
+        tagsFilePath,
+        {
+            {QStringLiteral("brand"), QStringLiteral("Brand"), 0},
+            {QStringLiteral("brand/social"), QStringLiteral("Social"), 1}
+        }));
+
+    QSignalSpy hookSpy(&viewModel, &TagsHierarchyViewModel::viewModelHookRequested);
+    QVERIFY(hookSpy.isValid());
+
+    viewModel.requestViewModelHook();
+
+    QCOMPARE(hookSpy.count(), 1);
+    QVERIFY(viewModel.loadSucceeded());
+    QCOMPARE(viewModel.itemModel()->rowCount(), 2);
+    QCOMPARE(viewModel.itemLabel(1), QStringLiteral("Social"));
 }
 
 void HierarchyViewModelsTest::hierarchyViewModels_exposeCapabilityInterfaces()

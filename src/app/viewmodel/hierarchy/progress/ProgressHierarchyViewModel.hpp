@@ -80,10 +80,7 @@ public
 
 
 
-    void requestViewModelHook()
-    {
-        emit viewModelHookRequested();
-    }
+    void requestViewModelHook();
 
 signals  :
 
@@ -98,6 +95,7 @@ signals  :
     void hubFilesystemMutated();
 
 private:
+    bool reloadFromProgressFilePath(QString* errorMessage = nullptr);
     void updateItemCount();
     void updateNoteItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());

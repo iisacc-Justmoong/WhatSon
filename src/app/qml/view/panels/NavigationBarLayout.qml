@@ -41,6 +41,7 @@ Rectangle {
     signal compactLeadingActionRequested
     signal dayCalendarRequested
     signal monthCalendarRequested
+    signal todoListRequested
     signal toggleDetailPanelRequested
     signal toggleSidebarRequested
     signal viewHookRequested
@@ -50,6 +51,8 @@ Rectangle {
     function handleApplicationBarViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
         navigationBar.requestViewHook(hookReason);
+        if (hookReason.indexOf("todo-list") >= 0)
+            navigationBar.todoListRequested();
         if (hookReason.indexOf("daily-calendar") >= 0)
             navigationBar.dayCalendarRequested();
         if (hookReason.indexOf("weekly-calendar") >= 0)

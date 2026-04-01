@@ -14,6 +14,8 @@ The implementation completes three steps in order.
 - The package id is derived from the file base name and receives a suffix when it would collide with an existing
   package.
 - `type`, `bucket`, and `format` are assigned by the rules in `WhatSonResourcePackageSupport.hpp`.
+- `importUrlsForEditor(...)` reuses the same import pipeline as `importUrls(...)` but also returns normalized metadata
+  maps so the editor can insert `<resource ...>` tags without reparsing `Resources.wsresources`.
 
 ## Failure Rule
 

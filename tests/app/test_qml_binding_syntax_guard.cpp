@@ -289,6 +289,13 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewLayoutText.contains(QStringLiteral("noteListModel: contentViewLayout.resolvedNoteListModel")),
         "ContentViewLayout.qml must pass the resolved note-list model into ContentsDisplayView.");
     QVERIFY2(
+        contentViewLayoutText.contains(QStringLiteral("property var resourcesImportViewModel: null")),
+        "ContentViewLayout.qml must expose a dedicated resourcesImportViewModel contract for editor resource drops.");
+    QVERIFY2(
+        contentViewLayoutText.contains(
+            QStringLiteral("resourcesImportViewModel: contentViewLayout.resourcesImportViewModel")),
+        "ContentViewLayout.qml must forward resourcesImportViewModel into ContentsDisplayView for resource drop import.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("import WhatSon.App.Internal 1.0")),
         "ContentsDisplayView.qml must import the internal backend bridge module for editor-side state delegation.");
     QVERIFY2(
@@ -300,6 +307,12 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("ContentsGutterMarkerBridge {")),
         "ContentsDisplayView.qml must compose a dedicated gutter-marker backend adapter.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("ContentsBodyResourceRenderer {")),
+        "ContentsDisplayView.qml must compose a dedicated body-resource renderer bridge for inline resource cards.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("noteId: contentsView.selectedNoteId")),
+        "ContentsDisplayView.qml body-resource renderer bridge must track the currently selected note id.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("ContentsEditorSession {")),
         "ContentsDisplayView.qml must compose a dedicated editor-session object for debounce and selection sync.");
@@ -325,6 +338,14 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("property var contentViewModel: null")),
         "ContentViewLayout.qml must accept the active hierarchy view-model for body persistence.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property var resourcesImportViewModel: null")),
+        "ContentsDisplayView.qml must expose a resources import bridge contract for editor drop-target packaging.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("DropArea {")) &&
+            contentViewText.contains(QStringLiteral("importUrlsForEditor(dropUrls)")) &&
+            contentViewText.contains(QStringLiteral("function resourceTagTextForImportedEntry(entry)")),
+        "ContentsDisplayView.qml must package dropped files through resourcesImportViewModel and inject <resource ...> links into editor text.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral(
             "readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable")),
@@ -918,6 +939,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         mainQmlText.contains(QStringLiteral("return LV.ViewModels.get(\"libraryNoteMutationViewModel\");")) &&
             mainQmlText.contains(QStringLiteral("noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel")),
         "Main.qml must inject the dedicated library note-mutation view-model into BodyLayout through the LVRS ViewModels registry.");
+    QVERIFY2(
+        mainQmlText.contains(QStringLiteral("resourcesImportViewModel: resourcesImportViewModel")),
+        "Main.qml must forward resourcesImportViewModel into desktop/mobile content shells so editor drop-import uses the shared resource package pipeline.");
     QVERIFY2(
         mainQmlText.contains(QStringLiteral("MainWindowInteractionController {")),
         "Main.qml must delegate root interaction policy to a dedicated MainWindowInteractionController.");
@@ -2015,6 +2039,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         bodyLayoutText.contains(QStringLiteral("property var libraryHierarchyViewModel: null")),
         "BodyLayout.qml must accept the shared library hierarchy view-model explicitly instead of relying on a self-referential child binding.");
     QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("property var resourcesImportViewModel: null")),
+        "BodyLayout.qml must expose resourcesImportViewModel so editor resource drops can package files through the shared import pipeline.");
+    QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("activeToolbarIndex: hStack.activeHierarchyIndex")),
         "BodyLayout.qml must feed child hierarchy/list views from the resolved active hierarchy index.");
     QVERIFY2(
@@ -2032,6 +2059,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("libraryHierarchyViewModel: hStack.libraryHierarchyViewModel")),
         "BodyLayout.qml must forward the explicit library hierarchy view-model into the content surface without a self-binding loop.");
+    QVERIFY2(
+        bodyLayoutText.contains(QStringLiteral("resourcesImportViewModel: hStack.resourcesImportViewModel")),
+        "BodyLayout.qml must forward resourcesImportViewModel into ContentViewLayout for editor drop-target imports.");
     QVERIFY2(
         bodyLayoutText.contains(QStringLiteral("searchFieldVisible: true")),
         "BodyLayout.qml desktop hierarchy route must keep the shared hierarchy search field visible.");
@@ -2514,8 +2544,10 @@ void QmlBindingSyntaxGuardTest::mobileHierarchyPage_mustRouteHierarchyActivation
     QVERIFY2(
         mobilePageText.contains(QStringLiteral("id: editorBodyComponent")) &&
             mobilePageText.contains(QStringLiteral("PanelView.ContentViewLayout {")) &&
+            mobilePageText.contains(QStringLiteral("property var resourcesImportViewModel: null")) &&
             mobilePageText.contains(QStringLiteral("contentViewModel: mobileHierarchyPage.activeContentViewModel")) &&
             mobilePageText.contains(QStringLiteral("noteListModel: mobileHierarchyPage.activeNoteListModel")) &&
+            mobilePageText.contains(QStringLiteral("resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel")) &&
             mobilePageText.contains(QStringLiteral("drawerVisible: false")) &&
             mobilePageText.contains(QStringLiteral("minimapVisible: false")) &&
             mobilePageText.contains(QStringLiteral("gutterColor: \"transparent\"")) &&

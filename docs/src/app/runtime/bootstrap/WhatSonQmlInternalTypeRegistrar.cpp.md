@@ -7,6 +7,7 @@ Provides the concrete QML bridge registration list used by the workspace shell.
 - `ContentsEditorSelectionBridge`
 - `ContentsLogicalTextBridge`
 - `ContentsGutterMarkerBridge`
+- `ContentsBodyResourceRenderer`
 - `FocusedNoteDeletionBridge`
 - `NoteListModelContractBridge`
 - `HierarchyDragDropBridge`

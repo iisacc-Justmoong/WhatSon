@@ -19,6 +19,7 @@ positions from the same document origin.
 ## Key Collaborators
 
 - `ContentsEditorSelectionBridge`: exposes the selected note body and persistence contracts.
+- `ContentsBodyResourceRenderer`: extracts `<resource ...>` tag render payloads from the selected note body document.
 - `ContentsLogicalTextBridge`: maps plain-text offsets to logical line numbers and line starts.
 - `ContentsGutterMarkerBridge`: normalizes external marker specifications into a gutter-friendly model.
 - `ContentsEditorSession`: owns local-authority tracking, debounced saves, and note-switch synchronization.
@@ -31,6 +32,10 @@ positions from the same document origin.
 - User edits flow through `editorSession.markLocalEditorAuthority()` and `editorSession.scheduleEditorPersistence()`.
 - Model-driven note swaps call `editorSession.syncEditorTextFromSelection(...)` and flush pending edits when the bound
   note changes.
+- The editor viewport now overlays resource cards rendered from `ContentsBodyResourceRenderer.renderedResources`, so image packages referenced in `.wsnbody` are visible without switching to a separate panel.
+- The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
+  `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
+  at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
 - `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
   mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.

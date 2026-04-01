@@ -13,6 +13,7 @@
 #include "viewmodel/navigationbar/NavigationModeViewModel.hpp"
 #include "viewmodel/detailPanel/DetailPanelViewModel.hpp"
 #include "viewmodel/calendar/DayCalendarViewModel.hpp"
+#include "viewmodel/calendar/TodoListViewModel.hpp"
 #include "viewmodel/calendar/MonthCalendarViewModel.hpp"
 #include "viewmodel/calendar/WeekCalendarViewModel.hpp"
 #include "viewmodel/calendar/YearCalendarViewModel.hpp"
@@ -200,6 +201,7 @@ int main(int argc, char* argv[])
     WhatSonAsyncScheduler asyncScheduler;
     PanelViewModelRegistry panelViewModelRegistry;
     DayCalendarViewModel dayCalendarViewModel;
+    TodoListViewModel todoListViewModel;
     MonthCalendarViewModel monthCalendarViewModel;
     WeekCalendarViewModel weekCalendarViewModel;
     YearCalendarViewModel yearCalendarViewModel;
@@ -220,6 +222,7 @@ int main(int argc, char* argv[])
 #endif
     libraryNoteMutationViewModel.setSourceViewModel(&libraryHierarchyViewModel);
     dayCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
+    todoListViewModel.setCalendarBoardStore(&calendarBoardStore);
     monthCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
     weekCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
     yearCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
@@ -452,6 +455,7 @@ int main(int argc, char* argv[])
     workspaceContextObjects.calendarBoardStore = &calendarBoardStore;
     workspaceContextObjects.systemCalendarStore = &systemCalendarStore;
     workspaceContextObjects.dayCalendarViewModel = &dayCalendarViewModel;
+    workspaceContextObjects.todoListViewModel = &todoListViewModel;
     workspaceContextObjects.monthCalendarViewModel = &monthCalendarViewModel;
     workspaceContextObjects.weekCalendarViewModel = &weekCalendarViewModel;
     workspaceContextObjects.yearCalendarViewModel = &yearCalendarViewModel;

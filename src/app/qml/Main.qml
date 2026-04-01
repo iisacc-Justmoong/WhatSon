@@ -74,6 +74,7 @@ LV.ApplicationWindow {
         const _ = applicationWindow.registeredViewModelKeys;
         return LV.ViewModels.get("sidebarHierarchyViewModel");
     }
+    readonly property var rootTodoListViewModel: typeof todoListViewModel !== "undefined" ? todoListViewModel : null
     readonly property var rootDayCalendarViewModel: typeof dayCalendarViewModel !== "undefined" ? dayCalendarViewModel : null
     readonly property var rootMonthCalendarViewModel: typeof monthCalendarViewModel !== "undefined" ? monthCalendarViewModel : null
     readonly property var rootWeekCalendarViewModel: typeof weekCalendarViewModel !== "undefined" ? weekCalendarViewModel : null
@@ -159,6 +160,7 @@ LV.ApplicationWindow {
             path: applicationWindow.workspaceRoutePath,
             component: workspacePageComponent
         })
+    property bool todoListOverlayVisible: false
     property bool dayCalendarOverlayVisible: false
     property bool monthCalendarOverlayVisible: false
     property bool weekCalendarOverlayVisible: false
@@ -647,25 +649,36 @@ LV.ApplicationWindow {
 
                     onToggleDetailPanelRequested: applicationWindow.toggleDetailPanelVisibility()
                     onToggleSidebarRequested: applicationWindow.toggleSidebarVisibility()
+                    onTodoListRequested: {
+                        applicationWindow.todoListOverlayVisible = true;
+                        applicationWindow.dayCalendarOverlayVisible = false;
+                        applicationWindow.weekCalendarOverlayVisible = false;
+                        applicationWindow.monthCalendarOverlayVisible = false;
+                        applicationWindow.yearCalendarOverlayVisible = false;
+                    }
                     onDayCalendarRequested: {
+                        applicationWindow.todoListOverlayVisible = false;
                         applicationWindow.dayCalendarOverlayVisible = true;
                         applicationWindow.weekCalendarOverlayVisible = false;
                         applicationWindow.monthCalendarOverlayVisible = false;
                         applicationWindow.yearCalendarOverlayVisible = false;
                     }
                     onMonthCalendarRequested: {
+                        applicationWindow.todoListOverlayVisible = false;
                         applicationWindow.dayCalendarOverlayVisible = false;
                         applicationWindow.weekCalendarOverlayVisible = false;
                         applicationWindow.monthCalendarOverlayVisible = true;
                         applicationWindow.yearCalendarOverlayVisible = false;
                     }
                     onWeekCalendarRequested: {
+                        applicationWindow.todoListOverlayVisible = false;
                         applicationWindow.dayCalendarOverlayVisible = false;
                         applicationWindow.weekCalendarOverlayVisible = true;
                         applicationWindow.monthCalendarOverlayVisible = false;
                         applicationWindow.yearCalendarOverlayVisible = false;
                     }
                     onYearCalendarRequested: {
+                        applicationWindow.todoListOverlayVisible = false;
                         applicationWindow.dayCalendarOverlayVisible = false;
                         applicationWindow.weekCalendarOverlayVisible = false;
                         applicationWindow.yearCalendarOverlayVisible = true;
@@ -694,12 +707,15 @@ LV.ApplicationWindow {
                     noteDeletionViewModel: applicationWindow.rootLibraryNoteMutationViewModel
                     rightPanelColor: applicationWindow.desktopPanelSurfaceColor
                     rightPanelWidth: applicationWindow.rightPanelWidth
+                    resourcesImportViewModel: resourcesImportViewModel
                     sidebarColor: applicationWindow.desktopPanelSurfaceColor
                     sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
                     sidebarHorizontalInset: applicationWindow.hierarchyHorizontalInset
                     sidebarWidth: applicationWindow.sidebarWidth
                     splitterColor: applicationWindow.bodySplitterColor
                     splitterThickness: applicationWindow.bodySplitterThickness
+                    todoListOverlayVisible: applicationWindow.todoListOverlayVisible
+                    todoListViewModel: applicationWindow.rootTodoListViewModel
                     dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
                     dayCalendarViewModel: applicationWindow.rootDayCalendarViewModel
                     monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
@@ -719,6 +735,7 @@ LV.ApplicationWindow {
                             : String(noteId).trim();
                         if (normalizedNoteId.length === 0)
                             return;
+                        applicationWindow.todoListOverlayVisible = false;
                         applicationWindow.dayCalendarOverlayVisible = false;
                         applicationWindow.weekCalendarOverlayVisible = false;
                         applicationWindow.monthCalendarOverlayVisible = false;
@@ -736,6 +753,7 @@ LV.ApplicationWindow {
                         if (value !== applicationWindow.preferredSidebarWidth)
                             applicationWindow.preferredSidebarWidth = value;
                     }
+                    onTodoListOverlayDismissRequested: applicationWindow.todoListOverlayVisible = false
                     onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
                     onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
                     onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
@@ -756,7 +774,10 @@ LV.ApplicationWindow {
             sidebarHierarchyViewModel: applicationWindow.rootSidebarHierarchyViewModel
             statusPlaceholderText: ""
             toolbarIconNames: applicationWindow.hierarchyToolbarIconNames
+            resourcesImportViewModel: resourcesImportViewModel
             windowInteractions: windowInteractions
+            todoListOverlayVisible: applicationWindow.todoListOverlayVisible
+            todoListViewModel: applicationWindow.rootTodoListViewModel
             dayCalendarOverlayVisible: applicationWindow.dayCalendarOverlayVisible
             dayCalendarViewModel: applicationWindow.rootDayCalendarViewModel
             monthCalendarOverlayVisible: applicationWindow.monthCalendarOverlayVisible
@@ -766,30 +787,42 @@ LV.ApplicationWindow {
             yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
             yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
 
+            onTodoListRequested: {
+                applicationWindow.todoListOverlayVisible = true;
+                applicationWindow.dayCalendarOverlayVisible = false;
+                applicationWindow.weekCalendarOverlayVisible = false;
+                applicationWindow.monthCalendarOverlayVisible = false;
+                applicationWindow.yearCalendarOverlayVisible = false;
+            }
             onDayCalendarRequested: {
+                applicationWindow.todoListOverlayVisible = false;
                 applicationWindow.dayCalendarOverlayVisible = true;
                 applicationWindow.weekCalendarOverlayVisible = false;
                 applicationWindow.monthCalendarOverlayVisible = false;
                 applicationWindow.yearCalendarOverlayVisible = false;
             }
             onMonthCalendarRequested: {
+                applicationWindow.todoListOverlayVisible = false;
                 applicationWindow.dayCalendarOverlayVisible = false;
                 applicationWindow.weekCalendarOverlayVisible = false;
                 applicationWindow.monthCalendarOverlayVisible = true;
                 applicationWindow.yearCalendarOverlayVisible = false;
             }
             onWeekCalendarRequested: {
+                applicationWindow.todoListOverlayVisible = false;
                 applicationWindow.dayCalendarOverlayVisible = false;
                 applicationWindow.weekCalendarOverlayVisible = true;
                 applicationWindow.monthCalendarOverlayVisible = false;
                 applicationWindow.yearCalendarOverlayVisible = false;
             }
             onYearCalendarRequested: {
+                applicationWindow.todoListOverlayVisible = false;
                 applicationWindow.dayCalendarOverlayVisible = false;
                 applicationWindow.weekCalendarOverlayVisible = false;
                 applicationWindow.yearCalendarOverlayVisible = true;
                 applicationWindow.monthCalendarOverlayVisible = false;
             }
+            onTodoListOverlayDismissRequested: applicationWindow.todoListOverlayVisible = false
             onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
             onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
             onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false

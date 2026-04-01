@@ -10,6 +10,7 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QUrl>
+#include <QVariantMap>
 #include <QtTest/QtTest>
 
 namespace
@@ -89,6 +90,7 @@ class ResourcesImportViewModelTest final : public QObject
 
 private slots:
     void importUrls_importsFilesIntoCurrentHubAndRewritesResourcesList();
+    void importUrlsForEditor_returnsImportedResourceMetadataEntries();
     void importUrls_preservesExistingResourcesAndGeneratesUniqueIds();
     void importUrls_withoutLocalFiles_failsWithSelectionMessage();
     void importUrls_withoutCurrentHubPath_fails();
@@ -242,6 +244,40 @@ void ResourcesImportViewModelTest::importUrls_preservesExistingResourcesAndGener
             QStringLiteral("ImportHub.wsresources/poster.wsresource"),
             QStringLiteral("ImportHub.wsresources/poster-2.wsresource")
         }));
+}
+
+void ResourcesImportViewModelTest::importUrlsForEditor_returnsImportedResourceMetadataEntries()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("ImportHub.wshub"));
+    QVERIFY(createHubShell(hubPath));
+
+    const QString sourceFilePath = QDir(tempDir.path()).filePath(QStringLiteral("Gallery-Preview.JPG"));
+    QVERIFY(writeUtf8File(sourceFilePath, QStringLiteral("jpg-bytes")));
+
+    ResourcesImportViewModel viewModel;
+    viewModel.setCurrentHubPath(hubPath);
+    viewModel.setReloadResourcesCallback(
+        [](const QString&, QString* errorMessage) -> bool
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        });
+
+    const QVariantList importedEntries = viewModel.importUrlsForEditor({QUrl::fromLocalFile(sourceFilePath)});
+    QCOMPARE(importedEntries.size(), 1);
+    const QVariantMap entry = importedEntries.constFirst().toMap();
+    QCOMPARE(entry.value(QStringLiteral("resourceId")).toString(), QStringLiteral("gallery-preview"));
+    QCOMPARE(entry.value(QStringLiteral("resourcePath")).toString(), QStringLiteral("ImportHub.wsresources/gallery-preview.wsresource"));
+    QCOMPARE(entry.value(QStringLiteral("assetPath")).toString(), QStringLiteral("Gallery-Preview.JPG"));
+    QCOMPARE(entry.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+    QCOMPARE(entry.value(QStringLiteral("format")).toString(), QStringLiteral(".jpg"));
+    QCOMPARE(entry.value(QStringLiteral("bucket")).toString(), QStringLiteral("Image"));
 }
 
 void ResourcesImportViewModelTest::importUrls_withoutLocalFiles_failsWithSelectionMessage()

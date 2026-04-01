@@ -21,6 +21,8 @@ LV.HStack {
         id: todoListButton
 
         iconName: "toolWindowCheckDetails"
+
+        onClicked: calendarBar.requestViewHook("open-todo-list")
     }
     LV.IconButton {
         id: dailyCalButton

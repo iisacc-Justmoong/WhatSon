@@ -23,18 +23,20 @@
 - `drawerHeightDragRequested`
 - `editorTextEdited`
 - `dayCalendarOverlayCloseRequested`
+- `todoListOverlayCloseRequested`
 - `monthCalendarOverlayCloseRequested`
 - `weekCalendarOverlayCloseRequested`
 - `viewHookRequested`
 - `yearCalendarOverlayCloseRequested`
 
 ## Content Surface Contract
-- Imports `../calendar` as `CalendarView` and mounts day/week/month/year pages through one content-surface `Loader`.
+- Imports `../calendar` as `CalendarView` and mounts todo/day/week/month/year pages through one content-surface `Loader`.
 - Uses a `StackLayout` (`currentIndex: activeSurfaceIndex`) so the editor surface and calendar surface are switched by
   route state, not by overlay stacking.
 - Both stack children (`editorContentSurface`, `calendarContentSurface`) explicitly apply
   `Layout.fillWidth: true` and `Layout.fillHeight: true` so calendar pages occupy the full `ContentsView` slot.
 - Uses per-mode visibility/viewmodel pairs:
+  - `todoListOverlayVisible` / `todoListViewModel`
   - `dayCalendarOverlayVisible` / `dayCalendarViewModel`
   - `weekCalendarOverlayVisible` / `weekCalendarViewModel`
   - `monthCalendarOverlayVisible` / `monthCalendarViewModel`
@@ -43,11 +45,13 @@
   - `0` => editor (`ContentsDisplayView`)
   - `1` => calendar content surface
 - Resolves the active page by strict priority:
-  - day first
+  - todo
+  - then day
   - then week
   - then month
   - then year
 - Exposes dedicated dismiss signals for each mode:
+  - `todoListOverlayCloseRequested`
   - `dayCalendarOverlayCloseRequested`
   - `weekCalendarOverlayCloseRequested`
   - `monthCalendarOverlayCloseRequested`
@@ -61,6 +65,8 @@
 - The composed `ContentsDisplayView` binding path now keeps explicit root-id qualification for
   ownership-sensitive bindings (`anchors.fill`, `enabled`) to preserve deterministic panel-level
   scope resolution.
+- `resourcesImportViewModel` is now part of the wrapper contract and is forwarded into
+  `ContentsDisplayView`, enabling editor-side drag/drop packaging through the shared resource import pipeline.
 
 ## Intended Detailed Sections
 - Responsibility and business role

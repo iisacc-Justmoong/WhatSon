@@ -67,10 +67,7 @@ public
 
 
 
-    void requestViewModelHook()
-    {
-        emit viewModelHookRequested();
-    }
+    void requestViewModelHook();
 
     signals  :
 
@@ -86,6 +83,7 @@ private:
     static int extractDepth(const QVariantMap& entryMap);
     static QVector<TagsHierarchyItem> buildItems(const QVector<WhatSonTagDepthEntry>& entries);
     static int nextFolderSequence(const QVector<WhatSonTagDepthEntry>& entries);
+    bool reloadFromTagsFilePath(QString* errorMessage = nullptr);
     void updateItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void syncStore();

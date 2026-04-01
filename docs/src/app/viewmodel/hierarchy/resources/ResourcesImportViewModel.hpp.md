@@ -23,6 +23,9 @@ This ViewModel translates external local file URLs into resource package imports
   Returns whether a file-picker-style URL list can be imported into the current hub.
 - `importUrls(...)`
   The main file import entrypoint.
+- `importUrlsForEditor(...)`
+  Imports files and returns per-resource metadata entries (`resourcePath`, `type`, `format`, `bucket`, `assetPath`) so
+  the note editor can inject `<resource ...>` links immediately after a drop.
 - `canImportDroppedUrls(...)`, `importDroppedUrls(...)`
   Compatibility wrappers that forward legacy drag/drop callers into the same import path.
 - `importCompleted(int)`

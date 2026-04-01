@@ -506,6 +506,7 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     const QString contentViewLayout = readQml(QStringLiteral("view/panels/ContentViewLayout.qml"));
     const QString calendarTodayControl = readQml(QStringLiteral("view/calendar/CalendarTodayControl.qml"));
     const QString dayCalendarPage = readQml(QStringLiteral("view/calendar/DayCalendarPage.qml"));
+    const QString todoListPage = readQml(QStringLiteral("view/calendar/TodoListPage.qml"));
     const QString monthCalendarDayCell = readQml(QStringLiteral("view/calendar/MonthCalendarDayCell.qml"));
     const QString calendarEventCell = readQml(QStringLiteral("view/calendar/CalendarEventCell.qml"));
     const QString monthCalendarPage = readQml(QStringLiteral("view/calendar/MonthCalendarPage.qml"));
@@ -523,6 +524,7 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(!contentViewLayout.isEmpty());
     QVERIFY(!calendarTodayControl.isEmpty());
     QVERIFY(!dayCalendarPage.isEmpty());
+    QVERIFY(!todoListPage.isEmpty());
     QVERIFY(!monthCalendarDayCell.isEmpty());
     QVERIFY(!calendarEventCell.isEmpty());
     QVERIFY(!monthCalendarPage.isEmpty());
@@ -537,6 +539,8 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(applicationEditBar.contains(QStringLiteral("onViewHookRequested: function (reason)")));
     QVERIFY(navigationCalendarBar.contains(QStringLiteral("signal viewHookRequested(string reason)")));
     QVERIFY(navigationCalendarBar.contains(QStringLiteral(
+        "onClicked: calendarBar.requestViewHook(\"open-todo-list\")")));
+    QVERIFY(navigationCalendarBar.contains(QStringLiteral(
         "onClicked: calendarBar.requestViewHook(\"open-daily-calendar\")")));
     QVERIFY(navigationCalendarBar.contains(QStringLiteral(
         "onClicked: calendarBar.requestViewHook(\"open-weekly-calendar\")")));
@@ -545,6 +549,11 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(navigationCalendarBar.contains(QStringLiteral(
         "onClicked: calendarBar.requestViewHook(\"open-yearly-calendar\")")));
 
+    QVERIFY(navigationBarLayout.contains(QStringLiteral("signal todoListRequested")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "if (hookReason.indexOf(\"todo-list\") >= 0)")));
+    QVERIFY(navigationBarLayout.contains(QStringLiteral(
+        "navigationBar.todoListRequested();")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral("signal dayCalendarRequested")));
     QVERIFY(navigationBarLayout.contains(QStringLiteral(
         "if (hookReason.indexOf(\"daily-calendar\") >= 0)")));
@@ -566,10 +575,22 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(navigationBarLayout.contains(QStringLiteral(
         "navigationBar.yearCalendarRequested();")));
 
+    QVERIFY(mainQml.contains(QStringLiteral("readonly property var rootTodoListViewModel: typeof todoListViewModel !== \"undefined\" ? todoListViewModel : null")));
+    QVERIFY(mainQml.contains(QStringLiteral("property bool todoListOverlayVisible: false")));
     QVERIFY(mainQml.contains(QStringLiteral("property bool dayCalendarOverlayVisible: false")));
     QVERIFY(mainQml.contains(QStringLiteral("property bool monthCalendarOverlayVisible: false")));
     QVERIFY(mainQml.contains(QStringLiteral("property bool weekCalendarOverlayVisible: false")));
     QVERIFY(mainQml.contains(QStringLiteral("property bool yearCalendarOverlayVisible: false")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onTodoListRequested: {")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "applicationWindow.todoListOverlayVisible = true;")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "todoListOverlayVisible: applicationWindow.todoListOverlayVisible")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "todoListViewModel: applicationWindow.rootTodoListViewModel")));
+    QVERIFY(mainQml.contains(QStringLiteral(
+        "onTodoListOverlayDismissRequested: applicationWindow.todoListOverlayVisible = false")));
     QVERIFY(mainQml.contains(QStringLiteral(
         "onDayCalendarRequested: {")));
     QVERIFY(mainQml.contains(QStringLiteral(
@@ -613,7 +634,10 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
 
     QVERIFY(bodyLayout.contains(QStringLiteral("property bool dayCalendarOverlayVisible: false")));
     QVERIFY(bodyLayout.contains(QStringLiteral("property var dayCalendarViewModel: null")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property bool todoListOverlayVisible: false")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("property var todoListViewModel: null")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal dayCalendarOverlayDismissRequested")));
+    QVERIFY(bodyLayout.contains(QStringLiteral("signal todoListOverlayDismissRequested")));
     QVERIFY(bodyLayout.contains(QStringLiteral("signal noteActivated(int index, string noteId)")));
     QVERIFY(bodyLayout.contains(QStringLiteral("onNoteActivated: function (index, noteId)")));
     QVERIFY(bodyLayout.contains(QStringLiteral("hStack.noteActivated(index, noteId);")));
@@ -630,6 +654,8 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(contentViewLayout.contains(QStringLiteral("StackLayout {")));
     QVERIFY(contentViewLayout.contains(QStringLiteral(
         "readonly property int activeSurfaceIndex: contentViewLayout.calendarOverlayVisible ? 1 : 0")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral(
+        "readonly property bool showingTodoListOverlay: contentViewLayout.todoListOverlayVisible")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("currentIndex: contentViewLayout.activeSurfaceIndex")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("visible: !contentViewLayout.calendarOverlayVisible")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("id: calendarContentSurface")));
@@ -657,9 +683,12 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(calendarTodayControl.contains(QStringLiteral("calendarTodayControl.requestViewHook(\"today\")")));
 
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal dayCalendarOverlayCloseRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("signal todoListOverlayCloseRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal monthCalendarOverlayCloseRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal weekCalendarOverlayCloseRequested")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("signal yearCalendarOverlayCloseRequested")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.TodoListPage {")));
+    QVERIFY(contentViewLayout.contains(QStringLiteral("todoListViewModel: contentViewLayout.todoListViewModel")));
     QVERIFY(contentViewLayout.contains(QStringLiteral("CalendarView.DayCalendarPage {")));
     QVERIFY(contentViewLayout.contains(QStringLiteral(
         "dayCalendarViewModel: contentViewLayout.dayCalendarViewModel")));
@@ -684,6 +713,11 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(dayCalendarPage.contains(QStringLiteral("height: dayTimelineContent.slotHeight")));
     QVERIFY(dayCalendarPage.contains(QStringLiteral("CalendarEventCell {")));
     QVERIFY(dayCalendarPage.contains(QStringLiteral("label: dayCalendarPage.entryCardLabel(slotEntryCard.entryModel)")));
+    QVERIFY(todoListPage.contains(QStringLiteral("function toggleTask(taskModel)")));
+    QVERIFY(todoListPage.contains(QStringLiteral("text: \"All day\"")));
+    QVERIFY(todoListPage.contains(QStringLiteral("text: \"Timed\"")));
+    QVERIFY(todoListPage.contains(QStringLiteral("text: \"Tasks\"")));
+    QVERIFY(todoListPage.contains(QStringLiteral("CalendarTodayControl {")));
     QVERIFY(monthCalendarPage.contains(QStringLiteral("function entriesForDate(dayModel)")));
     QVERIFY(monthCalendarPage.contains(QStringLiteral("readonly property int maxVisibleEntriesPerCell: 8")));
     QVERIFY(monthCalendarPage.contains(QStringLiteral("readonly property int eventBackgroundDefault: 0")));
@@ -828,9 +862,21 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
     QVERIFY(weekCalendarPage.contains(QStringLiteral("function entriesForHour(dayModel, hour)")));
     QVERIFY(weekCalendarPage.contains(QStringLiteral("model: weekCalendarPage.hourSlots")));
 
+    QVERIFY(mobileScaffold.contains(QStringLiteral("signal todoListRequested")));
+    QVERIFY(mobileScaffold.contains(QStringLiteral(
+        "onTodoListRequested: mobilePageScaffold.todoListRequested()")));
     QVERIFY(mobileScaffold.contains(QStringLiteral("signal dayCalendarRequested")));
     QVERIFY(mobileScaffold.contains(QStringLiteral(
         "onDayCalendarRequested: mobilePageScaffold.dayCalendarRequested()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral("signal todoListRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "signal todoListOverlayDismissRequested")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "todoListOverlayVisible: mobileHierarchyPage.todoListOverlayVisible")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "function requestOpenTodoList()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "onTodoListRequested: mobileHierarchyPage.requestOpenTodoList()")));
     QVERIFY(mobileHierarchyPage.contains(QStringLiteral("signal dayCalendarRequested")));
     QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
         "signal dayCalendarOverlayDismissRequested")));
@@ -862,6 +908,8 @@ void NavigationQmlFramesTest::navigationCalendar_mustMountContentSurfaceInline()
         "yearCalendarOverlayVisible: mobileHierarchyPage.yearCalendarOverlayVisible")));
     QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
         "function dismissCalendarOverlaysForEditorActivation()")));
+    QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
+        "mobileHierarchyPage.todoListOverlayDismissRequested();")));
     QVERIFY(mobileHierarchyPage.contains(QStringLiteral(
         "mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();")));
 }

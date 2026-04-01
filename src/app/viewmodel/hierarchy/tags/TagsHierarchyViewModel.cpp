@@ -663,6 +663,75 @@ void TagsHierarchyViewModel::applyRuntimeSnapshot(
     updateLoadState(true);
 }
 
+void TagsHierarchyViewModel::requestViewModelHook()
+{
+    if (m_tagsFilePath.trimmed().isEmpty())
+    {
+        emit viewModelHookRequested();
+        return;
+    }
+
+    QString reloadError;
+    if (!reloadFromTagsFilePath(&reloadError))
+    {
+        updateLoadState(false, reloadError);
+        emit viewModelHookRequested();
+        return;
+    }
+
+    updateLoadState(true);
+    emit viewModelHookRequested();
+}
+
+bool TagsHierarchyViewModel::reloadFromTagsFilePath(QString* errorMessage)
+{
+    const QString normalizedFilePath = m_tagsFilePath.trimmed();
+    if (normalizedFilePath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    QVector<WhatSonTagDepthEntry> refreshedEntries;
+    if (QFileInfo(normalizedFilePath).isFile())
+    {
+        QString rawText;
+        QString readError;
+        if (!WhatSon::Hierarchy::TagsSupport::readUtf8File(normalizedFilePath, &rawText, &readError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = readError;
+            }
+            return false;
+        }
+
+        WhatSonTagsHierarchyStore refreshedStore;
+        WhatSonTagsHierarchyParser parser;
+        QString parseError;
+        if (!parser.parse(rawText, &refreshedStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+
+        refreshedEntries = refreshedStore.tagEntries();
+    }
+
+    applyRuntimeSnapshot(std::move(refreshedEntries), normalizedFilePath, true);
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
+}
+
 bool TagsHierarchyViewModel::renameEnabled() const noexcept
 {
     return true;

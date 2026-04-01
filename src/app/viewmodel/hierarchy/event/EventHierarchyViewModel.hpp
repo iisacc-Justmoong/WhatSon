@@ -68,10 +68,7 @@ public
 
 
 
-    void requestViewModelHook()
-    {
-        emit viewModelHookRequested();
-    }
+    void requestViewModelHook();
 
     signals  :
 
@@ -84,6 +81,7 @@ public
     void viewModelHookRequested();
 
 private:
+    bool reloadFromEventFilePath(QString* errorMessage = nullptr);
     void updateItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void syncModel();

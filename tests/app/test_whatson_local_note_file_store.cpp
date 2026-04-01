@@ -82,6 +82,7 @@ class WhatSonLocalNoteFileStoreTest final : public QObject
 private slots:
     void createReadUpdateDelete_roundTripsLocalNoteFiles();
     void readNote_resolvesWsresourceThumbnailFromBody();
+    void readNote_resolvesUnquotedClosedResourceTagFromBody();
     void readNote_preservesEmptyAndWhitespaceOnlyParagraphs();
     void updateNote_headerOnlyRewrite_preservesExistingBodyText();
 };
@@ -234,6 +235,68 @@ void WhatSonLocalNoteFileStoreTest::readNote_resolvesWsresourceThumbnailFromBody
     QString errorMessage;
     QVERIFY2(store.readNote(readRequest, &document, &errorMessage), qPrintable(errorMessage));
     QVERIFY(document.bodyHasResource);
+    QCOMPARE(
+        document.bodyFirstResourceThumbnailUrl,
+        QUrl::fromLocalFile(
+            QDir(resourcesPath).filePath(QStringLiteral("preview.wsresource/preview.png"))).toString());
+}
+
+void WhatSonLocalNoteFileStoreTest::readNote_resolvesUnquotedClosedResourceTagFromBody()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("PreviewHub.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("PreviewHub.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Preview.wsnote"));
+    const QString resourcesPath = QDir(hubPath).filePath(QStringLiteral("PreviewHub.wsresources"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("preview"),
+        QStringLiteral("preview.png"),
+        QStringLiteral("png")));
+
+    const QString bodyXml =
+        QStringLiteral(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            "<!DOCTYPE WHATSONNOTE>\n"
+            "<contents id=\"Preview\">\n"
+            "  <body>\n"
+            "    <resource type=image format=.png path=PreviewHub.wsresources/preview.wsresource>\n"
+            "    <paragraph>Preview line</paragraph>\n"
+            "  </body>\n"
+            "</contents>\n");
+
+    WhatSonNoteHeaderStore headerStore;
+    headerStore.setNoteId(QStringLiteral("Preview"));
+    headerStore.setCreatedAt(QStringLiteral("2026-03-22-12-00-00"));
+    headerStore.setAuthor(QStringLiteral("Tester"));
+    headerStore.setLastModifiedAt(QStringLiteral("2026-03-22-12-00-00"));
+    headerStore.setModifiedBy(QStringLiteral("Tester"));
+    headerStore.setProgress(0);
+    headerStore.setPreset(false);
+
+    WhatSonNoteHeaderCreator headerCreator(hubPath);
+    QVERIFY(writeUtf8File(
+        QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhead")),
+        headerCreator.createHeaderText(headerStore)));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnbody")), bodyXml));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhistory")), QString()));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnversion")), QStringLiteral("{}")));
+
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    WhatSonLocalNoteFileStore store;
+    WhatSonLocalNoteDocument document;
+    QString errorMessage;
+    QVERIFY2(store.readNote(readRequest, &document, &errorMessage), qPrintable(errorMessage));
+    QVERIFY(document.bodyHasResource);
+    QCOMPARE(document.bodyPlainText, QStringLiteral("Preview line"));
+    QCOMPARE(document.bodyFirstLine, QStringLiteral("Preview line"));
     QCOMPARE(
         document.bodyFirstResourceThumbnailUrl,
         QUrl::fromLocalFile(

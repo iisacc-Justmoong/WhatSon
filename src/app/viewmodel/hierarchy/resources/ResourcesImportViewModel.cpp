@@ -14,6 +14,7 @@
 #include <QSaveFile>
 #include <QSet>
 #include <QUrl>
+#include <QVariantMap>
 
 #include <utility>
 
@@ -263,9 +264,10 @@ namespace
         const QString& resourcesDirectoryPath,
         QString* outResourcePath,
         QString* outCreatedPackagePath,
+        WhatSon::Resources::ResourcePackageMetadata* outMetadata,
         QString* errorMessage = nullptr)
     {
-        if (outResourcePath == nullptr || outCreatedPackagePath == nullptr)
+        if (outResourcePath == nullptr || outCreatedPackagePath == nullptr || outMetadata == nullptr)
         {
             if (errorMessage != nullptr)
             {
@@ -276,6 +278,7 @@ namespace
 
         *outResourcePath = QString();
         *outCreatedPackagePath = QString();
+        *outMetadata = {};
 
         const QFileInfo sourceFileInfo(sourceFilePath);
         if (!sourceFileInfo.exists() || !sourceFileInfo.isFile())
@@ -358,7 +361,20 @@ namespace
 
         *outResourcePath = resourcePath;
         *outCreatedPackagePath = packageDirectoryPath;
+        *outMetadata = metadata;
         return true;
+    }
+
+    QVariantMap importedEntryFromMetadata(const WhatSon::Resources::ResourcePackageMetadata& metadata)
+    {
+        QVariantMap entry;
+        entry.insert(QStringLiteral("resourceId"), metadata.resourceId.trimmed());
+        entry.insert(QStringLiteral("resourcePath"), WhatSon::Resources::normalizePath(metadata.resourcePath));
+        entry.insert(QStringLiteral("assetPath"), WhatSon::Resources::normalizePath(metadata.assetPath));
+        entry.insert(QStringLiteral("bucket"), metadata.bucket.trimmed());
+        entry.insert(QStringLiteral("type"), metadata.type.trimmed().toCaseFolded());
+        entry.insert(QStringLiteral("format"), WhatSon::Resources::normalizeFormat(metadata.format).toCaseFolded());
+        return entry;
     }
 }
 
@@ -424,10 +440,27 @@ bool ResourcesImportViewModel::canImportDroppedUrls(const QVariantList& urls) co
 
 bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
 {
+    return importUrlsInternal(urls, nullptr);
+}
+
+QVariantList ResourcesImportViewModel::importUrlsForEditor(const QVariantList& urls)
+{
+    QVariantList importedEntries;
+    if (!importUrlsInternal(urls, &importedEntries))
+    {
+        return {};
+    }
+    return importedEntries;
+}
+
+bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVariantList* importedEntries)
+{
     WhatSon::Debug::traceSelf(
         this,
         QString::fromLatin1(kScope),
-        QStringLiteral("importUrls.begin"),
+        importedEntries == nullptr
+            ? QStringLiteral("importUrls.begin")
+            : QStringLiteral("importUrlsForEditor.begin"),
         QStringLiteral("urlCount=%1 hubPath=%2").arg(urls.size()).arg(m_currentHubPath));
 
     if (m_busy)
@@ -490,17 +523,24 @@ bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
     QStringList createdPackagePaths;
     importedResourcePaths.reserve(sourceFiles.size());
     createdPackagePaths.reserve(sourceFiles.size());
+    QVariantList localImportedEntries;
+    if (importedEntries != nullptr)
+    {
+        localImportedEntries.reserve(sourceFiles.size());
+    }
 
     for (const QString& sourceFilePath : sourceFiles)
     {
         QString resourcePath;
         QString packagePath;
+        WhatSon::Resources::ResourcePackageMetadata importedMetadata;
         QString importError;
         if (!importSingleFile(
             sourceFilePath,
             resourcesDirectoryPath,
             &resourcePath,
             &packagePath,
+            &importedMetadata,
             &importError))
         {
             for (const QString& createdPackagePath : std::as_const(createdPackagePaths))
@@ -521,6 +561,10 @@ bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
 
         importedResourcePaths.push_back(resourcePath);
         createdPackagePaths.push_back(packagePath);
+        if (importedEntries != nullptr)
+        {
+            localImportedEntries.push_back(importedEntryFromMetadata(importedMetadata));
+        }
     }
 
     QStringList mergedResourcePaths = existingResourcePaths;
@@ -583,8 +627,14 @@ bool ResourcesImportViewModel::importUrls(const QVariantList& urls)
     WhatSon::Debug::traceSelf(
         this,
         QString::fromLatin1(kScope),
-        QStringLiteral("importUrls.success"),
+        importedEntries == nullptr
+            ? QStringLiteral("importUrls.success")
+            : QStringLiteral("importUrlsForEditor.success"),
         QStringLiteral("importedCount=%1").arg(importedResourcePaths.size()));
+    if (importedEntries != nullptr)
+    {
+        *importedEntries = localImportedEntries;
+    }
     return true;
 }
 

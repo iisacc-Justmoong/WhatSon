@@ -27,6 +27,7 @@ public:
 
     Q_INVOKABLE bool canImportUrls(const QVariantList& urls) const;
     Q_INVOKABLE bool importUrls(const QVariantList& urls);
+    Q_INVOKABLE QVariantList importUrlsForEditor(const QVariantList& urls);
     Q_INVOKABLE bool canImportDroppedUrls(const QVariantList& urls) const;
     Q_INVOKABLE bool importDroppedUrls(const QVariantList& urls);
 
@@ -45,6 +46,7 @@ signals:
     void viewModelHookRequested();
 
 private:
+    bool importUrlsInternal(const QVariantList& urls, QVariantList* importedEntries);
     void setBusy(bool busy);
     void setLastError(QString errorMessage);
 

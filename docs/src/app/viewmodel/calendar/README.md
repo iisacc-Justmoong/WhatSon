@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/viewmodel/calendar`
 - Child directories: 0
-- Child files: 8
+- Child files: 10
 
 ## Child Directories
 - No child directories.
@@ -17,6 +17,8 @@
 - `DayCalendarViewModel.hpp`
 - `MonthCalendarViewModel.cpp`
 - `MonthCalendarViewModel.hpp`
+- `TodoListViewModel.cpp`
+- `TodoListViewModel.hpp`
 - `WeekCalendarViewModel.cpp`
 - `WeekCalendarViewModel.hpp`
 - `YearCalendarViewModel.cpp`
@@ -33,3 +35,5 @@
 ## Notes
 - `DayCalendarViewModel`, `WeekCalendarViewModel`, `MonthCalendarViewModel`, and `YearCalendarViewModel` are wired to
   the shared `src/app/calendar/CalendarBoardStore.*` backend for date/time-based event/task board semantics.
+- `TodoListViewModel` projects one date into Todo-focused section models (`allDayEvents`, `timedEvents`, `tasks`) and
+  surfaces sample location/weather payloads for the Todo route card layout.

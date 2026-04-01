@@ -329,7 +329,7 @@ namespace
         for (const QString& attributeName : attributeNames)
         {
             const QRegularExpression attributePattern(
-                QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s/>]+)))ATTR")
+                QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+?)(?=\s|/?>)))ATTR")
                 .arg(QRegularExpression::escape(attributeName)),
                 QRegularExpression::CaseInsensitiveOption);
             const QRegularExpressionMatch match = attributePattern.match(tagText);

@@ -1,5 +1,6 @@
 #include "WhatSonQmlInternalTypeRegistrar.hpp"
 
+#include "editor/renderer/ContentsBodyResourceRenderer.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
@@ -20,6 +21,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsLogicalTextBridge");
         qmlRegisterType<ContentsGutterMarkerBridge>(
             "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
+        qmlRegisterType<ContentsBodyResourceRenderer>(
+            "WhatSon.App.Internal", 1, 0, "ContentsBodyResourceRenderer");
         qmlRegisterType<FocusedNoteDeletionBridge>(
             "WhatSon.App.Internal", 1, 0, "FocusedNoteDeletionBridge");
         qmlRegisterType<NoteListModelContractBridge>(

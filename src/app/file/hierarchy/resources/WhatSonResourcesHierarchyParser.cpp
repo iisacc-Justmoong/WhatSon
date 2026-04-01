@@ -11,6 +11,91 @@
 
 namespace
 {
+    QString extractPathValueFromObject(
+        const QJsonObject& object,
+        const QStringList& candidateKeys = QStringList{
+            QStringLiteral("resourcePath"),
+            QStringLiteral("path"),
+            QStringLiteral("resource"),
+            QStringLiteral("value")})
+    {
+        for (const QString& objectKey : object.keys())
+        {
+            for (const QString& candidateKey : candidateKeys)
+            {
+                if (objectKey.compare(candidateKey, Qt::CaseInsensitive) != 0)
+                {
+                    continue;
+                }
+
+                const QJsonValue value = object.value(objectKey);
+                if (!value.isString())
+                {
+                    continue;
+                }
+
+                const QString text = value.toString().trimmed();
+                if (!text.isEmpty())
+                {
+                    return text;
+                }
+            }
+        }
+
+        return {};
+    }
+
+    QString extractResourcePathAttribute(const QString& resourceTagText)
+    {
+        const QRegularExpression quotedDouble(
+            QStringLiteral(R"((?:resourcePath|path)\s*=\s*"([^"]+)")"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch quotedDoubleMatch = quotedDouble.match(resourceTagText);
+        if (quotedDoubleMatch.hasMatch())
+        {
+            return quotedDoubleMatch.captured(1).trimmed();
+        }
+
+        const QRegularExpression quotedSingle(
+            QStringLiteral(R"((?:resourcePath|path)\s*=\s*'([^']+)')"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch quotedSingleMatch = quotedSingle.match(resourceTagText);
+        if (quotedSingleMatch.hasMatch())
+        {
+            return quotedSingleMatch.captured(1).trimmed();
+        }
+
+        const QRegularExpression bare(
+            QStringLiteral(R"((?:resourcePath|path)\s*=\s*([^\s"'/>]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch bareMatch = bare.match(resourceTagText);
+        if (bareMatch.hasMatch())
+        {
+            return bareMatch.captured(1).trimmed();
+        }
+
+        return {};
+    }
+
+    QStringList parseResourceTagValues(const QString& rawText)
+    {
+        QStringList values;
+        const QRegularExpression resourceTag(
+            QStringLiteral(R"(<\s*resource\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+        QRegularExpressionMatchIterator iterator = resourceTag.globalMatch(rawText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const QString parsedPath = extractResourcePathAttribute(match.captured(0));
+            if (!parsedPath.isEmpty())
+            {
+                values.push_back(parsedPath);
+            }
+        }
+        return values;
+    }
+
     QStringList sanitizeLines(const QString& rawText)
     {
         QStringList values;
@@ -48,7 +133,7 @@ namespace
             else if (value.isObject())
             {
                 const QJsonObject object = value.toObject();
-                const QString text = object.value(QStringLiteral("resourcePath")).toString().trimmed();
+                const QString text = extractPathValueFromObject(object);
                 if (!text.isEmpty())
                 {
                     values.push_back(text);
@@ -56,6 +141,30 @@ namespace
             }
         }
 
+        return values;
+    }
+
+    QStringList parseLineValues(const QString& rawText)
+    {
+        QStringList values;
+        const QStringList lines = sanitizeLines(rawText);
+        values.reserve(lines.size());
+        for (const QString& line : lines)
+        {
+            const QString parsedPath = extractResourcePathAttribute(line);
+            if (!parsedPath.isEmpty())
+            {
+                values.push_back(parsedPath);
+                continue;
+            }
+
+            // Ignore XML-like wrappers such as <resources> ... </resources>.
+            if (line.startsWith(QLatin1Char('<')) && line.endsWith(QLatin1Char('>')))
+            {
+                continue;
+            }
+            values.push_back(line);
+        }
         return values;
     }
 } // namespace
@@ -98,31 +207,53 @@ bool WhatSonResourcesHierarchyParser::parse(
     const QJsonDocument document = QJsonDocument::fromJson(rawText.toUtf8(), &parseError);
     if (parseError.error == QJsonParseError::NoError && !document.isNull())
     {
+        bool recognizedJsonForm = false;
+        QStringList parsedValues;
         if (document.isArray())
         {
-            const QStringList parsedValues = parseArrayValues(document.array());
-            outStore->setResourcePaths(parsedValues);
-            return true;
+            recognizedJsonForm = true;
+            parsedValues = parseArrayValues(document.array());
         }
-
-        if (document.isObject())
+        else if (document.isObject())
         {
             const QJsonObject object = document.object();
             const QJsonValue listValue = object.value(QStringLiteral("resources"));
             if (listValue.isArray())
             {
-                outStore->setResourcePaths(parseArrayValues(listValue.toArray()));
-                return true;
+                recognizedJsonForm = true;
+                parsedValues = parseArrayValues(listValue.toArray());
             }
-            if (listValue.isString())
+            else if (listValue.isString())
             {
-                outStore->setResourcePaths(QStringList{listValue.toString().trimmed()});
-                return true;
+                recognizedJsonForm = true;
+                parsedValues = QStringList{listValue.toString().trimmed()};
             }
+            else
+            {
+                const QString directPathValue = extractPathValueFromObject(object);
+                if (!directPathValue.isEmpty())
+                {
+                    recognizedJsonForm = true;
+                    parsedValues = QStringList{directPathValue};
+                }
+            }
+        }
+
+        if (recognizedJsonForm)
+        {
+            outStore->setResourcePaths(parsedValues);
+            return true;
         }
     }
 
-    outStore->setResourcePaths(sanitizeLines(rawText));
+    const QStringList tagValues = parseResourceTagValues(rawText);
+    if (!tagValues.isEmpty())
+    {
+        outStore->setResourcePaths(tagValues);
+        return true;
+    }
+
+    outStore->setResourcePaths(parseLineValues(rawText));
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("hierarchy.resources.parser"),
                               QStringLiteral("parse.fallbackLines"),

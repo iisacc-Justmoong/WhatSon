@@ -529,6 +529,75 @@ void EventHierarchyViewModel::applyRuntimeSnapshot(
     updateLoadState(true);
 }
 
+void EventHierarchyViewModel::requestViewModelHook()
+{
+    if (m_eventFilePath.trimmed().isEmpty())
+    {
+        emit viewModelHookRequested();
+        return;
+    }
+
+    QString reloadError;
+    if (!reloadFromEventFilePath(&reloadError))
+    {
+        updateLoadState(false, reloadError);
+        emit viewModelHookRequested();
+        return;
+    }
+
+    updateLoadState(true);
+    emit viewModelHookRequested();
+}
+
+bool EventHierarchyViewModel::reloadFromEventFilePath(QString* errorMessage)
+{
+    const QString normalizedFilePath = m_eventFilePath.trimmed();
+    if (normalizedFilePath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    QStringList refreshedEventNames;
+    if (QFileInfo(normalizedFilePath).isFile())
+    {
+        QString rawText;
+        QString readError;
+        if (!WhatSon::Hierarchy::EventSupport::readUtf8File(normalizedFilePath, &rawText, &readError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = readError;
+            }
+            return false;
+        }
+
+        WhatSonEventHierarchyStore refreshedStore;
+        WhatSonEventHierarchyParser parser;
+        QString parseError;
+        if (!parser.parse(rawText, &refreshedStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+
+        refreshedEventNames = refreshedStore.eventNames();
+    }
+
+    applyRuntimeSnapshot(std::move(refreshedEventNames), normalizedFilePath, true);
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
+}
+
 void EventHierarchyViewModel::updateItemCount()
 {
     const int nextCount = m_itemModel.rowCount();

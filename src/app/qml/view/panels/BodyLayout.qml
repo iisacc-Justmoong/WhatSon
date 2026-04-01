@@ -27,6 +27,7 @@ Item {
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
+    property var resourcesImportViewModel: null
     property color rightPanelColor: "transparent"
     property int rightPanelWidth: 194
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
@@ -40,6 +41,8 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
+    property bool todoListOverlayVisible: false
+    property var todoListViewModel: null
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
@@ -55,6 +58,7 @@ Item {
     signal sidebarWidthDragRequested(int value)
     signal viewHookRequested
     signal dayCalendarOverlayDismissRequested
+    signal todoListOverlayDismissRequested
     signal monthCalendarOverlayDismissRequested
     signal weekCalendarOverlayDismissRequested
     signal yearCalendarOverlayDismissRequested
@@ -203,10 +207,13 @@ Item {
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight
                 noteListModel: hStack.activeNoteListModel
+                resourcesImportViewModel: hStack.resourcesImportViewModel
                 splitterColor: hStack.splitterColor
                 splitterThickness: hStack.splitterThickness
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarViewModel: hStack.dayCalendarViewModel
+                todoListOverlayVisible: hStack.todoListOverlayVisible
+                todoListViewModel: hStack.todoListViewModel
                 monthCalendarOverlayVisible: hStack.monthCalendarOverlayVisible
                 monthCalendarViewModel: hStack.monthCalendarViewModel
                 weekCalendarOverlayVisible: hStack.weekCalendarOverlayVisible
@@ -218,6 +225,7 @@ Item {
                     hStack.drawerHeightDragRequested(value);
                 }
                 onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
+                onTodoListOverlayCloseRequested: hStack.todoListOverlayDismissRequested()
                 onMonthCalendarOverlayCloseRequested: hStack.monthCalendarOverlayDismissRequested()
                 onWeekCalendarOverlayCloseRequested: hStack.weekCalendarOverlayDismissRequested()
                 onYearCalendarOverlayCloseRequested: hStack.yearCalendarOverlayDismissRequested()

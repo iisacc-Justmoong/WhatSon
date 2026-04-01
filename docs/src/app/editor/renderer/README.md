@@ -7,13 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/editor/renderer`
 - Child directories: 0
-- Child files: 0
+- Child files: 2
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
-- No direct source files.
+- `ContentsBodyResourceRenderer.cpp`
+- `ContentsBodyResourceRenderer.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

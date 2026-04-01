@@ -56,6 +56,7 @@ Item {
     readonly property bool hierarchyPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.hierarchyRoutePath
     readonly property bool noteListPageActive: mobileHierarchyPage.resolvedBodyRoutePath === mobileHierarchyPage.noteListRoutePath
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("mobile.MobileHierarchyPage") : null
+    property var resourcesImportViewModel: null
     required property var sidebarHierarchyViewModel
     property string statusPlaceholderText: ""
     property string statusSearchText: ""
@@ -63,6 +64,8 @@ Item {
     property var windowInteractions: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
+    property bool todoListOverlayVisible: false
+    property var todoListViewModel: null
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
     property bool weekCalendarOverlayVisible: false
@@ -70,6 +73,8 @@ Item {
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
 
+    signal todoListRequested
+    signal todoListOverlayDismissRequested
     signal dayCalendarRequested
     signal dayCalendarOverlayDismissRequested
     signal monthCalendarRequested
@@ -324,6 +329,8 @@ Item {
         mobileHierarchyPage.routeToCanonicalNoteList(preservedSelectionIndex);
     }
     function dismissCalendarOverlaysForEditorActivation() {
+        if (mobileHierarchyPage.todoListOverlayVisible)
+            mobileHierarchyPage.todoListOverlayDismissRequested();
         if (mobileHierarchyPage.dayCalendarOverlayVisible)
             mobileHierarchyPage.dayCalendarOverlayDismissRequested();
         if (mobileHierarchyPage.weekCalendarOverlayVisible)
@@ -366,6 +373,12 @@ Item {
         if (!mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.routeToCanonicalEditor();
+        return true;
+    }
+    function requestOpenTodoList() {
+        if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
+            return false;
+        mobileHierarchyPage.todoListRequested();
         return true;
     }
     function requestOpenDayCalendar() {
@@ -527,6 +540,7 @@ Item {
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
         onCompactLeadingActionRequested: mobileHierarchyPage.requestBackToHierarchy()
         onCreateNoteRequested: noteCreationCoordinator.requestCreateNote()
+        onTodoListRequested: mobileHierarchyPage.requestOpenTodoList()
         onDayCalendarRequested: mobileHierarchyPage.requestOpenDayCalendar()
         onMonthCalendarRequested: mobileHierarchyPage.requestOpenMonthCalendar()
         onStatusSearchSubmitted: function (text) {
@@ -684,6 +698,9 @@ Item {
             lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
+            resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel
+            todoListOverlayVisible: mobileHierarchyPage.todoListOverlayVisible
+            todoListViewModel: mobileHierarchyPage.todoListViewModel
             dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible
             dayCalendarViewModel: mobileHierarchyPage.dayCalendarViewModel
             monthCalendarOverlayVisible: mobileHierarchyPage.monthCalendarOverlayVisible
@@ -694,6 +711,7 @@ Item {
             yearCalendarViewModel: mobileHierarchyPage.yearCalendarViewModel
 
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
+            onTodoListOverlayCloseRequested: mobileHierarchyPage.todoListOverlayDismissRequested()
             onDayCalendarOverlayCloseRequested: mobileHierarchyPage.dayCalendarOverlayDismissRequested()
             onMonthCalendarOverlayCloseRequested: mobileHierarchyPage.monthCalendarOverlayDismissRequested()
             onWeekCalendarOverlayCloseRequested: mobileHierarchyPage.weekCalendarOverlayDismissRequested()

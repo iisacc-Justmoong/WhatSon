@@ -4,6 +4,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QRegularExpression>
 #include <QXmlStreamReader>
 
 namespace
@@ -13,6 +14,103 @@ namespace
         QString fallbackText;
         QStringList blockLines;
     };
+
+    QString escapeXmlAttributeValue(QString value)
+    {
+        value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
+        value.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
+        value.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
+        value.replace(QStringLiteral("\""), QStringLiteral("&quot;"));
+        value.replace(QStringLiteral("'"), QStringLiteral("&apos;"));
+        return value;
+    }
+
+    QString decodeXmlEntities(QString text)
+    {
+        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+        return text;
+    }
+
+    QString normalizeResourceStartTag(const QString& rawTagText)
+    {
+        static const QRegularExpression attributePattern(
+            QStringLiteral(
+                R"ATTR(\b([A-Za-z_][A-Za-z0-9_.:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+?)(?=\s|/?>)))ATTR"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QStringList attributes;
+        QRegularExpressionMatchIterator iterator = attributePattern.globalMatch(rawTagText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const QString attributeName = match.captured(1).trimmed();
+            if (attributeName.isEmpty())
+            {
+                continue;
+            }
+
+            QString attributeValue;
+            if (match.capturedStart(2) >= 0)
+            {
+                attributeValue = match.captured(2);
+            }
+            else if (match.capturedStart(3) >= 0)
+            {
+                attributeValue = match.captured(3);
+            }
+            else if (match.capturedStart(4) >= 0)
+            {
+                attributeValue = match.captured(4);
+            }
+            attributeValue = decodeXmlEntities(attributeValue);
+            attributes.push_back(
+                QStringLiteral("%1=\"%2\"")
+                    .arg(attributeName, escapeXmlAttributeValue(attributeValue)));
+        }
+
+        if (attributes.isEmpty())
+        {
+            return QStringLiteral("<resource />");
+        }
+        return QStringLiteral("<resource %1 />").arg(attributes.join(QLatin1Char(' ')));
+    }
+
+    QString normalizeResourceTagsForXmlParser(QString bodyDocumentText)
+    {
+        if (bodyDocumentText.trimmed().isEmpty())
+        {
+            return bodyDocumentText;
+        }
+
+        bodyDocumentText.remove(
+            QRegularExpression(
+                QStringLiteral(R"(</\s*resource\s*>)"),
+                QRegularExpression::CaseInsensitiveOption));
+
+        static const QRegularExpression resourceStartTagPattern(
+            QStringLiteral(R"(<resource\b[^>]*>)"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        int searchOffset = 0;
+        while (searchOffset >= 0 && searchOffset < bodyDocumentText.size())
+        {
+            const QRegularExpressionMatch match = resourceStartTagPattern.match(bodyDocumentText, searchOffset);
+            if (!match.hasMatch())
+            {
+                break;
+            }
+
+            const QString replacement = normalizeResourceStartTag(match.captured(0));
+            bodyDocumentText.replace(match.capturedStart(0), match.capturedLength(0), replacement);
+            searchOffset = match.capturedStart(0) + replacement.size();
+        }
+
+        return bodyDocumentText;
+    }
 
     QString normalizePath(QString path)
     {
@@ -49,7 +147,7 @@ namespace
             return fragments;
         }
 
-        QXmlStreamReader reader(bodyDocumentText);
+        QXmlStreamReader reader(normalizeResourceTagsForXmlParser(bodyDocumentText));
         bool insideBody = false;
         bool encounteredBlockElement = false;
         int blockDepth = 0;

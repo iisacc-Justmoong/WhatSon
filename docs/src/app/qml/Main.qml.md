@@ -15,6 +15,10 @@
   content occupies the entire screen while still pinning the render tier to `LowTier`.
 - Expose the global `StandardKey.New` note-creation shortcut only on desktop platforms.
 - Lazy-load the macOS native menu bar and hand it the root window plus the resources import ViewModel.
+- Forward `resourcesImportViewModel` into both desktop `BodyLayout` and mobile `MobileHierarchyPage` so note-editor
+  drag/drop imports and menu-driven imports share the same packaging/runtime-refresh backend.
+- Own Todo/day/week/month/year overlay visibility flags and keep them mutually exclusive across desktop and mobile
+  route handlers.
 
 ## ViewModel Ownership
 The important architectural work in this file is not the layout math. It is the ownership hand-off.
@@ -48,7 +52,7 @@ The file keeps both desktop and mobile layout branches alive.
 - `viewHookRequested` is the root forwarding signal used by nested components that want to bubble interaction intent upward.
 - The root `Shortcut` for `StandardKey.New` is intentionally gated behind `isDesktopPlatform` so mobile route changes and
   panel navigation cannot fall into global note creation.
-- Desktop `BodyLayout.noteActivated(...)` now clears all calendar visibility flags in `Main.qml`, so explicit note
+- Desktop `BodyLayout.noteActivated(...)` now clears all Todo/calendar visibility flags in `Main.qml`, so explicit note
   activation always restores the editor surface even when calendar mode was previously opened.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
 - `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile

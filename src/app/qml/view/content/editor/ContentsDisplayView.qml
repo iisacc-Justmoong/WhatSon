@@ -116,6 +116,11 @@ Item {
     property var panelViewModel: null
     property string pendingEditorFocusNoteId: ""
     property alias pendingBodySave: editorSession.pendingBodySave
+    property bool resourceDropActive: false
+    readonly property color resourceRenderBorderColor: "#334E5157"
+    readonly property color resourceRenderCardColor: "#E61A1D22"
+    readonly property int resourceRenderDisplayLimit: 3
+    property var resourcesImportViewModel: null
     readonly property int saveDebounceMs: 120
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
@@ -548,6 +553,116 @@ Item {
 
         return visibleLines;
     }
+    function extractResourceDropUrls(drop) {
+        const urls = [];
+        if (drop && drop.urls !== undefined && drop.urls !== null) {
+            if (Array.isArray(drop.urls)) {
+                for (let index = 0; index < drop.urls.length; ++index)
+                    urls.push(drop.urls[index]);
+            } else if (drop.urls.length !== undefined) {
+                for (let listIndex = 0; listIndex < drop.urls.length; ++listIndex)
+                    urls.push(drop.urls[listIndex]);
+            } else {
+                urls.push(drop.urls);
+            }
+        }
+        if (urls.length > 0)
+            return urls;
+        if (!drop || drop.getDataAsString === undefined)
+            return urls;
+        const rawUriList = String(drop.getDataAsString("text/uri-list") || "").trim();
+        if (rawUriList.length === 0)
+            return urls;
+        const uriLines = rawUriList.split(/\r?\n/);
+        for (let lineIndex = 0; lineIndex < uriLines.length; ++lineIndex) {
+            const line = String(uriLines[lineIndex] || "").trim();
+            if (line.length === 0 || line.charAt(0) === "#")
+                continue;
+            urls.push(line);
+        }
+        return urls;
+    }
+    function normalizeResourceType(typeValue) {
+        const normalizedType = typeValue === undefined || typeValue === null
+                ? ""
+                : String(typeValue).trim().toLowerCase();
+        return normalizedType.length > 0 ? normalizedType : "other";
+    }
+    function normalizeResourceFormat(formatValue) {
+        let normalizedFormat = formatValue === undefined || formatValue === null
+                ? ""
+                : String(formatValue).trim().toLowerCase();
+        if (normalizedFormat.length === 0)
+            normalizedFormat = ".bin";
+        if (normalizedFormat.charAt(0) !== ".")
+            normalizedFormat = "." + normalizedFormat;
+        return normalizedFormat;
+    }
+    function resourceTagTextForImportedEntry(entry) {
+        const resourceEntry = entry && typeof entry === "object" ? entry : ({});
+        const resourcePath = resourceEntry.resourcePath !== undefined
+                ? String(resourceEntry.resourcePath).trim()
+                : "";
+        if (resourcePath.length === 0)
+            return "";
+        const resourceType = contentsView.normalizeResourceType(resourceEntry.type);
+        const resourceFormat = contentsView.normalizeResourceFormat(resourceEntry.format);
+        const pathExpression = /\s/.test(resourcePath)
+                ? "path=\"" + resourcePath + "\""
+                : "path=" + resourcePath;
+        return "<resource type=\"" + resourceType + "\" format=\"" + resourceFormat + "\" " + pathExpression + ">";
+    }
+    function canAcceptResourceDropUrls(urls) {
+        if (!contentsView.hasSelectedNote || !contentsView.resourcesImportViewModel)
+            return false;
+        if (!Array.isArray(urls) || urls.length === 0)
+            return false;
+        if (contentsView.resourcesImportViewModel.canImportUrls === undefined)
+            return false;
+        return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
+    }
+    function persistEditorTextImmediately(nextText) {
+        const noteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (noteId.length === 0)
+            return false;
+        if (!selectionBridge || selectionBridge.persistEditorTextForNote === undefined || !contentsView.contentPersistenceContractAvailable)
+            return false;
+        return !!selectionBridge.persistEditorTextForNote(noteId, nextText);
+    }
+    function insertImportedResourceTags(importedEntries) {
+        if (!Array.isArray(importedEntries) || importedEntries.length === 0)
+            return false;
+        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const cursorPosition = Math.max(0, Math.min(
+                                           currentText.length,
+                                           contentEditor && contentEditor.cursorPosition !== undefined
+                                               ? Number(contentEditor.cursorPosition) || 0
+                                               : currentText.length));
+        const tagTexts = [];
+        for (let index = 0; index < importedEntries.length; ++index) {
+            const tagText = contentsView.resourceTagTextForImportedEntry(importedEntries[index]);
+            if (tagText.length > 0)
+                tagTexts.push(tagText);
+        }
+        if (tagTexts.length === 0)
+            return false;
+        const prefix = cursorPosition > 0 && currentText.charAt(cursorPosition - 1) !== "\n" ? "\n" : "";
+        const suffix = cursorPosition < currentText.length && currentText.charAt(cursorPosition) !== "\n" ? "\n" : "";
+        const insertionText = prefix + tagTexts.join("\n") + suffix;
+        const nextText = currentText.slice(0, cursorPosition) + insertionText + currentText.slice(cursorPosition);
+        contentsView.editorText = nextText;
+        editorSession.markLocalEditorAuthority();
+        const saved = contentsView.persistEditorTextImmediately(nextText);
+        if (!saved)
+            editorSession.scheduleEditorPersistence();
+        if (contentEditor && contentEditor.cursorPosition !== undefined)
+            contentEditor.cursorPosition = cursorPosition + insertionText.length;
+        contentsView.editorTextEdited(nextText);
+        bodyResourceRenderer.requestRenderRefresh();
+        return true;
+    }
 
     clip: true
 
@@ -590,6 +705,13 @@ Item {
 
         contentViewModel: contentsView.contentViewModel
         noteListModel: contentsView.noteListModel
+    }
+    ContentsBodyResourceRenderer {
+        id: bodyResourceRenderer
+
+        contentViewModel: contentsView.contentViewModel
+        maxRenderCount: contentsView.resourceRenderDisplayLimit
+        noteId: contentsView.selectedNoteId
     }
     ContentsLogicalTextBridge {
         id: textMetricsBridge
@@ -764,6 +886,52 @@ Item {
                             contentsView.editorTextEdited(text);
                         }
                     }
+                    Rectangle {
+                        anchors.fill: parent
+                        border.color: LV.Theme.primary
+                        border.width: contentsView.resourceDropActive ? 1 : 0
+                        color: contentsView.resourceDropActive ? "#1A9DA0A8" : "transparent"
+                        radius: LV.Theme.radiusSm
+                        visible: contentsView.resourceDropActive
+                        z: 4
+                    }
+                    DropArea {
+                        anchors.fill: parent
+                        keys: ["text/uri-list"]
+                        z: 5
+
+                        onEntered: function (drag) {
+                            const dropUrls = contentsView.extractResourceDropUrls(drag);
+                            const accepted = contentsView.canAcceptResourceDropUrls(dropUrls);
+                            if (drag)
+                                drag.accepted = accepted;
+                            contentsView.resourceDropActive = accepted;
+                        }
+                        onExited: {
+                            contentsView.resourceDropActive = false;
+                        }
+                        onPositionChanged: function (drag) {
+                            const dropUrls = contentsView.extractResourceDropUrls(drag);
+                            const accepted = contentsView.canAcceptResourceDropUrls(dropUrls);
+                            if (drag)
+                                drag.accepted = accepted;
+                            contentsView.resourceDropActive = accepted;
+                        }
+                        onDropped: function (drop) {
+                            const dropUrls = contentsView.extractResourceDropUrls(drop);
+                            if (!contentsView.canAcceptResourceDropUrls(dropUrls)) {
+                                if (drop)
+                                    drop.accepted = false;
+                                contentsView.resourceDropActive = false;
+                                return;
+                            }
+                            const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditor(dropUrls);
+                            const inserted = contentsView.insertImportedResourceTags(importedEntries);
+                            if (drop)
+                                drop.accepted = inserted;
+                            contentsView.resourceDropActive = false;
+                        }
+                    }
                     // Shared desktop/mobile contract: the outer editor surface owns the 16px top spacer, so LVRS top centering stays disabled.
                     Binding {
                         property: "topPadding"
@@ -779,6 +947,97 @@ Item {
                         style: body
                         text: "Start typing here"
                         visible: contentEditor.empty && contentsView.hasSelectedNote
+                    }
+                    Item {
+                        id: bodyResourceRenderLayer
+
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: contentsView.editorBottomInset
+                        anchors.left: parent.left
+                        anchors.leftMargin: contentsView.editorHorizontalInset
+                        anchors.right: parent.right
+                        anchors.rightMargin: contentsView.editorHorizontalInset
+                        enabled: false
+                        visible: contentsView.hasSelectedNote && bodyResourceRenderer.resourceCount > 0
+                        z: 2
+
+                        LV.VStack {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            spacing: LV.Theme.gap2
+
+                            Repeater {
+                                model: bodyResourceRenderer.renderedResources
+
+                                delegate: Rectangle {
+                                    id: resourceRenderCard
+
+                                    readonly property var resourceEntry: modelData && typeof modelData === "object" ? modelData : ({})
+                                    readonly property string resourceType: resourceEntry.type !== undefined ? String(resourceEntry.type) : ""
+                                    readonly property string resourceFormat: resourceEntry.format !== undefined ? String(resourceEntry.format) : ""
+                                    readonly property string resourcePath: resourceEntry.resourcePath !== undefined ? String(resourceEntry.resourcePath) : ""
+                                    readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
+                                    readonly property string resourceSource: resourceEntry.source !== undefined ? String(resourceEntry.source) : ""
+                                    border.color: contentsView.resourceRenderBorderColor
+                                    border.width: 1
+                                    color: contentsView.resourceRenderCardColor
+                                    implicitHeight: resourceRow.implicitHeight + LV.Theme.gap2 * 2
+                                    radius: LV.Theme.radiusSm
+                                    width: parent ? parent.width : 0
+
+                                    RowLayout {
+                                        id: resourceRow
+
+                                        anchors.fill: parent
+                                        anchors.margins: LV.Theme.gap2
+                                        spacing: LV.Theme.gap2
+
+                                        Rectangle {
+                                            Layout.preferredHeight: 72
+                                            Layout.preferredWidth: 96
+                                            color: "#CC0F141A"
+                                            radius: LV.Theme.radiusSm
+                                            visible: resourceRenderCard.resourceRenderMode === "image"
+                                                     && resourceRenderCard.resourceSource.length > 0
+
+                                            Image {
+                                                anchors.fill: parent
+                                                anchors.margins: 1
+                                                asynchronous: true
+                                                cache: true
+                                                fillMode: Image.PreserveAspectFit
+                                                source: resourceRenderCard.resourceSource
+                                            }
+                                        }
+                                        LV.VStack {
+                                            Layout.fillWidth: true
+                                            spacing: LV.Theme.gap2
+
+                                            LV.Label {
+                                                color: LV.Theme.textPrimary
+                                                style: body
+                                                text: resourceRenderCard.resourceRenderMode === "image"
+                                                      ? "Image Resource"
+                                                      : "Unsupported Resource"
+                                            }
+                                            LV.Label {
+                                                color: LV.Theme.textSecondary
+                                                style: body
+                                                text: "type=" + resourceRenderCard.resourceType + "  format="
+                                                      + resourceRenderCard.resourceFormat
+                                            }
+                                            LV.Label {
+                                                color: LV.Theme.textTertiary
+                                                elide: Text.ElideMiddle
+                                                style: body
+                                                text: resourceRenderCard.resourcePath
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 ContentsMinimapLayer {

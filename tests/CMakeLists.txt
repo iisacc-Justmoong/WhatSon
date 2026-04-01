@@ -599,6 +599,24 @@ target_link_libraries(whatson_day_calendar_viewmodel_tests
 add_test(NAME whatson_day_calendar_viewmodel_tests COMMAND whatson_day_calendar_viewmodel_tests)
 list(APPEND WHATSON_TEST_TARGETS whatson_day_calendar_viewmodel_tests)
 
+add_executable(whatson_todo_list_viewmodel_tests
+        app/test_todo_list_viewmodel.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/viewmodel/calendar/TodoListViewModel.cpp
+)
+set_target_properties(whatson_todo_list_viewmodel_tests PROPERTIES AUTOMOC ON)
+target_include_directories(whatson_todo_list_viewmodel_tests
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/app
+)
+target_link_libraries(whatson_todo_list_viewmodel_tests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+add_test(NAME whatson_todo_list_viewmodel_tests COMMAND whatson_todo_list_viewmodel_tests)
+list(APPEND WHATSON_TEST_TARGETS whatson_todo_list_viewmodel_tests)
+
 add_executable(whatson_week_calendar_viewmodel_tests
         app/test_week_calendar_viewmodel.cpp
         ${CMAKE_SOURCE_DIR}/src/app/calendar/CalendarBoardStore.cpp
@@ -784,6 +802,7 @@ list(APPEND WHATSON_TEST_TARGETS whatson_sidebar_hierarchy_module_tests)
 
 add_executable(whatson_contents_editor_bridge_tests
         app/test_contents_editor_bridge.cpp
+        ${CMAKE_SOURCE_DIR}/src/app/editor/renderer/ContentsBodyResourceRenderer.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsEditorSelectionBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsLogicalTextBridge.cpp
         ${CMAKE_SOURCE_DIR}/src/app/viewmodel/content/ContentsGutterMarkerBridge.cpp

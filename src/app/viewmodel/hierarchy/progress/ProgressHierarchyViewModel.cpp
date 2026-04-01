@@ -748,6 +748,95 @@ void ProgressHierarchyViewModel::applyRuntimeSnapshot(
     updateLoadState(true);
 }
 
+void ProgressHierarchyViewModel::requestViewModelHook()
+{
+    if (m_progressFilePath.trimmed().isEmpty())
+    {
+        emit viewModelHookRequested();
+        return;
+    }
+
+    QString reloadError;
+    if (!reloadFromProgressFilePath(&reloadError))
+    {
+        updateLoadState(false, reloadError);
+        emit viewModelHookRequested();
+        return;
+    }
+
+    updateLoadState(true);
+    emit viewModelHookRequested();
+}
+
+bool ProgressHierarchyViewModel::reloadFromProgressFilePath(QString* errorMessage)
+{
+    const QString normalizedFilePath = m_progressFilePath.trimmed();
+    if (normalizedFilePath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    WhatSonProgressHierarchyParser parser;
+    WhatSonProgressHierarchyStore refreshedStore;
+
+    if (QFileInfo(normalizedFilePath).isFile())
+    {
+        QString rawText;
+        QString readError;
+        if (!WhatSon::Hierarchy::ProgressSupport::readUtf8File(normalizedFilePath, &rawText, &readError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = readError;
+            }
+            return false;
+        }
+
+        QString parseError;
+        if (!parser.parse(rawText, &refreshedStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+    }
+    else
+    {
+        QString parseError;
+        if (!parser.parse(QString(), &refreshedStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+    }
+
+    setProgressState(refreshedStore.progressValue(), refreshedStore.progressStates());
+    QString noteLoadError;
+    if (!refreshIndexedNotesFromProgressFilePath(&noteLoadError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = noteLoadError;
+        }
+        return false;
+    }
+
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
+}
+
 void ProgressHierarchyViewModel::updateItemCount()
 {
     const int nextCount = m_itemModel.rowCount();

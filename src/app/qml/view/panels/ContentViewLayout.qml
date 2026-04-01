@@ -25,6 +25,7 @@ Item {
     property bool minimapVisible: true
     property var noteListModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
+    property var resourcesImportViewModel: null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
     property color splitterColor: "transparent"
@@ -32,23 +33,31 @@ Item {
     property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
+    property bool todoListOverlayVisible: false
+    property var todoListViewModel: null
     property bool monthCalendarOverlayVisible: false
     property var monthCalendarViewModel: null
     property bool weekCalendarOverlayVisible: false
     property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
-    readonly property bool calendarOverlayVisible: contentViewLayout.dayCalendarOverlayVisible
+    readonly property bool calendarOverlayVisible: contentViewLayout.todoListOverlayVisible
+                                                 || contentViewLayout.dayCalendarOverlayVisible
                                                  || contentViewLayout.weekCalendarOverlayVisible
                                                  || contentViewLayout.monthCalendarOverlayVisible
                                                  || contentViewLayout.yearCalendarOverlayVisible
-    readonly property bool showingDayCalendarOverlay: contentViewLayout.dayCalendarOverlayVisible
-    readonly property bool showingWeekCalendarOverlay: !contentViewLayout.dayCalendarOverlayVisible
+    readonly property bool showingTodoListOverlay: contentViewLayout.todoListOverlayVisible
+    readonly property bool showingDayCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+                                                      && contentViewLayout.dayCalendarOverlayVisible
+    readonly property bool showingWeekCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+                                                       && !contentViewLayout.dayCalendarOverlayVisible
                                                        && contentViewLayout.weekCalendarOverlayVisible
-    readonly property bool showingMonthCalendarOverlay: !contentViewLayout.dayCalendarOverlayVisible
+    readonly property bool showingMonthCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+                                                        && !contentViewLayout.dayCalendarOverlayVisible
                                                         && !contentViewLayout.weekCalendarOverlayVisible
                                                         && contentViewLayout.monthCalendarOverlayVisible
-    readonly property bool showingYearCalendarOverlay: !contentViewLayout.dayCalendarOverlayVisible
+    readonly property bool showingYearCalendarOverlay: !contentViewLayout.todoListOverlayVisible
+                                                       && !contentViewLayout.dayCalendarOverlayVisible
                                                        && !contentViewLayout.weekCalendarOverlayVisible
                                                        && !contentViewLayout.monthCalendarOverlayVisible
                                                        && contentViewLayout.yearCalendarOverlayVisible
@@ -57,12 +66,17 @@ Item {
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal dayCalendarOverlayCloseRequested
+    signal todoListOverlayCloseRequested
     signal monthCalendarOverlayCloseRequested
     signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
     signal yearCalendarOverlayCloseRequested
 
     function requestActiveCalendarOverlayClose() {
+        if (contentViewLayout.showingTodoListOverlay) {
+            contentViewLayout.todoListOverlayCloseRequested();
+            return;
+        }
         if (contentViewLayout.showingDayCalendarOverlay) {
             contentViewLayout.dayCalendarOverlayCloseRequested();
             return;
@@ -116,6 +130,7 @@ Item {
                 minimapVisible: contentViewLayout.minimapVisible
                 noteListModel: contentViewLayout.resolvedNoteListModel
                 panelViewModel: contentViewLayout.panelViewModel
+                resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
                 splitterColor: contentViewLayout.splitterColor
                 splitterHandleThickness: contentViewLayout.splitterHandleThickness
                 splitterThickness: contentViewLayout.splitterThickness
@@ -143,9 +158,11 @@ Item {
                 id: calendarPageLoader
 
                 anchors.fill: parent
-                sourceComponent: contentViewLayout.showingDayCalendarOverlay
-                                 ? dayCalendarPageComponent
-                                 : contentViewLayout.showingWeekCalendarOverlay
+                sourceComponent: contentViewLayout.showingTodoListOverlay
+                                 ? todoListPageComponent
+                                 : contentViewLayout.showingDayCalendarOverlay
+                                   ? dayCalendarPageComponent
+                                   : contentViewLayout.showingWeekCalendarOverlay
                                    ? weekCalendarPageComponent
                                    : contentViewLayout.showingMonthCalendarOverlay
                                      ? monthCalendarPageComponent
@@ -176,6 +193,18 @@ Item {
         CalendarView.DayCalendarPage {
             anchors.fill: parent
             dayCalendarViewModel: contentViewLayout.dayCalendarViewModel
+
+            onViewHookRequested: function (reason) {
+                contentViewLayout.viewHookRequested();
+            }
+        }
+    }
+    Component {
+        id: todoListPageComponent
+
+        CalendarView.TodoListPage {
+            anchors.fill: parent
+            todoListViewModel: contentViewLayout.todoListViewModel
 
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();

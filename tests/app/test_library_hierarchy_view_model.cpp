@@ -40,6 +40,7 @@ private
     void loadFromWshub_populatesNoteListModelAndSwitchesBySelectedBucket();
     void loadFromWshub_noteListModel_exposesCurrentBodyTextFromWsnbody();
     void loadFromWshub_noteListModel_exposesImagePreviewFromWsnbodyResource();
+    void loadFromWshub_noteListModel_exposesImagePreviewFromUnquotedClosedWsnbodyResource();
     void applyRuntimeSnapshot_blankBody_keepsPreviewEmptyAndSearchIgnoresInternalId();
     void saveCurrentBodyText_rewritesWsnbodyAndPreservesLogicalLines();
     void saveCurrentBodyText_unchangedPlainText_preservesExistingBodyMarkup();
@@ -1003,6 +1004,53 @@ void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePrev
         QUrl::fromLocalFile(resourceFilePath).toString());
 }
 
+void LibraryHierarchyViewModelTest::loadFromWshub_noteListModel_exposesImagePreviewFromUnquotedClosedWsnbodyResource()
+{
+    QString hubPath;
+    QVERIFY(prepareIndexedLibraryHub(&hubPath));
+
+    const QString resourceDirectoryName = QStringLiteral("LibraryHub_Library.wslibrary.wsresources");
+    const QString resourceDirectoryPath = QDir(hubPath).filePath(resourceDirectoryName);
+    QVERIFY(QDir().mkpath(resourceDirectoryPath));
+    QVERIFY(createResourcePackage(
+        resourceDirectoryPath,
+        QStringLiteral("beta-preview"),
+        QStringLiteral("beta-preview.png"),
+        QStringLiteral("png")));
+    const QString resourceFilePath = QDir(resourceDirectoryPath).filePath(
+        QStringLiteral("beta-preview.wsresource/beta-preview.png"));
+
+    const QString bodyPath = QDir(hubPath).filePath(
+        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Beta.wsnote/Beta.wsnbody"));
+    QVERIFY(writeUtf8File(
+        bodyPath,
+        makeWsnBodyText(
+            QStringLiteral(
+                "    <resource type=image format=.png path=LibraryHub_Library.wslibrary.wsresources/beta-preview.wsresource>\n"
+                "    <paragraph>Beta body summary.</paragraph>\n"))));
+
+    LibraryHierarchyViewModel viewModel;
+    QString errorMessage;
+    QVERIFY2(viewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::ImageRole)
+                 .toBool(),
+        true);
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::ImageSourceRole)
+                 .toString(),
+        QUrl::fromLocalFile(resourceFilePath).toString());
+    QCOMPARE(
+        viewModel.noteListModel()
+                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::PrimaryTextRole)
+                 .toString(),
+        QStringLiteral("Beta body summary."));
+}
+
 void LibraryHierarchyViewModelTest::applyRuntimeSnapshot_blankBody_keepsPreviewEmptyAndSearchIgnoresInternalId()
 {
     LibraryHierarchyViewModel viewModel;
@@ -1058,9 +1106,22 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
     const QString editedBody = QStringLiteral("\nEdited first line\nEdited second line\n");
     QVERIFY(viewModel.saveBodyTextForNote(QStringLiteral("note-a"), editedBody));
     QCOMPARE(viewModel.noteListModel()->currentBodyText(), editedBody);
+
+    int editedNoteRow = -1;
+    for (int row = 0; row < viewModel.noteListModel()->rowCount(); ++row)
+    {
+        const QModelIndex index = viewModel.noteListModel()->index(row, 0);
+        if (viewModel.noteListModel()->data(index, LibraryNoteListModel::NoteIdRole).toString()
+            == QStringLiteral("note-a"))
+        {
+            editedNoteRow = row;
+            break;
+        }
+    }
+    QVERIFY(editedNoteRow >= 0);
     QCOMPARE(
         viewModel.noteListModel()
-                 ->data(viewModel.noteListModel()->index(0, 0), LibraryNoteListModel::PrimaryTextRole)
+                 ->data(viewModel.noteListModel()->index(editedNoteRow, 0), LibraryNoteListModel::PrimaryTextRole)
                  .toString(),
         QStringLiteral("Edited first line\nEdited second line"));
 

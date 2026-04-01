@@ -1,13 +1,65 @@
+#include "editor/renderer/ContentsBodyResourceRenderer.hpp"
+#include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
 #include "viewmodel/content/ContentsGutterMarkerBridge.hpp"
 #include "viewmodel/content/ContentsLogicalTextBridge.hpp"
 
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QHash>
 #include <QObject>
+#include <QTemporaryDir>
 #include <QVariantList>
 #include <QVariantMap>
+#include <QUrl>
 #include <QtTest/QtTest>
 
 #include <algorithm>
+#include <type_traits>
+
+namespace
+{
+    bool writeUtf8File(const QString& filePath, const QString& text)
+    {
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+        {
+            return false;
+        }
+        file.write(text.toUtf8());
+        return true;
+    }
+
+    bool createResourcePackage(
+        const QString& resourcesPath,
+        const QString& resourceId,
+        const QString& assetFileName,
+        const QString& assetPayload = QStringLiteral("payload"))
+    {
+        const QString packageDirectoryPath = QDir(resourcesPath).filePath(resourceId + QStringLiteral(".wsresource"));
+        if (!QDir().mkpath(packageDirectoryPath))
+        {
+            return false;
+        }
+
+        const QString resourcePath = QStringLiteral("%1/%2")
+                                         .arg(QFileInfo(resourcesPath).fileName(), QFileInfo(packageDirectoryPath).fileName());
+        WhatSon::Resources::ResourcePackageMetadata metadata = WhatSon::Resources::buildMetadataForAssetFile(
+            assetFileName,
+            resourceId,
+            resourcePath);
+
+        return writeUtf8File(QDir(packageDirectoryPath).filePath(assetFileName), assetPayload)
+            && writeUtf8File(
+                QDir(packageDirectoryPath).filePath(WhatSon::Resources::metadataFileName()),
+                WhatSon::Resources::createResourcePackageMetadataXml(metadata));
+    }
+} // namespace
+
+static_assert(
+    !std::is_final_v<ContentsBodyResourceRenderer>,
+    "ContentsBodyResourceRenderer must remain non-final for qmlRegisterType wrapper generation.");
 
 class FakeNoteListModel final : public QObject
 {
@@ -97,12 +149,26 @@ public:
         return saveCurrentBodyTextResult;
     }
 
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const
+    {
+        return noteDirectoryPathByNoteId.value(noteId.trimmed());
+    }
+
+    void emitHubFilesystemMutated()
+    {
+        emit hubFilesystemMutated();
+    }
+
     QString lastSavedNoteId;
     QString lastSavedText;
+    QHash<QString, QString> noteDirectoryPathByNoteId;
     int saveBodyTextForNoteCallCount = 0;
     int saveCurrentBodyTextCallCount = 0;
     bool saveBodyTextForNoteResult = true;
     bool saveCurrentBodyTextResult = true;
+
+signals:
+    void hubFilesystemMutated();
 };
 
 class ContentsEditorAdapterTest final : public QObject
@@ -117,6 +183,7 @@ private
     void noteContracts_mustMirrorNoteListSelectionState();
     void gutterMarkers_mustNormalizeSupportedMarkerTypes();
     void persistence_mustDelegateToContentViewModel();
+    void resourceRenderer_mustResolveResourceTagsFromCurrentNoteBody();
 };
 
 void ContentsEditorAdapterTest::textMetrics_mustTrackLogicalOffsetsAndLineQueries()
@@ -209,6 +276,77 @@ void ContentsEditorAdapterTest::persistence_mustDelegateToContentViewModel()
     QCOMPARE(contentViewModel.lastSavedText, QStringLiteral("text-a"));
     QCOMPARE(contentViewModel.saveBodyTextForNoteCallCount, 1);
     QCOMPARE(contentViewModel.saveCurrentBodyTextCallCount, 0);
+}
+
+void ContentsEditorAdapterTest::resourceRenderer_mustResolveResourceTagsFromCurrentNoteBody()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString hubPath = QDir(tempDir.path()).filePath(QStringLiteral("RenderHub.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("RenderHub.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("Render.wsnote"));
+    const QString resourcesPath = QDir(hubPath).filePath(QStringLiteral("RenderHub.wsresources"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+    QVERIFY(QDir().mkpath(resourcesPath));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("preview"),
+        QStringLiteral("preview.png"),
+        QStringLiteral("png")));
+    QVERIFY(createResourcePackage(
+        resourcesPath,
+        QStringLiteral("voice"),
+        QStringLiteral("voice.mp3"),
+        QStringLiteral("mp3")));
+
+    const QString bodyDocumentText =
+        QStringLiteral(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            "<!DOCTYPE WHATSONNOTE>\n"
+            "<contents id=\"note-render\">\n"
+            "  <body>\n"
+            "    <resource type=\"image\" format=\".png\" resourcePath=\"RenderHub.wsresources/preview.wsresource\" />\n"
+            "    <paragraph>Body line</paragraph>\n"
+            "    <resource type=audio format=.mp3 path=RenderHub.wsresources/voice.wsresource>\n"
+            "  </body>\n"
+            "</contents>\n");
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Render.wsnbody")), bodyDocumentText));
+
+    FakeContentViewModel contentViewModel;
+    contentViewModel.noteDirectoryPathByNoteId.insert(QStringLiteral("note-render"), noteDirectoryPath);
+
+    ContentsBodyResourceRenderer renderer;
+    renderer.setContentViewModel(&contentViewModel);
+    renderer.setNoteId(QStringLiteral("note-render"));
+
+    const QVariantList renderedResources = renderer.renderedResources();
+    QCOMPARE(renderer.resourceCount(), 2);
+    QVERIFY(renderer.hasRenderableResource());
+    QCOMPARE(renderedResources.size(), 2);
+
+    const QVariantMap firstResource = renderedResources.at(0).toMap();
+    QCOMPARE(firstResource.value(QStringLiteral("renderMode")).toString(), QStringLiteral("image"));
+    QCOMPARE(firstResource.value(QStringLiteral("type")).toString(), QStringLiteral("image"));
+    QCOMPARE(firstResource.value(QStringLiteral("format")).toString(), QStringLiteral(".png"));
+    QCOMPARE(
+        firstResource.value(QStringLiteral("source")).toString(),
+        QUrl::fromLocalFile(
+            QDir(resourcesPath).filePath(QStringLiteral("preview.wsresource/preview.png"))).toString());
+
+    const QVariantMap secondResource = renderedResources.at(1).toMap();
+    QCOMPARE(secondResource.value(QStringLiteral("renderMode")).toString(), QStringLiteral("unsupported"));
+    QCOMPARE(secondResource.value(QStringLiteral("type")).toString(), QStringLiteral("audio"));
+    QCOMPARE(secondResource.value(QStringLiteral("format")).toString(), QStringLiteral(".mp3"));
+
+    renderer.setMaxRenderCount(1);
+    QCOMPARE(renderer.resourceCount(), 1);
+
+    renderer.setMaxRenderCount(3);
+    renderer.setNoteId(QString());
+    QCOMPARE(renderer.resourceCount(), 0);
+    QVERIFY(!renderer.hasRenderableResource());
 }
 
 QTEST_MAIN(ContentsEditorAdapterTest)

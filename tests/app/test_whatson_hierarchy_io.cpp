@@ -43,6 +43,7 @@ private
 
     void parse_blueprintFiles();
     void creatorParser_roundTrip();
+    void resourcesParser_supportsLegacyPathAndResourceTagForms();
     void libraryParser_parsesObjectStyleNotes();
     void bookmarksStore_hasTenHexCriteriaAndNormalizesInput();
 };
@@ -349,6 +350,51 @@ void WhatSonHierarchyIoTest::creatorParser_roundTrip()
         QCOMPARE(decoded.tagEntries().size(), 2);
         QCOMPARE(decoded.tagEntries().at(0).id, QStringLiteral("business"));
         QCOMPARE(decoded.tagEntries().at(1).depth, 1);
+    }
+}
+
+void WhatSonHierarchyIoTest::resourcesParser_supportsLegacyPathAndResourceTagForms()
+{
+    QString errorMessage;
+    WhatSonResourcesHierarchyParser parser;
+
+    {
+        const QString legacyJsonText = QStringLiteral(
+            "{\n"
+            "  \"version\": 1,\n"
+            "  \"resources\": [\n"
+            "    { \"path\": \"LegacyHub.wsresources/logo.wsresource\" },\n"
+            "    { \"resourcePath\": \"LegacyHub.wsresources/manual.wsresource\" },\n"
+            "    { \"PATH\": \"LegacyHub.wsresources/theme.wsresource\" }\n"
+            "  ]\n"
+            "}\n");
+
+        WhatSonResourcesHierarchyStore parsedStore;
+        QVERIFY2(parser.parse(legacyJsonText, &parsedStore, &errorMessage), qPrintable(errorMessage));
+        QCOMPARE(
+            parsedStore.resourcePaths(),
+            QStringList{
+                QStringLiteral("LegacyHub.wsresources/logo.wsresource"),
+                QStringLiteral("LegacyHub.wsresources/manual.wsresource"),
+                QStringLiteral("LegacyHub.wsresources/theme.wsresource")
+            });
+    }
+
+    {
+        const QString tagText = QStringLiteral(
+            "<resources>\n"
+            "    <resource type=\"image\" format=\".png\" path=\"TagHub.wsresources/poster.wsresource\" />\n"
+            "    <resource type=audio format=.mp3 resourcePath=TagHub.wsresources/voice.wsresource />\n"
+            "</resources>\n");
+
+        WhatSonResourcesHierarchyStore parsedStore;
+        QVERIFY2(parser.parse(tagText, &parsedStore, &errorMessage), qPrintable(errorMessage));
+        QCOMPARE(
+            parsedStore.resourcePaths(),
+            QStringList{
+                QStringLiteral("TagHub.wsresources/poster.wsresource"),
+                QStringLiteral("TagHub.wsresources/voice.wsresource")
+            });
     }
 }
 

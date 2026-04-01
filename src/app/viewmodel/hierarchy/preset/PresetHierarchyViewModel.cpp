@@ -530,6 +530,75 @@ void PresetHierarchyViewModel::applyRuntimeSnapshot(
     updateLoadState(true);
 }
 
+void PresetHierarchyViewModel::requestViewModelHook()
+{
+    if (m_presetFilePath.trimmed().isEmpty())
+    {
+        emit viewModelHookRequested();
+        return;
+    }
+
+    QString reloadError;
+    if (!reloadFromPresetFilePath(&reloadError))
+    {
+        updateLoadState(false, reloadError);
+        emit viewModelHookRequested();
+        return;
+    }
+
+    updateLoadState(true);
+    emit viewModelHookRequested();
+}
+
+bool PresetHierarchyViewModel::reloadFromPresetFilePath(QString* errorMessage)
+{
+    const QString normalizedFilePath = m_presetFilePath.trimmed();
+    if (normalizedFilePath.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    QStringList refreshedPresetNames;
+    if (QFileInfo(normalizedFilePath).isFile())
+    {
+        QString rawText;
+        QString readError;
+        if (!WhatSon::Hierarchy::PresetSupport::readUtf8File(normalizedFilePath, &rawText, &readError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = readError;
+            }
+            return false;
+        }
+
+        WhatSonPresetHierarchyStore refreshedStore;
+        WhatSonPresetHierarchyParser parser;
+        QString parseError;
+        if (!parser.parse(rawText, &refreshedStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+
+        refreshedPresetNames = refreshedStore.presetNames();
+    }
+
+    applyRuntimeSnapshot(std::move(refreshedPresetNames), normalizedFilePath, true);
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    return true;
+}
+
 void PresetHierarchyViewModel::updateItemCount()
 {
     const int nextCount = m_itemModel.rowCount();
