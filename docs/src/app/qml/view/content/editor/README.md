@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 9
+- Child files: 12
 
 ## Child Directories
 - No child directories.
@@ -15,8 +15,11 @@
 ## Child Files
 - `ContentsDisplayView.qml`
 - `ContentsDrawerSplitter.qml`
+- `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
+- `ContentsEditorTypingController.qml`
 - `ContentsGutterLayer.qml`
+- `ContentsInlineFormatEditor.qml`
 - `ContentsMinimapLayer.qml`
 - `ContentsResourceViewer.qml`
 - `DrawerContents.qml`
@@ -29,6 +32,8 @@
   `DrawerMenuBar.qml` (`155:4565`), `DrawerContents.qml` (`174:6352`), and `DrawerToolbar.qml` (`155:4570`).
 - `ContentsDisplayView.qml` remains the integration point and keeps local draft state plus panel-view-model hook routing
   for the new drawer modules.
+- `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
+  the whole RichText surface on every edit.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

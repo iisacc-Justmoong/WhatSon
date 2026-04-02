@@ -80,19 +80,6 @@ QtObject {
         return String(controller.view.selectedNoteId).trim();
     }
 
-    function normalizeEditorSurfaceTextToSource(surfaceText) {
-        const surface = surfaceText === undefined || surfaceText === null ? "" : String(surfaceText);
-        if (surface.length === 0)
-            return "";
-        if (controller.textFormatRenderer
-                && controller.textFormatRenderer.normalizeEditorSurfaceTextToSource !== undefined) {
-            const normalized = controller.textFormatRenderer.normalizeEditorSurfaceTextToSource(surface);
-            if (normalized !== undefined && normalized !== null)
-                return String(normalized);
-        }
-        return surface;
-    }
-
     function resetEditorSelectionCache() {
         controller.contextMenuSelectionStart = -1;
         controller.contextMenuSelectionEnd = -1;
@@ -569,7 +556,7 @@ QtObject {
             if (shiftPressed)
                 handled = controller.queueInlineFormatWrap("strikethrough");
             break;
-        case Qt.Key_H:
+        case Qt.Key_E:
             if (shiftPressed)
                 handled = controller.queueInlineFormatWrap("highlight");
             break;

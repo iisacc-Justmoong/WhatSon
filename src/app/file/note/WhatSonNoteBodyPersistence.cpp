@@ -232,6 +232,56 @@ namespace
         return bodyDocumentText;
     }
 
+    QString removeInterTagFormattingWhitespace(QString text)
+    {
+        text.replace(
+            QRegularExpression(QStringLiteral(R"(>([ \t]*\n[ \t\n]*)<)")),
+            QStringLiteral("><"));
+        return text;
+    }
+
+    void trimOuterWhitespaceOnlyLines(QStringList* plainLines, QStringList* richLines)
+    {
+        if (plainLines == nullptr || richLines == nullptr)
+        {
+            return;
+        }
+
+        while (!plainLines->isEmpty() && !richLines->isEmpty()
+               && plainLines->front().trimmed().isEmpty())
+        {
+            plainLines->removeFirst();
+            richLines->removeFirst();
+        }
+
+        while (!plainLines->isEmpty() && !richLines->isEmpty()
+               && plainLines->back().trimmed().isEmpty())
+        {
+            plainLines->removeLast();
+            richLines->removeLast();
+        }
+    }
+
+    QString trimOuterWhitespaceOnlyTextLines(QString text)
+    {
+        text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(text);
+        if (text.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        while (!lines.isEmpty() && lines.front().trimmed().isEmpty())
+        {
+            lines.removeFirst();
+        }
+        while (!lines.isEmpty() && lines.back().trimmed().isEmpty())
+        {
+            lines.removeLast();
+        }
+        return lines.join(QLatin1Char('\n'));
+    }
+
     bool isClosingTagToken(const QString& token)
     {
         for (int index = 1; index < token.size(); ++index)
@@ -385,6 +435,7 @@ namespace
             QRegularExpression(
                 QStringLiteral(R"(<!DOCTYPE[\s\S]*?>)"),
                 QRegularExpression::CaseInsensitiveOption));
+        normalizedSource = removeInterTagFormattingWhitespace(normalizedSource);
         const bool hasExplicitBodyTag = normalizedSource.contains(
             QRegularExpression(QStringLiteral(R"(<\s*body\b)"), QRegularExpression::CaseInsensitiveOption));
 
@@ -521,7 +572,7 @@ namespace
         {
             output.chop(1);
         }
-        return output;
+        return trimOuterWhitespaceOnlyTextLines(output);
     }
 
     QString serializeInlineTaggedLine(const QString& lineText)
@@ -783,6 +834,7 @@ namespace
 
         fragments.fallbackText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackText);
         fragments.fallbackRichText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackRichText);
+        trimOuterWhitespaceOnlyLines(&fragments.blockLines, &fragments.blockRichLines);
         return fragments;
     }
 } // namespace
@@ -793,6 +845,9 @@ namespace WhatSon::NoteBodyPersistence
     {
         text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        text.replace(QChar::LineSeparator, QLatin1Char('\n'));
+        text.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
+        text.replace(QChar::Nbsp, QLatin1Char(' '));
         return text;
     }
 

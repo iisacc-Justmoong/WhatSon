@@ -8,6 +8,9 @@ context-menu dispatch for `ContentsDisplayView.qml`.
 The controller keeps source-range bookkeeping separate from the larger editor layout shell so RichText selection and
 `.wsnbody` mutation rules no longer live inline inside the main view file.
 
+Ordinary typing is intentionally out of scope for this controller and now lives in
+`ContentsEditorTypingController.qml`.
+
 The controller talks to the editor through the stable `contentEditor` contract (`selectionSnapshot()`, `getText(...)`,
 `getFormattedText(...)`, `cursorPosition`, `selectionStart`, `selectionEnd`, `selectedText`, `editorItem`,
 `inputItem`) so the host view can swap the concrete editor surface without rewriting formatting logic.
@@ -17,8 +20,6 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - `contextMenuSelectionStart` / `contextMenuSelectionEnd`: selection snapshot captured when the context menu opens.
 - `contextMenuItems`: menu model for inline formatting actions. The top item is `Plain`, which clears inline
   formatting from the current selection.
-- `normalizeEditorSurfaceTextToSource(...)`: converts live RichText editor output back into canonical `.wsnbody`
-  source tags.
 - `selectedEditorRange()`: resolves the current editor-surface selection span.
 - `openEditorSelectionContextMenu(localX, localY)`: opens the LVRS context menu when a non-empty selection exists.
 - `wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)`: wraps the exact rendered RichText fragment from the
@@ -54,6 +55,7 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - Immediate persistence goes through `selectionBridge.persistEditorTextForNote(...)` when the contract is available.
 - The save pipeline canonicalizes the edited RichText surface back into `.wsnbody` source tags, so shortcut/context
   formatting persists as semantic tags such as `<bold>...</bold>` and `<italic>...</italic>` instead of raw span CSS.
+- Ordinary typing no longer goes through this controller or its whole-document RichText normalization helper.
 - A successful immediate save clears the local-authority/pending-save window so the model can immediately feed the
   canonical inline-tag source back into the editor normalization path.
 - If immediate persistence is unavailable or fails, the controller falls back to

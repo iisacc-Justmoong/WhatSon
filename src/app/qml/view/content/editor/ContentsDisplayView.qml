@@ -950,6 +950,15 @@ Item {
         contentViewModel: contentsView.contentViewModel
         noteListModel: contentsView.noteListModel
     }
+    ContentsEditorTypingController {
+        id: editorTypingController
+
+        contentEditor: contentEditor
+        editorSession: editorSession
+        textFormatRenderer: textFormatRenderer
+        textMetricsBridge: textMetricsBridge
+        view: contentsView
+    }
     ContentsBodyResourceRenderer {
         id: bodyResourceRenderer
 
@@ -1301,15 +1310,8 @@ Item {
                             if (!focused)
                                 editorSession.flushPendingEditorText();
                         }
-                        onTextEdited: function (text) {
-                            const normalizedSourceText = editorSelectionController.normalizeEditorSurfaceTextToSource(text);
-                            if (contentsView.editorText !== normalizedSourceText)
-                                contentsView.editorText = normalizedSourceText;
-                            if (contentsView.syncingEditorTextFromModel)
-                                return;
-                            editorSession.markLocalEditorAuthority();
-                            editorSession.scheduleEditorPersistence();
-                            contentsView.editorTextEdited(normalizedSourceText);
+                        onTextEdited: function (_text) {
+                            editorTypingController.handleEditorTextEdited();
                         }
                     }
                     Flickable {

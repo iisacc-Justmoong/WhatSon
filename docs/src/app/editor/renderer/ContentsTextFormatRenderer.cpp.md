@@ -23,9 +23,16 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Exposes `normalizeInlineStyleAliasesForEditor(...)` for editor-surface normalization:
   - rewrites inline aliases into editable RichText tags (`bold` -> `<strong style="font-weight:900;">`, etc.)
   - preserves non-style tags such as `<resource ...>` unchanged
+  - promotes canonical source LF characters to explicit `<br/>` tags before binding into `TextEdit.RichText`
   - preserves escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` unchanged
-- Exposes `normalizeEditorSurfaceTextToSource(...)` so the RichText editor surface can be canonicalized back into
-  inline `.wsnbody` tags after direct text edits.
+- Exposes `normalizeEditorSurfaceTextToSource(...)` so formatting-driven `QTextDocument` mutations can still be
+  canonicalized back into inline `.wsnbody` tags when the whole RichText surface genuinely changed.
+- Exposes `applyPlainTextReplacementToSource(...)` so ordinary typing can mutate only the affected raw source span:
+  - accepts canonical source text plus source start/end offsets
+  - normalizes plain-text line endings
+  - clamps source offsets against an `int`-safe `QString` length before replacement
+  - escapes inserted literal text before stitching it back into `.wsnbody`
+  - avoids whole-document RichText export for normal typing/backspace/delete/paste
 - Exposes `applyInlineStyleToSelectionSource(...)` so inline formatting no longer depends on QML string splicing:
   - loads the current editor RichText surface into `QTextDocument`
   - resolves the selected range with `QTextCursor`

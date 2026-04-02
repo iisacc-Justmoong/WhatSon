@@ -12,8 +12,13 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 
 - Accepts `renderedEditorText` as an input-only property (`text`) and syncs it into the underlying `TextEdit`
   programmatically.
-- Exposes a `textEdited(string text)` signal so the host view can canonicalize the RichText surface back into
-  `.wsnbody` source tags.
+- Exposes a `textEdited(string text)` signal as a change event for the host controllers.
+- The host no longer persists that whole-document RichText payload directly for ordinary typing.
+- Instead, the typing controller treats the signal as a notification and derives the actual mutation from
+  `getText(...)` plus the current source/plain-text bridges.
+- The editor still emits the live `TextEdit.text` payload for formatting-oriented consumers. The earlier
+  fragment-based `getFormattedText(...)` save path was removed because it leaked `StartFragment`/fragment-scaffold
+  markup into note editing.
 - Exposes direct Qt-style selection/text helpers on the wrapper itself:
   - `selectionSnapshot()`
   - `getText(start, end)`
@@ -43,3 +48,4 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - RichText spans derived from `.wsnbody` tags render visibly inside the live editor surface
   - cursor/selection updates still drive gutter and minimap geometry
   - programmatic note switches do not emit duplicate save mutations
+  - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`

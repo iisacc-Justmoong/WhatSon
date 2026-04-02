@@ -1,8 +1,8 @@
 #include "ContentsLogicalTextBridge.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QChar>
 #include <QStringView>
-#include <QTextDocument>
 #include <algorithm>
 #include <limits>
 
@@ -210,14 +210,9 @@ int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) c
 
 QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
 {
-    QTextDocument document;
-    document.setHtml(text);
-    QString normalized = document.toPlainText();
-    normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-    normalized.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-    normalized.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
-    normalized.replace(QChar::LineSeparator, QLatin1Char('\n'));
-    return normalized;
+    const QString serializedBodyDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), text);
+    return WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
 }
 
 QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& text)

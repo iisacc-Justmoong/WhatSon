@@ -12,10 +12,12 @@
 
 ## Runtime Line-Metric Contract
 
-- The bridge now normalizes incoming editor source through `QTextDocument::setHtml(...)` +
-  `toPlainText()` before deriving logical offsets.
-- Paragraph and line separators are folded into `\n`, so logical line starts stay stable across
-  rich-text paragraph blocks (`<p>`, `<br>`, inline span tags).
+- The bridge now normalizes incoming editor source through the canonical `.wsnbody` serializer /
+  parser path (`serializeBodyDocument(...)` + `plainTextFromBodyDocument(...)`) before deriving
+  logical offsets.
+- This keeps logical text identical to the same plain-text projection used by editor persistence,
+  so gutter/minimap/selection geometry cannot drift when RichText whitespace or block markup is
+  interpreted differently from the note-body parser.
 - `logicalLineCharacterCountAt(...)` uses normalized plain-text length (`m_logicalText`) instead of
   raw rich-text source length. This prevents gutter/minimap geometry drift when the source contains
   markup tokens that do not map 1:1 to cursor offsets.

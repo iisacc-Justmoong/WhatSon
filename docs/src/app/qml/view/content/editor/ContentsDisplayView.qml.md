@@ -45,6 +45,8 @@ The root editor state now keeps two text projections:
 ## Key Collaborators
 
 - `ContentsEditorSelectionBridge`: exposes the selected note body and persistence contracts.
+- `ContentsEditorTypingController`: owns ordinary typing/backspace/delete/paste mutation routing from the live editor
+  surface back into canonical `.wsnbody` source.
 - `ContentsEditorSelectionController`: owns source-range caching, context-menu selection snapshots, and inline-format
   mutation routing for the editor shell.
 - `ContentsInlineFormatEditor`: provides the live RichText input surface while preserving the legacy `contentEditor`
@@ -149,8 +151,15 @@ The root editor state now keeps two text projections:
   disabled so the editor never drops into a non-editable state.
 - `ContentsInlineFormatEditor` now owns the live RichText surface, and the control receives `renderedEditorText`
   instead of the raw `.wsnbody` source string.
-- Direct typing in the RichText surface is canonicalized back into `.wsnbody` source text through
-  `ContentsTextFormatRenderer.normalizeEditorSurfaceTextToSource(...)`.
+- Direct typing in the RichText surface no longer round-trips the full RichText document back through
+  `normalizeEditorSurfaceTextToSource(...)`.
+- Instead, `onTextEdited` delegates to `ContentsEditorTypingController`, which:
+  - compares the current live editor plain text to `ContentsLogicalTextBridge.logicalText`
+  - computes one contiguous plain-text replacement delta
+  - maps that logical delta back to source offsets
+  - replaces only that source span in `.wsnbody`
+- Whole-document RichText normalization is now reserved for formatting application (`QTextDocument/QTextCursor`)
+  rather than ordinary typing.
 - The view still reapplies `TextEdit.RichText` / `showRenderedOutput` across the editor wrapper, its inner editor
   item, and the nested input item after note/session sync so the editable surface does not fall back to plain-text
   rendering.
@@ -164,6 +173,11 @@ The root editor state now keeps two text projections:
 - Alias normalization is delegated to `ContentsTextFormatRenderer.normalizeInlineStyleAliasesForEditor(...)` from
   `normalizeBodySourceForRichTextEditor(...)`, so `.wsnbody` inline tags are normalized through the renderer contract
   before entering the editable surface.
+- That normalization path now promotes canonical source `\n` into explicit RichText `<br/>` breaks before the value is
+  rebound into `ContentsInlineFormatEditor`.
+- The surrounding persistence path now also trims only outer leading/trailing whitespace-only lines that were
+  previously introduced by whole-document RichText scaffold leakage, so corrupted notes reopen near their first real
+  content line instead of hundreds of empty rows away.
 - Escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` is intentionally preserved as literal text (not decoded).
 - As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
   tag text, even when the LVRS shell component does not provide reliable RichText styling on its own.
@@ -172,6 +186,12 @@ The root editor state now keeps two text projections:
 
 - Automated test files are not currently present in this repository.
 - Editor formatting regression checklist for this file:
+  - ordinary typing/backspace/delete/paste must not serialize fragment comment markup such as `<!--StartFragment-->`
+    back into `.wsnbody`
+  - pressing `Enter` in the editable RichText surface must persist and re-render as an actual line break, not as a
+    space or adjacent text collapse
+  - gutter line numbers and current-line markers must remain aligned to the first visible text row after whitespace /
+    RichText normalization changes
   - existing `.wsnbody` `<bold>` regions render as visible bold text on load
   - right-clicking a non-empty selection opens the formatting context menu
   - the context menu shows `Plain` as the first item

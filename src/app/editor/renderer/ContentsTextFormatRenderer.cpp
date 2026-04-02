@@ -3,6 +3,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <QColor>
 #include <QFont>
 #include <QRegularExpression>
@@ -16,6 +17,12 @@
 
 namespace
 {
+    int boundedQStringSize(const QString& text) noexcept
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
+    }
+
     QString escapeHtmlText(QString value)
     {
         value.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
@@ -30,6 +37,9 @@ namespace
     {
         text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        text.replace(QChar::LineSeparator, QLatin1Char('\n'));
+        text.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
+        text.replace(QChar::Nbsp, QLatin1Char(' '));
         return text;
     }
 
@@ -658,6 +668,7 @@ namespace
             output += closingEditorTagForStyle(openStyleTags.at(index));
         }
 
+        output.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
         return output;
     }
 } // namespace
@@ -711,6 +722,22 @@ QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QSt
     const QString serializedBodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), surfaceText);
     return WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
+}
+
+QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(
+    const QString& sourceText,
+    int sourceStart,
+    int sourceEnd,
+    const QString& replacementText) const
+{
+    const QString normalizedSourceText = normalizeLineEndings(sourceText);
+    const QString normalizedReplacementText = normalizeLineEndings(replacementText);
+    const int maximumSourceLength = boundedQStringSize(normalizedSourceText);
+    const int boundedStart = std::clamp(std::min(sourceStart, sourceEnd), 0, maximumSourceLength);
+    const int boundedEnd = std::clamp(std::max(sourceStart, sourceEnd), 0, maximumSourceLength);
+    return normalizedSourceText.left(boundedStart)
+        + escapeHtmlText(normalizedReplacementText)
+        + normalizedSourceText.mid(boundedEnd);
 }
 
 QString ContentsTextFormatRenderer::applyInlineStyleToSelectionSource(

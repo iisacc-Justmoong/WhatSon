@@ -15,6 +15,10 @@ embedded in the generic inline-tag parser.
   Stateless helper to render any input text without mutating bridge ownership state.
 - `normalizeEditorSurfaceTextToSource(surfaceText)`
   Converts RichText editor output back into canonical `.wsnbody` inline source tags.
+- `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
+  Replaces one source span with escaped plain text directly in canonical `.wsnbody`.
+  Source bounds are clamped against an `int`-safe `QString` length before stitching.
+  This is the ordinary typing path and intentionally does not reserialize the entire RichText surface.
 - `applyInlineStyleToSelectionSource(surfaceText, selectionStart, selectionEnd, styleTag)`
   Applies the requested inline style to the current RichText selection with `QTextDocument/QTextCursor`, then
   canonicalizes the result back into `.wsnbody` source tags.

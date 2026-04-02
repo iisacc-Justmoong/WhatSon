@@ -6,7 +6,8 @@ This implementation owns the reusable note-body normalization and save workflow.
 The file now also contains the shared XML-to-plain-text extraction path used by both the local note file store and the library runtime indexer.
 
 ## Key Behaviors
-- `normalizeBodyPlainText(...)` normalizes only `CRLF` / `CR` into `LF`.
+- `normalizeBodyPlainText(...)` normalizes `CRLF` / `CR` into `LF`, converts Qt line/paragraph separator characters
+  into plain `LF`, and converts non-breaking spaces back into ordinary spaces before `.wsnbody` canonicalization.
 - `serializeBodyDocument(...)` is the single write-side serializer. It normalizes three editor-source shapes into `.wsnbody`:
   - plain text with newlines
   - inline `.wsnbody` style/resource tags
@@ -22,9 +23,12 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
 - Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
 - Rich HTML `<span style=...>` runs are reduced into canonical inline tags before writing. This keeps storage format stable while still accepting LV text editor RichText output.
+- Formatting-only whitespace between tags (`>\n    <`) is stripped before Rich HTML / `.wsnbody` source is reduced into
+  inline-tag text, so pretty-printed HTML/XML indentation cannot leak into the note body as real content lines.
 - `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
-- Empty paragraphs are emitted as empty lines instead of being dropped.
-- Whitespace-only paragraphs are emitted as whitespace-only lines instead of being trimmed away.
+- Interior empty paragraphs are emitted as empty lines instead of being dropped.
+- Interior whitespace-only paragraphs are preserved, but outer leading/trailing whitespace-only lines are trimmed on
+  read/normalization so previously corrupted notes do not reopen hundreds of lines away from their first real content.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
   - inline-tag editor source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
