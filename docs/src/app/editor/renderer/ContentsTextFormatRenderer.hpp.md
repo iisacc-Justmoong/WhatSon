@@ -19,7 +19,10 @@ embedded in the generic inline-tag parser.
   Applies the requested inline style to the current RichText selection with `QTextDocument/QTextCursor`, then
   canonicalizes the result back into `.wsnbody` source tags.
   When the full selection already carries the same style, the renderer removes formatting from that range and writes
-  plain text back instead of nesting duplicate tags.
+  plain text back instead of nesting duplicate tags, so the matching inline source tags are also removed from
+  `.wsnbody`.
+  The same entrypoint also accepts `plain` / `clear` / `none` to strip all supported inline styling from the selected
+  range explicitly.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 
@@ -29,3 +32,4 @@ embedded in the generic inline-tag parser.
 - Underline aliases: `underline`, `u` -> `<span style="text-decoration: underline;">`
 - Strike aliases: `strikethrough`, `strike`, `s`, `del` -> `<span style="text-decoration: line-through;">`
 - Highlight aliases: `highlight`, `mark` -> Apple Notes-inspired styled `<span ...>`
+- Clear aliases: `plain`, `clear`, `none` -> remove inline formatting from the selected range

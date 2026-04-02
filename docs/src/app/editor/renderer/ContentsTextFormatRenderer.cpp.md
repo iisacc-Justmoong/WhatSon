@@ -12,7 +12,7 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - `underline`/`u` -> `<span style="text-decoration: underline;">`
   - `strikethrough`/`strike`/`s`/`del` -> `<span style="text-decoration: line-through;">`
 - Routes `highlight` / `mark` tags through `ContentsTextHighlightRenderer` and renders an Apple Notes-inspired
-  highlight span (`#8A4B00` background, `#FFD9A3` foreground, semibold text).
+  highlight span (`#8A4B00` background, `#D6AE58` foreground, semibold text).
 - Converts `<br>` style tags and newline characters to `<br/>`.
 - Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
@@ -29,8 +29,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Exposes `applyInlineStyleToSelectionSource(...)` so inline formatting no longer depends on QML string splicing:
   - loads the current editor RichText surface into `QTextDocument`
   - resolves the selected range with `QTextCursor`
-  - if the entire selection already has the requested style, replaces that selection with plain text to remove the
-    formatting instead of nesting duplicate tags
+  - accepts `plain` / `clear` / `none` as explicit remove-formatting commands for context-menu usage
+  - if the entire selection already has the requested style, replaces that selection with an explicit plain-text
+    `QTextCharFormat`, so the matching inline source tags are removed from canonical `.wsnbody` output instead of
+    surviving as hidden markup
   - otherwise merges `QTextCharFormat` for `bold` / `italic` / `underline` / `strikethrough` / `highlight`
   - serializes the updated document back into canonical `.wsnbody`
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so

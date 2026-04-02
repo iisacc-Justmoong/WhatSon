@@ -169,7 +169,7 @@ Item {
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 3
-    readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">"
+    readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     property var resourcesImportViewModel: null
     readonly property int saveDebounceMs: 120
     readonly property var selectedResourceEntry: {
@@ -1517,7 +1517,7 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                        sequence: "Meta+Shift+H"
+                        sequence: "Meta+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
@@ -1526,7 +1526,7 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                        sequence: "Ctrl+Shift+H"
+                        sequence: "Ctrl+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }

@@ -2,7 +2,8 @@
 
 namespace
 {
-    constexpr auto kHighlightOpenHtmlTag = "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">";
+    // LVRS Theme.accentYellowMuted
+    constexpr auto kHighlightOpenHtmlTag = "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">";
     constexpr auto kHighlightCloseHtmlTag = "</span>";
 }
 

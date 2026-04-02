@@ -21,6 +21,11 @@ QtObject {
 
     readonly property var contextMenuItems: [
         {
+            "label": "Plain",
+            "keyVisible": false,
+            "eventName": "editor.format.plain"
+        },
+        {
             "label": "Bold",
             "keyVisible": false,
             "eventName": "editor.format.bold"
@@ -398,6 +403,8 @@ QtObject {
 
     function normalizeInlineStyleTag(tagName) {
         const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
+        if (normalizedTagName === "plain" || normalizedTagName === "clear" || normalizedTagName === "none")
+            return "plain";
         if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
             return "bold";
         if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
@@ -419,6 +426,11 @@ QtObject {
                     "closeTag": ""
                 });
         switch (styleTag) {
+        case "plain":
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
         case "bold":
             return ({
                     "openTag": "<bold>",
@@ -705,7 +717,9 @@ QtObject {
 
     function handleSelectionContextMenuEvent(eventName) {
         const contextSelectionRange = controller.contextMenuEditorSelectionSnapshot();
-        if (eventName === "editor.format.bold")
+        if (eventName === "editor.format.plain")
+            controller.wrapSelectedEditorTextWithTag("plain", contextSelectionRange);
+        else if (eventName === "editor.format.bold")
             controller.wrapSelectedEditorTextWithTag("bold", contextSelectionRange);
         else if (eventName === "editor.format.italic")
             controller.wrapSelectedEditorTextWithTag("italic", contextSelectionRange);

@@ -217,6 +217,14 @@ namespace
 
     QString normalizeSupportedInlineStyleTag(const QString& rawStyleTag)
     {
+        const QString normalizedRawStyleTag = rawStyleTag.trimmed().toCaseFolded();
+        if (normalizedRawStyleTag == QStringLiteral("plain")
+            || normalizedRawStyleTag == QStringLiteral("clear")
+            || normalizedRawStyleTag == QStringLiteral("none"))
+        {
+            return QStringLiteral("plain");
+        }
+
         QString normalizedStyleTag = canonicalInlineStyleTagName(rawStyleTag);
         if (normalizedStyleTag.isEmpty() && ContentsTextHighlightRenderer::isHighlightTagAlias(rawStyleTag))
         {
@@ -247,9 +255,21 @@ namespace
         else if (normalizedStyleTag == QStringLiteral("highlight"))
         {
             format.setBackground(QColor(QStringLiteral("#8A4B00")));
-            format.setForeground(QColor(QStringLiteral("#FFD9A3")));
+            format.setForeground(QColor(QStringLiteral("#D6AE58")));
             format.setFontWeight(QFont::DemiBold);
         }
+        return format;
+    }
+
+    QTextCharFormat plainTextCharFormat()
+    {
+        QTextCharFormat format;
+        format.setFontWeight(QFont::Normal);
+        format.setFontItalic(false);
+        format.setFontUnderline(false);
+        format.setFontStrikeOut(false);
+        format.clearProperty(QTextFormat::ForegroundBrush);
+        format.clearProperty(QTextFormat::BackgroundBrush);
         return format;
     }
 
@@ -729,9 +749,17 @@ QString ContentsTextFormatRenderer::applyInlineStyleToSelectionSource(
     }
 
     cursor.beginEditBlock();
-    if (selectionFullyHasInlineStyle(cursor, normalizedStyleTag))
+    if (normalizedStyleTag == QStringLiteral("plain"))
     {
-        cursor.insertText(plainSelectedText(cursor), QTextCharFormat());
+        const QString replacementText = plainSelectedText(cursor);
+        cursor.removeSelectedText();
+        cursor.insertText(replacementText, plainTextCharFormat());
+    }
+    else if (selectionFullyHasInlineStyle(cursor, normalizedStyleTag))
+    {
+        const QString replacementText = plainSelectedText(cursor);
+        cursor.removeSelectedText();
+        cursor.insertText(replacementText, plainTextCharFormat());
     }
     else
     {

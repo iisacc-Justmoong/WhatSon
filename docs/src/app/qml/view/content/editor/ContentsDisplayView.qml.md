@@ -93,14 +93,15 @@ The root editor state now keeps two text projections:
   - `Cmd/Ctrl+I` -> `<italic>...</italic>`
   - `Cmd/Ctrl+U` -> `<underline>...</underline>`
   - `Shift+Cmd/Ctrl+X` -> `<strikethrough>...</strikethrough>`
-  - `Shift+Cmd/Ctrl+H` -> `<highlight>...</highlight>`
+  - `Shift+Cmd/Ctrl+E` -> `<highlight>...</highlight>`
 - Reapplying the same shortcut/context-menu style to a selection that is already fully formatted with that same style
   removes the inline formatting and persists plain `.wsnbody` text for that range.
-- The editor surface also handles the same shortcuts from `Keys.onPressed` (`Meta/Ctrl + B/I/U`, `Meta/Ctrl+Shift + X/H`)
+- The editor surface also handles the same shortcuts from `Keys.onPressed` (`Meta/Ctrl + B/I/U`, `Meta/Ctrl+Shift + X/E`)
   so formatting still applies even when platform `Shortcut` dispatch is intercepted by the underlying text input control.
-- `Shortcut` bindings are declared with explicit `Meta+...` and `Ctrl+...` sequences (`B/I/U`, `Shift+X`, `Shift+H`)
+- `Shortcut` bindings are declared with explicit `Meta+...` and `Ctrl+...` sequences (`B/I/U`, `Shift+X`, `Shift+E`)
   to keep desktop key routing deterministic across macOS and non-macOS layouts.
 - Right-clicking a non-empty editor selection opens an `LV.ContextMenu` anchored to the editor viewport with:
+  - `Plain`
   - `Bold`
   - `Italic`
   - `Underline`
@@ -118,6 +119,8 @@ The root editor state now keeps two text projections:
   - formatting actions always require a non-empty selection range before mutating `.wsnbody`
 - Context-menu actions dispatch through the same `wrapSelectedEditorTextWithTag(...)` path as keyboard shortcuts, so
   inline tag serialization/persistence behavior stays identical across input methods.
+- The top-level `Plain` context-menu action clears all inline formatting from the selected range and persists the
+  resulting plain `.wsnbody` text.
 - Shortcut enablement no longer hard-gates on `editorInputFocused`; instead, shortcuts stay available while a note is
   active, but the actual wrap request still captures the live `TextEdit` selection snapshot before the queued mutation
   runs.
@@ -157,7 +160,7 @@ The root editor state now keeps two text projections:
   - `italic` -> `<span style=\"font-style:italic;\">`
   - `underline` -> `<span style=\"text-decoration: underline;\">`
   - `strikethrough` -> `<span style=\"text-decoration: line-through;\">`
-  - `highlight`/`mark` -> orange styled `<span ...>`
+  - `highlight`/`mark` -> dark-orange background + LVRS `accentYellowMuted` foreground styled `<span ...>`
 - Alias normalization is delegated to `ContentsTextFormatRenderer.normalizeInlineStyleAliasesForEditor(...)` from
   `normalizeBodySourceForRichTextEditor(...)`, so `.wsnbody` inline tags are normalized through the renderer contract
   before entering the editable surface.
@@ -171,7 +174,9 @@ The root editor state now keeps two text projections:
 - Editor formatting regression checklist for this file:
   - existing `.wsnbody` `<bold>` regions render as visible bold text on load
   - right-clicking a non-empty selection opens the formatting context menu
+  - the context menu shows `Plain` as the first item
   - context-menu formatting wraps the actual selected source span, not a duplicated plain-text occurrence elsewhere
+  - choosing `Plain` removes inline tags from the selected source span
   - reapplying the same formatting action to an already formatted selection restores that selection to plain text
 - In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.

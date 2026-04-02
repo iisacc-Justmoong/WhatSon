@@ -96,11 +96,15 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 - Chevron-driven expansion now records a resolved hierarchy index from stable model ids first
   (`item.itemId`, then `item.resolvedItemId`, then callback `itemId`), and only falls back to
-  visual row indexes (`flatIndex`, active-row id, callback `index`) when model ids are unavailable.
+  visual row indexes (`flatIndex`, then callback `index`) when model ids are unavailable.
   It then starts a short activation-block timer.
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `shouldSuppressHierarchyActivation(item, itemId, index)` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
+- Expansion suppression is now global for that short window: any activation other than the current
+  selected row is ignored while the expansion block timer is active.
+- This prevents LVRS internal active-row normalization from leaking into the application selection
+  state when a chevron expand/collapse triggers a stray activation on a lower visible row.
 - This keeps the suppression stable even when LVRS emits activation and expansion callbacks in
   different order on mobile touch input.
 - Activation and expansion bridge calls both use the same resolved hierarchy index, so deep rows
@@ -108,6 +112,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   values that differ from source-model ids.
 - Integer parsing now avoids `Number(value) || -1` in this surface, so valid zero-based ids/indexes
   (notably first rows and progress `0`) no longer collapse into `-1`.
+- After a successful expand/collapse bridge call, the view resynchronizes `selectedFolderIndex`
+  back into `LV.Hierarchy` active presentation on the next turn so LVRS visual active state cannot
+  remain parked on an internally normalized row.
 - The underlying LVRS `HierarchyItem` also reserves a dedicated chevron interaction slot
   (`chevronInteractionWidth`) and blocks row activation while the chevron interaction flag is active.
   This keeps desktop and mobile on the same contract: chevron tap/click only expands or collapses.
@@ -143,3 +150,4 @@ This file should be read as a composed view, not as the place where hierarchy bu
   - `Shift + click` creates contiguous hierarchy ranges from `hierarchySelectionAnchorIndex`.
   - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.
   - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.
+  - Chevron expand/collapse must not move the primary active selection to an unrelated sibling row.

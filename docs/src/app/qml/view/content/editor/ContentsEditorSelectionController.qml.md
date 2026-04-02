@@ -15,7 +15,8 @@ The controller talks to the editor through the stable `contentEditor` contract (
 ## Public Contract
 
 - `contextMenuSelectionStart` / `contextMenuSelectionEnd`: selection snapshot captured when the context menu opens.
-- `contextMenuItems`: menu model for inline formatting actions.
+- `contextMenuItems`: menu model for inline formatting actions. The top item is `Plain`, which clears inline
+  formatting from the current selection.
 - `normalizeEditorSurfaceTextToSource(...)`: converts live RichText editor output back into canonical `.wsnbody`
   source tags.
 - `selectedEditorRange()`: resolves the current editor-surface selection span.
@@ -39,6 +40,8 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - The controller no longer slices `.wsnbody` directly for inline-format actions.
 - It captures the current RichText surface from the live editor and delegates the actual selection mutation to
   `ContentsTextFormatRenderer.applyInlineStyleToSelectionSource(...)`, which uses `QTextDocument/QTextCursor`.
+- The context menu exposes `Plain` as a first-class formatting action. It routes through the same renderer path and
+  clears all supported inline styles from the selected range before persisting canonical `.wsnbody`.
 - Reapplying the same inline style to a fully formatted selection now clears that selection back to plain text instead
   of stacking duplicate RichText spans/source tags.
 - The controller still persists canonical source tags (`<bold>`, `<italic>`, ...) directly; RichText HTML remains an
@@ -60,10 +63,11 @@ The controller talks to the editor through the stable `contentEditor` contract (
 
 ## Regression Checks
 
-- Re-selecting a different span and pressing `Cmd/Ctrl+B` / `I` / `U` / `Shift+X` / `Shift+H` should wrap the latest
+- Re-selecting a different span and pressing `Cmd/Ctrl+B` / `I` / `U` / `Shift+X` / `Shift+E` should wrap the latest
   visible selection from the live `TextEdit`, not an older fallback snapshot.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already
   contains inline tags around nearby text.
 - Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.
+- Choosing `Plain` from the context menu should remove all inline formatting tags from the selected source range.
 - Shortcut and window-level accelerator paths should coalesce into one queued wrap request per note/tag pair, avoiding
   duplicate formatting from the same key chord.

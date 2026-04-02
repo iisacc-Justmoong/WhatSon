@@ -189,9 +189,7 @@ Rectangle {
         }
     ]
     property bool hierarchyExpansionActivationSuppressed: false
-    property int hierarchyExpansionActivationSuppressionSerial: 0
     property int hierarchyActivationPendingSerial: 0
-    property int hierarchyExpansionActivationBlockedIndex: -1
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
     property int toolbarFrameWidth: 200
@@ -381,9 +379,6 @@ Rectangle {
         const resolvedFlatIndex = item ? sidebarHierarchyView.normalizedNonNegativeInteger(item.flatIndex) : -1;
         if (resolvedFlatIndex >= 0)
             return resolvedFlatIndex;
-        const resolvedActiveItemId = sidebarHierarchyView.normalizedNonNegativeInteger(hierarchyTree.activeListItemId);
-        if (resolvedActiveItemId >= 0)
-            return resolvedActiveItemId;
         const resolvedIndex = sidebarHierarchyView.normalizedNonNegativeInteger(index);
         if (resolvedIndex >= 0)
             return resolvedIndex;
@@ -391,26 +386,18 @@ Rectangle {
     }
 
     function armHierarchyExpansionActivationSuppression(item, itemId, index) {
-        const resolvedIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
-        const nextSerial = sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial + 1;
-        sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial = nextSerial;
         sidebarHierarchyView.hierarchyExpansionActivationSuppressed = true;
-        sidebarHierarchyView.hierarchyExpansionActivationBlockedIndex = resolvedIndex;
         hierarchyExpansionActivationBlockTimer.restart();
-        Qt.callLater(function () {
-            if (sidebarHierarchyView.hierarchyExpansionActivationSuppressionSerial !== nextSerial)
-                return;
-            sidebarHierarchyView.hierarchyExpansionActivationSuppressed = false;
-        });
     }
 
     function shouldSuppressHierarchyActivation(item, itemId, index) {
-        const resolvedIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
-        if (!hierarchyExpansionActivationBlockTimer.running)
+        if (!sidebarHierarchyView.hierarchyExpansionActivationSuppressed && !hierarchyExpansionActivationBlockTimer.running)
             return false;
-        if (resolvedIndex >= 0)
-            return resolvedIndex === sidebarHierarchyView.hierarchyExpansionActivationBlockedIndex;
-        return sidebarHierarchyView.hierarchyExpansionActivationSuppressed;
+        const selectedIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);
+        const resolvedIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
+        if (selectedIndex >= 0 && resolvedIndex >= 0 && resolvedIndex === selectedIndex)
+            return false;
+        return true;
     }
 
     function hierarchyItemAtPosition(x, y) {
@@ -698,7 +685,7 @@ Rectangle {
 
         interval: 160
         repeat: false
-        onTriggered: sidebarHierarchyView.hierarchyExpansionActivationBlockedIndex = -1
+        onTriggered: sidebarHierarchyView.hierarchyExpansionActivationSuppressed = false
     }
 
     clip: true
@@ -803,7 +790,11 @@ Rectangle {
                 return;
             if (resolvedExpansionIndex < 0)
                 return;
-            sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(resolvedExpansionIndex, expanded);
+            if (!sidebarHierarchyView.hierarchyInteractionBridge.setItemExpanded(resolvedExpansionIndex, expanded))
+                return;
+            Qt.callLater(function () {
+                sidebarHierarchyView.syncSelectedHierarchyItem(false);
+            });
         }
         onListItemMoved: function (item, itemId, itemKey, fromIndex, toIndex, depth) {
             if (!sidebarHierarchyView.hierarchyDragDropBridge || !sidebarHierarchyView.hierarchyDragDropBridge.reorderContractAvailable)
