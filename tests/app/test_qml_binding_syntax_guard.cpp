@@ -389,6 +389,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("y: formattedPreviewViewport.topInset")),
         "ContentsDisplayView.qml formatted preview must reuse paper-page geometry so rich text aligns with page/print scaffolds.");
     QVERIFY2(
+        contentViewText.contains(QStringLiteral("insetHorizontal: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("? contentsView.printGuideHorizontalInset")) &&
+            contentViewText.contains(QStringLiteral("insetVertical: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("? contentsView.printGuideVerticalInset")) &&
+            contentViewText.contains(QStringLiteral("pageWidth - contentsView.printGuideHorizontalInset * 2")) &&
+            contentViewText.contains(QStringLiteral("printEditorPage.x + contentsView.printGuideHorizontalInset")) &&
+            contentViewText.contains(QStringLiteral("printEditorPage.y + contentsView.printGuideVerticalInset")),
+        "ContentsDisplayView.qml page/print text, formatted preview, and placeholder anchors must share the print-guide inset so page and print render the same printable content bounds.");
+    QVERIFY2(
         contentViewText.contains(QStringLiteral("text: textFormatRenderer.renderedHtml")) &&
             contentViewText.contains(QStringLiteral("textFormat: Text.RichText")),
         "ContentsDisplayView.qml formatted preview surface must bind Text.RichText output from the renderer bridge.");

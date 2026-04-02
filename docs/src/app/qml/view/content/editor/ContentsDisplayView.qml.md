@@ -82,6 +82,10 @@ positions from the same document origin.
   - `Web/Presentation`: same editable RichText surface, keeping document editing consistent across all editor views.
 - `Page`/`Print` paper scaffold keeps a fixed A4 aspect ratio (`210 / 297`) and fits that portrait page into the
   editor viewport while preserving outer margins.
+- `Page`/`Print` text layout now uses the same insets as the print guide (`printGuideHorizontalInset`,
+  `printGuideVerticalInset`) so content is rendered strictly inside the printable area.
+- `Print` mode draws dashed margin guides for that printable area; `Page` mode uses the same margins for text layout
+  but intentionally hides guide lines.
 - `Page`/`Print` text color is explicitly forced to black (`#000000`) for editor and formatted preview surfaces so
   print/paper rendering does not inherit low-contrast dark-theme text colors.
 - `showFormattedTextRenderer` is intentionally pinned to `false`; the legacy read-only replacement layer remains

@@ -1392,10 +1392,10 @@ Item {
                         fontPixelSize: 12
                         fontWeight: Font.Medium
                         insetHorizontal: contentsView.showPrintEditorLayout
-                                         ? contentsView.printPaperPaddingHorizontal
+                                         ? contentsView.printGuideHorizontalInset
                                          : contentsView.editorHorizontalInset
                         insetVertical: contentsView.showPrintEditorLayout
-                                       ? contentsView.printPaperPaddingVertical
+                                       ? contentsView.printGuideVerticalInset
                                        : contentsView.editorBottomInset
                         placeholderText: ""
                         selectByMouse: true
@@ -1433,18 +1433,18 @@ Item {
                         anchors.fill: parent
                         clip: true
                         readonly property real horizontalInset: contentsView.showPrintEditorLayout
-                                                               ? (Number(printEditorPage.x) || 0) + contentsView.printPaperPaddingHorizontal
+                                                               ? (Number(printEditorPage.x) || 0) + contentsView.printGuideHorizontalInset
                                                                : contentsView.editorHorizontalInset
                         readonly property real topInset: contentsView.showPrintEditorLayout
-                                                        ? (Number(printEditorPage.y) || 0) + contentsView.printPaperPaddingVertical
+                                                        ? (Number(printEditorPage.y) || 0) + contentsView.printGuideVerticalInset
                                                         : contentsView.editorDocumentStartY
                         readonly property real bottomInset: contentsView.showPrintEditorLayout
-                                                           ? contentsView.printPaperPaddingVertical
+                                                           ? contentsView.printGuideVerticalInset
                                                            : contentsView.editorBottomInset
                         readonly property real textWidth: {
                             if (contentsView.showPrintEditorLayout) {
                                 const pageWidth = Number(printEditorPage.width) || 0;
-                                return Math.max(0, pageWidth - contentsView.printPaperPaddingHorizontal * 2);
+                                return Math.max(0, pageWidth - contentsView.printGuideHorizontalInset * 2);
                             }
                             return Math.max(0, formattedPreviewViewport.width - contentsView.editorHorizontalInset * 2);
                         }
@@ -1633,11 +1633,11 @@ Item {
                     LV.Label {
                         anchors.left: parent.left
                         anchors.leftMargin: contentsView.showPrintEditorLayout
-                                           ? printEditorPage.x + contentsView.printPaperPaddingHorizontal
+                                           ? printEditorPage.x + contentsView.printGuideHorizontalInset
                                            : contentsView.editorHorizontalInset
                         anchors.top: parent.top
                         anchors.topMargin: contentsView.showPrintEditorLayout
-                                          ? printEditorPage.y + contentsView.printPaperPaddingVertical
+                                          ? printEditorPage.y + contentsView.printGuideVerticalInset
                                           : contentsView.editorDocumentStartY
                         color: LV.Theme.textTertiary
                         style: body

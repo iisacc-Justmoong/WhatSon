@@ -64,6 +64,7 @@ DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
                          m_projectSelectionSourceViewModel.setNoteId(noteId);
                          m_bookmarkSelectionSourceViewModel.setNoteId(noteId);
                          m_progressSelectionSourceViewModel.setNoteId(noteId);
+                         reloadCurrentHeader(false);
                      });
     QObject::connect(&m_currentNoteContextBridge,
                      &DetailCurrentNoteContextBridge::currentNoteDirectoryPathChanged,

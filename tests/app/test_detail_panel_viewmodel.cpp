@@ -214,6 +214,7 @@ private
     void detailSelectorViewModels_mustMirrorHierarchyItemsWithoutSharingSelection();
     void detailSelectors_mustMirrorCurrentNoteHeaderFileState();
     void detailSelectors_mustReloadCurrentHeaderWhenNoteMetadataChanges();
+    void detailSelectors_mustReloadCurrentHeaderWhenCurrentNoteIdChangesWithStableDirectoryPath();
     void detailSelectors_mustPreserveCurrentNoteContextAcrossUnsupportedHierarchySources();
     void detailWrites_mustSynchronizeActiveLibraryNoteListMetadata();
     void detailWrites_mustSynchronizeActiveBookmarksNoteListMetadata();
@@ -628,6 +629,82 @@ void DetailPanelViewModelTest::detailSelectors_mustReloadCurrentHeaderWhenNoteMe
     QCOMPARE(
         propertiesViewModel->property("tagItems").toStringList(),
         QStringList({QStringLiteral("seed"), QStringLiteral("updated")}));
+}
+
+void DetailPanelViewModelTest::detailSelectors_mustReloadCurrentHeaderWhenCurrentNoteIdChangesWithStableDirectoryPath()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString firstNoteId = QStringLiteral("SharedFirst");
+    const QString secondNoteId = QStringLiteral("SharedSecond");
+    const QString noteDirectoryPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("Shared.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    const QString headerFilePath = QDir(noteDirectoryPath).filePath(QStringLiteral("Shared.wsnhead"));
+    const QString firstHeaderText =
+        QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                       "<!DOCTYPE WHATSONNOTE>\n"
+                       "<contents id=\"SharedFirst\">\n"
+                       "  <head>\n"
+                       "    <meta charset=\"UTF-8\" />\n"
+                       "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
+                       "    <folders>\n"
+                       "      <folder>Workspace/Alpha</folder>\n"
+                       "    </folders>\n"
+                       "    <project>One</project>\n"
+                       "    <bookmarks state=\"false\" colors=\"\" />\n"
+                       "    <tags>\n"
+                       "      <tag>first</tag>\n"
+                       "    </tags>\n"
+                       "    <progress enums=\"{Queued,Review,Ship,Published}\">1</progress>\n"
+                       "    <isPreset>false</isPreset>\n"
+                       "  </head>\n"
+                       "</contents>\n");
+    QVERIFY2(writeUtf8File(headerFilePath, firstHeaderText), "first shared header file must be written");
+
+    DetailPanelViewModel viewModel;
+    FakeCurrentNoteListModel noteListModel;
+    FakeNoteDirectorySourceViewModel noteDirectorySourceViewModel;
+
+    noteDirectorySourceViewModel.setNoteDirectoryPath(firstNoteId, noteDirectoryPath);
+    noteDirectorySourceViewModel.setNoteDirectoryPath(secondNoteId, noteDirectoryPath);
+    viewModel.setCurrentNoteDirectorySourceViewModel(&noteDirectorySourceViewModel);
+    noteListModel.setCurrentNoteId(firstNoteId);
+    viewModel.setCurrentNoteListModel(&noteListModel);
+
+    QObject* propertiesViewModel = viewModel.propertiesViewModel();
+    QVERIFY(propertiesViewModel != nullptr);
+    QCOMPARE(propertiesViewModel->property("folderItems").toStringList(), QStringList{QStringLiteral("Alpha")});
+    QCOMPARE(propertiesViewModel->property("tagItems").toStringList(), QStringList{QStringLiteral("first")});
+    QCOMPARE(propertiesViewModel->property("currentProject").toString(), QStringLiteral("One"));
+
+    const QString secondHeaderText =
+        QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                       "<!DOCTYPE WHATSONNOTE>\n"
+                       "<contents id=\"SharedSecond\">\n"
+                       "  <head>\n"
+                       "    <meta charset=\"UTF-8\" />\n"
+                       "    <meta name=\"wsn-type\" content=\"wsnhead\" />\n"
+                       "    <folders>\n"
+                       "      <folder>Workspace/Beta</folder>\n"
+                       "    </folders>\n"
+                       "    <project>Two</project>\n"
+                       "    <bookmarks state=\"false\" colors=\"\" />\n"
+                       "    <tags>\n"
+                       "      <tag>second</tag>\n"
+                       "    </tags>\n"
+                       "    <progress enums=\"{Queued,Review,Ship,Published}\">2</progress>\n"
+                       "    <isPreset>false</isPreset>\n"
+                       "  </head>\n"
+                       "</contents>\n");
+    QVERIFY2(writeUtf8File(headerFilePath, secondHeaderText), "second shared header file must be written");
+
+    noteListModel.setCurrentNoteId(secondNoteId);
+
+    QCOMPARE(propertiesViewModel->property("folderItems").toStringList(), QStringList{QStringLiteral("Beta")});
+    QCOMPARE(propertiesViewModel->property("tagItems").toStringList(), QStringList{QStringLiteral("second")});
+    QCOMPARE(propertiesViewModel->property("currentProject").toString(), QStringLiteral("Two"));
 }
 
 void DetailPanelViewModelTest::detailSelectors_mustPreserveCurrentNoteContextAcrossUnsupportedHierarchySources()
