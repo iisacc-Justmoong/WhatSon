@@ -55,6 +55,10 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 - `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
   filtered projection immediately, so project assignment writes do not require a later hub reload
   before the projects note list catches up.
+- When `reloadNoteMetadataForNoteId(...)` detects that a note's project label actually changed
+  (for example `Untitled -> <empty>`), it triggers one extra full re-index pass from
+  `ProjectLists.wsproj`/`Library.wslibrary` to guarantee that hierarchy badges and selected-project
+  note projection stay consistent even if the previous in-memory note snapshot carried stale paths.
 - `noteDirectoryPathForNoteId(...)` now resolves directory paths canonically by falling back to the
   readable `.wsnhead` location when the indexed directory path is missing or stale.
 - If `reloadNoteMetadataForNoteId(...)` cannot re-read the note header anymore (for example the

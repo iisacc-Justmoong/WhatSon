@@ -8,6 +8,7 @@
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModel.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -219,6 +220,7 @@ private
     void detailWrites_mustSynchronizeActiveLibraryNoteListMetadata();
     void detailWrites_mustSynchronizeActiveBookmarksNoteListMetadata();
     void detailWrites_mustSynchronizeProjectsNoteListMetadataFromLibraryContext();
+    void detailWrites_mustDropSelectedProjectsNoteImmediatelyWhenProjectCleared();
     void detailWrites_mustSynchronizeActiveProgressNoteListMetadata();
     void detailProgressSelection_mustWriteCurrentModelValueForProgressHierarchyQueries();
     void detailProgressSelection_withoutSource_mustFallbackToHeaderEnumsAndCanonicalValueMapping();
@@ -1108,6 +1110,136 @@ void DetailPanelViewModelTest::detailWrites_mustSynchronizeProjectsNoteListMetad
     QString parseError;
     QVERIFY2(parser.parse(headerText, &header, &parseError), qPrintable(parseError));
     QCOMPARE(header.project(), QStringLiteral("Alpha"));
+}
+
+void DetailPanelViewModelTest::detailWrites_mustDropSelectedProjectsNoteImmediatelyWhenProjectCleared()
+{
+    QTemporaryDir temporaryDirectory;
+    QVERIFY2(temporaryDirectory.isValid(), "temporary directory must be created");
+
+    const QString hubPath = QDir(temporaryDirectory.path()).filePath(QStringLiteral("DetailProjectsImmediateRefresh.wshub"));
+    const QString contentsPath = QDir(hubPath).filePath(QStringLiteral("DetailProjectsImmediateRefresh.wscontents"));
+    const QString libraryPath = QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary"));
+    const QString noteDirectoryPath = QDir(libraryPath).filePath(QStringLiteral("ProjectNote.wsnote"));
+    QVERIFY(QDir().mkpath(noteDirectoryPath));
+
+    QVERIFY2(
+        writeUtf8File(
+            QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.library.index\",\n"
+                "  \"notes\": [\n"
+                "    {\"id\": \"note-project\"}\n"
+                "  ]\n"
+                "}\n")),
+        "index.wsnindex must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(contentsPath).filePath(QStringLiteral("ProjectLists.wsproj")),
+            QStringLiteral(
+                "{\n"
+                "  \"version\": 1,\n"
+                "  \"schema\": \"whatson.projects.list\",\n"
+                "  \"projects\": [\n"
+                "    {\"id\": \"Untitled\", \"label\": \"Untitled\"}\n"
+                "  ]\n"
+                "}\n")),
+        "ProjectLists.wsproj must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("ProjectNote.wsnhead")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-project\">\n"
+                "  <head>\n"
+                "    <created>2026-03-01-00-00-00</created>\n"
+                "    <author>Tester</author>\n"
+                "    <lastModified>2026-03-01-00-00-00</lastModified>\n"
+                "    <modifiedBy>Tester</modifiedBy>\n"
+                "    <folders></folders>\n"
+                "    <project>Untitled</project>\n"
+                "    <bookmarks state=\"false\" />\n"
+                "    <tags>\n"
+                "    </tags>\n"
+                "    <progress enums=\"{Ready,Pending,InProgress,Done}\">0</progress>\n"
+                "    <isPreset>false</isPreset>\n"
+                "  </head>\n"
+                "</contents>\n")),
+        "ProjectNote.wsnhead must be written");
+    QVERIFY2(
+        writeUtf8File(
+            QDir(noteDirectoryPath).filePath(QStringLiteral("ProjectNote.wsnbody")),
+            QStringLiteral(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                "<!DOCTYPE WHATSONNOTE>\n"
+                "<contents id=\"note-project\">\n"
+                "  <body>\n"
+                "    <paragraph>Project note</paragraph>\n"
+                "  </body>\n"
+                "</contents>\n")),
+        "ProjectNote.wsnbody must be written");
+
+    ProjectsHierarchyViewModel projectsHierarchyViewModel;
+    QString errorMessage;
+    QVERIFY2(projectsHierarchyViewModel.loadFromWshub(hubPath, &errorMessage), qPrintable(errorMessage));
+
+    const auto noteCountByLabel = [&projectsHierarchyViewModel](const QString& label) -> int
+    {
+        const QVariantList hierarchyModel = projectsHierarchyViewModel.hierarchyModel();
+        for (const QVariant& entry : hierarchyModel)
+        {
+            const QVariantMap node = entry.toMap();
+            if (node.value(QStringLiteral("label")).toString() != label)
+            {
+                continue;
+            }
+
+            bool ok = false;
+            const int count = node.value(QStringLiteral("count")).toInt(&ok);
+            if (!ok)
+            {
+                return -1;
+            }
+            return count;
+        }
+        return -1;
+    };
+
+    QVERIFY(noteCountByLabel(QStringLiteral("Untitled")) == 1);
+    projectsHierarchyViewModel.setSelectedIndex(0);
+    LibraryNoteListModel* noteListModel = projectsHierarchyViewModel.noteListModel();
+    QVERIFY(noteListModel != nullptr);
+    QCOMPARE(noteListModel->rowCount(), 1);
+    noteListModel->setCurrentIndex(0);
+    QCOMPARE(noteListModel->currentNoteId(), QStringLiteral("note-project"));
+
+    DetailPanelViewModel detailPanelViewModel;
+    detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
+    detailPanelViewModel.setCurrentNoteListModel(noteListModel);
+    detailPanelViewModel.setCurrentNoteDirectorySourceViewModel(&projectsHierarchyViewModel);
+
+    QObject* projectSelector = detailPanelViewModel.projectSelectionViewModel();
+    QVERIFY(projectSelector != nullptr);
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 1);
+
+    QVERIFY(detailPanelViewModel.writeProjectSelection(0));
+    QCOMPARE(projectSelector->property("selectedIndex").toInt(), 0);
+    QCOMPARE(noteListModel->rowCount(), 0);
+    QCOMPARE(noteCountByLabel(QStringLiteral("Untitled")), 0);
+
+    QFile headerFile(QDir(noteDirectoryPath).filePath(QStringLiteral("ProjectNote.wsnhead")));
+    QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "ProjectNote.wsnhead must remain readable");
+    const QString headerText = QString::fromUtf8(headerFile.readAll());
+    headerFile.close();
+
+    WhatSonNoteHeaderStore header;
+    WhatSonNoteHeaderParser parser;
+    QString parseError;
+    QVERIFY2(parser.parse(headerText, &header, &parseError), qPrintable(parseError));
+    QCOMPARE(header.project(), QString());
 }
 
 void DetailPanelViewModelTest::detailWrites_mustSynchronizeActiveProgressNoteListMetadata()

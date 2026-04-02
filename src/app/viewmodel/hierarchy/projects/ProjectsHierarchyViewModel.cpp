@@ -749,6 +749,7 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
     }
 
     const LibraryNoteRecord indexedNote = m_allNotes.at(noteIndex);
+    const QString previousProjectLabel = indexedNote.project.trimmed();
     const QString preferredHeaderPath = resolveCanonicalHeaderPathForProjects(indexedNote);
     const QString resolvedDirectoryPath = resolveCanonicalNoteDirectoryPathForProjects(indexedNote);
 
@@ -777,14 +778,42 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
                                   QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, ioError));
         // Drop stale projection membership immediately when note metadata can no longer be read.
         m_allNotes[noteIndex].project.clear();
+        const bool projectMembershipChanged =
+            previousProjectLabel.compare(m_allNotes.at(noteIndex).project.trimmed(), Qt::CaseInsensitive) != 0;
         refreshNoteListForSelection();
         emit hierarchyModelChanged();
+        if (projectMembershipChanged && !m_projectsFilePath.trimmed().isEmpty())
+        {
+            QString refreshError;
+            if (!refreshIndexedNotesFromProjectsFilePath(&refreshError))
+            {
+                WhatSon::Debug::traceSelf(
+                    this,
+                    QString::fromLatin1(kScope),
+                    QStringLiteral("reloadNoteMetadataForNoteId.projectionRefreshFailed"),
+                    QStringLiteral("noteId=%1 reason=%2").arg(normalizedNoteId, refreshError));
+            }
+        }
         return false;
     }
 
     syncNoteRecordFromDocument(&m_allNotes[noteIndex], noteDocument);
+    const bool projectMembershipChanged =
+        previousProjectLabel.compare(m_allNotes.at(noteIndex).project.trimmed(), Qt::CaseInsensitive) != 0;
     refreshNoteListForSelection();
     emit hierarchyModelChanged();
+    if (projectMembershipChanged && !m_projectsFilePath.trimmed().isEmpty())
+    {
+        QString refreshError;
+        if (!refreshIndexedNotesFromProjectsFilePath(&refreshError))
+        {
+            WhatSon::Debug::traceSelf(
+                this,
+                QString::fromLatin1(kScope),
+                QStringLiteral("reloadNoteMetadataForNoteId.projectionRefreshFailed"),
+                QStringLiteral("noteId=%1 reason=%2").arg(normalizedNoteId, refreshError));
+        }
+    }
     return true;
 }
 
