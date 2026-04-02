@@ -364,11 +364,21 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("id: printEditorCanvas")) &&
             contentViewText.contains(QStringLiteral("id: printEditorPage")) &&
+            contentViewText.contains(QStringLiteral("readonly property real printPaperAspectRatio: 210 / 297")) &&
+            contentViewText.contains(QStringLiteral("anchors.centerIn: parent")) &&
+            contentViewText.contains(
+                QStringLiteral("printEditorPage.availableHeight * contentsView.printPaperAspectRatio")) &&
             contentViewText.contains(
                 QStringLiteral("anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent")) &&
             contentViewText.contains(QStringLiteral("visible: contentsView.showPrintMarginGuides")) &&
             contentViewText.contains(QStringLiteral("Number(contentsView.printGuideHorizontalInset)")),
-        "ContentsDisplayView.qml page/print modes must render inside a centered paper scaffold, and print mode must add dashed print-margin guides.");
+        "ContentsDisplayView.qml page/print modes must render inside an A4-ratio centered paper scaffold, and print mode must add dashed print-margin guides.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property color printPaperTextColor: \"#000000\"")) &&
+            contentViewText.contains(QStringLiteral("textColor: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("? contentsView.printPaperTextColor")) &&
+            contentViewText.contains(QStringLiteral(": LV.Theme.bodyColor")),
+        "ContentsDisplayView.qml must force black editor text in page/print paper layouts while preserving theme body color in plain mode.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property real horizontalInset: contentsView.showPrintEditorLayout")) &&
             contentViewText.contains(QStringLiteral("readonly property real topInset: contentsView.showPrintEditorLayout")) &&
@@ -552,6 +562,12 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentsDisplayView.qml must expose note-count availability through the selection adapter.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral(
+            "readonly property int noteSnapshotRefreshIntervalMs: 1200")) &&
+            contentViewText.contains(QStringLiteral(
+                "readonly property bool noteSnapshotRefreshEnabled: contentsView.visible")),
+        "ContentsDisplayView.qml must expose a periodic note-snapshot refresh contract for long-lived editor sessions.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral(
             "readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable")),
         "ContentsDisplayView.qml must expose the persistence contract through the selection adapter.");
     QVERIFY2(
@@ -713,6 +729,13 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("id: gutterRefreshTimer")),
         "ContentViewLayout.qml must use a dedicated timer to resample gutter layout after note changes and resurfacing.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function pollSelectedNoteSnapshot()")) &&
+            contentViewText.contains(QStringLiteral("selectionBridge.refreshSelectedNoteSnapshot()")) &&
+            contentViewText.contains(QStringLiteral("id: noteSnapshotRefreshTimer")) &&
+            contentViewText.contains(QStringLiteral("running: contentsView.noteSnapshotRefreshEnabled")) &&
+            contentViewText.contains(QStringLiteral("onTriggered: contentsView.pollSelectedNoteSnapshot()")),
+        "ContentsDisplayView.qml must poll selected-note metadata and trigger gutter refresh pulses so long-running editor sessions stay synchronized.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("contentsView.scheduleGutterRefresh(4);")),
         "ContentViewLayout.qml must trigger extra gutter refresh passes when a note body is rebound or the surface is shown.");

@@ -14,6 +14,13 @@
 - Declared namespaces present: no
 - QObject macro present: no
 
+## Current Implementation Notes
+- `refreshSelectedNoteSnapshot()` now supports polling-style sync from QML editors:
+  - Reads the currently selected note id from the bound note-list model.
+  - Invokes `reloadNoteMetadataForNoteId(QString)` on the bound content view-model when available.
+  - Refreshes exported selection/count state (`selectedNoteId`, `selectedNoteBodyText`, `visibleNoteCount`) after
+    reload attempts.
+
 ### Classes and Structs
 - None detected during scaffold generation.
 

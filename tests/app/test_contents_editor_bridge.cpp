@@ -149,6 +149,28 @@ public:
         return saveCurrentBodyTextResult;
     }
 
+    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId)
+    {
+        lastReloadedNoteId = noteId.trimmed();
+        reloadNoteMetadataForNoteIdCallCount += 1;
+        if (applyReloadedSelectionState && attachedNoteListModel != nullptr)
+        {
+            if (!nextReloadedNoteId.isNull())
+            {
+                attachedNoteListModel->setCurrentNoteId(nextReloadedNoteId);
+            }
+            if (!nextReloadedBodyText.isNull())
+            {
+                attachedNoteListModel->setCurrentBodyText(nextReloadedBodyText);
+            }
+            if (nextReloadedItemCount >= 0)
+            {
+                attachedNoteListModel->setItemCount(nextReloadedItemCount);
+            }
+        }
+        return reloadNoteMetadataForNoteIdResult;
+    }
+
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const
     {
         return noteDirectoryPathByNoteId.value(noteId.trimmed());
@@ -161,11 +183,19 @@ public:
 
     QString lastSavedNoteId;
     QString lastSavedText;
+    QString lastReloadedNoteId;
     QHash<QString, QString> noteDirectoryPathByNoteId;
+    FakeNoteListModel* attachedNoteListModel = nullptr;
+    QString nextReloadedNoteId;
+    QString nextReloadedBodyText;
+    int nextReloadedItemCount = -1;
+    bool applyReloadedSelectionState = false;
     int saveBodyTextForNoteCallCount = 0;
     int saveCurrentBodyTextCallCount = 0;
+    int reloadNoteMetadataForNoteIdCallCount = 0;
     bool saveBodyTextForNoteResult = true;
     bool saveCurrentBodyTextResult = true;
+    bool reloadNoteMetadataForNoteIdResult = true;
 
 signals:
     void hubFilesystemMutated();
@@ -181,6 +211,7 @@ private
 
     void textMetrics_mustTrackLogicalOffsetsAndLineQueries();
     void noteContracts_mustMirrorNoteListSelectionState();
+    void noteContracts_refreshSelectedNoteSnapshot_mustReloadSelectedNoteFromContentViewModel();
     void gutterMarkers_mustNormalizeSupportedMarkerTypes();
     void persistence_mustDelegateToContentViewModel();
     void resourceRenderer_mustResolveResourceTagsFromCurrentNoteBody();
@@ -230,6 +261,36 @@ void ContentsEditorAdapterTest::noteContracts_mustMirrorNoteListSelectionState()
     QCOMPARE(bridge.selectedNoteId(), QStringLiteral("note-77"));
     QCOMPARE(bridge.selectedNoteBodyText(), QStringLiteral("updated body"));
     QCOMPARE(bridge.visibleNoteCount(), 2);
+}
+
+void ContentsEditorAdapterTest::noteContracts_refreshSelectedNoteSnapshot_mustReloadSelectedNoteFromContentViewModel()
+{
+    FakeNoteListModel noteListModel;
+    noteListModel.setCurrentNoteId(QStringLiteral("note-42"));
+    noteListModel.setCurrentBodyText(QStringLiteral("body text"));
+    noteListModel.setItemCount(7);
+
+    FakeContentViewModel contentViewModel;
+    contentViewModel.attachedNoteListModel = &noteListModel;
+    contentViewModel.applyReloadedSelectionState = true;
+    contentViewModel.nextReloadedBodyText = QStringLiteral("reloaded body");
+    contentViewModel.nextReloadedItemCount = 9;
+    contentViewModel.reloadNoteMetadataForNoteIdResult = true;
+
+    ContentsEditorSelectionBridge bridge;
+    bridge.setNoteListModel(&noteListModel);
+    bridge.setContentViewModel(&contentViewModel);
+
+    QSignalSpy bodyTextChangedSpy(&bridge, &ContentsEditorSelectionBridge::selectedNoteBodyTextChanged);
+    QSignalSpy visibleNoteCountChangedSpy(&bridge, &ContentsEditorSelectionBridge::visibleNoteCountChanged);
+
+    QVERIFY(bridge.refreshSelectedNoteSnapshot());
+    QCOMPARE(contentViewModel.reloadNoteMetadataForNoteIdCallCount, 1);
+    QCOMPARE(contentViewModel.lastReloadedNoteId, QStringLiteral("note-42"));
+    QCOMPARE(bridge.selectedNoteBodyText(), QStringLiteral("reloaded body"));
+    QCOMPARE(bridge.visibleNoteCount(), 9);
+    QVERIFY(bodyTextChangedSpy.count() >= 1);
+    QVERIFY(visibleNoteCountChangedSpy.count() >= 1);
 }
 
 void ContentsEditorAdapterTest::gutterMarkers_mustNormalizeSupportedMarkerTypes()

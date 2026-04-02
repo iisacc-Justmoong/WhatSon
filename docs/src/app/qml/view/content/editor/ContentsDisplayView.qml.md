@@ -34,6 +34,9 @@ positions from the same document origin.
 - User edits flow through `editorSession.markLocalEditorAuthority()` and `editorSession.scheduleEditorPersistence()`.
 - Model-driven note swaps call `editorSession.syncEditorTextFromSelection(...)` and flush pending edits when the bound
   note changes.
+- The editor keeps a periodic note snapshot poll (`noteSnapshotRefreshTimer`, default `1200ms`) that calls
+  `selectionBridge.refreshSelectedNoteSnapshot()` and schedules gutter refresh passes. This keeps long-running sessions
+  synchronized when note metadata/body text changes are delivered late or out-of-band.
 - The editor viewport now overlays resource cards rendered from `ContentsBodyResourceRenderer.renderedResources`, so image packages referenced in `.wsnbody` are visible without switching to a separate panel.
 - When the selected note id is a direct `.wsresource` package, the surface switches to a dedicated in-editor resource
   viewer and hides text-editor/minimap chrome.
@@ -74,9 +77,13 @@ positions from the same document origin.
   surfaces by mode:
   - `Plain` (`activeViewMode == 0`):
     - `LV.TextEditor` RichText editing surface (cursor/input always enabled for note editing).
-  - `Page` (`activeViewMode == 1`): paper-layout RichText editing surface (PDF-like page canvas, no print guides)
+  - `Page` (`activeViewMode == 1`): paper-layout RichText editing surface (A4 portrait scaffold, no print guides)
   - `Print` (`activeViewMode == 2`): paper-layout RichText editing surface + dashed print-margin guides
   - `Web/Presentation`: same editable RichText surface, keeping document editing consistent across all editor views.
+- `Page`/`Print` paper scaffold keeps a fixed A4 aspect ratio (`210 / 297`) and fits that portrait page into the
+  editor viewport while preserving outer margins.
+- `Page`/`Print` text color is explicitly forced to black (`#000000`) for editor and formatted preview surfaces so
+  print/paper rendering does not inherit low-contrast dark-theme text colors.
 - `showFormattedTextRenderer` is intentionally pinned to `false`; the legacy read-only replacement layer remains
   disabled so the editor never drops into a non-editable state.
 - Stored inline aliases (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`, `<mark>`) are

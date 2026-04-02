@@ -9,6 +9,7 @@ namespace
 {
     constexpr auto kSaveBodyTextForNoteSignature = "saveBodyTextForNote(QString,QString)";
     constexpr auto kSaveCurrentBodyTextSignature = "saveCurrentBodyText(QString)";
+    constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
 }
 
 ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
@@ -152,6 +153,27 @@ bool ContentsEditorSelectionBridge::persistEditorTextForNote(const QString& note
     }
 
     return false;
+}
+
+bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
+{
+    const QString currentNoteId = readStringProperty(m_noteListModel, "currentNoteId").trimmed();
+    bool reloaded = false;
+    if (!currentNoteId.isEmpty() && hasInvokableMethod(m_contentViewModel, kReloadNoteMetadataForNoteIdSignature))
+    {
+        bool reloadSucceeded = false;
+        reloaded = QMetaObject::invokeMethod(
+                       m_contentViewModel,
+                       "reloadNoteMetadataForNoteId",
+                       Qt::DirectConnection,
+                       Q_RETURN_ARG(bool, reloadSucceeded),
+                       Q_ARG(QString, currentNoteId))
+            && reloadSucceeded;
+    }
+
+    refreshNoteSelectionState();
+    refreshNoteCountState();
+    return reloaded;
 }
 
 void ContentsEditorSelectionBridge::handleNoteListSelectionChanged()

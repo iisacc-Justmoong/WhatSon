@@ -133,6 +133,12 @@ Item {
     readonly property int minimapViewportMinHeight: 28
     readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
+    readonly property int noteSnapshotRefreshIntervalMs: 1200
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible
+                                                    && contentsView.hasSelectedNote
+                                                    && !contentsView.showDedicatedResourceViewer
+                                                    && !contentsView.showFormattedTextRenderer
+                                                    && contentsView.noteSelectionContractAvailable
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
@@ -233,10 +239,13 @@ Item {
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property color printCanvasColor: "#F1F3F6"
+    readonly property real printPaperAspectRatio: 210 / 297
     readonly property int printPaperHorizontalMargin: LV.Theme.gap12
     readonly property int printPaperMaxWidth: 880
     readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
     readonly property int printPaperPaddingVertical: LV.Theme.gap8
+    readonly property color printPaperTextColor: "#000000"
+    readonly property int printPaperVerticalMargin: LV.Theme.gap4
     readonly property color printPaperColor: "#FFFFFF"
     readonly property color printPaperBorderColor: "#19000000"
     readonly property int printGuideHorizontalInset: LV.Theme.gap12 * 2
@@ -582,6 +591,12 @@ Item {
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
+    }
+    function pollSelectedNoteSnapshot() {
+        if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
+            return;
+        selectionBridge.refreshSelectedNoteSnapshot();
+        contentsView.scheduleGutterRefresh(2);
     }
     function focusEditorForPendingNote() {
         const pendingNoteId = contentsView.pendingEditorFocusNoteId === undefined || contentsView.pendingEditorFocusNoteId === null
@@ -1124,6 +1139,15 @@ Item {
             contentsView.gutterRefreshPassesRemaining -= 1;
         }
     }
+    Timer {
+        id: noteSnapshotRefreshTimer
+
+        interval: contentsView.noteSnapshotRefreshIntervalMs
+        repeat: true
+        running: contentsView.noteSnapshotRefreshEnabled
+
+        onTriggered: contentsView.pollSelectedNoteSnapshot()
+    }
     Connections {
         function onEmptyNoteCreated(noteId) {
             contentsView.scheduleEditorFocusForNote(noteId);
@@ -1271,20 +1295,29 @@ Item {
                         Rectangle {
                             id: printEditorPage
 
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: LV.Theme.gap4
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.top: parent.top
-                            anchors.topMargin: LV.Theme.gap4
+                            readonly property real availableHeight: Math.max(
+                                                                       0,
+                                                                       Number(parent ? parent.height : 0)
+                                                                           - contentsView.printPaperVerticalMargin * 2)
+                            readonly property real availableWidth: Math.max(
+                                                                      0,
+                                                                      Number(parent ? parent.width : 0)
+                                                                          - contentsView.printPaperHorizontalMargin * 2)
+                            readonly property real fittedWidth: Math.max(
+                                                                    0,
+                                                                    Math.min(
+                                                                        contentsView.printPaperMaxWidth,
+                                                                        printEditorPage.availableWidth,
+                                                                        printEditorPage.availableHeight * contentsView.printPaperAspectRatio))
+                            anchors.centerIn: parent
                             border.color: contentsView.printPaperBorderColor
                             border.width: 1
                             color: contentsView.printPaperColor
+                            height: contentsView.printPaperAspectRatio > 0
+                                    ? printEditorPage.width / contentsView.printPaperAspectRatio
+                                    : 0
                             radius: LV.Theme.radiusSm
-                            width: Math.max(
-                                       360,
-                                       Math.min(
-                                           contentsView.printPaperMaxWidth,
-                                           parent.width - contentsView.printPaperHorizontalMargin * 2))
+                            width: printEditorPage.fittedWidth
 
                             Canvas {
                                 anchors.fill: parent
@@ -1372,7 +1405,9 @@ Item {
                         showRenderedOutput: false
                         showScrollBar: false
                         text: contentsView.editorText
-                        textColor: LV.Theme.bodyColor
+                        textColor: contentsView.showPrintEditorLayout
+                                   ? contentsView.printPaperTextColor
+                                   : LV.Theme.bodyColor
                         textFormat: TextEdit.RichText
                         visible: !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
@@ -1426,7 +1461,9 @@ Item {
                         Text {
                             id: formattedPreviewText
 
-                            color: LV.Theme.bodyColor
+                            color: contentsView.showPrintEditorLayout
+                                   ? contentsView.printPaperTextColor
+                                   : LV.Theme.bodyColor
                             font.family: LV.Theme.fontBody
                             font.letterSpacing: 0
                             font.pixelSize: 12

@@ -14,6 +14,12 @@
 - Declared namespaces present: no
 - QObject macro present: yes
 
+## Current Implementation Notes
+- Public invokables include:
+  - `persistEditorTextForNote(noteId, text)`
+  - `refreshSelectedNoteSnapshot()`: triggers selected-note metadata/body refresh via connected content view-model
+    contract (`reloadNoteMetadataForNoteId`) and re-synchronizes exposed selection/count properties.
+
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
 

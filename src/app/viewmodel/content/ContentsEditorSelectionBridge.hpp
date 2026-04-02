@@ -46,6 +46,7 @@ public:
     int visibleNoteCount() const noexcept;
 
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text) const;
+    Q_INVOKABLE bool refreshSelectedNoteSnapshot();
 
     signals  :
 
