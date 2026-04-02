@@ -8,7 +8,7 @@ It exposes two separate concepts.
 - A runtime lock expressed through `ArchitecturePolicyLock`, used to freeze startup-time wiring once the root object graph is complete.
 
 ## Public API
-- `enum class Layer`: canonical layer names used throughout tests and runtime verification.
+- `enum class Layer`: canonical layer names used throughout runtime dependency verification.
 - `layerName(Layer)`: string form used in logs and diagnostics.
 - `isDependencyAllowed(Layer from, Layer to)`: pure policy query without side effects.
 - `assertDependencyAllowed(...)`: returns a boolean and optionally formats an error message.

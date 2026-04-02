@@ -16,7 +16,7 @@ heterogeneous note-list model objects.
 
 ## Tests
 
-- `tests/app/test_note_list_model_contract_bridge.cpp` validates:
-  - property-backed contracts,
-  - method-only contracts,
-  - model-destroy lifecycle reset behavior.
+Automated test files were removed from this repository; keep these bridge contracts stable:
+- property-backed contracts
+- method-only contracts
+- model-destroy lifecycle reset behavior

@@ -26,7 +26,7 @@ The lock is intentionally one-way. There is no public unlock because application
 - `assertDependencyAllowed(...)` is the pure diagnostic helper.
 - `verifyDependencyAllowed(...)` adds a production-facing warning path using `[whatson:policy][dependency] ...`.
 
-The newer bridge code uses `verifyDependencyAllowed(...)` so the policy is not only tested in unit tests but also exercised in real wiring paths.
+The newer bridge code uses `verifyDependencyAllowed(...)` so the policy is exercised directly in real wiring paths.
 
 ## Practical Reading
 Read this file together with:

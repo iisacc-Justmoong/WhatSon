@@ -22,7 +22,6 @@ Each day model now carries entry counters (`eventCount`, `taskCount`, `entryCoun
 - `entriesForDate(...)` provides per-date drill-down for future detail panels or popovers.
 
 ## Coverage
-- `tests/app/test_year_calendar_viewmodel.cpp` verifies:
   - baseline year rendering behavior,
   - calendar-system and year mutation contracts,
   - board entry counters projected into the year day-grid cells.

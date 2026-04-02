@@ -33,7 +33,6 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - During update, the store keeps `bodyPlainText` and `bodySourceText` synchronized from the serialized body so viewmodel/list binding and search/index projections do not drift.
 
 ## Regression Coverage
-- `tests/app/test_whatson_local_note_file_store.cpp` verifies:
   - empty/whitespace paragraph round-trip
   - inline-tag source serialization
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags

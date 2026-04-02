@@ -42,6 +42,12 @@ every turn.
   the main thread before the first workspace frame. Low-priority hierarchy domains may be deferred until first-frame
   idle turns or the first explicit sidebar activation.
 
+## Automated Test Policy
+
+- The repository no longer ships an in-repo automated test suite (`tests/` was removed).
+- Do not add new test targets or `tests/*` source files unless explicitly requested again.
+- Verification is currently expected through runtime/manual checks and build-time tooling targets.
+
 ### Hierarchy ViewModel Ownership (Critical)
 
 - Each hierarchy type must use its own dedicated ViewModel under `src/app/viewmodel/hierarchy/*`.
@@ -65,7 +71,7 @@ every turn.
 - Organize changes around domain or feature boundaries first, not around broad shared technical layers, unless the
   shared layer is already a stable cross-domain primitive.
 - Keep each feature slice as end-to-end as possible: storage, runtime loading, service logic, viewmodel wiring, QML
-  surface, tests, and docs should stay close to the owning domain.
+  surface, and docs should stay close to the owning domain.
 - Shared helpers are allowed only when multiple domains genuinely reuse them and when extracting them does not pull
   business rules out of the domain that owns those rules.
 

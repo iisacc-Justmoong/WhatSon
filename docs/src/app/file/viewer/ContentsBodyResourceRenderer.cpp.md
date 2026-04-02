@@ -20,6 +20,5 @@ Implements note-body resource rendering data extraction for the editor surface.
 - Rebuilds the render model when the selected note changes or when `hubFilesystemMutated()` is emitted by the content view-model.
 
 ## Testing
-- Covered by `tests/app/test_contents_editor_bridge.cpp`:
   - `resourceRenderer_mustResolveResourceTagsFromCurrentNoteBody`
   - `resourceRenderer_mustRenderDirectResourcePackageSelection`

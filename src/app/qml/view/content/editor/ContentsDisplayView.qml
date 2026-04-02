@@ -854,6 +854,63 @@ Item {
                 "end": contentsView.contextMenuSelectionEnd
             });
     }
+    function currentSelectedEditorText() {
+        if (!contentEditor)
+            return "";
+        if (contentEditor.selectedText !== undefined)
+            return String(contentEditor.selectedText === undefined || contentEditor.selectedText === null ? "" : contentEditor.selectedText);
+        if (contentEditor.editorItem && contentEditor.editorItem.selectedText !== undefined)
+            return String(contentEditor.editorItem.selectedText === undefined || contentEditor.editorItem.selectedText === null ? "" : contentEditor.editorItem.selectedText);
+        if (contentEditor.editorItem && contentEditor.editorItem.inputItem && contentEditor.editorItem.inputItem.selectedText !== undefined)
+            return String(contentEditor.editorItem.inputItem.selectedText === undefined || contentEditor.editorItem.inputItem.selectedText === null ? "" : contentEditor.editorItem.inputItem.selectedText);
+        return "";
+    }
+    function currentEditorCursorPosition() {
+        if (!contentEditor)
+            return NaN;
+        if (contentEditor.cursorPosition !== undefined) {
+            const cursor = Number(contentEditor.cursorPosition);
+            if (isFinite(cursor))
+                return cursor;
+        }
+        if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined) {
+            const cursor = Number(contentEditor.editorItem.cursorPosition);
+            if (isFinite(cursor))
+                return cursor;
+        }
+        if (contentEditor.editorItem && contentEditor.editorItem.inputItem && contentEditor.editorItem.inputItem.cursorPosition !== undefined) {
+            const cursor = Number(contentEditor.editorItem.inputItem.cursorPosition);
+            if (isFinite(cursor))
+                return cursor;
+        }
+        return NaN;
+    }
+    function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
+        const sourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const normalizedSelectedText = selectedText === undefined || selectedText === null ? "" : String(selectedText);
+        if (sourceText.length === 0 || normalizedSelectedText.length === 0)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const normalizedCursor = isFinite(cursorPosition)
+                ? Math.max(0, Math.min(sourceText.length, Math.floor(cursorPosition)))
+                : sourceText.length;
+        let start = sourceText.lastIndexOf(normalizedSelectedText, normalizedCursor);
+        if (start < 0)
+            start = sourceText.indexOf(normalizedSelectedText, normalizedCursor);
+        if (start < 0)
+            start = sourceText.indexOf(normalizedSelectedText);
+        if (start < 0)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        return ({
+                "start": start,
+                "end": start + normalizedSelectedText.length
+            });
+    }
     function syncCachedEditorSelectionRange() {
         contentsView.cacheEditorSelectionRange(contentsView.selectedEditorRange());
     }
@@ -864,6 +921,13 @@ Item {
                     "end": -1
                 });
         const text = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const selectedText = contentsView.currentSelectedEditorText();
+        const cursorPosition = contentsView.currentEditorCursorPosition();
+        const inferredRange = contentsView.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
+        if (inferredRange.end > inferredRange.start) {
+            contentsView.cacheEditorSelectionRange(inferredRange);
+            return inferredRange;
+        }
         let start = contentEditor.selectionStart !== undefined ? Number(contentEditor.selectionStart) : NaN;
         let end = contentEditor.selectionEnd !== undefined ? Number(contentEditor.selectionEnd) : NaN;
         if (!isFinite(start) || !isFinite(end)) {
@@ -887,10 +951,12 @@ Item {
                 });
         const rangeStart = Math.max(0, Math.min(text.length, Math.floor(Math.min(start, end))));
         const rangeEnd = Math.max(0, Math.min(text.length, Math.floor(Math.max(start, end))));
-        contentsView.cacheEditorSelectionRange({
-                "start": rangeStart,
-                "end": rangeEnd
-            });
+        if (rangeEnd > rangeStart) {
+            contentsView.cacheEditorSelectionRange({
+                    "start": rangeStart,
+                    "end": rangeEnd
+                });
+        }
         return ({
                 "start": rangeStart,
                 "end": rangeEnd
@@ -1016,6 +1082,13 @@ Item {
         let selectionRange = contentsView.selectedEditorRange();
         if (selectionRange.end <= selectionRange.start)
             selectionRange = contentsView.cachedEditorSelectionRange();
+        if (selectionRange.end <= selectionRange.start) {
+            const inferredRange = contentsView.inferSelectionRangeFromSelectedText(
+                        contentsView.currentSelectedEditorText(),
+                        contentsView.currentEditorCursorPosition());
+            if (inferredRange.end > inferredRange.start)
+                selectionRange = inferredRange;
+        }
         if (selectionRange.end <= selectionRange.start)
             return false;
         if (editorSelectionContextMenu.opened)
@@ -1057,36 +1130,17 @@ Item {
             selectionRange = contentsView.contextMenuEditorSelectionRange();
         if (selectionRange.end <= selectionRange.start)
             return false;
-        const editorItem = contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null;
-        const selectedText = contentEditor && contentEditor.selectedText !== undefined
-                ? String(contentEditor.selectedText)
-                : (editorItem && editorItem.selectedText !== undefined
-                       ? String(editorItem.selectedText)
-                       : (editorItem && editorItem.inputItem && editorItem.inputItem.selectedText !== undefined
-                              ? String(editorItem.inputItem.selectedText)
-                              : (contentsView.editorText === undefined || contentsView.editorText === null
-                                     ? ""
-                                     : String(contentsView.editorText).slice(selectionRange.start, selectionRange.end))));
+        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const selectedText = selectionRange.start >= 0 && selectionRange.end <= currentText.length
+                ? currentText.slice(selectionRange.start, selectionRange.end)
+                : "";
         if (selectedText.length === 0)
             return false;
-        let nextText = "";
-        if (editorItem && editorItem.remove !== undefined && editorItem.insert !== undefined) {
-            editorItem.remove(selectionRange.start, selectionRange.end);
-            editorItem.insert(selectionRange.start, wrapTags.openTag + selectedText + wrapTags.closeTag);
-            if (editorItem.text !== undefined)
-                nextText = String(editorItem.text === undefined || editorItem.text === null ? "" : editorItem.text);
-            else if (contentEditor.text !== undefined)
-                nextText = String(contentEditor.text === undefined || contentEditor.text === null ? "" : contentEditor.text);
-        } else {
-            const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-            nextText = currentText.slice(0, selectionRange.start)
-                    + wrapTags.openTag
-                    + selectedText
-                    + wrapTags.closeTag
-                    + currentText.slice(selectionRange.end);
-        }
-        if (nextText.length === 0)
-            nextText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const nextText = currentText.slice(0, selectionRange.start)
+                + wrapTags.openTag
+                + selectedText
+                + wrapTags.closeTag
+                + currentText.slice(selectionRange.end);
         if (contentsView.editorText !== nextText)
             contentsView.editorText = nextText;
 
@@ -1095,7 +1149,7 @@ Item {
         if (!saved)
             editorSession.scheduleEditorPersistence();
 
-        const wrappedSelectionStart = selectionRange.start;
+        const wrappedSelectionStart = selectionRange.start + wrapTags.openTag.length;
         const wrappedSelectionEnd = wrappedSelectionStart + selectedText.length;
         contentsView.contextMenuSelectionStart = -1;
         contentsView.contextMenuSelectionEnd = -1;
@@ -1103,12 +1157,6 @@ Item {
                 "start": wrappedSelectionStart,
                 "end": wrappedSelectionEnd
             });
-        if (contentEditor.select !== undefined)
-            contentEditor.select(wrappedSelectionStart, wrappedSelectionEnd);
-        if (contentEditor.cursorPosition !== undefined)
-            contentEditor.cursorPosition = wrappedSelectionEnd;
-        if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined)
-            contentEditor.editorItem.cursorPosition = wrappedSelectionEnd;
 
         contentsView.editorTextEdited(nextText);
         return true;
@@ -1676,16 +1724,34 @@ Item {
                             contentsView.resourceDropActive = false;
                         }
                     }
-                    TapHandler {
+                    MouseArea {
+                        anchors.fill: parent
                         acceptedButtons: Qt.RightButton
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
+                        hoverEnabled: false
+                        preventStealing: false
+                        propagateComposedEvents: true
+                        z: 6
+                        property real lastPressX: 0
+                        property real lastPressY: 0
 
-                        onTapped: function(eventPoint, button) {
-                            contentsView.openEditorSelectionContextMenu(
-                                        eventPoint.position.x,
-                                        eventPoint.position.y);
+                        onPressed: function(mouse) {
+                            if (mouse.button !== Qt.RightButton)
+                                return;
+                            lastPressX = mouse.x;
+                            lastPressY = mouse.y;
+                            mouse.accepted = false;
+                        }
+                        onReleased: function(mouse) {
+                            if (mouse.button !== Qt.RightButton)
+                                return;
+                            Qt.callLater(function () {
+                                contentsView.openEditorSelectionContextMenu(
+                                            lastPressX,
+                                            lastPressY);
+                            });
                         }
                     }
                     Shortcut {
@@ -1693,7 +1759,7 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                        sequence: StandardKey.Bold
+                        sequence: "Meta+B"
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("bold")
                     }
@@ -1702,7 +1768,16 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                        sequence: StandardKey.Italic
+                        sequence: "Ctrl+B"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("bold")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+I"
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("italic")
                     }
@@ -1711,7 +1786,25 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                        sequence: StandardKey.Underline
+                        sequence: "Ctrl+I"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("italic")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+U"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("underline")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                        sequence: "Ctrl+U"
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("underline")
                     }

@@ -28,5 +28,4 @@ This keeps QML simple by avoiding per-frame hour filtering in the view.
 - `entriesForDate(...)` returns date-filtered entries directly from the board.
 
 ## Coverage
-- `tests/app/test_day_calendar_viewmodel.cpp` validates defaults, cursor shifting, slot population, and request
   signal emission.

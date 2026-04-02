@@ -3,7 +3,8 @@
 ## Role
 This directory contains an optional trial-entitlement kit for builds that should unlock the app only for a fixed evaluation window.
 
-The module is intentionally isolated from the mandatory app and daemon build graph. Consumers can opt in explicitly, while tests compile the sources directly to keep the policy covered.
+The module is intentionally isolated from the mandatory app and daemon build graph. Consumers can opt in explicitly,
+and validation is handled through runtime integration flows.
 
 ## Files
 - `WhatSonTrialSecureStore.hpp` / `WhatSonTrialSecureStore.cpp`: provide the optional OS secure-store bridge used by the trial module.

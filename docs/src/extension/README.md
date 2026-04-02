@@ -11,4 +11,4 @@ This directory is reserved for optional product extensions that should not autom
 ## Build Policy
 - Extension code is opt-in by design.
 - New modules here should avoid silently expanding the mandatory root build graph.
-- Automated tests may still compile extension sources directly so behavior stays covered before runtime integration happens.
+- Validation for this directory should rely on runtime integration and targeted diagnostics.

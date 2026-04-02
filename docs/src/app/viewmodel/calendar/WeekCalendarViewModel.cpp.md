@@ -22,5 +22,4 @@ Implements week cursor normalization, locale-based week labeling, and day-model 
 - Mutation wrappers (`addEvent`, `addTask`, `removeEntry`, `setTaskCompleted`) delegate to `CalendarBoardStore`.
 
 ## Coverage
-- `tests/app/test_week_calendar_viewmodel.cpp` validates defaults, week shifting, per-day counter projection, and
   request signal emission.

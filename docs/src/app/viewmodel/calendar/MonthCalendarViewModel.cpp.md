@@ -43,5 +43,4 @@ If the selected calendar cannot produce a valid first date, the model resets to 
 - `setSelectedDateIso(...)` validates ISO date text and refreshes `selectedDateEntries`.
 
 ## Coverage
-- `tests/app/test_month_calendar_viewmodel.cpp` validates defaults, calendar-system mutation, month cursor boundaries,
   request signal emission, and board entry count/selection synchronization.

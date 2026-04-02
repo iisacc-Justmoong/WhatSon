@@ -44,6 +44,4 @@ the top of the list.
 
 ## Verification
 
-The current regression coverage lives in `tests/app/test_hierarchy_viewmodels.cpp` and
-`tests/app/test_library_hierarchy_view_model.cpp`, including direct model sorting and runtime
-library-viewmodel ordering checks.
+Validate library note-list ordering through runtime library-viewmodel synchronization checks.

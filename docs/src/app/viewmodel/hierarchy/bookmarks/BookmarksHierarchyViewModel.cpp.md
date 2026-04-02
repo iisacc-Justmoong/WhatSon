@@ -75,5 +75,4 @@ used by the library list without inventing sort order from the localized `displa
 
 ## Verification
 
-Bookmark note-list ordering and selection behavior are covered by
-`tests/app/test_hierarchy_viewmodels.cpp`.
+Bookmark note-list ordering and selection behavior should be validated through runtime hierarchy/list synchronization checks.

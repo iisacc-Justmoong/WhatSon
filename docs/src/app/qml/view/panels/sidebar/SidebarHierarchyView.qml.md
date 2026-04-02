@@ -16,7 +16,7 @@ may also provide a color-specific `iconSource` override from C++.
 The QML palette controller is therefore a visual helper, not the source of truth for bookmark icon
 color identity.
 
-The root file still exposes wrapper functions for these helpers so callers and tests can use a stable interface.
+The root file still exposes wrapper functions for these helpers so callers can use a stable interface.
 
 ## Important Inputs
 - `hierarchyViewModel`: the active hierarchy state provider.

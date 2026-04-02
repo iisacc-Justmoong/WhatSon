@@ -11,8 +11,8 @@ callback to rebuild runtime state when the observed hub signature changes.
 - `setReloadCallback(...)`: injects the runtime reload function used after an observed external change.
 - `setCurrentHubPath(...)`: switches the mounted hub path, rebuilds the signature baseline, and reconfigures watcher
   coverage.
-- `setPeriodicIntervalMs(...)` / `setDebounceIntervalMs(...)`: tune polling/debounce policy for tests or platform
-  adjustments.
+- `setPeriodicIntervalMs(...)` / `setDebounceIntervalMs(...)`: tune polling/debounce policy for runtime diagnostics or
+  platform adjustments.
 - `requestSyncHint()`: schedules a debounced sync check.
 - `acknowledgeLocalMutation()`: marks an app-owned write so the next signature change refreshes baseline instead of
   reloading the runtime.

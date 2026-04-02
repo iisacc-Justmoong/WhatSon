@@ -9,5 +9,5 @@ modules, including hierarchy viewmodels, calendar stores/viewmodels (`agendaView
 scheduler, and panel registry.
 
 ## Test Coverage
-- `tests/app/test_runtime_bootstrap_wiring.cpp` verifies that each declared property key resolves to
-  the expected object pointer in `QQmlContext`.
+
+Automated test files were removed from this repository; confirm bound property keys by inspecting runtime context wiring logs.

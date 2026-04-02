@@ -22,7 +22,6 @@ Invalid payloads are rejected and traced through `WhatSon::Debug`.
 - `main.cpp` instantiates one shared store and injects it into all four calendar viewmodels.
 
 ## Coverage
-- `tests/app/test_calendar_board_store.cpp` verifies:
   - date/time/title validation,
   - sorted retrieval and per-day counts,
   - task completion and entry removal mutations.

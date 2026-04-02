@@ -294,23 +294,17 @@ WhatSon is an LVRS-based Qt Quick application.
 - Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts
   external gutter marker ranges via `gutterMarkers` using `{ type: "changed" | "conflict", startLine, lineSpan }` or
   `{ type, startLine, endLine }`.
-- The QML safety guard now scans for two recurring corruption patterns as part of the test suite: standalone string
-  literals inside `Binding {}` blocks and standalone dotted expressions such as `noteListItem.imageSource` that should
-  have been property assignments. Critical `ContentsDisplayView.qml` helper bodies are also asserted to keep their
-  explicit `return` statements.
-- The same guard suite now also checks the centralized MVVM contract boundaries for the data-driven views: sidebar
-  hierarchy state must stay anchored in `SidebarHierarchyViewModel`, hierarchy rendering must keep using the LVRS
-  `Hierarchy` surface plus each domain view-model's direct `hierarchyModel` property instead of falling back to local
-  compatibility wrappers or adapter layers, and
-  editor-side selection/persistence/text/gutter contracts must stay split across the dedicated editor adapters instead
-  of collapsing back into one bridge.
+- The QML safety guard scans for two recurring corruption patterns: standalone string literals inside `Binding {}`
+  blocks and standalone dotted expressions such as `noteListItem.imageSource` that should have been property
+  assignments. Critical `ContentsDisplayView.qml` helper bodies are also expected to keep explicit `return`
+  statements.
+- The same guard path also protects centralized MVVM boundaries for data-driven views: sidebar state stays anchored in
+  `SidebarHierarchyViewModel`, hierarchy rendering keeps using the LVRS `Hierarchy` surface plus each domain
+  view-model's direct `hierarchyModel` property, and editor-side selection/persistence/text/gutter contracts stay
+  split across dedicated editor adapters.
 - The obsolete LVRS override layers have been removed from the tree: no local hierarchy compat list, no sidebar
   interaction-controller hierarchy engine, and no project-specific `NavigationIconButton` wrapper remain. Navigation
   panels now bind stock LVRS primitives directly.
-- `tests/app/test_solid_architecture_contracts.cpp` now locks those shell/sidebar/editor boundaries as SOLID-facing
-  contracts: sidebar state must stay single-sourced behind the interface-driven `SidebarHierarchyViewModel`, editor
-  adapters must stay role-segregated, and the QML assembly must keep dedicated interaction/session/helper objects
-  instead of collapsing back into multi-responsibility controllers.
 
 ## Theme Token Usage
 

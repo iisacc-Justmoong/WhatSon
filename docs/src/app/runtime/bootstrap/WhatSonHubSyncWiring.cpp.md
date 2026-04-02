@@ -10,4 +10,5 @@ Implements hub-sync wiring extracted from `main.cpp`.
 - Reports aggregate validity through `HubSyncWiringResult`.
 
 ## Test Coverage
-- `tests/app/test_runtime_bootstrap_wiring.cpp` verifies wiring creation and connection validity.
+
+Automated test files were removed from this repository; verify wiring validity through startup/runtime smoke runs.

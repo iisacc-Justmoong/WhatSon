@@ -63,6 +63,5 @@ All calendar surfaces keep transparent fills so the app background color is visi
 - `src/app/qml/view/panels/ContentViewLayout.qml` (overlay host via `CalendarView.MonthCalendarPage`)
 
 ## Testing
-- `tests/app/test_month_calendar_viewmodel.cpp` verifies core month-model behavior.
-- `tests/app/test_navigation_qml_frames.cpp` and
-  `tests/python/test_navigation_panel_toggles.py` verify navigation-to-overlay routing.
+
+Automated test files were removed from this repository; verify this page through manual runtime navigation checks.

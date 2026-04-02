@@ -72,15 +72,22 @@ positions from the same document origin.
   - `Shift+Cmd/Ctrl+H` -> `<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">...</span>`
 - The editor surface also handles the same shortcuts from `Keys.onPressed` (`Meta/Ctrl + B/I/U`, `Meta/Ctrl+Shift + X/H`)
   so formatting still applies even when platform `Shortcut` dispatch is intercepted by the underlying text input control.
+- `Shortcut` bindings are declared with explicit `Meta+...` and `Ctrl+...` sequences (`B/I/U`, `Shift+X`, `Shift+H`)
+  to keep desktop key routing deterministic across macOS and non-macOS layouts.
 - Right-clicking a non-empty editor selection opens an `LV.ContextMenu` anchored to the editor viewport with:
   - `Bold`
   - `Italic`
   - `Underline`
   - `Strikethrough`
   - `Highlight`
+- Right-click dispatch is handled by a dedicated `MouseArea` on the editor viewport and opens the menu on
+  `onReleased` via `Qt.callLater(...)`, so selection updates from the underlying text input settle before the
+  context menu consumes the cached range.
 - Right-click handling now preserves selection intent by caching the last non-empty selection range:
   - `cachedEditorSelectionRange()` keeps the latest valid selection
   - `contextMenuEditorSelectionRange()` keeps the selection snapshot captured when the context menu opens
+  - `inferSelectionRangeFromSelectedText(...)` maps selected plain text back into the current editor source when
+    RichText selection offsets and source markup offsets diverge.
   - formatting actions always require a non-empty selection range before mutating `.wsnbody`
 - Context-menu actions dispatch through the same `wrapSelectedEditorTextWithTag(...)` path as keyboard shortcuts, so
   inline tag serialization/persistence behavior stays identical across input methods.
@@ -141,5 +148,4 @@ positions from the same document origin.
 
 ## Tests
 
-- `tests/app/test_qml_binding_syntax_guard.cpp` guards the shared top inset, zero top padding, Fill-height contract,
-  editor-session wiring, and the three-part quick-note drawer composition.
+Automated test files were removed from this repository; verify editor-session wiring and quick-note drawer composition through runtime checks.

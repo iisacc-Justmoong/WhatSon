@@ -44,7 +44,4 @@ reuse `NoteListItem` structure and keeps the Figma `232:7892` geometry and state
 
 ## Tests
 
-- `tests/app/test_qml_binding_syntax_guard.cpp` verifies:
-  - component existence,
-  - fixed geometry and state-color contracts,
-  - thumbnail/title bindings from delegate model roles.
+Automated test files were removed from this repository; verify component geometry and delegate bindings through runtime inspection.

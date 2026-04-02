@@ -11,7 +11,7 @@ out of viewmodels and mutation coordinators.
 - `bindings(...)` sanitizes and deduplicates raw folder/path UUID arrays.
 - `mergeBindings(...)` preserves the primary source first, then appends missing secondary bindings.
 - `assignFolder(...)` appends a dropped folder or rewrites the visible path for an existing UUID.
-- `contains(...)` and `matches(...)` provide the canonical equality tests used by drag/drop and
+- `contains(...)` and `matches(...)` provide the canonical equality checks used by drag/drop and
   folder-tree mutations.
 
 ## Why It Exists

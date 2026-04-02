@@ -13,4 +13,5 @@ Implements the on-disk scaffold for a brand new `.wshub` package.
 - File writes go through `QSaveFile` for local paths, so manifest and scaffold updates stay atomic on supported filesystems.
 
 ## Tests
-- `tests/app/test_whatson_workspace_hub_creator.cpp` verifies manifest creation, sanitized package layout creation, and explicit-path creation behavior.
+
+Automated test files were removed from this repository; validate this module through runtime smoke flows.

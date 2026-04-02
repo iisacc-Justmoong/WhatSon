@@ -35,4 +35,4 @@ recently.
 
 ## Verification
 
-The direct model regression coverage remains in `tests/app/test_hierarchy_viewmodels.cpp`.
+Validate bookmark note-list ordering and projection behavior through runtime hierarchy/list interaction checks.

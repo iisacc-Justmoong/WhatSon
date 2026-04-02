@@ -25,5 +25,4 @@ Implements Agenda list section projection (`all-day`, `timed`, `agendaItems`) an
 - Optional manual override is supported through `setWeather(...)`.
 
 ## Coverage
-- `tests/app/test_agenda_viewmodel.cpp` validates defaults, section splitting, request signal emission, and
   completion toggling.
