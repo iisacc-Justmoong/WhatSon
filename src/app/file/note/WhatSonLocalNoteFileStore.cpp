@@ -406,7 +406,7 @@ void WhatSonLocalNoteFileStore::applyBodyDocumentText(
     }
 
     document->bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
-    document->bodySourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyDocumentText);
+    document->bodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocumentText);
     if (document->bodySourceText.isEmpty())
     {
         document->bodySourceText = document->bodyPlainText;
@@ -469,7 +469,7 @@ bool WhatSonLocalNoteFileStore::createNote(
     }
     const QString bodyDocumentText = serializeBodyDocument(request.headerStore.noteId(), request.bodyPlainText);
     const QString normalizedBodyText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentText);
-    QString normalizedBodySourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(bodyDocumentText);
+    QString normalizedBodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocumentText);
     if (normalizedBodySourceText.isEmpty())
     {
         normalizedBodySourceText = normalizedBodyText;
@@ -694,7 +694,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
 
         serializedBodyDocument = serializeBodyDocument(request.document.headerStore.noteId(), bodySourceText);
         request.document.bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
-        request.document.bodySourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(serializedBodyDocument);
+        request.document.bodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
     }
     else
     {

@@ -13,6 +13,8 @@ embedded in the generic inline-tag parser.
   Render-ready HTML string consumed by QML `Text`/`TextEdit` in rich-text mode.
 - `renderRichText(sourceText)`
   Stateless helper to render any input text without mutating bridge ownership state.
+- `normalizeEditorSurfaceTextToSource(surfaceText)`
+  Converts RichText editor output back into canonical `.wsnbody` inline source tags.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 

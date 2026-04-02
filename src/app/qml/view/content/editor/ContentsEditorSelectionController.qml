@@ -59,7 +59,27 @@ QtObject {
                 || controller.selectionBridge.persistEditorTextForNote === undefined
                 || !controller.view.contentPersistenceContractAvailable)
             return false;
-        return !!controller.selectionBridge.persistEditorTextForNote(noteId, nextText);
+        const saved = !!controller.selectionBridge.persistEditorTextForNote(noteId, nextText);
+        if (saved && controller.editorSession) {
+            if (controller.editorSession.pendingBodySave !== undefined)
+                controller.editorSession.pendingBodySave = false;
+            if (controller.editorSession.localEditorAuthority !== undefined)
+                controller.editorSession.localEditorAuthority = false;
+        }
+        return saved;
+    }
+
+    function normalizeEditorSurfaceTextToSource(surfaceText) {
+        const surface = surfaceText === undefined || surfaceText === null ? "" : String(surfaceText);
+        if (surface.length === 0)
+            return "";
+        if (controller.textFormatRenderer
+                && controller.textFormatRenderer.normalizeEditorSurfaceTextToSource !== undefined) {
+            const normalized = controller.textFormatRenderer.normalizeEditorSurfaceTextToSource(surface);
+            if (normalized !== undefined && normalized !== null)
+                return String(normalized);
+        }
+        return surface;
     }
 
     function resetEditorSelectionCache() {
@@ -280,6 +300,46 @@ QtObject {
         switch (styleTag) {
         case "bold":
             return ({
+                    "openTag": "<bold>",
+                    "closeTag": "</bold>"
+                });
+        case "italic":
+            return ({
+                    "openTag": "<italic>",
+                    "closeTag": "</italic>"
+                });
+        case "underline":
+            return ({
+                    "openTag": "<underline>",
+                    "closeTag": "</underline>"
+                });
+        case "strikethrough":
+            return ({
+                    "openTag": "<strikethrough>",
+                    "closeTag": "</strikethrough>"
+                });
+        case "highlight":
+            return ({
+                    "openTag": "<highlight>",
+                    "closeTag": "</highlight>"
+                });
+        default:
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
+        }
+    }
+
+    function richTextWrapTags(styleTag) {
+        if (!controller.view)
+            return ({
+                    "openTag": "",
+                    "closeTag": ""
+                });
+        switch (styleTag) {
+        case "bold":
+            return ({
                     "openTag": "<span style=\"font-weight:800;\">",
                     "closeTag": "</span>"
                 });
@@ -371,7 +431,7 @@ QtObject {
             const styleTag = controller.normalizeInlineStyleTag(normalizedTagName);
             if (styleTag.length === 0)
                 return token;
-            const wrapTags = controller.inlineStyleWrapTags(styleTag);
+            const wrapTags = controller.richTextWrapTags(styleTag);
             if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
                 return token;
             return isClosingTag ? wrapTags.closeTag : wrapTags.openTag;

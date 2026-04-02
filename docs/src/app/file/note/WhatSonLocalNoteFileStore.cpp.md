@@ -20,7 +20,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - The decoder still detects `<resource ...>` tags for thumbnail metadata.
 - It now projects both:
   - `bodyPlainText` (search/list summary text)
-  - `bodySourceText` (editor-facing rich/source text from `.wsnbody`)
+  - `bodySourceText` (editor-facing canonical inline-tag source from `.wsnbody`)
 - The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
 - `<resource ... resourcePath="...">` now accepts `.wsresource` package paths.

@@ -12,6 +12,8 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - inline `.wsnbody` style/resource tags
   - Qt Rich HTML fragments/documents
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
+- `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
+  editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
 - `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to explicit span styling:
   - `bold` / `b` / `strong` -> `<span style="font-weight:800;">`
   - `italic` / `i` / `em` -> `<span style="font-style:italic;">`
@@ -25,7 +27,7 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - Whitespace-only paragraphs are emitted as whitespace-only lines instead of being trimmed away.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
-  - rich editor source text for editor binding
+  - inline-tag editor source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
 
 ## Why This Matters
 Before this change, RichText scaffolding could leak into the logical note body (`<!DOCTYPE HTML ...>` becoming first-line text). Canonicalizing through the `.wsnbody` serializer keeps parser/index behavior stable and preserves formatted editing semantics.

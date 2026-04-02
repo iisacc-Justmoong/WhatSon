@@ -837,6 +837,11 @@ namespace WhatSon::NoteBodyPersistence
         return fragments.fallbackText;
     }
 
+    QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
+    {
+        return normalizeEditorSourceToInlineTaggedText(bodyDocumentText);
+    }
+
     QString richTextFromBodyDocument(const QString& bodyDocumentText)
     {
         const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
@@ -1036,7 +1041,7 @@ namespace WhatSon::NoteBodyPersistence
 
         const QString serializedBodyDocument = serializeBodyDocument(noteId, bodyPlainText);
         const QString normalizedBodyText = plainTextFromBodyDocument(serializedBodyDocument);
-        const QString normalizedBodySourceText = richTextFromBodyDocument(serializedBodyDocument);
+        const QString normalizedBodySourceText = sourceTextFromBodyDocument(serializedBodyDocument);
         if (normalizedBodyText == document.bodyPlainText
             && normalizedBodySourceText == document.bodySourceText)
         {

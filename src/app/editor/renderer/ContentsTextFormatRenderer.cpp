@@ -1,5 +1,6 @@
 #include "ContentsTextFormatRenderer.hpp"
 #include "ContentsTextHighlightRenderer.hpp"
+#include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QRegularExpression>
 #include <QStringList>
@@ -541,6 +542,18 @@ QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) co
 QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const QString& sourceText) const
 {
     return normalizeInlineStyleAliasesForEditorSurface(sourceText);
+}
+
+QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QString& surfaceText) const
+{
+    if (surfaceText.isEmpty())
+    {
+        return {};
+    }
+
+    const QString serializedBodyDocument =
+        WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), surfaceText);
+    return WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
 }
 
 void ContentsTextFormatRenderer::requestRenderRefresh()

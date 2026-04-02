@@ -38,6 +38,7 @@ Item {
     readonly property int editorHorizontalInset: 16
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
     property alias editorText: editorSession.editorText
+    readonly property string renderedEditorText: contentsView.normalizeBodySourceForRichTextEditor(contentsView.editorText)
     readonly property int editorTextLineBoxHeight: 12
     readonly property int editorTopInset: LV.Theme.gap4
     property int editorTopInsetOverride: -1
@@ -891,7 +892,7 @@ Item {
         contentsView.resetEditorSelectionCache();
         editorSession.syncEditorTextFromSelection(
                     contentsView.selectedNoteId,
-                    contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
+                    contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleGutterRefresh(4);
     }
@@ -904,7 +905,7 @@ Item {
     }
     onHeightChanged: contentsView.scheduleGutterRefresh(2)
     onSelectedNoteBodyTextChanged: {
-        const normalizedBodyText = contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText);
+        const normalizedBodyText = contentsView.selectedNoteBodyText;
         if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, normalizedBodyText)) {
             editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, normalizedBodyText);
         } else {
@@ -919,7 +920,7 @@ Item {
             editorSession.flushPendingEditorText();
         editorSession.syncEditorTextFromSelection(
                     contentsView.selectedNoteId,
-                    contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
+                    contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
@@ -1258,7 +1259,7 @@ Item {
                             }
                         }
                     }
-                    LV.TextEditor {
+                    ContentsInlineFormatEditor {
                         id: contentEditor
 
                         anchors.fill: parent
@@ -1328,7 +1329,7 @@ Item {
                         shapeStyle: shapeRoundRect
                         showRenderedOutput: true
                         showScrollBar: false
-                        text: contentsView.editorText
+                        text: contentsView.renderedEditorText
                         textColor: contentsView.showPrintEditorLayout
                                    ? contentsView.printPaperTextColor
                                    : LV.Theme.bodyColor
@@ -1346,13 +1347,14 @@ Item {
                                 editorSession.flushPendingEditorText();
                         }
                         onTextEdited: function (text) {
-                            if (contentsView.editorText !== text)
-                                contentsView.editorText = text;
+                            const normalizedSourceText = editorSelectionController.normalizeEditorSurfaceTextToSource(text);
+                            if (contentsView.editorText !== normalizedSourceText)
+                                contentsView.editorText = normalizedSourceText;
                             if (contentsView.syncingEditorTextFromModel)
                                 return;
                             editorSession.markLocalEditorAuthority();
                             editorSession.scheduleEditorPersistence();
-                            contentsView.editorTextEdited(text);
+                            contentsView.editorTextEdited(normalizedSourceText);
                         }
                     }
                     Flickable {

@@ -12,13 +12,15 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`) plus normalized
   self-closed `<resource ... />` tags.
 - `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs.
+- `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
+  layer (`<bold>...</bold>`, `<italic>...</italic>`, `<resource ... />`).
 - `richTextFromBodyDocument(...)` extracts a rich-text projection from `.wsnbody` and maps inline style tags
-  (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `mark`) to HTML (`strong`, `em`, `u`, `s`, styled `span`).
+  (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `mark`) to RichText HTML (styled `span` tags).
 - `firstLineFromBodyDocument(...)` derives preview text from the first logical XML line, including leading inline text that appears before the first paragraph block.
 - `firstLineFromBodyPlainText(...)` derives preview text from the first non-empty trimmed line, without mutating the stored plain text.
 - `persistBodyPlainText(...)` is the high-level save entry used by hierarchy viewmodels. It now returns both:
   - normalized plain text (search/preview/index role)
-  - normalized editor source text (renderer/editor role)
+  - normalized inline-tag source text (editor/source role)
 
 ## Important Invariants
 - Empty `<paragraph></paragraph>` nodes must survive a read/save round-trip when the editor text is unchanged.

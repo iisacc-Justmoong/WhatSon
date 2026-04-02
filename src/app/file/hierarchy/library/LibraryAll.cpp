@@ -474,7 +474,7 @@ namespace
         }
 
         content.plainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(wsnbodyText);
-        content.sourceText = WhatSon::NoteBodyPersistence::richTextFromBodyDocument(wsnbodyText);
+        content.sourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(wsnbodyText);
         if (content.sourceText.isEmpty())
         {
             content.sourceText = content.plainText;

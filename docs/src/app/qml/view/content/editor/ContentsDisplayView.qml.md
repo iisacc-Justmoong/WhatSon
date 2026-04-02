@@ -2,8 +2,8 @@
 
 ## Responsibility
 
-`ContentsDisplayView.qml` is the shared editor surface for desktop and mobile note editing. It composes the LVRS
-`TextEditor`, gutter, minimap, and lower drawer into one geometry contract so every collaborator can resolve line
+`ContentsDisplayView.qml` is the shared editor surface for desktop and mobile note editing. It composes the custom
+inline-format editor, gutter, minimap, and lower drawer into one geometry contract so every collaborator can resolve line
 positions from the same document origin.
 
 ## Composition Model
@@ -15,11 +15,16 @@ The root file keeps wrapper functions such as `selectedEditorRange()`, `wrapSele
 `handleSelectionContextMenuEvent(...)` so the wider editor shell preserves a stable surface while selection-specific
 logic lives in a separate sibling controller.
 
+The root editor state now keeps two text projections:
+- `editorText`: canonical `.wsnbody` source tags (`<bold>`, `<italic>`, ...)
+- `renderedEditorText`: RichText rendering projection produced just before binding into
+  `ContentsInlineFormatEditor`
+
 ## Geometry Contract
 
 - `editorDocumentStartY` is the canonical top inset for the editable document.
-- The visible `16px` top spacer is materialized through the outer `LV.TextEditor` top margin, not through a late
-  mutation of `TextEditor.editorItem.y`.
+- The visible `16px` top spacer is materialized through the outer editor surface top margin, not through a late
+  mutation of `editorItem.y`.
 - `editorDocumentTopPadding` remains `0` so LVRS vertical centering does not reintroduce hidden top padding inside the
   text area.
 - `editorSurfaceHeight` is derived from `editorViewportHeight - editorDocumentStartY`, which keeps Fill sizing stable
@@ -37,6 +42,8 @@ logic lives in a separate sibling controller.
 - `ContentsEditorSelectionBridge`: exposes the selected note body and persistence contracts.
 - `ContentsEditorSelectionController`: owns source-range caching, context-menu selection snapshots, and inline-format
   mutation routing for the editor shell.
+- `ContentsInlineFormatEditor`: provides the live RichText input surface while preserving the legacy `contentEditor`
+  geometry/selection contract consumed by gutter, minimap, and selection helpers.
 - `ContentsTextFormatRenderer`: converts inline style tags in editor text into RichText HTML for preview modes.
 - `ContentsBodyResourceRenderer`: extracts `<resource ...>` tag render payloads from the selected note body document.
 - `ContentsResourceViewer`: renders direct `.wsresource` selections in-place (`image` bitmap / `pdf` reader).
@@ -56,8 +63,8 @@ logic lives in a separate sibling controller.
 ## Interaction and Persistence
 
 - User edits flow through `editorSession.markLocalEditorAuthority()` and `editorSession.scheduleEditorPersistence()`.
-- Model-driven note swaps call `editorSession.syncEditorTextFromSelection(...)` and flush pending edits when the bound
-  note changes.
+- Model-driven note swaps now feed canonical source text into `editorSession.syncEditorTextFromSelection(...)`, while
+  `ContentsInlineFormatEditor` binds to `renderedEditorText`.
 - The editor keeps a periodic note snapshot poll (`noteSnapshotRefreshTimer`, default `1200ms`) that calls
   `selectionBridge.refreshSelectedNoteSnapshot()` and schedules gutter refresh passes. This keeps long-running sessions
   synchronized when note metadata/body text changes are delivered late or out-of-band.
@@ -75,12 +82,13 @@ logic lives in a separate sibling controller.
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
-- Inline formatting shortcuts wrap selected text with editable RichText tags:
-  - `Cmd/Ctrl+B` -> `<strong style=\"font-weight:700;\">...</strong>`
-  - `Cmd/Ctrl+I` -> `<i>...</i>`
-  - `Cmd/Ctrl+U` -> `<u>...</u>`
-  - `Shift+Cmd/Ctrl+X` -> `<s>...</s>`
-  - `Shift+Cmd/Ctrl+H` -> `<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">...</span>`
+- Inline formatting shortcuts persist semantic `.wsnbody` inline tags around the selected text through the save
+  pipeline:
+  - `Cmd/Ctrl+B` -> `<bold>...</bold>`
+  - `Cmd/Ctrl+I` -> `<italic>...</italic>`
+  - `Cmd/Ctrl+U` -> `<underline>...</underline>`
+  - `Shift+Cmd/Ctrl+X` -> `<strikethrough>...</strikethrough>`
+  - `Shift+Cmd/Ctrl+H` -> `<highlight>...</highlight>`
 - The editor surface also handles the same shortcuts from `Keys.onPressed` (`Meta/Ctrl + B/I/U`, `Meta/Ctrl+Shift + X/H`)
   so formatting still applies even when platform `Shortcut` dispatch is intercepted by the underlying text input control.
 - `Shortcut` bindings are declared with explicit `Meta+...` and `Ctrl+...` sequences (`B/I/U`, `Shift+X`, `Shift+H`)
@@ -105,12 +113,12 @@ logic lives in a separate sibling controller.
   inline tag serialization/persistence behavior stays identical across input methods.
 - Shortcut enablement no longer hard-gates on `editorInputFocused`; instead, shortcuts stay available while a note is
   active and `wrapSelectedEditorTextWithTag(...)` enforces the non-empty selection guard.
-- The focus probe still tracks `LV.TextEditor.focused` / `activeFocus`, `editorItem.activeFocus`, and
+- The focus probe still tracks `contentEditor.focused` / `activeFocus`, `editorItem.activeFocus`, and
   `editorItem.inputItem.activeFocus` for marker/interaction state decisions.
 - The editor now resolves `editorViewModeViewModel` (from injected property or `LV.ViewModels`) and switches renderer
   surfaces by mode:
   - `Plain` (`activeViewMode == 0`):
-    - `LV.TextEditor` RichText editing surface (cursor/input always enabled for note editing).
+    - `ContentsInlineFormatEditor` RichText editing surface (cursor/input always enabled for note editing).
   - `Page` (`activeViewMode == 1`): paper-layout RichText editing surface (A4 portrait scaffold, no print guides)
   - `Print` (`activeViewMode == 2`): paper-layout RichText editing surface + dashed print-margin guides
   - `Web/Presentation`: same editable RichText surface, keeping document editing consistent across all editor views.
@@ -128,13 +136,15 @@ logic lives in a separate sibling controller.
   print/paper rendering does not inherit low-contrast dark-theme text colors.
 - `showFormattedTextRenderer` is intentionally pinned to `false`; the legacy read-only replacement layer remains
   disabled so the editor never drops into a non-editable state.
-- `LV.TextEditor.showRenderedOutput` is enabled, so inline tags normalized into explicit RichText spans
-  (`font-weight`, `font-style`, `text-decoration`, highlight `<span>`) render with style directly inside the editable
-  surface.
-- The view now reapplies `TextEdit.RichText` / `showRenderedOutput` to the LV editor wrapper, its inner editor item,
-  and the nested input item after note/session sync so the editable surface does not fall back to plain-text rendering.
+- `ContentsInlineFormatEditor` now owns the live RichText surface, and the control receives `renderedEditorText`
+  instead of the raw `.wsnbody` source string.
+- Direct typing in the RichText surface is canonicalized back into `.wsnbody` source text through
+  `ContentsTextFormatRenderer.normalizeEditorSurfaceTextToSource(...)`.
+- The view still reapplies `TextEdit.RichText` / `showRenderedOutput` across the editor wrapper, its inner editor
+  item, and the nested input item after note/session sync so the editable surface does not fall back to plain-text
+  rendering.
 - Stored inline aliases (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`, `<mark>`) are
-  normalized into editable RichText tags before session sync:
+  normalized into editable RichText spans before session sync:
   - `bold` -> `<span style=\"font-weight:800;\">`
   - `italic` -> `<span style=\"font-style:italic;\">`
   - `underline` -> `<span style=\"text-decoration: underline;\">`
@@ -145,7 +155,7 @@ logic lives in a separate sibling controller.
   before entering the editable surface.
 - Escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` is intentionally preserved as literal text (not decoded).
 - As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
-  tag text.
+  tag text, even when the LVRS shell component does not provide reliable RichText styling on its own.
 
 ## Tests
 
