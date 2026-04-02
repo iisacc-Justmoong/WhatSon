@@ -14,10 +14,10 @@ QtObject {
     property var textFormatRenderer: null
     property var selectionContextMenu: null
 
-    property int cachedSelectionStart: -1
-    property int cachedSelectionEnd: -1
     property int contextMenuSelectionStart: -1
     property int contextMenuSelectionEnd: -1
+    property string contextMenuSelectionText: ""
+    property var queuedInlineFormatWrapKeys: ({})
 
     readonly property var contextMenuItems: [
         {
@@ -69,6 +69,12 @@ QtObject {
         return saved;
     }
 
+    function currentSelectedNoteId() {
+        if (!controller.view || controller.view.selectedNoteId === undefined || controller.view.selectedNoteId === null)
+            return "";
+        return String(controller.view.selectedNoteId).trim();
+    }
+
     function normalizeEditorSurfaceTextToSource(surfaceText) {
         const surface = surfaceText === undefined || surfaceText === null ? "" : String(surfaceText);
         if (surface.length === 0)
@@ -83,34 +89,18 @@ QtObject {
     }
 
     function resetEditorSelectionCache() {
-        controller.cachedSelectionStart = -1;
-        controller.cachedSelectionEnd = -1;
         controller.contextMenuSelectionStart = -1;
         controller.contextMenuSelectionEnd = -1;
+        controller.contextMenuSelectionText = "";
     }
 
-    function cacheEditorSelectionRange(selectionRange) {
-        if (!selectionRange)
-            return false;
-        const start = Number(selectionRange.start);
-        const end = Number(selectionRange.end);
-        if (!isFinite(start) || !isFinite(end) || end <= start)
-            return false;
-        controller.cachedSelectionStart = Math.floor(start);
-        controller.cachedSelectionEnd = Math.floor(end);
-        return true;
-    }
-
-    function cachedEditorSelectionRange() {
-        if (controller.cachedSelectionEnd <= controller.cachedSelectionStart)
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        return ({
-                "start": controller.cachedSelectionStart,
-                "end": controller.cachedSelectionEnd
-            });
+    function normalizeSelectionTextValue(text) {
+        let normalizedText = text === undefined || text === null ? "" : String(text);
+        normalizedText = normalizedText.replace(/\r\n/g, "\n");
+        normalizedText = normalizedText.replace(/\r/g, "\n");
+        normalizedText = normalizedText.replace(/\u2028/g, "\n");
+        normalizedText = normalizedText.replace(/\u2029/g, "\n");
+        return normalizedText;
     }
 
     function contextMenuEditorSelectionRange() {
@@ -125,9 +115,24 @@ QtObject {
             });
     }
 
+    function contextMenuEditorSelectionSnapshot() {
+        const selectionRange = controller.contextMenuEditorSelectionRange();
+        return {
+            "start": selectionRange.start,
+            "end": selectionRange.end,
+            "selectedText": controller.contextMenuSelectionText,
+            "cursorPosition": controller.currentEditorCursorPosition()
+        };
+    }
+
     function currentSelectedEditorText() {
         if (!controller.contentEditor)
             return "";
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot && snapshot.selectedText !== undefined)
+                return String(snapshot.selectedText === undefined || snapshot.selectedText === null ? "" : snapshot.selectedText);
+        }
         if (controller.contentEditor.selectedText !== undefined)
             return String(controller.contentEditor.selectedText === undefined || controller.contentEditor.selectedText === null ? "" : controller.contentEditor.selectedText);
         if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.selectedText !== undefined)
@@ -137,9 +142,75 @@ QtObject {
         return "";
     }
 
+    function currentEditorInputItem() {
+        if (!controller.contentEditor)
+            return null;
+        if (controller.contentEditor.getFormattedText !== undefined
+                && controller.contentEditor.getText !== undefined)
+            return controller.contentEditor;
+        if (controller.contentEditor.editorItem
+                && controller.contentEditor.editorItem.inputItem)
+            return controller.contentEditor.editorItem.inputItem;
+        if (controller.contentEditor.editorItem)
+            return controller.contentEditor.editorItem;
+        return controller.contentEditor;
+    }
+
+    function currentEditorSelectionSnapshot() {
+        if (!controller.contentEditor)
+            return {
+                "cursorPosition": NaN,
+                "selectedText": "",
+                "selectionEnd": NaN,
+                "selectionStart": NaN
+            };
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot)
+                return snapshot;
+        }
+        return {
+            "cursorPosition": controller.currentEditorCursorPosition(),
+            "selectedText": controller.currentSelectedEditorText(),
+            "selectionEnd": controller.contentEditor.selectionEnd,
+            "selectionStart": controller.contentEditor.selectionStart
+        };
+    }
+
+    function currentEditorSurfaceLength() {
+        if (controller.contentEditor && controller.contentEditor.length !== undefined) {
+            const lengthValue = Number(controller.contentEditor.length);
+            if (isFinite(lengthValue))
+                return Math.max(0, Math.floor(lengthValue));
+        }
+        const inputItem = controller.currentEditorInputItem();
+        if (inputItem && inputItem.length !== undefined) {
+            const lengthValue = Number(inputItem.length);
+            if (isFinite(lengthValue))
+                return Math.max(0, Math.floor(lengthValue));
+        }
+        return controller.currentEditorPlainText().length;
+    }
+
+    function currentLogicalText() {
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined)
+            return String(controller.textMetricsBridge.logicalText === undefined || controller.textMetricsBridge.logicalText === null ? "" : controller.textMetricsBridge.logicalText);
+        if (!controller.view || controller.view.editorText === undefined || controller.view.editorText === null)
+            return "";
+        return String(controller.view.editorText);
+    }
+
     function currentEditorCursorPosition() {
         if (!controller.contentEditor)
             return NaN;
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot && snapshot.cursorPosition !== undefined) {
+                const cursor = Number(snapshot.cursorPosition);
+                if (isFinite(cursor))
+                    return cursor;
+            }
+        }
         if (controller.contentEditor.cursorPosition !== undefined) {
             const cursor = Number(controller.contentEditor.cursorPosition);
             if (isFinite(cursor))
@@ -160,67 +231,139 @@ QtObject {
         return NaN;
     }
 
-    function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
+    function currentEditorPlainText() {
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        if (controller.contentEditor && controller.contentEditor.getText !== undefined)
+            return controller.normalizeSelectionTextValue(controller.contentEditor.getText(0, surfaceLength));
+        const inputItem = controller.currentEditorInputItem();
+        if (inputItem && inputItem.getText !== undefined)
+            return controller.normalizeSelectionTextValue(inputItem.getText(0, surfaceLength));
+        return controller.normalizeSelectionTextValue(controller.currentLogicalText());
+    }
+
+    function editorPlainTextSlice(start, end) {
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        const boundedStart = Math.max(0, Math.min(surfaceLength, Math.floor(Number(start) || 0)));
+        const boundedEnd = Math.max(0, Math.min(surfaceLength, Math.floor(Number(end) || 0)));
+        if (boundedEnd <= boundedStart)
+            return "";
+        if (controller.contentEditor && controller.contentEditor.getText !== undefined)
+            return controller.normalizeSelectionTextValue(controller.contentEditor.getText(boundedStart, boundedEnd));
+        const inputItem = controller.currentEditorInputItem();
+        if (inputItem && inputItem.getText !== undefined)
+            return controller.normalizeSelectionTextValue(inputItem.getText(boundedStart, boundedEnd));
+        return controller.currentEditorPlainText().slice(boundedStart, boundedEnd);
+    }
+
+    function selectionRangeMatchesSelectedText(selectionRange, selectedText) {
+        if (!selectionRange)
+            return false;
+        const start = Number(selectionRange.start);
+        const end = Number(selectionRange.end);
+        if (!isFinite(start) || !isFinite(end) || end <= start)
+            return false;
+        const normalizedSelectedText = controller.normalizeSelectionTextValue(selectedText);
+        if (normalizedSelectedText.length === 0)
+            return false;
+        return controller.editorPlainTextSlice(start, end) === normalizedSelectedText;
+    }
+
+    function inferSelectionRangeFromSelectedText(selectedText, cursorPosition, preferredRangeStart, preferredRangeEnd) {
         if (!controller.view)
             return ({
                     "start": -1,
                     "end": -1
                 });
-        const sourceText = controller.view.editorText === undefined || controller.view.editorText === null ? "" : String(controller.view.editorText);
-        const normalizedSelectedText = selectedText === undefined || selectedText === null ? "" : String(selectedText);
-        if (sourceText.length === 0 || normalizedSelectedText.length === 0)
+        const plainText = controller.currentEditorPlainText();
+        const normalizedSelectedText = controller.normalizeSelectionTextValue(selectedText);
+        if (plainText.length === 0 || normalizedSelectedText.length === 0)
             return ({
                     "start": -1,
                     "end": -1
                 });
-        const normalizedCursor = isFinite(cursorPosition)
-                ? Math.max(0, Math.min(sourceText.length, Math.floor(cursorPosition)))
-                : sourceText.length;
-        let start = sourceText.lastIndexOf(normalizedSelectedText, normalizedCursor);
-        if (start < 0)
-            start = sourceText.indexOf(normalizedSelectedText, normalizedCursor);
-        if (start < 0)
-            start = sourceText.indexOf(normalizedSelectedText);
-        if (start < 0)
+        const occurrenceRanges = [];
+        let searchOffset = 0;
+        while (searchOffset <= plainText.length) {
+            const occurrenceStart = plainText.indexOf(normalizedSelectedText, searchOffset);
+            if (occurrenceStart < 0)
+                break;
+            occurrenceRanges.push({
+                    "start": occurrenceStart,
+                    "end": occurrenceStart + normalizedSelectedText.length
+                });
+            searchOffset = occurrenceStart + 1;
+        }
+        if (occurrenceRanges.length === 0)
             return ({
                     "start": -1,
                     "end": -1
                 });
+        let anchor = NaN;
+        const numericPreferredStart = Number(preferredRangeStart);
+        const numericPreferredEnd = Number(preferredRangeEnd);
+        if (isFinite(numericPreferredStart) && isFinite(numericPreferredEnd) && numericPreferredEnd > numericPreferredStart)
+            anchor = Math.max(0, Math.min(plainText.length, Math.floor((numericPreferredStart + numericPreferredEnd) / 2)));
+        else if (isFinite(cursorPosition))
+            anchor = Math.max(0, Math.min(plainText.length, Math.floor(cursorPosition)));
+        let bestOccurrence = occurrenceRanges[0];
+        let bestScore = Number.POSITIVE_INFINITY;
+        for (let index = 0; index < occurrenceRanges.length; ++index) {
+            const occurrence = occurrenceRanges[index];
+            const occurrenceMidpoint = (occurrence.start + occurrence.end) / 2;
+            const occurrenceScore = isFinite(anchor)
+                    ? Math.abs(occurrenceMidpoint - anchor)
+                    : Math.abs(occurrence.end - plainText.length);
+            if (occurrenceScore < bestScore) {
+                bestScore = occurrenceScore;
+                bestOccurrence = occurrence;
+            }
+        }
         return ({
-                "start": start,
-                "end": start + normalizedSelectedText.length
+                "start": bestOccurrence.start,
+                "end": bestOccurrence.end
             });
     }
 
-    function syncCachedEditorSelectionRange() {
-        controller.cacheEditorSelectionRange(controller.selectedEditorRange());
-    }
-
-    function sourceOffsetForLogicalOffset(logicalOffset) {
-        if (!controller.view)
-            return -1;
-        const sourceText = controller.view.editorText === undefined || controller.view.editorText === null ? "" : String(controller.view.editorText);
-        const numericOffset = Number(logicalOffset);
-        if (!isFinite(numericOffset))
-            return -1;
-        const normalizedOffset = Math.max(0, Math.floor(numericOffset));
-        if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
-            const mappedOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(normalizedOffset));
-            if (isFinite(mappedOffset))
-                return Math.max(0, Math.min(sourceText.length, Math.floor(mappedOffset)));
+    function resolveSelectionSnapshot(selectionSnapshot) {
+        const normalizedSelectedText = controller.normalizeSelectionTextValue(
+                    selectionSnapshot && selectionSnapshot.selectedText !== undefined
+                    ? selectionSnapshot.selectedText
+                    : controller.currentSelectedEditorText());
+        const cursorPosition = selectionSnapshot && selectionSnapshot.cursorPosition !== undefined
+                ? Number(selectionSnapshot.cursorPosition)
+                : controller.currentEditorCursorPosition();
+        const start = selectionSnapshot && selectionSnapshot.start !== undefined ? Number(selectionSnapshot.start) : NaN;
+        const end = selectionSnapshot && selectionSnapshot.end !== undefined ? Number(selectionSnapshot.end) : NaN;
+        if (isFinite(start) && isFinite(end) && end > start) {
+            const candidateRange = {
+                "start": Math.floor(start),
+                "end": Math.floor(end)
+            };
+            if (normalizedSelectedText.length === 0
+                    || controller.selectionRangeMatchesSelectedText(candidateRange, normalizedSelectedText)) {
+                return candidateRange;
+            }
         }
-        return Math.max(0, Math.min(sourceText.length, normalizedOffset));
+        if (normalizedSelectedText.length > 0)
+            return controller.inferSelectionRangeFromSelectedText(normalizedSelectedText, cursorPosition);
+        return {
+            "start": -1,
+            "end": -1
+        };
     }
 
     function selectedEditorRange() {
-        if (!controller.contentEditor || !controller.view)
+        if (!controller.contentEditor)
             return ({
                     "start": -1,
                     "end": -1
                 });
-        const text = controller.view.editorText === undefined || controller.view.editorText === null ? "" : String(controller.view.editorText);
-        let start = controller.contentEditor.selectionStart !== undefined ? Number(controller.contentEditor.selectionStart) : NaN;
-        let end = controller.contentEditor.selectionEnd !== undefined ? Number(controller.contentEditor.selectionEnd) : NaN;
+        const selectionSnapshot = controller.currentEditorSelectionSnapshot();
+        const selectedText = selectionSnapshot.selectedText !== undefined
+                ? selectionSnapshot.selectedText
+                : controller.currentSelectedEditorText();
+        let start = selectionSnapshot.selectionStart !== undefined ? Number(selectionSnapshot.selectionStart) : NaN;
+        let end = selectionSnapshot.selectionEnd !== undefined ? Number(selectionSnapshot.selectionEnd) : NaN;
         if (!isFinite(start) || !isFinite(end)) {
             if (controller.contentEditor.editorItem) {
                 if (!isFinite(start) && controller.contentEditor.editorItem.selectionStart !== undefined)
@@ -235,43 +378,21 @@ QtObject {
                 }
             }
         }
-        if (isFinite(start) && isFinite(end)) {
-            const logicalRangeStart = Math.max(0, Math.floor(Math.min(start, end)));
-            const logicalRangeEnd = Math.max(0, Math.floor(Math.max(start, end)));
-            const sourceRangeStart = controller.sourceOffsetForLogicalOffset(logicalRangeStart);
-            const sourceRangeEnd = controller.sourceOffsetForLogicalOffset(logicalRangeEnd);
-            if (sourceRangeEnd > sourceRangeStart) {
-                const explicitRange = {
-                    "start": sourceRangeStart,
-                    "end": sourceRangeEnd
-                };
-                controller.cacheEditorSelectionRange(explicitRange);
-                return explicitRange;
-            }
-        }
-        const selectedText = controller.currentSelectedEditorText();
-        const cursorPosition = controller.currentEditorCursorPosition();
-        const inferredRange = controller.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
-        if (inferredRange.end > inferredRange.start) {
-            controller.cacheEditorSelectionRange(inferredRange);
-            return inferredRange;
-        }
-        if (!isFinite(start) || !isFinite(end))
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        const rangeStart = Math.max(0, Math.min(text.length, Math.floor(Math.min(start, end))));
-        const rangeEnd = Math.max(0, Math.min(text.length, Math.floor(Math.max(start, end))));
-        if (rangeEnd > rangeStart) {
-            controller.cacheEditorSelectionRange({
-                    "start": rangeStart,
-                    "end": rangeEnd
-                });
-        }
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        const numericRange = {
+            "start": isFinite(start) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.min(start, end)))) : NaN,
+            "end": isFinite(end) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.max(start, end)))) : NaN,
+            "selectedText": selectedText,
+            "cursorPosition": selectionSnapshot.cursorPosition !== undefined
+                              ? Number(selectionSnapshot.cursorPosition)
+                              : controller.currentEditorCursorPosition()
+        };
+        const resolvedRange = controller.resolveSelectionSnapshot(numericRange);
+        if (resolvedRange.end > resolvedRange.start)
+            return resolvedRange;
         return ({
-                "start": rangeStart,
-                "end": rangeEnd
+                "start": -1,
+                "end": -1
             });
     }
 
@@ -340,8 +461,8 @@ QtObject {
         switch (styleTag) {
         case "bold":
             return ({
-                    "openTag": "<span style=\"font-weight:800;\">",
-                    "closeTag": "</span>"
+                    "openTag": "<strong style=\"font-weight:900;\">",
+                    "closeTag": "</strong>"
                 });
         case "italic":
             return ({
@@ -371,6 +492,44 @@ QtObject {
         }
     }
 
+    function queueInlineFormatWrap(tagName) {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer)
+            return false;
+        const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
+        if (normalizedTagName.length === 0)
+            return false;
+        let selectionRange = controller.selectedEditorRange();
+        const selectedText = controller.currentSelectedEditorText();
+        const selectionSnapshot = {
+            "start": selectionRange.start,
+            "end": selectionRange.end,
+            "selectedText": selectedText,
+            "cursorPosition": controller.currentEditorCursorPosition()
+        };
+        if (selectionRange.end <= selectionRange.start)
+            return false;
+        const capturedSelectionRange = selectionSnapshot;
+        const noteId = controller.currentSelectedNoteId();
+        const queueKey = noteId + "::" + normalizedTagName + "::"
+                + String(capturedSelectionRange.start) + "::" + String(capturedSelectionRange.end)
+                + "::" + controller.normalizeSelectionTextValue(capturedSelectionRange.selectedText);
+        if (controller.queuedInlineFormatWrapKeys[queueKey])
+            return true;
+        controller.queuedInlineFormatWrapKeys[queueKey] = true;
+        Qt.callLater(function () {
+            delete controller.queuedInlineFormatWrapKeys[queueKey];
+            if (!controller.view || !controller.view.hasSelectedNote)
+                return;
+            if (controller.currentSelectedNoteId() !== noteId)
+                return;
+            controller.wrapSelectedEditorTextWithTag(normalizedTagName, capturedSelectionRange);
+        });
+        return true;
+    }
+
     function handleInlineFormatShortcutKeyPress(event) {
         if (!event || !controller.view || !controller.view.hasSelectedNote
                 || controller.view.showDedicatedResourceViewer
@@ -386,21 +545,21 @@ QtObject {
         let handled = false;
         switch (event.key) {
         case Qt.Key_B:
-            handled = controller.wrapSelectedEditorTextWithTag("bold");
+            handled = controller.queueInlineFormatWrap("bold");
             break;
         case Qt.Key_I:
-            handled = controller.wrapSelectedEditorTextWithTag("italic");
+            handled = controller.queueInlineFormatWrap("italic");
             break;
         case Qt.Key_U:
-            handled = controller.wrapSelectedEditorTextWithTag("underline");
+            handled = controller.queueInlineFormatWrap("underline");
             break;
         case Qt.Key_X:
             if (shiftPressed)
-                handled = controller.wrapSelectedEditorTextWithTag("strikethrough");
+                handled = controller.queueInlineFormatWrap("strikethrough");
             break;
         case Qt.Key_H:
             if (shiftPressed)
-                handled = controller.wrapSelectedEditorTextWithTag("highlight");
+                handled = controller.queueInlineFormatWrap("highlight");
             break;
         default:
             break;
@@ -474,8 +633,6 @@ QtObject {
                 || controller.view.showFormattedTextRenderer)
             return false;
         let selectionRange = controller.selectedEditorRange();
-        if (selectionRange.end <= selectionRange.start)
-            selectionRange = controller.cachedEditorSelectionRange();
         if (selectionRange.end <= selectionRange.start) {
             const inferredRange = controller.inferSelectionRangeFromSelectedText(
                         controller.currentSelectedEditorText(),
@@ -489,6 +646,7 @@ QtObject {
             controller.selectionContextMenu.close();
         controller.contextMenuSelectionStart = selectionRange.start;
         controller.contextMenuSelectionEnd = selectionRange.end;
+        controller.contextMenuSelectionText = controller.normalizeSelectionTextValue(controller.currentSelectedEditorText());
         controller.selectionContextMenu.openFor(controller.editorViewport, Number(localX) || 0, Number(localY) || 0);
         return true;
     }
@@ -502,42 +660,35 @@ QtObject {
         const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
         if (normalizedTagName.length === 0)
             return false;
-        const wrapTags = controller.inlineStyleWrapTags(normalizedTagName);
-        if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
+        if (!controller.textFormatRenderer
+                || controller.textFormatRenderer.applyInlineStyleToSelectionSource === undefined)
             return false;
-        let selectionRange = explicitSelectionRange && explicitSelectionRange.start !== undefined
-                && explicitSelectionRange.end !== undefined
-                ? ({
-                       "start": Number(explicitSelectionRange.start),
-                       "end": Number(explicitSelectionRange.end)
-                   })
-                : ({
-                       "start": -1,
-                       "end": -1
-                   });
-        if (!isFinite(selectionRange.start) || !isFinite(selectionRange.end))
-            selectionRange = ({
-                    "start": -1,
-                    "end": -1
-                });
+        let selectionRange = controller.resolveSelectionSnapshot(explicitSelectionRange || null);
         if (selectionRange.end <= selectionRange.start)
             selectionRange = controller.selectedEditorRange();
         if (selectionRange.end <= selectionRange.start)
-            selectionRange = controller.contextMenuEditorSelectionRange();
+            selectionRange = controller.resolveSelectionSnapshot(controller.contextMenuEditorSelectionSnapshot());
         if (selectionRange.end <= selectionRange.start)
-            selectionRange = controller.cachedEditorSelectionRange();
-        if (selectionRange.end <= selectionRange.start)
+            return false;
+        const inputItem = controller.currentEditorInputItem();
+        if (!inputItem || inputItem.getFormattedText === undefined)
             return false;
         const currentText = controller.view.editorText === undefined || controller.view.editorText === null ? "" : String(controller.view.editorText);
-        const boundedStart = Math.max(0, Math.min(currentText.length, Math.floor(selectionRange.start)));
-        const boundedEnd = Math.max(0, Math.min(currentText.length, Math.floor(selectionRange.end)));
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        const boundedStart = Math.max(0, Math.min(surfaceLength, Math.floor(selectionRange.start)));
+        const boundedEnd = Math.max(0, Math.min(surfaceLength, Math.floor(selectionRange.end)));
         if (boundedEnd <= boundedStart)
             return false;
-        const nextText = currentText.slice(0, boundedStart)
-                + wrapTags.openTag
-                + currentText.slice(boundedStart, boundedEnd)
-                + wrapTags.closeTag
-                + currentText.slice(boundedEnd);
+        const currentSurfaceText = String(inputItem.getFormattedText(0, surfaceLength));
+        if (currentSurfaceText.length === 0 && currentText.length > 0)
+            return false;
+        const nextText = controller.textFormatRenderer.applyInlineStyleToSelectionSource(
+                    currentSurfaceText,
+                    boundedStart,
+                    boundedEnd,
+                    normalizedTagName);
+        if (nextText.length === 0 && currentText.length > 0)
+            return false;
         if (controller.view.editorText !== nextText)
             controller.view.editorText = nextText;
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
@@ -547,16 +698,13 @@ QtObject {
             controller.editorSession.scheduleEditorPersistence();
         controller.contextMenuSelectionStart = -1;
         controller.contextMenuSelectionEnd = -1;
-        controller.cacheEditorSelectionRange({
-                "start": boundedStart + wrapTags.openTag.length,
-                "end": boundedEnd + wrapTags.openTag.length
-            });
+        controller.contextMenuSelectionText = "";
         controller.view.editorTextEdited(nextText);
         return true;
     }
 
     function handleSelectionContextMenuEvent(eventName) {
-        const contextSelectionRange = controller.contextMenuEditorSelectionRange();
+        const contextSelectionRange = controller.contextMenuEditorSelectionSnapshot();
         if (eventName === "editor.format.bold")
             controller.wrapSelectedEditorTextWithTag("bold", contextSelectionRange);
         else if (eventName === "editor.format.italic")

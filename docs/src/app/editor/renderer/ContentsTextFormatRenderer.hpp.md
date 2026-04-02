@@ -15,11 +15,14 @@ embedded in the generic inline-tag parser.
   Stateless helper to render any input text without mutating bridge ownership state.
 - `normalizeEditorSurfaceTextToSource(surfaceText)`
   Converts RichText editor output back into canonical `.wsnbody` inline source tags.
+- `applyInlineStyleToSelectionSource(surfaceText, selectionStart, selectionEnd, styleTag)`
+  Applies the requested inline style to the current RichText selection with `QTextDocument/QTextCursor`, then
+  canonicalizes the result back into `.wsnbody` source tags.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 
 ## Supported Inline Style Tags
-- Bold aliases: `bold`, `b`, `strong` -> `<span style="font-weight:800;">`
+- Bold aliases: `bold`, `b`, `strong` -> `<strong style="font-weight:900;">`
 - Italic aliases: `italic`, `i`, `em` -> `<span style="font-style:italic;">`
 - Underline aliases: `underline`, `u` -> `<span style="text-decoration: underline;">`
 - Strike aliases: `strikethrough`, `strike`, `s`, `del` -> `<span style="text-decoration: line-through;">`

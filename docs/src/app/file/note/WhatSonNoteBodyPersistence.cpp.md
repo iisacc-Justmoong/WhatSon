@@ -15,7 +15,7 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
 - `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to explicit span styling:
-  - `bold` / `b` / `strong` -> `<span style="font-weight:800;">`
+  - `bold` / `b` / `strong` -> `<strong style="font-weight:900;">`
   - `italic` / `i` / `em` -> `<span style="font-style:italic;">`
   - `underline` / `u` -> `<span style="text-decoration: underline;">`
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`

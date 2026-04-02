@@ -102,8 +102,8 @@ namespace
         if (normalizedName == QStringLiteral("bold"))
         {
             return {
-                QStringLiteral("<span style=\"font-weight:800;\">"),
-                QStringLiteral("</span>")
+                QStringLiteral("<strong style=\"font-weight:900;\">"),
+                QStringLiteral("</strong>")
             };
         }
         if (normalizedName == QStringLiteral("italic"))

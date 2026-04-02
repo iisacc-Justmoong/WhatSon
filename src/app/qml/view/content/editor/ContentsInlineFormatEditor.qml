@@ -41,6 +41,8 @@ FocusScope {
     property alias editorItem: editorShell
     readonly property bool empty: textInput.length === 0
     readonly property bool focused: activeFocus || textInput.activeFocus
+    readonly property bool hasSelection: textInput.selectionEnd > textInput.selectionStart
+    readonly property int length: textInput.length
     readonly property int lineCount: textInput.lineCount
     readonly property string selectedText: textInput.selectedText
     readonly property int selectionEnd: textInput.selectionEnd
@@ -55,12 +57,52 @@ FocusScope {
         textInput.forceActiveFocus();
     }
 
+    function getText(start, end) {
+        return textInput.getText(start, end);
+    }
+
+    function getFormattedText(start, end) {
+        return textInput.getFormattedText(start, end);
+    }
+
+    function selectionSnapshot() {
+        return {
+            "cursorPosition": Number(textInput.cursorPosition),
+            "selectedText": textInput.selectedText,
+            "selectionEnd": Number(textInput.selectionEnd),
+            "selectionStart": Number(textInput.selectionStart)
+        };
+    }
+
+    function clampLogicalPosition(position, maximumLength) {
+        const numericPosition = Number(position);
+        if (!isFinite(numericPosition))
+            return 0;
+        return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, maximumLength)));
+    }
+
     function setProgrammaticText(nextText) {
         const normalizedText = nextText === undefined || nextText === null ? "" : String(nextText);
         if (textInput.text === normalizedText)
             return;
+        const previousCursorPosition = Number(textInput.cursorPosition);
+        const previousSelectionStart = Number(textInput.selectionStart);
+        const previousSelectionEnd = Number(textInput.selectionEnd);
+        const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
+                && previousSelectionEnd > previousSelectionStart;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
+        const maximumLength = Number(textInput.length) || 0;
+        const restoredSelectionStart = control.clampLogicalPosition(previousSelectionStart, maximumLength);
+        const restoredSelectionEnd = control.clampLogicalPosition(previousSelectionEnd, maximumLength);
+        const restoredCursorPosition = control.clampLogicalPosition(previousCursorPosition, maximumLength);
+        if (hadSelection && restoredSelectionEnd > restoredSelectionStart) {
+            textInput.select(restoredSelectionStart, restoredSelectionEnd);
+        } else {
+            if (textInput.deselect !== undefined)
+                textInput.deselect();
+            textInput.cursorPosition = restoredCursorPosition;
+        }
         control._programmaticTextSyncDepth -= 1;
     }
 

@@ -353,10 +353,16 @@ cmake -S . -B build
 cmake --build build -j
 ```
 
-The root host build now also prepares `build-trial` as the dedicated desktop trial-packaging tree.
-That means plain `cmake --build build`, `cmake --build build --target WhatSon`, CLion's `WhatSon`
-build, and `whatson_build_all` all configure `build-trial` and build the nested `whatson_package`
-target there.
+Ordinary host builds stay incremental and no longer trigger the dedicated `build-trial`
+desktop packaging tree automatically.
+If you explicitly need the nested trial packaging pass from the host tree, opt in during configure
+and invoke the mirror target manually:
+
+```bash
+cmake -S . -B build -DWHATSON_ENABLE_TRIAL_BUILD_MIRROR=ON
+cmake --build build --target whatson_sync_trial_build
+```
+
 On macOS the nested trial tree pins `CMAKE_OSX_ARCHITECTURES` from the host/LVRS setup so an
 auxiliary x86_64 CMake process does not accidentally configure `build-trial` against an arm64-only
 LVRS install.
@@ -995,11 +1001,12 @@ builds are not blocked by stale cross-compile metadata under `build/ios-xcode-ar
 The explicit `whatson_export_xcodeproj` target now clears only the nested iOS CMake
 cache/state files before reconfiguring, which keeps the export reproducible without
 deleting the entire artifact directory.
-When the host task runs, the automation now always configures both `build` and `build-trial`.
+When the host task runs, the automation still configures both `build` and `build-trial`.
 `build` is used for the normal runnable host build, while `build-trial` is reserved for the
 trial packaging pass and builds the `whatson_package` target there.
-The same `build-trial` mirror is also created by the root CMake build path, so CLion and plain
-`cmake --build build` keep the same two-tree contract as the Python automation.
+Manual root CMake host builds no longer mirror that behavior automatically, so CLion and plain
+`cmake --build build` stay focused on the incremental runnable host tree unless
+`WHATSON_ENABLE_TRIAL_BUILD_MIRROR=ON` is set explicitly.
 
 You can override artifact locations:
 

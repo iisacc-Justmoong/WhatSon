@@ -95,6 +95,16 @@ cmake --build build --target WhatSon_daemon -j
 cmake --build build --target whatson_run_app
 ```
 
+Normal host app and daemon builds must stay incremental and must not implicitly trigger the
+dedicated `build-trial` packaging tree.
+If a dedicated desktop trial package is explicitly required, opt in during configure and invoke
+the nested packaging target manually:
+
+```bash
+cmake -S . -B build -DWHATSON_ENABLE_TRIAL_BUILD_MIRROR=ON
+cmake --build build --target whatson_sync_trial_build
+```
+
 ## Single Source of Truth for LVRS Integration
 
 ### CMake

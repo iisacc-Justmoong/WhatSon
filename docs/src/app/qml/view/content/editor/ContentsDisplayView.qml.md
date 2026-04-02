@@ -36,6 +36,11 @@ The root editor state now keeps two text projections:
   `gutterRefreshRevision` and reused by both `lineDocumentY(...)` and
   `logicalLineNumberForDocumentY(...)` so binary-search visibility and rendered gutter delegates never drift into
   overlapping or skipped line-number rows when empty lines/wrapped edits jitter `positionToRectangle(...)`.
+- `visibleGutterLineEntries` is an imperative snapshot (`[{ lineNumber, y }]`) refreshed from
+  `commitGutterRefresh()`. The gutter no longer asks the live editor geometry for every delegate binding evaluation.
+- Minimap viewport/current-line chrome is also exposed as numeric snapshots
+  (`minimapResolvedViewportHeight`, `minimapResolvedViewportY`, `minimapResolvedCurrentLine*`) so the child minimap
+  layer no longer re-enters editor geometry through callback bindings for those properties.
 
 ## Key Collaborators
 
@@ -99,20 +104,21 @@ The root editor state now keeps two text projections:
   - `Underline`
   - `Strikethrough`
   - `Highlight`
-- Right-click dispatch is handled by a dedicated `MouseArea` on the editor viewport and now opens the menu from
-  `onClicked` after a deferred selection-cache refresh, avoiding the lost-release path that could suppress the menu.
-- Right-click handling now preserves selection intent by caching the last non-empty selection range:
-  - `cachedEditorSelectionRange()` keeps the latest valid selection
+- Right-click dispatch is handled by a dedicated `MouseArea` on the editor viewport and opens the menu from
+  `onClicked` on the next event-loop turn, avoiding the lost-release path that could suppress the menu.
+- Right-click handling now preserves selection intent with a short-lived context-menu snapshot:
   - `contextMenuEditorSelectionRange()` keeps the selection snapshot captured when the context menu opens
-  - `inferSelectionRangeFromSelectedText(...)` maps selected plain text back into the current editor source when
-    RichText selection offsets and source markup offsets diverge.
-  - `sourceOffsetForLogicalOffset(...)` (via `ContentsLogicalTextBridge`) converts rendered plain-text cursor offsets
-    back into source-markup offsets before wrapping the selection with inline tags.
+  - `inferSelectionRangeFromSelectedText(...)` maps selected plain text back into the current live editor plain text
+    when the RichText control does not expose usable numeric offsets.
+  - formatting actions no longer wrap raw `.wsnbody` substrings directly. The controller captures the live editor
+    RichText surface, then delegates the actual selected-range mutation to
+    `ContentsTextFormatRenderer.applyInlineStyleToSelectionSource(...)`.
   - formatting actions always require a non-empty selection range before mutating `.wsnbody`
 - Context-menu actions dispatch through the same `wrapSelectedEditorTextWithTag(...)` path as keyboard shortcuts, so
   inline tag serialization/persistence behavior stays identical across input methods.
 - Shortcut enablement no longer hard-gates on `editorInputFocused`; instead, shortcuts stay available while a note is
-  active and `wrapSelectedEditorTextWithTag(...)` enforces the non-empty selection guard.
+  active, but the actual wrap request still captures the live `TextEdit` selection snapshot before the queued mutation
+  runs.
 - The focus probe still tracks `contentEditor.focused` / `activeFocus`, `editorItem.activeFocus`, and
   `editorItem.inputItem.activeFocus` for marker/interaction state decisions.
 - The editor now resolves `editorViewModeViewModel` (from injected property or `LV.ViewModels`) and switches renderer
@@ -171,6 +177,8 @@ The root editor state now keeps two text projections:
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
 - `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
   mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.
+- Repository policy note: automated test files were removed; this document therefore treats the checklist above as the
+  expected regression surface for later runtime/manual verification.
 
 ## Scroll and Minimap Rules
 
@@ -178,7 +186,6 @@ The root editor state now keeps two text projections:
   top spacer is part of the visible editor frame.
 - Scroll-to-minimap routing uses `editorOccupiedContentHeight()` so the minimap and gutter continue to agree on the
   same content span even after the fixed top spacer is reserved above the text surface.
-
-## Tests
-
-Automated test files were removed from this repository; verify editor-session wiring and quick-note drawer composition through runtime checks.
+- `ContentsMinimapLayer` now receives viewport visibility/height/Y and current-line highlight geometry as resolved
+  numbers, not callback resolvers. This prevents the child layer from reopening layout calculations while its own
+  rectangles are being bound.

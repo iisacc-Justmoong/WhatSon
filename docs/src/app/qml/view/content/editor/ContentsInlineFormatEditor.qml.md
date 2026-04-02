@@ -14,6 +14,12 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   programmatically.
 - Exposes a `textEdited(string text)` signal so the host view can canonicalize the RichText surface back into
   `.wsnbody` source tags.
+- Exposes direct Qt-style selection/text helpers on the wrapper itself:
+  - `selectionSnapshot()`
+  - `getText(start, end)`
+  - `getFormattedText(start, end)`
+  - `length`
+  - `hasSelection`
 - Keeps the scroll contract compatible with the existing gutter/minimap code:
   - `editorItem.parent.y` follows the `Flickable.contentItem` offset
   - `editorItem.parent.parent` resolves back to the owning `Flickable`
@@ -25,6 +31,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - `editorItem.positionToRectangle(...)`
 - Falls back to `TextEdit.onTextChanged` dispatch when a native `textEdited` signal is unavailable, while suppressing
   programmatic text-sync loops.
+- Programmatic text-sync now preserves the pre-sync logical cursor/selection range when the visible plain-text payload is
+  unchanged and only the RichText markup wrapper changed (for example after inline formatting wraps).
+- Selection/formatting controllers should prefer these wrapper-level Qt helpers over re-walking nested `editorItem` /
+  `inputItem` objects.
 
 ## Tests
 

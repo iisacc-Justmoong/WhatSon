@@ -113,6 +113,11 @@ QString ContentsLogicalTextBridge::text() const
     return m_text;
 }
 
+QString ContentsLogicalTextBridge::logicalText() const
+{
+    return m_logicalText;
+}
+
 void ContentsLogicalTextBridge::setText(const QString& text)
 {
     if (m_text == text)
@@ -288,7 +293,12 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
 
 void ContentsLogicalTextBridge::refreshTextState()
 {
-    m_logicalText = normalizeLogicalText(m_text);
+    const QString nextLogicalText = normalizeLogicalText(m_text);
+    if (m_logicalText != nextLogicalText)
+    {
+        m_logicalText = nextLogicalText;
+        emit logicalTextChanged();
+    }
     m_logicalToSourceOffsets = buildLogicalToSourceOffsets(m_text, m_logicalText.size());
     const QVariantList nextOffsets = buildLogicalLineOffsets(m_logicalText);
     const int nextLineCount = std::max(1, static_cast<int>(nextOffsets.size()));

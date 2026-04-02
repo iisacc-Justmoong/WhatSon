@@ -2,8 +2,14 @@
 #include "ContentsTextHighlightRenderer.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 
+#include <algorithm>
+#include <QColor>
+#include <QFont>
 #include <QRegularExpression>
 #include <QStringList>
+#include <QTextCharFormat>
+#include <QTextCursor>
+#include <QTextDocument>
 #include <QVector>
 
 namespace
@@ -167,7 +173,7 @@ namespace
     {
         if (normalizedStyleTag == QStringLiteral("bold"))
         {
-            return QStringLiteral("<span style=\"font-weight:800;\">");
+            return QStringLiteral("<strong style=\"font-weight:900;\">");
         }
         if (normalizedStyleTag == QStringLiteral("italic"))
         {
@@ -194,14 +200,61 @@ namespace
         {
             return ContentsTextHighlightRenderer::highlightCloseHtmlTag();
         }
-        if (normalizedStyleTag == QStringLiteral("bold")
-            || normalizedStyleTag == QStringLiteral("italic")
+        if (normalizedStyleTag == QStringLiteral("bold"))
+        {
+            return QStringLiteral("</strong>");
+        }
+        if (normalizedStyleTag == QStringLiteral("italic")
             || normalizedStyleTag == QStringLiteral("underline")
             || normalizedStyleTag == QStringLiteral("strikethrough"))
         {
             return QStringLiteral("</span>");
         }
         return {};
+    }
+
+    QString normalizeSupportedInlineStyleTag(const QString& rawStyleTag)
+    {
+        QString normalizedStyleTag = canonicalInlineStyleTagName(rawStyleTag);
+        if (normalizedStyleTag.isEmpty() && ContentsTextHighlightRenderer::isHighlightTagAlias(rawStyleTag))
+        {
+            normalizedStyleTag = QStringLiteral("highlight");
+        }
+        return normalizedStyleTag;
+    }
+
+    QTextCharFormat textCharFormatForInlineStyle(const QString& normalizedStyleTag)
+    {
+        QTextCharFormat format;
+        if (normalizedStyleTag == QStringLiteral("bold"))
+        {
+            format.setFontWeight(QFont::Black);
+        }
+        else if (normalizedStyleTag == QStringLiteral("italic"))
+        {
+            format.setFontItalic(true);
+        }
+        else if (normalizedStyleTag == QStringLiteral("underline"))
+        {
+            format.setFontUnderline(true);
+        }
+        else if (normalizedStyleTag == QStringLiteral("strikethrough"))
+        {
+            format.setFontStrikeOut(true);
+        }
+        else if (normalizedStyleTag == QStringLiteral("highlight"))
+        {
+            format.setBackground(QColor(QStringLiteral("#8A4B00")));
+            format.setForeground(QColor(QStringLiteral("#FFD9A3")));
+            format.setFontWeight(QFont::DemiBold);
+        }
+        return format;
+    }
+
+    int boundedDocumentSelectionPosition(const QTextDocument& document, int position) noexcept
+    {
+        const int maxPosition = std::max(0, document.characterCount() - 1);
+        return std::clamp(position, 0, maxPosition);
     }
 
     bool isClosingTagToken(const QString& token)
@@ -554,6 +607,48 @@ QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QSt
     const QString serializedBodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), surfaceText);
     return WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
+}
+
+QString ContentsTextFormatRenderer::applyInlineStyleToSelectionSource(
+    const QString& surfaceText,
+    int selectionStart,
+    int selectionEnd,
+    const QString& styleTag) const
+{
+    if (surfaceText.isEmpty())
+    {
+        return {};
+    }
+
+    const QString normalizedStyleTag = normalizeSupportedInlineStyleTag(styleTag);
+    if (normalizedStyleTag.isEmpty())
+    {
+        return normalizeEditorSurfaceTextToSource(surfaceText);
+    }
+
+    QTextDocument document;
+    document.setHtml(surfaceText);
+
+    const int boundedStart = boundedDocumentSelectionPosition(document, std::min(selectionStart, selectionEnd));
+    const int boundedEnd = boundedDocumentSelectionPosition(document, std::max(selectionStart, selectionEnd));
+    if (boundedEnd <= boundedStart)
+    {
+        return normalizeEditorSurfaceTextToSource(surfaceText);
+    }
+
+    QTextCursor cursor(&document);
+    cursor.setPosition(boundedStart);
+    cursor.setPosition(boundedEnd, QTextCursor::KeepAnchor);
+    if (!cursor.hasSelection())
+    {
+        return normalizeEditorSurfaceTextToSource(surfaceText);
+    }
+
+    cursor.beginEditBlock();
+    cursor.mergeCharFormat(textCharFormatForInlineStyle(normalizedStyleTag));
+    cursor.endEditBlock();
+
+    return normalizeEditorSurfaceTextToSource(document.toHtml());
 }
 
 void ContentsTextFormatRenderer::requestRenderRefresh()

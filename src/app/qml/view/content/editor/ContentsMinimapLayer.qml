@@ -8,18 +8,18 @@ Item {
 
     property var editorFlickable: null
     property var minimapBarWidthResolver: null
-    property var minimapContentHeightResolver: null
     property color minimapCurrentLineColor: "#9DA0A8"
-    property var minimapCurrentLineHeightResolver: null
-    property var minimapCurrentLineWidthResolver: null
-    property var minimapCurrentLineYResolver: null
+    property real minimapCurrentLineHeight: 1
+    property real minimapCurrentLineWidth: 0
+    property real minimapCurrentLineY: 0
     property color minimapLineColor: "#4E5157"
-    property var minimapSilhouetteHeightResolver: null
+    property real minimapSilhouetteHeight: 1
+    property bool minimapScrollable: false
     property int minimapTrackInset: 8
     property int minimapTrackWidth: 36
     property color minimapViewportFillColor: "#149DA0A8"
-    property var minimapViewportHeightResolver: null
-    property var minimapViewportYResolver: null
+    property real minimapViewportHeight: 0
+    property real minimapViewportY: 0
     property var minimapVisualRowPaintHeightResolver: null
     property var minimapVisualRowPaintYResolver: null
     property var minimapVisualRows: []
@@ -58,9 +58,7 @@ Item {
         anchors.topMargin: 8
         height: Math.min(
                     Math.max(1, parent.height - 16),
-                    minimapLayer.resolveNumericResolverValue(
-                        minimapLayer.minimapSilhouetteHeightResolver,
-                        1))
+                    Math.max(1, Number(minimapLayer.minimapSilhouetteHeight) || 1))
         width: minimapLayer.minimapTrackWidth
 
         Canvas {
@@ -99,40 +97,25 @@ Item {
             }
         }
         Rectangle {
-            readonly property bool scrollable: minimapLayer.editorFlickable
-                                               && minimapLayer.resolveNumericResolverValue(
-                                                   minimapLayer.minimapContentHeightResolver,
-                                                   0) > (Number(minimapLayer.editorFlickable.height) || 0)
-
             anchors.left: parent.left
             anchors.right: parent.right
             border.width: 0
             color: minimapLayer.minimapViewportFillColor
-            height: minimapLayer.resolveNumericResolverValue(
-                        minimapLayer.minimapViewportHeightResolver,
-                        0)
+            height: Math.max(0, Number(minimapLayer.minimapViewportHeight) || 0)
             radius: 3
-            visible: scrollable
-            y: minimapLayer.resolveNumericResolverValue(
-                   minimapLayer.minimapViewportYResolver,
-                   0)
+            visible: minimapLayer.minimapScrollable
+            y: Math.max(0, Number(minimapLayer.minimapViewportY) || 0)
         }
         Rectangle {
             color: minimapLayer.minimapCurrentLineColor
             height: Math.max(
                         1,
-                        minimapLayer.resolveNumericResolverValue(
-                            minimapLayer.minimapCurrentLineHeightResolver,
-                            1))
+                        Number(minimapLayer.minimapCurrentLineHeight) || 1)
             opacity: 0.8
             radius: 1
-            width: minimapLayer.resolveNumericResolverValue(
-                       minimapLayer.minimapCurrentLineWidthResolver,
-                       0)
+            width: Math.max(0, Number(minimapLayer.minimapCurrentLineWidth) || 0)
             x: 0
-            y: minimapLayer.resolveNumericResolverValue(
-                   minimapLayer.minimapCurrentLineYResolver,
-                   0)
+            y: Math.max(0, Number(minimapLayer.minimapCurrentLineY) || 0)
         }
         MouseArea {
             acceptedButtons: Qt.LeftButton

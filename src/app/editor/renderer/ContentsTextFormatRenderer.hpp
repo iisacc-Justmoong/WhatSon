@@ -21,6 +21,11 @@ public:
     Q_INVOKABLE QString renderRichText(const QString& sourceText) const;
     Q_INVOKABLE QString normalizeInlineStyleAliasesForEditor(const QString& sourceText) const;
     Q_INVOKABLE QString normalizeEditorSurfaceTextToSource(const QString& surfaceText) const;
+    Q_INVOKABLE QString applyInlineStyleToSelectionSource(
+        const QString& surfaceText,
+        int selectionStart,
+        int selectionEnd,
+        const QString& styleTag) const;
 
 public slots:
     void requestRenderRefresh();

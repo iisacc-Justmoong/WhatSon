@@ -18,6 +18,8 @@
 
 - The header now declares a dedicated normalized logical-text cache (`m_logicalText`) separate from
   raw editor source text (`m_text`).
+- `logicalText` is now exposed to QML so selection logic can compare the live highlighted substring against the same
+  plain-text projection used by gutter/minimap metrics.
 - `normalizeLogicalText(...)` is the private normalization entrypoint used before line-offset
   generation so QML gutter queries consume plain-text-aligned offsets.
 - `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert

@@ -63,10 +63,8 @@ if (_whatson_binary_dir_name STREQUAL "build-trial")
     set(_WHATSON_IS_TRIAL_BUILD_DEFAULT ON)
 endif ()
 option(WHATSON_IS_TRIAL_BUILD "Mark this build tree as the dedicated trial packaging tree." ${_WHATSON_IS_TRIAL_BUILD_DEFAULT})
-set(_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT ON)
-if (WHATSON_IS_TRIAL_BUILD OR CMAKE_CROSSCOMPILING)
-    set(_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT OFF)
-endif ()
+# Keep nested trial packaging opt-in so ordinary host edit/build loops stay incremental.
+set(_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT OFF)
 option(WHATSON_ENABLE_TRIAL_BUILD_MIRROR
         "Configure and build the dedicated build-trial packaging tree from this host build."
         ${_WHATSON_ENABLE_TRIAL_BUILD_MIRROR_DEFAULT})
@@ -803,25 +801,5 @@ if (TARGET whatson_package
             COMMAND ${_whatson_trial_build_command}
             USES_TERMINAL
             COMMENT "Configure and build the dedicated build-trial packaging tree"
-    )
-
-    if (TARGET whatson_build_all)
-        add_dependencies(whatson_build_all whatson_sync_trial_build)
-    endif ()
-
-    if (TARGET WhatSon)
-        add_dependencies(WhatSon whatson_sync_trial_build)
-    endif ()
-
-    if (TARGET WhatSon_daemon)
-        add_dependencies(WhatSon_daemon whatson_sync_trial_build)
-    endif ()
-
-    if (TARGET whatson_cli)
-        add_dependencies(whatson_cli whatson_sync_trial_build)
-    endif ()
-
-    add_custom_target(whatson_sync_trial_build_on_build ALL
-            DEPENDS whatson_sync_trial_build
     )
 endif ()

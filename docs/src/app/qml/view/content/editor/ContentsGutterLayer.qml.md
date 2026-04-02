@@ -1,48 +1,36 @@
 # `src/app/qml/view/content/editor/ContentsGutterLayer.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/qml/view/content/editor/ContentsGutterLayer.qml`
-- Source kind: QML view/component
-- File name: `ContentsGutterLayer.qml`
-- Approximate line count: 79
+`ContentsGutterLayer.qml` renders the editor gutter chrome only: line numbers and normalized gutter markers.
 
-## QML Surface Snapshot
-- Root type: `Rectangle`
+The component is intentionally dumb. It does not query the editor directly. The parent view computes visible line
+entries and marker geometry, then hands those values to the gutter as plain model data or narrow numeric resolvers.
 
-### Object IDs
-- `gutterLayer`
-- `lineNumberViewport`
+## Public Surface
 
-### Required Properties
-- `modelData`
-- `modelData`
+- `visibleLineNumbersModel`: array of `{ lineNumber, y }` entries already culled to the current viewport.
+- `effectiveGutterMarkers`: normalized marker payloads (`type`, `startLine`, `lineSpan`, `color`).
+- `lineNumberColumnLeft` / `lineNumberColumnTextWidth`: text column geometry.
+- `markerHeightResolver` / `markerYResolver`: optional marker geometry callbacks.
+- `currentCursorLineNumber`: active line used for highlight color and font weight.
 
-### Signals
-- None detected during scaffold generation.
+## Binding Rules
 
-## LVRS/QML Standard Alignment
-- Declares `pragma ComponentBehavior: Bound` for strict delegate scope.
-- Gutter marker delegates now map model payload through `required property var modelData` plus an ID-qualified
-  `markerSpec` projection (`gutterMarker.modelData`), avoiding unqualified delegate context reads.
-- Optional Y/height resolver callbacks now flow through `resolveNumericResolverValue(...)` before projection so var
-  callback dispatch remains explicit and lint-safe.
+- Line-number delegates no longer call `lineY(...)` on every binding evaluation. They consume a precomputed
+  `resolvedY` from `visibleLineNumbersModel`.
+- Marker delegates still accept resolver callbacks, but all callback results pass through
+  `resolveNumericResolverValue(...)` before use so invalid/undefined values collapse to safe numeric fallbacks.
+- Delegate payload is always accessed through `required property var modelData`, avoiding implicit delegate context
+  reads.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Collaborators
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- `ContentsDisplayView.qml`: computes the visible line-entry snapshot and normalized marker list.
+- `ContentsGutterMarkerBridge`: prepares external marker payloads before the parent view hands them to the gutter.
+
+## Regression Checks
+
+- Line numbers should remain vertically stable while scrolling rich text with wrapped lines.
+- Active line styling should track the current cursor line without creating repeated binding-loop warnings.
+- Marker pills should remain aligned with the same logical lines as the line-number snapshot.

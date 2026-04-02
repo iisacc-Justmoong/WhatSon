@@ -78,24 +78,24 @@ Rectangle {
             model: gutterLayer.visibleLineNumbersModel
 
             delegate: LV.Label {
-                required property int modelData
+                required property var modelData
 
-                color: modelData === gutterLayer.currentCursorLineNumber ? gutterLayer.activeLineNumberColor : gutterLayer.lineNumberColor
+                readonly property int lineNumber: modelData && modelData.lineNumber !== undefined ? Number(modelData.lineNumber) || 0 : 0
+                readonly property real resolvedY: modelData && modelData.y !== undefined ? Number(modelData.y) || 0 : 0
+
+                color: lineNumber === gutterLayer.currentCursorLineNumber ? gutterLayer.activeLineNumberColor : gutterLayer.lineNumberColor
                 font.family: LV.Theme.fontBody
                 font.letterSpacing: 0
                 font.pixelSize: 11
-                font.weight: modelData === gutterLayer.currentCursorLineNumber ? Font.Medium : Font.Normal
+                font.weight: lineNumber === gutterLayer.currentCursorLineNumber ? Font.Medium : Font.Normal
                 height: gutterLayer.editorLineHeight
                 horizontalAlignment: Text.AlignRight
                 style: caption
-                text: String(modelData)
+                text: String(lineNumber)
                 verticalAlignment: Text.AlignVCenter
                 width: gutterLayer.lineNumberColumnTextWidth
                 x: gutterLayer.lineNumberColumnLeft
-                y: gutterLayer.resolveNumericResolverValue(
-                       gutterLayer.lineYResolver,
-                       0,
-                       modelData)
+                y: resolvedY
             }
         }
     }

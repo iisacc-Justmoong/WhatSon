@@ -10,6 +10,7 @@ class ContentsLogicalTextBridge : public QObject
     Q_OBJECT
 
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
+    Q_PROPERTY(QString logicalText READ logicalText NOTIFY logicalTextChanged)
     Q_PROPERTY(QVariantList logicalLineStartOffsets READ logicalLineStartOffsets NOTIFY logicalLineStartOffsetsChanged)
     Q_PROPERTY(int logicalLineCount READ logicalLineCount NOTIFY logicalLineCountChanged)
 
@@ -19,6 +20,7 @@ public:
 
     QString text() const;
     void setText(const QString& text);
+    QString logicalText() const;
 
     QVariantList logicalLineStartOffsets() const;
     int logicalLineCount() const noexcept;
@@ -33,6 +35,7 @@ public:
 
 
     void textChanged();
+    void logicalTextChanged();
     void logicalLineStartOffsetsChanged();
     void logicalLineCountChanged();
 

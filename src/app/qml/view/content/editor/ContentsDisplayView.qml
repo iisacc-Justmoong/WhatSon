@@ -86,6 +86,10 @@ Item {
     readonly property int gutterWidth: 74
     property int gutterWidthOverride: -1
     readonly property int effectiveGutterWidth: contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth
+    property var visibleGutterLineEntries: [{
+            "lineNumber": 1,
+            "y": 0
+        }]
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     readonly property int plainEditorViewModeValue: 0
     readonly property int pageEditorViewModeValue: 1
@@ -129,10 +133,22 @@ Item {
     readonly property int minimapOuterWidth: 56
     property bool minimapVisible: true
     readonly property int minimapRowGap: 1
+    readonly property bool minimapScrollable: {
+        const flickable = contentsView.editorFlickable;
+        if (!flickable)
+            return false;
+        return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
+    }
     readonly property int minimapTrackInset: 8
     readonly property int minimapTrackWidth: 36
-    readonly property real minimapTrackRuntimeHeight: minimapLayer ? minimapLayer.trackHeight : 0
-    readonly property real minimapTrackRuntimeWidth: minimapLayer ? minimapLayer.trackWidth : contentsView.minimapTrackWidth
+    readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - 16)
+    readonly property real minimapResolvedTrackHeight: Math.min(contentsView.minimapAvailableTrackHeight, contentsView.minimapSilhouetteHeight())
+    readonly property real minimapResolvedTrackWidth: contentsView.minimapTrackWidth
+    readonly property real minimapResolvedViewportHeight: contentsView.minimapViewportHeight()
+    readonly property real minimapResolvedViewportY: contentsView.minimapViewportY()
+    readonly property real minimapResolvedCurrentLineHeight: contentsView.minimapCurrentLineHeight()
+    readonly property real minimapResolvedCurrentLineWidth: contentsView.minimapCurrentLineWidth()
+    readonly property real minimapResolvedCurrentLineY: contentsView.minimapCurrentLineY()
     readonly property color minimapViewportFillColor: "#149DA0A8"
     readonly property int minimapViewportMinHeight: 28
     readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
@@ -189,8 +205,6 @@ Item {
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
     readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
     readonly property bool showFormattedTextRenderer: false
-    property alias cachedEditorSelectionStart: editorSelectionController.cachedSelectionStart
-    property alias cachedEditorSelectionEnd: editorSelectionController.cachedSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
@@ -343,6 +357,7 @@ Item {
     }
     function commitGutterRefresh() {
         contentsView.gutterRefreshRevision += 1;
+        contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
         if (minimapLayer)
             minimapLayer.requestRepaint();
     }
@@ -527,9 +542,31 @@ Item {
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
         return contentsView.lineY(startLine);
     }
+    function buildVisibleGutterLineEntries() {
+        const visibleLines = [];
+        const firstVisibleLine = contentsView.firstVisibleLogicalLine();
+        for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
+            const resolvedLineY = contentsView.lineY(lineNumber);
+            if (resolvedLineY > contentsView.gutterViewportHeight)
+                break;
+            if (resolvedLineY + contentsView.lineVisualHeight(lineNumber, 1) < 0)
+                continue;
+            visibleLines.push({
+                    "lineNumber": lineNumber,
+                    "y": resolvedLineY
+                });
+        }
+        if (visibleLines.length === 0) {
+            visibleLines.push({
+                    "lineNumber": firstVisibleLine,
+                    "y": contentsView.lineY(firstVisibleLine)
+                });
+        }
+        return visibleLines;
+    }
     function minimapBarWidth(characterCount) {
         const safeCount = Math.max(0, Number(characterCount) || 0);
-        const maxWidth = Math.max(6, contentsView.minimapTrackRuntimeWidth - 1);
+        const maxWidth = Math.max(6, contentsView.minimapResolvedTrackWidth - 1);
         if (safeCount <= 0)
             return Math.max(2, maxWidth * 0.08);
         const widthRatio = contentsView.clampUnit(0.08 + Math.log(safeCount + 1) / Math.log(160));
@@ -587,25 +624,25 @@ Item {
         const contentHeight = contentsView.minimapContentHeight();
         if (contentHeight <= 0)
             return 0;
-        return Math.max(1, (safeSegmentHeight / contentHeight) * contentsView.minimapTrackRuntimeHeight);
+        return Math.max(1, (safeSegmentHeight / contentHeight) * contentsView.minimapResolvedTrackHeight);
     }
     function minimapTrackYForContentY(contentY) {
         const contentHeight = contentsView.minimapContentHeight();
         if (contentHeight <= 0)
             return 0;
         const safeContentY = Math.max(0, Math.min(contentHeight, Number(contentY) || 0));
-        return (safeContentY / contentHeight) * contentsView.minimapTrackRuntimeHeight;
+        return (safeContentY / contentHeight) * contentsView.minimapResolvedTrackHeight;
     }
     function minimapViewportHeight() {
         const flickable = contentsView.editorFlickable;
         if (!flickable)
-            return contentsView.minimapTrackRuntimeHeight;
+            return contentsView.minimapResolvedTrackHeight;
         const contentHeight = Math.max(1, contentsView.minimapContentHeight());
         const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
         if (contentHeight <= viewportHeight)
-            return contentsView.minimapTrackRuntimeHeight;
+            return contentsView.minimapResolvedTrackHeight;
         const proportionalHeight = contentsView.minimapTrackHeightForContentHeight(viewportHeight);
-        return Math.min(contentsView.minimapTrackRuntimeHeight, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
+        return Math.min(contentsView.minimapResolvedTrackHeight, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
     }
     function minimapViewportY() {
         const flickable = contentsView.editorFlickable;
@@ -617,7 +654,7 @@ Item {
         if (maxContentY <= 0)
             return 0;
         const contentY = Math.max(0, Math.min(maxContentY, Number(flickable.contentY) || 0));
-        const maxTrackY = Math.max(0, contentsView.minimapTrackRuntimeHeight - contentsView.minimapViewportHeight());
+        const maxTrackY = Math.max(0, contentsView.minimapResolvedTrackHeight - contentsView.minimapViewportHeight());
         return maxTrackY * (contentY / maxContentY);
     }
     function minimapVisualRowPaintHeight(rowSpec) {
@@ -701,27 +738,10 @@ Item {
             flickable.contentY = 0;
             return;
         }
-        const trackRatio = contentsView.clampUnit((Number(localY) || 0) / Math.max(1, contentsView.minimapTrackRuntimeHeight));
+        const trackRatio = contentsView.clampUnit((Number(localY) || 0) / Math.max(1, contentsView.minimapResolvedTrackHeight));
         const documentY = contentHeight * trackRatio;
         const nextContentY = Math.max(0, Math.min(maxContentY, documentY - viewportHeight / 2));
         flickable.contentY = nextContentY;
-    }
-    function visibleLineNumbers() {
-        const refreshRevision = contentsView.gutterRefreshRevision;
-        const visibleLines = [];
-        const firstVisibleLine = contentsView.firstVisibleLogicalLine();
-        for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
-            const lineY = contentsView.lineY(lineNumber);
-            if (lineY > contentsView.gutterViewportHeight)
-                break;
-            if (lineY + contentsView.lineVisualHeight(lineNumber, 1) < 0)
-                continue;
-            visibleLines.push(lineNumber);
-        }
-        if (visibleLines.length === 0)
-            visibleLines.push(firstVisibleLine);
-
-        return visibleLines;
     }
     function extractResourceDropUrls(drop) {
         const urls = [];
@@ -799,12 +819,6 @@ Item {
     function resetEditorSelectionCache() {
         editorSelectionController.resetEditorSelectionCache();
     }
-    function cacheEditorSelectionRange(selectionRange) {
-        return editorSelectionController.cacheEditorSelectionRange(selectionRange);
-    }
-    function cachedEditorSelectionRange() {
-        return editorSelectionController.cachedEditorSelectionRange();
-    }
     function contextMenuEditorSelectionRange() {
         return editorSelectionController.contextMenuEditorSelectionRange();
     }
@@ -817,12 +831,6 @@ Item {
     function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
         return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
     }
-    function syncCachedEditorSelectionRange() {
-        editorSelectionController.syncCachedEditorSelectionRange();
-    }
-    function sourceOffsetForLogicalOffset(logicalOffset) {
-        return editorSelectionController.sourceOffsetForLogicalOffset(logicalOffset);
-    }
     function selectedEditorRange() {
         return editorSelectionController.selectedEditorRange();
     }
@@ -834,6 +842,9 @@ Item {
     }
     function handleInlineFormatShortcutKeyPress(event) {
         return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
+    }
+    function queueInlineFormatWrap(tagName) {
+        return editorSelectionController.queueInlineFormatWrap(tagName);
     }
     function normalizeBodySourceForRichTextEditor(sourceText) {
         return editorSelectionController.normalizeBodySourceForRichTextEditor(sourceText);
@@ -1014,51 +1025,13 @@ Item {
         function onLineCountChanged() {
             contentsView.scheduleGutterRefresh(2);
         }
-        function onCursorPositionChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectedTextChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectionStartChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectionEndChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
 
         ignoreUnknownSignals: true
         target: contentEditor
     }
     Connections {
         function onCursorPositionChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-                contentsView.scheduleEditorRichTextSurfaceSync();
-            });
-        }
-        function onSelectedTextChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectionStartChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectionEndChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
+            contentsView.scheduleEditorRichTextSurfaceSync();
         }
 
         ignoreUnknownSignals: true
@@ -1066,25 +1039,7 @@ Item {
     }
     Connections {
         function onCursorPositionChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-                contentsView.scheduleEditorRichTextSurfaceSync();
-            });
-        }
-        function onSelectedTextChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectionStartChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
-        }
-        function onSelectionEndChanged() {
-            Qt.callLater(function () {
-                contentsView.syncCachedEditorSelectionRange();
-            });
+            contentsView.scheduleEditorRichTextSurfaceSync();
         }
 
         ignoreUnknownSignals: true
@@ -1165,7 +1120,7 @@ Item {
                     visible: !contentsView.showDedicatedResourceViewer
                              && !contentsView.showPrintEditorLayout
                              && !contentsView.showFormattedTextRenderer
-                    visibleLineNumbersModel: contentsView.visibleLineNumbers()
+                    visibleLineNumbersModel: contentsView.visibleGutterLineEntries
                 }
                 Item {
                     id: editorViewport
@@ -1474,15 +1429,11 @@ Item {
                                 return;
                             lastPressX = mouse.x;
                             lastPressY = mouse.y;
-                            Qt.callLater(function () {
-                                contentsView.syncCachedEditorSelectionRange();
-                            });
                         }
                         onClicked: function(mouse) {
                             if (mouse.button !== Qt.RightButton)
                                 return;
                             Qt.callLater(function () {
-                                contentsView.syncCachedEditorSelectionRange();
                                 contentsView.openEditorSelectionContextMenu(
                                             lastPressX,
                                             lastPressY);
@@ -1496,7 +1447,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+B"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("bold")
+                        onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1505,7 +1456,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+B"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("bold")
+                        onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1514,7 +1465,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+I"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("italic")
+                        onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1523,7 +1474,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+I"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("italic")
+                        onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1532,7 +1483,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+U"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("underline")
+                        onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1541,7 +1492,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+U"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("underline")
+                        onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1550,7 +1501,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Shift+X"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("strikethrough")
+                        onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1559,7 +1510,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Shift+X"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("strikethrough")
+                        onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1568,7 +1519,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Shift+H"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("highlight")
+                        onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
@@ -1577,7 +1528,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Shift+H"
 
-                        onActivated: contentsView.wrapSelectedEditorTextWithTag("highlight")
+                        onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu
@@ -1769,32 +1720,18 @@ Item {
                     minimapBarWidthResolver: function (characterCount) {
                         return contentsView.minimapBarWidth(characterCount);
                     }
-                    minimapContentHeightResolver: function () {
-                        return contentsView.minimapContentHeight();
-                    }
                     minimapCurrentLineColor: contentsView.minimapCurrentLineColor
-                    minimapCurrentLineHeightResolver: function () {
-                        return contentsView.minimapCurrentLineHeight();
-                    }
-                    minimapCurrentLineWidthResolver: function () {
-                        return contentsView.minimapCurrentLineWidth();
-                    }
-                    minimapCurrentLineYResolver: function () {
-                        return contentsView.minimapCurrentLineY();
-                    }
+                    minimapCurrentLineHeight: contentsView.minimapResolvedCurrentLineHeight
+                    minimapCurrentLineWidth: contentsView.minimapResolvedCurrentLineWidth
+                    minimapCurrentLineY: contentsView.minimapResolvedCurrentLineY
                     minimapLineColor: contentsView.minimapLineColor
-                    minimapSilhouetteHeightResolver: function () {
-                        return contentsView.minimapSilhouetteHeight();
-                    }
+                    minimapScrollable: contentsView.minimapScrollable
+                    minimapSilhouetteHeight: contentsView.minimapSilhouetteHeight()
                     minimapTrackInset: contentsView.minimapTrackInset
                     minimapTrackWidth: contentsView.minimapTrackWidth
                     minimapViewportFillColor: contentsView.minimapViewportFillColor
-                    minimapViewportHeightResolver: function () {
-                        return contentsView.minimapViewportHeight();
-                    }
-                    minimapViewportYResolver: function () {
-                        return contentsView.minimapViewportY();
-                    }
+                    minimapViewportHeight: contentsView.minimapResolvedViewportHeight
+                    minimapViewportY: contentsView.minimapResolvedViewportY
                     minimapVisualRowPaintHeightResolver: function (row) {
                         return contentsView.minimapVisualRowPaintHeight(row);
                     }

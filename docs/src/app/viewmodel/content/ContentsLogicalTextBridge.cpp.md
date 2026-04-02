@@ -19,6 +19,8 @@
 - `logicalLineCharacterCountAt(...)` uses normalized plain-text length (`m_logicalText`) instead of
   raw rich-text source length. This prevents gutter/minimap geometry drift when the source contains
   markup tokens that do not map 1:1 to cursor offsets.
+- The implementation now also emits a QML-visible `logicalText` projection, giving selection-formatting code access to
+  the exact plain-text string that the offset table was built from.
 - The implementation now also builds a logical-text-to-source offset table:
   - inline tags are treated as zero-width source tokens
   - `<br>` counts as one logical line-break character
