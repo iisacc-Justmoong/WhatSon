@@ -18,6 +18,8 @@ embedded in the generic inline-tag parser.
 - `applyInlineStyleToSelectionSource(surfaceText, selectionStart, selectionEnd, styleTag)`
   Applies the requested inline style to the current RichText selection with `QTextDocument/QTextCursor`, then
   canonicalizes the result back into `.wsnbody` source tags.
+  When the full selection already carries the same style, the renderer removes formatting from that range and writes
+  plain text back instead of nesting duplicate tags.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 

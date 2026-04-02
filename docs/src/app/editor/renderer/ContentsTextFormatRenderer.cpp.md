@@ -29,7 +29,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Exposes `applyInlineStyleToSelectionSource(...)` so inline formatting no longer depends on QML string splicing:
   - loads the current editor RichText surface into `QTextDocument`
   - resolves the selected range with `QTextCursor`
-  - merges `QTextCharFormat` for `bold` / `italic` / `underline` / `strikethrough` / `highlight`
+  - if the entire selection already has the requested style, replaces that selection with plain text to remove the
+    formatting instead of nesting duplicate tags
+  - otherwise merges `QTextCharFormat` for `bold` / `italic` / `underline` / `strikethrough` / `highlight`
   - serializes the updated document back into canonical `.wsnbody`
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so
   read-side rendering and editor rendering no longer diverge on weight/decoration styling.

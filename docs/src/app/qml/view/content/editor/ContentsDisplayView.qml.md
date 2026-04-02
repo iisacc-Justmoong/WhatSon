@@ -94,6 +94,8 @@ The root editor state now keeps two text projections:
   - `Cmd/Ctrl+U` -> `<underline>...</underline>`
   - `Shift+Cmd/Ctrl+X` -> `<strikethrough>...</strikethrough>`
   - `Shift+Cmd/Ctrl+H` -> `<highlight>...</highlight>`
+- Reapplying the same shortcut/context-menu style to a selection that is already fully formatted with that same style
+  removes the inline formatting and persists plain `.wsnbody` text for that range.
 - The editor surface also handles the same shortcuts from `Keys.onPressed` (`Meta/Ctrl + B/I/U`, `Meta/Ctrl+Shift + X/H`)
   so formatting still applies even when platform `Shortcut` dispatch is intercepted by the underlying text input control.
 - `Shortcut` bindings are declared with explicit `Meta+...` and `Ctrl+...` sequences (`B/I/U`, `Shift+X`, `Shift+H`)
@@ -151,7 +153,7 @@ The root editor state now keeps two text projections:
   rendering.
 - Stored inline aliases (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`, `<mark>`) are
   normalized into editable RichText spans before session sync:
-  - `bold` -> `<span style=\"font-weight:800;\">`
+  - `bold` -> `<strong style=\"font-weight:900;\">`
   - `italic` -> `<span style=\"font-style:italic;\">`
   - `underline` -> `<span style=\"text-decoration: underline;\">`
   - `strikethrough` -> `<span style=\"text-decoration: line-through;\">`
@@ -170,6 +172,7 @@ The root editor state now keeps two text projections:
   - existing `.wsnbody` `<bold>` regions render as visible bold text on load
   - right-clicking a non-empty selection opens the formatting context menu
   - context-menu formatting wraps the actual selected source span, not a duplicated plain-text occurrence elsewhere
+  - reapplying the same formatting action to an already formatted selection restores that selection to plain text
 - In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally

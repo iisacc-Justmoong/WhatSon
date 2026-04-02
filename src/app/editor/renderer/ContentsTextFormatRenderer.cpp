@@ -7,9 +7,11 @@
 #include <QFont>
 #include <QRegularExpression>
 #include <QStringList>
+#include <QTextBlock>
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QTextFragment>
 #include <QVector>
 
 namespace
@@ -249,6 +251,88 @@ namespace
             format.setFontWeight(QFont::DemiBold);
         }
         return format;
+    }
+
+    bool textCharFormatHasInlineStyle(const QTextCharFormat& format, const QString& normalizedStyleTag)
+    {
+        if (normalizedStyleTag == QStringLiteral("bold"))
+        {
+            return format.fontWeight() >= QFont::DemiBold;
+        }
+        if (normalizedStyleTag == QStringLiteral("italic"))
+        {
+            return format.fontItalic();
+        }
+        if (normalizedStyleTag == QStringLiteral("underline"))
+        {
+            return format.fontUnderline();
+        }
+        if (normalizedStyleTag == QStringLiteral("strikethrough"))
+        {
+            return format.fontStrikeOut();
+        }
+        if (normalizedStyleTag == QStringLiteral("highlight"))
+        {
+            const QColor backgroundColor = format.background().color();
+            return format.background().style() != Qt::NoBrush
+                && backgroundColor.isValid()
+                && backgroundColor.alpha() > 0
+                && backgroundColor != Qt::transparent;
+        }
+        return false;
+    }
+
+    bool selectionFullyHasInlineStyle(const QTextCursor& selectionCursor, const QString& normalizedStyleTag)
+    {
+        if (!selectionCursor.hasSelection() || normalizedStyleTag.isEmpty())
+        {
+            return false;
+        }
+
+        const int selectionStart = selectionCursor.selectionStart();
+        const int selectionEnd = selectionCursor.selectionEnd();
+        if (selectionEnd <= selectionStart)
+        {
+            return false;
+        }
+
+        bool sawOverlappingFragment = false;
+        for (QTextBlock block = selectionCursor.document()->findBlock(selectionStart);
+             block.isValid() && block.position() < selectionEnd;
+             block = block.next())
+        {
+            for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it)
+            {
+                const QTextFragment fragment = it.fragment();
+                if (!fragment.isValid())
+                {
+                    continue;
+                }
+
+                const int fragmentStart = fragment.position();
+                const int fragmentEnd = fragmentStart + fragment.length();
+                if (fragmentEnd <= selectionStart || fragmentStart >= selectionEnd)
+                {
+                    continue;
+                }
+
+                sawOverlappingFragment = true;
+                if (!textCharFormatHasInlineStyle(fragment.charFormat(), normalizedStyleTag))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return sawOverlappingFragment;
+    }
+
+    QString plainSelectedText(const QTextCursor& selectionCursor)
+    {
+        QString selectedText = selectionCursor.selectedText();
+        selectedText.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
+        selectedText.replace(QChar::LineSeparator, QLatin1Char('\n'));
+        return selectedText;
     }
 
     int boundedDocumentSelectionPosition(const QTextDocument& document, int position) noexcept
@@ -645,7 +729,14 @@ QString ContentsTextFormatRenderer::applyInlineStyleToSelectionSource(
     }
 
     cursor.beginEditBlock();
-    cursor.mergeCharFormat(textCharFormatForInlineStyle(normalizedStyleTag));
+    if (selectionFullyHasInlineStyle(cursor, normalizedStyleTag))
+    {
+        cursor.insertText(plainSelectedText(cursor), QTextCharFormat());
+    }
+    else
+    {
+        cursor.mergeCharFormat(textCharFormatForInlineStyle(normalizedStyleTag));
+    }
     cursor.endEditBlock();
 
     return normalizeEditorSurfaceTextToSource(document.toHtml());

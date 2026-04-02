@@ -39,6 +39,8 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - The controller no longer slices `.wsnbody` directly for inline-format actions.
 - It captures the current RichText surface from the live editor and delegates the actual selection mutation to
   `ContentsTextFormatRenderer.applyInlineStyleToSelectionSource(...)`, which uses `QTextDocument/QTextCursor`.
+- Reapplying the same inline style to a fully formatted selection now clears that selection back to plain text instead
+  of stacking duplicate RichText spans/source tags.
 - The controller still persists canonical source tags (`<bold>`, `<italic>`, ...) directly; RichText HTML remains an
   editor-surface projection only.
 - Formatting actions require a non-empty resolved selection range before mutating `.wsnbody`.
@@ -62,5 +64,6 @@ The controller talks to the editor through the stable `contentEditor` contract (
   visible selection from the live `TextEdit`, not an older fallback snapshot.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already
   contains inline tags around nearby text.
+- Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.
 - Shortcut and window-level accelerator paths should coalesce into one queued wrap request per note/tag pair, avoiding
   duplicate formatting from the same key chord.
