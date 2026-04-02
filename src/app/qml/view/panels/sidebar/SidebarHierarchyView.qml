@@ -470,7 +470,10 @@ Rectangle {
         sidebarHierarchyView.requestViewHook("hierarchy.footer.delete");
     }
 
-    function requestHierarchyViewModelReload() {
+    function requestHierarchyViewModelReload(reason) {
+        const normalizedReason = reason === undefined || reason === null ? "" : String(reason).trim();
+        if (normalizedReason === "hierarchy.nodes.changed")
+            return;
         const hierarchyViewModelObject = sidebarHierarchyView.hierarchyViewModel;
         if (!hierarchyViewModelObject || hierarchyViewModelObject.requestViewModelHook === undefined)
             return;
@@ -618,7 +621,6 @@ Rectangle {
             if (sidebarHierarchyView.renameEditingActive && !sidebarHierarchyView.canRenameIndex(sidebarHierarchyView.editingHierarchyIndex))
                 sidebarHierarchyView.cancelHierarchyRename();
             sidebarHierarchyView.clearNoteDropPreview();
-            sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.nodes.changed");
             Qt.callLater(function () {
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
                 if (sidebarHierarchyView.renameEditingActive)

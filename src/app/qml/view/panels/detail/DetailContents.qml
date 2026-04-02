@@ -236,6 +236,9 @@ Item {
         const normalizedIndex = Number(index);
         if (!isFinite(normalizedIndex) || normalizedIndex < 0)
             return;
+        const currentIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);
+        if (currentIndex === normalizedIndex)
+            return;
 
         if (hookReason === "projects.comboSelect" && detailPanelViewModel && detailPanelViewModel.writeProjectSelection !== undefined) {
             if (!detailPanelViewModel.writeProjectSelection(normalizedIndex))

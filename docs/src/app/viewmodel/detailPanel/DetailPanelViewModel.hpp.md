@@ -42,3 +42,4 @@ The private write path now also routes successful metadata edits back into the a
 ## Selection Semantics
 - The three selector-copy objects expose a synthetic `No ...` item at index `0`.
 - Passing index `0` to `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, or `writeProgressSelection(...)` clears the corresponding field in the current `.wsnhead` file.
+- Passing the currently selected index to any `write...Selection(...)` API is a no-op success path and does not trigger metadata persistence or hierarchy reload callbacks.

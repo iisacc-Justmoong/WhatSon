@@ -47,6 +47,7 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 - Each visible combo label mirrors the matched selector-copy `selectedIndex` through `itemLabel(...)`.
 - Selecting a synthetic `No ...` popup entry clears the corresponding `.wsnhead` field instead of writing the visible label text.
 - Selecting a popup entry writes the chosen index back through that selector-copy object only.
+- Re-selecting the already active popup index is treated as a no-op and does not request another detail write, preventing recursive `reloadNoteMetadataForNoteId(...)` loops from context re-entry.
 - This keeps the detail panel aligned with the canonical hierarchy item lists without sharing mutable selection state with the sidebar.
 
 ## LVRS Reuse

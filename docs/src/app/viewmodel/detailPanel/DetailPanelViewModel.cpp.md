@@ -21,6 +21,7 @@ The exported `activeStateName()` now follows the corrected page ids:
 - The current-note bridge now preserves the last valid note id and note directory path when the active sidebar domain does not expose a note list or a `noteDirectoryPathForNoteId(...)` contract, so the selector copies do not collapse back to `No ...` while the same note remains open in the workspace.
 - The current note-list model is now also observed for an optional `itemsChanged()` signal; when the active note stays selected and metadata changes elsewhere, the detail panel force-reloads the same `.wsnhead` file instead of waiting for a note-id transition.
 - `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, and `writeProgressSelection(...)` persist directly into the active note header file and then re-synchronize the selector copies from the file-backed session store.
+- The shared write path now short-circuits when the incoming selector index already matches the detail-local selector-copy `selectedIndex`, so repeated `No ...` or same-option clicks do not re-persist identical `.wsnhead` state.
 - After any detail-panel metadata write succeeds, the viewmodel now asks the active hierarchy domain
   and any injected project/bookmark/progress option-source domains to
   `reloadNoteMetadataForNoteId(...)` so every affected note-list projection immediately mirrors the

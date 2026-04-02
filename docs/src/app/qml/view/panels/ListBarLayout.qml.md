@@ -76,6 +76,10 @@
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
 - `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
   not need to own all dynamic contract detection.
+- Delegate active styling uses `isDelegateActive(index, noteId)`:
+  - primary contract: committed `currentIndex`
+  - fallback contract: committed `currentNoteId` equality
+  so the selected row stays visually active even when the model momentarily reorders or defers index stabilization.
 - `FocusedNoteDeletionBridge` keeps keyboard delete behavior aligned with whichever note card is visually focused.
 - Focused-note sync now reads `resolvedNoteListModel.currentNoteId` first, so keyboard-delete focus
   follows the model-authoritative current note contract.

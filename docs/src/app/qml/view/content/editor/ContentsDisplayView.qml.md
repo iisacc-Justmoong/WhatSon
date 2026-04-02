@@ -53,6 +53,23 @@ positions from the same document origin.
   - `Cmd/Ctrl+I` -> `<i>...</i>`
   - `Cmd/Ctrl+U` -> `<u>...</u>`
   - `Shift+Cmd/Ctrl+X` -> `<s>...</s>`
+  - `Shift+Cmd/Ctrl+H` -> `<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">...</span>`
+- Right-clicking a non-empty editor selection opens an `LV.ContextMenu` anchored to the editor viewport with:
+  - `Bold`
+  - `Italic`
+  - `Underline`
+  - `Strikethrough`
+  - `Highlight`
+- Right-click handling now preserves selection intent by caching the last non-empty selection range:
+  - `cachedEditorSelectionRange()` keeps the latest valid selection
+  - `contextMenuEditorSelectionRange()` keeps the selection snapshot captured when the context menu opens
+  - formatting actions always require a non-empty selection range before mutating `.wsnbody`
+- Context-menu actions dispatch through the same `wrapSelectedEditorTextWithTag(...)` path as keyboard shortcuts, so
+  inline tag serialization/persistence behavior stays identical across input methods.
+- Shortcut enablement no longer hard-gates on `editorInputFocused`; instead, shortcuts stay available while a note is
+  active and `wrapSelectedEditorTextWithTag(...)` enforces the non-empty selection guard.
+- The focus probe still tracks `LV.TextEditor.focused` / `activeFocus`, `editorItem.activeFocus`, and
+  `editorItem.inputItem.activeFocus` for marker/interaction state decisions.
 - The editor now resolves `editorViewModeViewModel` (from injected property or `LV.ViewModels`) and switches renderer
   surfaces by mode:
   - `Plain` (`activeViewMode == 0`):

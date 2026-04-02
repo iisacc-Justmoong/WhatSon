@@ -39,6 +39,33 @@ class NoteListViewportPreservationTests(unittest.TestCase):
 
         self.assertIn("caches `contentY` before note-model reset cycles", doc_text)
 
+    def test_list_bar_delegate_active_state_falls_back_to_committed_note_id(self) -> None:
+        list_bar_text = (
+            REPO_ROOT / "src/app/qml/view/panels/ListBarLayout.qml"
+        ).read_text(encoding="utf-8")
+        doc_text = (
+            REPO_ROOT / "docs/src/app/qml/view/panels/ListBarLayout.qml.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn(
+            "readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()",
+            list_bar_text,
+        )
+        self.assertIn("function currentNoteIdFromModel()", list_bar_text)
+        self.assertIn(
+            "const bridgeNoteId = noteListContractBridge.readCurrentNoteId();",
+            list_bar_text,
+        )
+        self.assertIn("function isDelegateActive(index, noteId)", list_bar_text)
+        self.assertIn(
+            "active: listBarLayout.isDelegateActive(noteItemDelegate.index, noteItemDelegate.noteId)",
+            list_bar_text,
+        )
+        self.assertIn(
+            "fallback contract: committed `currentNoteId` equality",
+            doc_text,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

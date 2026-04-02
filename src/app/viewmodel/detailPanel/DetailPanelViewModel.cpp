@@ -382,6 +382,10 @@ bool DetailPanelViewModel::writeSelectionIndex(
     {
         return false;
     }
+    if (index == selectionSourceViewModel.selectedIndex())
+    {
+        return true;
+    }
 
     const QVariantMap entry = hierarchyModel.at(index).toMap();
     const bool clearSelection = entry.value(QStringLiteral("clearSelection")).toBool();

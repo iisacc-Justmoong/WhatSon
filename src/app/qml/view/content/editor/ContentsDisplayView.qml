@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
@@ -178,7 +179,59 @@ Item {
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
     readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
     readonly property bool showFormattedTextRenderer: false
-    readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentEditor.focused
+    property int cachedEditorSelectionStart: -1
+    property int cachedEditorSelectionEnd: -1
+    property int contextMenuSelectionStart: -1
+    property int contextMenuSelectionEnd: -1
+    readonly property var editorSelectionContextMenuItems: [
+        {
+            "label": "Bold",
+            "keyVisible": false,
+            "eventName": "editor.format.bold"
+        },
+        {
+            "label": "Italic",
+            "keyVisible": false,
+            "eventName": "editor.format.italic"
+        },
+        {
+            "label": "Underline",
+            "keyVisible": false,
+            "eventName": "editor.format.underline"
+        },
+        {
+            "label": "Strikethrough",
+            "keyVisible": false,
+            "eventName": "editor.format.strikethrough"
+        },
+        {
+            "label": "Highlight",
+            "keyVisible": false,
+            "eventName": "editor.format.highlight"
+        }
+    ]
+    readonly property bool editorInputFocused: {
+        if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
+            return true;
+        if (contentEditor && contentEditor.activeFocus !== undefined && contentEditor.activeFocus)
+            return true;
+        if (contentEditor && contentEditor.editorItem
+                && contentEditor.editorItem.activeFocus !== undefined
+                && contentEditor.editorItem.activeFocus)
+            return true;
+        if (contentEditor && contentEditor.editorItem
+                && contentEditor.editorItem.inputItem
+                && contentEditor.editorItem.inputItem.activeFocus !== undefined
+                && contentEditor.editorItem.inputItem.activeFocus)
+            return true;
+        if (contentEditor && contentEditor.editorItem
+                && contentEditor.editorItem.inputItem
+                && contentEditor.editorItem.inputItem.focused !== undefined
+                && contentEditor.editorItem.inputItem.focused)
+            return true;
+        return false;
+    }
+    readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property color printCanvasColor: "#F1F3F6"
     readonly property int printPaperHorizontalMargin: LV.Theme.gap12
     readonly property int printPaperMaxWidth: 880
@@ -696,6 +749,48 @@ Item {
             return false;
         return !!selectionBridge.persistEditorTextForNote(noteId, nextText);
     }
+    function resetEditorSelectionCache() {
+        contentsView.cachedEditorSelectionStart = -1;
+        contentsView.cachedEditorSelectionEnd = -1;
+        contentsView.contextMenuSelectionStart = -1;
+        contentsView.contextMenuSelectionEnd = -1;
+    }
+    function cacheEditorSelectionRange(selectionRange) {
+        if (!selectionRange)
+            return false;
+        const start = Number(selectionRange.start);
+        const end = Number(selectionRange.end);
+        if (!isFinite(start) || !isFinite(end) || end <= start)
+            return false;
+        contentsView.cachedEditorSelectionStart = Math.floor(start);
+        contentsView.cachedEditorSelectionEnd = Math.floor(end);
+        return true;
+    }
+    function cachedEditorSelectionRange() {
+        if (contentsView.cachedEditorSelectionEnd <= contentsView.cachedEditorSelectionStart)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        return ({
+                "start": contentsView.cachedEditorSelectionStart,
+                "end": contentsView.cachedEditorSelectionEnd
+            });
+    }
+    function contextMenuEditorSelectionRange() {
+        if (contentsView.contextMenuSelectionEnd <= contentsView.contextMenuSelectionStart)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        return ({
+                "start": contentsView.contextMenuSelectionStart,
+                "end": contentsView.contextMenuSelectionEnd
+            });
+    }
+    function syncCachedEditorSelectionRange() {
+        contentsView.cacheEditorSelectionRange(contentsView.selectedEditorRange());
+    }
     function selectedEditorRange() {
         if (!contentEditor)
             return ({
@@ -711,6 +806,12 @@ Item {
                     start = Number(contentEditor.editorItem.selectionStart);
                 if (!isFinite(end) && contentEditor.editorItem.selectionEnd !== undefined)
                     end = Number(contentEditor.editorItem.selectionEnd);
+                if (contentEditor.editorItem.inputItem) {
+                    if (!isFinite(start) && contentEditor.editorItem.inputItem.selectionStart !== undefined)
+                        start = Number(contentEditor.editorItem.inputItem.selectionStart);
+                    if (!isFinite(end) && contentEditor.editorItem.inputItem.selectionEnd !== undefined)
+                        end = Number(contentEditor.editorItem.inputItem.selectionEnd);
+                }
             }
         }
         if (!isFinite(start) || !isFinite(end))
@@ -720,6 +821,10 @@ Item {
                 });
         const rangeStart = Math.max(0, Math.min(text.length, Math.floor(Math.min(start, end))));
         const rangeEnd = Math.max(0, Math.min(text.length, Math.floor(Math.max(start, end))));
+        contentsView.cacheEditorSelectionRange({
+                "start": rangeStart,
+                "end": rangeEnd
+            });
         return ({
                 "start": rangeStart,
                 "end": rangeEnd
@@ -795,7 +900,24 @@ Item {
             return isClosingTag ? wrapTags.closeTag : wrapTags.openTag;
         });
     }
-    function wrapSelectedEditorTextWithTag(tagName) {
+    function openEditorSelectionContextMenu(localX, localY) {
+        if (!contentsView.hasSelectedNote
+                || contentsView.showDedicatedResourceViewer
+                || contentsView.showFormattedTextRenderer)
+            return false;
+        let selectionRange = contentsView.selectedEditorRange();
+        if (selectionRange.end <= selectionRange.start)
+            selectionRange = contentsView.cachedEditorSelectionRange();
+        if (selectionRange.end <= selectionRange.start)
+            return false;
+        if (editorSelectionContextMenu.opened)
+            editorSelectionContextMenu.close();
+        contentsView.contextMenuSelectionStart = selectionRange.start;
+        contentsView.contextMenuSelectionEnd = selectionRange.end;
+        editorSelectionContextMenu.openFor(editorViewport, Number(localX) || 0, Number(localY) || 0);
+        return true;
+    }
+    function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
         if (!contentsView.hasSelectedNote
                 || contentsView.showDedicatedResourceViewer
                 || contentsView.showFormattedTextRenderer)
@@ -806,15 +928,37 @@ Item {
         const wrapTags = contentsView.inlineStyleWrapTags(normalizedTagName);
         if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
             return false;
-        const selectionRange = contentsView.selectedEditorRange();
+        let selectionRange = explicitSelectionRange && explicitSelectionRange.start !== undefined
+                && explicitSelectionRange.end !== undefined
+                ? ({
+                       "start": Number(explicitSelectionRange.start),
+                       "end": Number(explicitSelectionRange.end)
+                   })
+                : ({
+                       "start": -1,
+                       "end": -1
+                   });
+        if (!isFinite(selectionRange.start) || !isFinite(selectionRange.end))
+            selectionRange = ({
+                    "start": -1,
+                    "end": -1
+                });
+        if (selectionRange.end <= selectionRange.start)
+            selectionRange = contentsView.selectedEditorRange();
+        if (selectionRange.end <= selectionRange.start && editorSelectionContextMenu.opened)
+            selectionRange = contentsView.contextMenuEditorSelectionRange();
         if (selectionRange.end <= selectionRange.start)
             return false;
         const editorItem = contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null;
-        const selectedText = editorItem && editorItem.selectedText !== undefined
-                ? String(editorItem.selectedText)
-                : (contentsView.editorText === undefined || contentsView.editorText === null
-                       ? ""
-                       : String(contentsView.editorText).slice(selectionRange.start, selectionRange.end));
+        const selectedText = contentEditor && contentEditor.selectedText !== undefined
+                ? String(contentEditor.selectedText)
+                : (editorItem && editorItem.selectedText !== undefined
+                       ? String(editorItem.selectedText)
+                       : (editorItem && editorItem.inputItem && editorItem.inputItem.selectedText !== undefined
+                              ? String(editorItem.inputItem.selectedText)
+                              : (contentsView.editorText === undefined || contentsView.editorText === null
+                                     ? ""
+                                     : String(contentsView.editorText).slice(selectionRange.start, selectionRange.end))));
         if (selectedText.length === 0)
             return false;
         if (editorItem && editorItem.remove !== undefined && editorItem.insert !== undefined) {
@@ -838,6 +982,12 @@ Item {
 
         const wrappedSelectionStart = selectionRange.start;
         const wrappedSelectionEnd = wrappedSelectionStart + selectedText.length;
+        contentsView.contextMenuSelectionStart = -1;
+        contentsView.contextMenuSelectionEnd = -1;
+        contentsView.cacheEditorSelectionRange({
+                "start": wrappedSelectionStart,
+                "end": wrappedSelectionEnd
+            });
         if (contentEditor.select !== undefined)
             contentEditor.select(wrappedSelectionStart, wrappedSelectionEnd);
         if (contentEditor.cursorPosition !== undefined)
@@ -884,6 +1034,7 @@ Item {
     clip: true
 
     Component.onCompleted: {
+        contentsView.resetEditorSelectionCache();
         editorSession.syncEditorTextFromSelection(
                     contentsView.selectedNoteId,
                     contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
@@ -906,6 +1057,7 @@ Item {
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
+        contentsView.resetEditorSelectionCache();
         if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
             editorSession.flushPendingEditorText();
         editorSession.syncEditorTextFromSelection(
@@ -994,8 +1146,48 @@ Item {
         function onLineCountChanged() {
             contentsView.scheduleGutterRefresh(2);
         }
+        function onSelectedTextChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+        function onSelectionStartChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+        function onSelectionEndChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
 
+        ignoreUnknownSignals: true
         target: contentEditor
+    }
+    Connections {
+        function onSelectedTextChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+        function onSelectionStartChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+        function onSelectionEndChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+
+        ignoreUnknownSignals: true
+        target: contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null
+    }
+    Connections {
+        function onSelectedTextChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+        function onSelectionStartChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+        function onSelectionEndChanged() {
+            contentsView.syncCachedEditorSelectionRange();
+        }
+
+        ignoreUnknownSignals: true
+        target: contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem
+                ? contentEditor.editorItem.inputItem
+                : null
     }
     Connections {
         function onContentYChanged() {
@@ -1297,12 +1489,23 @@ Item {
                             contentsView.resourceDropActive = false;
                         }
                     }
+                    TapHandler {
+                        acceptedButtons: Qt.RightButton
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+
+                        onTapped: function(eventPoint, button) {
+                            contentsView.openEditorSelectionContextMenu(
+                                        eventPoint.position.x,
+                                        eventPoint.position.y);
+                        }
+                    }
                     Shortcut {
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentEditor.focused
                         sequence: StandardKey.Bold
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("bold")
@@ -1312,7 +1515,6 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentEditor.focused
                         sequence: StandardKey.Italic
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("italic")
@@ -1322,7 +1524,6 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentEditor.focused
                         sequence: StandardKey.Underline
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("underline")
@@ -1332,7 +1533,6 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentEditor.focused
                         sequence: "Meta+Shift+X"
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("strikethrough")
@@ -1342,10 +1542,50 @@ Item {
                         enabled: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentEditor.focused
                         sequence: "Ctrl+Shift+X"
 
                         onActivated: contentsView.wrapSelectedEditorTextWithTag("strikethrough")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+Shift+H"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("highlight")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                        sequence: "Ctrl+Shift+H"
+
+                        onActivated: contentsView.wrapSelectedEditorTextWithTag("highlight")
+                    }
+                    LV.ContextMenu {
+                        id: editorSelectionContextMenu
+
+                        autoCloseOnTrigger: true
+                        closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
+                        items: contentsView.editorSelectionContextMenuItems
+                        modal: false
+                        parent: Controls.Overlay.overlay
+
+                        onItemEventTriggered: function(eventName, payload, index, item) {
+                            const contextSelectionRange = contentsView.contextMenuEditorSelectionRange();
+                            if (eventName === "editor.format.bold")
+                                contentsView.wrapSelectedEditorTextWithTag("bold", contextSelectionRange);
+                            else if (eventName === "editor.format.italic")
+                                contentsView.wrapSelectedEditorTextWithTag("italic", contextSelectionRange);
+                            else if (eventName === "editor.format.underline")
+                                contentsView.wrapSelectedEditorTextWithTag("underline", contextSelectionRange);
+                            else if (eventName === "editor.format.strikethrough")
+                                contentsView.wrapSelectedEditorTextWithTag("strikethrough", contextSelectionRange);
+                            else if (eventName === "editor.format.highlight")
+                                contentsView.wrapSelectedEditorTextWithTag("highlight", contextSelectionRange);
+                        }
                     }
                     // Shared desktop/mobile contract: the outer editor surface owns the 16px top spacer, so LVRS top centering stays disabled.
                     Binding {

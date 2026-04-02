@@ -481,21 +481,67 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("function resourceTagTextForImportedEntry(entry)")),
         "ContentsDisplayView.qml must package dropped files through resourcesImportViewModel and inject <resource ...> links into editor text.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("function wrapSelectedEditorTextWithTag(tagName)")) &&
+        contentViewText.contains(QStringLiteral("function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)")) &&
             contentViewText.contains(QStringLiteral("function selectedEditorRange()")) &&
             contentViewText.contains(QStringLiteral("function normalizeInlineStyleTag(tagName)")),
         "ContentsDisplayView.qml must expose explicit selection-range and inline-style tag helpers for .wsnbody formatting shortcuts.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property var editorSelectionContextMenuItems: [")) &&
+            contentViewText.contains(QStringLiteral("\"eventName\": \"editor.format.bold\"")) &&
+            contentViewText.contains(QStringLiteral("\"eventName\": \"editor.format.italic\"")) &&
+            contentViewText.contains(QStringLiteral("\"eventName\": \"editor.format.underline\"")) &&
+            contentViewText.contains(QStringLiteral("\"eventName\": \"editor.format.strikethrough\"")) &&
+            contentViewText.contains(QStringLiteral("\"eventName\": \"editor.format.highlight\"")),
+        "ContentsDisplayView.qml must expose a dedicated editor selection context-menu model for bold/italic/underline/strikethrough/highlight actions.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function openEditorSelectionContextMenu(localX, localY)")) &&
+            contentViewText.contains(QStringLiteral("selectionRange = contentsView.cachedEditorSelectionRange();")) &&
+            contentViewText.contains(QStringLiteral("editorSelectionContextMenu.openFor(editorViewport")) &&
+            contentViewText.contains(QStringLiteral("selectionRange.end <= selectionRange.start")),
+        "ContentsDisplayView.qml must fall back to the cached non-empty selection range before opening the editor context menu on right-click.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("TapHandler {")) &&
+            contentViewText.contains(QStringLiteral("acceptedButtons: Qt.RightButton")) &&
+            contentViewText.contains(QStringLiteral("openEditorSelectionContextMenu(")),
+        "ContentsDisplayView.qml must route right-click taps through a dedicated TapHandler to open selection formatting actions.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("id: editorSelectionContextMenu")) &&
+            contentViewText.contains(QStringLiteral("items: contentsView.editorSelectionContextMenuItems")) &&
+            contentViewText.contains(QStringLiteral("onItemEventTriggered: function(eventName, payload, index, item)")) &&
+            contentViewText.contains(QStringLiteral("eventName === \"editor.format.highlight\"")),
+        "ContentsDisplayView.qml must map editor selection context-menu events back into inline style wrapping helpers.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("readonly property bool editorInputFocused: {")) &&
+            contentViewText.contains(QStringLiteral("contentEditor.editorItem.activeFocus !== undefined")) &&
+            contentViewText.contains(QStringLiteral("contentEditor.editorItem.inputItem.activeFocus !== undefined")) &&
+            contentViewText.contains(QStringLiteral("showCurrentLineMarker:")) &&
+            contentViewText.contains(QStringLiteral("contentsView.editorInputFocused")),
+        "ContentsDisplayView.qml marker focus detection must treat LV.TextEditor, editorItem, and editorItem.inputItem active-focus ownership as valid editor input focus.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property int cachedEditorSelectionStart: -1")) &&
+            contentViewText.contains(QStringLiteral("property int cachedEditorSelectionEnd: -1")) &&
+            contentViewText.contains(QStringLiteral("property int contextMenuSelectionStart: -1")) &&
+            contentViewText.contains(QStringLiteral("property int contextMenuSelectionEnd: -1")) &&
+            contentViewText.contains(QStringLiteral("function cachedEditorSelectionRange()")) &&
+            contentViewText.contains(QStringLiteral("function contextMenuEditorSelectionRange()")) &&
+            contentViewText.contains(QStringLiteral("function syncCachedEditorSelectionRange()")) &&
+            contentViewText.contains(QStringLiteral("selectionRange = contentsView.contextMenuEditorSelectionRange();")),
+        "ContentsDisplayView.qml must preserve the last non-empty editor selection and reuse it for context-menu formatting events.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("sequence: StandardKey.Bold")) &&
             contentViewText.contains(QStringLiteral("sequence: StandardKey.Italic")) &&
             contentViewText.contains(QStringLiteral("sequence: StandardKey.Underline")) &&
             contentViewText.contains(QStringLiteral("sequence: \"Meta+Shift+X\"")) &&
             contentViewText.contains(QStringLiteral("sequence: \"Ctrl+Shift+X\"")) &&
+            contentViewText.contains(QStringLiteral("sequence: \"Meta+Shift+H\"")) &&
+            contentViewText.contains(QStringLiteral("sequence: \"Ctrl+Shift+H\"")) &&
+            !contentViewText.contains(QStringLiteral("&& contentsView.editorInputFocused")) &&
             contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"bold\")")) &&
             contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"italic\")")) &&
             contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"underline\")")) &&
-            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"strikethrough\")")),
-        "ContentsDisplayView.qml must map editor shortcuts (Cmd/Ctrl+B/I/U and Shift+Cmd/Ctrl+X) to inline .wsnbody style tags.");
+            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"strikethrough\")")) &&
+            contentViewText.contains(QStringLiteral("wrapSelectedEditorTextWithTag(\"highlight\")")),
+        "ContentsDisplayView.qml must map editor shortcuts (Cmd/Ctrl+B/I/U, Shift+Cmd/Ctrl+X, and Shift+Cmd/Ctrl+H) to inline .wsnbody style tags without a hard focus gate.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral(
             "readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable")),
@@ -1557,6 +1603,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("function onHierarchyNodesChanged()")),
         "SidebarHierarchyView.qml must resync LVRS activation when the shared hierarchy interface publishes a new hierarchy model.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("const normalizedReason = reason === undefined || reason === null ? \"\" : String(reason).trim();")) &&
+            sidebarViewText.contains(QStringLiteral("if (normalizedReason === \"hierarchy.nodes.changed\")")) &&
+            !sidebarViewText.contains(QStringLiteral("sidebarHierarchyView.requestHierarchyViewModelReload(\"hierarchy.nodes.changed\");")),
+        "SidebarHierarchyView.qml must block hierarchy.nodes.changed reload re-entry to prevent recursive requestViewModelHook loops.");
+    QVERIFY2(
         !sidebarViewText.contains(QStringLiteral("SidebarHierarchyInteractionController {")),
         "SidebarHierarchyView.qml must not reintroduce the old monolithic interaction controller.");
     QVERIFY2(
@@ -1847,8 +1898,11 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(")),
         "ListBarLayout.qml must expose the committed note selection separately from transient ListView currentIndex changes.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("active: listBarLayout.committedNoteIndex === noteItemDelegate.index")),
-        "ListBarLayout.qml note delegates must bind persistent card activation only to the committed note-model selection.");
+        listBarLayoutText.contains(QStringLiteral("readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()")) &&
+            listBarLayoutText.contains(QStringLiteral("function currentNoteIdFromModel()")) &&
+            listBarLayoutText.contains(QStringLiteral("function isDelegateActive(index, noteId)")) &&
+            listBarLayoutText.contains(QStringLiteral("active: listBarLayout.isDelegateActive(noteItemDelegate.index, noteItemDelegate.noteId)")),
+        "ListBarLayout.qml note/resource delegates must keep persistent card activation tied to committed currentIndex with a currentNoteId fallback.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral(
             "pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteItemDelegate.pointerDragActive")),
@@ -2509,6 +2563,8 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
             detailContentsText.contains(QStringLiteral("property var progressSelectionViewModel: null")) &&
             detailContentsText.contains(QStringLiteral("function resolveHierarchyMenuItems(hierarchyViewModel)")) &&
             detailContentsText.contains(QStringLiteral("function resolveHierarchySelectionText(hierarchyViewModel, emptyText)")) &&
+            detailContentsText.contains(QStringLiteral("const currentIndex = detailContents.resolveHierarchyMenuSelectedIndex(hierarchyViewModel);")) &&
+            detailContentsText.contains(QStringLiteral("if (currentIndex === normalizedIndex)")) &&
             detailContentsText.contains(QStringLiteral("const iconName = entry && entry.iconName !== undefined && entry.iconName !== null ? String(entry.iconName).trim() : \"\";")) &&
             detailContentsText.contains(QStringLiteral("const iconSource = entry && entry.iconSource !== undefined && entry.iconSource !== null ? entry.iconSource : \"\";")) &&
             detailContentsText.contains(QStringLiteral("hierarchyViewModel.setSelectedIndex(normalizedIndex);")) &&

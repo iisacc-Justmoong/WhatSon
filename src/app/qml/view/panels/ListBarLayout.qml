@@ -51,6 +51,7 @@ Rectangle {
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
     readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(
                                                   listBarLayout.currentIndexFromModel())
+    readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()
     readonly property real grabbedNoteOpacity: 0.25
     readonly property int noteListFlickDeceleration: 1000000
     property bool noteListViewportRestorePending: false
@@ -175,6 +176,27 @@ Rectangle {
         if (listBarLayout.noteListModel.currentIndex !== undefined)
             return Number(listBarLayout.noteListModel.currentIndex);
         return -1;
+    }
+    function currentNoteIdFromModel() {
+        const bridgeNoteId = noteListContractBridge.readCurrentNoteId();
+        const normalizedBridgeNoteId = bridgeNoteId === undefined || bridgeNoteId === null ? "" : String(bridgeNoteId).trim();
+        if (normalizedBridgeNoteId.length > 0)
+            return normalizedBridgeNoteId;
+        if (listBarLayout.noteListModel
+                && listBarLayout.noteListModel.currentNoteId !== undefined
+                && listBarLayout.noteListModel.currentNoteId !== null) {
+            return String(listBarLayout.noteListModel.currentNoteId).trim();
+        }
+        return "";
+    }
+    function isDelegateActive(index, noteId) {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedIndex >= 0 && listBarLayout.committedNoteIndex === normalizedIndex)
+            return true;
+        if (normalizedNoteId.length === 0 || listBarLayout.committedNoteId.length === 0)
+            return false;
+        return normalizedNoteId === listBarLayout.committedNoteId;
     }
     function clearContextMenuNoteFolders() {
         if (!listBarLayout.noteFolderClearContractAvailable || !listBarLayout.noteContextMenuNoteAvailable)
@@ -575,7 +597,7 @@ Rectangle {
                         NoteListItem {
                             id: noteCard
 
-                            active: listBarLayout.committedNoteIndex === noteItemDelegate.index
+                            active: listBarLayout.isDelegateActive(noteItemDelegate.index, noteItemDelegate.noteId)
                             anchors.fill: parent
                             bookmarkColor: noteItemDelegate.bookmarkColor === undefined || noteItemDelegate.bookmarkColor === null ? "" : String(noteItemDelegate.bookmarkColor)
                             bookmarked: noteItemDelegate.bookmarked === undefined ? false : Boolean(noteItemDelegate.bookmarked)
@@ -593,7 +615,7 @@ Rectangle {
                         ResourceListItem {
                             id: resourceCard
 
-                            active: listBarLayout.committedNoteIndex === noteItemDelegate.index
+                            active: listBarLayout.isDelegateActive(noteItemDelegate.index, noteItemDelegate.noteId)
                             anchors.fill: parent
                             opacity: noteItemDelegate.pointerDragActive ? listBarLayout.grabbedNoteOpacity : 1
                             pressed: listBarLayout.pressedNoteIndex === noteItemDelegate.index || noteItemDelegate.pointerDragActive

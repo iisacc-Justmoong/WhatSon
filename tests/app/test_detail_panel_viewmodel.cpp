@@ -1017,6 +1017,9 @@ void DetailPanelViewModelTest::detailWrites_mustSynchronizeProjectsNoteListMetad
     QVERIFY(detailPanelViewModel.writeProjectSelection(1));
     QCOMPARE(projectSource.reloadCallCount(), 1);
     QCOMPARE(projectSource.reloadedNoteIds(), QStringList{QStringLiteral("note-project")});
+    QVERIFY(detailPanelViewModel.writeProjectSelection(1));
+    QCOMPARE(projectSource.reloadCallCount(), 1);
+    QCOMPARE(projectSource.reloadedNoteIds(), QStringList{QStringLiteral("note-project")});
 
     QFile headerFile(QDir(noteDirectoryPath).filePath(QStringLiteral("ProjectNote.wsnhead")));
     QVERIFY2(headerFile.open(QIODevice::ReadOnly | QIODevice::Text), "ProjectNote.wsnhead must remain readable");

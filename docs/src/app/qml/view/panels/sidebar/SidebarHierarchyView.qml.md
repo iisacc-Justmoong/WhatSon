@@ -44,10 +44,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 
 - When `hierarchyViewModel` changes (domain entry/switch), the view now calls
   `hierarchyViewModel.requestViewModelHook()` if the active domain provides it.
-- The same hook is also called from `onHierarchyNodesChanged` so model mutations tied to sidebar
-  actions can force a domain-level refresh path.
-- This keeps model-backed projections (for example projects note membership derived from
-  `.wsnhead`) synchronized when users re-enter the sidebar domain view.
+- `onHierarchyNodesChanged` no longer calls `requestViewModelHook()` directly.
+  Instead, it only resynchronizes LVRS selection/focus presentation.
+- `requestHierarchyViewModelReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
 
 ## Footer View Options
 
