@@ -1,14 +1,12 @@
 #pragma once
 
+#include "ISystemCalendarStore.hpp"
+
 #include <QLocale>
-#include <QObject>
-#include <QString>
-#include <QStringList>
-#include <QVariantMap>
 
 class QDate;
 
-class SystemCalendarStore final : public QObject
+class SystemCalendarStore final : public ISystemCalendarStore
 {
     Q_OBJECT
 
@@ -28,21 +26,23 @@ public:
     explicit SystemCalendarStore(QObject* parent = nullptr);
     ~SystemCalendarStore() override;
 
-    QString localeName() const;
-    QString bcp47Name() const;
-    QString languageName() const;
-    QString territoryName() const;
-    QString timeZoneId() const;
-    QStringList uiLanguages() const;
-    QString shortDateFormat() const;
-    QString longDateFormat() const;
-    QString shortDatePlaceholderText() const;
-    QString shortDateExample() const;
-    int firstDayOfWeek() const noexcept;
+    QString localeName() const override;
+    QString bcp47Name() const override;
+    QString languageName() const override;
+    QString territoryName() const override;
+    QString timeZoneId() const override;
+    QStringList uiLanguages() const override;
+    QString shortDateFormat() const override;
+    QString longDateFormat() const override;
+    QString shortDatePlaceholderText() const override;
+    QString shortDateExample() const override;
+    int firstDayOfWeek() const noexcept override;
 
-    Q_INVOKABLE QVariantMap snapshot() const;
-    Q_INVOKABLE QString formatShortDate(const QString& value) const;
-    Q_INVOKABLE QString formatNoteDate(const QString& primaryValue, const QString& fallbackValue = QString()) const;
+    Q_INVOKABLE QVariantMap snapshot() const override;
+    Q_INVOKABLE QString formatShortDate(const QString& value) const override;
+    Q_INVOKABLE QString formatNoteDate(
+        const QString& primaryValue,
+        const QString& fallbackValue = QString()) const override;
 
     static QString formatNoteDateForSystem(const QString& primaryValue, const QString& fallbackValue = QString());
 
@@ -51,15 +51,8 @@ public
 
 
 
-    void refreshFromSystem();
-    void requestStoreHook(const QString& reason = QString());
-
-    signals  :
-
-
-
-    void systemInfoChanged();
-    void storeHookRequested(QString reason);
+    void refreshFromSystem() override;
+    void requestStoreHook(const QString& reason = QString()) override;
 
 private:
     static QDate parseFlexibleDate(const QString& value);

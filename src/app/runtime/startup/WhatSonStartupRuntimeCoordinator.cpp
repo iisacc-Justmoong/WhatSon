@@ -13,7 +13,7 @@
 #include "viewmodel/hierarchy/resources/ResourcesHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/tags/TagsHierarchyViewModel.hpp"
 #include "viewmodel/sidebar/HierarchySidebarDomain.hpp"
-#include "viewmodel/sidebar/SidebarHierarchyViewModel.hpp"
+#include "viewmodel/sidebar/IActiveHierarchySource.hpp"
 
 #include <QDebug>
 #include <QStringList>
@@ -30,9 +30,14 @@ void WhatSonStartupRuntimeCoordinator::setTargets(const RuntimeTargets& targets)
     m_targets = targets;
 }
 
+void WhatSonStartupRuntimeCoordinator::setParallelLoader(const IWhatSonRuntimeParallelLoader* loader)
+{
+    m_parallelLoader = loader;
+}
+
 bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
     const QString& hubPath,
-    const WhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains,
+    const IWhatSonRuntimeParallelLoader::RequestedDomains& requestedDomains,
     QString* errorMessage)
 {
     const QString normalizedHubPath = hubPath.trimmed().isEmpty()
@@ -63,8 +68,16 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
         QStringLiteral("loadFromWshub.begin"),
         QStringLiteral("path=%1").arg(normalizedHubPath));
 
-    WhatSonRuntimeParallelLoader parallelLoader;
-    WhatSonRuntimeParallelLoader::Targets targets;
+    if (m_parallelLoader == nullptr)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Startup runtime loader interface is not configured.");
+        }
+        return false;
+    }
+
+    IWhatSonRuntimeParallelLoader::Targets targets;
     targets.libraryViewModel = m_targets.libraryViewModel;
     targets.projectsViewModel = m_targets.projectsViewModel;
     targets.bookmarksViewModel = m_targets.bookmarksViewModel;
@@ -75,8 +88,8 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
     targets.presetViewModel = m_targets.presetViewModel;
     targets.hubRuntimeStore = m_targets.hubRuntimeStore;
 
-    QVector<WhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;
-    const bool loadSucceeded = parallelLoader.loadFromWshub(
+    QVector<IWhatSonRuntimeParallelLoader::DomainLoadResult> loadResults;
+    const bool loadSucceeded = m_parallelLoader->loadFromWshub(
         normalizedHubPath,
         targets,
         requestedDomains,
@@ -85,7 +98,7 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
     const bool hubRuntimeRequested = requestedDomains.hubRuntimeStore;
     bool hubRuntimeLoadSucceeded = !hubRuntimeRequested;
     QStringList failedDomains;
-    for (const WhatSonRuntimeParallelLoader::DomainLoadResult& result : loadResults)
+    for (const IWhatSonRuntimeParallelLoader::DomainLoadResult& result : loadResults)
     {
         if (result.domain == QStringLiteral("hub.runtime"))
         {
@@ -183,7 +196,7 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntime(const QString& hubPath
 {
     const bool succeeded = loadHubIntoRuntimeWithRequestedDomains(
         hubPath,
-        WhatSonRuntimeParallelLoader::RequestedDomains{},
+        IWhatSonRuntimeParallelLoader::RequestedDomains{},
         errorMessage);
     if (succeeded)
     {
@@ -196,7 +209,7 @@ bool WhatSonStartupRuntimeCoordinator::loadStartupHubIntoRuntime(const QString& 
 {
     disableStartupDeferredBootstrap();
 
-    WhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
+    IWhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
     requestedDomains.event = false;
     requestedDomains.preset = false;
 
@@ -218,7 +231,7 @@ bool WhatSonStartupRuntimeCoordinator::loadStartupHubIntoRuntime(const QString& 
 
 bool WhatSonStartupRuntimeCoordinator::reloadResourcesDomainIntoRuntime(const QString& hubPath, QString* errorMessage)
 {
-    WhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
+    IWhatSonRuntimeParallelLoader::RequestedDomains requestedDomains;
     requestedDomains.library = false;
     requestedDomains.projects = false;
     requestedDomains.bookmarks = false;
@@ -298,7 +311,7 @@ void WhatSonStartupRuntimeCoordinator::ensureDeferredStartupHierarchyLoaded(int 
         QStringLiteral("domain=%1 reason=%2 error=%3").arg(domainName, reason, trimmedError));
 }
 
-void WhatSonStartupRuntimeCoordinator::bindSidebarActivation(SidebarHierarchyViewModel* sidebarHierarchyViewModel)
+void WhatSonStartupRuntimeCoordinator::bindSidebarActivation(IActiveHierarchySource* sidebarHierarchyViewModel)
 {
     if (sidebarHierarchyViewModel == nullptr)
     {
@@ -307,7 +320,7 @@ void WhatSonStartupRuntimeCoordinator::bindSidebarActivation(SidebarHierarchyVie
 
     QObject::connect(
         sidebarHierarchyViewModel,
-        &SidebarHierarchyViewModel::activeHierarchyIndexChanged,
+        &IActiveHierarchySource::activeHierarchyIndexChanged,
         sidebarHierarchyViewModel,
         [this, sidebarHierarchyViewModel]()
         {

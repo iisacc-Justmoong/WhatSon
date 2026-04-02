@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewmodel/detailPanel/session/WhatSonNoteHeaderSessionStore.hpp"
+#include "viewmodel/detailPanel/session/IWhatSonNoteHeaderSessionStore.hpp"
 
 #include <QMetaObject>
 #include <QObject>
@@ -34,7 +34,7 @@ public:
     QString noteDirectoryPath() const;
     QObject* optionsSourceViewModel() const noexcept;
 
-    void setSessionStore(WhatSonNoteHeaderSessionStore* sessionStore);
+    void setSessionStore(IWhatSonNoteHeaderSessionStore* sessionStore);
     void setNoteId(const QString& noteId);
     void setNoteDirectoryPath(const QString& noteDirectoryPath);
     void setOptionsSourceViewModel(QObject* optionsSourceViewModel);
@@ -66,7 +66,7 @@ private:
     QString entryLabelAt(int index) const;
 
     Field m_field;
-    QPointer<WhatSonNoteHeaderSessionStore> m_sessionStore;
+    QPointer<IWhatSonNoteHeaderSessionStore> m_sessionStore;
     QPointer<QObject> m_optionsSourceViewModel;
     QVariantList m_hierarchyModel;
     QString m_noteId;

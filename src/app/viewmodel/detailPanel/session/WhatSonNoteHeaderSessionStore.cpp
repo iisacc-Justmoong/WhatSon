@@ -18,7 +18,7 @@ namespace
 }
 
 WhatSonNoteHeaderSessionStore::WhatSonNoteHeaderSessionStore(QObject* parent)
-    : QObject(parent)
+    : IWhatSonNoteHeaderSessionStore(parent)
 {
 }
 

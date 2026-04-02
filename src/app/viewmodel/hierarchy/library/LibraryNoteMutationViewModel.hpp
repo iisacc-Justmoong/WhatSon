@@ -1,10 +1,10 @@
 #pragma once
 
+#include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
+
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
-
-class LibraryHierarchyViewModel;
 
 class LibraryNoteMutationViewModel final : public QObject
 {
@@ -14,8 +14,8 @@ public:
     explicit LibraryNoteMutationViewModel(QObject* parent = nullptr);
     ~LibraryNoteMutationViewModel() override;
 
-    void setSourceViewModel(LibraryHierarchyViewModel* viewModel);
-    LibraryHierarchyViewModel* sourceViewModel() const noexcept;
+    void setSourceViewModel(QObject* viewModel);
+    QObject* sourceViewModel() const noexcept;
 
     Q_INVOKABLE bool createEmptyNote();
     Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId);
@@ -33,7 +33,8 @@ private slots:
 private:
     void disconnectSourceViewModel();
 
-    QPointer<LibraryHierarchyViewModel> m_sourceViewModel;
+    QPointer<QObject> m_sourceViewModel;
+    ILibraryNoteMutationCapability* m_sourceCapability = nullptr;
     QMetaObject::Connection m_sourceDestroyedConnection;
     QMetaObject::Connection m_noteDeletedConnection;
     QMetaObject::Connection m_emptyNoteCreatedConnection;

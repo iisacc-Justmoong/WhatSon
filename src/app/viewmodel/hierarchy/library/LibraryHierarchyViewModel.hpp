@@ -14,14 +14,15 @@
 #include <QVariantList>
 #include <QVector>
 
-class SystemCalendarStore;
+class ISystemCalendarStore;
 
 class LibraryHierarchyViewModel final : public IHierarchyViewModel,
                                         public IHierarchyRenameCapability,
                                         public IHierarchyCrudCapability,
                                         public IHierarchyExpansionCapability,
                                         public IHierarchyReorderCapability,
-                                        public IHierarchyNoteDropCapability
+                                        public IHierarchyNoteDropCapability,
+                                        public ILibraryNoteMutationCapability
 {
     Q_OBJECT
     Q_INTERFACES(
@@ -29,7 +30,8 @@ class LibraryHierarchyViewModel final : public IHierarchyViewModel,
         IHierarchyCrudCapability
         IHierarchyExpansionCapability
         IHierarchyReorderCapability
-        IHierarchyNoteDropCapability)
+        IHierarchyNoteDropCapability
+        ILibraryNoteMutationCapability)
 
     Q_PROPERTY(LibraryHierarchyModel* itemModel READ itemModel CONSTANT)
     Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
@@ -92,9 +94,9 @@ public:
     Q_INVOKABLE bool applyHierarchyNodes(
         const QVariantList& hierarchyNodes,
         const QString& activeItemKey = QString()) override;
-    Q_INVOKABLE bool createEmptyNote();
-    Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId);
-    Q_INVOKABLE bool deleteNoteById(const QString& noteId);
+    Q_INVOKABLE bool createEmptyNote() override;
+    Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId) override;
+    Q_INVOKABLE bool deleteNoteById(const QString& noteId) override;
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
@@ -102,8 +104,8 @@ public:
     bool supportsHierarchyNodeReorder() const noexcept override;
     bool supportsHierarchyNoteDrop() const noexcept override;
 
-    void setSystemCalendarStore(SystemCalendarStore* store);
-    SystemCalendarStore* systemCalendarStore() const noexcept;
+    void setSystemCalendarStore(ISystemCalendarStore* store);
+    ISystemCalendarStore* systemCalendarStore() const noexcept;
     void setHubStore(WhatSonHubStore store);
     WhatSonHubStore hubStore() const;
 
@@ -203,7 +205,7 @@ private:
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
     QString m_foldersFilePath;
-    QPointer<SystemCalendarStore> m_systemCalendarStore;
+    QPointer<ISystemCalendarStore> m_systemCalendarStore;
     QMetaObject::Connection m_systemCalendarStoreChangedConnection;
     WhatSonHubStore m_hubStore;
 };

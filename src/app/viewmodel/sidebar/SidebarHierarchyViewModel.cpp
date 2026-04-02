@@ -6,7 +6,7 @@
 #include <QDebug>
 
 SidebarHierarchyViewModel::SidebarHierarchyViewModel(QObject* parent)
-    : QObject(parent)
+    : IActiveHierarchySource(parent)
 {
     m_fallbackHierarchyIndex = WhatSon::Sidebar::kHierarchyDefaultIndex;
 }

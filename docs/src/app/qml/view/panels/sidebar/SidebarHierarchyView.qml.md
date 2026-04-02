@@ -7,6 +7,8 @@ It renders the hierarchy tree, search/header/footer affordances, toolbar switchi
 
 ## Composition Model
 The file now delegates several responsibilities to sibling helper controllers.
+- `SidebarHierarchySelectionController`: hierarchy multi-selection state, modifier recovery, and primary activation
+  routing.
 - `SidebarHierarchyRenameController`: rename label normalization and rename transaction handling.
 - `SidebarHierarchyNoteDropController`: hierarchy hit testing, drag payload decoding, note-drop preview, and drop commit.
 - `SidebarHierarchyBookmarkPaletteController`: bookmark color token lookup and canvas glyph drawing.
@@ -17,6 +19,8 @@ The QML palette controller is therefore a visual helper, not the source of truth
 color identity.
 
 The root file still exposes wrapper functions for these helpers so callers can use a stable interface.
+The same wrapper rule now applies to hierarchy selection, so pointer-selection behavior moved out of the root file
+without changing delegate call sites.
 
 ## Important Inputs
 - `hierarchyViewModel`: the active hierarchy state provider.

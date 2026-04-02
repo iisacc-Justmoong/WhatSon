@@ -1,5 +1,6 @@
 #include "LibraryHierarchyViewModel.hpp"
 
+#include "calendar/ISystemCalendarStore.hpp"
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 #include "file/WhatSonDebugTrace.hpp"
@@ -1710,7 +1711,7 @@ bool LibraryHierarchyViewModel::supportsHierarchyNoteDrop() const noexcept
     return true;
 }
 
-void LibraryHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* store)
+void LibraryHierarchyViewModel::setSystemCalendarStore(ISystemCalendarStore* store)
 {
     if (m_systemCalendarStore == store)
     {
@@ -1727,7 +1728,7 @@ void LibraryHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* stor
     {
         m_systemCalendarStoreChangedConnection = QObject::connect(
             m_systemCalendarStore,
-            &SystemCalendarStore::systemInfoChanged,
+            &ISystemCalendarStore::systemInfoChanged,
             this,
             [this]()
             {
@@ -1744,7 +1745,7 @@ void LibraryHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* stor
     refreshNoteListForSelection();
 }
 
-SystemCalendarStore* LibraryHierarchyViewModel::systemCalendarStore() const noexcept
+ISystemCalendarStore* LibraryHierarchyViewModel::systemCalendarStore() const noexcept
 {
     return m_systemCalendarStore;
 }

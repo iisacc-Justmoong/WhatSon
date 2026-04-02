@@ -1,53 +1,42 @@
 #pragma once
 
-#include "file/note/WhatSonNoteHeaderStore.hpp"
+#include "IWhatSonNoteHeaderSessionStore.hpp"
 
-#include <QObject>
 #include <QHash>
-#include <QString>
 
-class WhatSonNoteHeaderSessionStore final : public QObject
+class WhatSonNoteHeaderSessionStore final : public IWhatSonNoteHeaderSessionStore
 {
     Q_OBJECT
 
 public:
-    struct Entry final
-    {
-        QString noteId;
-        QString noteDirectoryPath;
-        QString headerFilePath;
-        WhatSonNoteHeaderStore header;
-        bool loaded = false;
-        bool dirty = false;
-    };
-
     explicit WhatSonNoteHeaderSessionStore(QObject* parent = nullptr);
 
     bool ensureLoaded(
         const QString& noteId,
         const QString& noteDirectoryPath,
         QString* errorMessage = nullptr,
-        bool forceReload = false);
-    bool hasEntry(const QString& noteId) const;
-    Entry entry(const QString& noteId) const;
+        bool forceReload = false) override;
+    bool hasEntry(const QString& noteId) const override;
+    Entry entry(const QString& noteId) const override;
 
-    QString noteDirectoryPath(const QString& noteId) const;
-    QString headerFilePath(const QString& noteId) const;
-    WhatSonNoteHeaderStore header(const QString& noteId) const;
+    QString noteDirectoryPath(const QString& noteId) const override;
+    QString headerFilePath(const QString& noteId) const override;
+    WhatSonNoteHeaderStore header(const QString& noteId) const override;
 
-    bool updateProject(const QString& noteId, const QString& project, QString* errorMessage = nullptr);
-    bool updateBookmarked(const QString& noteId, bool bookmarked, QStringList bookmarkColors, QString* errorMessage = nullptr);
-    bool updateProgress(const QString& noteId, int progress, QString* errorMessage = nullptr);
+    bool updateProject(const QString& noteId, const QString& project, QString* errorMessage = nullptr) override;
+    bool updateBookmarked(
+        const QString& noteId,
+        bool bookmarked,
+        QStringList bookmarkColors,
+        QString* errorMessage = nullptr) override;
+    bool updateProgress(const QString& noteId, int progress, QString* errorMessage = nullptr) override;
     bool assignFolderBinding(
         const QString& noteId,
         const QString& folderPath,
         const QString& folderUuid,
-        QString* errorMessage = nullptr);
-    bool removeFolderAt(const QString& noteId, int index, QString* errorMessage = nullptr);
-    bool removeTagAt(const QString& noteId, int index, QString* errorMessage = nullptr);
-
-signals:
-    void entryChanged(const QString& noteId);
+        QString* errorMessage = nullptr) override;
+    bool removeFolderAt(const QString& noteId, int index, QString* errorMessage = nullptr) override;
+    bool removeTagAt(const QString& noteId, int index, QString* errorMessage = nullptr) override;
 
 private:
     static QString resolveHeaderFilePath(const QString& noteDirectoryPath);

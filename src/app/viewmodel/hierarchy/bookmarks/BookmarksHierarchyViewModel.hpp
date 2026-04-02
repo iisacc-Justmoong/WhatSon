@@ -10,7 +10,7 @@
 #include <QVariantList>
 #include <QVector>
 
-class SystemCalendarStore;
+class ISystemCalendarStore;
 
 class BookmarksHierarchyViewModel final : public IHierarchyViewModel,
                                           public IHierarchyRenameCapability,
@@ -60,8 +60,8 @@ public:
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
     Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
 
-    void setSystemCalendarStore(SystemCalendarStore* store);
-    SystemCalendarStore* systemCalendarStore() const noexcept;
+    void setSystemCalendarStore(ISystemCalendarStore* store);
+    ISystemCalendarStore* systemCalendarStore() const noexcept;
     bool renameEnabled() const noexcept override;
     bool createFolderEnabled() const noexcept override;
     bool deleteFolderEnabled() const noexcept override;
@@ -114,6 +114,6 @@ private:
     bool m_loadSucceeded = false;
     QString m_lastLoadError;
     QString m_wshubPath;
-    QPointer<SystemCalendarStore> m_systemCalendarStore;
+    QPointer<ISystemCalendarStore> m_systemCalendarStore;
     QMetaObject::Connection m_systemCalendarStoreChangedConnection;
 };

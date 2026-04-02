@@ -1,14 +1,12 @@
 #pragma once
 
+#include "ICalendarBoardStore.hpp"
+
 #include <QDate>
-#include <QObject>
-#include <QString>
 #include <QTime>
-#include <QVariantList>
-#include <QVariantMap>
 #include <QVector>
 
-class CalendarBoardStore final : public QObject
+class CalendarBoardStore final : public ICalendarBoardStore
 {
     Q_OBJECT
 
@@ -20,22 +18,16 @@ public:
         const QString& dateIso,
         const QString& timeText,
         const QString& title,
-        const QString& detail = QString());
+        const QString& detail = QString()) override;
     Q_INVOKABLE bool addTask(
         const QString& dateIso,
         const QString& timeText,
         const QString& title,
-        const QString& detail = QString());
-    Q_INVOKABLE QVariantList entriesForDate(const QString& dateIso) const;
-    Q_INVOKABLE QVariantMap countsForDate(const QString& dateIso) const;
-    Q_INVOKABLE bool removeEntry(const QString& entryId);
-    Q_INVOKABLE bool setTaskCompleted(const QString& entryId, bool completed);
-
-signals:
-    void entriesChanged();
-    void entryAdded(QString entryId, QString entryType, QString dateIso, QString timeText);
-    void entryRemoved(QString entryId);
-    void entryUpdated(QString entryId);
+        const QString& detail = QString()) override;
+    Q_INVOKABLE QVariantList entriesForDate(const QString& dateIso) const override;
+    Q_INVOKABLE QVariantMap countsForDate(const QString& dateIso) const override;
+    Q_INVOKABLE bool removeEntry(const QString& entryId) override;
+    Q_INVOKABLE bool setTaskCompleted(const QString& entryId, bool completed) override;
 
 private:
     enum class EntryType

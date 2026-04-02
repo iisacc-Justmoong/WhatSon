@@ -316,6 +316,8 @@ int main(int argc, char* argv[])
     startupRuntimeTargets.presetViewModel = &presetHierarchyViewModel;
     startupRuntimeTargets.hubRuntimeStore = &hubRuntimeStore;
     WhatSonStartupRuntimeCoordinator startupRuntimeCoordinator(startupRuntimeTargets);
+    WhatSonRuntimeParallelLoader runtimeParallelLoader;
+    startupRuntimeCoordinator.setParallelLoader(&runtimeParallelLoader);
 
     WhatSonHubSyncController hubSyncController;
     hubSyncController.setReloadCallback(

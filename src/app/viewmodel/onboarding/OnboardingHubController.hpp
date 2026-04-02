@@ -1,13 +1,14 @@
 #pragma once
 
-#include <QObject>
+#include "IOnboardingHubController.hpp"
+
 #include <QByteArray>
 #include <QStringList>
 #include <QUrl>
 
 #include <functional>
 
-class OnboardingHubController final : public QObject
+class OnboardingHubController final : public IOnboardingHubController
 {
     Q_OBJECT
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
@@ -41,9 +42,9 @@ public:
     Q_INVOKABLE bool prepareHubSelectionFromUrl(const QUrl& hubUrl);
     Q_INVOKABLE bool loadHubFromUrl(const QUrl& hubUrl);
     Q_INVOKABLE bool loadHubSelectionCandidate(int index);
-    Q_INVOKABLE void beginWorkspaceTransition();
-    Q_INVOKABLE void completeWorkspaceTransition();
-    Q_INVOKABLE void failWorkspaceTransition(const QString& message);
+    Q_INVOKABLE void beginWorkspaceTransition() override;
+    Q_INVOKABLE void completeWorkspaceTransition() override;
+    Q_INVOKABLE void failWorkspaceTransition(const QString& message) override;
 
 public
     slots  :

@@ -6,6 +6,15 @@
 (tap/drag/context-menu/viewport) and now branches visual delegates between `NoteListItem` and
 `ResourceListItem` by model contract, while note-list probing is delegated to C++ bridge objects.
 
+## Composition Model
+
+The root view now delegates note multi-selection state and modifier interpretation to
+`ListBarSelectionController.qml`.
+
+`ListBarLayout.qml` keeps wrapper functions such as `requestNoteSelection(...)` and
+`syncSelectionFromCommittedState()` so delegates and peer panels continue to use a stable host API while the
+selection state machine lives in a sibling controller file.
+
 ## Source Metadata
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
 - Source kind: QML view/component
@@ -18,6 +27,7 @@
 ### Object IDs
 - `listBarLayout`
 - `noteSelectionState`
+- `noteSelectionController`
 - `noteDragPreviewState`
 - `noteDeletionBridge`
 - `noteListContractBridge`

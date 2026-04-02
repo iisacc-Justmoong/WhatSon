@@ -4,9 +4,16 @@
 #include <QStringView>
 #include <QTextDocument>
 #include <algorithm>
+#include <limits>
 
 namespace
 {
+    int boundedQStringSize(const QString& text) noexcept
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
+    }
+
     QString normalizedHtmlTagName(const QStringView tagToken)
     {
         if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
@@ -186,13 +193,14 @@ int ContentsLogicalTextBridge::logicalLineCharacterCountAt(int index) const noex
 
 int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) const noexcept
 {
+    const int maxSourceOffset = boundedQStringSize(m_text);
     if (m_logicalToSourceOffsets.isEmpty())
     {
-        return std::clamp(logicalOffset, 0, m_text.size());
+        return std::clamp(logicalOffset, 0, maxSourceOffset);
     }
 
     const int safeOffset = std::clamp(logicalOffset, 0, static_cast<int>(m_logicalToSourceOffsets.size()) - 1);
-    return std::clamp(m_logicalToSourceOffsets.at(safeOffset), 0, m_text.size());
+    return std::clamp(m_logicalToSourceOffsets.at(safeOffset), 0, maxSourceOffset);
 }
 
 QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)

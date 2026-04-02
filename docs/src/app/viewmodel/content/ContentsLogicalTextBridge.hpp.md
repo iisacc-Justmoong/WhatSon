@@ -24,6 +24,8 @@
   RichText/plain-text selection offsets back into source-markup offsets before mutating the stored body text.
 - The header also carries a logical-to-source offset cache (`m_logicalToSourceOffsets`) that stays synchronized with
   the normalized plain-text projection.
+- The exposed offset contract remains `int`-based for QML callers, so implementation-side source bounds must be
+  normalized before clamping against `QString::size()`.
 
 ### Classes and Structs
 - `ContentsLogicalTextBridge`

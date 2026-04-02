@@ -5,7 +5,7 @@
 #include <QStringList>
 #include <QVariantList>
 
-class CalendarBoardStore;
+class ICalendarBoardStore;
 class QCalendar;
 
 class MonthCalendarViewModel final : public QObject
@@ -47,7 +47,7 @@ public:
     QString selectedDateIso() const;
     QVariantList selectedDateEntries() const;
     QVariantList calendarSystemOptions() const;
-    void setCalendarBoardStore(CalendarBoardStore* calendarBoardStore);
+    void setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore);
 
 public slots:
     void setDisplayedYear(int year);
@@ -94,7 +94,7 @@ private:
     QString m_monthLabel;
     QStringList m_weekdayLabels;
     QVariantList m_dayModels;
-    CalendarBoardStore* m_calendarBoardStore = nullptr;
+    ICalendarBoardStore* m_calendarBoardStore = nullptr;
     QString m_selectedDateIso;
     QVariantList m_selectedDateEntries;
 };

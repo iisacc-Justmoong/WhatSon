@@ -5,7 +5,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 
-class CalendarBoardStore;
+class ICalendarBoardStore;
 class QDate;
 class QLocale;
 
@@ -33,7 +33,7 @@ public:
     QVariantList timedEvents() const;
     QVariantList agendaItems() const;
     QVariantMap summary() const;
-    void setCalendarBoardStore(CalendarBoardStore* calendarBoardStore);
+    void setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore);
 
 public slots:
     void setDisplayedDateIso(const QString& dateIso);
@@ -101,7 +101,7 @@ private:
 
     void rebuildAgenda();
 
-    CalendarBoardStore* m_calendarBoardStore = nullptr;
+    ICalendarBoardStore* m_calendarBoardStore = nullptr;
     QString m_displayedDateIso;
     QString m_dateLabel;
     AgendaLocationModel m_locationModel;

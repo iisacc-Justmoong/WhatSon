@@ -1,6 +1,6 @@
 #include "AgendaViewModel.hpp"
 
-#include "calendar/CalendarBoardStore.hpp"
+#include "calendar/ICalendarBoardStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QDate>
@@ -62,7 +62,7 @@ QVariantMap AgendaViewModel::summary() const
     return m_summary;
 }
 
-void AgendaViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
+void AgendaViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
     if (m_calendarBoardStore == calendarBoardStore)
     {
@@ -77,7 +77,7 @@ void AgendaViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardSto
     m_calendarBoardStore = calendarBoardStore;
     if (m_calendarBoardStore)
     {
-        connect(m_calendarBoardStore, &CalendarBoardStore::entriesChanged, this, [this]()
+        connect(m_calendarBoardStore, &ICalendarBoardStore::entriesChanged, this, [this]()
         {
             rebuildAgenda();
         });

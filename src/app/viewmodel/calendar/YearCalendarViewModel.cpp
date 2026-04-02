@@ -1,6 +1,6 @@
 #include "YearCalendarViewModel.hpp"
 
-#include "calendar/CalendarBoardStore.hpp"
+#include "calendar/ICalendarBoardStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QCalendar>
@@ -70,7 +70,7 @@ QVariantList YearCalendarViewModel::calendarSystemOptions() const
     };
 }
 
-void YearCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
+void YearCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
     if (m_calendarBoardStore == calendarBoardStore)
     {
@@ -85,7 +85,7 @@ void YearCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBo
     m_calendarBoardStore = calendarBoardStore;
     if (m_calendarBoardStore)
     {
-        connect(m_calendarBoardStore, &CalendarBoardStore::entriesChanged, this, [this]()
+        connect(m_calendarBoardStore, &ICalendarBoardStore::entriesChanged, this, [this]()
         {
             rebuildYearModel();
         });

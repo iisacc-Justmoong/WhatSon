@@ -4,7 +4,7 @@
 #include <QString>
 #include <QVariantList>
 
-class CalendarBoardStore;
+class ICalendarBoardStore;
 class QDate;
 class QLocale;
 
@@ -24,7 +24,7 @@ public:
     QString dayLabel() const;
     QVariantList dayEntries() const;
     QVariantList timeSlots() const;
-    void setCalendarBoardStore(CalendarBoardStore* calendarBoardStore);
+    void setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore);
 
 public slots:
     void setDisplayedDateIso(const QString& dateIso);
@@ -56,10 +56,9 @@ private:
     static bool parseIsoDate(const QString& dateIso, QDate* outDate);
     static QString formatDayLabel(const QDate& date, const QLocale& locale);
 
-    CalendarBoardStore* m_calendarBoardStore = nullptr;
+    ICalendarBoardStore* m_calendarBoardStore = nullptr;
     QString m_displayedDateIso;
     QString m_dayLabel;
     QVariantList m_dayEntries;
     QVariantList m_timeSlots;
 };
-

@@ -1,19 +1,19 @@
 #pragma once
 
-#include <QByteArray>
-#include <QString>
+#include "ISelectedHubStore.hpp"
 
-class SelectedHubStore final
+class SelectedHubStore final : public ISelectedHubStore
 {
 public:
     SelectedHubStore() = default;
+    ~SelectedHubStore() override = default;
 
-    [[nodiscard]] QString selectedHubPath();
-    [[nodiscard]] QByteArray selectedHubAccessBookmark();
-    [[nodiscard]] QString startupHubPath(const QString& blueprintFallbackHubPath);
-    void clearSelectedHubPath();
-    void setSelectedHubPath(const QString& hubPath);
-    void setSelectedHubSelection(const QString& hubPath, const QByteArray& accessBookmark);
+    [[nodiscard]] QString selectedHubPath() override;
+    [[nodiscard]] QByteArray selectedHubAccessBookmark() override;
+    [[nodiscard]] QString startupHubPath(const QString& blueprintFallbackHubPath) override;
+    void clearSelectedHubPath() override;
+    void setSelectedHubPath(const QString& hubPath) override;
+    void setSelectedHubSelection(const QString& hubPath, const QByteArray& accessBookmark) override;
 
 private:
     [[nodiscard]] bool isStoredHubPathValid(const QString& hubPath) const;

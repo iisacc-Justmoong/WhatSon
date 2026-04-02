@@ -4,7 +4,7 @@
 #include <QPointer>
 #include <QString>
 
-class OnboardingHubController;
+class IOnboardingHubController;
 
 class OnboardingRouteBootstrapController final : public QObject
 {
@@ -22,7 +22,7 @@ public:
     [[nodiscard]] bool routeCommitPending() const noexcept;
     [[nodiscard]] QString startupRoutePath() const;
 
-    void setHubController(OnboardingHubController* controller);
+    void setHubController(IOnboardingHubController* controller);
     void configure(bool embeddedEnabled, bool startupHubMounted);
 
     Q_INVOKABLE void handleHubLoaded();
@@ -45,7 +45,7 @@ private:
     void setRouteCommitPending(bool pending);
     void setStartupRoutePath(const QString& path);
 
-    QPointer<OnboardingHubController> m_hubController;
+    QPointer<IOnboardingHubController> m_hubController;
     bool m_embeddedOnboardingEnabled = false;
     bool m_embeddedOnboardingVisible = false;
     bool m_routeCommitPending = false;

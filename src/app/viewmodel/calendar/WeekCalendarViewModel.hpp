@@ -5,7 +5,7 @@
 #include <QStringList>
 #include <QVariantList>
 
-class CalendarBoardStore;
+class ICalendarBoardStore;
 class QDate;
 class QLocale;
 
@@ -27,7 +27,7 @@ public:
     QString weekLabel() const;
     QStringList weekdayLabels() const;
     QVariantList dayModels() const;
-    void setCalendarBoardStore(CalendarBoardStore* calendarBoardStore);
+    void setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore);
 
 public slots:
     void setDisplayedWeekStartIso(const QString& dateIso);
@@ -59,10 +59,9 @@ private:
     static QDate startOfWeek(const QDate& date, const QLocale& locale);
     static QString formatWeekLabel(const QDate& weekStartDate, const QLocale& locale);
 
-    CalendarBoardStore* m_calendarBoardStore = nullptr;
+    ICalendarBoardStore* m_calendarBoardStore = nullptr;
     QString m_displayedWeekStartIso;
     QString m_weekLabel;
     QStringList m_weekdayLabels;
     QVariantList m_dayModels;
 };
-

@@ -44,7 +44,7 @@ Rectangle {
     property var noteListModel: null
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     readonly property int mobileNoteDragHoldInterval: 1000
-    property int noteSelectionAnchorIndex: -1
+    property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property int pressedNoteIndex: -1
@@ -57,7 +57,7 @@ Rectangle {
     readonly property int noteListFlickDeceleration: 1000000
     property bool noteListViewportRestorePending: false
     readonly property int noteListScrollTick: LV.Theme.gap2
-    property var selectedNoteIndices: []
+    property alias selectedNoteIndices: noteSelectionController.selectedIndices
     property string searchText: ""
     property bool syncingNoteListViewport: false
     property bool syncingCurrentIndexFromModel: false
@@ -71,6 +71,11 @@ Rectangle {
 
         property int pendingIndex: -1
         property int requestRevision: 0
+    }
+    ListBarSelectionController {
+        id: noteSelectionController
+
+        view: listBarLayout
     }
     QtObject {
         id: noteDragPreviewState
@@ -114,149 +119,37 @@ Rectangle {
         });
     }
     function normalizedKeyboardModifiers(modifiers) {
-        const eventModifiers = modifiers === undefined || modifiers === null
-                ? Qt.NoModifier
-                : modifiers;
-        const applicationModifiers = Qt.application && Qt.application.keyboardModifiers !== undefined
-                ? Qt.application.keyboardModifiers
-                : Qt.NoModifier;
-        return eventModifiers | applicationModifiers;
+        return noteSelectionController.normalizedKeyboardModifiers(modifiers);
     }
     function selectionToggleModifierPressed(modifiers) {
-        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
-        const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
-        return Boolean(normalizedModifiers & toggleMask);
+        return noteSelectionController.selectionToggleModifierPressed(modifiers);
     }
     function selectionRangeModifierPressed(modifiers) {
-        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
-        return Boolean(normalizedModifiers & Qt.ShiftModifier);
+        return noteSelectionController.selectionRangeModifierPressed(modifiers);
     }
     function selectionModifierPressed(modifiers) {
-        return listBarLayout.selectionRangeModifierPressed(modifiers)
-                || listBarLayout.selectionToggleModifierPressed(modifiers);
+        return noteSelectionController.selectionModifierPressed(modifiers);
     }
     function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
-        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
-        if (listBarLayout.selectionModifierPressed(normalizedModifiers))
-            return normalizedModifiers;
-        const capturedAtMs = Number(cachedCapturedAtMs);
-        const cacheAgeMs = Date.now() - capturedAtMs;
-        const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
-        const normalizedCachedModifiers = listBarLayout.normalizedKeyboardModifiers(cachedModifiers);
-        if (cacheFresh && listBarLayout.selectionModifierPressed(normalizedCachedModifiers))
-            return normalizedCachedModifiers;
-        return normalizedModifiers;
+        return noteSelectionController.resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs);
     }
     function normalizeSelectedNoteIndices(indices) {
-        if (!indices || indices.length === undefined)
-            return [];
-        const normalized = [];
-        for (let row = 0; row < indices.length; ++row) {
-            const normalizedIndex = listBarLayout.normalizeCurrentIndex(indices[row]);
-            if (normalizedIndex < 0)
-                continue;
-            if (normalized.indexOf(normalizedIndex) >= 0)
-                continue;
-            normalized.push(normalizedIndex);
-        }
-        normalized.sort(function (left, right) {
-            return left - right;
-        });
-        return normalized;
+        return noteSelectionController.normalizeSelectedNoteIndices(indices);
     }
     function noteSelectionContainsIndex(index) {
-        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
-        if (normalizedIndex < 0)
-            return false;
-        const normalizedSelection = listBarLayout.normalizeSelectedNoteIndices(listBarLayout.selectedNoteIndices);
-        return normalizedSelection.indexOf(normalizedIndex) >= 0;
+        return noteSelectionController.noteSelectionContainsIndex(index);
     }
     function setSelectedNoteIndices(indices) {
-        listBarLayout.selectedNoteIndices = listBarLayout.normalizeSelectedNoteIndices(indices);
+        noteSelectionController.setSelectedNoteIndices(indices);
     }
     function selectionRangeIndices(anchorIndex, targetIndex) {
-        const normalizedAnchor = listBarLayout.normalizeCurrentIndex(anchorIndex);
-        const normalizedTarget = listBarLayout.normalizeCurrentIndex(targetIndex);
-        if (normalizedTarget < 0)
-            return [];
-        if (normalizedAnchor < 0)
-            return [normalizedTarget];
-        const begin = Math.min(normalizedAnchor, normalizedTarget);
-        const end = Math.max(normalizedAnchor, normalizedTarget);
-        const range = [];
-        for (let candidate = begin; candidate <= end; ++candidate)
-            range.push(candidate);
-        return range;
+        return noteSelectionController.selectionRangeIndices(anchorIndex, targetIndex);
     }
     function syncSelectionFromCommittedState() {
-        const normalizedIndex = listBarLayout.normalizeCurrentIndex(
-                    listBarLayout.currentIndexFromModel());
-        if (normalizedIndex < 0) {
-            listBarLayout.setSelectedNoteIndices([]);
-            listBarLayout.noteSelectionAnchorIndex = -1;
-            return;
-        }
-        listBarLayout.setSelectedNoteIndices([normalizedIndex]);
-        listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
+        noteSelectionController.syncSelectionFromCommittedState();
     }
     function requestNoteSelection(index, noteId, modifiers) {
-        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
-        if (normalizedIndex < 0)
-            return;
-        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
-        if (listBarLayout.selectionRangeModifierPressed(normalizedModifiers)) {
-            let anchorIndex = listBarLayout.normalizeCurrentIndex(listBarLayout.noteSelectionAnchorIndex);
-            if (anchorIndex < 0)
-                anchorIndex = listBarLayout.normalizeCurrentIndex(listBarLayout.currentIndexFromModel());
-            if (anchorIndex < 0)
-                anchorIndex = normalizedIndex;
-            const rangeSelection = listBarLayout.selectionRangeIndices(anchorIndex, normalizedIndex);
-            if (listBarLayout.selectionToggleModifierPressed(normalizedModifiers)) {
-                const selectedIndices = listBarLayout.normalizeSelectedNoteIndices(
-                            listBarLayout.selectedNoteIndices);
-                for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
-                    selectedIndices.push(rangeSelection[selectionIndex]);
-                listBarLayout.setSelectedNoteIndices(selectedIndices);
-            } else {
-                listBarLayout.setSelectedNoteIndices(rangeSelection);
-            }
-            listBarLayout.noteSelectionAnchorIndex = anchorIndex;
-            listBarLayout.activateNoteIndex(normalizedIndex, noteId);
-            return;
-        }
-        if (listBarLayout.selectionToggleModifierPressed(normalizedModifiers)) {
-            const selectedIndices = listBarLayout.normalizeSelectedNoteIndices(
-                        listBarLayout.selectedNoteIndices);
-            const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
-            if (existingSelectionIndex < 0) {
-                selectedIndices.push(normalizedIndex);
-                listBarLayout.setSelectedNoteIndices(selectedIndices);
-                listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
-                listBarLayout.activateNoteIndex(normalizedIndex, noteId);
-                return;
-            }
-            if (selectedIndices.length <= 1) {
-                listBarLayout.setSelectedNoteIndices([normalizedIndex]);
-                listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
-                listBarLayout.activateNoteIndex(normalizedIndex, noteId);
-                return;
-            }
-            selectedIndices.splice(existingSelectionIndex, 1);
-            listBarLayout.setSelectedNoteIndices(selectedIndices);
-            const committedIndex = listBarLayout.normalizeCurrentIndex(
-                        listBarLayout.currentIndexFromModel());
-            const committedSelectionRetained = listBarLayout.noteSelectionContainsIndex(
-                        committedIndex);
-            if (committedSelectionRetained)
-                return;
-            const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
-            if (fallbackIndex >= 0)
-                listBarLayout.activateNoteIndex(fallbackIndex, "");
-            return;
-        }
-        listBarLayout.setSelectedNoteIndices([normalizedIndex]);
-        listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
-        listBarLayout.activateNoteIndex(normalizedIndex, noteId);
+        noteSelectionController.requestNoteSelection(index, noteId, modifiers);
     }
     function applySearchTextToModel() {
         if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)

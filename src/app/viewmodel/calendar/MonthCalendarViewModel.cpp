@@ -1,6 +1,6 @@
 #include "MonthCalendarViewModel.hpp"
 
-#include "calendar/CalendarBoardStore.hpp"
+#include "calendar/ICalendarBoardStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QCalendar>
@@ -93,7 +93,7 @@ QVariantList MonthCalendarViewModel::calendarSystemOptions() const
     };
 }
 
-void MonthCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
+void MonthCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
     if (m_calendarBoardStore == calendarBoardStore)
     {
@@ -108,7 +108,7 @@ void MonthCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarB
     m_calendarBoardStore = calendarBoardStore;
     if (m_calendarBoardStore)
     {
-        connect(m_calendarBoardStore, &CalendarBoardStore::entriesChanged, this, [this]()
+        connect(m_calendarBoardStore, &ICalendarBoardStore::entriesChanged, this, [this]()
         {
             rebuildMonthModel();
             refreshSelectedDateEntries();

@@ -25,6 +25,8 @@
   - common HTML entities (`&lt;`, `&amp;`, `&#39;`, etc.) collapse to one logical character
 - `sourceOffsetForLogicalOffset(...)` exposes that table to QML so selection/context-menu formatting can mutate the
   correct source slice even when the editor cursor operates on rendered plain-text offsets.
+- Source-offset clamping is now normalized through an explicit `int`-bounded QString size helper before returning to
+  QML, which avoids libc++ `std::clamp` template mismatches between `int` and `qsizetype` on Apple toolchains.
 
 ## Extracted Symbols
 - Declared namespaces present: no

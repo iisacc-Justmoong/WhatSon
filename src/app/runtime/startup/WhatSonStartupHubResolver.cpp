@@ -5,7 +5,7 @@
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
 #include "runtime/bootstrap/WhatSonAppLaunchSupport.hpp"
-#include "store/hub/SelectedHubStore.hpp"
+#include "store/hub/ISelectedHubStore.hpp"
 
 #include <QDebug>
 #include <QDir>
@@ -123,7 +123,7 @@ namespace WhatSon::Runtime::Startup
     }
 
     StartupHubSelection resolveStartupHubSelection(
-        SelectedHubStore& selectedHubStore,
+        ISelectedHubStore& selectedHubStore,
         const QString& blueprintFallbackHubPath)
     {
         StartupHubSelection selection;

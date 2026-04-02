@@ -71,3 +71,16 @@ public:
 
 #define IHierarchyNoteDropCapability_iid "WhatSon.IHierarchyNoteDropCapability/1.0"
 Q_DECLARE_INTERFACE(IHierarchyNoteDropCapability, IHierarchyNoteDropCapability_iid)
+
+class ILibraryNoteMutationCapability
+{
+public:
+    virtual ~ILibraryNoteMutationCapability() = default;
+
+    virtual bool createEmptyNote() = 0;
+    virtual bool clearNoteFoldersById(const QString& noteId) = 0;
+    virtual bool deleteNoteById(const QString& noteId) = 0;
+};
+
+#define ILibraryNoteMutationCapability_iid "WhatSon.ILibraryNoteMutationCapability/1.0"
+Q_DECLARE_INTERFACE(ILibraryNoteMutationCapability, ILibraryNoteMutationCapability_iid)

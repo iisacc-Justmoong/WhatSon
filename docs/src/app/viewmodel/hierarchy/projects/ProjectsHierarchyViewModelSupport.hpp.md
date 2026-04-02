@@ -1,37 +1,48 @@
 # `src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp`
-- Source kind: C++ header
-- File name: `ProjectsHierarchyViewModelSupport.hpp`
-- Approximate line count: 449
+This header owns project-specific hierarchy parsing, serialization, and sanitization helpers.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Shared IO Delegation
 
-### Classes and Structs
-- None detected during scaffold generation.
+`ProjectsSupport` now re-exports shared hub IO from `WhatSonHierarchyIoSupport.hpp`:
 
-### Enums
-- None detected during scaffold generation.
+- `normalizePath(...)`
+- `resolveContentsDirectories(...)`
+- `readUtf8File(...)`
+- `deduplicateStringsPreservingOrder(...)`
+- `extractDistinctLabelsFromItems(...)`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+The duplicated inline `.wshub` traversal and UTF-8 loading logic was removed from this file.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Shared Tree Delegation
+
+`ProjectsSupport` also re-exports shared tree mutation helpers from `WhatSonHierarchyTreeItemSupport.hpp`:
+
+- `applyChevronByDepth(...)`
+- `nextGeneratedFolderSequence(...)`
+- `renameHierarchyItem(...)`
+- `isBucketHeaderItem(...)`
+- `deleteHierarchySubtree(...)`
+
+`createHierarchyFolder(...)` remains as a thin project-domain wrapper around the flat insertion helper.
+
+## Domain Logic That Stays Local
+
+The following helpers remain project-specific because they shape project hierarchy payloads rather than generic hub IO:
+
+- `sanitizeStringList(...)`
+- `clampSelectionIndex(...)`
+- `parseItemEntry(...)`
+- `parseDepthItems(...)`
+- `serializeDepthItems(...)`
+- the equality and builder helpers defined later in the header
+
+`sanitizeStringList(...)` and `extractDomainLabelsFromItems(...)` now delegate their dedup work to the
+shared `QSet`-backed helpers instead of repeatedly scanning `QStringList`.
+
+## Maintenance Rule
+
+Keep shared filesystem behavior in `WhatSon::Hierarchy::IoSupport`.
+Only project-domain rules should be added to this support header.

@@ -284,7 +284,7 @@ namespace
 }
 
 OnboardingHubController::OnboardingHubController(QObject* parent)
-    : QObject(parent)
+    : IOnboardingHubController(parent)
 {
     setCurrentFolderPath(defaultOnboardingFolderPath());
 }

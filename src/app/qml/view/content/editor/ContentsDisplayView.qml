@@ -188,37 +188,11 @@ Item {
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
     readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
     readonly property bool showFormattedTextRenderer: false
-    property int cachedEditorSelectionStart: -1
-    property int cachedEditorSelectionEnd: -1
-    property int contextMenuSelectionStart: -1
-    property int contextMenuSelectionEnd: -1
-    readonly property var editorSelectionContextMenuItems: [
-        {
-            "label": "Bold",
-            "keyVisible": false,
-            "eventName": "editor.format.bold"
-        },
-        {
-            "label": "Italic",
-            "keyVisible": false,
-            "eventName": "editor.format.italic"
-        },
-        {
-            "label": "Underline",
-            "keyVisible": false,
-            "eventName": "editor.format.underline"
-        },
-        {
-            "label": "Strikethrough",
-            "keyVisible": false,
-            "eventName": "editor.format.strikethrough"
-        },
-        {
-            "label": "Highlight",
-            "keyVisible": false,
-            "eventName": "editor.format.highlight"
-        }
-    ]
+    property alias cachedEditorSelectionStart: editorSelectionController.cachedSelectionStart
+    property alias cachedEditorSelectionEnd: editorSelectionController.cachedSelectionEnd
+    property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
+    property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
+    property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
     readonly property bool editorInputFocused: {
         if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
             return true;
@@ -265,6 +239,19 @@ Item {
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal viewHookRequested
+
+    ContentsEditorSelectionController {
+        id: editorSelectionController
+
+        contentEditor: contentEditor
+        editorSession: editorSession
+        editorViewport: editorViewport
+        selectionBridge: selectionBridge
+        selectionContextMenu: editorSelectionContextMenu
+        textFormatRenderer: textFormatRenderer
+        textMetricsBridge: textMetricsBridge
+        view: contentsView
+    }
 
     function buildFallbackMinimapVisualRows(textStartY) {
         const rows = [];
@@ -806,414 +793,64 @@ Item {
         return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
     }
     function persistEditorTextImmediately(nextText) {
-        const noteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
-                ? ""
-                : String(contentsView.selectedNoteId).trim();
-        if (noteId.length === 0)
-            return false;
-        if (!selectionBridge || selectionBridge.persistEditorTextForNote === undefined || !contentsView.contentPersistenceContractAvailable)
-            return false;
-        return !!selectionBridge.persistEditorTextForNote(noteId, nextText);
+        return editorSelectionController.persistEditorTextImmediately(nextText);
     }
     function resetEditorSelectionCache() {
-        contentsView.cachedEditorSelectionStart = -1;
-        contentsView.cachedEditorSelectionEnd = -1;
-        contentsView.contextMenuSelectionStart = -1;
-        contentsView.contextMenuSelectionEnd = -1;
+        editorSelectionController.resetEditorSelectionCache();
     }
     function cacheEditorSelectionRange(selectionRange) {
-        if (!selectionRange)
-            return false;
-        const start = Number(selectionRange.start);
-        const end = Number(selectionRange.end);
-        if (!isFinite(start) || !isFinite(end) || end <= start)
-            return false;
-        contentsView.cachedEditorSelectionStart = Math.floor(start);
-        contentsView.cachedEditorSelectionEnd = Math.floor(end);
-        return true;
+        return editorSelectionController.cacheEditorSelectionRange(selectionRange);
     }
     function cachedEditorSelectionRange() {
-        if (contentsView.cachedEditorSelectionEnd <= contentsView.cachedEditorSelectionStart)
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        return ({
-                "start": contentsView.cachedEditorSelectionStart,
-                "end": contentsView.cachedEditorSelectionEnd
-            });
+        return editorSelectionController.cachedEditorSelectionRange();
     }
     function contextMenuEditorSelectionRange() {
-        if (contentsView.contextMenuSelectionEnd <= contentsView.contextMenuSelectionStart)
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        return ({
-                "start": contentsView.contextMenuSelectionStart,
-                "end": contentsView.contextMenuSelectionEnd
-            });
+        return editorSelectionController.contextMenuEditorSelectionRange();
     }
     function currentSelectedEditorText() {
-        if (!contentEditor)
-            return "";
-        if (contentEditor.selectedText !== undefined)
-            return String(contentEditor.selectedText === undefined || contentEditor.selectedText === null ? "" : contentEditor.selectedText);
-        if (contentEditor.editorItem && contentEditor.editorItem.selectedText !== undefined)
-            return String(contentEditor.editorItem.selectedText === undefined || contentEditor.editorItem.selectedText === null ? "" : contentEditor.editorItem.selectedText);
-        if (contentEditor.editorItem && contentEditor.editorItem.inputItem && contentEditor.editorItem.inputItem.selectedText !== undefined)
-            return String(contentEditor.editorItem.inputItem.selectedText === undefined || contentEditor.editorItem.inputItem.selectedText === null ? "" : contentEditor.editorItem.inputItem.selectedText);
-        return "";
+        return editorSelectionController.currentSelectedEditorText();
     }
     function currentEditorCursorPosition() {
-        if (!contentEditor)
-            return NaN;
-        if (contentEditor.cursorPosition !== undefined) {
-            const cursor = Number(contentEditor.cursorPosition);
-            if (isFinite(cursor))
-                return cursor;
-        }
-        if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined) {
-            const cursor = Number(contentEditor.editorItem.cursorPosition);
-            if (isFinite(cursor))
-                return cursor;
-        }
-        if (contentEditor.editorItem && contentEditor.editorItem.inputItem && contentEditor.editorItem.inputItem.cursorPosition !== undefined) {
-            const cursor = Number(contentEditor.editorItem.inputItem.cursorPosition);
-            if (isFinite(cursor))
-                return cursor;
-        }
-        return NaN;
+        return editorSelectionController.currentEditorCursorPosition();
     }
     function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
-        const sourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const normalizedSelectedText = selectedText === undefined || selectedText === null ? "" : String(selectedText);
-        if (sourceText.length === 0 || normalizedSelectedText.length === 0)
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        const normalizedCursor = isFinite(cursorPosition)
-                ? Math.max(0, Math.min(sourceText.length, Math.floor(cursorPosition)))
-                : sourceText.length;
-        let start = sourceText.lastIndexOf(normalizedSelectedText, normalizedCursor);
-        if (start < 0)
-            start = sourceText.indexOf(normalizedSelectedText, normalizedCursor);
-        if (start < 0)
-            start = sourceText.indexOf(normalizedSelectedText);
-        if (start < 0)
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        return ({
-                "start": start,
-                "end": start + normalizedSelectedText.length
-            });
+        return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
     }
     function syncCachedEditorSelectionRange() {
-        contentsView.cacheEditorSelectionRange(contentsView.selectedEditorRange());
+        editorSelectionController.syncCachedEditorSelectionRange();
     }
     function sourceOffsetForLogicalOffset(logicalOffset) {
-        const sourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const numericOffset = Number(logicalOffset);
-        if (!isFinite(numericOffset))
-            return -1;
-        const normalizedOffset = Math.max(0, Math.floor(numericOffset));
-        if (textMetricsBridge && textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
-            const mappedOffset = Number(textMetricsBridge.sourceOffsetForLogicalOffset(normalizedOffset));
-            if (isFinite(mappedOffset))
-                return Math.max(0, Math.min(sourceText.length, Math.floor(mappedOffset)));
-        }
-        return Math.max(0, Math.min(sourceText.length, normalizedOffset));
+        return editorSelectionController.sourceOffsetForLogicalOffset(logicalOffset);
     }
     function selectedEditorRange() {
-        if (!contentEditor)
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        const text = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        let start = contentEditor.selectionStart !== undefined ? Number(contentEditor.selectionStart) : NaN;
-        let end = contentEditor.selectionEnd !== undefined ? Number(contentEditor.selectionEnd) : NaN;
-        if (!isFinite(start) || !isFinite(end)) {
-            if (contentEditor.editorItem) {
-                if (!isFinite(start) && contentEditor.editorItem.selectionStart !== undefined)
-                    start = Number(contentEditor.editorItem.selectionStart);
-                if (!isFinite(end) && contentEditor.editorItem.selectionEnd !== undefined)
-                    end = Number(contentEditor.editorItem.selectionEnd);
-                if (contentEditor.editorItem.inputItem) {
-                    if (!isFinite(start) && contentEditor.editorItem.inputItem.selectionStart !== undefined)
-                        start = Number(contentEditor.editorItem.inputItem.selectionStart);
-                    if (!isFinite(end) && contentEditor.editorItem.inputItem.selectionEnd !== undefined)
-                        end = Number(contentEditor.editorItem.inputItem.selectionEnd);
-                }
-            }
-        }
-        if (isFinite(start) && isFinite(end)) {
-            const logicalRangeStart = Math.max(0, Math.floor(Math.min(start, end)));
-            const logicalRangeEnd = Math.max(0, Math.floor(Math.max(start, end)));
-            const sourceRangeStart = contentsView.sourceOffsetForLogicalOffset(logicalRangeStart);
-            const sourceRangeEnd = contentsView.sourceOffsetForLogicalOffset(logicalRangeEnd);
-            if (sourceRangeEnd > sourceRangeStart) {
-                const explicitRange = {
-                    "start": sourceRangeStart,
-                    "end": sourceRangeEnd
-                };
-                contentsView.cacheEditorSelectionRange(explicitRange);
-                return explicitRange;
-            }
-        }
-        const selectedText = contentsView.currentSelectedEditorText();
-        const cursorPosition = contentsView.currentEditorCursorPosition();
-        const inferredRange = contentsView.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
-        if (inferredRange.end > inferredRange.start) {
-            contentsView.cacheEditorSelectionRange(inferredRange);
-            return inferredRange;
-        }
-        if (!isFinite(start) || !isFinite(end))
-            return ({
-                    "start": -1,
-                    "end": -1
-                });
-        const rangeStart = Math.max(0, Math.min(text.length, Math.floor(Math.min(start, end))));
-        const rangeEnd = Math.max(0, Math.min(text.length, Math.floor(Math.max(start, end))));
-        if (rangeEnd > rangeStart) {
-            contentsView.cacheEditorSelectionRange({
-                    "start": rangeStart,
-                    "end": rangeEnd
-                });
-        }
-        return ({
-                "start": rangeStart,
-                "end": rangeEnd
-            });
+        return editorSelectionController.selectedEditorRange();
     }
     function normalizeInlineStyleTag(tagName) {
-        const normalizedTagName = tagName === undefined || tagName === null ? "" : String(tagName).trim().toLowerCase();
-        if (normalizedTagName === "bold" || normalizedTagName === "b" || normalizedTagName === "strong")
-            return "bold";
-        if (normalizedTagName === "italic" || normalizedTagName === "i" || normalizedTagName === "em")
-            return "italic";
-        if (normalizedTagName === "underline" || normalizedTagName === "u")
-            return "underline";
-        if (normalizedTagName === "strikethrough" || normalizedTagName === "strike" || normalizedTagName === "s"
-                || normalizedTagName === "del")
-            return "strikethrough";
-        if (normalizedTagName === "highlight" || normalizedTagName === "mark")
-            return "highlight";
-        return "";
+        return editorSelectionController.normalizeInlineStyleTag(tagName);
     }
     function inlineStyleWrapTags(styleTag) {
-        switch (styleTag) {
-        case "bold":
-            return ({
-                    "openTag": "<span style=\"font-weight:800;\">",
-                    "closeTag": "</span>"
-                });
-        case "italic":
-            return ({
-                    "openTag": "<span style=\"font-style:italic;\">",
-                    "closeTag": "</span>"
-                });
-        case "underline":
-            return ({
-                    "openTag": "<span style=\"text-decoration: underline;\">",
-                    "closeTag": "</span>"
-                });
-        case "strikethrough":
-            return ({
-                    "openTag": "<span style=\"text-decoration: line-through;\">",
-                    "closeTag": "</span>"
-                });
-        case "highlight":
-            return ({
-                    "openTag": contentsView.richTextHighlightOpenTag,
-                    "closeTag": "</span>"
-                });
-        default:
-            return ({
-                    "openTag": "",
-                    "closeTag": ""
-                });
-        }
+        return editorSelectionController.inlineStyleWrapTags(styleTag);
     }
     function handleInlineFormatShortcutKeyPress(event) {
-        if (!event || !contentsView.hasSelectedNote || contentsView.showDedicatedResourceViewer || contentsView.showFormattedTextRenderer)
-            return false;
-
-        const modifiers = event.modifiers;
-        const commandPressed = (modifiers & Qt.MetaModifier) || (modifiers & Qt.ControlModifier);
-        if (!commandPressed)
-            return false;
-
-        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
-        let handled = false;
-        switch (event.key) {
-        case Qt.Key_B:
-            handled = contentsView.wrapSelectedEditorTextWithTag("bold");
-            break;
-        case Qt.Key_I:
-            handled = contentsView.wrapSelectedEditorTextWithTag("italic");
-            break;
-        case Qt.Key_U:
-            handled = contentsView.wrapSelectedEditorTextWithTag("underline");
-            break;
-        case Qt.Key_X:
-            if (shiftPressed)
-                handled = contentsView.wrapSelectedEditorTextWithTag("strikethrough");
-            break;
-        case Qt.Key_H:
-            if (shiftPressed)
-                handled = contentsView.wrapSelectedEditorTextWithTag("highlight");
-            break;
-        default:
-            break;
-        }
-
-        if (handled)
-            event.accepted = true;
-        return handled;
+        return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
     }
     function normalizeBodySourceForRichTextEditor(sourceText) {
-        const source = sourceText === undefined || sourceText === null ? "" : String(sourceText);
-        if (source.length === 0)
-            return "";
-        if (textFormatRenderer && textFormatRenderer.normalizeInlineStyleAliasesForEditor !== undefined) {
-            const rendererNormalizedText = textFormatRenderer.normalizeInlineStyleAliasesForEditor(source);
-            if (rendererNormalizedText !== undefined && rendererNormalizedText !== null)
-                return String(rendererNormalizedText);
-        }
-        const inlineTagPattern = /<\s*(\/?)\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>/gi;
-        return source.replace(inlineTagPattern, function (token, slashToken, rawTagName) {
-            const normalizedTagName = rawTagName === undefined || rawTagName === null
-                    ? ""
-                    : String(rawTagName).trim().toLowerCase();
-            const isClosingTag = slashToken !== undefined && slashToken !== null && String(slashToken).length > 0;
-            if (normalizedTagName === "br")
-                return "<br/>";
-            const styleTag = contentsView.normalizeInlineStyleTag(normalizedTagName);
-            if (styleTag.length === 0)
-                return token;
-            const wrapTags = contentsView.inlineStyleWrapTags(styleTag);
-            if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
-                return token;
-            return isClosingTag ? wrapTags.closeTag : wrapTags.openTag;
-        });
+        return editorSelectionController.normalizeBodySourceForRichTextEditor(sourceText);
     }
     function applyEditorRichTextSurface() {
-        if (!contentEditor)
-            return;
-        if (contentEditor.textFormat !== undefined && contentEditor.textFormat !== TextEdit.RichText)
-            contentEditor.textFormat = TextEdit.RichText;
-        if (contentEditor.showRenderedOutput !== undefined && !contentEditor.showRenderedOutput)
-            contentEditor.showRenderedOutput = true;
-        const editorItem = contentEditor.editorItem;
-        if (!editorItem)
-            return;
-        if (editorItem.textFormat !== undefined && editorItem.textFormat !== TextEdit.RichText)
-            editorItem.textFormat = TextEdit.RichText;
-        if (editorItem.showRenderedOutput !== undefined && !editorItem.showRenderedOutput)
-            editorItem.showRenderedOutput = true;
-        const inputItem = editorItem.inputItem;
-        if (!inputItem)
-            return;
-        if (inputItem.textFormat !== undefined && inputItem.textFormat !== TextEdit.RichText)
-            inputItem.textFormat = TextEdit.RichText;
-        if (inputItem.selectByMouse !== undefined && !inputItem.selectByMouse)
-            inputItem.selectByMouse = true;
+        editorSelectionController.applyEditorRichTextSurface();
     }
     function scheduleEditorRichTextSurfaceSync() {
-        Qt.callLater(function () {
-            contentsView.applyEditorRichTextSurface();
-        });
+        editorSelectionController.scheduleEditorRichTextSurfaceSync();
     }
     function openEditorSelectionContextMenu(localX, localY) {
-        if (!contentsView.hasSelectedNote
-                || contentsView.showDedicatedResourceViewer
-                || contentsView.showFormattedTextRenderer)
-            return false;
-        let selectionRange = contentsView.selectedEditorRange();
-        if (selectionRange.end <= selectionRange.start)
-            selectionRange = contentsView.cachedEditorSelectionRange();
-        if (selectionRange.end <= selectionRange.start) {
-            const inferredRange = contentsView.inferSelectionRangeFromSelectedText(
-                        contentsView.currentSelectedEditorText(),
-                        contentsView.currentEditorCursorPosition());
-            if (inferredRange.end > inferredRange.start)
-                selectionRange = inferredRange;
-        }
-        if (selectionRange.end <= selectionRange.start)
-            return false;
-        if (editorSelectionContextMenu.opened)
-            editorSelectionContextMenu.close();
-        contentsView.contextMenuSelectionStart = selectionRange.start;
-        contentsView.contextMenuSelectionEnd = selectionRange.end;
-        editorSelectionContextMenu.openFor(editorViewport, Number(localX) || 0, Number(localY) || 0);
-        return true;
+        return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
+    }
+    function handleSelectionContextMenuEvent(eventName) {
+        editorSelectionController.handleSelectionContextMenuEvent(eventName);
     }
     function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
-        if (!contentsView.hasSelectedNote
-                || contentsView.showDedicatedResourceViewer
-                || contentsView.showFormattedTextRenderer)
-            return false;
-        const normalizedTagName = contentsView.normalizeInlineStyleTag(tagName);
-        if (normalizedTagName.length === 0)
-            return false;
-        const wrapTags = contentsView.inlineStyleWrapTags(normalizedTagName);
-        if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
-            return false;
-        let selectionRange = explicitSelectionRange && explicitSelectionRange.start !== undefined
-                && explicitSelectionRange.end !== undefined
-                ? ({
-                       "start": Number(explicitSelectionRange.start),
-                       "end": Number(explicitSelectionRange.end)
-                   })
-                : ({
-                       "start": -1,
-                       "end": -1
-                   });
-        if (!isFinite(selectionRange.start) || !isFinite(selectionRange.end))
-            selectionRange = ({
-                    "start": -1,
-                    "end": -1
-                });
-        if (selectionRange.end <= selectionRange.start)
-            selectionRange = contentsView.selectedEditorRange();
-        if (selectionRange.end <= selectionRange.start && editorSelectionContextMenu.opened)
-            selectionRange = contentsView.contextMenuEditorSelectionRange();
-        if (selectionRange.end <= selectionRange.start)
-            return false;
-        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const selectedText = selectionRange.start >= 0 && selectionRange.end <= currentText.length
-                ? currentText.slice(selectionRange.start, selectionRange.end)
-                : "";
-        if (selectedText.length === 0)
-            return false;
-        const nextText = currentText.slice(0, selectionRange.start)
-                + wrapTags.openTag
-                + selectedText
-                + wrapTags.closeTag
-                + currentText.slice(selectionRange.end);
-        if (contentsView.editorText !== nextText)
-            contentsView.editorText = nextText;
-
-        editorSession.markLocalEditorAuthority();
-        const saved = contentsView.persistEditorTextImmediately(nextText);
-        if (!saved)
-            editorSession.scheduleEditorPersistence();
-
-        const wrappedSelectionStart = selectionRange.start + wrapTags.openTag.length;
-        const wrappedSelectionEnd = wrappedSelectionStart + selectedText.length;
-        contentsView.contextMenuSelectionStart = -1;
-        contentsView.contextMenuSelectionEnd = -1;
-        contentsView.cacheEditorSelectionRange({
-                "start": wrappedSelectionStart,
-                "end": wrappedSelectionEnd
-            });
-
-        contentsView.editorTextEdited(nextText);
-        return true;
+        return editorSelectionController.wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange);
     }
     function insertImportedResourceTags(importedEntries) {
         if (!Array.isArray(importedEntries) || importedEntries.length === 0)
@@ -1950,17 +1587,7 @@ Item {
                         parent: Controls.Overlay.overlay
 
                         onItemEventTriggered: function(eventName, payload, index, item) {
-                            const contextSelectionRange = contentsView.contextMenuEditorSelectionRange();
-                            if (eventName === "editor.format.bold")
-                                contentsView.wrapSelectedEditorTextWithTag("bold", contextSelectionRange);
-                            else if (eventName === "editor.format.italic")
-                                contentsView.wrapSelectedEditorTextWithTag("italic", contextSelectionRange);
-                            else if (eventName === "editor.format.underline")
-                                contentsView.wrapSelectedEditorTextWithTag("underline", contextSelectionRange);
-                            else if (eventName === "editor.format.strikethrough")
-                                contentsView.wrapSelectedEditorTextWithTag("strikethrough", contextSelectionRange);
-                            else if (eventName === "editor.format.highlight")
-                                contentsView.wrapSelectedEditorTextWithTag("highlight", contextSelectionRange);
+                            contentsView.handleSelectionContextMenuEvent(eventName);
                         }
                     }
                     // Shared desktop/mobile contract: the outer editor surface owns the 16px top spacer, so LVRS top centering stays disabled.

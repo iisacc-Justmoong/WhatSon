@@ -1,6 +1,6 @@
 #include "OnboardingRouteBootstrapController.hpp"
 
-#include "OnboardingHubController.hpp"
+#include "IOnboardingHubController.hpp"
 
 namespace
 {
@@ -33,7 +33,7 @@ QString OnboardingRouteBootstrapController::startupRoutePath() const
     return m_startupRoutePath;
 }
 
-void OnboardingRouteBootstrapController::setHubController(OnboardingHubController* controller)
+void OnboardingRouteBootstrapController::setHubController(IOnboardingHubController* controller)
 {
     m_hubController = controller;
 }

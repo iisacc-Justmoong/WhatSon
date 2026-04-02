@@ -13,7 +13,7 @@ namespace
 }
 
 CalendarBoardStore::CalendarBoardStore(QObject* parent)
-    : QObject(parent)
+    : ICalendarBoardStore(parent)
 {
 }
 

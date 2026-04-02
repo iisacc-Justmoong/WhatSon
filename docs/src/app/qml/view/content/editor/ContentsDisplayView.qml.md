@@ -6,6 +6,15 @@
 `TextEditor`, gutter, minimap, and lower drawer into one geometry contract so every collaborator can resolve line
 positions from the same document origin.
 
+## Composition Model
+
+`ContentsDisplayView.qml` now delegates selection caching, inline-format mutation, and formatting context-menu dispatch
+to `ContentsEditorSelectionController.qml`.
+
+The root file keeps wrapper functions such as `selectedEditorRange()`, `wrapSelectedEditorTextWithTag(...)`, and
+`handleSelectionContextMenuEvent(...)` so the wider editor shell preserves a stable surface while selection-specific
+logic lives in a separate sibling controller.
+
 ## Geometry Contract
 
 - `editorDocumentStartY` is the canonical top inset for the editable document.
@@ -26,6 +35,8 @@ positions from the same document origin.
 ## Key Collaborators
 
 - `ContentsEditorSelectionBridge`: exposes the selected note body and persistence contracts.
+- `ContentsEditorSelectionController`: owns source-range caching, context-menu selection snapshots, and inline-format
+  mutation routing for the editor shell.
 - `ContentsTextFormatRenderer`: converts inline style tags in editor text into RichText HTML for preview modes.
 - `ContentsBodyResourceRenderer`: extracts `<resource ...>` tag render payloads from the selected note body document.
 - `ContentsResourceViewer`: renders direct `.wsresource` selections in-place (`image` bitmap / `pdf` reader).

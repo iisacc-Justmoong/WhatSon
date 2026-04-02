@@ -1,6 +1,6 @@
 #include "WeekCalendarViewModel.hpp"
 
-#include "calendar/CalendarBoardStore.hpp"
+#include "calendar/ICalendarBoardStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 
 #include <QDate>
@@ -37,7 +37,7 @@ QVariantList WeekCalendarViewModel::dayModels() const
     return m_dayModels;
 }
 
-void WeekCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBoardStore)
+void WeekCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
     if (m_calendarBoardStore == calendarBoardStore)
     {
@@ -52,7 +52,7 @@ void WeekCalendarViewModel::setCalendarBoardStore(CalendarBoardStore* calendarBo
     m_calendarBoardStore = calendarBoardStore;
     if (m_calendarBoardStore)
     {
-        connect(m_calendarBoardStore, &CalendarBoardStore::entriesChanged, this, [this]()
+        connect(m_calendarBoardStore, &ICalendarBoardStore::entriesChanged, this, [this]()
         {
             rebuildWeekModel();
         });
@@ -274,4 +274,3 @@ QString WeekCalendarViewModel::formatWeekLabel(const QDate& weekStartDate, const
         .arg(locale.toString(weekStartDate, QLocale::ShortFormat))
         .arg(locale.toString(weekEndDate, QLocale::ShortFormat));
 }
-

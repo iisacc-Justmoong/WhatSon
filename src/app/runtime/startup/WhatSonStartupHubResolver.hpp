@@ -3,7 +3,7 @@
 #include <QByteArray>
 #include <QString>
 
-class SelectedHubStore;
+class ISelectedHubStore;
 
 namespace WhatSon::Runtime::Startup
 {
@@ -20,6 +20,6 @@ namespace WhatSon::Runtime::Startup
         QString* errorMessage = nullptr);
 
     StartupHubSelection resolveStartupHubSelection(
-        SelectedHubStore& selectedHubStore,
+        ISelectedHubStore& selectedHubStore,
         const QString& blueprintFallbackHubPath);
 }

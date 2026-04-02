@@ -1,13 +1,13 @@
 #pragma once
 
 #include "store/sidebar/ISidebarSelectionStore.hpp"
+#include "viewmodel/sidebar/IActiveHierarchySource.hpp"
 #include "viewmodel/sidebar/IHierarchyViewModelProvider.hpp"
 
 #include <QMetaObject>
-#include <QObject>
 #include <QPointer>
 
-class SidebarHierarchyViewModel final : public QObject
+class SidebarHierarchyViewModel final : public IActiveHierarchySource
 {
     Q_OBJECT
 

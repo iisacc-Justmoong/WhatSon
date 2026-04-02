@@ -220,7 +220,7 @@ QObject* DetailNoteHeaderSelectionSourceViewModel::optionsSourceViewModel() cons
     return m_optionsSourceViewModel.data();
 }
 
-void DetailNoteHeaderSelectionSourceViewModel::setSessionStore(WhatSonNoteHeaderSessionStore* sessionStore)
+void DetailNoteHeaderSelectionSourceViewModel::setSessionStore(IWhatSonNoteHeaderSessionStore* sessionStore)
 {
     m_sessionStore = sessionStore;
     synchronize(true);

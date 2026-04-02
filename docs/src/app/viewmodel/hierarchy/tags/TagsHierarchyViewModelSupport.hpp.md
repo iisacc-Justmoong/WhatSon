@@ -1,37 +1,20 @@
 # `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/tags/TagsHierarchyViewModelSupport.hpp`
-- Source kind: C++ header
-- File name: `TagsHierarchyViewModelSupport.hpp`
-- Approximate line count: 136
+This header now acts as the tags-domain facade for shared hierarchy IO helpers.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Shared IO Delegation
 
-### Classes and Structs
-- None detected during scaffold generation.
+`TagsSupport` re-exports these helpers from `WhatSonHierarchyIoSupport.hpp`:
 
-### Enums
-- None detected during scaffold generation.
+- `normalizePath(...)`
+- `resolveContentsDirectories(...)`
+- `readUtf8File(...)`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+The tags domain keeps its public helper namespace, but the actual `.wshub` discovery and UTF-8 file loading logic is implemented once in the shared hierarchy IO helper.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Scope
+
+Generic filesystem logic belongs to `WhatSon::Hierarchy::IoSupport`.
+Any tags-specific parsing or runtime shaping should stay in the tags domain instead of reintroducing another copy of the shared IO code.

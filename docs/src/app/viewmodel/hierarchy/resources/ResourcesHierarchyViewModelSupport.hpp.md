@@ -2,11 +2,30 @@
 
 ## Responsibility
 
-The resources hierarchy support header owns three responsibilities:
+This header owns resource-specific metadata materialization and the flattened `type -> format` hierarchy projection used by the resources sidebar.
 
-- `Resources.wsresources` and `.wshub` contents-path resolution
-- `.wsresource` metadata materialization
-- conversion from materialized entries to flattened `type -> format` hierarchy rows
+## Shared IO Delegation
+
+`ResourcesSupport` now re-exports shared hub IO from `WhatSonHierarchyIoSupport.hpp`:
+
+- `normalizePath(...)`
+- `resolveContentsDirectories(...)`
+- `readUtf8File(...)`
+- `deduplicateStringsPreservingOrder(...)`
+
+This removes another copy of the `.wshub` traversal and UTF-8 file loading logic from the resources domain.
+
+## Domain Logic That Stays Local
+
+The resources support header still owns the logic that is unique to resource packages:
+
+- resource path sanitization
+- metadata parsing and fallback materialization
+- conversion from materialized resources to stable hierarchy rows
+- equality helpers for no-op reset detection
+
+`sanitizeStringList(...)` and `extractResourcePathsFromItems(...)` now use `QSet`-backed duplicate
+tracking so large imported resource lists avoid repeated `QStringList::contains(...)` scans.
 
 ## Materialization Rule
 
@@ -19,7 +38,8 @@ This stage normalizes `resourceId`, `bucket`, `type`, `format`, and `assetPath`.
 
 ## Stable Keys
 
-Rows use explicit keys so expansion state can be restored safely.
+Rows keep explicit keys so expansion state can be restored safely.
+Typical examples:
 
 - `type:image`
 - `format:image:.png`
@@ -44,25 +64,21 @@ format list is visible even when `resourcePaths` is empty.
 - `Other`
 
 These type rows are expandable (`kind="type"`) and each expands into format children (`kind="format"`),
-so the sidebar keeps the legacy "type parent -> format children" interaction from the old hierarchy UI.
-
-## Count Aggregation
-
-`buildHierarchyItems(...)`는 materialized 리소스를 순회하면서 count를 같이 집계한다.
-
-- `type.count`: 해당 타입으로 분류된 리소스 총 개수
-- `format.count`: 해당 타입/포맷 조합에 속한 리소스 개수
-
-이 값은 `ResourcesHierarchyViewModel::depthItems()`를 통해 QML count role로 전달된다.
+so the sidebar keeps the legacy `type parent -> format children` interaction from the old hierarchy UI.
 
 ## Equality Contract
 
 `hierarchyItemsEqual(...)` compares every structural field used by QML rendering:
 
-- depth/label
+- depth and label
 - expansion and chevron flags
-- key/kind/bucket/type/format
+- key, kind, bucket, type, and format
 - resource identity and resolved paths
 
 `ResourcesHierarchyViewModel::setResourcePaths(...)` uses this comparator to skip no-op model resets
 when the rebuilt hierarchy is identical to the previous one.
+
+## Maintenance Rule
+
+Keep shared filesystem behavior in `WhatSon::Hierarchy::IoSupport`.
+Only resource-domain parsing and hierarchy shaping should live in this header.

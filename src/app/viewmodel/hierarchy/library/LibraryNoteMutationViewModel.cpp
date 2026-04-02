@@ -1,6 +1,6 @@
 #include "LibraryNoteMutationViewModel.hpp"
 
-#include "LibraryHierarchyViewModel.hpp"
+#include <QtGlobal>
 
 LibraryNoteMutationViewModel::LibraryNoteMutationViewModel(QObject* parent)
     : QObject(parent)
@@ -12,7 +12,7 @@ LibraryNoteMutationViewModel::~LibraryNoteMutationViewModel()
     disconnectSourceViewModel();
 }
 
-void LibraryNoteMutationViewModel::setSourceViewModel(LibraryHierarchyViewModel* viewModel)
+void LibraryNoteMutationViewModel::setSourceViewModel(QObject* viewModel)
 {
     if (m_sourceViewModel == viewModel)
     {
@@ -21,8 +21,9 @@ void LibraryNoteMutationViewModel::setSourceViewModel(LibraryHierarchyViewModel*
 
     disconnectSourceViewModel();
     m_sourceViewModel = viewModel;
+    m_sourceCapability = qobject_cast<ILibraryNoteMutationCapability*>(viewModel);
 
-    if (m_sourceViewModel != nullptr)
+    if (m_sourceViewModel != nullptr && m_sourceCapability != nullptr)
     {
         m_sourceDestroyedConnection = connect(
             m_sourceViewModel,
@@ -31,42 +32,46 @@ void LibraryNoteMutationViewModel::setSourceViewModel(LibraryHierarchyViewModel*
             &LibraryNoteMutationViewModel::handleSourceDestroyed);
         m_noteDeletedConnection = connect(
             m_sourceViewModel,
-            &LibraryHierarchyViewModel::noteDeleted,
+            SIGNAL(noteDeleted(QString)),
             this,
-            &LibraryNoteMutationViewModel::noteDeleted);
+            SIGNAL(noteDeleted(QString)));
         m_emptyNoteCreatedConnection = connect(
             m_sourceViewModel,
-            &LibraryHierarchyViewModel::emptyNoteCreated,
+            SIGNAL(emptyNoteCreated(QString)),
             this,
-            &LibraryNoteMutationViewModel::emptyNoteCreated);
+            SIGNAL(emptyNoteCreated(QString)));
         m_hubFilesystemMutatedConnection = connect(
             m_sourceViewModel,
-            &LibraryHierarchyViewModel::hubFilesystemMutated,
+            SIGNAL(hubFilesystemMutated()),
             this,
-            &LibraryNoteMutationViewModel::hubFilesystemMutated);
+            SIGNAL(hubFilesystemMutated()));
+    }
+    else if (m_sourceViewModel != nullptr)
+    {
+        qWarning("LibraryNoteMutationViewModel sourceViewModel does not implement ILibraryNoteMutationCapability.");
     }
 
     emit sourceViewModelChanged();
 }
 
-LibraryHierarchyViewModel* LibraryNoteMutationViewModel::sourceViewModel() const noexcept
+QObject* LibraryNoteMutationViewModel::sourceViewModel() const noexcept
 {
     return m_sourceViewModel;
 }
 
 bool LibraryNoteMutationViewModel::createEmptyNote()
 {
-    return m_sourceViewModel != nullptr && m_sourceViewModel->createEmptyNote();
+    return m_sourceCapability != nullptr && m_sourceCapability->createEmptyNote();
 }
 
 bool LibraryNoteMutationViewModel::clearNoteFoldersById(const QString& noteId)
 {
-    return m_sourceViewModel != nullptr && m_sourceViewModel->clearNoteFoldersById(noteId);
+    return m_sourceCapability != nullptr && m_sourceCapability->clearNoteFoldersById(noteId);
 }
 
 bool LibraryNoteMutationViewModel::deleteNoteById(const QString& noteId)
 {
-    return m_sourceViewModel != nullptr && m_sourceViewModel->deleteNoteById(noteId);
+    return m_sourceCapability != nullptr && m_sourceCapability->deleteNoteById(noteId);
 }
 
 void LibraryNoteMutationViewModel::handleSourceDestroyed()
@@ -98,5 +103,6 @@ void LibraryNoteMutationViewModel::disconnectSourceViewModel()
     m_noteDeletedConnection = {};
     m_emptyNoteCreatedConnection = {};
     m_hubFilesystemMutatedConnection = {};
+    m_sourceCapability = nullptr;
     m_sourceViewModel = nullptr;
 }

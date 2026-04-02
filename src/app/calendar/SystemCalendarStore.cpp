@@ -13,7 +13,7 @@ namespace
 }
 
 SystemCalendarStore::SystemCalendarStore(QObject* parent)
-    : QObject(parent)
+    : ISystemCalendarStore(parent)
 {
     refreshFromSystem();
 }

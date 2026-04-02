@@ -1,37 +1,20 @@
 # `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp`
-- Source kind: C++ header
-- File name: `LibraryHierarchyViewModelSupport.hpp`
-- Approximate line count: 136
+This header now acts as the library-domain facade for shared hierarchy IO helpers.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Shared IO Delegation
 
-### Classes and Structs
-- None detected during scaffold generation.
+`LibrarySupport` re-exports these helpers from `WhatSonHierarchyIoSupport.hpp`:
 
-### Enums
-- None detected during scaffold generation.
+- `normalizePath(...)`
+- `resolveContentsDirectories(...)`
+- `readUtf8File(...)`
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+This keeps existing call sites stable while removing duplicated `.wshub` and UTF-8 file logic from the library domain.
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Scope
+
+The library support header no longer owns an inline copy of the shared filesystem implementation.
+Any future library-specific parsing or transformation logic should stay in the library domain, while generic hub IO remains in `WhatSon::Hierarchy::IoSupport`.

@@ -1,5 +1,6 @@
 #include "BookmarksHierarchyViewModel.hpp"
 
+#include "calendar/ISystemCalendarStore.hpp"
 #include "calendar/SystemCalendarStore.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
@@ -335,7 +336,7 @@ BookmarksNoteListModel* BookmarksHierarchyViewModel::noteListModel() noexcept
     return &m_noteListModel;
 }
 
-void BookmarksHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* store)
+void BookmarksHierarchyViewModel::setSystemCalendarStore(ISystemCalendarStore* store)
 {
     if (m_systemCalendarStore == store)
     {
@@ -352,7 +353,7 @@ void BookmarksHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* st
     {
         m_systemCalendarStoreChangedConnection = QObject::connect(
             m_systemCalendarStore,
-            &SystemCalendarStore::systemInfoChanged,
+            &ISystemCalendarStore::systemInfoChanged,
             this,
             [this]()
             {
@@ -367,7 +368,7 @@ void BookmarksHierarchyViewModel::setSystemCalendarStore(SystemCalendarStore* st
     refreshNoteListForSelection();
 }
 
-SystemCalendarStore* BookmarksHierarchyViewModel::systemCalendarStore() const noexcept
+ISystemCalendarStore* BookmarksHierarchyViewModel::systemCalendarStore() const noexcept
 {
     return m_systemCalendarStore;
 }
