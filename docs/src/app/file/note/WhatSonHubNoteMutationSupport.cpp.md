@@ -5,6 +5,9 @@
 This file contains shared helpers for keeping `LibraryNoteRecord` synchronized with note documents
 after local mutations.
 
+It no longer owns note sidecar manifest generation. Package scaffold responsibility now lives in
+`WhatSonLocalNoteFileStore`.
+
 ## Folder Synchronization
 
 The runtime sync path now copies both folder paths and folder UUIDs from the parsed note document

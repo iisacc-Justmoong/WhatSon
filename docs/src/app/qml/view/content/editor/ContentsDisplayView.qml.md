@@ -35,6 +35,12 @@ positions from the same document origin.
 - `ContentsGutterLayer` and `ContentsMinimapLayer`: render against the shared geometry helpers exported by this file.
 - `DrawerMenuBar`, `DrawerContents`, and `DrawerToolbar`: compose the lower drawer as separate Figma-aligned modules
   instead of an inline placeholder rectangle.
+- Drawer/editor panel partition is computed in one place (`drawerView`):
+  - `effectiveDrawerHeight`: clamped runtime drawer height
+  - `drawerReservedHeight`: `effectiveDrawerHeight + splitterThickness`
+  - `availableDisplayHeight`: `contentsView.height - drawerReservedHeight` (bounded by `minDisplayHeight`)
+  - `contentsDisplayView.Layout.preferredHeight` binds to `availableDisplayHeight`, so the drawer never overlays the
+    editor surface and the editor never pushes below the drawer frame.
 
 ## Interaction and Persistence
 
@@ -59,11 +65,13 @@ positions from the same document origin.
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
 - Inline formatting shortcuts wrap selected text with editable RichText tags:
-  - `Cmd/Ctrl+B` -> `<b>...</b>`
+  - `Cmd/Ctrl+B` -> `<strong style=\"font-weight:700;\">...</strong>`
   - `Cmd/Ctrl+I` -> `<i>...</i>`
   - `Cmd/Ctrl+U` -> `<u>...</u>`
   - `Shift+Cmd/Ctrl+X` -> `<s>...</s>`
   - `Shift+Cmd/Ctrl+H` -> `<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">...</span>`
+- The editor surface also handles the same shortcuts from `Keys.onPressed` (`Meta/Ctrl + B/I/U`, `Meta/Ctrl+Shift + X/H`)
+  so formatting still applies even when platform `Shortcut` dispatch is intercepted by the underlying text input control.
 - Right-clicking a non-empty editor selection opens an `LV.ContextMenu` anchored to the editor viewport with:
   - `Bold`
   - `Italic`
@@ -87,30 +95,37 @@ positions from the same document origin.
   - `Page` (`activeViewMode == 1`): paper-layout RichText editing surface (A4 portrait scaffold, no print guides)
   - `Print` (`activeViewMode == 2`): paper-layout RichText editing surface + dashed print-margin guides
   - `Web/Presentation`: same editable RichText surface, keeping document editing consistent across all editor views.
-- `Page`/`Print` paper scaffold keeps a fixed A4 aspect ratio (`210 / 297`) and fits that portrait page into the
-  editor viewport while preserving outer margins.
-- `Page`/`Print` text layout now uses the same insets as the print guide (`printGuideHorizontalInset`,
-  `printGuideVerticalInset`) so content is rendered strictly inside the printable area.
-- The editor surface is anchored to the viewport (`anchors.fill: parent`) and applies page-offset
-  `left/right/top/bottom` margins computed from `printEditorPage` geometry, so paper-mode text always follows the
-  centered page bounds instead of drifting outside the sheet.
+- `Page`/`Print` paper scaffold keeps a fixed A4 aspect ratio (`210 / 297`) with width-first fitting
+  (`printEditorPage.availableWidth`) and no height-fit shrink pass, so the paper size no longer collapses to match
+  viewport height.
+- `Page`/`Print` text layout now maps the editor frame directly to the printable rectangle inside the page:
+  `left/right/top/bottom` margins are offset by `printGuideHorizontalInset` / `printGuideVerticalInset`, and
+  editor-side `insetHorizontal` / `insetVertical` are pinned to `0` in paper layouts.
+- This keeps the first rendered line below the top print margin and prevents text from crossing the page guide even
+  when the viewport height changes.
 - `Print` mode draws dashed margin guides for that printable area; `Page` mode uses the same margins for text layout
   but intentionally hides guide lines.
 - `Page`/`Print` text color is explicitly forced to black (`#000000`) for editor and formatted preview surfaces so
   print/paper rendering does not inherit low-contrast dark-theme text colors.
 - `showFormattedTextRenderer` is intentionally pinned to `false`; the legacy read-only replacement layer remains
   disabled so the editor never drops into a non-editable state.
+- `LV.TextEditor.showRenderedOutput` is enabled, so inline tags normalized into RichText aliases (`<strong>`, `<em>`,
+  `<u>`, `<s>`, highlight `<span>`) render with style directly inside the editable surface.
 - Stored inline aliases (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`, `<mark>`) are
   normalized into editable RichText tags before session sync:
-  - `bold` -> `<b>`
+  - `bold` -> `<strong style=\"font-weight:700;\">`
   - `italic` -> `<i>`
   - `underline` -> `<u>`
   - `strikethrough` -> `<s>`
   - `highlight`/`mark` -> orange styled `<span ...>`
+- Alias normalization is delegated to `ContentsTextFormatRenderer.normalizeInlineStyleAliasesForEditor(...)` from
+  `normalizeBodySourceForRichTextEditor(...)`, so `.wsnbody` inline tags are normalized through the renderer contract
+  before entering the editable surface.
+- Escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` is intentionally preserved as literal text (not decoded).
 - As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
   tag text.
-- In `Page`/`Print`, the preview text geometry is aligned to the centered paper scaffold (`printEditorPage`) and uses
-  page padding insets for both horizontal and vertical placement.
+- In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
+  the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally
   always editable for note-taking workflows.
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.

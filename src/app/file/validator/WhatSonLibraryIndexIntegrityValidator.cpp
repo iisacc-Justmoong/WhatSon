@@ -87,6 +87,16 @@ WhatSonLibraryIndexIntegrityValidator::pruneOrphanRecords(const QVector<LibraryN
 
     for (LibraryNoteRecord record : records)
     {
+        QString normalizationError;
+        if (!m_noteStorageValidator.normalizeWsnotePackage(record, &normalizationError))
+        {
+            WhatSon::Debug::trace(
+                QStringLiteral("library.validator"),
+                QStringLiteral("notePackage.normalizeFailed"),
+                QStringLiteral("noteId=%1 dir=%2 reason=%3")
+                    .arg(record.noteId, record.noteDirectoryPath, normalizationError));
+        }
+
         if (!m_noteStorageValidator.hasMaterializedStorage(record))
         {
             const QString orphanNoteId = record.noteId.trimmed();

@@ -13,12 +13,10 @@
 #include "file/note/WhatSonHubNoteCreationService.hpp"
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
 #include "file/note/WhatSonHubNoteFolderClearService.hpp"
-#include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
-#include "file/note/WhatSonNoteLinkManagerCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
 
@@ -741,28 +739,6 @@ namespace
 
         WhatSonSystemIoGateway ioGateway;
         return ioGateway.ensureDirectory(directoryPath, errorMessage);
-    }
-
-    QString createAttachmentManifestText(const QString& noteId)
-    {
-        return QStringLiteral(
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                "<!DOCTYPE WHATSONNOTEPAINT>\n"
-                "<contents id=\"%1\">\n"
-                "  <body>\n"
-                "  </body>\n"
-                "</contents>\n")
-            .arg(noteId);
-    }
-
-    QString createLinkManifestText(const QString& noteId, const QString& schema)
-    {
-        QJsonObject root;
-        root.insert(QStringLiteral("version"), 1);
-        root.insert(QStringLiteral("schema"), schema);
-        root.insert(QStringLiteral("noteId"), noteId);
-        root.insert(QStringLiteral("links"), QJsonArray{});
-        return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
     }
 
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
@@ -2822,6 +2798,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     {
         syncNoteRecordFromDocument(&note, noteDocument);
         setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
+        syncModel();
         refreshNoteListForSelection();
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
@@ -2851,6 +2828,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     syncNoteRecordFromDocument(&note, noteDocument);
 
     setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
+    syncModel();
     refreshNoteListForSelection();
 
     WhatSon::Debug::traceSelf(this,
@@ -3038,6 +3016,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
 
     const QString effectiveWshubPath = !result.wshubPath.isEmpty() ? result.wshubPath : sourceWshubPath;
     setIndexedStateNotes(effectiveWshubPath, std::move(result.notes));
+    syncModel();
 
     if (!effectiveWshubPath.isEmpty())
     {
@@ -3127,6 +3106,7 @@ bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
     }
 
     setIndexedStateNotes(result.wshubPath, std::move(result.remainingNotes));
+    syncModel();
 
     if (!result.wshubPath.isEmpty())
     {
@@ -3192,6 +3172,7 @@ bool LibraryHierarchyViewModel::clearNoteFoldersById(const QString& noteId)
     }
 
     setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(result.notes));
+    syncModel();
     refreshNoteListForSelection();
 
     WhatSon::Debug::traceSelf(this,
@@ -3253,6 +3234,7 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
     }
 
     setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
+    syncModel();
     refreshNoteListForSelection();
     emit hubFilesystemMutated();
     return true;
@@ -3310,6 +3292,7 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
 
     syncNoteRecordFromDocument(&allNotes[noteIndex], noteDocument);
     setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
+    syncModel();
     refreshNoteListForSelection();
     return true;
 }

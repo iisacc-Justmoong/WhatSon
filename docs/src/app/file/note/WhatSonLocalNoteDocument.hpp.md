@@ -4,6 +4,14 @@
 
 `WhatSonLocalNoteDocument` is the parsed in-memory representation of one local note file set.
 
+## Package Paths
+
+- The document tracks package paths for:
+  - `.wsnhead`
+  - `.wsnbody`
+  - `.wsnversion`
+  - `.wsnpaint`
+
 ## Library Projection
 
 `toLibraryNoteRecord()` now exports folder UUIDs together with folder paths when it translates the

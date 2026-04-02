@@ -5,9 +5,6 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QRandomGenerator>
 #include <QSet>
 
@@ -156,28 +153,6 @@ bool WhatSon::NoteMutationSupport::removeDirectoryPath(const QString& directoryP
 {
     WhatSonSystemIoGateway ioGateway;
     return ioGateway.removeDirectoryRecursively(directoryPath, errorMessage);
-}
-
-QString WhatSon::NoteMutationSupport::createAttachmentManifestText(const QString& noteId)
-{
-    return QStringLiteral(
-               "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-               "<!DOCTYPE WHATSONNOTEPAINT>\n"
-               "<contents id=\"%1\">\n"
-               "  <body>\n"
-               "  </body>\n"
-               "</contents>\n")
-        .arg(noteId);
-}
-
-QString WhatSon::NoteMutationSupport::createLinkManifestText(const QString& noteId, const QString& schema)
-{
-    QJsonObject root;
-    root.insert(QStringLiteral("version"), 1);
-    root.insert(QStringLiteral("schema"), schema);
-    root.insert(QStringLiteral("noteId"), noteId);
-    root.insert(QStringLiteral("links"), QJsonArray{});
-    return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
 }
 
 QString WhatSon::NoteMutationSupport::resolveNoteHeaderPath(const LibraryNoteRecord& note)

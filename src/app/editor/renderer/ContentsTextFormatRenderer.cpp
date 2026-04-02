@@ -53,6 +53,15 @@ namespace
         return {};
     }
 
+    QString openingEditorTagForStyle(const QString& normalizedStyleTag)
+    {
+        if (normalizedStyleTag == QStringLiteral("strong"))
+        {
+            return QStringLiteral("<strong style=\"font-weight:700;\">");
+        }
+        return QStringLiteral("<%1>").arg(normalizedStyleTag);
+    }
+
     bool isClosingTagToken(const QString& token)
     {
         for (int index = 1; index < token.size(); ++index)
@@ -195,6 +204,99 @@ namespace
         html.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
         return html;
     }
+
+    QString normalizeInlineStyleAliasesForEditorSurface(const QString& sourceText)
+    {
+        const QString normalizedText = normalizeLineEndings(sourceText);
+        if (normalizedText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+
+        QString output;
+        QStringList openStyleTags;
+        qsizetype cursor = 0;
+
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype tagStart = match.capturedStart(0);
+            const qsizetype tagEnd = match.capturedEnd(0);
+            if (tagStart < 0 || tagEnd <= tagStart)
+            {
+                continue;
+            }
+
+            if (tagStart > cursor)
+            {
+                output += normalizedText.mid(cursor, tagStart - cursor);
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
+            const bool closingTag = isClosingTagToken(fullTagToken);
+            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+
+            if (normalizedTagName == QStringLiteral("br"))
+            {
+                output += QStringLiteral("<br/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            {
+                const QString highlightStackTagName = ContentsTextHighlightRenderer::highlightStackTagName();
+                if (closingTag)
+                {
+                    closeMatchingTag(&openStyleTags, &output, highlightStackTagName);
+                }
+                else if (!selfClosingTag)
+                {
+                    output += ContentsTextHighlightRenderer::highlightOpenHtmlTag();
+                    openStyleTags.append(highlightStackTagName);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            const QString styleTag = normalizedInlineStyleTagName(rawTagName);
+            if (!styleTag.isEmpty())
+            {
+                if (closingTag)
+                {
+                    closeMatchingTag(&openStyleTags, &output, styleTag);
+                }
+                else if (!selfClosingTag)
+                {
+                    output += openingEditorTagForStyle(styleTag);
+                    openStyleTags.append(styleTag);
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            output += fullTagToken;
+            cursor = tagEnd;
+        }
+
+        if (cursor < normalizedText.size())
+        {
+            output += normalizedText.mid(cursor);
+        }
+
+        for (int index = openStyleTags.size() - 1; index >= 0; --index)
+        {
+            output += QStringLiteral("</%1>").arg(openStyleTags.at(index));
+        }
+
+        return output;
+    }
 } // namespace
 
 ContentsTextFormatRenderer::ContentsTextFormatRenderer(QObject* parent)
@@ -229,6 +331,11 @@ QString ContentsTextFormatRenderer::renderedHtml() const
 QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) const
 {
     return renderInlineTaggedTextToHtml(sourceText);
+}
+
+QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const QString& sourceText) const
+{
+    return normalizeInlineStyleAliasesForEditorSurface(sourceText);
 }
 
 void ContentsTextFormatRenderer::requestRenderRefresh()

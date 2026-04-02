@@ -12,6 +12,9 @@ This implementation creates the initial note scaffold on disk and returns the ma
 - It mirrors the same bindings into the returned `LibraryNoteRecord`.
 - New note scaffolds now initialize progress to `-1` (`No progress`) instead of `0`, so freshly
   created notes do not appear as `First draft` unless the user explicitly selects a progress state.
+- The service now delegates package scaffolding entirely to `WhatSonLocalNoteFileStore`, which keeps
+  the package at exactly four files (`.wsnhead/.wsnbody/.wsnversion/.wsnpaint`) and avoids
+  attachment/link sidecar creation.
 
 ## Result
 

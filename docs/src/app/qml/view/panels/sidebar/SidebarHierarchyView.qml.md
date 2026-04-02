@@ -48,6 +48,28 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   Instead, it only resynchronizes LVRS selection/focus presentation.
 - `requestHierarchyViewModelReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
 
+## Selected Row Activation Contract
+
+- `syncSelectedHierarchyItem(...)` now resolves a stable selected-row key via
+  `selectedHierarchyItemActivationKey()`.
+- Programmatic activation now prefers `LV.Hierarchy.activateListItemByKey(...)` and only falls back to
+  `activateListItemById(...)` when no usable key is available.
+- This prevents post-insert index drift from activating the wrong row when a new hierarchy item is created and
+  surrounding rows are reindexed by LVRS model refresh timing.
+
+## Multi Selection Contract
+
+- Hierarchy row activation now routes through `requestHierarchySelection(item, resolvedIndex, modifiers)` after the
+  existing expansion-suppression guard.
+- Modifier behavior:
+  - plain click: single selection
+  - `Shift` + click: contiguous range selection anchored by `hierarchySelectionAnchorIndex`
+  - `Cmd/Ctrl` + click: additive toggle selection
+- `selectedHierarchyIndices` stores the visual multi-selection set, while `hierarchyViewModel.setHierarchySelectedIndex(...)`
+  still tracks the primary routed folder.
+- Because LVRS hierarchy rows expose only one native active item, additional selections are rendered by
+  `hierarchySelectionOverlayLayer` through `selectedHierarchyOverlayRects`.
+
 ## Footer View Options
 
 - The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.
@@ -101,3 +123,5 @@ This file should be read as a composed view, not as the place where hierarchy bu
 ## Recent Updates
 - Added `pragma ComponentBehavior: Bound` at the file root so toolbar `Repeater` delegates can
   reference `sidebarHierarchyView` id members with bound component scope.
+- Added modifier-based hierarchy multi-selection (`Cmd/Ctrl` toggle, `Shift` range) with an explicit
+  overlay highlight path for non-primary selected rows.

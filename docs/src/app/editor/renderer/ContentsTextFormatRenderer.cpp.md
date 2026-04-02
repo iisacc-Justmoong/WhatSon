@@ -18,3 +18,7 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
 - Auto-closes unmatched open style tags at end-of-input to keep emitted HTML structurally valid.
 - Emits `renderedHtmlChanged()` only when the derived HTML payload actually changes.
+- Exposes `normalizeInlineStyleAliasesForEditor(...)` for editor-surface normalization:
+  - rewrites inline aliases into editable RichText tags (`bold` -> `<strong style="font-weight:700;">`, etc.)
+  - preserves non-style tags such as `<resource ...>` unchanged
+  - preserves escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` unchanged

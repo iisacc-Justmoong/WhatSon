@@ -915,8 +915,8 @@ Item {
         switch (styleTag) {
         case "bold":
             return ({
-                    "openTag": "<b>",
-                    "closeTag": "</b>"
+                    "openTag": "<strong style=\"font-weight:700;\">",
+                    "closeTag": "</strong>"
                 });
         case "italic":
             return ({
@@ -945,10 +945,52 @@ Item {
                 });
         }
     }
+    function handleInlineFormatShortcutKeyPress(event) {
+        if (!event || !contentsView.hasSelectedNote || contentsView.showDedicatedResourceViewer || contentsView.showFormattedTextRenderer)
+            return false;
+
+        const modifiers = event.modifiers;
+        const commandPressed = (modifiers & Qt.MetaModifier) || (modifiers & Qt.ControlModifier);
+        if (!commandPressed)
+            return false;
+
+        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
+        let handled = false;
+        switch (event.key) {
+        case Qt.Key_B:
+            handled = contentsView.wrapSelectedEditorTextWithTag("bold");
+            break;
+        case Qt.Key_I:
+            handled = contentsView.wrapSelectedEditorTextWithTag("italic");
+            break;
+        case Qt.Key_U:
+            handled = contentsView.wrapSelectedEditorTextWithTag("underline");
+            break;
+        case Qt.Key_X:
+            if (shiftPressed)
+                handled = contentsView.wrapSelectedEditorTextWithTag("strikethrough");
+            break;
+        case Qt.Key_H:
+            if (shiftPressed)
+                handled = contentsView.wrapSelectedEditorTextWithTag("highlight");
+            break;
+        default:
+            break;
+        }
+
+        if (handled)
+            event.accepted = true;
+        return handled;
+    }
     function normalizeBodySourceForRichTextEditor(sourceText) {
         const source = sourceText === undefined || sourceText === null ? "" : String(sourceText);
         if (source.length === 0)
             return "";
+        if (textFormatRenderer && textFormatRenderer.normalizeInlineStyleAliasesForEditor !== undefined) {
+            const rendererNormalizedText = textFormatRenderer.normalizeInlineStyleAliasesForEditor(source);
+            if (rendererNormalizedText !== undefined && rendererNormalizedText !== null)
+                return String(rendererNormalizedText);
+        }
         const inlineTagPattern = /<\s*(\/?)\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>/gi;
         return source.replace(inlineTagPattern, function (token, slashToken, rawTagName) {
             const normalizedTagName = rawTagName === undefined || rawTagName === null
@@ -1027,19 +1069,26 @@ Item {
                                      : String(contentsView.editorText).slice(selectionRange.start, selectionRange.end))));
         if (selectedText.length === 0)
             return false;
+        let nextText = "";
         if (editorItem && editorItem.remove !== undefined && editorItem.insert !== undefined) {
             editorItem.remove(selectionRange.start, selectionRange.end);
             editorItem.insert(selectionRange.start, wrapTags.openTag + selectedText + wrapTags.closeTag);
+            if (editorItem.text !== undefined)
+                nextText = String(editorItem.text === undefined || editorItem.text === null ? "" : editorItem.text);
+            else if (contentEditor.text !== undefined)
+                nextText = String(contentEditor.text === undefined || contentEditor.text === null ? "" : contentEditor.text);
         } else {
             const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-            const nextText = currentText.slice(0, selectionRange.start)
+            nextText = currentText.slice(0, selectionRange.start)
                     + wrapTags.openTag
                     + selectedText
                     + wrapTags.closeTag
                     + currentText.slice(selectionRange.end);
-            contentsView.editorText = nextText;
         }
-        const nextText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        if (nextText.length === 0)
+            nextText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        if (contentsView.editorText !== nextText)
+            contentsView.editorText = nextText;
 
         editorSession.markLocalEditorAuthority();
         const saved = contentsView.persistEditorTextImmediately(nextText);
@@ -1277,17 +1326,28 @@ Item {
 
         target: contentsView.editorFlickable
     }
-    LV.VStack {
+    ColumnLayout {
         id: drawerView
 
+        readonly property real effectiveDrawerHeight: contentsView.drawerVisible
+                                                     ? contentsView.clampDrawerHeight(contentsView.drawerHeight)
+                                                     : 0
+        readonly property real drawerReservedHeight: contentsView.drawerVisible
+                                                    ? drawerView.effectiveDrawerHeight + contentsView.splitterThickness
+                                                    : 0
+        readonly property real availableDisplayHeight: Math.max(
+                                                           contentsView.minDisplayHeight,
+                                                           (Number(contentsView.height) || 0)
+                                                               - drawerView.drawerReservedHeight)
         anchors.fill: parent
         spacing: LV.Theme.gapNone
 
         Rectangle {
             id: contentsDisplayView
 
-            Layout.fillHeight: true
             Layout.fillWidth: true
+            Layout.minimumHeight: contentsView.minDisplayHeight
+            Layout.preferredHeight: drawerView.availableDisplayHeight
             color: contentsView.displayColor
 
             RowLayout {
@@ -1331,6 +1391,7 @@ Item {
                 Item {
                     id: editorViewport
 
+                    clip: true
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     Layout.minimumHeight: contentsView.minEditorHeight
@@ -1339,6 +1400,7 @@ Item {
                         id: printEditorCanvas
 
                         anchors.fill: parent
+                        clip: true
                         color: contentsView.printCanvasColor
                         visible: contentsView.showPrintEditorLayout
                         z: 0
@@ -1346,10 +1408,6 @@ Item {
                         Rectangle {
                             id: printEditorPage
 
-                            readonly property real availableHeight: Math.max(
-                                                                       0,
-                                                                       Number(parent ? parent.height : 0)
-                                                                           - contentsView.printPaperVerticalMargin * 2)
                             readonly property real availableWidth: Math.max(
                                                                       0,
                                                                       Number(parent ? parent.width : 0)
@@ -1358,9 +1416,7 @@ Item {
                                                                     0,
                                                                     Math.min(
                                                                         contentsView.printPaperMaxWidth,
-                                                                        printEditorPage.availableWidth,
-                                                                        printEditorPage.availableHeight * contentsView.printPaperAspectRatio))
-                            anchors.centerIn: parent
+                                                                        printEditorPage.availableWidth))
                             border.color: contentsView.printPaperBorderColor
                             border.width: 1
                             color: contentsView.printPaperColor
@@ -1369,6 +1425,10 @@ Item {
                                     : 0
                             radius: LV.Theme.radiusSm
                             width: printEditorPage.fittedWidth
+                            x: Math.max(
+                                   0,
+                                   (Number(parent ? parent.width : 0) - printEditorPage.width) / 2)
+                            y: contentsView.printPaperVerticalMargin
 
                             Canvas {
                                 anchors.fill: parent
@@ -1425,25 +1485,32 @@ Item {
 
                         anchors.fill: parent
                         anchors.leftMargin: contentsView.showPrintEditorLayout
-                                            ? (Number(printEditorPage.x) || 0)
+                                            ? Math.max(
+                                                  0,
+                                                  (Number(printEditorPage.x) || 0)
+                                                      + contentsView.printGuideHorizontalInset)
                                             : 0
                         anchors.rightMargin: contentsView.showPrintEditorLayout
                                              ? Math.max(
                                                    0,
                                                    (Number(parent ? parent.width : 0) || 0)
                                                        - ((Number(printEditorPage.x) || 0)
-                                                          + (Number(printEditorPage.width) || 0)))
+                                                          + (Number(printEditorPage.width) || 0)
+                                                          - contentsView.printGuideHorizontalInset))
                                              : 0
                         anchors.topMargin: contentsView.showPrintEditorLayout
-                                           ? (Number(printEditorPage.y) || 0)
-                                               + contentsView.editorDocumentStartY
+                                           ? Math.max(
+                                                 0,
+                                                 (Number(printEditorPage.y) || 0)
+                                                     + contentsView.printGuideVerticalInset)
                                            : contentsView.editorDocumentStartY
                         anchors.bottomMargin: contentsView.showPrintEditorLayout
                                               ? Math.max(
                                                     0,
                                                     (Number(parent ? parent.height : 0) || 0)
                                                         - ((Number(printEditorPage.y) || 0)
-                                                           + (Number(printEditorPage.height) || 0)))
+                                                           + (Number(printEditorPage.height) || 0)
+                                                           - contentsView.printGuideVerticalInset))
                                               : 0
                         autoFocusOnPress: true
                         backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
@@ -1454,26 +1521,34 @@ Item {
                         centeredTextHeight: contentsView.editorTextLineBoxHeight
                         cornerRadius: 0
                         editorHeight: contentsView.showPrintEditorLayout
-                                      ? Math.max(0, Number(printEditorPage.height) || 0)
+                                      ? Math.max(
+                                            0,
+                                            (Number(printEditorPage.height) || 0)
+                                                - contentsView.printGuideVerticalInset * 2)
                                       : contentsView.editorSurfaceHeight
                         enforceModeDefaults: false
-                        fieldMinHeight: Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
+                        fieldMinHeight: contentsView.showPrintEditorLayout
+                                        ? Math.max(
+                                              1,
+                                              (Number(printEditorPage.height) || 0)
+                                                  - contentsView.printGuideVerticalInset * 2)
+                                        : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
                         fontFamily: LV.Theme.fontBody
                         fontLetterSpacing: 0
                         fontPixelSize: 12
                         fontWeight: Font.Medium
                         insetHorizontal: contentsView.showPrintEditorLayout
-                                         ? contentsView.printGuideHorizontalInset
+                                         ? 0
                                          : contentsView.editorHorizontalInset
                         insetVertical: contentsView.showPrintEditorLayout
-                                       ? contentsView.printGuideVerticalInset
+                                       ? 0
                                        : contentsView.editorBottomInset
                         placeholderText: ""
                         selectByMouse: true
                         selectedTextColor: LV.Theme.textPrimary
                         selectionColor: LV.Theme.accent
                         shapeStyle: shapeRoundRect
-                        showRenderedOutput: false
+                        showRenderedOutput: true
                         showScrollBar: false
                         text: contentsView.editorText
                         textColor: contentsView.showPrintEditorLayout
@@ -1483,6 +1558,10 @@ Item {
                         visible: !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
+
+                        Keys.onPressed: function(event) {
+                            contentsView.handleInlineFormatShortcutKeyPress(event);
+                        }
 
                         onFocusedChanged: {
                             if (!focused)
@@ -1935,7 +2014,7 @@ Item {
             id: drawer
 
             Layout.fillWidth: true
-            Layout.preferredHeight: contentsView.clampDrawerHeight(contentsView.drawerHeight)
+            Layout.preferredHeight: drawerView.effectiveDrawerHeight
             clip: true
             color: contentsView.drawerColor
             visible: contentsView.drawerVisible

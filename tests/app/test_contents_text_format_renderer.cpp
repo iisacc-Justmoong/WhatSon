@@ -17,6 +17,7 @@ private slots:
     void renderer_mustSupportAliasTagsAndLineBreaks();
     void renderer_mustRenderHighlightTagWithAppleNotesStyle();
     void renderer_mustIgnoreResourceTagsAndEscapeUnknownTags();
+    void renderer_mustNormalizeInlineAliasesForEditorSurfaceWithoutTouchingEscapedTags();
 };
 
 void ContentsTextFormatRendererTest::renderer_mustMapSupportedInlineStyleTags()
@@ -63,6 +64,22 @@ void ContentsTextFormatRendererTest::renderer_mustIgnoreResourceTagsAndEscapeUnk
     QVERIFY(renderedHtml.contains(QStringLiteral("&lt;custom&gt;tag&lt;/custom&gt;")));
     QVERIFY(renderedHtml.contains(QStringLiteral("before")));
     QVERIFY(renderedHtml.contains(QStringLiteral("after")));
+}
+
+void ContentsTextFormatRendererTest::renderer_mustNormalizeInlineAliasesForEditorSurfaceWithoutTouchingEscapedTags()
+{
+    ContentsTextFormatRenderer renderer;
+    const QString normalized = renderer.normalizeInlineStyleAliasesForEditor(
+        QStringLiteral(
+            "before <bold>Hello</bold> <resource type=\"image\" path=resources.wsresources/sample.wsresource> "
+            "&lt;bold&gt;safe&lt;/bold&gt; <highlight>Glow</highlight>"));
+
+    QVERIFY(normalized.contains(QStringLiteral("<strong style=\"font-weight:700;\">Hello</strong>")));
+    QVERIFY(normalized.contains(
+        QStringLiteral("<resource type=\"image\" path=resources.wsresources/sample.wsresource>")));
+    QVERIFY(normalized.contains(QStringLiteral("&lt;bold&gt;safe&lt;/bold&gt;")));
+    QVERIFY(normalized.contains(
+        QStringLiteral("<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">Glow</span>")));
 }
 
 QTEST_MAIN(ContentsTextFormatRendererTest)

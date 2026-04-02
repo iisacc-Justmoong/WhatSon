@@ -1,37 +1,26 @@
 # `src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`WhatSonLibraryIndexIntegrityValidator` validates index/runtime consistency for library note records and rewrites index files from materialized records.
 
-## Source Metadata
-- Source path: `src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonLibraryIndexIntegrityValidator.cpp`
-- Approximate line count: 150
+## Orphan Pruning Behavior
+`pruneOrphanRecords(...)` now performs two integrity stages for each record:
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+1. Run `m_noteStorageValidator.normalizeWsnotePackage(record, &normalizationError)`.
+   - This enforces the strict `.wsnote` package contract before existence checks.
+   - Failures are traced with `notePackage.normalizeFailed`, but processing continues so valid records are not blocked by one bad package.
+2. Evaluate `hasMaterializedStorage(record)`.
+   - Records without header/directory materialization are pruned as orphans.
+   - Orphan note IDs are accumulated in `PruneResult::prunedOrphanNoteIds`.
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Index Rewrite Behavior
+`rewriteIndexesFromRecords(...)` rewrites each `index.wsnindex` from the filtered record set:
+- Keeps only note IDs that still belong to each library root.
+- Persists rewritten index text through `WhatSonLibraryHierarchyCreator` + `WhatSonLibraryHierarchyStore`.
+- Returns the first write error via `errorMessage`.
 
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Why Normalization Happens Here
+The library index validator is on the index integrity path, so placing normalization here guarantees:
+- package pollution is removed before index materialization decisions,
+- migrated/created required note files are visible to subsequent storage checks,
+- orphan pruning reflects post-normalization state rather than stale filesystem leftovers.

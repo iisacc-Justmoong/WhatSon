@@ -353,8 +353,6 @@ add_executable(whatson_hierarchy_viewmodels_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
@@ -479,8 +477,6 @@ add_executable(whatson_library_hierarchy_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonLocalNoteFileStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteFolderBindingService.cpp
@@ -959,7 +955,6 @@ add_executable(whatson_detail_panel_viewmodel_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteDeletionService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteFolderClearService.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonHubNoteMutationSupport.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyPersistence.cpp
@@ -968,7 +963,6 @@ add_executable(whatson_detail_panel_viewmodel_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonHubStructureValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonLibraryIndexIntegrityValidator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/validator/WhatSonNoteStorageValidator.cpp
@@ -1049,8 +1043,6 @@ add_executable(whatson_note_header_tests
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteBodyCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteLinkManagerCreator.cpp
-        ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteAttachManagerCreator.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderStore.cpp
         ${CMAKE_SOURCE_DIR}/src/app/file/note/WhatSonNoteHeaderParser.cpp
 )

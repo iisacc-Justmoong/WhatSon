@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/note`
 - Child directories: 0
-- Child files: 35
+- Child files: 31
 
 ## Child Directories
 - No child directories.
@@ -27,8 +27,6 @@
 - `WhatSonLocalNoteFileStore.hpp`
 - `WhatSonLocalNoteVersionStore.cpp`
 - `WhatSonLocalNoteVersionStore.hpp`
-- `WhatSonNoteAttachManagerCreator.cpp`
-- `WhatSonNoteAttachManagerCreator.hpp`
 - `WhatSonNoteBodyCreator.cpp`
 - `WhatSonNoteBodyCreator.hpp`
 - `WhatSonNoteBodyPersistence.cpp`
@@ -46,8 +44,6 @@
 - `WhatSonNoteHeaderParser.hpp`
 - `WhatSonNoteHeaderStore.cpp`
 - `WhatSonNoteHeaderStore.hpp`
-- `WhatSonNoteLinkManagerCreator.cpp`
-- `WhatSonNoteLinkManagerCreator.hpp`
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

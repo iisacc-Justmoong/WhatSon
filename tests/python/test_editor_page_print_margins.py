@@ -13,10 +13,6 @@ class EditorPagePrintMarginsTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn(
-            "insetHorizontal: contentsView.showPrintEditorLayout",
-            display_view_text,
-        )
-        self.assertIn(
             "anchors.fill: parent",
             display_view_text,
         )
@@ -32,24 +28,24 @@ class EditorPagePrintMarginsTests(unittest.TestCase):
             "(Number(printEditorPage.width) || 0)",
             display_view_text,
         )
-        self.assertIn(
-            "(Number(printEditorPage.height) || 0)",
-            display_view_text,
-        )
         self.assertNotIn(
             "anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent",
             display_view_text,
         )
         self.assertIn(
-            "? contentsView.printGuideHorizontalInset",
+            "+ contentsView.printGuideHorizontalInset",
             display_view_text,
         )
         self.assertIn(
-            "insetVertical: contentsView.showPrintEditorLayout",
+            "- contentsView.printGuideHorizontalInset",
             display_view_text,
         )
         self.assertIn(
-            "? contentsView.printGuideVerticalInset",
+            "+ contentsView.printGuideVerticalInset",
+            display_view_text,
+        )
+        self.assertIn(
+            "- contentsView.printGuideVerticalInset",
             display_view_text,
         )
         self.assertIn(
@@ -62,6 +58,18 @@ class EditorPagePrintMarginsTests(unittest.TestCase):
         )
         self.assertIn(
             "pageWidth - contentsView.printGuideHorizontalInset * 2",
+            display_view_text,
+        )
+        self.assertIn(
+            "insetHorizontal: contentsView.showPrintEditorLayout",
+            display_view_text,
+        )
+        self.assertIn(
+            "? 0",
+            display_view_text,
+        )
+        self.assertIn(
+            "insetVertical: contentsView.showPrintEditorLayout",
             display_view_text,
         )
 
@@ -80,6 +88,24 @@ class EditorPagePrintMarginsTests(unittest.TestCase):
         )
         self.assertIn(
             "visible: contentsView.showPrintMarginGuides",
+            display_view_text,
+        )
+
+    def test_page_scaffold_must_not_shrink_from_viewport_height_fit(self) -> None:
+        display_view_text = (
+            REPO_ROOT / "src/app/qml/view/content/editor/ContentsDisplayView.qml"
+        ).read_text(encoding="utf-8")
+
+        self.assertNotIn(
+            "printEditorPage.availableHeight * contentsView.printPaperAspectRatio",
+            display_view_text,
+        )
+        self.assertIn(
+            "printEditorPage.availableWidth",
+            display_view_text,
+        )
+        self.assertIn(
+            "y: contentsView.printPaperVerticalMargin",
             display_view_text,
         )
 

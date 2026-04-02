@@ -6,8 +6,6 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QTemporaryDir>
 #include <QUrl>
 #include <QtTest/QtTest>
@@ -33,21 +31,6 @@ namespace
             return {};
         }
         return QString::fromUtf8(file.readAll());
-    }
-
-    QList<QJsonObject> readHistoryEntries(const QString& filePath)
-    {
-        QList<QJsonObject> entries;
-        const QStringList lines = readUtf8File(filePath).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-        for (const QString& line : lines)
-        {
-            const QJsonDocument document = QJsonDocument::fromJson(line.toUtf8());
-            if (document.isObject())
-            {
-                entries.push_back(document.object());
-            }
-        }
-        return entries;
     }
 
     bool createResourcePackage(
@@ -125,15 +108,16 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QVERIFY2(store.createNote(std::move(createRequest), &createdDocument, &createError), qPrintable(createError));
     QVERIFY(QFileInfo(createdDocument.noteHeaderPath).isFile());
     QVERIFY(QFileInfo(createdDocument.noteBodyPath).isFile());
-    QVERIFY(QFileInfo(createdDocument.noteHistoryPath).isFile());
     QVERIFY(QFileInfo(createdDocument.noteVersionPath).isFile());
-    QVERIFY(QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral(".meta"))).isDir());
-
-    const QList<QJsonObject> initialHistoryEntries = readHistoryEntries(createdDocument.noteHistoryPath);
-    QCOMPARE(initialHistoryEntries.size(), 1);
-    QCOMPARE(initialHistoryEntries.constFirst().value(QStringLiteral("noteId")).toString(), QStringLiteral("Alpha"));
-    QCOMPARE(initialHistoryEntries.constFirst().value(QStringLiteral("removedText")).toString(), QString());
-    QCOMPARE(initialHistoryEntries.constFirst().value(QStringLiteral("insertedText")).toString(), QStringLiteral("alpha\nbeta"));
+    QVERIFY(QFileInfo(createdDocument.notePaintPath).isFile());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("Alpha.wsnhistory"))).exists());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral(".meta"))).exists());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("attachments"))).exists());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("links.wsnlink"))).exists());
+    const QFileInfoList packageFiles = QDir(noteDirectoryPath).entryInfoList(
+        QDir::Files | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QCOMPARE(packageFiles.size(), 4);
 
     WhatSonLocalNoteFileStore::ReadRequest readRequest;
     readRequest.noteDirectoryPath = noteDirectoryPath;
@@ -146,8 +130,8 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QCOMPARE(readDocument.bodyPlainText, QStringLiteral("alpha\nbeta"));
     QCOMPARE(readDocument.bodySourceText, QStringLiteral("alpha<br/>beta"));
     QCOMPARE(readDocument.bodyFirstLine, QStringLiteral("alpha"));
-    QCOMPARE(readDocument.noteHistoryPath, createdDocument.noteHistoryPath);
     QCOMPARE(readDocument.noteVersionPath, createdDocument.noteVersionPath);
+    QCOMPARE(readDocument.notePaintPath, createdDocument.notePaintPath);
     QVERIFY(readUtf8File(readDocument.noteHeaderPath).contains(QStringLiteral("<folder>Projects/One</folder>")));
 
     readDocument.bodyPlainText = QStringLiteral("gamma\ndelta");
@@ -167,13 +151,8 @@ void WhatSonLocalNoteFileStoreTest::createReadUpdateDelete_roundTripsLocalNoteFi
     QCOMPARE(updatedDocument.bodyFirstLine, QStringLiteral("gamma"));
     QCOMPARE(updatedDocument.headerStore.folders(), QStringList{QStringLiteral("Projects/Two")});
     QVERIFY(!updatedDocument.headerStore.lastModifiedAt().trimmed().isEmpty());
-
-    const QList<QJsonObject> updatedHistoryEntries = readHistoryEntries(updatedDocument.noteHistoryPath);
-    QCOMPARE(updatedHistoryEntries.size(), 2);
-    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("prefixLength")).toInt(), 0);
-    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("suffixLength")).toInt(), 2);
-    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("removedText")).toString(), QStringLiteral("alpha\nbe"));
-    QCOMPARE(updatedHistoryEntries.constLast().value(QStringLiteral("insertedText")).toString(), QStringLiteral("gamma\ndel"));
+    QVERIFY(QFileInfo(updatedDocument.noteVersionPath).isFile());
+    QVERIFY(QFileInfo(updatedDocument.notePaintPath).isFile());
 
     WhatSonLocalNoteDocument rereadDocument;
     QVERIFY2(store.readNote(readRequest, &rereadDocument, &readError), qPrintable(readError));
@@ -231,8 +210,8 @@ void WhatSonLocalNoteFileStoreTest::readNote_resolvesWsresourceThumbnailFromBody
         QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhead")),
         headerCreator.createHeaderText(headerStore)));
     QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnbody")), bodyXml));
-    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhistory")), QString()));
     QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnversion")), QStringLiteral("{}")));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnpaint")), QStringLiteral("<contents />")));
 
     WhatSonLocalNoteFileStore::ReadRequest readRequest;
     readRequest.noteDirectoryPath = noteDirectoryPath;
@@ -291,8 +270,8 @@ void WhatSonLocalNoteFileStoreTest::readNote_resolvesUnquotedClosedResourceTagFr
         QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhead")),
         headerCreator.createHeaderText(headerStore)));
     QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnbody")), bodyXml));
-    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnhistory")), QString()));
     QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnversion")), QStringLiteral("{}")));
+    QVERIFY(writeUtf8File(QDir(noteDirectoryPath).filePath(QStringLiteral("Preview.wsnpaint")), QStringLiteral("<contents />")));
 
     WhatSonLocalNoteFileStore::ReadRequest readRequest;
     readRequest.noteDirectoryPath = noteDirectoryPath;
@@ -341,7 +320,8 @@ void WhatSonLocalNoteFileStoreTest::updateNote_headerOnlyRewrite_preservesExisti
     WhatSonLocalNoteDocument createdDocument;
     QString createError;
     QVERIFY2(store.createNote(std::move(createRequest), &createdDocument, &createError), qPrintable(createError));
-    QCOMPARE(readHistoryEntries(createdDocument.noteHistoryPath).size(), 1);
+    QVERIFY(QFileInfo(createdDocument.noteVersionPath).isFile());
+    QVERIFY(QFileInfo(createdDocument.notePaintPath).isFile());
 
     createdDocument.headerStore.setFolders({QStringLiteral("Inbox/Sub")});
 
@@ -362,7 +342,8 @@ void WhatSonLocalNoteFileStoreTest::updateNote_headerOnlyRewrite_preservesExisti
     QVERIFY2(store.readNote(readRequest, &rereadDocument, &readError), qPrintable(readError));
     QCOMPARE(rereadDocument.bodyPlainText, QStringLiteral("body before"));
     QCOMPARE(rereadDocument.headerStore.folders(), QStringList{QStringLiteral("Inbox/Sub")});
-    QCOMPARE(readHistoryEntries(rereadDocument.noteHistoryPath).size(), 1);
+    QVERIFY(QFileInfo(rereadDocument.noteVersionPath).isFile());
+    QVERIFY(QFileInfo(rereadDocument.notePaintPath).isFile());
 }
 
 void WhatSonLocalNoteFileStoreTest::readNote_preservesEmptyAndWhitespaceOnlyParagraphs()

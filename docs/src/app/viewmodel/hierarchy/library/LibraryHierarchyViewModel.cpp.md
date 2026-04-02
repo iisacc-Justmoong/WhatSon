@@ -75,6 +75,9 @@ next launch, and note-folder matching would quietly fall back to path recovery a
 - Folder rows emit the number of notes effectively bound to that folder UUID, using the same
   UUID-first resolution flow as folder-scope note filtering.
 - This keeps the LVRS hierarchy count slot aligned with what users see after selecting the same row.
+- Any note-index mutation that calls `setIndexedStateNotes(...)` from this viewmodel must also
+  call `syncModel()` before returning to the UI flow. Otherwise `hierarchyNodes` can keep stale
+  folder/system-bucket counts while the note list already reflects updated note bindings.
 
 ## Note Filtering And Assignment
 
@@ -113,6 +116,12 @@ when the rendered first line came from markup that is not preserved as the leadi
 `LibraryNoteListItem.bodyText` now binds to `LibraryNoteRecord.bodySourceText` (editor source/rich projection) with
 `bodyPlainText` fallback. This keeps the editor surface synchronized with formatted body content without changing
 search/index behavior that still depends on plain text.
+
+## Note Package Scaffold Contract
+
+- Note scaffold creation no longer depends on attachment/link sidecar creators.
+- The creation flow now relies on `WhatSonLocalNoteFileStore` for package persistence and expects the
+  four-file contract only: `.wsnhead`, `.wsnbody`, `.wsnversion`, `.wsnpaint`.
 
 ## Backend Boundary
 

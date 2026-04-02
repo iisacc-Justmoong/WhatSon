@@ -74,6 +74,8 @@ Rectangle {
     property var hierarchyDragDropBridge: null
     property var hierarchyInteractionBridge: null
     property bool hierarchyEditable: false
+    property int hierarchySelectionAnchorIndex: -1
+    property int hierarchySelectionVisualRevision: 0
     readonly property color hierarchyNoteDropHoverColor: {
         const item = sidebarHierarchyView.noteDropHoverItem;
         if (item && item.rowBackgroundColorActive !== undefined)
@@ -149,7 +151,12 @@ Rectangle {
     property color searchFieldBackgroundColor: "transparent"
     property bool searchFieldVisible: false
     property string searchText: ""
+    property var selectedHierarchyIndices: []
     readonly property int selectedFolderIndex: hierarchyViewModel ? hierarchyViewModel.hierarchySelectedIndex : -1
+    readonly property var selectedHierarchyOverlayRects: {
+        const revision = sidebarHierarchyView.hierarchySelectionVisualRevision;
+        return sidebarHierarchyView.collectSelectedHierarchyOverlayRects();
+    }
     readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : [])
     readonly property bool hierarchyBulkExpansionEnabled: {
         if (!sidebarHierarchyView.hierarchyInteractionBridge)
@@ -251,6 +258,208 @@ Rectangle {
     function normalizedNonNegativeInteger(value) {
         const normalized = sidebarHierarchyView.normalizedInteger(value, -1);
         return normalized >= 0 ? normalized : -1;
+    }
+
+    function normalizedKeyboardModifiers(modifiers) {
+        const eventModifiers = modifiers === undefined || modifiers === null
+                ? Qt.NoModifier
+                : modifiers;
+        const applicationModifiers = Qt.application && Qt.application.keyboardModifiers !== undefined
+                ? Qt.application.keyboardModifiers
+                : Qt.NoModifier;
+        return eventModifiers | applicationModifiers;
+    }
+
+    function hierarchySelectionToggleModifierPressed(modifiers) {
+        const normalizedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(modifiers);
+        const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
+        return Boolean(normalizedModifiers & toggleMask);
+    }
+
+    function hierarchySelectionRangeModifierPressed(modifiers) {
+        const normalizedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(modifiers);
+        return Boolean(normalizedModifiers & Qt.ShiftModifier);
+    }
+
+    function normalizeHierarchySelectionIndices(indices) {
+        if (!indices || indices.length === undefined)
+            return [];
+        const normalized = [];
+        for (let index = 0; index < indices.length; ++index) {
+            const resolvedIndex = sidebarHierarchyView.normalizedInteger(indices[index], -1);
+            if (resolvedIndex < 0)
+                continue;
+            if (normalized.indexOf(resolvedIndex) >= 0)
+                continue;
+            normalized.push(resolvedIndex);
+        }
+        normalized.sort(function (left, right) {
+            return left - right;
+        });
+        return normalized;
+    }
+
+    function setSelectedHierarchyIndices(indices) {
+        sidebarHierarchyView.selectedHierarchyIndices = sidebarHierarchyView.normalizeHierarchySelectionIndices(indices);
+        sidebarHierarchyView.invalidateHierarchySelectionVisuals();
+    }
+
+    function hierarchySelectionContainsIndex(index) {
+        const resolvedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
+        if (resolvedIndex < 0)
+            return false;
+        const normalizedSelection = sidebarHierarchyView.normalizeHierarchySelectionIndices(
+                    sidebarHierarchyView.selectedHierarchyIndices);
+        return normalizedSelection.indexOf(resolvedIndex) >= 0;
+    }
+
+    function hierarchySelectionRangeIndices(anchorIndex, targetIndex) {
+        const normalizedAnchor = sidebarHierarchyView.normalizedInteger(anchorIndex, -1);
+        const normalizedTarget = sidebarHierarchyView.normalizedInteger(targetIndex, -1);
+        if (normalizedTarget < 0)
+            return [];
+        if (normalizedAnchor < 0)
+            return [normalizedTarget];
+        const begin = Math.min(normalizedAnchor, normalizedTarget);
+        const end = Math.max(normalizedAnchor, normalizedTarget);
+        const range = [];
+        for (let index = begin; index <= end; ++index)
+            range.push(index);
+        return range;
+    }
+
+    function syncHierarchySelectionFromSelectedFolder() {
+        const selectedIndex = sidebarHierarchyView.normalizedInteger(
+                    sidebarHierarchyView.selectedFolderIndex, -1);
+        if (selectedIndex < 0) {
+            sidebarHierarchyView.setSelectedHierarchyIndices([]);
+            sidebarHierarchyView.hierarchySelectionAnchorIndex = -1;
+            return;
+        }
+        sidebarHierarchyView.setSelectedHierarchyIndices([selectedIndex]);
+        sidebarHierarchyView.hierarchySelectionAnchorIndex = selectedIndex;
+    }
+
+    function invalidateHierarchySelectionVisuals() {
+        sidebarHierarchyView.hierarchySelectionVisualRevision += 1;
+    }
+
+    function collectSelectedHierarchyOverlayRects() {
+        const selectedIndices = sidebarHierarchyView.normalizeHierarchySelectionIndices(
+                    sidebarHierarchyView.selectedHierarchyIndices);
+        const primaryIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);
+        const overlayRects = [];
+        for (let index = 0; index < selectedIndices.length; ++index) {
+            const resolvedIndex = selectedIndices[index];
+            if (resolvedIndex < 0 || resolvedIndex === primaryIndex)
+                continue;
+            const hierarchyItem = sidebarHierarchyView.resolveVisibleHierarchyItem(resolvedIndex);
+            if (!hierarchyItem || hierarchyItem.mapToItem === undefined)
+                continue;
+            const point = hierarchyItem.mapToItem(hierarchyTree, 0, 0);
+            const width = Number(hierarchyItem.width) || 0;
+            const height = Number(hierarchyItem.height) || 0;
+            if (width <= 0 || height <= 0)
+                continue;
+            overlayRects.push({
+                    "height": height,
+                    "radius": Number(hierarchyItem.resolvedCornerRadius) || LV.Theme.radiusControl,
+                    "width": width,
+                    "x": Number(point.x) || 0,
+                    "y": Number(point.y) || 0
+                });
+        }
+        return overlayRects;
+    }
+
+    function emitHierarchySelectionActivation(item, resolvedIndex) {
+        if (!sidebarHierarchyView.hierarchyViewModel)
+            return;
+        const normalizedIndex = sidebarHierarchyView.normalizedInteger(resolvedIndex, -1);
+        if (normalizedIndex < 0)
+            return;
+        const activationItem = item ? item : sidebarHierarchyView.resolveVisibleHierarchyItem(normalizedIndex);
+        sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(normalizedIndex);
+        sidebarHierarchyView.hierarchyItemActivated(activationItem, normalizedIndex, normalizedIndex);
+    }
+
+    function requestHierarchySelection(item, resolvedIndex, modifiers) {
+        if (!sidebarHierarchyView.hierarchyViewModel)
+            return;
+        const normalizedIndex = sidebarHierarchyView.normalizedInteger(resolvedIndex, -1);
+        if (normalizedIndex < 0)
+            return;
+        const normalizedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(modifiers);
+        if (sidebarHierarchyView.hierarchySelectionRangeModifierPressed(normalizedModifiers)) {
+            let anchorIndex = sidebarHierarchyView.normalizedInteger(
+                        sidebarHierarchyView.hierarchySelectionAnchorIndex, -1);
+            if (anchorIndex < 0)
+                anchorIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);
+            if (anchorIndex < 0)
+                anchorIndex = normalizedIndex;
+            const rangeSelection = sidebarHierarchyView.hierarchySelectionRangeIndices(anchorIndex, normalizedIndex);
+            if (sidebarHierarchyView.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
+                const selectedIndices = sidebarHierarchyView.normalizeHierarchySelectionIndices(
+                            sidebarHierarchyView.selectedHierarchyIndices);
+                for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
+                    selectedIndices.push(rangeSelection[selectionIndex]);
+                sidebarHierarchyView.setSelectedHierarchyIndices(selectedIndices);
+            } else {
+                sidebarHierarchyView.setSelectedHierarchyIndices(rangeSelection);
+            }
+            sidebarHierarchyView.hierarchySelectionAnchorIndex = anchorIndex;
+            sidebarHierarchyView.emitHierarchySelectionActivation(item, normalizedIndex);
+            return;
+        }
+        if (sidebarHierarchyView.hierarchySelectionToggleModifierPressed(normalizedModifiers)) {
+            const selectedIndices = sidebarHierarchyView.normalizeHierarchySelectionIndices(
+                        sidebarHierarchyView.selectedHierarchyIndices);
+            const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
+            if (existingSelectionIndex < 0) {
+                selectedIndices.push(normalizedIndex);
+                sidebarHierarchyView.setSelectedHierarchyIndices(selectedIndices);
+                sidebarHierarchyView.hierarchySelectionAnchorIndex = normalizedIndex;
+                sidebarHierarchyView.emitHierarchySelectionActivation(item, normalizedIndex);
+                return;
+            }
+            if (selectedIndices.length <= 1) {
+                sidebarHierarchyView.setSelectedHierarchyIndices([normalizedIndex]);
+                sidebarHierarchyView.hierarchySelectionAnchorIndex = normalizedIndex;
+                sidebarHierarchyView.emitHierarchySelectionActivation(item, normalizedIndex);
+                return;
+            }
+            selectedIndices.splice(existingSelectionIndex, 1);
+            sidebarHierarchyView.setSelectedHierarchyIndices(selectedIndices);
+            const committedIndex = sidebarHierarchyView.normalizedInteger(
+                        sidebarHierarchyView.selectedFolderIndex, -1);
+            if (sidebarHierarchyView.hierarchySelectionContainsIndex(committedIndex))
+                return;
+            const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
+            if (fallbackIndex >= 0)
+                sidebarHierarchyView.emitHierarchySelectionActivation(
+                            sidebarHierarchyView.resolveVisibleHierarchyItem(fallbackIndex),
+                            fallbackIndex);
+            return;
+        }
+        sidebarHierarchyView.setSelectedHierarchyIndices([normalizedIndex]);
+        sidebarHierarchyView.hierarchySelectionAnchorIndex = normalizedIndex;
+        sidebarHierarchyView.emitHierarchySelectionActivation(item, normalizedIndex);
+    }
+
+    function selectedHierarchyItemActivationKey() {
+        const selectedIndex = sidebarHierarchyView.normalizedInteger(selectedFolderIndex, -1);
+        if (selectedIndex < 0)
+            return "";
+        const item = sidebarHierarchyView.standardHierarchyModel[selectedIndex];
+        if (!item)
+            return "";
+        const itemKey = item.itemKey !== undefined && item.itemKey !== null ? String(item.itemKey).trim() : "";
+        if (itemKey.length)
+            return itemKey;
+        const key = item.key !== undefined && item.key !== null ? String(item.key).trim() : "";
+        if (key.length)
+            return key;
+        return "";
     }
 
     function resolveHierarchyActivationIndex(item, itemId, index) {
@@ -540,13 +749,19 @@ Rectangle {
     function syncSelectedHierarchyItem(focusView) {
         if (selectedFolderIndex < 0) {
             sidebarHierarchyView.clearEditingHierarchyPresentation();
+            sidebarHierarchyView.invalidateHierarchySelectionVisuals();
             return;
         }
-        hierarchyTree.activateListItemById(selectedFolderIndex);
+        const selectedItemActivationKey = sidebarHierarchyView.selectedHierarchyItemActivationKey();
+        if (selectedItemActivationKey.length > 0 && hierarchyTree.activateListItemByKey !== undefined)
+            hierarchyTree.activateListItemByKey(selectedItemActivationKey);
+        else
+            hierarchyTree.activateListItemById(selectedFolderIndex);
         if (focusView)
             sidebarHierarchyView.forceActiveFocus();
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.refreshEditingHierarchyPresentation(false);
+        sidebarHierarchyView.invalidateHierarchySelectionVisuals();
     }
 
     SidebarHierarchyRenameController {
@@ -597,6 +812,7 @@ Rectangle {
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelHierarchyRename();
         sidebarHierarchyView.clearNoteDropPreview();
+        sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.viewModel.changed");
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(false);
@@ -606,12 +822,18 @@ Rectangle {
     onBookmarkPaletteVisualsEnabledChanged: {
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
     }
+    onWidthChanged: sidebarHierarchyView.invalidateHierarchySelectionVisuals()
+    onHeightChanged: sidebarHierarchyView.invalidateHierarchySelectionVisuals()
     onSelectedFolderIndexChanged: {
         if (sidebarHierarchyView.renameEditingActive && sidebarHierarchyView.selectedFolderIndex !== sidebarHierarchyView.editingHierarchyIndex)
             sidebarHierarchyView.cancelHierarchyRename();
+        if (sidebarHierarchyView.selectedHierarchyIndices.length === 0 || !sidebarHierarchyView.hierarchySelectionContainsIndex(
+                    sidebarHierarchyView.selectedFolderIndex))
+            sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         syncSelectedHierarchyItem(true);
     }
     Component.onCompleted: {
+        sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
         sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.view.ready");
     }
@@ -622,6 +844,9 @@ Rectangle {
                 sidebarHierarchyView.cancelHierarchyRename();
             sidebarHierarchyView.clearNoteDropPreview();
             Qt.callLater(function () {
+                if (sidebarHierarchyView.selectedHierarchyIndices.length === 0 || !sidebarHierarchyView.hierarchySelectionContainsIndex(
+                            sidebarHierarchyView.selectedFolderIndex))
+                    sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
                 sidebarHierarchyView.syncSelectedHierarchyItem(false);
                 if (sidebarHierarchyView.renameEditingActive)
                     sidebarHierarchyView.refreshEditingHierarchyPresentation(true);
@@ -650,6 +875,7 @@ Rectangle {
             const resolvedActivationIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
             if (resolvedActivationIndex < 0)
                 return;
+            const activationModifiers = Qt.application.keyboardModifiers;
             const pendingSerial = sidebarHierarchyView.hierarchyActivationPendingSerial + 1;
             sidebarHierarchyView.hierarchyActivationPendingSerial = pendingSerial;
             Qt.callLater(function () {
@@ -659,8 +885,7 @@ Rectangle {
                     return;
                 if (sidebarHierarchyView.shouldSuppressHierarchyActivation(item, itemId, index))
                     return;
-                sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(resolvedActivationIndex);
-                sidebarHierarchyView.hierarchyItemActivated(item, resolvedActivationIndex, resolvedActivationIndex);
+                sidebarHierarchyView.requestHierarchySelection(item, resolvedActivationIndex, activationModifiers);
             });
         }
         onListItemExpanded: function (item, itemId, index, expanded) {
@@ -678,6 +903,31 @@ Rectangle {
             if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey))
                 return;
             sidebarHierarchyView.requestViewHook("hierarchy.reorder");
+        }
+    }
+    Item {
+        id: hierarchySelectionOverlayLayer
+
+        anchors.fill: hierarchyTree
+        visible: sidebarHierarchyView.selectedHierarchyOverlayRects.length > 0
+        z: 0.9
+
+        Repeater {
+            model: sidebarHierarchyView.selectedHierarchyOverlayRects
+
+            delegate: Rectangle {
+                required property var modelData
+
+                color: Qt.alpha(LV.Theme.accentBlue, 0.18)
+                height: Number(modelData.height) || 0
+                radius: Number(modelData.radius) || LV.Theme.radiusControl
+                width: Number(modelData.width) || 0
+                x: Number(modelData.x) || 0
+                y: Number(modelData.y) || 0
+
+                border.color: Qt.alpha(LV.Theme.accentBlue, 0.55)
+                border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
+            }
         }
     }
     Canvas {

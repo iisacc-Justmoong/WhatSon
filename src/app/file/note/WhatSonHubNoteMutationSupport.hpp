@@ -16,8 +16,6 @@ namespace WhatSon::NoteMutationSupport
     bool writeUtf8File(const QString& filePath, const QString& text, QString* errorMessage = nullptr);
     bool removeFilePath(const QString& filePath, QString* errorMessage = nullptr);
     bool removeDirectoryPath(const QString& directoryPath, QString* errorMessage = nullptr);
-    QString createAttachmentManifestText(const QString& noteId);
-    QString createLinkManifestText(const QString& noteId, const QString& schema);
     QString resolveNoteHeaderPath(const LibraryNoteRecord& note);
     void syncNoteRecordFromDocument(LibraryNoteRecord* note, const WhatSonLocalNoteDocument& document);
 } // namespace WhatSon::NoteMutationSupport

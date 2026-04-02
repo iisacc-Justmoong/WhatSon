@@ -19,6 +19,7 @@ public:
     QString renderedHtml() const;
 
     Q_INVOKABLE QString renderRichText(const QString& sourceText) const;
+    Q_INVOKABLE QString normalizeInlineStyleAliasesForEditor(const QString& sourceText) const;
 
 public slots:
     void requestRenderRefresh();

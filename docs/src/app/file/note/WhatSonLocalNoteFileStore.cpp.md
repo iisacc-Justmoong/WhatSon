@@ -1,9 +1,19 @@
 # `src/app/file/note/WhatSonLocalNoteFileStore.cpp`
 
 ## Role
-`WhatSonLocalNoteFileStore` is the concrete filesystem adapter for `.wsnhead`, `.wsnbody`, `.wsnhistory`, and `.wsnversion`.
+`WhatSonLocalNoteFileStore` is the concrete filesystem adapter for `.wsnhead`, `.wsnbody`, `.wsnversion`, and `.wsnpaint`.
 
 It creates notes, reads materialized note directories, updates persisted body/header state, and deletes local note storage.
+
+## Package Contract
+- A note package now persists only these four files:
+  - `<note-id>.wsnhead`
+  - `<note-id>.wsnbody`
+  - `<note-id>.wsnversion`
+  - `<note-id>.wsnpaint`
+- The store no longer creates or appends `.wsnhistory`.
+- The store no longer creates `.meta` directories.
+- `.wsnpaint` is treated as a dedicated paint-layer document, not as an attachment sidecar.
 
 ## Body Parsing Contract
 - `applyBodyDocumentText(...)` is the read-side body decoder.

@@ -14,6 +14,5 @@ public:
     QStringList requiredRelativePaths() const override;
 
     QString headerFileName() const;
-    QString metadataDirectoryName() const;
     QString createHeaderText(const WhatSonNoteHeaderStore& store) const;
 };

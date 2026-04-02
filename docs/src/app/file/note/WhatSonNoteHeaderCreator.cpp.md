@@ -18,6 +18,11 @@ stable machine identity.
 Callers should arrive with normalized data. The creator does not try to infer missing UUIDs from
 paths; that responsibility belongs to higher-level services that know the current folder tree.
 
+## Scaffold Path Policy
+
+- `requiredRelativePaths()` is intentionally empty.
+- Header creation no longer requires or emits `.meta` subdirectories inside `.wsnote` packages.
+
 ## Progress Serialization Rules
 
 - The serializer now preserves `WhatSonNoteHeaderStore::progressEnums()` in the `<progress enums="...">`

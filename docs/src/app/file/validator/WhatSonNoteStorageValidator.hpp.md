@@ -1,37 +1,30 @@
 # `src/app/file/validator/WhatSonNoteStorageValidator.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+`WhatSonNoteStorageValidator` resolves materialized note storage paths and now owns `.wsnote` package normalization.
 
-## Source Metadata
-- Source path: `src/app/file/validator/WhatSonNoteStorageValidator.hpp`
-- Source kind: C++ header
-- File name: `WhatSonNoteStorageValidator.hpp`
-- Approximate line count: 19
+## Public API
+- `resolveExistingNoteHeaderPath(const LibraryNoteRecord&)`
+  - Resolves a usable `.wsnhead` path from direct record fields or from a materialized note directory.
+- `resolveExistingNoteDirectoryPath(const LibraryNoteRecord&)`
+  - Resolves the backing `.wsnote` directory from directory/header hints.
+- `hasMaterializedStorage(const LibraryNoteRecord&)`
+  - Returns whether either header or note directory is physically present.
+- `normalizeWsnotePackage(const LibraryNoteRecord&, QString* errorMessage)`
+  - Enforces the note package contract in-place and reports filesystem errors through `errorMessage`.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## `.wsnote` Contract
+- The validator treats the following files as the only allowed package payload:
+  - `<note-stem>.wsnhead`
+  - `<note-stem>.wsnbody`
+  - `<note-stem>.wsnversion`
+  - `<note-stem>.wsnpaint`
+- Any extra sidecar file (for example `*.wsnlink`, `*.wsnhistory`, ad-hoc payloads) is considered package pollution and removed.
+- Any subdirectory (including hidden folders such as `.meta` and legacy folders such as `attachments/`) is removed recursively.
+- Missing required files are materialized:
+  - `.wsnhead` and `.wsnbody` get empty XML defaults.
+  - `.wsnversion` and `.wsnpaint` get schema defaults.
 
-### Classes and Structs
-- `WhatSonNoteStorageValidator`
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Dependency Notes
+- Uses `WhatSonSystemIoGateway` for read/write/delete operations and error propagation.
+- Exposes no QObject surface; this is a pure filesystem validation utility used by runtime validators.

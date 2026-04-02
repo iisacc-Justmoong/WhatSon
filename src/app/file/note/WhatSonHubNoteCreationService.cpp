@@ -1,10 +1,8 @@
 #include "WhatSonHubNoteCreationService.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
-#include "file/note/WhatSonNoteAttachManagerCreator.hpp"
 #include "file/note/WhatSonNoteHeaderCreator.hpp"
 #include "file/note/WhatSonNoteHeaderStore.hpp"
-#include "file/note/WhatSonNoteLinkManagerCreator.hpp"
 #include "viewmodel/hierarchy/library/LibraryHierarchyViewModelSupport.hpp"
 
 #include <QDateTime>
@@ -78,12 +76,8 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
                                            : request.hubStat.participants().constFirst().trimmed());
 
     WhatSonNoteHeaderCreator headerCreator(libraryPath, QString());
-    WhatSonNoteAttachManagerCreator attachCreator(libraryPath, QString());
-    WhatSonNoteLinkManagerCreator linkCreator(libraryPath, QString());
 
     const QString headerPath = headerCreator.targetPathForNote(noteId);
-    const QString attachmentManifestPath = attachCreator.targetPathForNote(noteId);
-    const QString linksPath = linkCreator.targetPathForNote(noteId);
     const QString noteDirectoryPath = QFileInfo(headerPath).absolutePath();
 
     if (QFileInfo(noteDirectoryPath).exists())
@@ -128,21 +122,6 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
         }
     }
 
-    for (const QString& relativePath : attachCreator.requiredRelativePaths())
-    {
-        if (!WhatSon::NoteMutationSupport::ensureDirectoryPath(
-            QDir(noteDirectoryPath).filePath(relativePath),
-            &createError))
-        {
-            rollbackNoteDirectory();
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = createError;
-            }
-            return false;
-        }
-    }
-
     const QString createdTimestamp = WhatSon::NoteMutationSupport::currentNoteTimestamp();
     WhatSonNoteHeaderStore headerStore;
     headerStore.setNoteId(noteId);
@@ -157,32 +136,6 @@ bool WhatSonHubNoteCreationService::createNote(Request request, Result* outResul
     headerStore.setTags({});
     headerStore.setProgress(-1);
     headerStore.setPreset(false);
-
-    if (!WhatSon::NoteMutationSupport::writeUtf8File(
-        attachmentManifestPath,
-        WhatSon::NoteMutationSupport::createAttachmentManifestText(noteId),
-        &createError))
-    {
-        rollbackNoteDirectory();
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = createError;
-        }
-        return false;
-    }
-
-    if (!WhatSon::NoteMutationSupport::writeUtf8File(
-        linksPath,
-        WhatSon::NoteMutationSupport::createLinkManifestText(noteId, QStringLiteral("whatson.note.links")),
-        &createError))
-    {
-        rollbackNoteDirectory();
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = createError;
-        }
-        return false;
-    }
 
     WhatSonLocalNoteFileStore::CreateRequest createRequest;
     createRequest.noteId = noteId;

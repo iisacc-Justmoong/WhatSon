@@ -1,37 +1,37 @@
 # `src/app/file/validator/WhatSonNoteStorageValidator.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Behavior Summary
+The implementation provides path resolution helpers and an in-place normalizer for `.wsnote` directories.
 
-## Source Metadata
-- Source path: `src/app/file/validator/WhatSonNoteStorageValidator.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonNoteStorageValidator.cpp`
-- Approximate line count: 105
+## Normalization Flow
+`normalizeWsnotePackage(...)` executes the following sequence:
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+1. Resolve a materialized note directory from the record.
+2. Skip non-materialized or non-`.wsnote` paths.
+3. Derive canonical target names from the note directory stem:
+   - `<stem>.wsnhead`
+   - `<stem>.wsnbody`
+   - `<stem>.wsnversion`
+   - `<stem>.wsnpaint`
+4. For each required suffix:
+   - Keep existing canonical file if present.
+   - Otherwise migrate the first legacy file with the same suffix into the canonical target.
+   - If no source exists, write an empty default document for that suffix.
+5. Remove all non-allowed files.
+6. Remove all subdirectories recursively (including hidden directories).
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Default Document Policy
+- Missing `.wsnhead` is synthesized as a minimal valid header XML.
+- Missing `.wsnbody` is synthesized as a minimal body XML with an empty paragraph.
+- Missing `.wsnversion` is synthesized as `whatson.note.version.store` JSON.
+- Missing `.wsnpaint` is synthesized as `WHATSONNOTEPAINT` XML.
 
-### Enums
-- None detected during scaffold generation.
+## Pollution Removal Scope
+- Files such as `*.wsnlink`, `*.wsnhistory`, and any unknown sidecar are deleted.
+- Hidden directories (for example `.meta`) are explicitly included in cleanup using `QDir::Hidden`.
+- Legacy directories (for example `attachments`) are removed recursively.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Error Handling
+- Every filesystem mutation uses `WhatSonSystemIoGateway`.
+- Any failed read/write/delete operation returns `false` and propagates a descriptive message through `errorMessage`.
+- Successful normalization is idempotent for already-clean packages.

@@ -161,6 +161,7 @@ private
 
     void hubStructureValidator_resolvesHubPaths();
     void noteStorageValidator_resolvesMaterializedStorage();
+    void noteStorageValidator_normalizesWsnotePackageContract();
     void libraryIndexIntegrityValidator_prunesOrphansAndRewritesIndex();
     void libraryIndexIntegrityValidator_allowsConcurrentRewrite();
 };
@@ -227,6 +228,56 @@ void WhatSonFileValidatorsTest::noteStorageValidator_resolvesMaterializedStorage
     QVERIFY(validator.resolveExistingNoteHeaderPath(orphan).isEmpty());
     QVERIFY(validator.resolveExistingNoteDirectoryPath(orphan).isEmpty());
     QVERIFY(!validator.hasMaterializedStorage(orphan));
+}
+
+void WhatSonFileValidatorsTest::noteStorageValidator_normalizesWsnotePackageContract()
+{
+    QString hubPath;
+    QVERIFY(prepareValidationHub(&hubPath));
+
+    const QString libraryPath = QDir(hubPath).filePath(QStringLiteral("ValidatorHub.wscontents/Library.wslibrary"));
+    const QString alphaPath = QDir(libraryPath).filePath(QStringLiteral("Alpha.wsnote"));
+    const QString legacyPaintPath = QDir(alphaPath).filePath(QStringLiteral("attachments.wsnpaint"));
+    const QString legacyVersionPath = QDir(alphaPath).filePath(QStringLiteral("Legacy.wsnversion"));
+
+    QVERIFY(writeUtf8File(QDir(alphaPath).filePath(QStringLiteral("links.wsnlink")), QStringLiteral("{}")));
+    QVERIFY(writeUtf8File(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnhistory")), QStringLiteral("{}")));
+    QVERIFY(writeUtf8File(legacyPaintPath, QStringLiteral("<legacy-paint/>")));
+    QVERIFY(writeUtf8File(legacyVersionPath, QStringLiteral("{\"schema\":\"legacy.version\"}")));
+    QVERIFY(QDir().mkpath(QDir(alphaPath).filePath(QStringLiteral(".meta"))));
+    QVERIFY(QDir().mkpath(QDir(alphaPath).filePath(QStringLiteral("attachments"))));
+    QVERIFY(!QFileInfo(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnpaint"))).exists());
+    QVERIFY(!QFileInfo(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnversion"))).exists());
+
+    WhatSonNoteStorageValidator validator;
+    LibraryNoteRecord alpha;
+    alpha.noteId = QStringLiteral("note-a");
+    alpha.noteDirectoryPath = alphaPath;
+
+    QString errorMessage;
+    QVERIFY2(validator.normalizeWsnotePackage(alpha, &errorMessage), qPrintable(errorMessage));
+
+    const QStringList fileNames = QDir(alphaPath).entryList(
+        QDir::Files | QDir::NoDotAndDotDot,
+        QDir::Name);
+    QCOMPARE(
+        fileNames,
+        QStringList{
+            QStringLiteral("Alpha.wsnbody"),
+            QStringLiteral("Alpha.wsnhead"),
+            QStringLiteral("Alpha.wsnpaint"),
+            QStringLiteral("Alpha.wsnversion")
+        });
+
+    QVERIFY(!QFileInfo(QDir(alphaPath).filePath(QStringLiteral("links.wsnlink"))).exists());
+    QVERIFY(!QFileInfo(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnhistory"))).exists());
+    QVERIFY(!QFileInfo(legacyPaintPath).exists());
+    QVERIFY(!QFileInfo(legacyVersionPath).exists());
+    QVERIFY(!QFileInfo(QDir(alphaPath).filePath(QStringLiteral(".meta"))).exists());
+    QVERIFY(!QFileInfo(QDir(alphaPath).filePath(QStringLiteral("attachments"))).exists());
+    QVERIFY(readUtf8File(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnbody"))).contains(QStringLiteral("<paragraph></paragraph>")));
+    QCOMPARE(readUtf8File(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnpaint"))), QStringLiteral("<legacy-paint/>"));
+    QCOMPARE(readUtf8File(QDir(alphaPath).filePath(QStringLiteral("Alpha.wsnversion"))), QStringLiteral("{\"schema\":\"legacy.version\"}"));
 }
 
 void WhatSonFileValidatorsTest::libraryIndexIntegrityValidator_prunesOrphansAndRewritesIndex()

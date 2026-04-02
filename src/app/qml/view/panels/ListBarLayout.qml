@@ -44,6 +44,7 @@ Rectangle {
     property var noteListModel: null
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     readonly property int mobileNoteDragHoldInterval: 1000
+    property int noteSelectionAnchorIndex: -1
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
     property int pressedNoteIndex: -1
@@ -56,6 +57,7 @@ Rectangle {
     readonly property int noteListFlickDeceleration: 1000000
     property bool noteListViewportRestorePending: false
     readonly property int noteListScrollTick: LV.Theme.gap2
+    property var selectedNoteIndices: []
     property string searchText: ""
     property bool syncingNoteListViewport: false
     property bool syncingCurrentIndexFromModel: false
@@ -110,6 +112,135 @@ Rectangle {
                 noteDeletionBridge.focusedNoteId = normalizedNoteId;
             noteSelectionState.pendingIndex = -1;
         });
+    }
+    function normalizedKeyboardModifiers(modifiers) {
+        const eventModifiers = modifiers === undefined || modifiers === null
+                ? Qt.NoModifier
+                : modifiers;
+        const applicationModifiers = Qt.application && Qt.application.keyboardModifiers !== undefined
+                ? Qt.application.keyboardModifiers
+                : Qt.NoModifier;
+        return eventModifiers | applicationModifiers;
+    }
+    function selectionToggleModifierPressed(modifiers) {
+        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
+        const toggleMask = Qt.ControlModifier | Qt.MetaModifier;
+        return Boolean(normalizedModifiers & toggleMask);
+    }
+    function selectionRangeModifierPressed(modifiers) {
+        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
+        return Boolean(normalizedModifiers & Qt.ShiftModifier);
+    }
+    function normalizeSelectedNoteIndices(indices) {
+        if (!indices || indices.length === undefined)
+            return [];
+        const normalized = [];
+        for (let row = 0; row < indices.length; ++row) {
+            const normalizedIndex = listBarLayout.normalizeCurrentIndex(indices[row]);
+            if (normalizedIndex < 0)
+                continue;
+            if (normalized.indexOf(normalizedIndex) >= 0)
+                continue;
+            normalized.push(normalizedIndex);
+        }
+        normalized.sort(function (left, right) {
+            return left - right;
+        });
+        return normalized;
+    }
+    function noteSelectionContainsIndex(index) {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        if (normalizedIndex < 0)
+            return false;
+        const normalizedSelection = listBarLayout.normalizeSelectedNoteIndices(listBarLayout.selectedNoteIndices);
+        return normalizedSelection.indexOf(normalizedIndex) >= 0;
+    }
+    function setSelectedNoteIndices(indices) {
+        listBarLayout.selectedNoteIndices = listBarLayout.normalizeSelectedNoteIndices(indices);
+    }
+    function selectionRangeIndices(anchorIndex, targetIndex) {
+        const normalizedAnchor = listBarLayout.normalizeCurrentIndex(anchorIndex);
+        const normalizedTarget = listBarLayout.normalizeCurrentIndex(targetIndex);
+        if (normalizedTarget < 0)
+            return [];
+        if (normalizedAnchor < 0)
+            return [normalizedTarget];
+        const begin = Math.min(normalizedAnchor, normalizedTarget);
+        const end = Math.max(normalizedAnchor, normalizedTarget);
+        const range = [];
+        for (let candidate = begin; candidate <= end; ++candidate)
+            range.push(candidate);
+        return range;
+    }
+    function syncSelectionFromCommittedState() {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(
+                    listBarLayout.currentIndexFromModel());
+        if (normalizedIndex < 0) {
+            listBarLayout.setSelectedNoteIndices([]);
+            listBarLayout.noteSelectionAnchorIndex = -1;
+            return;
+        }
+        listBarLayout.setSelectedNoteIndices([normalizedIndex]);
+        listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
+    }
+    function requestNoteSelection(index, noteId, modifiers) {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        if (normalizedIndex < 0)
+            return;
+        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
+        if (listBarLayout.selectionRangeModifierPressed(normalizedModifiers)) {
+            let anchorIndex = listBarLayout.normalizeCurrentIndex(listBarLayout.noteSelectionAnchorIndex);
+            if (anchorIndex < 0)
+                anchorIndex = listBarLayout.normalizeCurrentIndex(listBarLayout.currentIndexFromModel());
+            if (anchorIndex < 0)
+                anchorIndex = normalizedIndex;
+            const rangeSelection = listBarLayout.selectionRangeIndices(anchorIndex, normalizedIndex);
+            if (listBarLayout.selectionToggleModifierPressed(normalizedModifiers)) {
+                const selectedIndices = listBarLayout.normalizeSelectedNoteIndices(
+                            listBarLayout.selectedNoteIndices);
+                for (let selectionIndex = 0; selectionIndex < rangeSelection.length; ++selectionIndex)
+                    selectedIndices.push(rangeSelection[selectionIndex]);
+                listBarLayout.setSelectedNoteIndices(selectedIndices);
+            } else {
+                listBarLayout.setSelectedNoteIndices(rangeSelection);
+            }
+            listBarLayout.noteSelectionAnchorIndex = anchorIndex;
+            listBarLayout.activateNoteIndex(normalizedIndex, noteId);
+            return;
+        }
+        if (listBarLayout.selectionToggleModifierPressed(normalizedModifiers)) {
+            const selectedIndices = listBarLayout.normalizeSelectedNoteIndices(
+                        listBarLayout.selectedNoteIndices);
+            const existingSelectionIndex = selectedIndices.indexOf(normalizedIndex);
+            if (existingSelectionIndex < 0) {
+                selectedIndices.push(normalizedIndex);
+                listBarLayout.setSelectedNoteIndices(selectedIndices);
+                listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
+                listBarLayout.activateNoteIndex(normalizedIndex, noteId);
+                return;
+            }
+            if (selectedIndices.length <= 1) {
+                listBarLayout.setSelectedNoteIndices([normalizedIndex]);
+                listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
+                listBarLayout.activateNoteIndex(normalizedIndex, noteId);
+                return;
+            }
+            selectedIndices.splice(existingSelectionIndex, 1);
+            listBarLayout.setSelectedNoteIndices(selectedIndices);
+            const committedIndex = listBarLayout.normalizeCurrentIndex(
+                        listBarLayout.currentIndexFromModel());
+            const committedSelectionRetained = listBarLayout.noteSelectionContainsIndex(
+                        committedIndex);
+            if (committedSelectionRetained)
+                return;
+            const fallbackIndex = selectedIndices.length > 0 ? selectedIndices[selectedIndices.length - 1] : -1;
+            if (fallbackIndex >= 0)
+                listBarLayout.activateNoteIndex(fallbackIndex, "");
+            return;
+        }
+        listBarLayout.setSelectedNoteIndices([normalizedIndex]);
+        listBarLayout.noteSelectionAnchorIndex = normalizedIndex;
+        listBarLayout.activateNoteIndex(normalizedIndex, noteId);
     }
     function applySearchTextToModel() {
         if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)
@@ -192,6 +323,8 @@ Rectangle {
     function isDelegateActive(index, noteId) {
         const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedIndex >= 0 && listBarLayout.noteSelectionContainsIndex(normalizedIndex))
+            return true;
         if (normalizedIndex >= 0 && listBarLayout.committedNoteIndex === normalizedIndex)
             return true;
         if (normalizedNoteId.length === 0 || listBarLayout.committedNoteId.length === 0)
@@ -395,6 +528,7 @@ Rectangle {
 
     Component.onCompleted: {
         listBarLayout.syncCurrentIndexFromModel();
+        listBarLayout.syncSelectionFromCommittedState();
         listBarLayout.syncFocusedNoteDeletionState();
     }
     onNoteListModeChanged: {
@@ -413,10 +547,13 @@ Rectangle {
             noteContextMenu.close();
         listBarLayout.clearNoteContextMenuState();
         noteSelectionState.pendingIndex = -1;
+        listBarLayout.noteSelectionAnchorIndex = -1;
+        listBarLayout.setSelectedNoteIndices([]);
         listBarLayout.pressedNoteIndex = -1;
         noteSelectionState.requestRevision += 1;
         listBarLayout.applySearchTextToModel();
         listBarLayout.syncCurrentIndexFromModel();
+        listBarLayout.syncSelectionFromCommittedState();
         listBarLayout.syncFocusedNoteDeletionState();
     }
     onSearchTextChanged: applySearchTextToModel()
@@ -705,7 +842,10 @@ Rectangle {
                                 if (noteItemDelegate.mobilePointerDragging)
                                     return;
                                 listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);
+                                listBarLayout.requestNoteSelection(
+                                            noteItemDelegate.index,
+                                            noteItemDelegate.noteId,
+                                            mouse.modifiers);
                             }
                             onPressAndHold: function(mouse) {
                                 noteItemDelegate.mobileLongPressPendingContextMenu = true;
@@ -798,9 +938,14 @@ Rectangle {
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
                                 noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
                             }
-                            onTapped: {
+                            onTapped: function(eventPoint, button) {
                                 listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.activateNoteIndex(noteItemDelegate.index, noteCard.noteId);
+                                const selectionModifiers = eventPoint
+                                        && eventPoint.modifiers !== undefined ? eventPoint.modifiers : Qt.application.keyboardModifiers;
+                                listBarLayout.requestNoteSelection(
+                                            noteItemDelegate.index,
+                                            noteItemDelegate.noteId,
+                                            selectionModifiers);
                             }
                         }
                         TapHandler {
@@ -826,6 +971,9 @@ Rectangle {
                             return;
                         }
                         listBarLayout.pushCurrentIndexToModel(noteListView.currentIndex);
+                        if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(
+                                    noteListView.currentIndex))
+                            listBarLayout.syncSelectionFromCommittedState();
                         Qt.callLater(function () {
                             listBarLayout.syncFocusedNoteDeletionState();
                         });
@@ -865,6 +1013,9 @@ Rectangle {
 
         function onCurrentIndexChanged() {
             listBarLayout.syncCurrentIndexFromModel();
+            if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(
+                        listBarLayout.committedNoteIndex))
+                listBarLayout.syncSelectionFromCommittedState();
         }
 
         ignoreUnknownSignals: true

@@ -73,6 +73,12 @@
 - `activateNoteIndex(index, noteId)` is the only immediate note-activation path. It updates `currentIndex`, pushes the
   authoritative selection back into the bound note-list model, captures `focusedNoteId` for keyboard deletion, and
   reasserts the pending user choice after the current event turn.
+- Pointer selection now routes through `requestNoteSelection(index, noteId, modifiers)`:
+  - plain click/tap: single selection
+  - `Shift` + click/tap: range selection anchored by `noteSelectionAnchorIndex`
+  - `Cmd/Ctrl` + click/tap: additive toggle selection
+- Multi-selection state is held in `selectedNoteIndices`; model-authoritative `currentIndex/currentNoteId` remains the
+  primary note for downstream domain routing.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
 - `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
   not need to own all dynamic contract detection.
@@ -80,6 +86,7 @@
   (not invokable snapshots), so QML binding reactivity tracks selection changes and avoids the first-row-fixed
   active-card regression.
 - Delegate active styling uses `isDelegateActive(index, noteId)`:
+  - first contract: `selectedNoteIndices` membership (multi-selection highlight)
   - primary contract: committed `currentIndex`
   - fallback contract: committed `currentNoteId` equality
   so the selected row stays visually active even when the model momentarily reorders or defers index stabilization.
@@ -101,3 +108,5 @@
 
 - `tests/app/test_qml_binding_syntax_guard.cpp` guards selection authority, drag wiring, delete shortcuts, and the
   non-inertial quantized note-list scroll contract.
+- `tests/python/test_multi_selection_modifiers.py` guards `Cmd/Ctrl` additive selection and `Shift` range-selection
+  wiring for note/resource list delegates.

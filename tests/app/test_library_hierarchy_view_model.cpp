@@ -1131,23 +1131,17 @@ void LibraryHierarchyViewModelTest::saveCurrentBodyText_rewritesWsnbodyAndPreser
 
     const QString bodyPath = QDir(hubPath).filePath(
         QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnbody"));
-    const QString historyPath = QDir(hubPath).filePath(
-        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnhistory"));
     const QString versionPath = QDir(hubPath).filePath(
         QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnversion"));
+    const QString paintPath = QDir(hubPath).filePath(
+        QStringLiteral("LibraryHub_Library.wslibrary.wscontents/Library.wslibrary/Alpha.wsnote/Alpha.wsnpaint"));
     const QString savedBodyXml = readUtf8File(bodyPath);
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph></paragraph>")));
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Edited first line</paragraph>")));
     QVERIFY(savedBodyXml.contains(QStringLiteral("<paragraph>Edited second line</paragraph>")));
     QVERIFY(QFileInfo(versionPath).isFile());
+    QVERIFY(QFileInfo(paintPath).isFile());
     QCOMPARE(readJsonObjectFile(versionPath).value(QStringLiteral("snapshots")).toArray().size(), 0);
-
-    const QStringList historyLines = readUtf8File(historyPath).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    QCOMPARE(historyLines.size(), 1);
-    const QJsonObject historyEntry = QJsonDocument::fromJson(historyLines.constFirst().toUtf8()).object();
-    QCOMPARE(historyEntry.value(QStringLiteral("noteId")).toString(), QStringLiteral("note-a"));
-    QCOMPARE(historyEntry.value(QStringLiteral("removedText")).toString(), QStringLiteral("Alpha body summary."));
-    QCOMPARE(historyEntry.value(QStringLiteral("insertedText")).toString(), editedBody);
 }
 
 void LibraryHierarchyViewModelTest::saveCurrentBodyText_unchangedPlainText_preservesExistingBodyMarkup()
@@ -2923,9 +2917,27 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
     const int competitorIndex = findIndexByLabel(QStringLiteral("Competitor"));
     QVERIFY(draftIndex >= 0);
     QVERIFY(competitorIndex >= 0);
+    const auto hierarchyCountByLabel = [&viewModel](const QString& label) -> int
+    {
+        const QVariantList hierarchyNodes = viewModel.hierarchyModel();
+        for (const QVariant& nodeValue : hierarchyNodes)
+        {
+            const QVariantMap node = nodeValue.toMap();
+            if (node.value(QStringLiteral("label")).toString() != label)
+            {
+                continue;
+            }
+            bool ok = false;
+            const int countValue = node.value(QStringLiteral("count")).toInt(&ok);
+            return ok ? countValue : -1;
+        }
+        return -1;
+    };
 
     viewModel.setSelectedIndex(draftIndex);
     QCOMPARE(viewModel.noteListModel()->rowCount(), 2);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Draft")), 2);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Competitor")), 0);
     QVERIFY(viewModel.canAcceptNoteDrop(competitorIndex, QStringLiteral("note-a")));
     QVERIFY(!viewModel.canAcceptNoteDrop(draftIndex, QStringLiteral("note-a")));
 
@@ -2934,6 +2946,8 @@ void LibraryHierarchyViewModelTest::assignNoteToFolder_updatesHeaderAndRefreshes
     QVERIFY(viewModel.assignNoteToFolder(competitorIndex, QStringLiteral("note-a")));
 
     QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Draft")), 1);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Competitor")), 1);
     QCOMPARE(
         viewModel.noteListModel()->data(
                       viewModel.noteListModel()->index(0, 0),
@@ -3884,17 +3898,17 @@ void LibraryHierarchyViewModelTest::createEmptyNote_whenFolderSelected_createsSc
     const QString noteDirectoryPath = QDir(libraryPath).filePath(createdNoteId + QStringLiteral(".wsnote"));
     const QString noteHeaderPath = QDir(noteDirectoryPath).filePath(createdNoteId + QStringLiteral(".wsnhead"));
     const QString noteBodyPath = QDir(noteDirectoryPath).filePath(createdNoteId + QStringLiteral(".wsnbody"));
-    const QString noteHistoryPath = QDir(noteDirectoryPath).filePath(createdNoteId + QStringLiteral(".wsnhistory"));
     const QString noteVersionPath = QDir(noteDirectoryPath).filePath(createdNoteId + QStringLiteral(".wsnversion"));
+    const QString notePaintPath = QDir(noteDirectoryPath).filePath(createdNoteId + QStringLiteral(".wsnpaint"));
     QVERIFY(QFileInfo(noteDirectoryPath).isDir());
-    QVERIFY(QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral(".meta"))).isDir());
-    QVERIFY(QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("attachments"))).isDir());
     QVERIFY(QFileInfo(noteHeaderPath).isFile());
     QVERIFY(QFileInfo(noteBodyPath).isFile());
-    QVERIFY(QFileInfo(noteHistoryPath).isFile());
     QVERIFY(QFileInfo(noteVersionPath).isFile());
-    QVERIFY(QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("attachments.wsnpaint"))).isFile());
-    QVERIFY(QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("links.wsnlink"))).isFile());
+    QVERIFY(QFileInfo(notePaintPath).isFile());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral(".meta"))).exists());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("attachments"))).exists());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("attachments.wsnpaint"))).exists());
+    QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("links.wsnlink"))).exists());
     QVERIFY(!QFileInfo(QDir(noteDirectoryPath).filePath(QStringLiteral("backlinks.wsnlink"))).exists());
 
     QFile headerFile(noteHeaderPath);
@@ -3916,7 +3930,6 @@ void LibraryHierarchyViewModelTest::createEmptyNote_whenFolderSelected_createsSc
     const QString bodyText = readUtf8File(noteBodyPath);
     QVERIFY(bodyText.contains(QStringLiteral("<body>")));
     QVERIFY(!bodyText.contains(QStringLiteral("<paragraph>")));
-    QVERIFY(readUtf8File(noteHistoryPath).trimmed().isEmpty());
     QCOMPARE(readJsonObjectFile(noteVersionPath).value(QStringLiteral("snapshots")).toArray().size(), 0);
 
     const QJsonObject indexRoot = readJsonObjectFile(QDir(libraryPath).filePath(QStringLiteral("index.wsnindex")));
@@ -4015,10 +4028,30 @@ void LibraryHierarchyViewModelTest::clearNoteFoldersById_rewritesHeaderAndRefres
         QStringList({QStringLiteral("Workspace")}));
     const QString lastModifiedBeforeClear =
         QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd")) + QStringLiteral("-12-00-00");
+    const auto hierarchyCountByLabel = [&viewModel](const QString& label) -> int
+    {
+        const QVariantList hierarchyNodes = viewModel.hierarchyModel();
+        for (const QVariant& nodeValue : hierarchyNodes)
+        {
+            const QVariantMap node = nodeValue.toMap();
+            if (node.value(QStringLiteral("label")).toString() != label)
+            {
+                continue;
+            }
+            bool ok = false;
+            const int countValue = node.value(QStringLiteral("count")).toInt(&ok);
+            return ok ? countValue : -1;
+        }
+        return -1;
+    };
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Workspace")), 1);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Draft")), 2);
 
     QSignalSpy filesystemSpy(&viewModel, &LibraryHierarchyViewModel::hubFilesystemMutated);
     QVERIFY(viewModel.clearNoteFoldersById(QStringLiteral("note-b")));
     QCOMPARE(filesystemSpy.count(), 1);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Workspace")), 0);
+    QCOMPARE(hierarchyCountByLabel(QStringLiteral("Draft")), 3);
 
     QFile betaHeaderFile(QDir(contentsPath).filePath(QStringLiteral("Library.wslibrary/Beta.wsnote/Beta.wsnhead")));
     QVERIFY(betaHeaderFile.open(QIODevice::ReadOnly | QIODevice::Text));

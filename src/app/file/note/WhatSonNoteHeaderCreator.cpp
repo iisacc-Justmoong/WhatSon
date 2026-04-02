@@ -81,17 +81,12 @@ QString WhatSonNoteHeaderCreator::targetPathForNote(const QString& noteId) const
 
 QStringList WhatSonNoteHeaderCreator::requiredRelativePaths() const
 {
-    return {metadataDirectoryName()};
+    return {};
 }
 
 QString WhatSonNoteHeaderCreator::headerFileName() const
 {
     return QStringLiteral("note.wsnhead");
-}
-
-QString WhatSonNoteHeaderCreator::metadataDirectoryName() const
-{
-    return QStringLiteral(".meta");
 }
 
 QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore& store) const

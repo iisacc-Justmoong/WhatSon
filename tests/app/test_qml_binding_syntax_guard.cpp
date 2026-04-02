@@ -332,10 +332,11 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentsDisplayView.qml must compose a dedicated text-format renderer bridge from editor text.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function normalizeBodySourceForRichTextEditor(sourceText)")) &&
+            contentViewText.contains(QStringLiteral("textFormatRenderer.normalizeInlineStyleAliasesForEditor(source);")) &&
             contentViewText.contains(QStringLiteral("contentsView.richTextHighlightOpenTag")) &&
             contentViewText.contains(QStringLiteral("editorSession.syncEditorTextFromSelection(")) &&
             contentViewText.contains(QStringLiteral("contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText)")),
-        "ContentsDisplayView.qml must normalize stored inline style aliases into editable rich-text tags before syncing selected note body text into the editor session.");
+        "ContentsDisplayView.qml must ask the text-format renderer to normalize stored inline style aliases into editable rich-text tags before syncing selected note body text into the editor session.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property var resolvedEditorViewModeViewModel: {")) &&
             contentViewText.contains(QStringLiteral("LV.ViewModels.get(\"editorViewModeViewModel\")")) &&
@@ -365,9 +366,10 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         contentViewText.contains(QStringLiteral("id: printEditorCanvas")) &&
             contentViewText.contains(QStringLiteral("id: printEditorPage")) &&
             contentViewText.contains(QStringLiteral("readonly property real printPaperAspectRatio: 210 / 297")) &&
-            contentViewText.contains(QStringLiteral("anchors.centerIn: parent")) &&
-            contentViewText.contains(
+            contentViewText.contains(QStringLiteral("printEditorPage.availableWidth")) &&
+            !contentViewText.contains(
                 QStringLiteral("printEditorPage.availableHeight * contentsView.printPaperAspectRatio")) &&
+            contentViewText.contains(QStringLiteral("y: contentsView.printPaperVerticalMargin")) &&
             contentViewText.contains(QStringLiteral("anchors.fill: parent")) &&
             contentViewText.contains(QStringLiteral("anchors.leftMargin: contentsView.showPrintEditorLayout")) &&
             contentViewText.contains(QStringLiteral("anchors.rightMargin: contentsView.showPrintEditorLayout")) &&
@@ -376,7 +378,7 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
                 QStringLiteral("anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent")) &&
             contentViewText.contains(QStringLiteral("visible: contentsView.showPrintMarginGuides")) &&
             contentViewText.contains(QStringLiteral("Number(contentsView.printGuideHorizontalInset)")),
-        "ContentsDisplayView.qml page/print modes must render inside an A4-ratio centered paper scaffold, anchor the editor to the viewport via page-offset margins, and keep print-mode dashed guides.");
+        "ContentsDisplayView.qml page/print modes must render inside an A4-ratio paper scaffold, anchor the editor to printable bounds via page-offset margins, and keep print-mode dashed guides.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color printPaperTextColor: \"#000000\"")) &&
             contentViewText.contains(QStringLiteral("textColor: contentsView.showPrintEditorLayout")) &&
@@ -394,13 +396,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         "ContentsDisplayView.qml formatted preview must reuse paper-page geometry so rich text aligns with page/print scaffolds.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("insetHorizontal: contentsView.showPrintEditorLayout")) &&
-            contentViewText.contains(QStringLiteral("? contentsView.printGuideHorizontalInset")) &&
+            contentViewText.contains(QStringLiteral("? 0")) &&
             contentViewText.contains(QStringLiteral("insetVertical: contentsView.showPrintEditorLayout")) &&
-            contentViewText.contains(QStringLiteral("? contentsView.printGuideVerticalInset")) &&
+            contentViewText.contains(QStringLiteral("? 0")) &&
             contentViewText.contains(QStringLiteral("pageWidth - contentsView.printGuideHorizontalInset * 2")) &&
             contentViewText.contains(QStringLiteral("printEditorPage.x + contentsView.printGuideHorizontalInset")) &&
-            contentViewText.contains(QStringLiteral("printEditorPage.y + contentsView.printGuideVerticalInset")),
-        "ContentsDisplayView.qml page/print text, formatted preview, and placeholder anchors must share the print-guide inset so page and print render the same printable content bounds.");
+            contentViewText.contains(QStringLiteral("printEditorPage.y + contentsView.printGuideVerticalInset")) &&
+            contentViewText.contains(QStringLiteral("- contentsView.printGuideHorizontalInset")) &&
+            contentViewText.contains(QStringLiteral("- contentsView.printGuideVerticalInset")),
+        "ContentsDisplayView.qml page/print text, formatted preview, and placeholder anchors must map to the same printable rectangle so page and print render the same content bounds.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("text: textFormatRenderer.renderedHtml")) &&
             contentViewText.contains(QStringLiteral("textFormat: Text.RichText")),
@@ -724,8 +728,8 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
         !contentViewText.contains(QStringLiteral("text: \"Select a note to view its body text\"")),
         "ContentsDisplayView.qml must not keep a synthetic no-selection editor prompt; no selected note must leave the editor surface empty.");
     QVERIFY2(
-        contentViewText.contains(QStringLiteral("showRenderedOutput: false")),
-        "ContentViewLayout.qml must disable TextEditor preview output inside the contents display surface.");
+        contentViewText.contains(QStringLiteral("showRenderedOutput: true")),
+        "ContentViewLayout.qml must enable TextEditor preview output so inline style tags render directly inside the editable contents surface.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("enforceModeDefaults: false")),
         "ContentViewLayout.qml must opt out of TextEditor forced defaults so wrapped logical-line gutter mapping can be set.");
@@ -1023,6 +1027,14 @@ void QmlBindingSyntaxGuardTest::contentDrawer_mustComposeQuickNoteFrames()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("quickNoteText: contentsView.drawerQuickNoteText")),
         "ContentsDisplayView.qml must bind the drawer contents page to the local quick-note draft state.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("id: drawerView")) &&
+            contentViewText.contains(QStringLiteral("readonly property real effectiveDrawerHeight:")) &&
+            contentViewText.contains(QStringLiteral("readonly property real drawerReservedHeight:")) &&
+            contentViewText.contains(QStringLiteral("readonly property real availableDisplayHeight:")) &&
+            contentViewText.contains(QStringLiteral("Layout.preferredHeight: drawerView.availableDisplayHeight")) &&
+            contentViewText.contains(QStringLiteral("Layout.preferredHeight: drawerView.effectiveDrawerHeight")),
+        "ContentsDisplayView.qml must compute editor/drawer heights as complementary panel regions so drawer chrome cannot overlap the editor surface.");
 
     QVERIFY2(
         drawerMenuBarText.contains(QStringLiteral("id: drawerMenubar")) &&
@@ -1259,8 +1271,12 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         sidebarViewText.contains(QStringLiteral("function syncSelectedHierarchyItem(focusView)")),
         "SidebarHierarchyView.qml must expose syncSelectedHierarchyItem(focusView) for programmatic focus sync.");
     QVERIFY2(
+        sidebarViewText.contains(QStringLiteral("function selectedHierarchyItemActivationKey()")) &&
+            sidebarViewText.contains(QStringLiteral("hierarchyTree.activateListItemByKey(selectedItemActivationKey);")),
+        "SidebarHierarchyView.qml must resolve a stable selected item key and prefer LVRS activateListItemByKey(...) so newly inserted hierarchy rows stay active after model reindex.");
+    QVERIFY2(
         sidebarViewText.contains(QStringLiteral("hierarchyTree.activateListItemById(selectedFolderIndex);")),
-        "SidebarHierarchyView.qml must drive programmatic hierarchy activation through LVRS activateListItemById(...).");
+        "SidebarHierarchyView.qml must keep LVRS activateListItemById(...) as the fallback activation path when selected hierarchy rows do not expose a key.");
     QVERIFY2(
         sidebarViewText.contains(QStringLiteral("LV.Hierarchy {")),
         "SidebarHierarchyView.qml must render folders through the LVRS Hierarchy surface.");
