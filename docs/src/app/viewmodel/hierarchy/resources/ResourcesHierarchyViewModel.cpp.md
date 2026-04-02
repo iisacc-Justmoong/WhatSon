@@ -25,7 +25,7 @@ default format catalog, so the resources sidebar is never a flat type-only list.
 
 This viewmodel now owns a dedicated `ResourcesListModel` projection for the shared right panel.
 
-- `selectedIndex = -1`: all resources are projected.
+- `selectedIndex = -1`: no hierarchy row is selected, so the right-panel list is intentionally empty.
 - selected `kind="type"` row: only resources of that type are projected.
 - selected `kind="format"` row: only resources that match type+format are projected.
 

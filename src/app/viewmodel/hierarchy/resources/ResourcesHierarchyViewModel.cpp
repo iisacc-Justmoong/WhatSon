@@ -822,6 +822,12 @@ void ResourcesHierarchyViewModel::refreshNoteListForSelection()
         selectedItem = &m_items.at(m_selectedIndex);
     }
 
+    if (selectedItem == nullptr)
+    {
+        m_noteListModel.setItems({});
+        return;
+    }
+
     QVector<ResourcesListItem> listItems = buildResourceNoteListItems(
         m_resourcePaths,
         m_resourceResolutionBasePaths,

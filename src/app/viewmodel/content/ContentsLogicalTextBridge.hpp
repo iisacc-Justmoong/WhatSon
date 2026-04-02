@@ -35,11 +35,13 @@ public:
     void logicalLineCountChanged();
 
 private:
+    static QString normalizeLogicalText(const QString& text);
     static QVariantList buildLogicalLineOffsets(const QString& text);
 
     void refreshTextState();
 
     QString m_text;
+    QString m_logicalText;
     QVariantList m_logicalLineStartOffsets;
     int m_logicalLineCount = 1;
 };

@@ -1,5 +1,7 @@
 #include "ContentsLogicalTextBridge.hpp"
 
+#include <QChar>
+#include <QTextDocument>
 #include <algorithm>
 
 ContentsLogicalTextBridge::ContentsLogicalTextBridge(QObject* parent)
@@ -89,8 +91,20 @@ int ContentsLogicalTextBridge::logicalLineCharacterCountAt(int index) const noex
     const int startOffset = logicalLineStartOffsetAt(safeIndex);
     const int nextOffset = safeIndex + 1 < m_logicalLineStartOffsets.size()
                                ? logicalLineStartOffsetAt(safeIndex + 1)
-                               : m_text.size();
+                               : m_logicalText.size();
     return std::max(0, nextOffset - startOffset - (safeIndex + 1 < m_logicalLineStartOffsets.size() ? 1 : 0));
+}
+
+QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
+{
+    QTextDocument document;
+    document.setHtml(text);
+    QString normalized = document.toPlainText();
+    normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    normalized.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+    normalized.replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
+    normalized.replace(QChar::LineSeparator, QLatin1Char('\n'));
+    return normalized;
 }
 
 QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& text)
@@ -111,7 +125,8 @@ QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& t
 
 void ContentsLogicalTextBridge::refreshTextState()
 {
-    const QVariantList nextOffsets = buildLogicalLineOffsets(m_text);
+    m_logicalText = normalizeLogicalText(m_text);
+    const QVariantList nextOffsets = buildLogicalLineOffsets(m_logicalText);
     const int nextLineCount = std::max(1, static_cast<int>(nextOffsets.size()));
 
     if (m_logicalLineStartOffsets != nextOffsets)

@@ -368,11 +368,15 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
             contentViewText.contains(QStringLiteral("anchors.centerIn: parent")) &&
             contentViewText.contains(
                 QStringLiteral("printEditorPage.availableHeight * contentsView.printPaperAspectRatio")) &&
-            contentViewText.contains(
+            contentViewText.contains(QStringLiteral("anchors.fill: parent")) &&
+            contentViewText.contains(QStringLiteral("anchors.leftMargin: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("anchors.rightMargin: contentsView.showPrintEditorLayout")) &&
+            contentViewText.contains(QStringLiteral("anchors.bottomMargin: contentsView.showPrintEditorLayout")) &&
+            !contentViewText.contains(
                 QStringLiteral("anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent")) &&
             contentViewText.contains(QStringLiteral("visible: contentsView.showPrintMarginGuides")) &&
             contentViewText.contains(QStringLiteral("Number(contentsView.printGuideHorizontalInset)")),
-        "ContentsDisplayView.qml page/print modes must render inside an A4-ratio centered paper scaffold, and print mode must add dashed print-margin guides.");
+        "ContentsDisplayView.qml page/print modes must render inside an A4-ratio centered paper scaffold, anchor the editor to the viewport via page-offset margins, and keep print-mode dashed guides.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("readonly property color printPaperTextColor: \"#000000\"")) &&
             contentViewText.contains(QStringLiteral("textColor: contentsView.showPrintEditorLayout")) &&
@@ -619,6 +623,18 @@ void QmlBindingSyntaxGuardTest::contentView_mustComposeTextEditorGutter()
     QVERIFY2(
         contentViewText.contains(QStringLiteral("positionToRectangle(safeOffset)")),
         "ContentViewLayout.qml must map gutter positions through editorItem.positionToRectangle for wrapped text.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("function logicalTextLength()")) &&
+            contentViewText.contains(QStringLiteral("contentsView.logicalTextLength()")) &&
+            contentViewText.contains(QStringLiteral("const logicalLength = contentsView.logicalTextLength();")) &&
+            !contentViewText.contains(QStringLiteral("positionToRectangle(Math.max(0, text.length))")),
+        "ContentViewLayout.qml must derive gutter cursor/bottom geometry from logical plain-text length, not raw rich-text source length.");
+    QVERIFY2(
+        contentViewText.contains(QStringLiteral("property var logicalLineDocumentYCache: []")) &&
+            contentViewText.contains(QStringLiteral("function ensureLogicalLineDocumentYCache()")) &&
+            contentViewText.contains(QStringLiteral("contentsView.logicalLineDocumentYCacheRevision === refreshRevision")) &&
+            contentViewText.contains(QStringLiteral("const middleY = contentsView.lineDocumentY(middle + 1);")),
+        "ContentViewLayout.qml must cache logical line document-Y values and resolve first-visible-line lookup through that monotonic cache to prevent overlapping/omitted gutter numbers.");
     QVERIFY2(
         contentViewText.contains(QStringLiteral("function lineVisualHeight(startLine, lineSpan)")),
         "ContentViewLayout.qml must expand gutter markers to the visual height of wrapped logical lines.");
@@ -1930,6 +1946,9 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(")),
         "ListBarLayout.qml must expose the committed note selection separately from transient ListView currentIndex changes.");
     QVERIFY2(
+        listBarLayoutText.contains(QStringLiteral("const bridgeCurrentIndex = Number(noteListContractBridge.currentIndex);")),
+        "ListBarLayout.qml current-index authority must read the bridge currentIndex property contract so delegate active-state bindings stay reactive.");
+    QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()")) &&
             listBarLayoutText.contains(QStringLiteral("function currentNoteIdFromModel()")) &&
             listBarLayoutText.contains(QStringLiteral("function isDelegateActive(index, noteId)")) &&
@@ -2201,7 +2220,7 @@ void QmlBindingSyntaxGuardTest::hierarchySidebarWiring_mustBindLoaderAndToolbarT
         listBarLayoutText.contains(QStringLiteral("function syncFocusedNoteDeletionState()")),
         "ListBarLayout.qml must expose a helper that resyncs focused note deletion state from the visible current card.");
     QVERIFY2(
-        listBarLayoutText.contains(QStringLiteral("const bridgeNoteId = noteListContractBridge.readCurrentNoteId();")),
+        listBarLayoutText.contains(QStringLiteral("const bridgeNoteId = noteListContractBridge.currentNoteId;")),
         "ListBarLayout.qml focused-note synchronization must read current-note authority from NoteListModelContractBridge first.");
     QVERIFY2(
         listBarLayoutText.contains(QStringLiteral("listBarLayout.noteListModel.currentIndex = index;")),

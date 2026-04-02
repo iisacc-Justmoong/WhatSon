@@ -17,6 +17,30 @@ class EditorPagePrintMarginsTests(unittest.TestCase):
             display_view_text,
         )
         self.assertIn(
+            "anchors.fill: parent",
+            display_view_text,
+        )
+        self.assertIn(
+            "anchors.leftMargin: contentsView.showPrintEditorLayout",
+            display_view_text,
+        )
+        self.assertIn(
+            "anchors.rightMargin: contentsView.showPrintEditorLayout",
+            display_view_text,
+        )
+        self.assertIn(
+            "(Number(printEditorPage.width) || 0)",
+            display_view_text,
+        )
+        self.assertIn(
+            "(Number(printEditorPage.height) || 0)",
+            display_view_text,
+        )
+        self.assertNotIn(
+            "anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent",
+            display_view_text,
+        )
+        self.assertIn(
             "? contentsView.printGuideHorizontalInset",
             display_view_text,
         )

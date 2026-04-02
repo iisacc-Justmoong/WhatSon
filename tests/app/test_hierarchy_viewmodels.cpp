@@ -1915,7 +1915,7 @@ void HierarchyViewModelsTest::resourcesViewModel_noteListModel_filtersBySelected
     });
 
     QVERIFY(viewModel.noteListModel() != nullptr);
-    QCOMPARE(viewModel.noteListModel()->rowCount(), 3);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 0);
 
     auto findIndexByKey = [&viewModel](const QString& key)
     {
@@ -1984,6 +1984,21 @@ void HierarchyViewModelsTest::resourcesViewModel_noteListSelection_resolvesSelec
 
     ResourcesHierarchyViewModel viewModel;
     viewModel.setResourcePaths({packageDirectoryPath});
+    int selectableTypeIndex = -1;
+    for (int row = 0; row < viewModel.itemModel()->rowCount(); ++row)
+    {
+        const QModelIndex index = viewModel.itemModel()->index(row, 0);
+        const QString kind = viewModel.itemModel()->data(index, ResourcesHierarchyModel::KindRole).toString();
+        const int count = viewModel.itemModel()->data(index, ResourcesHierarchyModel::CountRole).toInt();
+        if (kind == QStringLiteral("type") && count > 0)
+        {
+            selectableTypeIndex = row;
+            break;
+        }
+    }
+    QVERIFY(selectableTypeIndex >= 0);
+    viewModel.setSelectedIndex(selectableTypeIndex);
+    QCOMPARE(viewModel.noteListModel()->rowCount(), 1);
     viewModel.noteListModel()->setCurrentIndex(0);
 
     const QString selectedNoteId = viewModel.noteListModel()->currentNoteId();

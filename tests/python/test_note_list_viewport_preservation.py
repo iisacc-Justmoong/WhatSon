@@ -51,9 +51,13 @@ class NoteListViewportPreservationTests(unittest.TestCase):
             "readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()",
             list_bar_text,
         )
+        self.assertIn(
+            "const bridgeCurrentIndex = Number(noteListContractBridge.currentIndex);",
+            list_bar_text,
+        )
         self.assertIn("function currentNoteIdFromModel()", list_bar_text)
         self.assertIn(
-            "const bridgeNoteId = noteListContractBridge.readCurrentNoteId();",
+            "const bridgeNoteId = noteListContractBridge.currentNoteId;",
             list_bar_text,
         )
         self.assertIn("function isDelegateActive(index, noteId)", list_bar_text)

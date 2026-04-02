@@ -76,6 +76,9 @@
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
 - `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
   not need to own all dynamic contract detection.
+- Committed active-row state now reads `noteListContractBridge.currentIndex/currentNoteId` **property contracts**
+  (not invokable snapshots), so QML binding reactivity tracks selection changes and avoids the first-row-fixed
+  active-card regression.
 - Delegate active styling uses `isDelegateActive(index, noteId)`:
   - primary contract: committed `currentIndex`
   - fallback contract: committed `currentNoteId` equality

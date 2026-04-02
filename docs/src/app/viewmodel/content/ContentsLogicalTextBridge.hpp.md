@@ -14,6 +14,13 @@
 - Declared namespaces present: no
 - QObject macro present: yes
 
+## Logical Text State
+
+- The header now declares a dedicated normalized logical-text cache (`m_logicalText`) separate from
+  raw editor source text (`m_text`).
+- `normalizeLogicalText(...)` is the private normalization entrypoint used before line-offset
+  generation so QML gutter queries consume plain-text-aligned offsets.
+
 ### Classes and Structs
 - `ContentsLogicalTextBridge`
 

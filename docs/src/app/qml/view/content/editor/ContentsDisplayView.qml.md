@@ -15,6 +15,13 @@ positions from the same document origin.
   text area.
 - `editorSurfaceHeight` is derived from `editorViewportHeight - editorDocumentStartY`, which keeps Fill sizing stable
   after reserving the fixed top spacer.
+- `logicalTextLength()` is the canonical line-metric length source for gutter/minimap cursor geometry in RichText mode.
+  It is derived from `ContentsLogicalTextBridge` logical offsets/counts instead of raw `editorText.length`, so markup
+  token length cannot desynchronize gutter row placement.
+- `logicalLineDocumentYCache` stores monotonic document-Y values per logical line. It is rebuilt per
+  `gutterRefreshRevision` and reused by both `lineDocumentY(...)` and
+  `logicalLineNumberForDocumentY(...)` so binary-search visibility and rendered gutter delegates never drift into
+  overlapping or skipped line-number rows when empty lines/wrapped edits jitter `positionToRectangle(...)`.
 
 ## Key Collaborators
 
@@ -84,6 +91,9 @@ positions from the same document origin.
   editor viewport while preserving outer margins.
 - `Page`/`Print` text layout now uses the same insets as the print guide (`printGuideHorizontalInset`,
   `printGuideVerticalInset`) so content is rendered strictly inside the printable area.
+- The editor surface is anchored to the viewport (`anchors.fill: parent`) and applies page-offset
+  `left/right/top/bottom` margins computed from `printEditorPage` geometry, so paper-mode text always follows the
+  centered page bounds instead of drifting outside the sheet.
 - `Print` mode draws dashed margin guides for that printable area; `Page` mode uses the same margins for text layout
   but intentionally hides guide lines.
 - `Page`/`Print` text color is explicitly forced to black (`#000000`) for editor and formatted preview surfaces so

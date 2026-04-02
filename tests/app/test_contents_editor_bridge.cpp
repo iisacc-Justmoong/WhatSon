@@ -210,6 +210,7 @@ private
 
 
     void textMetrics_mustTrackLogicalOffsetsAndLineQueries();
+    void textMetrics_whenRichTextSource_mustDeriveLogicalOffsetsFromRenderedText();
     void noteContracts_mustMirrorNoteListSelectionState();
     void noteContracts_refreshSelectedNoteSnapshot_mustReloadSelectedNoteFromContentViewModel();
     void gutterMarkers_mustNormalizeSupportedMarkerTypes();
@@ -236,6 +237,20 @@ void ContentsEditorAdapterTest::textMetrics_mustTrackLogicalOffsetsAndLineQuerie
     QCOMPARE(bridge.logicalLineCharacterCountAt(0), 5);
     QCOMPARE(bridge.logicalLineCharacterCountAt(1), 4);
     QCOMPARE(bridge.logicalLineCharacterCountAt(2), 0);
+}
+
+void ContentsEditorAdapterTest::textMetrics_whenRichTextSource_mustDeriveLogicalOffsetsFromRenderedText()
+{
+    ContentsLogicalTextBridge bridge;
+    bridge.setText(QStringLiteral("<p>alpha</p><p>beta</p>"));
+
+    QVERIFY(bridge.logicalLineCount() >= 2);
+    QCOMPARE(bridge.logicalLineNumberForOffset(0), 1);
+
+    const int secondLineStartOffset = bridge.logicalLineStartOffsetAt(1);
+    QVERIFY(secondLineStartOffset > 0);
+    QCOMPARE(bridge.logicalLineNumberForOffset(secondLineStartOffset), 2);
+    QVERIFY(bridge.logicalLineCharacterCountAt(0) >= 5);
 }
 
 void ContentsEditorAdapterTest::noteContracts_mustMirrorNoteListSelectionState()

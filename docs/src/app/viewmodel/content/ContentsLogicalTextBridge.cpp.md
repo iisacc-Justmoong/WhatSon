@@ -10,6 +10,16 @@
 - File name: `ContentsLogicalTextBridge.cpp`
 - Approximate line count: 127
 
+## Runtime Line-Metric Contract
+
+- The bridge now normalizes incoming editor source through `QTextDocument::setHtml(...)` +
+  `toPlainText()` before deriving logical offsets.
+- Paragraph and line separators are folded into `\n`, so logical line starts stay stable across
+  rich-text paragraph blocks (`<p>`, `<br>`, inline span tags).
+- `logicalLineCharacterCountAt(...)` uses normalized plain-text length (`m_logicalText`) instead of
+  raw rich-text source length. This prevents gutter/minimap geometry drift when the source contains
+  markup tokens that do not map 1:1 to cursor offsets.
+
 ## Extracted Symbols
 - Declared namespaces present: no
 - QObject macro present: no

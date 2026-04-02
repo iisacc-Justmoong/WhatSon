@@ -170,7 +170,7 @@ Rectangle {
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
             return -1;
-        const bridgeCurrentIndex = Number(noteListContractBridge.readCurrentIndex());
+        const bridgeCurrentIndex = Number(noteListContractBridge.currentIndex);
         if (isFinite(bridgeCurrentIndex))
             return bridgeCurrentIndex;
         if (listBarLayout.noteListModel.currentIndex !== undefined)
@@ -178,7 +178,7 @@ Rectangle {
         return -1;
     }
     function currentNoteIdFromModel() {
-        const bridgeNoteId = noteListContractBridge.readCurrentNoteId();
+        const bridgeNoteId = noteListContractBridge.currentNoteId;
         const normalizedBridgeNoteId = bridgeNoteId === undefined || bridgeNoteId === null ? "" : String(bridgeNoteId).trim();
         if (normalizedBridgeNoteId.length > 0)
             return normalizedBridgeNoteId;
@@ -355,7 +355,7 @@ Rectangle {
         listBarLayout.syncingCurrentIndexFromModel = false;
     }
     function syncFocusedNoteDeletionState() {
-        const bridgeNoteId = noteListContractBridge.readCurrentNoteId();
+        const bridgeNoteId = noteListContractBridge.currentNoteId;
         if (bridgeNoteId.length > 0) {
             noteDeletionBridge.focusedNoteId = bridgeNoteId;
             return;

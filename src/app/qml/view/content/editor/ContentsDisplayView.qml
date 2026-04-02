@@ -116,6 +116,9 @@ Item {
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
     readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
     readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
+    property var logicalLineDocumentYCache: []
+    property int logicalLineDocumentYCacheRevision: -1
+    property int logicalLineDocumentYCacheLineCount: 0
     property var libraryHierarchyViewModel: null
     property int minDisplayHeight: LV.Theme.gap20 * 8
     property int minDrawerHeight: LV.Theme.gap20 * 6
@@ -365,7 +368,11 @@ Item {
     }
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
-        const safeOffset = Math.max(0, Math.min(contentsView.editorText.length, Number(contentEditor.cursorPosition) || 0));
+        const safeOffset = Math.max(
+                    0,
+                    Math.min(
+                        contentsView.logicalTextLength(),
+                        Number(contentEditor.cursorPosition) || 0));
         if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
             const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
             return {
@@ -382,15 +389,20 @@ Item {
     }
     function documentOccupiedBottomY() {
         const refreshRevision = contentsView.gutterRefreshRevision;
-        const text = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        contentsView.ensureLogicalLineDocumentYCache();
+        const cachedLastLineDocumentY = contentsView.logicalLineCount > 0
+                ? contentsView.lineDocumentY(contentsView.logicalLineCount)
+                : 0;
+        const cachedBottom = Math.max(contentsView.editorLineHeight, cachedLastLineDocumentY + contentsView.editorLineHeight);
+        const logicalLength = contentsView.logicalTextLength();
         if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
-            const rect = contentEditor.editorItem.positionToRectangle(Math.max(0, text.length));
+            const rect = contentEditor.editorItem.positionToRectangle(Math.max(0, logicalLength));
             const rectY = Number(rect.y);
             const rectHeight = Number(rect.height);
             if (isFinite(rectY))
-                return Math.max(contentsView.editorLineHeight, rectY + Math.max(contentsView.editorLineHeight, isFinite(rectHeight) ? rectHeight : contentsView.editorLineHeight));
+                return Math.max(cachedBottom, rectY + Math.max(contentsView.editorLineHeight, isFinite(rectHeight) ? rectHeight : contentsView.editorLineHeight));
         }
-        return Math.max(contentsView.editorLineHeight, contentsView.logicalLineCount * contentsView.editorLineHeight);
+        return cachedBottom;
     }
     function documentYForOffset(offset) {
         const refreshRevision = contentsView.gutterRefreshRevision;
@@ -419,9 +431,43 @@ Item {
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
+    function ensureLogicalLineDocumentYCache() {
+        const refreshRevision = contentsView.gutterRefreshRevision;
+        const lineCount = contentsView.logicalLineCount;
+        if (contentsView.logicalLineDocumentYCacheRevision === refreshRevision
+                && contentsView.logicalLineDocumentYCacheLineCount === lineCount
+                && Array.isArray(contentsView.logicalLineDocumentYCache)
+                && contentsView.logicalLineDocumentYCache.length === lineCount) {
+            return;
+        }
+        const cachedYValues = [];
+        let previousDocumentY = 0;
+        for (let lineIndex = 0; lineIndex < lineCount; ++lineIndex) {
+            const startOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lineIndex)) || 0);
+            const rawDocumentY = Math.max(0, Number(contentsView.documentYForOffset(startOffset)) || 0);
+            const minimumDocumentY = lineIndex === 0
+                    ? 0
+                    : previousDocumentY + Math.max(1, contentsView.editorLineHeight);
+            const resolvedDocumentY = lineIndex === 0
+                    ? rawDocumentY
+                    : Math.max(rawDocumentY, minimumDocumentY);
+            cachedYValues.push(resolvedDocumentY);
+            previousDocumentY = resolvedDocumentY;
+        }
+        contentsView.logicalLineDocumentYCache = cachedYValues;
+        contentsView.logicalLineDocumentYCacheRevision = refreshRevision;
+        contentsView.logicalLineDocumentYCacheLineCount = lineCount;
+    }
     function lineDocumentY(lineNumber) {
+        contentsView.ensureLogicalLineDocumentYCache();
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
-        return contentsView.documentYForOffset(textMetricsBridge.logicalLineStartOffsetAt(safeLineNumber - 1));
+        const cacheIndex = safeLineNumber - 1;
+        if (Array.isArray(contentsView.logicalLineDocumentYCache)
+                && cacheIndex >= 0
+                && cacheIndex < contentsView.logicalLineDocumentYCache.length) {
+            return Number(contentsView.logicalLineDocumentYCache[cacheIndex]) || 0;
+        }
+        return Math.max(0, (safeLineNumber - 1) * contentsView.editorLineHeight);
     }
     function lineVisualHeight(startLine, lineSpan) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
@@ -440,16 +486,16 @@ Item {
         return contentsView.editorViewportYForDocumentY(contentsView.lineDocumentY(lineNumber));
     }
     function logicalLineNumberForDocumentY(documentY) {
-        const offsets = contentsView.logicalLineStartOffsets;
-        if (!offsets || offsets.length === undefined || offsets.length === 0)
+        if (contentsView.logicalLineCount <= 0)
             return 1;
+        contentsView.ensureLogicalLineDocumentYCache();
         const safeDocumentY = Math.max(0, Number(documentY) || 0);
         let low = 0;
-        let high = offsets.length - 1;
+        let high = contentsView.logicalLineCount - 1;
         let best = 0;
         while (low <= high) {
             const middle = Math.floor((low + high) / 2);
-            const middleY = contentsView.documentYForOffset(offsets[middle]);
+            const middleY = contentsView.lineDocumentY(middle + 1);
             if (middleY <= safeDocumentY) {
                 best = middle;
                 low = middle + 1;
@@ -458,6 +504,13 @@ Item {
             }
         }
         return best + 1;
+    }
+    function logicalTextLength() {
+        const safeLineCount = Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1);
+        const lastLineIndex = safeLineCount - 1;
+        const lastStartOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lastLineIndex)) || 0);
+        const lastLineCharacterCount = Math.max(0, Number(textMetricsBridge.logicalLineCharacterCountAt(lastLineIndex)) || 0);
+        return lastStartOffset + lastLineCharacterCount;
     }
     function markerColorForType(markerType) {
         const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
@@ -616,9 +669,7 @@ Item {
             if (activeNoteId !== pendingNoteId)
                 return;
 
-            const cursorPosition = contentsView.editorText === undefined || contentsView.editorText === null
-                    ? 0
-                    : String(contentsView.editorText).length;
+            const cursorPosition = Math.max(0, contentsView.logicalTextLength());
             contentEditor.forceActiveFocus();
             if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
                 contentEditor.editorItem.forceActiveFocus();
@@ -1372,8 +1423,28 @@ Item {
                     LV.TextEditor {
                         id: contentEditor
 
-                        anchors.fill: contentsView.showPrintEditorLayout ? printEditorPage : parent
-                        anchors.topMargin: contentsView.editorDocumentStartY
+                        anchors.fill: parent
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                            ? (Number(printEditorPage.x) || 0)
+                                            : 0
+                        anchors.rightMargin: contentsView.showPrintEditorLayout
+                                             ? Math.max(
+                                                   0,
+                                                   (Number(parent ? parent.width : 0) || 0)
+                                                       - ((Number(printEditorPage.x) || 0)
+                                                          + (Number(printEditorPage.width) || 0)))
+                                             : 0
+                        anchors.topMargin: contentsView.showPrintEditorLayout
+                                           ? (Number(printEditorPage.y) || 0)
+                                               + contentsView.editorDocumentStartY
+                                           : contentsView.editorDocumentStartY
+                        anchors.bottomMargin: contentsView.showPrintEditorLayout
+                                              ? Math.max(
+                                                    0,
+                                                    (Number(parent ? parent.height : 0) || 0)
+                                                        - ((Number(printEditorPage.y) || 0)
+                                                           + (Number(printEditorPage.height) || 0)))
+                                              : 0
                         autoFocusOnPress: true
                         backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         backgroundColorDisabled: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
