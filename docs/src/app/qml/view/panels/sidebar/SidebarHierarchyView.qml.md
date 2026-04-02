@@ -65,6 +65,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   - plain click: single selection
   - `Shift` + click: contiguous range selection anchored by `hierarchySelectionAnchorIndex`
   - `Cmd/Ctrl` + click: additive toggle selection
+- The hierarchy host now captures press-time pointer modifiers via a dedicated left-button `TapHandler`
+  (`acceptedModifiers: Qt.KeyboardModifierMask`) mounted on `LV.Hierarchy`.
+- `resolveHierarchySelectionModifiers(...)` uses a short-lived press cache when activation callbacks arrive without
+  modifier bits, so `Cmd/Ctrl` and `Shift` gestures remain stable across platform callback timing differences.
 - `selectedHierarchyIndices` stores the visual multi-selection set, while `hierarchyViewModel.setHierarchySelectedIndex(...)`
   still tracks the primary routed folder.
 - Because LVRS hierarchy rows expose only one native active item, additional selections are rendered by
@@ -125,3 +129,13 @@ This file should be read as a composed view, not as the place where hierarchy bu
   reference `sidebarHierarchyView` id members with bound component scope.
 - Added modifier-based hierarchy multi-selection (`Cmd/Ctrl` toggle, `Shift` range) with an explicit
   overlay highlight path for non-primary selected rows.
+- Added press-time modifier capture and cached activation-modifier resolution so modifier-selection does not regress when
+  LVRS activation callbacks are delivered after pointer-up.
+
+## Tests
+
+- Automated test files are not currently present in this repository.
+- Modifier-selection regression checklist for this file:
+  - `Shift + click` creates contiguous hierarchy ranges from `hierarchySelectionAnchorIndex`.
+  - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.
+  - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.

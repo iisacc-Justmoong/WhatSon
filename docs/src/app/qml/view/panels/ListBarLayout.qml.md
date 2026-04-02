@@ -80,6 +80,10 @@
   - `Cmd/Ctrl + Shift` + click/tap: additive range selection (existing set + anchor-target range union)
 - Modifier normalization now merges per-event modifiers with `Qt.application.keyboardModifiers`, so platform event
   payloads that drop one side of the modifier state no longer collapse multi-selection into single-row activation.
+- The desktop left-click `TapHandler` explicitly accepts all modifier states (`acceptedModifiers: Qt.KeyboardModifierMask`),
+  captures modifier keys on press, and keeps a short-lived cache for tap resolution.
+- `resolveSelectionModifiers(...)` now restores press-time modifier intent when tap events arrive without modifier flags
+  (for example, occasional `Cmd`/`Shift` loss on macOS pointer release dispatch).
 - Multi-selection state is held in `selectedNoteIndices`; model-authoritative `currentIndex/currentNoteId` remains the
   primary note for downstream domain routing.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
@@ -109,4 +113,9 @@
 
 ## Tests
 
-Automated test files were removed from this repository; validate non-inertial note-list scroll and selection wiring through runtime interaction checks.
+- Automated test files are not currently present in this repository.
+- Modifier-selection regression checklist for this file:
+  - `Shift + click` selects contiguous ranges from `noteSelectionAnchorIndex`.
+  - `Cmd/Ctrl + click` toggles row membership without collapsing to single-row selection.
+  - `Cmd/Ctrl + Shift + click` unions the anchor range with existing selection.
+  - Releasing modifier keys near pointer-up must still respect press-time intent.

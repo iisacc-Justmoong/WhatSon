@@ -1,8 +1,97 @@
 #include "ContentsLogicalTextBridge.hpp"
 
 #include <QChar>
+#include <QStringView>
 #include <QTextDocument>
 #include <algorithm>
+
+namespace
+{
+    QString normalizedHtmlTagName(const QStringView tagToken)
+    {
+        if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
+        {
+            return {};
+        }
+
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+        {
+            ++cursor;
+        }
+        if (cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/'))
+        {
+            ++cursor;
+        }
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+        {
+            ++cursor;
+        }
+
+        const int nameStart = cursor;
+        while (cursor < tagToken.size())
+        {
+            const QChar ch = tagToken.at(cursor);
+            if (!(ch.isLetterOrNumber()
+                  || ch == QLatin1Char('_')
+                  || ch == QLatin1Char('.')
+                  || ch == QLatin1Char(':')
+                  || ch == QLatin1Char('-')))
+            {
+                break;
+            }
+            ++cursor;
+        }
+
+        if (cursor <= nameStart)
+        {
+            return {};
+        }
+
+        return tagToken.mid(nameStart, cursor - nameStart).toString().trimmed().toCaseFolded();
+    }
+
+    bool htmlTagProducesLogicalBreak(const QStringView tagToken)
+    {
+        return normalizedHtmlTagName(tagToken) == QStringLiteral("br");
+    }
+
+    int htmlEntityLengthAt(const QString& text, const int sourceOffset)
+    {
+        if (sourceOffset < 0
+            || sourceOffset >= text.size()
+            || text.at(sourceOffset) != QLatin1Char('&'))
+        {
+            return 0;
+        }
+
+        const int semicolonOffset = text.indexOf(QLatin1Char(';'), sourceOffset + 1);
+        if (semicolonOffset <= sourceOffset)
+        {
+            return 0;
+        }
+
+        const QString entityToken = text.mid(sourceOffset, semicolonOffset - sourceOffset + 1).toCaseFolded();
+        if (entityToken == QStringLiteral("&amp;")
+            || entityToken == QStringLiteral("&lt;")
+            || entityToken == QStringLiteral("&gt;")
+            || entityToken == QStringLiteral("&quot;")
+            || entityToken == QStringLiteral("&apos;")
+            || entityToken == QStringLiteral("&#39;")
+            || entityToken == QStringLiteral("&nbsp;"))
+        {
+            return entityToken.size();
+        }
+
+        if (entityToken.startsWith(QStringLiteral("&#x"))
+            || entityToken.startsWith(QStringLiteral("&#")))
+        {
+            return entityToken.size();
+        }
+
+        return 0;
+    }
+} // namespace
 
 ContentsLogicalTextBridge::ContentsLogicalTextBridge(QObject* parent)
     : QObject(parent)
@@ -95,6 +184,17 @@ int ContentsLogicalTextBridge::logicalLineCharacterCountAt(int index) const noex
     return std::max(0, nextOffset - startOffset - (safeIndex + 1 < m_logicalLineStartOffsets.size() ? 1 : 0));
 }
 
+int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) const noexcept
+{
+    if (m_logicalToSourceOffsets.isEmpty())
+    {
+        return std::clamp(logicalOffset, 0, m_text.size());
+    }
+
+    const int safeOffset = std::clamp(logicalOffset, 0, static_cast<int>(m_logicalToSourceOffsets.size()) - 1);
+    return std::clamp(m_logicalToSourceOffsets.at(safeOffset), 0, m_text.size());
+}
+
 QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
 {
     QTextDocument document;
@@ -123,9 +223,65 @@ QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& t
     return offsets;
 }
 
+QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QString& text, const int logicalTextLength)
+{
+    QVector<int> offsets;
+    const int safeLogicalTextLength = std::max(0, logicalTextLength);
+    offsets.reserve(safeLogicalTextLength + 1);
+    offsets.push_back(0);
+
+    int logicalOffset = 0;
+    int sourceOffset = 0;
+    while (sourceOffset < text.size() && logicalOffset < safeLogicalTextLength)
+    {
+        const QChar ch = text.at(sourceOffset);
+        if (ch == QLatin1Char('<'))
+        {
+            const int tagEnd = text.indexOf(QLatin1Char('>'), sourceOffset + 1);
+            if (tagEnd > sourceOffset)
+            {
+                const QStringView tagToken(text.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                if (htmlTagProducesLogicalBreak(tagToken))
+                {
+                    ++logicalOffset;
+                    offsets.push_back(tagEnd + 1);
+                }
+                sourceOffset = tagEnd + 1;
+                continue;
+            }
+        }
+
+        const int entityLength = htmlEntityLengthAt(text, sourceOffset);
+        if (entityLength > 0)
+        {
+            sourceOffset += entityLength;
+            ++logicalOffset;
+            offsets.push_back(sourceOffset);
+            continue;
+        }
+
+        ++sourceOffset;
+        ++logicalOffset;
+        offsets.push_back(sourceOffset);
+    }
+
+    while (offsets.size() < safeLogicalTextLength + 1)
+    {
+        offsets.push_back(text.size());
+    }
+
+    if (offsets.size() > safeLogicalTextLength + 1)
+    {
+        offsets.resize(safeLogicalTextLength + 1);
+    }
+
+    return offsets;
+}
+
 void ContentsLogicalTextBridge::refreshTextState()
 {
     m_logicalText = normalizeLogicalText(m_text);
+    m_logicalToSourceOffsets = buildLogicalToSourceOffsets(m_text, m_logicalText.size());
     const QVariantList nextOffsets = buildLogicalLineOffsets(m_logicalText);
     const int nextLineCount = std::max(1, static_cast<int>(nextOffsets.size()));
 

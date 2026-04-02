@@ -3,6 +3,7 @@
 
 #include <QRegularExpression>
 #include <QStringList>
+#include <QVector>
 
 namespace
 {
@@ -23,43 +24,183 @@ namespace
         return text;
     }
 
-    QString normalizedInlineStyleTagName(const QString& elementName)
+    QString decodeHtmlEntities(QString text)
+    {
+        text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+        text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+        text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+        text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&#39;"), QStringLiteral("'"));
+        text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
+        text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+        return text;
+    }
+
+    QString canonicalInlineStyleTagName(const QString& elementName)
     {
         const QString normalizedName = elementName.trimmed().toCaseFolded();
         if (normalizedName == QStringLiteral("bold")
             || normalizedName == QStringLiteral("b")
             || normalizedName == QStringLiteral("strong"))
         {
-            return QStringLiteral("strong");
+            return QStringLiteral("bold");
         }
         if (normalizedName == QStringLiteral("italic")
             || normalizedName == QStringLiteral("i")
             || normalizedName == QStringLiteral("em"))
         {
-            return QStringLiteral("em");
+            return QStringLiteral("italic");
         }
         if (normalizedName == QStringLiteral("underline")
             || normalizedName == QStringLiteral("u"))
         {
-            return QStringLiteral("u");
+            return QStringLiteral("underline");
         }
         if (normalizedName == QStringLiteral("strikethrough")
             || normalizedName == QStringLiteral("strike")
             || normalizedName == QStringLiteral("s")
             || normalizedName == QStringLiteral("del"))
         {
-            return QStringLiteral("s");
+            return QStringLiteral("strikethrough");
+        }
+        return {};
+    }
+
+    QStringList spanInlineStyleTagsFromCssDeclaration(const QString& cssDeclaration)
+    {
+        const QString normalizedCss = cssDeclaration.toCaseFolded();
+        if (normalizedCss.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList tags;
+
+        bool hasHighlight = false;
+        const QRegularExpression backgroundColorPattern(
+            QStringLiteral(R"(background-color\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch backgroundColorMatch = backgroundColorPattern.match(normalizedCss);
+        if (backgroundColorMatch.hasMatch())
+        {
+            const QString backgroundValue = backgroundColorMatch.captured(1).trimmed().toCaseFolded();
+            if (!backgroundValue.isEmpty()
+                && backgroundValue != QStringLiteral("transparent")
+                && backgroundValue != QStringLiteral("none")
+                && backgroundValue != QStringLiteral("initial")
+                && backgroundValue != QStringLiteral("inherit"))
+            {
+                tags.push_back(QStringLiteral("highlight"));
+                hasHighlight = true;
+            }
+        }
+
+        const QRegularExpression fontWeightPattern(
+            QStringLiteral(R"(font-weight\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch fontWeightMatch = fontWeightPattern.match(normalizedCss);
+        if (!hasHighlight && fontWeightMatch.hasMatch())
+        {
+            const QString weightValue = fontWeightMatch.captured(1).trimmed();
+            bool numericWeightParsed = false;
+            const int numericWeight = weightValue.toInt(&numericWeightParsed);
+            if (weightValue.contains(QStringLiteral("bold"))
+                || (numericWeightParsed && numericWeight >= 600))
+            {
+                tags.push_back(QStringLiteral("bold"));
+            }
+        }
+
+        const QRegularExpression fontStylePattern(
+            QStringLiteral(R"(font-style\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch fontStyleMatch = fontStylePattern.match(normalizedCss);
+        if (fontStyleMatch.hasMatch()
+            && fontStyleMatch.captured(1).contains(QStringLiteral("italic"), Qt::CaseInsensitive))
+        {
+            tags.push_back(QStringLiteral("italic"));
+        }
+
+        const QRegularExpression textDecorationPattern(
+            QStringLiteral(R"(text-decoration(?:-line)?\s*:\s*([^;]+))"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch textDecorationMatch = textDecorationPattern.match(normalizedCss);
+        if (textDecorationMatch.hasMatch())
+        {
+            const QString decorationValue = textDecorationMatch.captured(1).toCaseFolded();
+            if (decorationValue.contains(QStringLiteral("underline")))
+            {
+                tags.push_back(QStringLiteral("underline"));
+            }
+            if (decorationValue.contains(QStringLiteral("line-through")))
+            {
+                tags.push_back(QStringLiteral("strikethrough"));
+            }
+        }
+
+        return tags;
+    }
+
+    QString cssStyleAttributeFromTagToken(const QString& tagToken)
+    {
+        static const QRegularExpression stylePattern(
+            QStringLiteral(R"ATTR(\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR"),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch styleMatch = stylePattern.match(tagToken);
+        if (!styleMatch.hasMatch())
+        {
+            return {};
+        }
+        for (int captureIndex = 1; captureIndex <= 3; ++captureIndex)
+        {
+            const QString value = decodeHtmlEntities(styleMatch.captured(captureIndex));
+            if (!value.isEmpty())
+            {
+                return value;
+            }
         }
         return {};
     }
 
     QString openingEditorTagForStyle(const QString& normalizedStyleTag)
     {
-        if (normalizedStyleTag == QStringLiteral("strong"))
+        if (normalizedStyleTag == QStringLiteral("bold"))
         {
-            return QStringLiteral("<strong style=\"font-weight:700;\">");
+            return QStringLiteral("<span style=\"font-weight:800;\">");
         }
-        return QStringLiteral("<%1>").arg(normalizedStyleTag);
+        if (normalizedStyleTag == QStringLiteral("italic"))
+        {
+            return QStringLiteral("<span style=\"font-style:italic;\">");
+        }
+        if (normalizedStyleTag == QStringLiteral("underline"))
+        {
+            return QStringLiteral("<span style=\"text-decoration: underline;\">");
+        }
+        if (normalizedStyleTag == QStringLiteral("strikethrough"))
+        {
+            return QStringLiteral("<span style=\"text-decoration: line-through;\">");
+        }
+        if (normalizedStyleTag == QStringLiteral("highlight"))
+        {
+            return ContentsTextHighlightRenderer::highlightOpenHtmlTag();
+        }
+        return {};
+    }
+
+    QString closingEditorTagForStyle(const QString& normalizedStyleTag)
+    {
+        if (normalizedStyleTag == QStringLiteral("highlight"))
+        {
+            return ContentsTextHighlightRenderer::highlightCloseHtmlTag();
+        }
+        if (normalizedStyleTag == QStringLiteral("bold")
+            || normalizedStyleTag == QStringLiteral("italic")
+            || normalizedStyleTag == QStringLiteral("underline")
+            || normalizedStyleTag == QStringLiteral("strikethrough"))
+        {
+            return QStringLiteral("</span>");
+        }
+        return {};
     }
 
     bool isClosingTagToken(const QString& token)
@@ -100,7 +241,7 @@ namespace
         for (int index = openStyleTags->size() - 1; index >= openTagIndex; --index)
         {
             const QString openTag = openStyleTags->at(index);
-            *htmlOutput += QStringLiteral("</%1>").arg(openTag);
+            *htmlOutput += closingEditorTagForStyle(openTag);
             openStyleTags->removeAt(index);
         }
     }
@@ -118,6 +259,7 @@ namespace
 
         QString html;
         QStringList openStyleTags;
+        QVector<QStringList> spanStyleStack;
         qsizetype cursor = 0;
 
         QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedText);
@@ -155,23 +297,54 @@ namespace
                 continue;
             }
 
-            if (ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            if (normalizedTagName == QStringLiteral("span"))
             {
-                const QString highlightStackTagName = ContentsTextHighlightRenderer::highlightStackTagName();
                 if (closingTag)
                 {
-                    closeMatchingTag(&openStyleTags, &html, highlightStackTagName);
+                    if (!spanStyleStack.isEmpty())
+                    {
+                        const QStringList spanTags = spanStyleStack.takeLast();
+                        for (int index = spanTags.size() - 1; index >= 0; --index)
+                        {
+                            closeMatchingTag(&openStyleTags, &html, spanTags.at(index));
+                        }
+                    }
+                    else
+                    {
+                        html += escapeHtmlText(fullTagToken);
+                    }
                 }
-                else if (!selfClosingTag)
+                else if (selfClosingTag)
                 {
-                    html += ContentsTextHighlightRenderer::highlightOpenHtmlTag();
-                    openStyleTags.append(highlightStackTagName);
+                    html += escapeHtmlText(fullTagToken);
+                }
+                else
+                {
+                    const QStringList spanTags = spanInlineStyleTagsFromCssDeclaration(
+                        cssStyleAttributeFromTagToken(fullTagToken));
+                    if (spanTags.isEmpty())
+                    {
+                        html += escapeHtmlText(fullTagToken);
+                    }
+                    else
+                    {
+                        for (const QString& spanTag : spanTags)
+                        {
+                            html += openingEditorTagForStyle(spanTag);
+                            openStyleTags.append(spanTag);
+                        }
+                        spanStyleStack.push_back(spanTags);
+                    }
                 }
                 cursor = tagEnd;
                 continue;
             }
 
-            const QString styleTag = normalizedInlineStyleTagName(rawTagName);
+            QString styleTag = canonicalInlineStyleTagName(rawTagName);
+            if (styleTag.isEmpty() && ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            {
+                styleTag = QStringLiteral("highlight");
+            }
             if (!styleTag.isEmpty())
             {
                 if (closingTag)
@@ -180,7 +353,7 @@ namespace
                 }
                 else if (!selfClosingTag)
                 {
-                    html += QStringLiteral("<%1>").arg(styleTag);
+                    html += openingEditorTagForStyle(styleTag);
                     openStyleTags.append(styleTag);
                 }
                 cursor = tagEnd;
@@ -198,7 +371,7 @@ namespace
 
         for (int index = openStyleTags.size() - 1; index >= 0; --index)
         {
-            html += QStringLiteral("</%1>").arg(openStyleTags.at(index));
+            html += closingEditorTagForStyle(openStyleTags.at(index));
         }
 
         html.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
@@ -218,6 +391,7 @@ namespace
 
         QString output;
         QStringList openStyleTags;
+        QVector<QStringList> spanStyleStack;
         qsizetype cursor = 0;
 
         QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedText);
@@ -249,23 +423,54 @@ namespace
                 continue;
             }
 
-            if (ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            if (normalizedTagName == QStringLiteral("span"))
             {
-                const QString highlightStackTagName = ContentsTextHighlightRenderer::highlightStackTagName();
                 if (closingTag)
                 {
-                    closeMatchingTag(&openStyleTags, &output, highlightStackTagName);
+                    if (!spanStyleStack.isEmpty())
+                    {
+                        const QStringList spanTags = spanStyleStack.takeLast();
+                        for (int index = spanTags.size() - 1; index >= 0; --index)
+                        {
+                            closeMatchingTag(&openStyleTags, &output, spanTags.at(index));
+                        }
+                    }
+                    else
+                    {
+                        output += fullTagToken;
+                    }
                 }
-                else if (!selfClosingTag)
+                else if (selfClosingTag)
                 {
-                    output += ContentsTextHighlightRenderer::highlightOpenHtmlTag();
-                    openStyleTags.append(highlightStackTagName);
+                    output += fullTagToken;
+                }
+                else
+                {
+                    const QStringList spanTags = spanInlineStyleTagsFromCssDeclaration(
+                        cssStyleAttributeFromTagToken(fullTagToken));
+                    if (spanTags.isEmpty())
+                    {
+                        output += fullTagToken;
+                    }
+                    else
+                    {
+                        for (const QString& spanTag : spanTags)
+                        {
+                            output += openingEditorTagForStyle(spanTag);
+                            openStyleTags.append(spanTag);
+                        }
+                        spanStyleStack.push_back(spanTags);
+                    }
                 }
                 cursor = tagEnd;
                 continue;
             }
 
-            const QString styleTag = normalizedInlineStyleTagName(rawTagName);
+            QString styleTag = canonicalInlineStyleTagName(rawTagName);
+            if (styleTag.isEmpty() && ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            {
+                styleTag = QStringLiteral("highlight");
+            }
             if (!styleTag.isEmpty())
             {
                 if (closingTag)
@@ -292,7 +497,7 @@ namespace
 
         for (int index = openStyleTags.size() - 1; index >= 0; --index)
         {
-            output += QStringLiteral("</%1>").arg(openStyleTags.at(index));
+            output += closingEditorTagForStyle(openStyleTags.at(index));
         }
 
         return output;

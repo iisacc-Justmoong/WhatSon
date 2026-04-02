@@ -80,14 +80,15 @@ positions from the same document origin.
   - `Underline`
   - `Strikethrough`
   - `Highlight`
-- Right-click dispatch is handled by a dedicated `MouseArea` on the editor viewport and opens the menu on
-  `onReleased` via `Qt.callLater(...)`, so selection updates from the underlying text input settle before the
-  context menu consumes the cached range.
+- Right-click dispatch is handled by a dedicated `MouseArea` on the editor viewport and now opens the menu from
+  `onClicked` after a deferred selection-cache refresh, avoiding the lost-release path that could suppress the menu.
 - Right-click handling now preserves selection intent by caching the last non-empty selection range:
   - `cachedEditorSelectionRange()` keeps the latest valid selection
   - `contextMenuEditorSelectionRange()` keeps the selection snapshot captured when the context menu opens
   - `inferSelectionRangeFromSelectedText(...)` maps selected plain text back into the current editor source when
     RichText selection offsets and source markup offsets diverge.
+  - `sourceOffsetForLogicalOffset(...)` (via `ContentsLogicalTextBridge`) converts rendered plain-text cursor offsets
+    back into source-markup offsets before wrapping the selection with inline tags.
   - formatting actions always require a non-empty selection range before mutating `.wsnbody`
 - Context-menu actions dispatch through the same `wrapSelectedEditorTextWithTag(...)` path as keyboard shortcuts, so
   inline tag serialization/persistence behavior stays identical across input methods.
@@ -116,14 +117,17 @@ positions from the same document origin.
   print/paper rendering does not inherit low-contrast dark-theme text colors.
 - `showFormattedTextRenderer` is intentionally pinned to `false`; the legacy read-only replacement layer remains
   disabled so the editor never drops into a non-editable state.
-- `LV.TextEditor.showRenderedOutput` is enabled, so inline tags normalized into RichText aliases (`<strong>`, `<em>`,
-  `<u>`, `<s>`, highlight `<span>`) render with style directly inside the editable surface.
+- `LV.TextEditor.showRenderedOutput` is enabled, so inline tags normalized into explicit RichText spans
+  (`font-weight`, `font-style`, `text-decoration`, highlight `<span>`) render with style directly inside the editable
+  surface.
+- The view now reapplies `TextEdit.RichText` / `showRenderedOutput` to the LV editor wrapper, its inner editor item,
+  and the nested input item after note/session sync so the editable surface does not fall back to plain-text rendering.
 - Stored inline aliases (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`, `<mark>`) are
   normalized into editable RichText tags before session sync:
-  - `bold` -> `<strong style=\"font-weight:700;\">`
-  - `italic` -> `<i>`
-  - `underline` -> `<u>`
-  - `strikethrough` -> `<s>`
+  - `bold` -> `<span style=\"font-weight:800;\">`
+  - `italic` -> `<span style=\"font-style:italic;\">`
+  - `underline` -> `<span style=\"text-decoration: underline;\">`
+  - `strikethrough` -> `<span style=\"text-decoration: line-through;\">`
   - `highlight`/`mark` -> orange styled `<span ...>`
 - Alias normalization is delegated to `ContentsTextFormatRenderer.normalizeInlineStyleAliasesForEditor(...)` from
   `normalizeBodySourceForRichTextEditor(...)`, so `.wsnbody` inline tags are normalized through the renderer contract
@@ -131,6 +135,14 @@ positions from the same document origin.
 - Escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` is intentionally preserved as literal text (not decoded).
 - As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
   tag text.
+
+## Tests
+
+- Automated test files are not currently present in this repository.
+- Editor formatting regression checklist for this file:
+  - existing `.wsnbody` `<bold>` regions render as visible bold text on load
+  - right-clicking a non-empty selection opens the formatting context menu
+  - context-menu formatting wraps the actual selected source span, not a duplicated plain-text occurrence elsewhere
 - In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally

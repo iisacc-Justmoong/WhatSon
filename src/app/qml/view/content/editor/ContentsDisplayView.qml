@@ -914,6 +914,19 @@ Item {
     function syncCachedEditorSelectionRange() {
         contentsView.cacheEditorSelectionRange(contentsView.selectedEditorRange());
     }
+    function sourceOffsetForLogicalOffset(logicalOffset) {
+        const sourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const numericOffset = Number(logicalOffset);
+        if (!isFinite(numericOffset))
+            return -1;
+        const normalizedOffset = Math.max(0, Math.floor(numericOffset));
+        if (textMetricsBridge && textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
+            const mappedOffset = Number(textMetricsBridge.sourceOffsetForLogicalOffset(normalizedOffset));
+            if (isFinite(mappedOffset))
+                return Math.max(0, Math.min(sourceText.length, Math.floor(mappedOffset)));
+        }
+        return Math.max(0, Math.min(sourceText.length, normalizedOffset));
+    }
     function selectedEditorRange() {
         if (!contentEditor)
             return ({
@@ -921,13 +934,6 @@ Item {
                     "end": -1
                 });
         const text = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const selectedText = contentsView.currentSelectedEditorText();
-        const cursorPosition = contentsView.currentEditorCursorPosition();
-        const inferredRange = contentsView.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
-        if (inferredRange.end > inferredRange.start) {
-            contentsView.cacheEditorSelectionRange(inferredRange);
-            return inferredRange;
-        }
         let start = contentEditor.selectionStart !== undefined ? Number(contentEditor.selectionStart) : NaN;
         let end = contentEditor.selectionEnd !== undefined ? Number(contentEditor.selectionEnd) : NaN;
         if (!isFinite(start) || !isFinite(end)) {
@@ -943,6 +949,27 @@ Item {
                         end = Number(contentEditor.editorItem.inputItem.selectionEnd);
                 }
             }
+        }
+        if (isFinite(start) && isFinite(end)) {
+            const logicalRangeStart = Math.max(0, Math.floor(Math.min(start, end)));
+            const logicalRangeEnd = Math.max(0, Math.floor(Math.max(start, end)));
+            const sourceRangeStart = contentsView.sourceOffsetForLogicalOffset(logicalRangeStart);
+            const sourceRangeEnd = contentsView.sourceOffsetForLogicalOffset(logicalRangeEnd);
+            if (sourceRangeEnd > sourceRangeStart) {
+                const explicitRange = {
+                    "start": sourceRangeStart,
+                    "end": sourceRangeEnd
+                };
+                contentsView.cacheEditorSelectionRange(explicitRange);
+                return explicitRange;
+            }
+        }
+        const selectedText = contentsView.currentSelectedEditorText();
+        const cursorPosition = contentsView.currentEditorCursorPosition();
+        const inferredRange = contentsView.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
+        if (inferredRange.end > inferredRange.start) {
+            contentsView.cacheEditorSelectionRange(inferredRange);
+            return inferredRange;
         }
         if (!isFinite(start) || !isFinite(end))
             return ({
@@ -981,23 +1008,23 @@ Item {
         switch (styleTag) {
         case "bold":
             return ({
-                    "openTag": "<strong style=\"font-weight:700;\">",
-                    "closeTag": "</strong>"
+                    "openTag": "<span style=\"font-weight:800;\">",
+                    "closeTag": "</span>"
                 });
         case "italic":
             return ({
-                    "openTag": "<i>",
-                    "closeTag": "</i>"
+                    "openTag": "<span style=\"font-style:italic;\">",
+                    "closeTag": "</span>"
                 });
         case "underline":
             return ({
-                    "openTag": "<u>",
-                    "closeTag": "</u>"
+                    "openTag": "<span style=\"text-decoration: underline;\">",
+                    "closeTag": "</span>"
                 });
         case "strikethrough":
             return ({
-                    "openTag": "<s>",
-                    "closeTag": "</s>"
+                    "openTag": "<span style=\"text-decoration: line-through;\">",
+                    "closeTag": "</span>"
                 });
         case "highlight":
             return ({
@@ -1072,6 +1099,33 @@ Item {
             if (wrapTags.openTag.length === 0 || wrapTags.closeTag.length === 0)
                 return token;
             return isClosingTag ? wrapTags.closeTag : wrapTags.openTag;
+        });
+    }
+    function applyEditorRichTextSurface() {
+        if (!contentEditor)
+            return;
+        if (contentEditor.textFormat !== undefined && contentEditor.textFormat !== TextEdit.RichText)
+            contentEditor.textFormat = TextEdit.RichText;
+        if (contentEditor.showRenderedOutput !== undefined && !contentEditor.showRenderedOutput)
+            contentEditor.showRenderedOutput = true;
+        const editorItem = contentEditor.editorItem;
+        if (!editorItem)
+            return;
+        if (editorItem.textFormat !== undefined && editorItem.textFormat !== TextEdit.RichText)
+            editorItem.textFormat = TextEdit.RichText;
+        if (editorItem.showRenderedOutput !== undefined && !editorItem.showRenderedOutput)
+            editorItem.showRenderedOutput = true;
+        const inputItem = editorItem.inputItem;
+        if (!inputItem)
+            return;
+        if (inputItem.textFormat !== undefined && inputItem.textFormat !== TextEdit.RichText)
+            inputItem.textFormat = TextEdit.RichText;
+        if (inputItem.selectByMouse !== undefined && !inputItem.selectByMouse)
+            inputItem.selectByMouse = true;
+    }
+    function scheduleEditorRichTextSurfaceSync() {
+        Qt.callLater(function () {
+            contentsView.applyEditorRichTextSurface();
         });
     }
     function openEditorSelectionContextMenu(localX, localY) {
@@ -1201,11 +1255,13 @@ Item {
         editorSession.syncEditorTextFromSelection(
                     contentsView.selectedNoteId,
                     contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
+        contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleGutterRefresh(4);
     }
     Component.onDestruction: editorSession.flushPendingEditorText()
     onEditorFlickableChanged: contentsView.scheduleGutterRefresh(2)
     onEditorTextChanged: {
+        contentsView.scheduleEditorRichTextSurfaceSync();
         if (minimapLayer)
             minimapLayer.requestRepaint();
     }
@@ -1217,6 +1273,7 @@ Item {
         } else {
             editorSession.scheduleEditorPersistence();
         }
+        contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
@@ -1226,6 +1283,7 @@ Item {
         editorSession.syncEditorTextFromSelection(
                     contentsView.selectedNoteId,
                     contentsView.normalizeBodySourceForRichTextEditor(contentsView.selectedNoteBodyText));
+        contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
@@ -1318,42 +1376,77 @@ Item {
         function onLineCountChanged() {
             contentsView.scheduleGutterRefresh(2);
         }
+        function onCursorPositionChanged() {
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
+        }
         function onSelectedTextChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
         function onSelectionStartChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
         function onSelectionEndChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
 
         ignoreUnknownSignals: true
         target: contentEditor
     }
     Connections {
+        function onCursorPositionChanged() {
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+                contentsView.scheduleEditorRichTextSurfaceSync();
+            });
+        }
         function onSelectedTextChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
         function onSelectionStartChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
         function onSelectionEndChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
 
         ignoreUnknownSignals: true
         target: contentEditor && contentEditor.editorItem ? contentEditor.editorItem : null
     }
     Connections {
+        function onCursorPositionChanged() {
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+                contentsView.scheduleEditorRichTextSurfaceSync();
+            });
+        }
         function onSelectedTextChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
         function onSelectionStartChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
         function onSelectionEndChanged() {
-            contentsView.syncCachedEditorSelectionRange();
+            Qt.callLater(function () {
+                contentsView.syncCachedEditorSelectionRange();
+            });
         }
 
         ignoreUnknownSignals: true
@@ -1742,12 +1835,15 @@ Item {
                                 return;
                             lastPressX = mouse.x;
                             lastPressY = mouse.y;
-                            mouse.accepted = false;
+                            Qt.callLater(function () {
+                                contentsView.syncCachedEditorSelectionRange();
+                            });
                         }
-                        onReleased: function(mouse) {
+                        onClicked: function(mouse) {
                             if (mouse.button !== Qt.RightButton)
                                 return;
                             Qt.callLater(function () {
+                                contentsView.syncCachedEditorSelectionRange();
                                 contentsView.openEditorSelectionContextMenu(
                                             lastPressX,
                                             lastPressY);

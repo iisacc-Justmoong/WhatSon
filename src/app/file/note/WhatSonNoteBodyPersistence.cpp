@@ -102,29 +102,29 @@ namespace
         if (normalizedName == QStringLiteral("bold"))
         {
             return {
-                QStringLiteral("<strong>"),
-                QStringLiteral("</strong>")
+                QStringLiteral("<span style=\"font-weight:800;\">"),
+                QStringLiteral("</span>")
             };
         }
         if (normalizedName == QStringLiteral("italic"))
         {
             return {
-                QStringLiteral("<em>"),
-                QStringLiteral("</em>")
+                QStringLiteral("<span style=\"font-style:italic;\">"),
+                QStringLiteral("</span>")
             };
         }
         if (normalizedName == QStringLiteral("underline"))
         {
             return {
-                QStringLiteral("<u>"),
-                QStringLiteral("</u>")
+                QStringLiteral("<span style=\"text-decoration: underline;\">"),
+                QStringLiteral("</span>")
             };
         }
         if (normalizedName == QStringLiteral("strikethrough"))
         {
             return {
-                QStringLiteral("<s>"),
-                QStringLiteral("</s>")
+                QStringLiteral("<span style=\"text-decoration: line-through;\">"),
+                QStringLiteral("</span>")
             };
         }
         if (normalizedName == QStringLiteral("highlight"))

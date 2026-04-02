@@ -131,6 +131,22 @@ Rectangle {
         const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
         return Boolean(normalizedModifiers & Qt.ShiftModifier);
     }
+    function selectionModifierPressed(modifiers) {
+        return listBarLayout.selectionRangeModifierPressed(modifiers)
+                || listBarLayout.selectionToggleModifierPressed(modifiers);
+    }
+    function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
+        const normalizedModifiers = listBarLayout.normalizedKeyboardModifiers(modifiers);
+        if (listBarLayout.selectionModifierPressed(normalizedModifiers))
+            return normalizedModifiers;
+        const capturedAtMs = Number(cachedCapturedAtMs);
+        const cacheAgeMs = Date.now() - capturedAtMs;
+        const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
+        const normalizedCachedModifiers = listBarLayout.normalizedKeyboardModifiers(cachedModifiers);
+        if (cacheFresh && listBarLayout.selectionModifierPressed(normalizedCachedModifiers))
+            return normalizedCachedModifiers;
+        return normalizedModifiers;
+    }
     function normalizeSelectedNoteIndices(indices) {
         if (!indices || indices.length === undefined)
             return [];
@@ -713,6 +729,8 @@ Rectangle {
                         property bool mobileLongPressPendingContextMenu: false
                         property bool mobilePointerDragging: false
                         property bool mobileSuppressNextClick: false
+                        property double pointerSelectionModifiersCapturedAtMs: 0
+                        property int pointerSelectionModifiers: Qt.NoModifier
                         readonly property bool pointerDragActive: noteDragHandler.active || noteItemDelegate.mobilePointerDragging
                         readonly property bool pointerDragRequiresLongPress: LV.Theme.mobileTarget
 
@@ -924,8 +942,11 @@ Rectangle {
                             }
                         }
                         TapHandler {
+                            id: noteTapHandler
+
                             enabled: noteItemDelegate.immediatePointerDragEnabled
                             acceptedButtons: Qt.LeftButton
+                            acceptedModifiers: Qt.KeyboardModifierMask
                             gesturePolicy: TapHandler.DragThreshold
                             grabPermissions: PointerHandler.ApprovesTakeOverByAnything
 
@@ -935,17 +956,34 @@ Rectangle {
                                         listBarLayout.pressedNoteIndex = -1;
                                     return;
                                 }
+                                const pressModifiers = noteTapHandler.point
+                                        && noteTapHandler.point.modifiers !== undefined
+                                        ? noteTapHandler.point.modifiers
+                                        : Qt.application.keyboardModifiers;
+                                noteItemDelegate.pointerSelectionModifiers = listBarLayout.normalizedKeyboardModifiers(
+                                            pressModifiers);
+                                noteItemDelegate.pointerSelectionModifiersCapturedAtMs = Date.now();
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
                                 noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
                             }
                             onTapped: function(eventPoint, button) {
                                 listBarLayout.pressedNoteIndex = -1;
-                                const selectionModifiers = eventPoint
-                                        && eventPoint.modifiers !== undefined ? eventPoint.modifiers : Qt.application.keyboardModifiers;
+                                const eventModifiers = eventPoint
+                                        && eventPoint.modifiers !== undefined ? eventPoint.modifiers : Qt.NoModifier;
+                                const selectionModifiers = listBarLayout.resolveSelectionModifiers(
+                                            eventModifiers,
+                                            noteItemDelegate.pointerSelectionModifiers,
+                                            noteItemDelegate.pointerSelectionModifiersCapturedAtMs);
+                                noteItemDelegate.pointerSelectionModifiers = Qt.NoModifier;
+                                noteItemDelegate.pointerSelectionModifiersCapturedAtMs = 0;
                                 listBarLayout.requestNoteSelection(
                                             noteItemDelegate.index,
                                             noteItemDelegate.noteId,
                                             selectionModifiers);
+                            }
+                            onCanceled: {
+                                noteItemDelegate.pointerSelectionModifiers = Qt.NoModifier;
+                                noteItemDelegate.pointerSelectionModifiersCapturedAtMs = 0;
                             }
                         }
                         TapHandler {

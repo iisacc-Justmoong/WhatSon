@@ -12,11 +12,11 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - inline `.wsnbody` style/resource tags
   - Qt Rich HTML fragments/documents
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
-- `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to canonical tags:
-  - `bold` / `b` / `strong` -> `strong`
-  - `italic` / `i` / `em` -> `em`
-  - `underline` / `u` -> `u`
-  - `strikethrough` / `strike` / `s` / `del` -> `s`
+- `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to explicit span styling:
+  - `bold` / `b` / `strong` -> `<span style="font-weight:800;">`
+  - `italic` / `i` / `em` -> `<span style="font-style:italic;">`
+  - `underline` / `u` -> `<span style="text-decoration: underline;">`
+  - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#FFD9A3; font-weight:600`)
 - Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
 - Rich HTML `<span style=...>` runs are reduced into canonical inline tags before writing. This keeps storage format stable while still accepting LV text editor RichText output.

@@ -76,6 +76,8 @@ Rectangle {
     property bool hierarchyEditable: false
     property int hierarchySelectionAnchorIndex: -1
     property int hierarchySelectionVisualRevision: 0
+    property double hierarchyPointerSelectionModifiersCapturedAtMs: 0
+    property int hierarchyPointerSelectionModifiers: Qt.NoModifier
     readonly property color hierarchyNoteDropHoverColor: {
         const item = sidebarHierarchyView.noteDropHoverItem;
         if (item && item.rowBackgroundColorActive !== undefined)
@@ -279,6 +281,34 @@ Rectangle {
     function hierarchySelectionRangeModifierPressed(modifiers) {
         const normalizedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(modifiers);
         return Boolean(normalizedModifiers & Qt.ShiftModifier);
+    }
+    function hierarchySelectionModifierPressed(modifiers) {
+        return sidebarHierarchyView.hierarchySelectionRangeModifierPressed(modifiers)
+                || sidebarHierarchyView.hierarchySelectionToggleModifierPressed(modifiers);
+    }
+    function captureHierarchyPointerSelectionModifiers(modifiers) {
+        const normalizedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(modifiers);
+        if (!sidebarHierarchyView.hierarchySelectionModifierPressed(normalizedModifiers))
+            return;
+        sidebarHierarchyView.hierarchyPointerSelectionModifiers = normalizedModifiers;
+        sidebarHierarchyView.hierarchyPointerSelectionModifiersCapturedAtMs = Date.now();
+    }
+    function clearHierarchyPointerSelectionModifiers() {
+        sidebarHierarchyView.hierarchyPointerSelectionModifiers = Qt.NoModifier;
+        sidebarHierarchyView.hierarchyPointerSelectionModifiersCapturedAtMs = 0;
+    }
+    function resolveHierarchySelectionModifiers(modifiers) {
+        const normalizedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(modifiers);
+        if (sidebarHierarchyView.hierarchySelectionModifierPressed(normalizedModifiers))
+            return normalizedModifiers;
+        const capturedAtMs = Number(sidebarHierarchyView.hierarchyPointerSelectionModifiersCapturedAtMs);
+        const cacheAgeMs = Date.now() - capturedAtMs;
+        const cacheFresh = capturedAtMs > 0 && isFinite(cacheAgeMs) && cacheAgeMs >= 0 && cacheAgeMs <= 800;
+        const normalizedCachedModifiers = sidebarHierarchyView.normalizedKeyboardModifiers(
+                    sidebarHierarchyView.hierarchyPointerSelectionModifiers);
+        if (cacheFresh && sidebarHierarchyView.hierarchySelectionModifierPressed(normalizedCachedModifiers))
+            return normalizedCachedModifiers;
+        return normalizedModifiers;
     }
 
     function normalizeHierarchySelectionIndices(indices) {
@@ -875,10 +905,12 @@ Rectangle {
             const resolvedActivationIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
             if (resolvedActivationIndex < 0)
                 return;
-            const activationModifiers = Qt.application.keyboardModifiers;
+            const activationModifiers = sidebarHierarchyView.resolveHierarchySelectionModifiers(
+                        Qt.application.keyboardModifiers);
             const pendingSerial = sidebarHierarchyView.hierarchyActivationPendingSerial + 1;
             sidebarHierarchyView.hierarchyActivationPendingSerial = pendingSerial;
             Qt.callLater(function () {
+                sidebarHierarchyView.clearHierarchyPointerSelectionModifiers();
                 if (sidebarHierarchyView.hierarchyActivationPendingSerial !== pendingSerial)
                     return;
                 if (!sidebarHierarchyView.hierarchyViewModel)
@@ -903,6 +935,21 @@ Rectangle {
             if (!sidebarHierarchyView.hierarchyDragDropBridge.applyHierarchyReorder(hierarchyTree.model, itemKey))
                 return;
             sidebarHierarchyView.requestViewHook("hierarchy.reorder");
+        }
+        TapHandler {
+            acceptedButtons: Qt.LeftButton
+            acceptedModifiers: Qt.KeyboardModifierMask
+            gesturePolicy: TapHandler.DragThreshold
+            target: null
+
+            onPressedChanged: {
+                if (!pressed)
+                    return;
+                const pressModifiers = point && point.modifiers !== undefined
+                        ? point.modifiers
+                        : Qt.application.keyboardModifiers;
+                sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(pressModifiers);
+            }
         }
     }
     Item {

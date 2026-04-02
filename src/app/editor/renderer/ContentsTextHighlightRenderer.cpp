@@ -2,7 +2,6 @@
 
 namespace
 {
-    constexpr auto kHighlightStackTagName = "span";
     constexpr auto kHighlightOpenHtmlTag = "<span style=\"background-color:#8A4B00;color:#FFD9A3;font-weight:600;\">";
     constexpr auto kHighlightCloseHtmlTag = "</span>";
 }
@@ -22,9 +21,4 @@ QString ContentsTextHighlightRenderer::highlightOpenHtmlTag()
 QString ContentsTextHighlightRenderer::highlightCloseHtmlTag()
 {
     return QString::fromLatin1(kHighlightCloseHtmlTag);
-}
-
-QString ContentsTextHighlightRenderer::highlightStackTagName()
-{
-    return QString::fromLatin1(kHighlightStackTagName);
 }

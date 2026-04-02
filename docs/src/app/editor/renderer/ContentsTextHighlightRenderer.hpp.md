@@ -11,5 +11,3 @@ Defines the dedicated highlight-style renderer contract used by text-format rend
   dark orange background + bright orange foreground + semibold text.
 - `highlightCloseHtmlTag()`
   Returns the matching closing tag.
-- `highlightStackTagName()`
-  Returns the structural stack tag name used by the generic close-matching logic.

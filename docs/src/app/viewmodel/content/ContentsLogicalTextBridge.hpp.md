@@ -20,6 +20,10 @@
   raw editor source text (`m_text`).
 - `normalizeLogicalText(...)` is the private normalization entrypoint used before line-offset
   generation so QML gutter queries consume plain-text-aligned offsets.
+- `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert
+  RichText/plain-text selection offsets back into source-markup offsets before mutating the stored body text.
+- The header also carries a logical-to-source offset cache (`m_logicalToSourceOffsets`) that stays synchronized with
+  the normalized plain-text projection.
 
 ### Classes and Structs
 - `ContentsLogicalTextBridge`
