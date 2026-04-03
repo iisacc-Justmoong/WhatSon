@@ -19,6 +19,11 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - The editor still emits the live `TextEdit.text` payload for formatting-oriented consumers. The earlier
   fragment-based `getFormattedText(...)` save path was removed because it leaked `StartFragment`/fragment-scaffold
   markup into note editing.
+- IME composition is now treated as a first-class input state:
+  - wrapper-level `inputMethodComposing` / `preeditText` surface the native `TextEdit` composition state
+  - `textEdited(...)` is deferred while preedit text is active
+  - the wrapper emits one committed edit after composition ends instead of replaying every intermediate Hangul syllable
+    assembly step back into the host mutation pipeline
 - Exposes direct Qt-style selection/text helpers on the wrapper itself:
   - `selectionSnapshot()`
   - `getText(start, end)`
@@ -49,3 +54,5 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - cursor/selection updates still drive gutter and minimap geometry
   - programmatic note switches do not emit duplicate save mutations
   - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
+  - Hangul IME composition must not delete previously committed text when a syllable block is assembled
+  - Hangul IME composition must not leave split jamo behind after the committed syllable lands

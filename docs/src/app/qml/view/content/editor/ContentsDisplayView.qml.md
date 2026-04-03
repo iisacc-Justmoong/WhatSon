@@ -75,6 +75,8 @@ The root editor state now keeps two text projections:
 - User edits flow through `editorSession.markLocalEditorAuthority()` and `editorSession.scheduleEditorPersistence()`.
 - Model-driven note swaps now feed canonical source text into `editorSession.syncEditorTextFromSelection(...)`, while
   `ContentsInlineFormatEditor` binds to `renderedEditorText`.
+- Focus-loss persistence now waits for IME preedit to settle before flushing pending editor text, so Hangul syllable
+  composition is applied to source text before debounce/save cleanup runs.
 - The editor keeps a periodic note snapshot poll (`noteSnapshotRefreshTimer`, default `1200ms`) that calls
   `selectionBridge.refreshSelectedNoteSnapshot()` and schedules gutter refresh passes. This keeps long-running sessions
   synchronized when note metadata/body text changes are delivered late or out-of-band.
@@ -194,6 +196,8 @@ The root editor state now keeps two text projections:
 - Editor formatting regression checklist for this file:
   - ordinary typing/backspace/delete/paste must not serialize fragment comment markup such as `<!--StartFragment-->`
     back into `.wsnbody`
+  - typing Hangul in the note body must not randomly delete surrounding text when a syllable block commits
+  - typing Hangul in the note body must not leave separated jamo after the committed syllable appears
   - pressing `Enter` in the editable RichText surface must persist and re-render as an actual line break, not as a
     space or adjacent text collapse
   - opening a note and waiting through repeated note snapshot refreshes must not emit repeated minimap binding-loop

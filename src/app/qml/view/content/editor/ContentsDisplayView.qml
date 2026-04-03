@@ -742,6 +742,23 @@ Item {
         contentsView.pendingEditorFocusNoteId = normalizedNoteId;
         contentsView.focusEditorForPendingNote();
     }
+    function flushEditorStateAfterInputSettles(attempt) {
+        const retryCount = Math.max(0, Number(attempt) || 0);
+        const activePreeditText = contentEditor && contentEditor.preeditText !== undefined
+                ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText)
+                : "";
+        const inputMethodBusy = !!(contentEditor
+                                   && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing)
+                                       || activePreeditText.length > 0));
+        if (inputMethodBusy && retryCount < 6) {
+            Qt.callLater(function () {
+                contentsView.flushEditorStateAfterInputSettles(retryCount + 1);
+            });
+            return;
+        }
+        editorTypingController.handleEditorTextEdited();
+        editorSession.flushPendingEditorText();
+    }
     function resolveEditorFlickable() {
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
             return null;
@@ -938,7 +955,10 @@ Item {
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(4);
     }
-    Component.onDestruction: editorSession.flushPendingEditorText()
+    Component.onDestruction: {
+        editorTypingController.handleEditorTextEdited();
+        editorSession.flushPendingEditorText();
+    }
     onEditorFlickableChanged: {
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(2);
@@ -1368,7 +1388,7 @@ Item {
 
                         onFocusedChanged: {
                             if (!focused)
-                                editorSession.flushPendingEditorText();
+                                contentsView.flushEditorStateAfterInputSettles(0);
                         }
                         onTextEdited: function (_text) {
                             editorTypingController.handleEditorTextEdited();

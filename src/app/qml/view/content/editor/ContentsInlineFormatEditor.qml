@@ -42,14 +42,18 @@ FocusScope {
     readonly property bool empty: textInput.length === 0
     readonly property bool focused: activeFocus || textInput.activeFocus
     readonly property bool hasSelection: textInput.selectionEnd > textInput.selectionStart
+    readonly property bool inputMethodComposing: textInput.inputMethodComposing
     readonly property int length: textInput.length
     readonly property int lineCount: textInput.lineCount
+    readonly property string preeditText: textInput.preeditText === undefined || textInput.preeditText === null
+                                           ? ""
+                                           : String(textInput.preeditText)
     readonly property string selectedText: textInput.selectedText
     readonly property int selectionEnd: textInput.selectionEnd
     readonly property int selectionStart: textInput.selectionStart
 
     property int _programmaticTextSyncDepth: 0
-    property bool _nativeTextEditedSeen: false
+    property bool _compositionEditPending: false
 
     signal textEdited(string text)
 
@@ -90,6 +94,8 @@ FocusScope {
         const previousSelectionEnd = Number(textInput.selectionEnd);
         const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
                 && previousSelectionEnd > previousSelectionStart;
+        textChangedDispatchTimer.stop();
+        control._compositionEditPending = false;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
         const maximumLength = Number(textInput.length) || 0;
@@ -104,6 +110,17 @@ FocusScope {
             textInput.cursorPosition = restoredCursorPosition;
         }
         control._programmaticTextSyncDepth -= 1;
+    }
+
+    function scheduleCommittedTextEditedDispatch() {
+        if (control._programmaticTextSyncDepth > 0)
+            return;
+        if (control.inputMethodComposing || control.preeditText.length > 0) {
+            control._compositionEditPending = true;
+            return;
+        }
+        if (!textChangedDispatchTimer.running)
+            textChangedDispatchTimer.start();
     }
 
     onTextChanged: setProgrammaticText(text)
@@ -145,7 +162,11 @@ FocusScope {
 
             property alias cursorPosition: textInput.cursorPosition
             readonly property bool focused: textInput.activeFocus
+            readonly property bool inputMethodComposing: textInput.inputMethodComposing
             property alias inputItem: textInput
+            readonly property string preeditText: textInput.preeditText === undefined || textInput.preeditText === null
+                                                 ? ""
+                                                 : String(textInput.preeditText)
             readonly property string selectedText: textInput.selectedText
             readonly property int selectionEnd: textInput.selectionEnd
             readonly property int selectionStart: textInput.selectionStart
@@ -188,10 +209,7 @@ FocusScope {
                 property bool showRenderedOutput: control.showRenderedOutput
 
                 onTextChanged: {
-                    if (control._programmaticTextSyncDepth > 0)
-                        return;
-                    if (!textChangedDispatchTimer.running)
-                        textChangedDispatchTimer.start();
+                    control.scheduleCommittedTextEditedDispatch();
                 }
             }
         }
@@ -210,22 +228,30 @@ FocusScope {
         repeat: false
 
         onTriggered: {
-            if (control._programmaticTextSyncDepth > 0) {
-                control._nativeTextEditedSeen = false;
+            if (control._programmaticTextSyncDepth > 0)
+                return;
+            if (control.inputMethodComposing || control.preeditText.length > 0) {
+                control._compositionEditPending = true;
                 return;
             }
-            if (!control._nativeTextEditedSeen)
-                control.textEdited(textInput.text);
-            control._nativeTextEditedSeen = false;
+            control._compositionEditPending = false;
+            control.textEdited(textInput.text);
         }
     }
 
     Connections {
+        function onInputMethodComposingChanged() {
+            if (!textInput.inputMethodComposing && control._compositionEditPending)
+                control.scheduleCommittedTextEditedDispatch();
+        }
+
+        function onPreeditTextChanged() {
+            if (!textInput.inputMethodComposing && control._compositionEditPending && control.preeditText.length === 0)
+                control.scheduleCommittedTextEditedDispatch();
+        }
+
         function onTextEdited() {
-            if (control._programmaticTextSyncDepth > 0)
-                return;
-            control._nativeTextEditedSeen = true;
-            control.textEdited(textInput.text);
+            control.scheduleCommittedTextEditedDispatch();
         }
 
         ignoreUnknownSignals: true

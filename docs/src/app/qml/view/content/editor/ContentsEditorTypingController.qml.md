@@ -13,6 +13,8 @@ This controller exists to keep plain typing separate from inline-format applicat
 
 - Reads the authoritative previous plain text from `ContentsLogicalTextBridge.logicalText`.
 - Reads the live edited plain text from `contentEditor.getText(0, length)`.
+- Receives committed edit notifications only after IME composition settles, so diffing is based on stable plain-text
+  snapshots instead of transient Hangul/Japanese preedit fragments.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - Resolves the delta back into source offsets through `ContentsLogicalTextBridge.sourceOffsetForLogicalOffset(...)`.
@@ -45,3 +47,4 @@ longer part of the normal typing path.
 - `Space`, `Enter`, `Backspace`, and selection replacement should update the correct source span.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
+- Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
