@@ -53,6 +53,8 @@
 - Desktop trial builds pull in the dedicated trial activation sources from `src/extension/trial` and define `WHATSON_IS_TRIAL_BUILD=1` for the app target.
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.
+- The app target now declares `Qt6::Pdf` and `Qt6::PdfQuick` as first-class dependencies because `ContentsResourceViewer.qml` imports `QtQuick.Pdf` for direct `.wsresource` PDF rendering.
+- iOS keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export flow, so any non-default QML plugin used by app QML must be linked explicitly. `Qt6::PdfQuickplugin` is therefore part of the iOS-only manual plugin link set to keep `QtQuick.Pdf` bundled into the app.
 
 ## Authoring Notes For Next Pass
 - Read the real implementation and adjacent headers before replacing this scaffold.

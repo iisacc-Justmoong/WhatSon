@@ -1,4 +1,4 @@
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 Pdf PdfQuick)
 find_package(LVRS CONFIG REQUIRED)
 qt_policy(SET QTP0004 NEW)
 
@@ -383,7 +383,8 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
             Qt6::qtquickcontrols2plugin
             Qt6::qtquickcontrols2basicstyleplugin
             Qt6::qtquickcontrols2iosstyleplugin
-            Qt6::qtquickdialogsplugin)
+            Qt6::qtquickdialogsplugin
+            Qt6::PdfQuickplugin)
         if (TARGET "${_whatson_ios_qml_plugin}")
             target_link_libraries(WhatSon PRIVATE "${_whatson_ios_qml_plugin}")
         endif ()
@@ -392,6 +393,8 @@ endif ()
 
 target_link_libraries(WhatSon
         PRIVATE
+        Qt6::Pdf
+        Qt6::PdfQuick
         Qt6::Quick
         Qt6::QuickDialogs2
         Qt6::QuickControls2
