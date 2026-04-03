@@ -374,17 +374,28 @@ if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set_target_properties(WhatSon PROPERTIES
             QT_QML_MODULE_NO_IMPORT_SCAN TRUE)
 
-    # With import scanning disabled, the static QML plugins for the built-in QtQuick modules
-    # used by the onboarding/main shells must be linked explicitly.
-    foreach (_whatson_ios_qml_plugin IN ITEMS
+    # With import scanning disabled, iOS must link the full static QML plugin closure that
+    # qmlimportscanner would normally resolve, including transitive plugins hidden behind
+    # QT_IS_PLUGIN_GENEX in the imported Qt plugin targets.
+    set(_whatson_ios_qml_plugins
             Qt6::qtquick2plugin
             Qt6::quickwindow
+            Qt6::qmlplugin
+            Qt6::modelsplugin
+            Qt6::workerscriptplugin
             Qt6::qquicklayoutsplugin
+            Qt6::qtquicktemplates2plugin
+            Qt6::qtquickcontrols2implplugin
+            Qt6::qtquickcontrols2basicstyleimplplugin
+            Qt6::qtquickcontrols2iosstyleimplplugin
             Qt6::qtquickcontrols2plugin
             Qt6::qtquickcontrols2basicstyleplugin
             Qt6::qtquickcontrols2iosstyleplugin
+            Qt6::qtquickdialogs2quickimplplugin
             Qt6::qtquickdialogsplugin
+            Qt6::qmlshapesplugin
             Qt6::PdfQuickplugin)
+    foreach (_whatson_ios_qml_plugin IN LISTS _whatson_ios_qml_plugins)
         if (TARGET "${_whatson_ios_qml_plugin}")
             target_link_libraries(WhatSon PRIVATE "${_whatson_ios_qml_plugin}")
         endif ()

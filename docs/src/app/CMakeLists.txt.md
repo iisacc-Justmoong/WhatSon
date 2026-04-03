@@ -54,7 +54,10 @@
 - Android and iOS builds intentionally skip the trial sources because the mobile app does not participate in the desktop trial flow.
 - On Apple desktop trial builds, the app target also links the `Security` framework because the trial secure-store implementation uses the host keychain.
 - The app target now declares `Qt6::Pdf` and `Qt6::PdfQuick` as first-class dependencies because `ContentsResourceViewer.qml` imports `QtQuick.Pdf` for direct `.wsresource` PDF rendering.
-- iOS keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export flow, so any non-default QML plugin used by app QML must be linked explicitly. `Qt6::PdfQuickplugin` is therefore part of the iOS-only manual plugin link set to keep `QtQuick.Pdf` bundled into the app.
+- iOS keeps `QT_QML_MODULE_NO_IMPORT_SCAN` enabled for the clean Xcode export flow, so the app now carries an explicit static QML plugin closure instead of relying on top-level imports alone.
+- That closure includes the QML runtime foundation (`Qt6::qmlplugin`, `Qt6::modelsplugin`, `Qt6::workerscriptplugin`), the controls/dialog implementation chain (`Qt6::qtquicktemplates2plugin`, `Qt6::qtquickcontrols2implplugin`, `Qt6::qtquickcontrols2basicstyleimplplugin`, `Qt6::qtquickcontrols2iosstyleimplplugin`, `Qt6::qtquickdialogs2quickimplplugin`), and the feature-facing plugins already used by app QML.
+- `QtQuick.Pdf` is not self-contained on iOS in this static-plugin setup: `PdfMultiPageView.qml` also imports `QtQuick.Shapes`, so `Qt6::qmlshapesplugin` must stay in the same manual plugin link set or the QML engine aborts during startup.
+- This defensive list mirrors the transitive plugin closure hidden behind `QT_IS_PLUGIN_GENEX` inside Qt's imported plugin targets, which makes future `module \"...\" is not installed` regressions less likely when `PdfQuick`, dialogs, or control styles pull nested QML imports.
 
 ## Authoring Notes For Next Pass
 - Read the real implementation and adjacent headers before replacing this scaffold.

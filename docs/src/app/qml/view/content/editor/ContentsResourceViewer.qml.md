@@ -13,6 +13,13 @@
 - other modes: renders no fallback scaffold in this surface.
 - Build contract: because this file imports `QtQuick.Pdf`, the app target must link `Qt6::PdfQuick` and, on iOS
   where QML import scanning is disabled for Xcode export generation, the static `Qt6::PdfQuickplugin` QML plugin.
+- Transitive iOS contract: `PdfMultiPageView.qml` imports `QtQuick.Shapes`, so the same static-plugin bundle must
+  also include `Qt6::qmlshapesplugin` or QML engine startup fails before the editor surface loads.
+- Defensive iOS contract: the bundle also keeps the shared QML runtime and controls/dialog implementation plugins
+  explicitly linked (`qmlplugin`, `modelsplugin`, `workerscriptplugin`, `qtquicktemplates2plugin`,
+  `qtquickcontrols2implplugin`, `qtquickcontrols2basicstyleimplplugin`, `qtquickcontrols2iosstyleimplplugin`,
+  `qtquickdialogs2quickimplplugin`) because `QT_QML_MODULE_NO_IMPORT_SCAN` prevents Qt from discovering those
+  transitive static plugins automatically during Xcode project generation.
 
 ## Inputs
 
@@ -31,5 +38,7 @@
 - Automated test files are not currently present in this repository.
 - Resource-viewer regression checklist for this file:
   - selecting a direct `.wsresource` entry with `renderMode == "pdf"` must not fail QML engine startup because `QtQuick.Pdf` was omitted from the bundle
+  - selecting the same PDF entry on iOS must not fail startup because `PdfMultiPageView.qml` could not resolve `QtQuick.Shapes`
+  - selecting the same PDF entry on iOS must not uncover a second-stage missing-plugin failure from the shared QML runtime or controls/dialog implementation chain
   - `pdfRenderable` must stay false when the resolved open target is empty so the PDF document does not bind an invalid source during note/resource transitions
   - `image` render mode must continue to render through `ResourceBitmapViewer` without being affected by the PDF dependency wiring
