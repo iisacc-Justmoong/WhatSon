@@ -41,6 +41,9 @@ The root editor state now keeps two text projections:
 - Minimap viewport/current-line chrome is also exposed as numeric snapshots
   (`minimapResolvedViewportHeight`, `minimapResolvedViewportY`, `minimapResolvedCurrentLine*`) so the child minimap
   layer no longer re-enters editor geometry through callback bindings for those properties.
+- `minimapVisualRows`, `minimapScrollable`, `minimapResolvedTrackHeight`, and the viewport/current-line metrics are
+  refreshed imperatively from a shared minimap snapshot path instead of `readonly` property bindings. This breaks the
+  old cycle where editor layout and minimap layout could repeatedly reopen each other during note snapshot polling.
 
 ## Key Collaborators
 
@@ -75,6 +78,10 @@ The root editor state now keeps two text projections:
 - The editor keeps a periodic note snapshot poll (`noteSnapshotRefreshTimer`, default `1200ms`) that calls
   `selectionBridge.refreshSelectedNoteSnapshot()` and schedules gutter refresh passes. This keeps long-running sessions
   synchronized when note metadata/body text changes are delivered late or out-of-band.
+- The same refresh path now also recomputes the minimap snapshot so periodic note polling no longer emits repeated QML
+  binding-loop warnings for `minimapScrollable`, `minimapResolvedViewportHeight`, or `minimapResolvedViewportY`.
+- Cursor movement, scroll position changes, and content-height changes also reschedule that minimap snapshot so the
+  viewport thumb and current-line highlight stay live without restoring the old binding cycle.
 - The editor viewport now overlays resource cards rendered from `ContentsBodyResourceRenderer.renderedResources`, so image packages referenced in `.wsnbody` are visible without switching to a separate panel.
 - When the selected note id is a direct `.wsresource` package, the surface switches to a dedicated in-editor resource
   viewer and hides text-editor/minimap chrome.
@@ -175,9 +182,8 @@ The root editor state now keeps two text projections:
   before entering the editable surface.
 - That normalization path now promotes canonical source `\n` into explicit RichText `<br/>` breaks before the value is
   rebound into `ContentsInlineFormatEditor`.
-- The surrounding persistence path now also trims only outer leading/trailing whitespace-only lines that were
-  previously introduced by whole-document RichText scaffold leakage, so corrupted notes reopen near their first real
-  content line instead of hundreds of empty rows away.
+- The surrounding persistence path preserves leading/trailing whitespace-only lines and empty paragraphs so intentional
+  blank-line spacing created in the editor survives save/load round-trips.
 - Escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` is intentionally preserved as literal text (not decoded).
 - As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
   tag text, even when the LVRS shell component does not provide reliable RichText styling on its own.
@@ -190,6 +196,9 @@ The root editor state now keeps two text projections:
     back into `.wsnbody`
   - pressing `Enter` in the editable RichText surface must persist and re-render as an actual line break, not as a
     space or adjacent text collapse
+  - opening a note and waiting through repeated note snapshot refreshes must not emit repeated minimap binding-loop
+    warnings
+  - scrolling the editor or moving the cursor must keep the minimap viewport thumb and current-line highlight in sync
   - gutter line numbers and current-line markers must remain aligned to the first visible text row after whitespace /
     RichText normalization changes
   - existing `.wsnbody` `<bold>` regions render as visible bold text on load

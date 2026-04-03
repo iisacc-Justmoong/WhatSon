@@ -11,7 +11,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   (plain text, inline `.wsnbody` tags, or Qt Rich HTML) and emits normalized `<paragraph>` XML with
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`) plus normalized
   self-closed `<resource ... />` tags.
-- `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs.
+- `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created.
 - `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
   layer (`<bold>...</bold>`, `<italic>...</italic>`, `<resource ... />`).
 - `richTextFromBodyDocument(...)` extracts a rich-text projection from `.wsnbody` and maps inline style tags
@@ -23,8 +23,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   - normalized inline-tag source text (editor/source role)
 
 ## Important Invariants
-- Empty `<paragraph></paragraph>` nodes must survive a read/save round-trip when the editor text is unchanged.
+- Empty `<paragraph></paragraph>` nodes must survive a read/save round-trip when the editor text is unchanged, regardless of whether they appear at the beginning, middle, or end of the note body.
 - Whitespace-only paragraphs must remain representable in the plain-text editor model.
-- The persistence layer must not perform unsolicited body-tag cleanup beyond the serializer that is explicitly chosen for a real body rewrite.
+- The persistence layer must not perform unsolicited body-tag cleanup or whitespace-line trimming beyond the serializer that is explicitly chosen for a real body rewrite.
 - Rich-text scaffolding from Qt (`<!DOCTYPE HTML ...><html>...`) must never leak into logical note content or
   first-line indexing.

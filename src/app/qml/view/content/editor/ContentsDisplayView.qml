@@ -133,25 +133,22 @@ Item {
     readonly property int minimapOuterWidth: 56
     property bool minimapVisible: true
     readonly property int minimapRowGap: 1
-    readonly property bool minimapScrollable: {
-        const flickable = contentsView.editorFlickable;
-        if (!flickable)
-            return false;
-        return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
-    }
+    property bool minimapScrollable: false
     readonly property int minimapTrackInset: 8
     readonly property int minimapTrackWidth: 36
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - 16)
-    readonly property real minimapResolvedTrackHeight: Math.min(contentsView.minimapAvailableTrackHeight, contentsView.minimapSilhouetteHeight())
+    property real minimapResolvedTrackHeight: 1
     readonly property real minimapResolvedTrackWidth: contentsView.minimapTrackWidth
-    readonly property real minimapResolvedViewportHeight: contentsView.minimapViewportHeight()
-    readonly property real minimapResolvedViewportY: contentsView.minimapViewportY()
-    readonly property real minimapResolvedCurrentLineHeight: contentsView.minimapCurrentLineHeight()
-    readonly property real minimapResolvedCurrentLineWidth: contentsView.minimapCurrentLineWidth()
-    readonly property real minimapResolvedCurrentLineY: contentsView.minimapCurrentLineY()
+    property real minimapResolvedViewportHeight: 0
+    property real minimapResolvedViewportY: 0
+    property real minimapResolvedCurrentLineHeight: 1
+    property real minimapResolvedCurrentLineWidth: 0
+    property real minimapResolvedCurrentLineY: 0
+    property real minimapResolvedSilhouetteHeight: 1
     readonly property color minimapViewportFillColor: "#149DA0A8"
     readonly property int minimapViewportMinHeight: 28
-    readonly property var minimapVisualRows: contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0))
+    property bool minimapSnapshotRefreshQueued: false
+    property var minimapVisualRows: []
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
     readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property bool noteSnapshotRefreshEnabled: contentsView.visible
@@ -348,6 +345,39 @@ Item {
 
         return rows.length > 0 ? rows : contentsView.buildFallbackMinimapVisualRows(textStartY);
     }
+    function refreshMinimapSnapshot() {
+        const nextRows = contentsView.buildMinimapVisualRows(
+                    contentsView.editorText,
+                    Number(contentEditor ? contentEditor.width : 0),
+                    Number(contentEditor ? contentEditor.contentHeight : 0));
+        const nextSilhouetteHeight = contentsView.minimapSilhouetteHeight(nextRows);
+        const nextTrackHeight = Math.min(
+                    contentsView.minimapAvailableTrackHeight,
+                    nextSilhouetteHeight);
+        const nextScrollable = contentsView.isMinimapScrollable();
+        const nextViewportHeight = contentsView.minimapViewportHeight(nextTrackHeight);
+        const nextViewportY = contentsView.minimapViewportY(nextTrackHeight, nextViewportHeight);
+        const nextCurrentVisualRow = contentsView.minimapCurrentVisualRow(nextRows);
+
+        contentsView.minimapVisualRows = nextRows;
+        contentsView.minimapResolvedSilhouetteHeight = nextSilhouetteHeight;
+        contentsView.minimapResolvedTrackHeight = nextTrackHeight;
+        contentsView.minimapScrollable = nextScrollable;
+        contentsView.minimapResolvedViewportHeight = nextViewportHeight;
+        contentsView.minimapResolvedViewportY = nextViewportY;
+        contentsView.minimapResolvedCurrentLineHeight = contentsView.minimapVisualRowPaintHeight(nextCurrentVisualRow);
+        contentsView.minimapResolvedCurrentLineWidth = contentsView.minimapBarWidth(nextCurrentVisualRow.charCount);
+        contentsView.minimapResolvedCurrentLineY = contentsView.minimapVisualRowPaintY(nextCurrentVisualRow);
+    }
+    function scheduleMinimapSnapshotRefresh() {
+        if (contentsView.minimapSnapshotRefreshQueued)
+            return;
+        contentsView.minimapSnapshotRefreshQueued = true;
+        Qt.callLater(function () {
+            contentsView.minimapSnapshotRefreshQueued = false;
+            contentsView.refreshMinimapSnapshot();
+        });
+    }
     function clampDrawerHeight(value) {
         var maxDrawer = Math.max(contentsView.minDrawerHeight, contentsView.height - contentsView.minDisplayHeight - contentsView.splitterThickness);
         return Math.max(contentsView.minDrawerHeight, Math.min(maxDrawer, value));
@@ -358,6 +388,7 @@ Item {
     function commitGutterRefresh() {
         contentsView.gutterRefreshRevision += 1;
         contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
+        contentsView.refreshMinimapSnapshot();
         if (minimapLayer)
             minimapLayer.requestRepaint();
     }
@@ -575,22 +606,18 @@ Item {
     function minimapContentHeight() {
         return Math.max(1, contentsView.editorOccupiedContentHeight());
     }
+    function isMinimapScrollable() {
+        const flickable = contentsView.editorFlickable;
+        if (!flickable)
+            return false;
+        return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
+    }
     function minimapContentYForLine(lineNumber) {
         const textStartY = contentsView.editorDocumentStartY;
         return textStartY + contentsView.lineDocumentY(lineNumber);
     }
-    function minimapCurrentLineHeight() {
-        return contentsView.minimapVisualRowPaintHeight(contentsView.minimapCurrentVisualRow());
-    }
-    function minimapCurrentLineWidth() {
-        const visualRow = contentsView.minimapCurrentVisualRow();
-        return contentsView.minimapBarWidth(visualRow.charCount);
-    }
-    function minimapCurrentLineY() {
-        return contentsView.minimapVisualRowPaintY(contentsView.minimapCurrentVisualRow());
-    }
-    function minimapCurrentVisualRow() {
-        const rows = Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : [];
+    function minimapCurrentVisualRow(rowsOverride) {
+        const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : []);
         const textStartY = contentsView.editorDocumentStartY;
         const cursorRect = contentsView.currentCursorVisualRowRect();
         const cursorContentY = textStartY + (Number(cursorRect.y) || 0);
@@ -613,8 +640,8 @@ Item {
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
         return contentsView.minimapTrackYForContentY(contentsView.minimapContentYForLine(safeLineNumber));
     }
-    function minimapSilhouetteHeight() {
-        const rows = Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : [];
+    function minimapSilhouetteHeight(rowsOverride) {
+        const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(contentsView.minimapVisualRows) ? contentsView.minimapVisualRows : []);
         if (rows.length === 0)
             return contentsView.minimapVisualRowPaintHeight(null);
         return rows.length * contentsView.minimapVisualRowPaintHeight(rows[0]) + Math.max(0, rows.length - 1) * contentsView.minimapRowGap;
@@ -633,28 +660,31 @@ Item {
         const safeContentY = Math.max(0, Math.min(contentHeight, Number(contentY) || 0));
         return (safeContentY / contentHeight) * contentsView.minimapResolvedTrackHeight;
     }
-    function minimapViewportHeight() {
+    function minimapViewportHeight(trackHeightOverride) {
         const flickable = contentsView.editorFlickable;
+        const trackHeight = Math.max(1, Number(trackHeightOverride) || contentsView.minimapResolvedTrackHeight);
         if (!flickable)
-            return contentsView.minimapResolvedTrackHeight;
+            return trackHeight;
         const contentHeight = Math.max(1, contentsView.minimapContentHeight());
         const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
         if (contentHeight <= viewportHeight)
-            return contentsView.minimapResolvedTrackHeight;
-        const proportionalHeight = contentsView.minimapTrackHeightForContentHeight(viewportHeight);
-        return Math.min(contentsView.minimapResolvedTrackHeight, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
+            return trackHeight;
+        const proportionalHeight = Math.max(1, (viewportHeight / contentHeight) * trackHeight);
+        return Math.min(trackHeight, Math.max(contentsView.minimapViewportMinHeight, proportionalHeight));
     }
-    function minimapViewportY() {
+    function minimapViewportY(trackHeightOverride, viewportHeightOverride) {
         const flickable = contentsView.editorFlickable;
+        const trackHeight = Math.max(1, Number(trackHeightOverride) || contentsView.minimapResolvedTrackHeight);
+        const viewportHeight = Math.max(0, Number(viewportHeightOverride) || contentsView.minimapResolvedViewportHeight);
         if (!flickable)
             return 0;
         const contentHeight = Math.max(1, contentsView.minimapContentHeight());
-        const viewportHeight = Math.max(0, contentsView.editorViewportHeight);
-        const maxContentY = Math.max(0, contentHeight - viewportHeight);
+        const editorViewportHeight = Math.max(0, contentsView.editorViewportHeight);
+        const maxContentY = Math.max(0, contentHeight - editorViewportHeight);
         if (maxContentY <= 0)
             return 0;
         const contentY = Math.max(0, Math.min(maxContentY, Number(flickable.contentY) || 0));
-        const maxTrackY = Math.max(0, contentsView.minimapResolvedTrackHeight - contentsView.minimapViewportHeight());
+        const maxTrackY = Math.max(0, trackHeight - viewportHeight);
         return maxTrackY * (contentY / maxContentY);
     }
     function minimapVisualRowPaintHeight(rowSpec) {
@@ -905,16 +935,24 @@ Item {
                     contentsView.selectedNoteId,
                     contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
+        contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(4);
     }
     Component.onDestruction: editorSession.flushPendingEditorText()
-    onEditorFlickableChanged: contentsView.scheduleGutterRefresh(2)
+    onEditorFlickableChanged: {
+        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleGutterRefresh(2);
+    }
     onEditorTextChanged: {
         contentsView.scheduleEditorRichTextSurfaceSync();
+        contentsView.scheduleMinimapSnapshotRefresh();
         if (minimapLayer)
             minimapLayer.requestRepaint();
     }
-    onHeightChanged: contentsView.scheduleGutterRefresh(2)
+    onHeightChanged: {
+        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleGutterRefresh(2);
+    }
     onSelectedNoteBodyTextChanged: {
         const normalizedBodyText = contentsView.selectedNoteBodyText;
         if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, normalizedBodyText)) {
@@ -923,6 +961,7 @@ Item {
             editorSession.scheduleEditorPersistence();
         }
         contentsView.scheduleEditorRichTextSurfaceSync();
+        contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
@@ -933,14 +972,18 @@ Item {
                     contentsView.selectedNoteId,
                     contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
+        contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
+            contentsView.scheduleMinimapSnapshotRefresh();
             contentsView.scheduleGutterRefresh(4);
+        }
     }
     onWidthChanged: {
+        contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(2);
     }
 
@@ -1029,14 +1072,31 @@ Item {
     }
     Connections {
         function onContentHeightChanged() {
+            contentsView.scheduleMinimapSnapshotRefresh();
             contentsView.scheduleGutterRefresh(2);
         }
+        function onCursorPositionChanged() {
+            contentsView.scheduleMinimapSnapshotRefresh();
+            if (minimapLayer)
+                minimapLayer.requestRepaint();
+        }
         function onLineCountChanged() {
+            contentsView.scheduleMinimapSnapshotRefresh();
             contentsView.scheduleGutterRefresh(2);
         }
 
         ignoreUnknownSignals: true
         target: contentEditor
+    }
+    Connections {
+        function onContentYChanged() {
+            contentsView.scheduleMinimapSnapshotRefresh();
+            if (minimapLayer)
+                minimapLayer.requestRepaint();
+        }
+
+        ignoreUnknownSignals: true
+        target: contentsView.editorFlickable
     }
     Connections {
         function onCursorPositionChanged() {
@@ -1728,7 +1788,7 @@ Item {
                     minimapCurrentLineY: contentsView.minimapResolvedCurrentLineY
                     minimapLineColor: contentsView.minimapLineColor
                     minimapScrollable: contentsView.minimapScrollable
-                    minimapSilhouetteHeight: contentsView.minimapSilhouetteHeight()
+                    minimapSilhouetteHeight: contentsView.minimapResolvedSilhouetteHeight
                     minimapTrackInset: contentsView.minimapTrackInset
                     minimapTrackWidth: contentsView.minimapTrackWidth
                     minimapViewportFillColor: contentsView.minimapViewportFillColor

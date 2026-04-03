@@ -26,6 +26,8 @@ parent view and paints them without re-entering editor layout state.
   parent for that value through a callback binding.
 - The viewport thumb and current-line highlight consume numeric snapshot properties directly, not resolver callbacks.
   This breaks the old cycle where the minimap could reopen editor layout computations while binding its own rectangles.
+- `minimapScrollable`, `minimapViewportHeight`, and `minimapViewportY` are expected to arrive as parent-owned snapshot
+  values, not as live bindings back into `ContentsDisplayView.qml`.
 - Only the canvas row paint path still uses resolver callbacks, because those values are paint-time projections from a
   static row model rather than live layout dependencies.
 

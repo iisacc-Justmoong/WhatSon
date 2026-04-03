@@ -26,9 +26,8 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - Formatting-only whitespace between tags (`>\n    <`) is stripped before Rich HTML / `.wsnbody` source is reduced into
   inline-tag text, so pretty-printed HTML/XML indentation cannot leak into the note body as real content lines.
 - `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
-- Interior empty paragraphs are emitted as empty lines instead of being dropped.
-- Interior whitespace-only paragraphs are preserved, but outer leading/trailing whitespace-only lines are trimmed on
-  read/normalization so previously corrupted notes do not reopen hundreds of lines away from their first real content.
+- Empty paragraphs are emitted as empty lines instead of being dropped, including leading/trailing empty paragraphs the user intentionally created.
+- Whitespace-only paragraphs are preserved exactly as stored; the persistence layer no longer trims outer whitespace-only lines during read/normalization.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
   - inline-tag editor source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)

@@ -240,48 +240,6 @@ namespace
         return text;
     }
 
-    void trimOuterWhitespaceOnlyLines(QStringList* plainLines, QStringList* richLines)
-    {
-        if (plainLines == nullptr || richLines == nullptr)
-        {
-            return;
-        }
-
-        while (!plainLines->isEmpty() && !richLines->isEmpty()
-               && plainLines->front().trimmed().isEmpty())
-        {
-            plainLines->removeFirst();
-            richLines->removeFirst();
-        }
-
-        while (!plainLines->isEmpty() && !richLines->isEmpty()
-               && plainLines->back().trimmed().isEmpty())
-        {
-            plainLines->removeLast();
-            richLines->removeLast();
-        }
-    }
-
-    QString trimOuterWhitespaceOnlyTextLines(QString text)
-    {
-        text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(text);
-        if (text.isEmpty())
-        {
-            return {};
-        }
-
-        QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-        while (!lines.isEmpty() && lines.front().trimmed().isEmpty())
-        {
-            lines.removeFirst();
-        }
-        while (!lines.isEmpty() && lines.back().trimmed().isEmpty())
-        {
-            lines.removeLast();
-        }
-        return lines.join(QLatin1Char('\n'));
-    }
-
     bool isClosingTagToken(const QString& token)
     {
         for (int index = 1; index < token.size(); ++index)
@@ -445,6 +403,8 @@ namespace
         QString output;
         qsizetype cursor = 0;
         bool insideBody = !hasExplicitBodyTag;
+        int textBlockDepth = 0;
+        bool encounteredTopLevelTextBlock = false;
         QVector<QStringList> spanStyleStack;
 
         QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedSource);
@@ -490,9 +450,21 @@ namespace
 
             if (isTextBlockElement(rawTagName))
             {
-                if (closingTag && !output.endsWith(QLatin1Char('\n')))
+                if (!closingTag)
                 {
-                    output += QLatin1Char('\n');
+                    if (textBlockDepth == 0)
+                    {
+                        if (encounteredTopLevelTextBlock)
+                        {
+                            output += QLatin1Char('\n');
+                        }
+                        encounteredTopLevelTextBlock = true;
+                    }
+                    ++textBlockDepth;
+                }
+                else if (textBlockDepth > 0)
+                {
+                    --textBlockDepth;
                 }
                 cursor = tagEnd;
                 continue;
@@ -568,11 +540,7 @@ namespace
         }
 
         output = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
-        if (output.endsWith(QLatin1Char('\n')))
-        {
-            output.chop(1);
-        }
-        return trimOuterWhitespaceOnlyTextLines(output);
+        return output;
     }
 
     QString serializeInlineTaggedLine(const QString& lineText)
@@ -834,7 +802,6 @@ namespace
 
         fragments.fallbackText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackText);
         fragments.fallbackRichText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(fragments.fallbackRichText);
-        trimOuterWhitespaceOnlyLines(&fragments.blockLines, &fragments.blockRichLines);
         return fragments;
     }
 } // namespace

@@ -33,6 +33,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - During update, the store keeps `bodyPlainText` and `bodySourceText` synchronized from the serialized body so viewmodel/list binding and search/index projections do not drift.
 
 ## Regression Coverage
-  - empty/whitespace paragraph round-trip
+  - leading/interior/trailing empty paragraph round-trip
+  - whitespace-only paragraph round-trip
   - inline-tag source serialization
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags
