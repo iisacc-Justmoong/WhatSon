@@ -35,3 +35,5 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- The store no longer consults a hub write-lease helper before rewriting `Tags.wstags`; it now writes directly after
+  creating the parent directory.
