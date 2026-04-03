@@ -24,8 +24,8 @@ The implementation completes three steps in order.
 ## Failure Rule
 
 If package creation or `Resources.wsresources` rewriting fails, every package directory created during that turn is
-rolled back. If persistence succeeds but the runtime refresh callback fails, the imported packages remain on disk and
-the ViewModel emits a failure signal so the UI can report the problem to the user.
+rolled back. If persistence succeeds but the runtime refresh callback fails, the ViewModel now removes the imported
+packages and restores the previous `Resources.wsresources` contents before emitting the failure signal.
 
 ## Current Callers
 

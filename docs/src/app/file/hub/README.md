@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/hub`
 - Child directories: 0
-- Child files: 16
+- Child files: 15
 
 ## Child Directories
 - No child directories.
@@ -28,8 +28,7 @@
 - `WhatSonHubStat.hpp`
 - `WhatSonHubStore.cpp`
 - `WhatSonHubStore.hpp`
-- `WhatSonHubWriteLease.hpp`
 
 ## Notes
 - `WhatSonHubCreator` is responsible for initial hub package materialization, including `.whatson/hub.json`.
-- `WhatSonHubWriteLease.hpp` owns runtime write-lock coordination after a hub already exists.
+- Runtime hub writes no longer depend on a hub-level write-lease side channel.

@@ -38,7 +38,6 @@
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
-#include "file/hub/WhatSonHubWriteLease.hpp"
 #include "file/WhatSonDebugTrace.hpp"
 #include "platform/Android/WhatSonAndroidStorageBackend.hpp"
 #include "platform/Apple/AppleSecurityScopedResourceAccess.hpp"
@@ -142,57 +141,6 @@ int main(int argc, char* argv[])
     PresetHierarchyViewModel presetHierarchyViewModel;
     SidebarSelectionStore sidebarSelectionStore;
     SelectedHubStore selectedHubStore;
-    QString currentWriteLeaseHubPath;
-    QTimer hubWriteLeaseTimer;
-    hubWriteLeaseTimer.setInterval(WhatSon::HubWriteLease::heartbeatIntervalMs());
-    const auto updateWriteLeaseOwnership = [&currentWriteLeaseHubPath, &hubWriteLeaseTimer](const QString& hubPath)
-    {
-        const QString normalizedHubPath = hubPath.trimmed().isEmpty()
-                                              ? QString()
-                                              : WhatSon::HubPath::normalizeAbsolutePath(hubPath);
-        if (normalizedHubPath.isEmpty())
-        {
-            if (!currentWriteLeaseHubPath.isEmpty())
-            {
-                WhatSon::HubWriteLease::releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);
-                currentWriteLeaseHubPath.clear();
-            }
-            hubWriteLeaseTimer.stop();
-            return;
-        }
-
-        if (currentWriteLeaseHubPath != normalizedHubPath && !currentWriteLeaseHubPath.isEmpty())
-        {
-            WhatSon::HubWriteLease::releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);
-        }
-
-        currentWriteLeaseHubPath = normalizedHubPath;
-        hubWriteLeaseTimer.start();
-    };
-    QObject::connect(&hubWriteLeaseTimer, &QTimer::timeout, &app, [&currentWriteLeaseHubPath]()
-    {
-        if (currentWriteLeaseHubPath.isEmpty())
-        {
-            return;
-        }
-
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::refreshWriteLeaseForHub(currentWriteLeaseHubPath, &leaseError))
-        {
-            qWarning().noquote()
-                << QStringLiteral("Failed to refresh WhatSon Hub write lease '%1': %2")
-                .arg(currentWriteLeaseHubPath, leaseError.trimmed());
-        }
-    });
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&currentWriteLeaseHubPath]()
-    {
-        if (currentWriteLeaseHubPath.isEmpty())
-        {
-            return;
-        }
-
-        WhatSon::HubWriteLease::releaseWriteLeaseForHub(currentWriteLeaseHubPath, nullptr);
-    });
     HierarchyViewModelProvider hierarchyViewModelProvider;
     SidebarHierarchyViewModel sidebarHierarchyViewModel;
     DetailPanelViewModel detailPanelViewModel;
@@ -362,12 +310,11 @@ int main(int argc, char* argv[])
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
-        [&onboardingHubController, &selectedHubStore, &updateWriteLeaseOwnership, &hubSyncController, &resourcesImportViewModel](const QString& hubPath)
+        [&onboardingHubController, &selectedHubStore, &hubSyncController, &resourcesImportViewModel](const QString& hubPath)
         {
             selectedHubStore.setSelectedHubSelection(
                 hubPath,
                 onboardingHubController.currentHubAccessBookmark());
-            updateWriteLeaseOwnership(hubPath);
             hubSyncController.setCurrentHubPath(hubPath);
             resourcesImportViewModel.setCurrentHubPath(hubPath);
         });
@@ -390,7 +337,6 @@ int main(int argc, char* argv[])
             selectedHubStore.setSelectedHubSelection(
                 startupHubSelection.hubPath,
                 startupHubSelection.accessBookmark);
-            updateWriteLeaseOwnership(startupHubSelection.hubPath);
             hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
             resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
         }

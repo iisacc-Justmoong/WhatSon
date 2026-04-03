@@ -41,38 +41,15 @@ namespace
         return key;
     }
 
-    QString loadMirroredTextValue(
+    QString loadSecureTextValue(
         const QString& settingsKey,
         const WhatSonTrialSecureStore& secureStore,
         const std::function<QString(QString)>& normalizeValue)
     {
-        QSettings settings;
-
-        const QString rawSettingsValue = settings.value(settingsKey).toString();
-        const QString normalizedSettingsValue = normalizeValue(rawSettingsValue);
-        if (normalizedSettingsValue.isEmpty())
-        {
-            if (!rawSettingsValue.trimmed().isEmpty() || settings.contains(settingsKey))
-            {
-                settings.remove(settingsKey);
-                settings.sync();
-            }
-        }
-        else if (rawSettingsValue != normalizedSettingsValue)
-        {
-            settings.setValue(settingsKey, normalizedSettingsValue);
-            settings.sync();
-        }
-
         const WhatSonTrialSecureStoreReadResult secureResult = secureStore.readEntry(settingsKey);
         const QString normalizedSecureValue = normalizeValue(secureResult.value);
         if (secureResult.status == WhatSonTrialSecureStoreStatus::Success && !normalizedSecureValue.isEmpty())
         {
-            if (normalizedSettingsValue != normalizedSecureValue)
-            {
-                settings.setValue(settingsKey, normalizedSecureValue);
-                settings.sync();
-            }
             return normalizedSecureValue;
         }
 
@@ -81,35 +58,56 @@ namespace
             (void)secureStore.removeEntry(settingsKey);
         }
 
+        if (!secureResult.backendAvailable())
+        {
+            return {};
+        }
+
+        QSettings settings;
+        const QString rawSettingsValue = settings.value(settingsKey).toString();
+        const QString normalizedSettingsValue = normalizeValue(rawSettingsValue);
+        bool migratedLegacyValue = false;
         if (!normalizedSettingsValue.isEmpty())
         {
-            if (secureResult.status == WhatSonTrialSecureStoreStatus::NotFound
-                || (secureResult.status == WhatSonTrialSecureStoreStatus::Success && normalizedSecureValue.isEmpty()))
+            const WhatSonTrialSecureStoreWriteResult writeResult =
+                secureStore.writeEntry(settingsKey, normalizedSettingsValue);
+            if (writeResult.succeeded())
             {
-                (void)secureStore.writeEntry(settingsKey, normalizedSettingsValue);
+                settings.remove(settingsKey);
+                settings.sync();
+                migratedLegacyValue = true;
+                return normalizedSettingsValue;
             }
-            return normalizedSettingsValue;
+        }
+
+        if ((normalizedSettingsValue.isEmpty() || migratedLegacyValue)
+            && (!rawSettingsValue.trimmed().isEmpty() || settings.contains(settingsKey)))
+        {
+            settings.remove(settingsKey);
+            settings.sync();
         }
 
         return {};
     }
 
-    void storeMirroredTextValue(
+    void storeSecureTextValue(
         const QString& settingsKey,
         const QString& normalizedValue,
         const WhatSonTrialSecureStore& secureStore)
     {
         QSettings settings;
-        if (normalizedValue.isEmpty())
+        if (!settingsKey.trimmed().isEmpty() && settings.contains(settingsKey))
         {
             settings.remove(settingsKey);
             settings.sync();
+        }
+
+        if (normalizedValue.isEmpty())
+        {
             (void)secureStore.removeEntry(settingsKey);
             return;
         }
 
-        settings.setValue(settingsKey, normalizedValue);
-        settings.sync();
         (void)secureStore.writeEntry(settingsKey, normalizedValue);
     }
 }
@@ -227,7 +225,7 @@ QString WhatSonTrialClientIdentityStore::registerIntegritySecretSettingsKey() co
 
 QString WhatSonTrialClientIdentityStore::loadDeviceUuid() const
 {
-    return loadMirroredTextValue(
+    return loadSecureTextValue(
         m_deviceUuidSettingsKey,
         m_secureStore,
         [](QString value) { return normalizeDeviceUuid(std::move(value)); });
@@ -235,7 +233,7 @@ QString WhatSonTrialClientIdentityStore::loadDeviceUuid() const
 
 QString WhatSonTrialClientIdentityStore::loadClientKey() const
 {
-    return loadMirroredTextValue(
+    return loadSecureTextValue(
         m_clientKeySettingsKey,
         m_secureStore,
         [](QString value) { return normalizeClientKey(std::move(value)); });
@@ -243,7 +241,7 @@ QString WhatSonTrialClientIdentityStore::loadClientKey() const
 
 QString WhatSonTrialClientIdentityStore::loadRegisterIntegritySecret() const
 {
-    return loadMirroredTextValue(
+    return loadSecureTextValue(
         m_registerIntegritySecretSettingsKey,
         m_secureStore,
         [](QString value) { return normalizeRegisterIntegritySecret(std::move(value)); });
@@ -277,9 +275,14 @@ WhatSonTrialClientIdentity WhatSonTrialClientIdentityStore::ensureIdentity() con
     if (changed)
     {
         storeIdentity(identity);
+        identity = loadIdentity();
     }
 
-    ensureRegisterIntegritySecret();
+    const QString registerIntegritySecret = ensureRegisterIntegritySecret();
+    if (identity.deviceUuid.isEmpty() || identity.key.isEmpty() || registerIntegritySecret.isEmpty())
+    {
+        return loadIdentity();
+    }
     return identity;
 }
 
@@ -293,22 +296,22 @@ QString WhatSonTrialClientIdentityStore::ensureRegisterIntegritySecret() const
 
     const QString createdSecret = createRegisterIntegritySecret();
     storeRegisterIntegritySecret(createdSecret);
-    return createdSecret;
+    return loadRegisterIntegritySecret();
 }
 
 void WhatSonTrialClientIdentityStore::storeIdentity(const WhatSonTrialClientIdentity& identity) const
 {
     const WhatSonTrialClientIdentity normalizedIdentity = normalizeIdentity(identity);
 
-    storeMirroredTextValue(m_deviceUuidSettingsKey, normalizedIdentity.deviceUuid, m_secureStore);
-    storeMirroredTextValue(m_clientKeySettingsKey, normalizedIdentity.key, m_secureStore);
+    storeSecureTextValue(m_deviceUuidSettingsKey, normalizedIdentity.deviceUuid, m_secureStore);
+    storeSecureTextValue(m_clientKeySettingsKey, normalizedIdentity.key, m_secureStore);
 }
 
 void WhatSonTrialClientIdentityStore::clear() const
 {
-    storeMirroredTextValue(m_deviceUuidSettingsKey, {}, m_secureStore);
-    storeMirroredTextValue(m_clientKeySettingsKey, {}, m_secureStore);
-    storeMirroredTextValue(m_registerIntegritySecretSettingsKey, {}, m_secureStore);
+    storeSecureTextValue(m_deviceUuidSettingsKey, {}, m_secureStore);
+    storeSecureTextValue(m_clientKeySettingsKey, {}, m_secureStore);
+    storeSecureTextValue(m_registerIntegritySecretSettingsKey, {}, m_secureStore);
 }
 
 QString WhatSonTrialClientIdentityStore::createDeviceUuid()
@@ -340,7 +343,7 @@ QString WhatSonTrialClientIdentityStore::createRegisterIntegritySecret()
 
 void WhatSonTrialClientIdentityStore::storeRegisterIntegritySecret(const QString& value) const
 {
-    storeMirroredTextValue(
+    storeSecureTextValue(
         m_registerIntegritySecretSettingsKey,
         normalizeRegisterIntegritySecret(value),
         m_secureStore);

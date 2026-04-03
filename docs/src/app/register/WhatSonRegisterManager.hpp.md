@@ -6,7 +6,7 @@ Declares the app-core registration manager that owns the persisted authenticatio
 ## Public API
 - `authenticated()`: returns the cached authentication-complete flag.
 - `setAuthenticated(...)`: updates the flag, persists it, and emits `authenticatedChanged()` when the value changes.
-- `reload()`: reloads the persisted state from `QSettings`.
+- `reload()`: reloads the persisted state from `QSettings`, verifying the signed trial-build record before accepting it.
 - `clearAuthentication()`: convenience slot that resets the flag to `false`.
 
 ## Integration

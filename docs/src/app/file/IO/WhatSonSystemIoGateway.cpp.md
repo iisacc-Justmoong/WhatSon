@@ -35,3 +35,4 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- The gateway now serializes process-local mutations with `g_systemIoMutationMutex` only; it no longer consults a hub-level write-lease helper before filesystem writes.

@@ -13,9 +13,8 @@ records the watcher paths that must be registered with `QFileSystemWatcher`.
 
 The observed signature intentionally ignores:
 - `.whatson`
-- `.whatson/write-lease.json`
 
-This keeps lease-maintenance churn out of runtime reload policy.
+This keeps app-private bookkeeping churn out of runtime reload policy.
 
 This keeps signature hashing and watcher coverage on a single recursive observation pass.
 

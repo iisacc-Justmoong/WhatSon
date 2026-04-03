@@ -1,7 +1,6 @@
 #include "WhatSonEventHierarchyStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
-#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonEventHierarchyCreator.hpp"
 
 #include <QDir>
@@ -89,16 +88,6 @@ bool WhatSonEventHierarchyStore::writeToFile(const QString& filePath, QString* e
 
     WhatSonEventHierarchyCreator creator;
     const QString text = creator.createText(*this);
-
-    QString leaseError;
-    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = leaseError;
-        }
-        return false;
-    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))

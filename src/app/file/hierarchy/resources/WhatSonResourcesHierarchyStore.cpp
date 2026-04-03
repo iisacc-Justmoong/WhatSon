@@ -2,7 +2,6 @@
 
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonResourcePackageSupport.hpp"
-#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonResourcesHierarchyCreator.hpp"
 
 #include <QDir>
@@ -90,16 +89,6 @@ bool WhatSonResourcesHierarchyStore::writeToFile(const QString& filePath, QStrin
 
     WhatSonResourcesHierarchyCreator creator;
     const QString text = creator.createText(*this);
-
-    QString leaseError;
-    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = leaseError;
-        }
-        return false;
-    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))

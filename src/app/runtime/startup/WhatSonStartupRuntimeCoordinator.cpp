@@ -2,7 +2,6 @@
 
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
-#include "file/hub/WhatSonHubWriteLease.hpp"
 #include "hub/WhatSonHubRuntimeStore.hpp"
 #include "viewmodel/hierarchy/bookmarks/BookmarksHierarchyViewModel.hpp"
 #include "viewmodel/hierarchy/event/EventHierarchyViewModel.hpp"
@@ -48,17 +47,6 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
         if (errorMessage != nullptr)
         {
             *errorMessage = QStringLiteral("Hub path must not be empty.");
-        }
-        return false;
-    }
-
-    QString leaseError;
-    const bool replacingCurrentLease = m_currentLoadedHubPath == normalizedHubPath;
-    if (!WhatSon::HubWriteLease::refreshWriteLeaseForHub(normalizedHubPath, &leaseError))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = leaseError;
         }
         return false;
     }
@@ -157,10 +145,6 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
 
     if (!loadSucceeded)
     {
-        if (!replacingCurrentLease)
-        {
-            WhatSon::HubWriteLease::releaseWriteLeaseForHub(normalizedHubPath, nullptr);
-        }
         if (errorMessage != nullptr)
         {
             *errorMessage = failedDomains.isEmpty()
@@ -173,10 +157,6 @@ bool WhatSonStartupRuntimeCoordinator::loadHubIntoRuntimeWithRequestedDomains(
 
     if (hubRuntimeRequested && !hubRuntimeLoadSucceeded)
     {
-        if (!replacingCurrentLease)
-        {
-            WhatSon::HubWriteLease::releaseWriteLeaseForHub(normalizedHubPath, nullptr);
-        }
         if (errorMessage != nullptr)
         {
             *errorMessage = QStringLiteral("Failed to load the selected WhatSon Hub runtime state.");

@@ -10,7 +10,7 @@ Declares the trial-only in-app identity store that owns the persisted device UUI
 - `ensureIdentity()`: guarantees that the device UUID, client key, and register-integrity secret exist.
 - `ensureRegisterIntegritySecret()`: lazily creates the HMAC secret used for `trial_register.xml`.
 - `storeIdentity(...)`: replaces the stored identity with normalized values.
-- `clear()`: removes the trial-only identity and register-integrity secret from both storage layers.
+- `clear()`: removes the trial-only identity and register-integrity secret from the secure store and clears any remaining legacy plain settings.
 
 ## Data Contract
 - `deviceUuid` is stored separately from the client key so future trial flows can inspect it without parsing XML.

@@ -5,7 +5,6 @@
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcesHierarchyStore.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
-#include "file/hub/WhatSonHubWriteLease.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -179,16 +178,6 @@ namespace
 
     bool writeUtf8FileAtomically(const QString& filePath, const QString& text, QString* errorMessage = nullptr)
     {
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(filePath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
-
         const QString directoryPath = QFileInfo(filePath).absolutePath();
         if (!directoryPath.isEmpty() && !QDir().mkpath(directoryPath))
         {
@@ -228,6 +217,32 @@ namespace
             return false;
         }
 
+        return true;
+    }
+
+    bool readUtf8FileText(const QString& filePath, QString* outText, QString* errorMessage = nullptr)
+    {
+        if (outText == nullptr)
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("outText must not be null.");
+            }
+            return false;
+        }
+
+        outText->clear();
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to open file for read: %1").arg(filePath);
+            }
+            return false;
+        }
+
+        *outText = QString::fromUtf8(file.readAll());
         return true;
     }
 
@@ -405,32 +420,12 @@ namespace
             QStringLiteral("%1/%2")
                 .arg(QFileInfo(resourcesDirectoryPath).fileName(), QFileInfo(packageDirectoryPath).fileName()));
 
-        QString leaseError;
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(packageDirectoryPath, &leaseError))
-        {
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
-            }
-            return false;
-        }
-
         if (!QDir().mkpath(packageDirectoryPath))
         {
             if (errorMessage != nullptr)
             {
                 *errorMessage = QStringLiteral("Failed to create resource package directory: %1").arg(
                     packageDirectoryPath);
-            }
-            return false;
-        }
-
-        if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(destinationAssetPath, &leaseError))
-        {
-            QDir(packageDirectoryPath).removeRecursively();
-            if (errorMessage != nullptr)
-            {
-                *errorMessage = leaseError;
             }
             return false;
         }
@@ -605,6 +600,14 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
     }
 
     const QString resourcesFilePath = QDir(contentsDirectoryPath).filePath(QStringLiteral("Resources.wsresources"));
+    const bool hadResourcesFile = QFileInfo(resourcesFilePath).isFile();
+    QString previousResourcesFileText;
+    if (hadResourcesFile && !readUtf8FileText(resourcesFilePath, &previousResourcesFileText, &resolveError))
+    {
+        setLastError(resolveError);
+        emit operationFailed(resolveError);
+        return false;
+    }
 
     QStringList existingResourcePaths;
     if (!loadExistingResourcePaths(resourcesFilePath, &existingResourcePaths, &resolveError))
@@ -634,6 +637,49 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
     {
         localImportedEntries.reserve(sourceFiles.size());
     }
+    bool wroteResourcesFile = false;
+
+    auto rollbackImportedResources = [&](const bool restoreResourcesFile, QString* rollbackError = nullptr)
+    {
+        QStringList rollbackErrors;
+
+        for (const QString& createdPackagePath : std::as_const(createdPackagePaths))
+        {
+            if (!QFileInfo(createdPackagePath).exists())
+            {
+                continue;
+            }
+
+            if (!QDir(createdPackagePath).removeRecursively())
+            {
+                rollbackErrors.push_back(
+                    QStringLiteral("Failed to remove imported resource package: %1").arg(createdPackagePath));
+            }
+        }
+
+        if (restoreResourcesFile)
+        {
+            if (hadResourcesFile)
+            {
+                QString restoreError;
+                if (!writeUtf8FileAtomically(resourcesFilePath, previousResourcesFileText, &restoreError))
+                {
+                    rollbackErrors.push_back(restoreError);
+                }
+            }
+            else if (QFileInfo(resourcesFilePath).exists() && !QFile::remove(resourcesFilePath))
+            {
+                rollbackErrors.push_back(
+                    QStringLiteral("Failed to remove restored Resources.wsresources file: %1").arg(resourcesFilePath));
+            }
+        }
+
+        if (rollbackError != nullptr)
+        {
+            *rollbackError = rollbackErrors.join(QStringLiteral("; "));
+        }
+        return rollbackErrors.isEmpty();
+    };
 
     for (const QString& sourceFilePath : sourceFiles)
     {
@@ -649,10 +695,7 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
             &importedMetadata,
             &importError))
         {
-            for (const QString& createdPackagePath : std::as_const(createdPackagePaths))
-            {
-                QDir(createdPackagePath).removeRecursively();
-            }
+            rollbackImportedResources(false, nullptr);
 
             setBusy(false);
             setLastError(importError);
@@ -689,10 +732,7 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
     QString writeError;
     if (!store.writeToFile(resourcesFilePath, &writeError))
     {
-        for (const QString& createdPackagePath : std::as_const(createdPackagePaths))
-        {
-            QDir(createdPackagePath).removeRecursively();
-        }
+        rollbackImportedResources(false, nullptr);
 
         setBusy(false);
         setLastError(writeError);
@@ -704,25 +744,33 @@ bool ResourcesImportViewModel::importUrlsInternal(const QVariantList& urls, QVar
             QStringLiteral("reason=%1").arg(writeError));
         return false;
     }
+    wroteResourcesFile = true;
 
     if (m_reloadResourcesCallback)
     {
         QString reloadError;
         if (!m_reloadResourcesCallback(m_currentHubPath, &reloadError))
         {
+            QString rollbackError;
+            rollbackImportedResources(wroteResourcesFile, &rollbackError);
             const QString errorMessage = reloadError.trimmed().isEmpty()
                                              ? QStringLiteral("Imported resources but failed to refresh the workspace.")
                                              : QStringLiteral(
                                                    "Imported resources but failed to refresh the workspace: %1").arg(
                                                    reloadError.trimmed());
+            const QString finalErrorMessage = rollbackError.trimmed().isEmpty()
+                                                  ? errorMessage
+                                                  : QStringLiteral("%1 Rollback: %2").arg(
+                                                      errorMessage,
+                                                      rollbackError.trimmed());
             setBusy(false);
-            setLastError(errorMessage);
-            emit operationFailed(errorMessage);
+            setLastError(finalErrorMessage);
+            emit operationFailed(finalErrorMessage);
             WhatSon::Debug::traceSelf(
                 this,
                 QString::fromLatin1(kScope),
                 QStringLiteral("importUrls.reloadFailed"),
-                QStringLiteral("reason=%1").arg(errorMessage));
+                QStringLiteral("reason=%1").arg(finalErrorMessage));
             return false;
         }
     }

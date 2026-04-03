@@ -3,7 +3,6 @@
 #include "../WhatSonFolderIdentity.hpp"
 #include "WhatSonDebugTrace.hpp"
 #include "WhatSonFoldersHierarchyCreator.hpp"
-#include "hub/WhatSonHubWriteLease.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -114,16 +113,6 @@ bool WhatSonFoldersHierarchyStore::writeToFile(const QString& filePath, QString*
 
     WhatSonFoldersHierarchyCreator creator;
     const QString text = creator.createText(*this);
-
-    QString leaseError;
-    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = leaseError;
-        }
-        return false;
-    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))

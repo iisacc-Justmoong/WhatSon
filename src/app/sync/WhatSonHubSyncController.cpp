@@ -34,8 +34,7 @@ namespace
     bool shouldIgnoreObservedRelativePath(const QString& relativePath)
     {
         const QString normalizedRelativePath = normalizeObservedRelativePath(relativePath);
-        return normalizedRelativePath == QStringLiteral(".whatson")
-            || normalizedRelativePath == QStringLiteral(".whatson/write-lease.json");
+        return normalizedRelativePath == QStringLiteral(".whatson");
     }
 
     QStringList normalizeWatchPaths(QStringList watchPaths)

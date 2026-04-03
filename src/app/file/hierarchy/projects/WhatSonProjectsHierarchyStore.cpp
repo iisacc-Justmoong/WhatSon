@@ -1,7 +1,6 @@
 #include "WhatSonProjectsHierarchyStore.hpp"
 
 #include "WhatSonDebugTrace.hpp"
-#include "hub/WhatSonHubWriteLease.hpp"
 #include "WhatSonProjectsHierarchyCreator.hpp"
 
 #include <QDir>
@@ -186,16 +185,6 @@ bool WhatSonProjectsHierarchyStore::writeToFile(const QString& filePath, QString
 
     WhatSonProjectsHierarchyCreator creator;
     const QString text = creator.createText(*this);
-
-    QString leaseError;
-    if (!WhatSon::HubWriteLease::ensureWriteLeaseForPath(normalizedPath, &leaseError))
-    {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = leaseError;
-        }
-        return false;
-    }
 
     const QFileInfo info(normalizedPath);
     if (!QDir().mkpath(info.absolutePath()))
