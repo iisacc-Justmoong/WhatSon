@@ -2,6 +2,37 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 Pdf 
 find_package(LVRS CONFIG REQUIRED)
 qt_policy(SET QTP0004 NEW)
 
+function(whatson_prune_missing_imported_includes target_name)
+    if (NOT TARGET "${target_name}")
+        return()
+    endif ()
+
+    get_target_property(_whatson_imported_includes "${target_name}" INTERFACE_INCLUDE_DIRECTORIES)
+    if (NOT _whatson_imported_includes)
+        return()
+    endif ()
+
+    set(_whatson_imported_includes_filtered)
+    set(_whatson_imported_includes_pruned FALSE)
+    foreach (_whatson_imported_include IN LISTS _whatson_imported_includes)
+        if (EXISTS "${_whatson_imported_include}")
+            list(APPEND _whatson_imported_includes_filtered "${_whatson_imported_include}")
+        else ()
+            set(_whatson_imported_includes_pruned TRUE)
+        endif ()
+    endforeach ()
+
+    if (_whatson_imported_includes_pruned)
+        set_property(TARGET "${target_name}" PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES "${_whatson_imported_includes_filtered}")
+    endif ()
+endfunction()
+
+whatson_prune_missing_imported_includes(Qt6::Pdf)
+whatson_prune_missing_imported_includes(Qt6::PdfQuick)
+whatson_prune_missing_imported_includes(Qt6::PdfPrivate)
+whatson_prune_missing_imported_includes(Qt6::PdfQuickPrivate)
+
 if (APPLE AND TARGET WrapOpenGL::WrapOpenGL)
     get_target_property(_whatson_wrap_opengl_links WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
     if (_whatson_wrap_opengl_links)
