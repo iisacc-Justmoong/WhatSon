@@ -6,6 +6,14 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 ## Key Behavior
 - Normalizes CRLF/CR to LF before parsing.
 - Escapes plain text segments to keep HTML output safe.
+- Recognizes markdown-style block prefixes without rewriting the stored source text:
+    - unordered list markers (`- ` / `* ` / `+ `) render as bullet-list lines
+    - ordered list markers (`1. ` / `2. ` / `3) `) render as numbered-list lines
+    - heading markers (`#` ... `######`) render as larger title lines while keeping the marker text visible
+    - blockquotes (`> `) render as muted italic quote lines
+    - fenced code blocks keep the literal `` ``` `` lines but render the fenced region with monospace/code styling
+- The RichText spans for those markdown roles are emitted through `WhatSonNoteMarkdownStyleObject`, not ad-hoc
+  free-form CSS strings.
 - Converts supported inline style tags to explicit RichText/CSS spans:
   - `bold`/`b`/`strong` -> `<strong style="font-weight:900;">`
   - `italic`/`i`/`em` -> `<span style="font-style:italic;">`
@@ -13,6 +21,11 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - `strikethrough`/`strike`/`s`/`del` -> `<span style="text-decoration: line-through;">`
 - Routes `highlight` / `mark` tags through `ContentsTextHighlightRenderer` and renders an Apple Notes-inspired
   highlight span (`#8A4B00` background, `#D6AE58` foreground, semibold text).
+- Styles inline markdown-shaped literals that do not conflict with proprietary formatting tags:
+    - inline code spans (`` `code` ``)
+    - link-shaped literals (`[label](url)`)
+- Proprietary formatting remains authoritative for bold/italic/underline/strikethrough/highlight; markdown emphasis
+  tokens are intentionally not promoted into those styles.
 - Converts `<br>` style tags and newline characters to `<br/>`.
 - Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
@@ -27,6 +40,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - preserves escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` unchanged
 - Exposes `normalizeEditorSurfaceTextToSource(...)` so formatting-driven `QTextDocument` mutations can still be
   canonicalized back into inline `.wsnbody` tags when the whole RichText surface genuinely changed.
+- That whole-surface normalization also converts rendered unordered-list bullet glyphs (`• `) back into source markdown
+  markers (`- `), so selection-format round-trips do not silently replace markdown list syntax with literal bullets.
+  That canonical `-` marker is now an explicit shared policy.
 - Exposes `applyPlainTextReplacementToSource(...)` so ordinary typing can mutate only the affected raw source span:
   - accepts canonical source text plus source start/end offsets
   - normalizes plain-text line endings
@@ -42,5 +58,26 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     surviving as hidden markup
   - otherwise merges `QTextCharFormat` for `bold` / `italic` / `underline` / `strikethrough` / `highlight`
   - serializes the updated document back into canonical `.wsnbody`
+- Exposes `applyInlineStyleToLogicalSelectionSource(...)` for shortcut/context-menu formatting that must ignore markdown
+  presentation roles:
+    - builds a markdown-neutral inline-style editing surface from canonical source text
+    - resolves the selected range by logical editor offsets
+    - toggles only when the proprietary `.wsnbody` inline style is already present
+    - serializes the edited document back into canonical `.wsnbody`
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so
   read-side rendering and editor rendering no longer diverge on weight/decoration styling.
+
+## Regression Checks
+
+- Typing `- item` in the note body should re-render as a bullet-list line without changing the stored source marker.
+- Typing `1. item` should re-render as a numbered-list line.
+- Typing `# title` should re-render as a heading-like line while preserving literal `# ` in the source text.
+- Typing `` ``` `` fenced blocks should keep the fence markers visible and render the fenced body as code-styled text.
+- Typing `[label](https://example.com)` should keep the literal token in source while rendering it as a link-styled
+  span.
+- Applying proprietary inline formatting to text inside a markdown bullet line must keep the stored source line prefix
+  as
+  `- ` instead of persisting the rendered `• ` glyph.
+- Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
+  must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
+  already-applied shortcut format.

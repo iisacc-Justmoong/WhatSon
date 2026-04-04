@@ -1,7 +1,9 @@
 # `src/app/editor/renderer/ContentsTextFormatRenderer.hpp`
 
 ## Responsibility
-Declares the editor-side rich-text renderer bridge that converts `.wsnbody` inline style tags into QML RichText HTML.
+
+Declares the editor-side rich-text renderer bridge that converts `.wsnbody` inline style tags and markdown-like note
+input into QML RichText HTML.
 
 Highlight styling is delegated to the dedicated `ContentsTextHighlightRenderer` module so palette logic does not stay
 embedded in the generic inline-tag parser.
@@ -13,6 +15,13 @@ embedded in the generic inline-tag parser.
   Render-ready HTML string consumed by QML `Text`/`TextEdit` in rich-text mode.
 - `renderRichText(sourceText)`
   Stateless helper to render any input text without mutating bridge ownership state.
+  This now includes markdown-style block rendering for:
+    - ordered list prefixes such as `1. `
+    - unordered list prefixes such as `- ` / `* ` / `+ `
+    - headings (`#` ... `######`)
+    - blockquotes (`> `)
+    - fenced code blocks (`` ``` ``)
+    - inline code and link-shaped literals
 - `normalizeEditorSurfaceTextToSource(surfaceText)`
   Converts RichText editor output back into canonical `.wsnbody` inline source tags.
 - `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
@@ -27,6 +36,9 @@ embedded in the generic inline-tag parser.
   `.wsnbody`.
   The same entrypoint also accepts `plain` / `clear` / `none` to strip all supported inline styling from the selected
   range explicitly.
+- `applyInlineStyleToLogicalSelectionSource(sourceText, selectionStart, selectionEnd, styleTag)`
+  Applies inline formatting from canonical source text plus logical editor offsets, using a markdown-neutral editing
+  surface so shortcut/context-menu toggles only react to proprietary `.wsnbody` inline styles.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 
@@ -37,3 +49,10 @@ embedded in the generic inline-tag parser.
 - Strike aliases: `strikethrough`, `strike`, `s`, `del` -> `<span style="text-decoration: line-through;">`
 - Highlight aliases: `highlight`, `mark` -> Apple Notes-inspired styled `<span ...>`
 - Clear aliases: `plain`, `clear`, `none` -> remove inline formatting from the selected range
+
+Markdown emphasis markers such as `**bold**`, `*italic*`, `~~strike~~`, or `==highlight==` are intentionally **not**
+the formatting source of truth in this editor. Those styles remain bound to the proprietary `.wsnbody` inline tags and
+the existing shortcut/context-menu pipeline.
+
+Markdown presentation roles are now emitted through `WhatSonNoteMarkdownStyleObject`, so renderer-side RichText HTML
+and persistence-side markdown promotion share the same contract.

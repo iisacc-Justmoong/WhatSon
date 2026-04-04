@@ -190,7 +190,7 @@ Item {
         if (nextSelectionIndex < 0)
             nextSelectionIndex = mobileHierarchyPage.currentHierarchySelectionIndex();
         mobileHierarchyPage.preservedNoteListSelectionIndex = nextSelectionIndex;
-        return nextSelectionIndex;
+
     }
     function restoreNoteListSelection(selectionIndex) {
         if (!mobileHierarchyPage.activeContentViewModel
@@ -692,11 +692,7 @@ Item {
             drawerVisible: false
             editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
             frameHorizontalInsetOverride: LV.Theme.gapNone
-            gutterColor: "transparent"
-            gutterWidthOverride: LV.Theme.gap20 * 2
             libraryHierarchyViewModel: noteCreationCoordinator.noteCreationViewModel
-            lineNumberColumnLeftOverride: 14
-            lineNumberColumnTextWidthOverride: LV.Theme.gap20 + LV.Theme.gap2
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
             resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel

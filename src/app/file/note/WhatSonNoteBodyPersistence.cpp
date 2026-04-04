@@ -1,5 +1,6 @@
 #include "WhatSonNoteBodyPersistence.hpp"
 
+#include "WhatSonNoteMarkdownStyleObject.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
 
 #include <QDir>
@@ -284,6 +285,13 @@ namespace
 
     QStringList spanInlineStyleTagsFromCssDeclaration(const QString& cssDeclaration)
     {
+        const WhatSon::WhatSonNoteMarkdownStyleObject::PromotionMatch markdownPromotionMatch =
+            WhatSon::WhatSonNoteMarkdownStyleObject::promotionMatchForCss(cssDeclaration);
+        if (markdownPromotionMatch.matched)
+        {
+            return markdownPromotionMatch.promotedInlineTags;
+        }
+
         const QString normalizedCss = cssDeclaration.toCaseFolded();
         if (normalizedCss.isEmpty())
         {

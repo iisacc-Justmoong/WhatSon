@@ -25,3 +25,6 @@ The bridge forwards the caller-provided active item key when available and other
 - reject negative indices and empty note IDs before delegating
 
 This keeps the QML layer free from repeated sanitation logic and ensures that malformed drag payloads fail early.
+
+For note-list multi-selection, `canAcceptNoteDropList(...)` and `assignNotesToFolder(...)` normalize/deduplicate a
+QML-provided note-id array and replay the same capability contract across the selected notes.

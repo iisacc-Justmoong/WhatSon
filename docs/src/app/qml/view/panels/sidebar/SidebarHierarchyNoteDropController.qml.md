@@ -1,41 +1,23 @@
 # `src/app/qml/view/panels/sidebar/SidebarHierarchyNoteDropController.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/sidebar/SidebarHierarchyNoteDropController.qml`
-- Source kind: QML view/component
-- File name: `SidebarHierarchyNoteDropController.qml`
-- Approximate line count: 194
+`SidebarHierarchyNoteDropController.qml` centralizes note-to-folder drop decoding for the hierarchy sidebar.
 
-## QML Surface Snapshot
-- Root type: `QtObject`
+## Behavior
 
-### Object IDs
-- `noteDropController`
+- Resolves the hovered hierarchy row from raw pointer coordinates and exposes that as a normalized drop target.
+- Normalizes drag payloads into unique note-id arrays, including multi-selection payloads exported from
+  `ListBarLayout.qml`.
+- Uses `HierarchyDragDropBridge.canAcceptNoteDropList(...)` / `assignNotesToFolder(...)` when available, with
+  single-note fallback for older capability surfaces.
+- Clears hover preview state whenever the payload is empty or the hovered folder cannot accept any of the dragged notes.
 
-### Required Properties
-- `hierarchyDragDropBridge`
-- `hierarchyTree`
-- `hostView`
+## Tests
 
-### Signals
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - JSON `application/x-whatson-note-ids` payloads must decode into a unique ordered note-id list.
+    - Plain-text newline-separated payloads must still decode into the same note-id set.
+    - A multi-selected note-list drag should highlight a folder when at least one dragged note can be assigned there.
+    - Dropping that payload should route every assignable dragged note through the hierarchy drag/drop bridge.

@@ -33,6 +33,7 @@ public:
     Q_INVOKABLE bool applySearchText(const QString& searchText);
     Q_INVOKABLE int readCurrentIndex() const;
     Q_INVOKABLE QString readCurrentNoteId() const;
+    Q_INVOKABLE QString readNoteIdAt(int index) const;
     Q_INVOKABLE bool pushCurrentIndex(int index);
 
 signals:

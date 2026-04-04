@@ -15,6 +15,7 @@
 - Exposes normalized read contracts:
   - `currentIndex`
   - `currentNoteId`
+  - `readNoteIdAt(int)` for turning visual multi-selection row indexes back into stable note ids
 - Exposes write helpers:
   - `applySearchText(QString)`
   - `pushCurrentIndex(int)`

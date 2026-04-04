@@ -7,22 +7,18 @@ QtObject {
     required property var hierarchyTree
     required property var hostView
 
-    function normalizedInteger(value, fallbackValue) {
-        const numericValue = Number(value);
-        if (!isFinite(numericValue))
-            return fallbackValue;
-        return Math.floor(numericValue);
+    function canAcceptNoteDropAtPosition(x, y, noteIds, referenceItem) {
+        const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
+        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+        if (target.index < 0 || normalizedNoteIds.length === 0 || !hierarchyDragDropBridge)
+            return false;
+        if (hierarchyDragDropBridge.canAcceptNoteDropList !== undefined)
+            return hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds);
+        return hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteIds[0]);
     }
-
-    function normalizedNonNegativeInteger(value) {
-        const normalized = noteDropController.normalizedInteger(value, -1);
-        return normalized >= 0 ? normalized : -1;
-    }
-
     function clearNoteDropPreview() {
         hostView.noteDropHoverIndex = -1;
     }
-
     function collectHierarchyItems() {
         const items = [];
         function visitHierarchyDescendants(item) {
@@ -39,24 +35,24 @@ QtObject {
             }
         }
         visitHierarchyDescendants(hierarchyTree);
-        return items;
-    }
 
-    function hierarchyItemContainsPoint(item, x, y) {
-        if (!item || item.mapToItem === undefined)
-            return false;
-        const mappedPoint = item.mapToItem(hierarchyTree, 0, 0);
-        const itemX = Number(mappedPoint.x) || 0;
-        const itemY = Number(mappedPoint.y) || 0;
-        const itemWidth = Number(item.width) || 0;
-        const itemHeight = Number(item.height) || 0;
-        if (itemWidth <= 0 || itemHeight <= 0)
-            return false;
-        if (item.rowVisible !== undefined && !Boolean(item.rowVisible))
-            return false;
-        return x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight;
     }
-
+    function commitNoteDropAtPosition(x, y, noteIds, referenceItem) {
+        const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
+        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+        if (target.index < 0 || normalizedNoteIds.length === 0) {
+            noteDropController.clearNoteDropPreview();
+            return false;
+        }
+        const committed = hierarchyDragDropBridge && (hierarchyDragDropBridge.assignNotesToFolder !== undefined ? hierarchyDragDropBridge.assignNotesToFolder(target.index, normalizedNoteIds) : hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteIds[0]));
+        if (!committed) {
+            noteDropController.clearNoteDropPreview();
+            return false;
+        }
+        noteDropController.clearNoteDropPreview();
+        hostView.requestViewHook("hierarchy.noteDrop");
+        return true;
+    }
     function hierarchyItemAtPosition(x, y) {
         const targetX = Number(x) || 0;
         const targetY = Number(y) || 0;
@@ -71,15 +67,27 @@ QtObject {
                 const matchedDescendant = visitHierarchyDescendants(child);
                 if (matchedDescendant)
                     return matchedDescendant;
-                if (child.__isHierarchyItem === true
-                        && noteDropController.hierarchyItemContainsPoint(child, targetX, targetY))
+                if (child.__isHierarchyItem === true && noteDropController.hierarchyItemContainsPoint(child, targetX, targetY))
                     return child;
             }
             return null;
         }
         return visitHierarchyDescendants(hierarchyTree);
     }
-
+    function hierarchyItemContainsPoint(item, x, y) {
+        if (!item || item.mapToItem === undefined)
+            return false;
+        const mappedPoint = item.mapToItem(hierarchyTree, 0, 0);
+        const itemX = Number(mappedPoint.x) || 0;
+        const itemY = Number(mappedPoint.y) || 0;
+        const itemWidth = Number(item.width) || 0;
+        const itemHeight = Number(item.height) || 0;
+        if (itemWidth <= 0 || itemHeight <= 0)
+            return false;
+        if (item.rowVisible !== undefined && !Boolean(item.rowVisible))
+            return false;
+        return x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight;
+    }
     function hierarchyItemForResolvedIndex(itemId) {
         const numericIndex = Number(itemId);
         if (!isFinite(numericIndex))
@@ -100,9 +108,7 @@ QtObject {
                     return matchedDescendant;
                 if (child.__isHierarchyItem !== true)
                     continue;
-                const rawItemId = child.itemId !== undefined && child.itemId !== null
-                    ? child.itemId
-                    : child.resolvedItemId;
+                const rawItemId = child.itemId !== undefined && child.itemId !== null ? child.itemId : child.resolvedItemId;
                 if (noteDropController.normalizedInteger(rawItemId, -1) === resolvedIndex)
                     return child;
             }
@@ -110,25 +116,54 @@ QtObject {
         }
         return visitHierarchyDescendants(hierarchyTree);
     }
+    function normalizeNoteIds(noteIds) {
+        if (noteIds === undefined || noteIds === null)
+            return [];
 
+        var sourceIds = noteIds;
+        if (typeof sourceIds === "string")
+            sourceIds = sourceIds.split(/\r?\n/);
+        else if (!Array.isArray(sourceIds) && sourceIds.length !== undefined)
+            sourceIds = Array.prototype.slice.call(sourceIds);
+        else if (!Array.isArray(sourceIds))
+            sourceIds = [sourceIds];
+
+        const normalized = [];
+        for (let index = 0; index < sourceIds.length; ++index) {
+            const normalizedNoteId = String(sourceIds[index] === undefined || sourceIds[index] === null ? "" : sourceIds[index]).trim();
+            if (!normalizedNoteId.length || normalized.indexOf(normalizedNoteId) >= 0)
+                continue;
+            normalized.push(normalizedNoteId);
+        }
+
+    }
+    function normalizedInteger(value, fallbackValue) {
+        const numericValue = Number(value);
+        if (!isFinite(numericValue))
+            return fallbackValue;
+        return Math.floor(numericValue);
+    }
+    function normalizedNonNegativeInteger(value) {
+        const normalized = noteDropController.normalizedInteger(value, -1);
+        return normalized >= 0 ? normalized : -1;
+    }
+    function noteDropIndexAtPosition(x, y, referenceItem) {
+
+    }
     function noteDropTargetAtPosition(x, y, referenceItem) {
         const localX = Number(x) || 0;
         const localY = Number(y) || 0;
-        const hierarchyPoint = referenceItem && referenceItem !== hierarchyTree && hierarchyTree.mapFromItem !== undefined
-            ? hierarchyTree.mapFromItem(referenceItem, localX, localY)
-            : ({
-                    "x": localX,
-                    "y": localY
-                });
+        const hierarchyPoint = referenceItem && referenceItem !== hierarchyTree && hierarchyTree.mapFromItem !== undefined ? hierarchyTree.mapFromItem(referenceItem, localX, localY) : ({
+                "x": localX,
+                "y": localY
+            });
         const hierarchyItem = noteDropController.hierarchyItemAtPosition(hierarchyPoint.x, hierarchyPoint.y);
         if (!hierarchyItem)
             return ({
                     "index": -1,
                     "item": null
                 });
-        const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null
-            ? hierarchyItem.itemId
-            : hierarchyItem.resolvedItemId;
+        const rawItemId = hierarchyItem.itemId !== undefined && hierarchyItem.itemId !== null ? hierarchyItem.itemId : hierarchyItem.resolvedItemId;
         const parsedIndex = noteDropController.normalizedNonNegativeInteger(rawItemId);
         if (parsedIndex < 0)
             return ({
@@ -140,63 +175,47 @@ QtObject {
                 "item": hierarchyItem
             });
     }
-
-    function noteDropIndexAtPosition(x, y, referenceItem) {
-        return noteDropController.noteDropTargetAtPosition(x, y, referenceItem).index;
-    }
-
-    function canAcceptNoteDropAtPosition(x, y, noteId, referenceItem) {
-        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
-        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        if (target.index < 0 || normalizedNoteId.length === 0 || !hierarchyDragDropBridge)
-            return false;
-        return hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteId);
-    }
-
-    function commitNoteDropAtPosition(x, y, noteId, referenceItem) {
-        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
-        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        if (target.index < 0 || normalizedNoteId.length === 0) {
-            noteDropController.clearNoteDropPreview();
-            return false;
-        }
-        if (!hierarchyDragDropBridge
-                || !hierarchyDragDropBridge.assignNoteToFolder(target.index, normalizedNoteId)) {
-            noteDropController.clearNoteDropPreview();
-            return false;
-        }
-        noteDropController.clearNoteDropPreview();
-        hostView.requestViewHook("hierarchy.noteDrop");
-        return true;
-    }
-
     function noteIdFromDragPayload(drag) {
+        const noteIds = noteDropController.noteIdsFromDragPayload(drag);
+        return noteIds.length > 0 ? noteIds[0] : "";
+    }
+    function noteIdsFromDragPayload(drag) {
         if (!drag)
-            return "";
+            return [];
         const source = drag.source;
+        if (source && source.draggedNoteIds !== undefined && source.draggedNoteIds !== null) {
+            const draggedNoteIds = noteDropController.normalizeNoteIds(source.draggedNoteIds);
+            if (draggedNoteIds.length > 0)
+                return draggedNoteIds;
+        }
         if (source && source.noteId !== undefined && source.noteId !== null) {
             const sourceNoteId = String(source.noteId).trim();
             if (sourceNoteId.length > 0)
-                return sourceNoteId;
+                return [sourceNoteId];
         }
         if (drag.getDataAsString !== undefined) {
+            const mimeNoteIds = String(drag.getDataAsString("application/x-whatson-note-ids") || "").trim();
+            if (mimeNoteIds.length > 0) {
+                try {
+                    const parsedNoteIds = JSON.parse(mimeNoteIds);
+                    const normalizedParsedNoteIds = noteDropController.normalizeNoteIds(parsedNoteIds);
+                    if (normalizedParsedNoteIds.length > 0)
+                        return normalizedParsedNoteIds;
+                } catch (error) {}
+            }
             const mimeNoteId = String(drag.getDataAsString("application/x-whatson-note-id") || "").trim();
             if (mimeNoteId.length > 0)
-                return mimeNoteId;
-            const plainTextNoteId = String(drag.getDataAsString("text/plain") || "").trim();
-            if (plainTextNoteId.length > 0)
-                return plainTextNoteId;
+                return [mimeNoteId];
+            const plainTextNoteIds = noteDropController.normalizeNoteIds(String(drag.getDataAsString("text/plain") || "").trim());
+            if (plainTextNoteIds.length > 0)
+                return plainTextNoteIds;
         }
-        return "";
+        return [];
     }
-
-    function updateNoteDropPreviewAtPosition(x, y, noteId, referenceItem) {
-        const normalizedNoteId = noteId !== undefined && noteId !== null ? String(noteId).trim() : "";
+    function updateNoteDropPreviewAtPosition(x, y, noteIds, referenceItem) {
+        const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
         const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
-        if (target.index < 0
-                || normalizedNoteId.length === 0
-                || !hierarchyDragDropBridge
-                || !hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteId)) {
+        if (target.index < 0 || normalizedNoteIds.length === 0 || !hierarchyDragDropBridge || !(hierarchyDragDropBridge.canAcceptNoteDropList !== undefined ? hierarchyDragDropBridge.canAcceptNoteDropList(target.index, normalizedNoteIds) : hierarchyDragDropBridge.canAcceptNoteDrop(target.index, normalizedNoteIds[0]))) {
             noteDropController.clearNoteDropPreview();
             return false;
         }

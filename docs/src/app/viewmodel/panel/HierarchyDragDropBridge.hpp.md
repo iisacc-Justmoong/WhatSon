@@ -17,7 +17,9 @@ It exposes three ideas to QML.
 - Invokables:
   - `applyHierarchyReorder(...)`
   - `canAcceptNoteDrop(...)`
+  - `canAcceptNoteDropList(...)`
   - `assignNoteToFolder(...)`
+  - `assignNotesToFolder(...)`
 
 ## Design Constraint
 This bridge only understands the generic hierarchy interface plus capability interfaces. It should not grow domain-specific policy. Domain-specific accept/reject logic belongs in the concrete hierarchy viewmodel capability implementation.

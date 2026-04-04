@@ -31,6 +31,11 @@ public:
         int selectionStart,
         int selectionEnd,
         const QString& styleTag) const;
+    Q_INVOKABLE QString applyInlineStyleToLogicalSelectionSource(
+        const QString& sourceText,
+        int selectionStart,
+        int selectionEnd,
+        const QString& styleTag) const;
 
 public slots:
     void requestRenderRefresh();

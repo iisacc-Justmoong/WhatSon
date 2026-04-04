@@ -22,8 +22,8 @@ The controller talks to the editor through the stable `contentEditor` contract (
   formatting from the current selection.
 - `selectedEditorRange()`: resolves the current editor-surface selection span.
 - `openEditorSelectionContextMenu(localX, localY)`: opens the LVRS context menu when a non-empty selection exists.
-- `wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)`: wraps the exact rendered RichText fragment from the
-  live editor with the requested inline style tag and persists the canonicalized result.
+- `wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)`: applies the requested inline style to canonical
+  `.wsnbody` source using the resolved logical editor selection range and persists the canonicalized result.
 - `handleSelectionContextMenuEvent(eventName)`: routes menu events through the same formatting mutation path as
   keyboard shortcuts.
 
@@ -38,13 +38,16 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - Shortcut-triggered wraps capture the resolved editor-surface selection range first, then queue the wrap one event-loop turn
   later. The queued mutation therefore reuses the original selection snapshot instead of re-reading a possibly collapsed
   post-shortcut selection.
-- The controller no longer slices `.wsnbody` directly for inline-format actions.
-- It captures the current RichText surface from the live editor and delegates the actual selection mutation to
-  `ContentsTextFormatRenderer.applyInlineStyleToSelectionSource(...)`, which uses `QTextDocument/QTextCursor`.
+- The controller no longer mutates the live markdown-rendered RichText surface directly for shortcut formatting.
+- It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
+  markdown-neutral source-editing surface from the canonical `.wsnbody` text and applies `QTextDocument/QTextCursor`
+  formatting against logical editor offsets.
 - The context menu exposes `Plain` as a first-class formatting action. It routes through the same renderer path and
   clears all supported inline styles from the selected range before persisting canonical `.wsnbody`.
 - Reapplying the same inline style to a fully formatted selection now clears that selection back to plain text instead
   of stacking duplicate RichText spans/source tags.
+- Markdown presentation roles such as headings, blockquotes, link literals, or code literals must not by themselves make
+  the controller think the corresponding shortcut style is already applied.
 - The controller still persists canonical source tags (`<bold>`, `<italic>`, ...) directly; RichText HTML remains an
   editor-surface projection only.
 - Formatting actions require a non-empty resolved selection range before mutating `.wsnbody`.
@@ -73,3 +76,5 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - Choosing `Plain` from the context menu should remove all inline formatting tags from the selected source range.
 - Shortcut and window-level accelerator paths should coalesce into one queued wrap request per note/tag pair, avoiding
   duplicate formatting from the same key chord.
+- Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`
+  toggles to misfire as if the proprietary `.wsnbody` style was already present.

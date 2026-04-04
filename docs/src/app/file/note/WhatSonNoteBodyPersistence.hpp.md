@@ -11,6 +11,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   (plain text, inline `.wsnbody` tags, or Qt Rich HTML) and emits normalized `<paragraph>` XML with
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`) plus normalized
   self-closed `<resource ... />` tags.
+- Markdown-presentation RichText spans are first matched through `WhatSonNoteMarkdownStyleObject`, which decides whether
+  they intentionally promote into proprietary inline tags or should merely suppress generic CSS promotion.
 - `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created.
 - `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
   layer (`<bold>...</bold>`, `<italic>...</italic>`, `<resource ... />`).
@@ -28,3 +30,4 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - The persistence layer must not perform unsolicited body-tag cleanup or whitespace-line trimming beyond the serializer that is explicitly chosen for a real body rewrite.
 - Rich-text scaffolding from Qt (`<!DOCTYPE HTML ...><html>...`) must never leak into logical note content or
   first-line indexing.
+- Unordered-list display glyph recovery is intentionally canonicalized to the single source marker `-`.

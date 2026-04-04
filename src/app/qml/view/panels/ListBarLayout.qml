@@ -10,82 +10,62 @@ Rectangle {
     id: listBarLayout
 
     property int activeToolbarIndex: 0
+    readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()
+    readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(listBarLayout.currentIndexFromModel())
+    property string contextMenuNoteId: ""
+    property var contextMenuNoteIds: []
+    property int contextMenuNoteIndex: -1
+    readonly property real grabbedNoteOpacity: 0.25
     readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property bool headerVisible: true
     property color hintColor: LV.Theme.descriptionColor
-    property string contextMenuNoteId: ""
-    readonly property bool noteDeletionContractAvailable: noteDeletionBridge.deleteContractAvailable && noteDeletionBridge.focusedNoteAvailable
-    property var noteDeletionViewModel: null
-    property bool noteDragActive: false
-    property bool noteDragCanceled: false
-    property var noteDropTarget: null
-    readonly property bool noteContextMenuNoteAvailable: listBarLayout.contextMenuNoteId.trim().length > 0
-    readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null
-        && listBarLayout.noteDeletionViewModel !== undefined
-        && listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined
-    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
-    readonly property bool noteListMode: listBarLayout.hasNoteListModel
-    readonly property bool resourceListMode: listBarLayout.noteListMode
-        && listBarLayout.resolvedNoteListModel !== null
-        && listBarLayout.resolvedNoteListModel !== undefined
-        && listBarLayout.resolvedNoteListModel.currentResourceEntry !== undefined
+    readonly property int mobileNoteDragHoldInterval: 1000
     readonly property var noteContextMenuItems: [
         {
-            "label": "Delete note",
+            "label": listBarLayout.noteContextMenuSelectionCount > 1 ? "Delete notes" : "Delete note",
             "enabled": listBarLayout.noteDeletionContractAvailable && listBarLayout.noteContextMenuNoteAvailable,
             "eventName": "note.delete"
         },
         {
-            "label": "Clear all folders",
+            "label": listBarLayout.noteContextMenuSelectionCount > 1 ? "Clear all folders for notes" : "Clear all folders",
             "enabled": listBarLayout.noteFolderClearContractAvailable && listBarLayout.noteContextMenuNoteAvailable,
             "eventName": "note.clearAllFolders"
         }
     ]
+    readonly property bool noteContextMenuNoteAvailable: listBarLayout.contextMenuNoteIds.length > 0
+    readonly property int noteContextMenuSelectionCount: listBarLayout.contextMenuNoteIds.length
+    readonly property bool noteDeletionBatchContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNotesByIds !== undefined
+    readonly property bool noteDeletionContractAvailable: listBarLayout.noteDeletionHandlerAvailable && (listBarLayout.resolvedSelectedNoteIds.length > 0 || noteDeletionBridge.focusedNoteAvailable)
+    readonly property bool noteDeletionHandlerAvailable: listBarLayout.noteDeletionBatchContractAvailable || listBarLayout.noteDeletionSingleContractAvailable
+    readonly property bool noteDeletionSingleContractAvailable: noteDeletionBridge.deleteContractAvailable || (listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined)
+    property var noteDeletionViewModel: null
+    property bool noteDragActive: false
+    property bool noteDragCanceled: false
+    property var noteDropTarget: null
+    readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
+    readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
+    readonly property int noteListFlickDeceleration: 1000000
+    readonly property bool noteListMode: listBarLayout.hasNoteListModel
     property var noteListModel: null
+    readonly property int noteListScrollTick: LV.Theme.gap2
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
-    readonly property int mobileNoteDragHoldInterval: 1000
+    property bool noteListViewportRestorePending: false
     property alias noteSelectionAnchorIndex: noteSelectionController.selectionAnchorIndex
     property color panelColor: "transparent"
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ListBarLayout") : null
-    property int pressedNoteIndex: -1
     property real preservedNoteListContentY: 0
+    property int pressedNoteIndex: -1
     readonly property var resolvedNoteListModel: listBarLayout.noteListMode ? listBarLayout.noteListModel : null
-    readonly property int committedNoteIndex: listBarLayout.normalizeCurrentIndex(
-                                                  listBarLayout.currentIndexFromModel())
-    readonly property string committedNoteId: listBarLayout.currentNoteIdFromModel()
-    readonly property real grabbedNoteOpacity: 0.25
-    readonly property int noteListFlickDeceleration: 1000000
-    property bool noteListViewportRestorePending: false
-    readonly property int noteListScrollTick: LV.Theme.gap2
-    property alias selectedNoteIndices: noteSelectionController.selectedIndices
+    readonly property var resolvedSelectedNoteIds: listBarLayout.selectedNoteIdsFromIndices(listBarLayout.selectedNoteIndices)
+    readonly property bool resourceListMode: listBarLayout.noteListMode && listBarLayout.resolvedNoteListModel !== null && listBarLayout.resolvedNoteListModel !== undefined && listBarLayout.resolvedNoteListModel.currentResourceEntry !== undefined
     property string searchText: ""
-    property bool syncingNoteListViewport: false
+    property alias selectedNoteIndices: noteSelectionController.selectedIndices
     property bool syncingCurrentIndexFromModel: false
+    property bool syncingNoteListViewport: false
     readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget
 
     signal noteActivated(int index, string noteId)
     signal viewHookRequested
-
-    QtObject {
-        id: noteSelectionState
-
-        property int pendingIndex: -1
-        property int requestRevision: 0
-    }
-    ListBarSelectionController {
-        id: noteSelectionController
-
-        view: listBarLayout
-    }
-    QtObject {
-        id: noteDragPreviewState
-
-        property var delegateItem: null
-        property real hotSpotX: 0
-        property real hotSpotY: 0
-        property real x: 0
-        property real y: 0
-    }
 
     function activateNoteIndex(index, noteId) {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -118,38 +98,14 @@ Rectangle {
             noteSelectionState.pendingIndex = -1;
         });
     }
-    function normalizedKeyboardModifiers(modifiers) {
-        return noteSelectionController.normalizedKeyboardModifiers(modifiers);
-    }
-    function selectionToggleModifierPressed(modifiers) {
-        return noteSelectionController.selectionToggleModifierPressed(modifiers);
-    }
-    function selectionRangeModifierPressed(modifiers) {
-        return noteSelectionController.selectionRangeModifierPressed(modifiers);
-    }
-    function selectionModifierPressed(modifiers) {
-        return noteSelectionController.selectionModifierPressed(modifiers);
-    }
-    function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
-        return noteSelectionController.resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs);
-    }
-    function normalizeSelectedNoteIndices(indices) {
-        return noteSelectionController.normalizeSelectedNoteIndices(indices);
-    }
-    function noteSelectionContainsIndex(index) {
-        return noteSelectionController.noteSelectionContainsIndex(index);
-    }
-    function setSelectedNoteIndices(indices) {
-        noteSelectionController.setSelectedNoteIndices(indices);
-    }
-    function selectionRangeIndices(anchorIndex, targetIndex) {
-        return noteSelectionController.selectionRangeIndices(anchorIndex, targetIndex);
-    }
-    function syncSelectionFromCommittedState() {
-        noteSelectionController.syncSelectionFromCommittedState();
-    }
-    function requestNoteSelection(index, noteId, modifiers) {
-        noteSelectionController.requestNoteSelection(index, noteId, modifiers);
+    function applyNoteListViewportStep(contentY) {
+        const targetY = listBarLayout.quantizedNoteListContentY(contentY);
+        const previousY = Number(noteListView.contentY) || 0;
+        if (Math.abs(targetY - previousY) <= 0.001)
+            return;
+        listBarLayout.syncingNoteListViewport = true;
+        noteListView.contentY = targetY;
+        listBarLayout.syncingNoteListViewport = false;
     }
     function applySearchTextToModel() {
         if (!listBarLayout.noteListMode || !listBarLayout.noteListSearchContractAvailable)
@@ -170,31 +126,50 @@ Rectangle {
         noteDragPreviewState.delegateItem = delegateItem;
         noteDragPreviewState.hotSpotX = Math.max(0, Number(hotSpotX) || 0);
         noteDragPreviewState.hotSpotY = Math.max(0, Number(hotSpotY) || 0);
+        noteDragPreviewState.noteIds = listBarLayout.selectedNoteIdsForDelegateAction(delegateItem.index, delegateItem.noteId);
         listBarLayout.updateNoteDragPreviewPosition(delegateItem, hotSpotX, hotSpotY);
     }
-    function clearNoteDragPreview(delegateItem) {
-        if (delegateItem && noteDragPreviewState.delegateItem !== delegateItem)
+    function captureNoteListViewport() {
+        if (!listBarLayout.noteListMode)
             return;
-        noteDragPreviewState.delegateItem = null;
-        noteDragPreviewState.hotSpotX = 0;
-        noteDragPreviewState.hotSpotY = 0;
-        noteDragPreviewState.x = 0;
-        noteDragPreviewState.y = 0;
+        listBarLayout.preservedNoteListContentY = listBarLayout.quantizedNoteListContentY(noteListView.contentY);
+        listBarLayout.noteListViewportRestorePending = true;
     }
-    function commitInternalNoteDrop(delegateItem, localX, localY) {
-        if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
+    function clampNoteListContentY(value) {
+        const numericValue = Number(value);
+        if (!isFinite(numericValue))
+            return 0;
+        return Math.max(0, Math.min(listBarLayout.noteListMaxContentY(), numericValue));
+    }
+    function clearContextMenuNoteFolders() {
+        if (!listBarLayout.noteFolderClearContractAvailable || !listBarLayout.noteContextMenuNoteAvailable)
             return false;
-        if (listBarLayout.noteDropTarget.commitNoteDropAtPosition === undefined)
+        const targetNoteIds = listBarLayout.uniqueTrimmedStringList(listBarLayout.contextMenuNoteIds);
+        if (targetNoteIds.length === 0)
             return false;
-        const noteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
-        if (noteId.length === 0)
+        noteDeletionBridge.focusedNoteId = targetNoteIds[0];
+        const cleared = listBarLayout.clearFoldersForNoteIds(targetNoteIds);
+        if (cleared)
+            noteListView.forceActiveFocus();
+
+    }
+    function clearFoldersForNoteIds(noteIds) {
+        const normalizedNoteIds = listBarLayout.uniqueTrimmedStringList(noteIds);
+        if (normalizedNoteIds.length === 0 || !listBarLayout.noteDeletionViewModel)
             return false;
-        const mappedPoint = delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0);
-        return Boolean(listBarLayout.noteDropTarget.commitNoteDropAtPosition(
-                           mappedPoint.x,
-                           mappedPoint.y,
-                           noteId,
-                           listBarLayout.noteDropTarget));
+
+        if (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined)
+            return Boolean(listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds(normalizedNoteIds));
+
+        if (listBarLayout.noteDeletionViewModel.clearNoteFoldersById === undefined)
+            return false;
+
+        let clearedAny = false;
+        for (let index = 0; index < normalizedNoteIds.length; ++index) {
+            if (listBarLayout.noteDeletionViewModel.clearNoteFoldersById(normalizedNoteIds[index]))
+                clearedAny = true;
+        }
+
     }
     function clearInternalNoteDropPreview() {
         if (!listBarLayout.noteDropTarget || listBarLayout.noteDropTarget.clearNoteDropPreview === undefined)
@@ -206,6 +181,37 @@ Rectangle {
         if (normalizedNoteId.length > 0 && noteDeletionBridge.focusedNoteId === normalizedNoteId)
             noteDeletionBridge.focusedNoteId = "";
         listBarLayout.contextMenuNoteId = "";
+        listBarLayout.contextMenuNoteIndex = -1;
+        listBarLayout.contextMenuNoteIds = [];
+    }
+    function clearNoteDragPreview(delegateItem) {
+        if (delegateItem && noteDragPreviewState.delegateItem !== delegateItem)
+            return;
+        noteDragPreviewState.delegateItem = null;
+        noteDragPreviewState.hotSpotX = 0;
+        noteDragPreviewState.hotSpotY = 0;
+        noteDragPreviewState.noteIds = [];
+        noteDragPreviewState.x = 0;
+        noteDragPreviewState.y = 0;
+    }
+    function commitInternalNoteDrop(delegateItem, localX, localY) {
+        if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
+            return false;
+        if (listBarLayout.noteDropTarget.commitNoteDropAtPosition === undefined)
+            return false;
+        const noteIds = listBarLayout.selectedNoteIdsForDelegateAction(delegateItem.index, delegateItem.noteId);
+        if (noteIds.length === 0)
+            return false;
+        const mappedPoint = delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0);
+        return Boolean(listBarLayout.noteDropTarget.commitNoteDropAtPosition(mappedPoint.x, mappedPoint.y, noteIds, listBarLayout.noteDropTarget));
+    }
+    function currentIndexChangeIsAuthoritative(index) {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        if (listBarLayout.syncingCurrentIndexFromModel)
+            return true;
+        if (noteSelectionState.pendingIndex === normalizedIndex)
+            return true;
+        return listBarLayout.currentIndexFromModel() === normalizedIndex;
     }
     function currentIndexFromModel() {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -222,12 +228,54 @@ Rectangle {
         const normalizedBridgeNoteId = bridgeNoteId === undefined || bridgeNoteId === null ? "" : String(bridgeNoteId).trim();
         if (normalizedBridgeNoteId.length > 0)
             return normalizedBridgeNoteId;
-        if (listBarLayout.noteListModel
-                && listBarLayout.noteListModel.currentNoteId !== undefined
-                && listBarLayout.noteListModel.currentNoteId !== null) {
+        if (listBarLayout.noteListModel && listBarLayout.noteListModel.currentNoteId !== undefined && listBarLayout.noteListModel.currentNoteId !== null) {
             return String(listBarLayout.noteListModel.currentNoteId).trim();
         }
         return "";
+    }
+    function deleteContextMenuNote() {
+        if (!listBarLayout.noteContextMenuNoteAvailable)
+            return false;
+        const targetNoteIds = listBarLayout.uniqueTrimmedStringList(listBarLayout.contextMenuNoteIds);
+        if (targetNoteIds.length === 0)
+            return false;
+        noteDeletionBridge.focusedNoteId = targetNoteIds[0];
+        const deleted = listBarLayout.deleteNoteIds(targetNoteIds);
+        if (deleted)
+            noteListView.forceActiveFocus();
+
+    }
+    function deleteCurrentNote() {
+        if (!listBarLayout.noteDeletionContractAvailable)
+            return false;
+        const targetNoteIds = listBarLayout.selectedNoteIdsForCurrentAction();
+        const deleted = listBarLayout.deleteNoteIds(targetNoteIds);
+        if (deleted)
+            noteListView.forceActiveFocus();
+
+
+    }
+    function deleteNoteIds(noteIds) {
+        const normalizedNoteIds = listBarLayout.uniqueTrimmedStringList(noteIds);
+        if (normalizedNoteIds.length === 0)
+            return false;
+
+        if (listBarLayout.noteDeletionViewModel && listBarLayout.noteDeletionViewModel.deleteNotesByIds !== undefined)
+            return Boolean(listBarLayout.noteDeletionViewModel.deleteNotesByIds(normalizedNoteIds));
+
+        let deletedAny = false;
+        if (listBarLayout.noteDeletionViewModel && listBarLayout.noteDeletionViewModel.deleteNoteById !== undefined) {
+            for (let index = 0; index < normalizedNoteIds.length; ++index) {
+                if (listBarLayout.noteDeletionViewModel.deleteNoteById(normalizedNoteIds[index]))
+                    deletedAny = true;
+            }
+        }
+
+        if (!deletedAny && normalizedNoteIds.length === 1 && noteDeletionBridge.deleteContractAvailable) {
+            noteDeletionBridge.focusedNoteId = normalizedNoteIds[0];
+            deletedAny = noteDeletionBridge.deleteFocusedNote();
+        }
+
     }
     function isDelegateActive(index, noteId) {
         const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
@@ -240,46 +288,11 @@ Rectangle {
             return false;
         return normalizedNoteId === listBarLayout.committedNoteId;
     }
-    function clearContextMenuNoteFolders() {
-        if (!listBarLayout.noteFolderClearContractAvailable || !listBarLayout.noteContextMenuNoteAvailable)
-            return false;
-        const normalizedNoteId = String(listBarLayout.contextMenuNoteId).trim();
-        if (normalizedNoteId.length === 0)
-            return false;
-        noteDeletionBridge.focusedNoteId = normalizedNoteId;
-        const cleared = Boolean(listBarLayout.noteDeletionViewModel.clearNoteFoldersById(normalizedNoteId));
-        if (cleared)
-            noteListView.forceActiveFocus();
-        return cleared;
-    }
-    function deleteCurrentNote() {
-        if (!listBarLayout.noteDeletionContractAvailable)
-            return false;
-        const deleted = noteDeletionBridge.deleteFocusedNote();
-        if (deleted)
-            noteListView.forceActiveFocus();
-
-        return deleted;
-    }
-    function deleteContextMenuNote() {
-        if (!listBarLayout.noteContextMenuNoteAvailable)
-            return false;
-        noteDeletionBridge.focusedNoteId = String(listBarLayout.contextMenuNoteId).trim();
-        return listBarLayout.deleteCurrentNote();
-    }
     function normalizeCurrentIndex(index) {
         const numericIndex = Number(index);
         if (!isFinite(numericIndex))
             return -1;
         return Math.max(-1, Math.floor(numericIndex));
-    }
-    function currentIndexChangeIsAuthoritative(index) {
-        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
-        if (listBarLayout.syncingCurrentIndexFromModel)
-            return true;
-        if (noteSelectionState.pendingIndex === normalizedIndex)
-            return true;
-        return listBarLayout.currentIndexFromModel() === normalizedIndex;
     }
     function normalizeEntries(value) {
         if (value === undefined || value === null)
@@ -304,55 +317,39 @@ Rectangle {
             });
         return [];
     }
+    function normalizeSelectedNoteIndices(indices) {
+        return noteSelectionController.normalizeSelectedNoteIndices(indices);
+    }
+    function normalizedKeyboardModifiers(modifiers) {
+        return noteSelectionController.normalizedKeyboardModifiers(modifiers);
+    }
+    function noteIdAtIndex(index) {
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        if (normalizedIndex < 0 || !noteListContractBridge || noteListContractBridge.readNoteIdAt === undefined)
+            return "";
+        return String(noteListContractBridge.readNoteIdAt(normalizedIndex) || "").trim();
+    }
     function noteListMaxContentY() {
-        return Math.max(
-                    0,
-                    (Number(noteListView.contentHeight) || 0)
-                    - (Number(noteListView.height) || 0));
+        return Math.max(0, (Number(noteListView.contentHeight) || 0) - (Number(noteListView.height) || 0));
     }
-    function clampNoteListContentY(value) {
-        const numericValue = Number(value);
-        if (!isFinite(numericValue))
-            return 0;
-        return Math.max(0, Math.min(listBarLayout.noteListMaxContentY(), numericValue));
+    function noteSelectionContainsIndex(index) {
+        return noteSelectionController.noteSelectionContainsIndex(index);
     }
-    function quantizedNoteListContentY(value) {
-        const clampedValue = listBarLayout.clampNoteListContentY(value);
-        const tick = Math.max(1, Number(listBarLayout.noteListScrollTick) || 1);
-        const maxContentY = listBarLayout.noteListMaxContentY();
-        if (clampedValue <= 0)
-            return 0;
-        if (clampedValue >= maxContentY - tick)
-            return maxContentY;
-        return Math.max(0, Math.min(maxContentY, Math.round(clampedValue / tick) * tick));
-    }
-    function captureNoteListViewport() {
-        if (!listBarLayout.noteListMode)
+    function openNoteContextMenu(delegateItem, localX, localY) {
+        if (!delegateItem)
             return;
-        listBarLayout.preservedNoteListContentY = listBarLayout.quantizedNoteListContentY(noteListView.contentY);
-        listBarLayout.noteListViewportRestorePending = true;
-    }
-    function applyNoteListViewportStep(contentY) {
-        const targetY = listBarLayout.quantizedNoteListContentY(contentY);
-        const previousY = Number(noteListView.contentY) || 0;
-        if (Math.abs(targetY - previousY) <= 0.001)
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(delegateItem.index);
+        const normalizedNoteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
+        if (normalizedNoteId.length === 0)
             return;
-        listBarLayout.syncingNoteListViewport = true;
-        noteListView.contentY = targetY;
-        listBarLayout.syncingNoteListViewport = false;
-    }
-    function restoreNoteListViewport() {
-        if (!listBarLayout.noteListViewportRestorePending)
+        const actionNoteIds = listBarLayout.selectedNoteIdsForDelegateAction(normalizedIndex, normalizedNoteId);
+        if (actionNoteIds.length === 0)
             return;
-        listBarLayout.noteListViewportRestorePending = false;
-        listBarLayout.applyNoteListViewportStep(listBarLayout.preservedNoteListContentY);
-    }
-    function settleNoteListViewport() {
-        if (listBarLayout.noteListViewportRestorePending) {
-            listBarLayout.restoreNoteListViewport();
-            return;
-        }
-        listBarLayout.applyNoteListViewportStep(noteListView.contentY);
+        listBarLayout.contextMenuNoteIndex = normalizedIndex;
+        listBarLayout.contextMenuNoteId = normalizedNoteId;
+        listBarLayout.contextMenuNoteIds = actionNoteIds;
+        noteDeletionBridge.focusedNoteId = normalizedNoteId;
+        noteContextMenu.openFor(delegateItem, Number(localX) || 0, Number(localY) || 0);
     }
     function pushCurrentIndexToModel(index) {
         if (!listBarLayout.noteListCurrentIndexContractAvailable)
@@ -371,15 +368,18 @@ Rectangle {
         if (listBarLayout.noteListModel.setCurrentIndex !== undefined)
             listBarLayout.noteListModel.setCurrentIndex(normalizedIndex);
     }
-    function openNoteContextMenu(delegateItem, localX, localY) {
-        if (!delegateItem)
-            return;
-        const normalizedNoteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
-        if (normalizedNoteId.length === 0)
-            return;
-        listBarLayout.contextMenuNoteId = normalizedNoteId;
-        noteDeletionBridge.focusedNoteId = normalizedNoteId;
-        noteContextMenu.openFor(delegateItem, Number(localX) || 0, Number(localY) || 0);
+    function quantizedNoteListContentY(value) {
+        const clampedValue = listBarLayout.clampNoteListContentY(value);
+        const tick = Math.max(1, Number(listBarLayout.noteListScrollTick) || 1);
+        const maxContentY = listBarLayout.noteListMaxContentY();
+        if (clampedValue <= 0)
+            return 0;
+        if (clampedValue >= maxContentY - tick)
+            return maxContentY;
+        return Math.max(0, Math.min(maxContentY, Math.round(clampedValue / tick) * tick));
+    }
+    function requestNoteSelection(index, noteId, modifiers) {
+        noteSelectionController.requestNoteSelection(index, noteId, modifiers);
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -387,9 +387,73 @@ Rectangle {
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
     }
+    function resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs) {
+        return noteSelectionController.resolveSelectionModifiers(modifiers, cachedModifiers, cachedCapturedAtMs);
+    }
+    function restoreNoteListViewport() {
+        if (!listBarLayout.noteListViewportRestorePending)
+            return;
+        listBarLayout.noteListViewportRestorePending = false;
+        listBarLayout.applyNoteListViewportStep(listBarLayout.preservedNoteListContentY);
+    }
+    function selectedNoteIdsForCurrentAction() {
+        const selectedIds = listBarLayout.selectedNoteIdsFromIndices(listBarLayout.selectedNoteIndices);
+        if (selectedIds.length > 0)
+            return selectedIds;
+
+        const focusedNoteId = noteDeletionBridge && noteDeletionBridge.focusedNoteId !== undefined ? String(noteDeletionBridge.focusedNoteId || "").trim() : "";
+        if (focusedNoteId.length > 0)
+            return [focusedNoteId];
+
+        const currentNoteId = listBarLayout.currentNoteIdFromModel();
+        return currentNoteId.length > 0 ? [currentNoteId] : [];
+    }
+    function selectedNoteIdsForDelegateAction(index, noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
+        const normalizedSelection = listBarLayout.normalizeSelectedNoteIndices(listBarLayout.selectedNoteIndices);
+        if (normalizedIndex >= 0 && normalizedSelection.length > 1 && normalizedSelection.indexOf(normalizedIndex) >= 0) {
+            const selectedIds = listBarLayout.selectedNoteIdsFromIndices(normalizedSelection);
+            if (selectedIds.length > 0)
+                return selectedIds;
+        }
+        return normalizedNoteId.length > 0 ? [normalizedNoteId] : [];
+    }
+    function selectedNoteIdsFromIndices(indices) {
+        const normalizedIndices = listBarLayout.normalizeSelectedNoteIndices(indices);
+        const noteIds = [];
+        for (let selectionIndex = 0; selectionIndex < normalizedIndices.length; ++selectionIndex) {
+            const noteId = listBarLayout.noteIdAtIndex(normalizedIndices[selectionIndex]);
+            if (!noteId.length || noteIds.indexOf(noteId) >= 0)
+                continue;
+            noteIds.push(noteId);
+        }
+
+    }
+    function selectionModifierPressed(modifiers) {
+        return noteSelectionController.selectionModifierPressed(modifiers);
+    }
+    function selectionRangeIndices(anchorIndex, targetIndex) {
+        return noteSelectionController.selectionRangeIndices(anchorIndex, targetIndex);
+    }
+    function selectionRangeModifierPressed(modifiers) {
+        return noteSelectionController.selectionRangeModifierPressed(modifiers);
+    }
+    function selectionToggleModifierPressed(modifiers) {
+        return noteSelectionController.selectionToggleModifierPressed(modifiers);
+    }
+    function setSelectedNoteIndices(indices) {
+        noteSelectionController.setSelectedNoteIndices(indices);
+    }
+    function settleNoteListViewport() {
+        if (listBarLayout.noteListViewportRestorePending) {
+            listBarLayout.restoreNoteListViewport();
+            return;
+        }
+        listBarLayout.applyNoteListViewportStep(noteListView.contentY);
+    }
     function syncCurrentIndexFromModel() {
-        const normalizedIndex = listBarLayout.normalizeCurrentIndex(
-                    listBarLayout.currentIndexFromModel());
+        const normalizedIndex = listBarLayout.normalizeCurrentIndex(listBarLayout.currentIndexFromModel());
         if (noteListView.currentIndex !== normalizedIndex)
             listBarLayout.syncingCurrentIndexFromModel = true;
         if (noteListView.currentIndex !== normalizedIndex)
@@ -409,6 +473,41 @@ Rectangle {
         }
         noteDeletionBridge.focusedNoteId = "";
     }
+    function syncSelectionFromCommittedState() {
+        noteSelectionController.syncSelectionFromCommittedState();
+    }
+    function uniqueTrimmedStringList(values) {
+        if (values === undefined || values === null)
+            return [];
+
+        var sourceValues = values;
+        if (typeof sourceValues === "string")
+            sourceValues = sourceValues.split(/\r?\n/);
+        else if (!Array.isArray(sourceValues) && sourceValues.length !== undefined)
+            sourceValues = Array.prototype.slice.call(sourceValues);
+        else if (!Array.isArray(sourceValues))
+            sourceValues = [sourceValues];
+
+        const normalized = [];
+        for (let index = 0; index < sourceValues.length; ++index) {
+            const normalizedValue = String(sourceValues[index] === undefined || sourceValues[index] === null ? "" : sourceValues[index]).trim();
+            if (!normalizedValue.length || normalized.indexOf(normalizedValue) >= 0)
+                continue;
+            normalized.push(normalizedValue);
+        }
+
+    }
+    function updateInternalNoteDropPreview(delegateItem, localX, localY) {
+        if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
+            return false;
+        if (listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition === undefined)
+            return false;
+        const noteIds = listBarLayout.selectedNoteIdsForDelegateAction(delegateItem.index, delegateItem.noteId);
+        if (noteIds.length === 0)
+            return false;
+        const mappedPoint = delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0);
+        return Boolean(listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition(mappedPoint.x, mappedPoint.y, noteIds, listBarLayout.noteDropTarget));
+    }
     function updateNoteDragPreviewPosition(delegateItem, localX, localY) {
         if (!delegateItem || noteDragPreviewState.delegateItem !== delegateItem)
             return;
@@ -416,21 +515,6 @@ Rectangle {
         const mappedPoint = delegateItem.mapToItem(previewParent, Number(localX) || 0, Number(localY) || 0);
         noteDragPreviewState.x = Math.round((Number(mappedPoint.x) || 0) - noteDragPreviewState.hotSpotX);
         noteDragPreviewState.y = Math.round((Number(mappedPoint.y) || 0) - noteDragPreviewState.hotSpotY);
-    }
-    function updateInternalNoteDropPreview(delegateItem, localX, localY) {
-        if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
-            return false;
-        if (listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition === undefined)
-            return false;
-        const noteId = delegateItem.noteId !== undefined && delegateItem.noteId !== null ? String(delegateItem.noteId).trim() : "";
-        if (noteId.length === 0)
-            return false;
-        const mappedPoint = delegateItem.mapToItem(listBarLayout.noteDropTarget, Number(localX) || 0, Number(localY) || 0);
-        return Boolean(listBarLayout.noteDropTarget.updateNoteDropPreviewAtPosition(
-                           mappedPoint.x,
-                           mappedPoint.y,
-                           noteId,
-                           listBarLayout.noteDropTarget));
     }
 
     color: panelColor
@@ -467,6 +551,27 @@ Rectangle {
     }
     onSearchTextChanged: applySearchTextToModel()
 
+    QtObject {
+        id: noteSelectionState
+
+        property int pendingIndex: -1
+        property int requestRevision: 0
+    }
+    ListBarSelectionController {
+        id: noteSelectionController
+
+        view: listBarLayout
+    }
+    QtObject {
+        id: noteDragPreviewState
+
+        property var delegateItem: null
+        property real hotSpotX: 0
+        property real hotSpotY: 0
+        property var noteIds: []
+        property real x: 0
+        property real y: 0
+    }
     FocusedNoteDeletionBridge {
         id: noteDeletionBridge
 
@@ -488,7 +593,7 @@ Rectangle {
         parent: Controls.Overlay.overlay
 
         onClosed: listBarLayout.clearNoteContextMenuState()
-        onItemEventTriggered: function(eventName, payload, index, item) {
+        onItemEventTriggered: function (eventName, payload, index, item) {
             if (eventName === "note.delete")
                 listBarLayout.deleteContextMenuNote();
             else if (eventName === "note.clearAllFolders")
@@ -498,14 +603,13 @@ Rectangle {
     Item {
         id: noteDragPreview
 
+        height: listBarLayout.resourceListMode ? resourceDragPreviewCard.implicitHeight : noteDragPreviewCard.implicitHeight
         parent: Controls.Overlay.overlay ? Controls.Overlay.overlay : listBarLayout
         visible: listBarLayout.noteDragActive && noteDragPreviewState.delegateItem !== null
-        z: 1000
-
-        height: listBarLayout.resourceListMode ? resourceDragPreviewCard.implicitHeight : noteDragPreviewCard.implicitHeight
         width: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.width !== undefined ? Number(noteDragPreviewState.delegateItem.width) || implicitWidth : implicitWidth
         x: noteDragPreviewState.x
         y: noteDragPreviewState.y
+        z: 1000
 
         NoteListItem {
             id: noteDragPreviewCard
@@ -533,6 +637,26 @@ Rectangle {
             previewSource: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.imageSource !== undefined && noteDragPreviewState.delegateItem.imageSource !== null ? noteDragPreviewState.delegateItem.imageSource : ""
             titleText: noteDragPreviewState.delegateItem && noteDragPreviewState.delegateItem.primaryText !== undefined && noteDragPreviewState.delegateItem.primaryText !== null ? String(noteDragPreviewState.delegateItem.primaryText) : ""
             visible: listBarLayout.resourceListMode
+        }
+        Rectangle {
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.top: parent.top
+            anchors.topMargin: 8
+            color: LV.Theme.accentBlue
+            height: 20
+            radius: height * 0.5
+            visible: noteDragPreviewState.noteIds.length > 1
+            width: Math.max(20, dragCountLabel.implicitWidth + 10)
+
+            LV.Label {
+                id: dragCountLabel
+
+                anchors.centerIn: parent
+                color: "white"
+                style: caption
+                text: String(noteDragPreviewState.noteIds.length)
+            }
         }
     }
     Item {
@@ -585,47 +709,30 @@ Rectangle {
                     synchronousDrag: true
                     visible: listBarLayout.noteListMode
 
-                    onContentHeightChanged: listBarLayout.settleNoteListViewport()
-                    onContentYChanged: {
-                        if (listBarLayout.syncingNoteListViewport || listBarLayout.noteListViewportRestorePending)
-                            return;
-                        listBarLayout.applyNoteListViewportStep(noteListView.contentY);
-                    }
-                    onFlickStarted: noteListView.cancelFlick()
-                    onHeightChanged: listBarLayout.settleNoteListViewport()
-                    onMovementEnded: listBarLayout.settleNoteListViewport()
-
-                    Keys.onPressed: function (event) {
-                        if (event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete)
-                            return;
-                        if (!listBarLayout.deleteCurrentNote())
-                            return;
-                        event.accepted = true;
-                    }
-
                     delegate: Item {
                         id: noteItemDelegate
 
                         required property string bookmarkColor
                         required property bool bookmarked
                         required property string displayDate
+                        property real dragHotSpotX: width * 0.5
+                        property real dragHotSpotY: height * 0.5
+                        readonly property var draggedNoteIds: listBarLayout.selectedNoteIdsForDelegateAction(noteItemDelegate.index, noteItemDelegate.noteId)
                         required property var folders
                         required property bool image
                         required property var imageSource
-                        required property int index
-                        required property string noteId
-                        required property string primaryText
-                        required property var tags
-                        property real dragHotSpotX: width * 0.5
-                        property real dragHotSpotY: height * 0.5
                         readonly property bool immediatePointerDragEnabled: !noteItemDelegate.pointerDragRequiresLongPress
+                        required property int index
                         property bool mobileLongPressPendingContextMenu: false
                         property bool mobilePointerDragging: false
                         property bool mobileSuppressNextClick: false
-                        property double pointerSelectionModifiersCapturedAtMs: 0
-                        property int pointerSelectionModifiers: Qt.NoModifier
+                        required property string noteId
                         readonly property bool pointerDragActive: noteDragHandler.active || noteItemDelegate.mobilePointerDragging
                         readonly property bool pointerDragRequiresLongPress: LV.Theme.mobileTarget
+                        property int pointerSelectionModifiers: Qt.NoModifier
+                        property double pointerSelectionModifiersCapturedAtMs: 0
+                        required property string primaryText
+                        required property var tags
 
                         Drag.active: noteItemDelegate.pointerDragActive
                         Drag.dragType: listBarLayout.useInternalNoteDrag ? Drag.Internal : Drag.Automatic
@@ -633,8 +740,9 @@ Rectangle {
                         Drag.hotSpot.y: noteItemDelegate.dragHotSpotY
                         Drag.keys: ["whatson.library.note"]
                         Drag.mimeData: ({
-                                "application/x-whatson-note-id": noteItemDelegate.noteId,
-                                "text/plain": noteItemDelegate.noteId
+                                "application/x-whatson-note-id": noteItemDelegate.draggedNoteIds.length > 0 ? noteItemDelegate.draggedNoteIds[0] : noteItemDelegate.noteId,
+                                "application/x-whatson-note-ids": JSON.stringify(noteItemDelegate.draggedNoteIds),
+                                "text/plain": noteItemDelegate.draggedNoteIds.join("\n")
                             })
                         Drag.source: noteItemDelegate
                         Drag.supportedActions: Qt.CopyAction
@@ -686,20 +794,11 @@ Rectangle {
                                     listBarLayout.noteDragCanceled = false;
                                     noteItemDelegate.dragHotSpotX = Number(noteDragHandler.centroid.pressPosition.x) || noteItemDelegate.width * 0.5;
                                     noteItemDelegate.dragHotSpotY = Number(noteDragHandler.centroid.pressPosition.y) || noteItemDelegate.height * 0.5;
-                                    listBarLayout.beginNoteDragPreview(
-                                                noteItemDelegate,
-                                                noteItemDelegate.dragHotSpotX,
-                                                noteItemDelegate.dragHotSpotY);
-                                    listBarLayout.updateInternalNoteDropPreview(
-                                                noteItemDelegate,
-                                                noteDragHandler.centroid.position.x,
-                                                noteDragHandler.centroid.position.y);
+                                    listBarLayout.beginNoteDragPreview(noteItemDelegate, noteItemDelegate.dragHotSpotX, noteItemDelegate.dragHotSpotY);
+                                    listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, noteDragHandler.centroid.position.x, noteDragHandler.centroid.position.y);
                                 } else {
                                     if (!listBarLayout.noteDragCanceled)
-                                        listBarLayout.commitInternalNoteDrop(
-                                                    noteItemDelegate,
-                                                    noteDragHandler.centroid.position.x,
-                                                    noteDragHandler.centroid.position.y);
+                                        listBarLayout.commitInternalNoteDrop(noteItemDelegate, noteDragHandler.centroid.position.x, noteDragHandler.centroid.position.y);
                                     listBarLayout.clearInternalNoteDropPreview();
                                     listBarLayout.clearNoteDragPreview(noteItemDelegate);
                                     listBarLayout.noteDragCanceled = false;
@@ -707,45 +806,44 @@ Rectangle {
                                 if (active && listBarLayout.pressedNoteIndex === noteItemDelegate.index)
                                     listBarLayout.pressedNoteIndex = -1;
                             }
-                            onCentroidChanged: {
-                                if (!active)
-                                    return;
-                                listBarLayout.updateNoteDragPreviewPosition(
-                                            noteItemDelegate,
-                                            noteDragHandler.centroid.position.x,
-                                            noteDragHandler.centroid.position.y);
-                                listBarLayout.updateInternalNoteDropPreview(
-                                            noteItemDelegate,
-                                            noteDragHandler.centroid.position.x,
-                                            noteDragHandler.centroid.position.y);
-                            }
                             onCanceled: {
                                 listBarLayout.noteDragCanceled = true;
                                 listBarLayout.noteDragActive = false;
                                 listBarLayout.clearInternalNoteDropPreview();
                                 listBarLayout.clearNoteDragPreview(noteItemDelegate);
                             }
+                            onCentroidChanged: {
+                                if (!active)
+                                    return;
+                                listBarLayout.updateNoteDragPreviewPosition(noteItemDelegate, noteDragHandler.centroid.position.x, noteDragHandler.centroid.position.y);
+                                listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, noteDragHandler.centroid.position.x, noteDragHandler.centroid.position.y);
+                            }
                         }
                         MouseArea {
                             id: mobileLongPressDragArea
 
+                            acceptedButtons: Qt.LeftButton
                             anchors.fill: parent
                             enabled: noteItemDelegate.pointerDragRequiresLongPress
-                            acceptedButtons: Qt.LeftButton
                             hoverEnabled: false
-                            preventStealing: noteItemDelegate.mobilePointerDragging
                             pressAndHoldInterval: listBarLayout.mobileNoteDragHoldInterval
+                            preventStealing: noteItemDelegate.mobilePointerDragging
 
-                            onPressed: function(mouse) {
-                                noteItemDelegate.dragHotSpotX = Number(mouse.x) || width * 0.5;
-                                noteItemDelegate.dragHotSpotY = Number(mouse.y) || height * 0.5;
+                            onCanceled: {
+                                const dragging = noteItemDelegate.mobilePointerDragging;
                                 noteItemDelegate.mobileLongPressPendingContextMenu = false;
                                 noteItemDelegate.mobilePointerDragging = false;
                                 noteItemDelegate.mobileSuppressNextClick = false;
-                                listBarLayout.pressedNoteIndex = noteItemDelegate.index;
-                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
+                                listBarLayout.pressedNoteIndex = -1;
+                                if (!dragging)
+                                    return;
+                                listBarLayout.noteDragCanceled = true;
+                                listBarLayout.noteDragActive = false;
+                                listBarLayout.clearInternalNoteDropPreview();
+                                listBarLayout.clearNoteDragPreview(noteItemDelegate);
+                                listBarLayout.noteDragCanceled = false;
                             }
-                            onClicked: function(mouse) {
+                            onClicked: function (mouse) {
                                 if (noteItemDelegate.mobileSuppressNextClick) {
                                     noteItemDelegate.mobileSuppressNextClick = false;
                                     return;
@@ -753,25 +851,12 @@ Rectangle {
                                 if (noteItemDelegate.mobilePointerDragging)
                                     return;
                                 listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.requestNoteSelection(
-                                            noteItemDelegate.index,
-                                            noteItemDelegate.noteId,
-                                            mouse.modifiers);
+                                listBarLayout.requestNoteSelection(noteItemDelegate.index, noteItemDelegate.noteId, mouse.modifiers);
                             }
-                            onPressAndHold: function(mouse) {
-                                noteItemDelegate.mobileLongPressPendingContextMenu = true;
-                                noteItemDelegate.mobileSuppressNextClick = true;
-                            }
-                            onPositionChanged: function(mouse) {
+                            onPositionChanged: function (mouse) {
                                 if (noteItemDelegate.mobilePointerDragging) {
-                                    listBarLayout.updateNoteDragPreviewPosition(
-                                                noteItemDelegate,
-                                                mouse.x,
-                                                mouse.y);
-                                    listBarLayout.updateInternalNoteDropPreview(
-                                                noteItemDelegate,
-                                                mouse.x,
-                                                mouse.y);
+                                    listBarLayout.updateNoteDragPreviewPosition(noteItemDelegate, mouse.x, mouse.y);
+                                    listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, mouse.x, mouse.y);
                                     return;
                                 }
                                 if (!noteItemDelegate.mobileLongPressPendingContextMenu)
@@ -784,50 +869,37 @@ Rectangle {
                                 listBarLayout.noteDragCanceled = false;
                                 listBarLayout.noteDragActive = true;
                                 noteItemDelegate.mobilePointerDragging = true;
-                                listBarLayout.beginNoteDragPreview(
-                                            noteItemDelegate,
-                                            noteItemDelegate.dragHotSpotX,
-                                            noteItemDelegate.dragHotSpotY);
-                                listBarLayout.updateNoteDragPreviewPosition(
-                                            noteItemDelegate,
-                                            mouse.x,
-                                            mouse.y);
-                                listBarLayout.updateInternalNoteDropPreview(
-                                            noteItemDelegate,
-                                            mouse.x,
-                                            mouse.y);
+                                listBarLayout.beginNoteDragPreview(noteItemDelegate, noteItemDelegate.dragHotSpotX, noteItemDelegate.dragHotSpotY);
+                                listBarLayout.updateNoteDragPreviewPosition(noteItemDelegate, mouse.x, mouse.y);
+                                listBarLayout.updateInternalNoteDropPreview(noteItemDelegate, mouse.x, mouse.y);
                                 if (listBarLayout.pressedNoteIndex === noteItemDelegate.index)
                                     listBarLayout.pressedNoteIndex = -1;
                             }
-                            onReleased: function(mouse) {
+                            onPressAndHold: function (mouse) {
+                                noteItemDelegate.mobileLongPressPendingContextMenu = true;
+                                noteItemDelegate.mobileSuppressNextClick = true;
+                            }
+                            onPressed: function (mouse) {
+                                noteItemDelegate.dragHotSpotX = Number(mouse.x) || width * 0.5;
+                                noteItemDelegate.dragHotSpotY = Number(mouse.y) || height * 0.5;
+                                noteItemDelegate.mobileLongPressPendingContextMenu = false;
+                                noteItemDelegate.mobilePointerDragging = false;
+                                noteItemDelegate.mobileSuppressNextClick = false;
+                                listBarLayout.pressedNoteIndex = noteItemDelegate.index;
+                                noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
+                            }
+                            onReleased: function (mouse) {
                                 const dragging = noteItemDelegate.mobilePointerDragging;
                                 const openContextMenu = noteItemDelegate.mobileLongPressPendingContextMenu && !dragging;
                                 noteItemDelegate.mobileLongPressPendingContextMenu = false;
                                 noteItemDelegate.mobilePointerDragging = false;
                                 listBarLayout.pressedNoteIndex = -1;
                                 if (openContextMenu) {
-                                    listBarLayout.openNoteContextMenu(
-                                                noteItemDelegate,
-                                                mouse.x,
-                                                mouse.y);
+                                    listBarLayout.openNoteContextMenu(noteItemDelegate, mouse.x, mouse.y);
                                     return;
                                 }
                                 if (!dragging)
                                     return;
-                                listBarLayout.noteDragActive = false;
-                                listBarLayout.clearInternalNoteDropPreview();
-                                listBarLayout.clearNoteDragPreview(noteItemDelegate);
-                                listBarLayout.noteDragCanceled = false;
-                            }
-                            onCanceled: {
-                                const dragging = noteItemDelegate.mobilePointerDragging;
-                                noteItemDelegate.mobileLongPressPendingContextMenu = false;
-                                noteItemDelegate.mobilePointerDragging = false;
-                                noteItemDelegate.mobileSuppressNextClick = false;
-                                listBarLayout.pressedNoteIndex = -1;
-                                if (!dragging)
-                                    return;
-                                listBarLayout.noteDragCanceled = true;
                                 listBarLayout.noteDragActive = false;
                                 listBarLayout.clearInternalNoteDropPreview();
                                 listBarLayout.clearNoteDragPreview(noteItemDelegate);
@@ -837,62 +909,61 @@ Rectangle {
                         TapHandler {
                             id: noteTapHandler
 
-                            enabled: noteItemDelegate.immediatePointerDragEnabled
                             acceptedButtons: Qt.LeftButton
                             acceptedModifiers: Qt.KeyboardModifierMask
+                            enabled: noteItemDelegate.immediatePointerDragEnabled
                             gesturePolicy: TapHandler.DragThreshold
                             grabPermissions: PointerHandler.ApprovesTakeOverByAnything
 
+                            onCanceled: {
+                                noteItemDelegate.pointerSelectionModifiers = Qt.NoModifier;
+                                noteItemDelegate.pointerSelectionModifiersCapturedAtMs = 0;
+                            }
                             onPressedChanged: {
                                 if (!pressed) {
                                     if (listBarLayout.pressedNoteIndex === noteItemDelegate.index && !noteDragHandler.active)
                                         listBarLayout.pressedNoteIndex = -1;
                                     return;
                                 }
-                                const pressModifiers = noteTapHandler.point
-                                        && noteTapHandler.point.modifiers !== undefined
-                                        ? noteTapHandler.point.modifiers
-                                        : Qt.application.keyboardModifiers;
-                                noteItemDelegate.pointerSelectionModifiers = listBarLayout.normalizedKeyboardModifiers(
-                                            pressModifiers);
+                                const pressModifiers = noteTapHandler.point && noteTapHandler.point.modifiers !== undefined ? noteTapHandler.point.modifiers : Qt.application.keyboardModifiers;
+                                noteItemDelegate.pointerSelectionModifiers = listBarLayout.normalizedKeyboardModifiers(pressModifiers);
                                 noteItemDelegate.pointerSelectionModifiersCapturedAtMs = Date.now();
                                 listBarLayout.pressedNoteIndex = noteItemDelegate.index;
                                 noteDeletionBridge.focusedNoteId = noteItemDelegate.noteId;
                             }
-                            onTapped: function(eventPoint, button) {
+                            onTapped: function (eventPoint, button) {
                                 listBarLayout.pressedNoteIndex = -1;
-                                const eventModifiers = eventPoint
-                                        && eventPoint.modifiers !== undefined ? eventPoint.modifiers : Qt.NoModifier;
-                                const selectionModifiers = listBarLayout.resolveSelectionModifiers(
-                                            eventModifiers,
-                                            noteItemDelegate.pointerSelectionModifiers,
-                                            noteItemDelegate.pointerSelectionModifiersCapturedAtMs);
+                                const eventModifiers = eventPoint && eventPoint.modifiers !== undefined ? eventPoint.modifiers : Qt.NoModifier;
+                                const selectionModifiers = listBarLayout.resolveSelectionModifiers(eventModifiers, noteItemDelegate.pointerSelectionModifiers, noteItemDelegate.pointerSelectionModifiersCapturedAtMs);
                                 noteItemDelegate.pointerSelectionModifiers = Qt.NoModifier;
                                 noteItemDelegate.pointerSelectionModifiersCapturedAtMs = 0;
-                                listBarLayout.requestNoteSelection(
-                                            noteItemDelegate.index,
-                                            noteItemDelegate.noteId,
-                                            selectionModifiers);
-                            }
-                            onCanceled: {
-                                noteItemDelegate.pointerSelectionModifiers = Qt.NoModifier;
-                                noteItemDelegate.pointerSelectionModifiersCapturedAtMs = 0;
+                                listBarLayout.requestNoteSelection(noteItemDelegate.index, noteItemDelegate.noteId, selectionModifiers);
                             }
                         }
                         TapHandler {
-                            enabled: !noteItemDelegate.pointerDragRequiresLongPress
                             acceptedButtons: Qt.RightButton
+                            enabled: !noteItemDelegate.pointerDragRequiresLongPress
 
-                            onTapped: function(eventPoint, button) {
+                            onTapped: function (eventPoint, button) {
                                 listBarLayout.pressedNoteIndex = -1;
-                                listBarLayout.openNoteContextMenu(
-                                            noteItemDelegate,
-                                            eventPoint.position.x,
-                                            eventPoint.position.y);
+                                listBarLayout.openNoteContextMenu(noteItemDelegate, eventPoint.position.x, eventPoint.position.y);
                             }
                         }
                     }
 
+                    Keys.onPressed: function (event) {
+                        if (event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete)
+                            return;
+                        if (!listBarLayout.deleteCurrentNote())
+                            return;
+                        event.accepted = true;
+                    }
+                    onContentHeightChanged: listBarLayout.settleNoteListViewport()
+                    onContentYChanged: {
+                        if (listBarLayout.syncingNoteListViewport || listBarLayout.noteListViewportRestorePending)
+                            return;
+                        listBarLayout.applyNoteListViewportStep(noteListView.contentY);
+                    }
                     onCurrentIndexChanged: {
                         listBarLayout.pressedNoteIndex = -1;
                         if (!listBarLayout.currentIndexChangeIsAuthoritative(noteListView.currentIndex)) {
@@ -902,13 +973,15 @@ Rectangle {
                             return;
                         }
                         listBarLayout.pushCurrentIndexToModel(noteListView.currentIndex);
-                        if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(
-                                    noteListView.currentIndex))
+                        if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(noteListView.currentIndex))
                             listBarLayout.syncSelectionFromCommittedState();
                         Qt.callLater(function () {
                             listBarLayout.syncFocusedNoteDeletionState();
                         });
                     }
+                    onFlickStarted: noteListView.cancelFlick()
+                    onHeightChanged: listBarLayout.settleNoteListViewport()
+                    onMovementEnded: listBarLayout.settleNoteListViewport()
                 }
                 LV.WheelScrollGuard {
                     anchors.fill: parent
@@ -932,21 +1005,18 @@ Rectangle {
         }
     }
     Connections {
+        function onCurrentIndexChanged() {
+            listBarLayout.syncCurrentIndexFromModel();
+            if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(listBarLayout.committedNoteIndex))
+                listBarLayout.syncSelectionFromCommittedState();
+        }
         function onModelAboutToBeReset() {
             listBarLayout.captureNoteListViewport();
         }
-
         function onModelReset() {
             Qt.callLater(function () {
                 listBarLayout.restoreNoteListViewport();
             });
-        }
-
-        function onCurrentIndexChanged() {
-            listBarLayout.syncCurrentIndexFromModel();
-            if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(
-                        listBarLayout.committedNoteIndex))
-                listBarLayout.syncSelectionFromCommittedState();
         }
 
         ignoreUnknownSignals: true

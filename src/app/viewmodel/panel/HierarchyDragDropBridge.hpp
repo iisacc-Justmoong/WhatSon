@@ -33,7 +33,9 @@ public:
     Q_INVOKABLE bool applyHierarchyReorder(const QVariantList& hierarchyNodes,
                                            const QString& activeItemKey = QString());
     Q_INVOKABLE bool canAcceptNoteDrop(int index, const QString& noteId) const;
+    Q_INVOKABLE bool canAcceptNoteDropList(int index, const QVariantList& noteIds) const;
     Q_INVOKABLE bool assignNoteToFolder(int index, const QString& noteId);
+    Q_INVOKABLE bool assignNotesToFolder(int index, const QVariantList& noteIds);
 
     signals  :
 

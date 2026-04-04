@@ -40,6 +40,8 @@ longer part of the normal typing path.
   - NBSP -> regular space
 - The source-side splice path escapes literal text before inserting it into `.wsnbody`, so ordinary typing cannot
   inject raw inline tags accidentally.
+- Markdown-style prefixes such as `1. `, `- `, `# `, `> `, and `` ``` `` still enter the source as literal typed text;
+  the renderer layer is responsible for their RichText presentation after the source update lands.
 
 ## Regression Checks
 
@@ -48,3 +50,5 @@ longer part of the normal typing path.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
+- Typing `- item` or `1. item` should persist the literal markdown marker text in source rather than an already-expanded
+  bullet/number glyph representation.

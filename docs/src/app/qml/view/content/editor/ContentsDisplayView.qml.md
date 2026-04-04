@@ -6,6 +6,12 @@
 inline-format editor, gutter, minimap, and lower drawer into one geometry contract so every collaborator can resolve line
 positions from the same document origin.
 
+The shared surface also owns the cross-platform editor typography policy:
+
+- desktop editor text renders at `13px`
+- mobile editor text renders at `15px` (`desktop + 2`)
+- mobile hides the gutter entirely instead of reserving a transparent gutter column
+
 ## Composition Model
 
 `ContentsDisplayView.qml` now delegates selection caching, inline-format mutation, and formatting context-menu dispatch
@@ -29,6 +35,10 @@ The root editor state now keeps two text projections:
   text area.
 - `editorSurfaceHeight` is derived from `editorViewportHeight - editorDocumentStartY`, which keeps Fill sizing stable
   after reserving the fixed top spacer.
+- `effectiveEditorFontPixelSize` is the canonical editor font size and now drives both the editable RichText surface
+  and the legacy formatted-preview fallback.
+- `editorTextLineBoxHeight` follows that same effective font size so gutter/minimap fallback geometry does not keep the
+  old `12px` line-box assumption after the editor typography changed.
 - `logicalTextLength()` is the canonical line-metric length source for gutter/minimap cursor geometry in RichText mode.
   It is derived from `ContentsLogicalTextBridge` logical offsets/counts instead of raw `editorText.length`, so markup
   token length cannot desynchronize gutter row placement.
@@ -61,6 +71,8 @@ The root editor state now keeps two text projections:
 - `ContentsGutterMarkerBridge`: normalizes external marker specifications into a gutter-friendly model.
 - `ContentsEditorSession`: owns local-authority tracking, debounced saves, and note-switch synchronization.
 - `ContentsGutterLayer` and `ContentsMinimapLayer`: render against the shared geometry helpers exported by this file.
+  `ContentsGutterLayer` is mounted only for non-mobile editor surfaces; mobile no longer keeps a zero-value chrome
+  placeholder in the row layout.
 - `DrawerMenuBar`, `DrawerContents`, and `DrawerToolbar`: compose the lower drawer as separate Figma-aligned modules
   instead of an inline placeholder rectangle.
 - Drawer/editor panel partition is computed in one place (`drawerView`):
@@ -124,9 +136,9 @@ The root editor state now keeps two text projections:
   - `contextMenuEditorSelectionRange()` keeps the selection snapshot captured when the context menu opens
   - `inferSelectionRangeFromSelectedText(...)` maps selected plain text back into the current live editor plain text
     when the RichText control does not expose usable numeric offsets.
-  - formatting actions no longer wrap raw `.wsnbody` substrings directly. The controller captures the live editor
-    RichText surface, then delegates the actual selected-range mutation to
-    `ContentsTextFormatRenderer.applyInlineStyleToSelectionSource(...)`.
+  - formatting actions no longer wrap raw `.wsnbody` substrings directly. The controller captures the live logical
+    selection range, then delegates the actual selected-range mutation to
+    `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`.
   - formatting actions always require a non-empty selection range before mutating `.wsnbody`
 - Context-menu actions dispatch through the same `wrapSelectedEditorTextWithTag(...)` path as keyboard shortcuts, so
   inline tag serialization/persistence behavior stays identical across input methods.
@@ -179,6 +191,16 @@ The root editor state now keeps two text projections:
   - `underline` -> `<span style=\"text-decoration: underline;\">`
   - `strikethrough` -> `<span style=\"text-decoration: line-through;\">`
   - `highlight`/`mark` -> dark-orange background + LVRS `accentYellowMuted` foreground styled `<span ...>`
+- The same renderer path now also styles markdown-like note input directly in the editable surface:
+    - `1. ` / `2. ` / `3) ` -> numbered-list line styling
+    - `- ` / `* ` / `+ ` -> unordered-list line styling with a rendered bullet glyph
+    - `#` ... `######` -> heading-like line styling
+    - `> ` -> blockquote-like line styling
+    - `` `code` ``, `[label](url)`, and fenced code blocks -> code/link-styled literals
+- Those markdown presentation roles are emitted through the shared `WhatSonNoteMarkdownStyleObject`, so renderer output
+  and `.wsnbody` promotion rules stay aligned.
+- Bold, italic, underline, strikethrough, and highlight remain proprietary `.wsnbody` inline-format tags; markdown
+  emphasis markers are intentionally not the authoritative formatting path.
 - Alias normalization is delegated to `ContentsTextFormatRenderer.normalizeInlineStyleAliasesForEditor(...)` from
   `normalizeBodySourceForRichTextEditor(...)`, so `.wsnbody` inline tags are normalized through the renderer contract
   before entering the editable surface.
@@ -206,15 +228,30 @@ The root editor state now keeps two text projections:
   - gutter line numbers and current-line markers must remain aligned to the first visible text row after whitespace /
     RichText normalization changes
   - existing `.wsnbody` `<bold>` regions render as visible bold text on load
+  - typing `- item` must re-render as a bullet-list line in the editor surface
+  - typing `1. item` must re-render as a numbered-list line in the editor surface
+  - typing `# heading` or `> quote` must re-render with heading/blockquote styling without changing the stored source
+    marker characters
+  - fenced code blocks and inline code/link-shaped literals must re-render with markdown-aware styling while preserving
+    their literal source text
+  - `Cmd/Ctrl+B` on heading text, `Cmd/Ctrl+I` on blockquote text, `Cmd/Ctrl+U` on link literals, and highlight on code
+    literals must still operate on proprietary `.wsnbody` tags rather than treating markdown presentation as the
+    already-applied shortcut state
   - right-clicking a non-empty selection opens the formatting context menu
   - the context menu shows `Plain` as the first item
   - context-menu formatting wraps the actual selected source span, not a duplicated plain-text occurrence elsewhere
   - choosing `Plain` removes inline tags from the selected source span
   - reapplying the same formatting action to an already formatted selection restores that selection to plain text
+  - opening an empty note must not render a `Start typing here` placeholder overlay
+  - desktop editor text must render at `13px`
+  - mobile editor text must render `2px` larger than desktop
+  - mobile editor route must not reserve or render the gutter column
 - In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally
   always editable for note-taking workflows.
+- An empty note no longer renders a `Start typing here` overlay; the editor surface stays visually blank until the
+  user types real content.
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
 - `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
   mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.

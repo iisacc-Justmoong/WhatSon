@@ -95,6 +95,10 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `HierarchySidebarLayout.qml`: renders the hierarchy route body.
 - `ListBarLayout.qml`: renders the folder-scoped note list route body.
 - `ContentViewLayout.qml`: renders the editor route body.
+- The mobile editor route intentionally relies on `ContentsDisplayView.qml` platform policy instead of forcing its own
+  gutter metrics:
+    - gutter is removed on mobile
+    - editor font size is `desktop + 2px`
 - `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
   `<resource ...>` links through the same import pipeline.
 - `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
@@ -106,3 +110,5 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.
 - Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
 - Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.
+- The mobile editor page must not reintroduce gutter width/line-number overrides now that the shared editor view owns
+  mobile gutter suppression directly.

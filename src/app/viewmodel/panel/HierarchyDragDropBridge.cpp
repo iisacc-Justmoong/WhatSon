@@ -3,6 +3,29 @@
 #include "policy/ArchitecturePolicyLock.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 
+#include <QStringList>
+
+namespace
+{
+    QStringList normalizedUniqueNoteIds(const QVariantList& noteIds)
+    {
+        QStringList normalized;
+        normalized.reserve(noteIds.size());
+        for (const QVariant& noteIdValue : noteIds)
+        {
+            const QString normalizedNoteId = noteIdValue.toString().trimmed();
+            if (normalizedNoteId.isEmpty() || normalized.contains(normalizedNoteId))
+            {
+                continue;
+            }
+
+            normalized.push_back(normalizedNoteId);
+        }
+
+        return normalized;
+    }
+}
+
 HierarchyDragDropBridge::HierarchyDragDropBridge(QObject* parent)
     : QObject(parent)
 {
@@ -104,6 +127,26 @@ bool HierarchyDragDropBridge::canAcceptNoteDrop(int index, const QString& noteId
     return noteDropCapability->canAcceptNoteDrop(index, normalizedNoteId);
 }
 
+bool HierarchyDragDropBridge::canAcceptNoteDropList(int index, const QVariantList& noteIds) const
+{
+    const auto* noteDropCapability = qobject_cast<IHierarchyNoteDropCapability*>(m_hierarchyViewModel);
+    if (noteDropCapability == nullptr || !m_noteDropContractAvailable || index < 0)
+    {
+        return false;
+    }
+
+    const QStringList normalizedNoteIds = normalizedUniqueNoteIds(noteIds);
+    for (const QString& noteId : normalizedNoteIds)
+    {
+        if (noteDropCapability->canAcceptNoteDrop(index, noteId))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool HierarchyDragDropBridge::assignNoteToFolder(int index, const QString& noteId)
 {
     auto* noteDropCapability = qobject_cast<IHierarchyNoteDropCapability*>(m_hierarchyViewModel);
@@ -119,6 +162,32 @@ bool HierarchyDragDropBridge::assignNoteToFolder(int index, const QString& noteI
     }
 
     return noteDropCapability->assignNoteToFolder(index, normalizedNoteId);
+}
+
+bool HierarchyDragDropBridge::assignNotesToFolder(int index, const QVariantList& noteIds)
+{
+    auto* noteDropCapability = qobject_cast<IHierarchyNoteDropCapability*>(m_hierarchyViewModel);
+    if (noteDropCapability == nullptr || !m_noteDropContractAvailable || index < 0)
+    {
+        return false;
+    }
+
+    const QStringList normalizedNoteIds = normalizedUniqueNoteIds(noteIds);
+    bool assignedAny = false;
+    for (const QString& noteId : normalizedNoteIds)
+    {
+        if (!noteDropCapability->canAcceptNoteDrop(index, noteId))
+        {
+            continue;
+        }
+
+        if (noteDropCapability->assignNoteToFolder(index, noteId))
+        {
+            assignedAny = true;
+        }
+    }
+
+    return assignedAny;
 }
 
 void HierarchyDragDropBridge::handleHierarchyModelChanged()

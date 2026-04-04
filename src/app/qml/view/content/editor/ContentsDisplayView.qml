@@ -8,19 +8,30 @@ import LVRS 1.0 as LV
 Item {
     id: contentsView
 
+    property string activeDrawerMode: contentsView.drawerModeQuickNote
+    readonly property int activeEditorViewModeValue: {
+        const viewModeModel = contentsView.resolvedEditorViewModeViewModel;
+        if (viewModeModel && viewModeModel.activeViewMode !== undefined) {
+            const activeValue = Number(viewModeModel.activeViewMode);
+            if (isFinite(activeValue))
+                return Math.max(0, Math.floor(activeValue));
+        }
+        return contentsView.plainEditorViewModeValue;
+    }
     readonly property color activeLineNumberColor: "#9DA0A8"
     readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable
     property var contentViewModel: null
-    property var editorViewModeViewModel: null
+    property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
+    property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
+    readonly property int desktopEditorFontPixelSize: 13
     property color displayColor: "transparent"
-    property string drawerQuickNoteText: ""
-    property bool drawerVisible: true
     property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property string drawerModeQuickNote: "QuickNote"
-    property string activeDrawerMode: contentsView.drawerModeQuickNote
+    property string drawerQuickNoteText: ""
+    property bool drawerVisible: true
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
@@ -36,15 +47,33 @@ Item {
     readonly property int editorDocumentTopPadding: 0
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()
     readonly property int editorHorizontalInset: 16
+    readonly property bool editorInputFocused: {
+        if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
+            return true;
+        if (contentEditor && contentEditor.activeFocus !== undefined && contentEditor.activeFocus)
+            return true;
+        if (contentEditor && contentEditor.editorItem && contentEditor.editorItem.activeFocus !== undefined && contentEditor.editorItem.activeFocus)
+            return true;
+        if (contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem && contentEditor.editorItem.inputItem.activeFocus !== undefined && contentEditor.editorItem.inputItem.activeFocus)
+            return true;
+        if (contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem && contentEditor.editorItem.inputItem.focused !== undefined && contentEditor.editorItem.inputItem.focused)
+            return true;
+        return false;
+    }
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
+    readonly property int editorMobileFontPixelSizeOffset: 2
+    readonly property bool editorMobilePresentation: LV.Theme.mobileTarget
+    property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
+    readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)
     property alias editorText: editorSession.editorText
-    readonly property string renderedEditorText: contentsView.normalizeBodySourceForRichTextEditor(contentsView.editorText)
-    readonly property int editorTextLineBoxHeight: 12
+    readonly property int editorTextLineBoxHeight: contentsView.effectiveEditorFontPixelSize
     readonly property int editorTopInset: LV.Theme.gap4
     property int editorTopInsetOverride: -1
-    readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
+    property var editorViewModeViewModel: null
     readonly property real editorViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
-    readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)
+    readonly property int effectiveEditorFontPixelSize: contentsView.desktopEditorFontPixelSize + (contentsView.editorMobilePresentation ? contentsView.editorMobileFontPixelSizeOffset : 0)
+    readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
+    readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
     readonly property var effectiveGutterMarkers: {
         const normalizedMarkers = [];
         if (contentsView.showCurrentLineMarker) {
@@ -67,9 +96,11 @@ Item {
         }
         return normalizedMarkers;
     }
+    readonly property int effectiveGutterWidth: contentsView.showEditorGutter ? (contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth) : 0
+    readonly property int effectiveLineNumberColumnLeft: contentsView.lineNumberColumnLeftOverride >= 0 ? contentsView.lineNumberColumnLeftOverride : contentsView.lineNumberColumnLeft
+    readonly property int effectiveLineNumberColumnTextWidth: contentsView.lineNumberColumnTextWidthOverride >= 0 ? contentsView.lineNumberColumnTextWidthOverride : contentsView.lineNumberColumnTextWidth
     readonly property int frameHorizontalInset: 2
     property int frameHorizontalInsetOverride: -1
-    readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
     property color gutterColor: "transparent"
     readonly property int gutterCommentMarkerOffset: 2
     readonly property int gutterCommentRailLeft: 4
@@ -85,15 +116,69 @@ Item {
     readonly property real gutterViewportHeight: contentsView.editorViewportHeight
     readonly property int gutterWidth: 74
     property int gutterWidthOverride: -1
-    readonly property int effectiveGutterWidth: contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth
-    property var visibleGutterLineEntries: [{
-            "lineNumber": 1,
-            "y": 0
-        }]
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
-    readonly property int plainEditorViewModeValue: 0
+    property var libraryHierarchyViewModel: null
+    readonly property color lineNumberColor: "#4E5157"
+    readonly property int lineNumberColumnLeft: 14
+    property int lineNumberColumnLeftOverride: -1
+    readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
+    property int lineNumberColumnTextWidthOverride: -1
+    readonly property int lineNumberColumnWidth: 26
+    readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
+    readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
+    property var logicalLineDocumentYCache: []
+    property int logicalLineDocumentYCacheLineCount: 0
+    property int logicalLineDocumentYCacheRevision: -1
+    readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
+    property int minDisplayHeight: LV.Theme.gap20 * 8
+    property int minDrawerHeight: LV.Theme.gap20 * 6
+    readonly property int minEditorHeight: LV.Theme.gap20 * 12
+    readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - 16)
+    readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
+    readonly property color minimapLineColor: contentsView.lineNumberColor
+    readonly property int minimapOuterWidth: 56
+    property real minimapResolvedCurrentLineHeight: 1
+    property real minimapResolvedCurrentLineWidth: 0
+    property real minimapResolvedCurrentLineY: 0
+    property real minimapResolvedSilhouetteHeight: 1
+    property real minimapResolvedTrackHeight: 1
+    readonly property real minimapResolvedTrackWidth: contentsView.minimapTrackWidth
+    property real minimapResolvedViewportHeight: 0
+    property real minimapResolvedViewportY: 0
+    readonly property int minimapRowGap: 1
+    property bool minimapScrollable: false
+    property bool minimapSnapshotRefreshQueued: false
+    readonly property int minimapTrackInset: 8
+    readonly property int minimapTrackWidth: 36
+    readonly property color minimapViewportFillColor: "#149DA0A8"
+    readonly property int minimapViewportMinHeight: 28
+    property bool minimapVisible: true
+    property var minimapVisualRows: []
+    readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
+    readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
+    property var noteListModel: null
+    readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable
+    readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property int pageEditorViewModeValue: 1
+    property var panelViewModel: null
+    property alias pendingBodySave: editorSession.pendingBodySave
+    property string pendingEditorFocusNoteId: ""
+    readonly property int plainEditorViewModeValue: 0
+    readonly property color printCanvasColor: "#F1F3F6"
     readonly property int printEditorViewModeValue: 2
+    readonly property int printGuideHorizontalInset: LV.Theme.gap12 * 2
+    readonly property int printGuideVerticalInset: LV.Theme.gap12 * 2
+    readonly property real printPaperAspectRatio: 210 / 297
+    readonly property color printPaperBorderColor: "#19000000"
+    readonly property color printPaperColor: "#FFFFFF"
+    readonly property int printPaperHorizontalMargin: LV.Theme.gap12
+    readonly property int printPaperMaxWidth: 880
+    readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
+    readonly property int printPaperPaddingVertical: LV.Theme.gap8
+    readonly property color printPaperTextColor: "#000000"
+    readonly property int printPaperVerticalMargin: LV.Theme.gap4
+    readonly property string renderedEditorText: contentsView.normalizeBodySourceForRichTextEditor(contentsView.editorText)
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
             return contentsView.editorViewModeViewModel;
@@ -101,78 +186,18 @@ Item {
             return LV.ViewModels.get("editorViewModeViewModel");
         return null;
     }
-    readonly property int activeEditorViewModeValue: {
-        const viewModeModel = contentsView.resolvedEditorViewModeViewModel;
-        if (viewModeModel && viewModeModel.activeViewMode !== undefined) {
-            const activeValue = Number(viewModeModel.activeViewMode);
-            if (isFinite(activeValue))
-                return Math.max(0, Math.floor(activeValue));
-        }
-        return contentsView.plainEditorViewModeValue;
-    }
-    readonly property color lineNumberColor: "#4E5157"
-    readonly property int lineNumberColumnLeft: 14
-    readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
-    property int lineNumberColumnLeftOverride: -1
-    property int lineNumberColumnTextWidthOverride: -1
-    readonly property int effectiveLineNumberColumnLeft: contentsView.lineNumberColumnLeftOverride >= 0 ? contentsView.lineNumberColumnLeftOverride : contentsView.lineNumberColumnLeft
-    readonly property int effectiveLineNumberColumnTextWidth: contentsView.lineNumberColumnTextWidthOverride >= 0 ? contentsView.lineNumberColumnTextWidthOverride : contentsView.lineNumberColumnTextWidth
-    readonly property int lineNumberColumnWidth: 26
-    readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
-    readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
-    readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
-    property var logicalLineDocumentYCache: []
-    property int logicalLineDocumentYCacheRevision: -1
-    property int logicalLineDocumentYCacheLineCount: 0
-    property var libraryHierarchyViewModel: null
-    property int minDisplayHeight: LV.Theme.gap20 * 8
-    property int minDrawerHeight: LV.Theme.gap20 * 6
-    readonly property int minEditorHeight: LV.Theme.gap20 * 12
-    readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
-    readonly property color minimapLineColor: contentsView.lineNumberColor
-    readonly property int minimapOuterWidth: 56
-    property bool minimapVisible: true
-    readonly property int minimapRowGap: 1
-    property bool minimapScrollable: false
-    readonly property int minimapTrackInset: 8
-    readonly property int minimapTrackWidth: 36
-    readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - 16)
-    property real minimapResolvedTrackHeight: 1
-    readonly property real minimapResolvedTrackWidth: contentsView.minimapTrackWidth
-    property real minimapResolvedViewportHeight: 0
-    property real minimapResolvedViewportY: 0
-    property real minimapResolvedCurrentLineHeight: 1
-    property real minimapResolvedCurrentLineWidth: 0
-    property real minimapResolvedCurrentLineY: 0
-    property real minimapResolvedSilhouetteHeight: 1
-    readonly property color minimapViewportFillColor: "#149DA0A8"
-    readonly property int minimapViewportMinHeight: 28
-    property bool minimapSnapshotRefreshQueued: false
-    property var minimapVisualRows: []
-    readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
-    readonly property int noteSnapshotRefreshIntervalMs: 1200
-    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible
-                                                    && contentsView.hasSelectedNote
-                                                    && !contentsView.showDedicatedResourceViewer
-                                                    && !contentsView.showFormattedTextRenderer
-                                                    && contentsView.noteSelectionContractAvailable
-    readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
-    property var noteListModel: null
-    readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
-    property var panelViewModel: null
-    property string pendingEditorFocusNoteId: ""
-    property alias pendingBodySave: editorSession.pendingBodySave
     property bool resourceDropActive: false
     readonly property color resourceRenderBorderColor: "#334E5157"
     readonly property color resourceRenderCardColor: "#E61A1D22"
     readonly property int resourceRenderDisplayLimit: 3
-    readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     property var resourcesImportViewModel: null
+    readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property int saveDebounceMs: 120
+    readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
+    readonly property string selectedNoteId: selectionBridge.selectedNoteId
+    readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
     readonly property var selectedResourceEntry: {
-        if (contentsView.showDedicatedResourceViewer
-                && contentsView.noteListModel
-                && contentsView.noteListModel.currentResourceEntry !== undefined) {
+        if (contentsView.showDedicatedResourceViewer && contentsView.noteListModel && contentsView.noteListModel.currentResourceEntry !== undefined) {
             const currentEntry = contentsView.noteListModel.currentResourceEntry;
             if (currentEntry && typeof currentEntry === "object") {
                 const entrySource = currentEntry.source !== undefined ? String(currentEntry.source).trim() : "";
@@ -189,56 +214,14 @@ Item {
         const entry = resources[0];
         return entry && typeof entry === "object" ? entry : ({});
     }
-    readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
-    readonly property string selectedNoteId: selectionBridge.selectedNoteId
-    readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
+    readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
-    readonly property bool showPageEditorLayout: contentsView.hasSelectedNote
-                                                 && !contentsView.showDedicatedResourceViewer
-                                                 && contentsView.activeEditorViewModeValue === contentsView.pageEditorViewModeValue
-    readonly property bool showPrintModeActive: contentsView.hasSelectedNote
-                                                && !contentsView.showDedicatedResourceViewer
-                                                && contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue
+    readonly property bool showEditorGutter: !contentsView.editorMobilePresentation && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
+    readonly property bool showFormattedTextRenderer: false
+    readonly property bool showPageEditorLayout: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && contentsView.activeEditorViewModeValue === contentsView.pageEditorViewModeValue
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
     readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
-    readonly property bool showFormattedTextRenderer: false
-    property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
-    property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
-    property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
-    readonly property bool editorInputFocused: {
-        if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
-            return true;
-        if (contentEditor && contentEditor.activeFocus !== undefined && contentEditor.activeFocus)
-            return true;
-        if (contentEditor && contentEditor.editorItem
-                && contentEditor.editorItem.activeFocus !== undefined
-                && contentEditor.editorItem.activeFocus)
-            return true;
-        if (contentEditor && contentEditor.editorItem
-                && contentEditor.editorItem.inputItem
-                && contentEditor.editorItem.inputItem.activeFocus !== undefined
-                && contentEditor.editorItem.inputItem.activeFocus)
-            return true;
-        if (contentEditor && contentEditor.editorItem
-                && contentEditor.editorItem.inputItem
-                && contentEditor.editorItem.inputItem.focused !== undefined
-                && contentEditor.editorItem.inputItem.focused)
-            return true;
-        return false;
-    }
-    readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
-    readonly property color printCanvasColor: "#F1F3F6"
-    readonly property real printPaperAspectRatio: 210 / 297
-    readonly property int printPaperHorizontalMargin: LV.Theme.gap12
-    readonly property int printPaperMaxWidth: 880
-    readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
-    readonly property int printPaperPaddingVertical: LV.Theme.gap8
-    readonly property color printPaperTextColor: "#000000"
-    readonly property int printPaperVerticalMargin: LV.Theme.gap4
-    readonly property color printPaperColor: "#FFFFFF"
-    readonly property color printPaperBorderColor: "#19000000"
-    readonly property int printGuideHorizontalInset: LV.Theme.gap12 * 2
-    readonly property int printGuideVerticalInset: LV.Theme.gap12 * 2
+    readonly property bool showPrintModeActive: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue
     property color splitterColor: "transparent"
     property int splitterHandleThickness: LV.Theme.gap12
     property int splitterThickness: LV.Theme.gapNone
@@ -246,25 +229,21 @@ Item {
     readonly property real textOriginY: {
         return contentsView.editorDocumentStartY + contentsView.editorContentOffsetY;
     }
+    property var visibleGutterLineEntries: [
+        {
+            "lineNumber": 1,
+            "y": 0
+        }
+    ]
     readonly property int visibleNoteCount: selectionBridge.visibleNoteCount
 
     signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal viewHookRequested
 
-    ContentsEditorSelectionController {
-        id: editorSelectionController
-
-        contentEditor: contentEditor
-        editorSession: editorSession
-        editorViewport: editorViewport
-        selectionBridge: selectionBridge
-        selectionContextMenu: editorSelectionContextMenu
-        textFormatRenderer: textFormatRenderer
-        textMetricsBridge: textMetricsBridge
-        view: contentsView
+    function applyEditorRichTextSurface() {
+        editorSelectionController.applyEditorRichTextSurface();
     }
-
     function buildFallbackMinimapVisualRows(textStartY) {
         const rows = [];
         for (let lineNumber = 1; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
@@ -292,7 +271,7 @@ Item {
             });
         }
 
-        return rows;
+
     }
     function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
         const _editorWidth = Number(editorWidth) || 0;
@@ -345,38 +324,38 @@ Item {
 
         return rows.length > 0 ? rows : contentsView.buildFallbackMinimapVisualRows(textStartY);
     }
-    function refreshMinimapSnapshot() {
-        const nextRows = contentsView.buildMinimapVisualRows(
-                    contentsView.editorText,
-                    Number(contentEditor ? contentEditor.width : 0),
-                    Number(contentEditor ? contentEditor.contentHeight : 0));
-        const nextSilhouetteHeight = contentsView.minimapSilhouetteHeight(nextRows);
-        const nextTrackHeight = Math.min(
-                    contentsView.minimapAvailableTrackHeight,
-                    nextSilhouetteHeight);
-        const nextScrollable = contentsView.isMinimapScrollable();
-        const nextViewportHeight = contentsView.minimapViewportHeight(nextTrackHeight);
-        const nextViewportY = contentsView.minimapViewportY(nextTrackHeight, nextViewportHeight);
-        const nextCurrentVisualRow = contentsView.minimapCurrentVisualRow(nextRows);
+    function buildVisibleGutterLineEntries() {
+        const visibleLines = [];
+        const firstVisibleLine = contentsView.firstVisibleLogicalLine();
+        for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
+            const resolvedLineY = contentsView.lineY(lineNumber);
+            if (resolvedLineY > contentsView.gutterViewportHeight)
+                break;
+            if (resolvedLineY + contentsView.lineVisualHeight(lineNumber, 1) < 0)
+                continue;
+            visibleLines.push({
+                "lineNumber": lineNumber,
+                "y": resolvedLineY
+            });
+        }
+        if (visibleLines.length === 0) {
+            visibleLines.push({
+                "lineNumber": firstVisibleLine,
+                "y": contentsView.lineY(firstVisibleLine)
+            });
+        }
 
-        contentsView.minimapVisualRows = nextRows;
-        contentsView.minimapResolvedSilhouetteHeight = nextSilhouetteHeight;
-        contentsView.minimapResolvedTrackHeight = nextTrackHeight;
-        contentsView.minimapScrollable = nextScrollable;
-        contentsView.minimapResolvedViewportHeight = nextViewportHeight;
-        contentsView.minimapResolvedViewportY = nextViewportY;
-        contentsView.minimapResolvedCurrentLineHeight = contentsView.minimapVisualRowPaintHeight(nextCurrentVisualRow);
-        contentsView.minimapResolvedCurrentLineWidth = contentsView.minimapBarWidth(nextCurrentVisualRow.charCount);
-        contentsView.minimapResolvedCurrentLineY = contentsView.minimapVisualRowPaintY(nextCurrentVisualRow);
     }
-    function scheduleMinimapSnapshotRefresh() {
-        if (contentsView.minimapSnapshotRefreshQueued)
-            return;
-        contentsView.minimapSnapshotRefreshQueued = true;
-        Qt.callLater(function () {
-            contentsView.minimapSnapshotRefreshQueued = false;
-            contentsView.refreshMinimapSnapshot();
-        });
+    function canAcceptResourceDropUrls(urls) {
+        if (!contentsView.hasSelectedNote || !contentsView.resourcesImportViewModel)
+            return false;
+        if (contentsView.showDedicatedResourceViewer || contentsView.showFormattedTextRenderer)
+            return false;
+        if (!Array.isArray(urls) || urls.length === 0)
+            return false;
+        if (contentsView.resourcesImportViewModel.canImportUrls === undefined)
+            return false;
+        return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
     }
     function clampDrawerHeight(value) {
         var maxDrawer = Math.max(contentsView.minDrawerHeight, contentsView.height - contentsView.minDisplayHeight - contentsView.splitterThickness);
@@ -392,6 +371,9 @@ Item {
         if (minimapLayer)
             minimapLayer.requestRepaint();
     }
+    function contextMenuEditorSelectionRange() {
+        return editorSelectionController.contextMenuEditorSelectionRange();
+    }
     function currentCursorVisualLineHeight() {
         const rect = contentsView.currentCursorVisualRowRect();
         return Math.max(1, Number(rect.height) || contentsView.editorLineHeight);
@@ -402,11 +384,7 @@ Item {
     }
     function currentCursorVisualRowRect() {
         const refreshRevision = contentsView.gutterRefreshRevision;
-        const safeOffset = Math.max(
-                    0,
-                    Math.min(
-                        contentsView.logicalTextLength(),
-                        Number(contentEditor.cursorPosition) || 0));
+        const safeOffset = Math.max(0, Math.min(contentsView.logicalTextLength(), Number(contentEditor.cursorPosition) || 0));
         if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
             const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
             return {
@@ -421,12 +399,16 @@ Item {
             "y": contentsView.documentYForOffset(safeOffset)
         };
     }
+    function currentEditorCursorPosition() {
+        return editorSelectionController.currentEditorCursorPosition();
+    }
+    function currentSelectedEditorText() {
+        return editorSelectionController.currentSelectedEditorText();
+    }
     function documentOccupiedBottomY() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         contentsView.ensureLogicalLineDocumentYCache();
-        const cachedLastLineDocumentY = contentsView.logicalLineCount > 0
-                ? contentsView.lineDocumentY(contentsView.logicalLineCount)
-                : 0;
+        const cachedLastLineDocumentY = contentsView.logicalLineCount > 0 ? contentsView.lineDocumentY(contentsView.logicalLineCount) : 0;
         const cachedBottom = Math.max(contentsView.editorLineHeight, cachedLastLineDocumentY + contentsView.editorLineHeight);
         const logicalLength = contentsView.logicalTextLength();
         if (contentEditor.editorItem && contentEditor.editorItem.positionToRectangle !== undefined) {
@@ -436,7 +418,7 @@ Item {
             if (isFinite(rectY))
                 return Math.max(cachedBottom, rectY + Math.max(contentsView.editorLineHeight, isFinite(rectHeight) ? rectHeight : contentsView.editorLineHeight));
         }
-        return cachedBottom;
+
     }
     function documentYForOffset(offset) {
         const refreshRevision = contentsView.gutterRefreshRevision;
@@ -456,6 +438,55 @@ Item {
         const editorY = contentsView.editorDocumentStartY;
         return editorY + documentY + contentsView.editorContentOffsetY;
     }
+    function ensureLogicalLineDocumentYCache() {
+        const refreshRevision = contentsView.gutterRefreshRevision;
+        const lineCount = contentsView.logicalLineCount;
+        if (contentsView.logicalLineDocumentYCacheRevision === refreshRevision && contentsView.logicalLineDocumentYCacheLineCount === lineCount && Array.isArray(contentsView.logicalLineDocumentYCache) && contentsView.logicalLineDocumentYCache.length === lineCount) {
+            return;
+        }
+        const cachedYValues = [];
+        let previousDocumentY = 0;
+        for (let lineIndex = 0; lineIndex < lineCount; ++lineIndex) {
+            const startOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lineIndex)) || 0);
+            const rawDocumentY = Math.max(0, Number(contentsView.documentYForOffset(startOffset)) || 0);
+            const minimumDocumentY = lineIndex === 0 ? 0 : previousDocumentY + Math.max(1, contentsView.editorLineHeight);
+            const resolvedDocumentY = lineIndex === 0 ? rawDocumentY : Math.max(rawDocumentY, minimumDocumentY);
+            cachedYValues.push(resolvedDocumentY);
+            previousDocumentY = resolvedDocumentY;
+        }
+        contentsView.logicalLineDocumentYCache = cachedYValues;
+        contentsView.logicalLineDocumentYCacheRevision = refreshRevision;
+        contentsView.logicalLineDocumentYCacheLineCount = lineCount;
+    }
+    function extractResourceDropUrls(drop) {
+        const urls = [];
+        if (drop && drop.urls !== undefined && drop.urls !== null) {
+            if (Array.isArray(drop.urls)) {
+                for (let index = 0; index < drop.urls.length; ++index)
+                    urls.push(drop.urls[index]);
+            } else if (drop.urls.length !== undefined) {
+                for (let listIndex = 0; listIndex < drop.urls.length; ++listIndex)
+                    urls.push(drop.urls[listIndex]);
+            } else {
+                urls.push(drop.urls);
+            }
+        }
+        if (urls.length > 0)
+            return urls;
+        if (!drop || drop.getDataAsString === undefined)
+            return urls;
+        const rawUriList = String(drop.getDataAsString("text/uri-list") || "").trim();
+        if (rawUriList.length === 0)
+            return urls;
+        const uriLines = rawUriList.split(/\r?\n/);
+        for (let lineIndex = 0; lineIndex < uriLines.length; ++lineIndex) {
+            const line = String(uriLines[lineIndex] || "").trim();
+            if (line.length === 0 || line.charAt(0) === "#")
+                continue;
+            urls.push(line);
+        }
+
+    }
     function firstVisibleLogicalLine() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const flickable = contentsView.editorFlickable;
@@ -465,40 +496,92 @@ Item {
         const firstVisibleDocumentY = Math.max(0, contentY - contentsView.editorDocumentStartY);
         return Math.max(1, Math.min(contentsView.logicalLineCount, contentsView.logicalLineNumberForDocumentY(firstVisibleDocumentY)));
     }
-    function ensureLogicalLineDocumentYCache() {
-        const refreshRevision = contentsView.gutterRefreshRevision;
-        const lineCount = contentsView.logicalLineCount;
-        if (contentsView.logicalLineDocumentYCacheRevision === refreshRevision
-                && contentsView.logicalLineDocumentYCacheLineCount === lineCount
-                && Array.isArray(contentsView.logicalLineDocumentYCache)
-                && contentsView.logicalLineDocumentYCache.length === lineCount) {
+    function flushEditorStateAfterInputSettles(attempt) {
+        const retryCount = Math.max(0, Number(attempt) || 0);
+        const activePreeditText = contentEditor && contentEditor.preeditText !== undefined ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText) : "";
+        const inputMethodBusy = !!(contentEditor && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing) || activePreeditText.length > 0));
+        if (inputMethodBusy && retryCount < 6) {
+            Qt.callLater(function () {
+                contentsView.flushEditorStateAfterInputSettles(retryCount + 1);
+            });
             return;
         }
-        const cachedYValues = [];
-        let previousDocumentY = 0;
-        for (let lineIndex = 0; lineIndex < lineCount; ++lineIndex) {
-            const startOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lineIndex)) || 0);
-            const rawDocumentY = Math.max(0, Number(contentsView.documentYForOffset(startOffset)) || 0);
-            const minimumDocumentY = lineIndex === 0
-                    ? 0
-                    : previousDocumentY + Math.max(1, contentsView.editorLineHeight);
-            const resolvedDocumentY = lineIndex === 0
-                    ? rawDocumentY
-                    : Math.max(rawDocumentY, minimumDocumentY);
-            cachedYValues.push(resolvedDocumentY);
-            previousDocumentY = resolvedDocumentY;
+        editorTypingController.handleEditorTextEdited();
+        editorSession.flushPendingEditorText();
+    }
+    function focusEditorForPendingNote() {
+        const pendingNoteId = contentsView.pendingEditorFocusNoteId === undefined || contentsView.pendingEditorFocusNoteId === null ? "" : String(contentsView.pendingEditorFocusNoteId).trim();
+        const selectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId).trim();
+        if (pendingNoteId.length === 0 || pendingNoteId !== selectedNoteId || !contentsView.hasSelectedNote)
+            return;
+
+        contentsView.pendingEditorFocusNoteId = "";
+        Qt.callLater(function () {
+            const activeNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null ? "" : String(contentsView.selectedNoteId).trim();
+            if (activeNoteId !== pendingNoteId)
+                return;
+
+            const cursorPosition = Math.max(0, contentsView.logicalTextLength());
+            contentEditor.forceActiveFocus();
+            if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
+                contentEditor.editorItem.forceActiveFocus();
+            if (contentEditor.cursorPosition !== undefined)
+                contentEditor.cursorPosition = cursorPosition;
+            if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined)
+                contentEditor.editorItem.cursorPosition = cursorPosition;
+        });
+    }
+    function handleInlineFormatShortcutKeyPress(event) {
+        return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
+    }
+    function handleSelectionContextMenuEvent(eventName) {
+        editorSelectionController.handleSelectionContextMenuEvent(eventName);
+    }
+    function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
+        return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
+    }
+    function inlineStyleWrapTags(styleTag) {
+        return editorSelectionController.inlineStyleWrapTags(styleTag);
+    }
+    function insertImportedResourceTags(importedEntries) {
+        if (!Array.isArray(importedEntries) || importedEntries.length === 0)
+            return false;
+        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const cursorPosition = Math.max(0, Math.min(currentText.length, contentEditor && contentEditor.cursorPosition !== undefined ? Number(contentEditor.cursorPosition) || 0 : currentText.length));
+        const tagTexts = [];
+        for (let index = 0; index < importedEntries.length; ++index) {
+            const tagText = contentsView.resourceTagTextForImportedEntry(importedEntries[index]);
+            if (tagText.length > 0)
+                tagTexts.push(tagText);
         }
-        contentsView.logicalLineDocumentYCache = cachedYValues;
-        contentsView.logicalLineDocumentYCacheRevision = refreshRevision;
-        contentsView.logicalLineDocumentYCacheLineCount = lineCount;
+        if (tagTexts.length === 0)
+            return false;
+        const prefix = cursorPosition > 0 && currentText.charAt(cursorPosition - 1) !== "\n" ? "\n" : "";
+        const suffix = cursorPosition < currentText.length && currentText.charAt(cursorPosition) !== "\n" ? "\n" : "";
+        const insertionText = prefix + tagTexts.join("\n") + suffix;
+        const nextText = currentText.slice(0, cursorPosition) + insertionText + currentText.slice(cursorPosition);
+        contentsView.editorText = nextText;
+        editorSession.markLocalEditorAuthority();
+        const saved = contentsView.persistEditorTextImmediately(nextText);
+        if (!saved)
+            editorSession.scheduleEditorPersistence();
+        if (contentEditor && contentEditor.cursorPosition !== undefined)
+            contentEditor.cursorPosition = cursorPosition + insertionText.length;
+        contentsView.editorTextEdited(nextText);
+        bodyResourceRenderer.requestRenderRefresh();
+        return true;
+    }
+    function isMinimapScrollable() {
+        const flickable = contentsView.editorFlickable;
+        if (!flickable)
+            return false;
+        return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
     }
     function lineDocumentY(lineNumber) {
         contentsView.ensureLogicalLineDocumentYCache();
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
         const cacheIndex = safeLineNumber - 1;
-        if (Array.isArray(contentsView.logicalLineDocumentYCache)
-                && cacheIndex >= 0
-                && cacheIndex < contentsView.logicalLineDocumentYCache.length) {
+        if (Array.isArray(contentsView.logicalLineDocumentYCache) && cacheIndex >= 0 && cacheIndex < contentsView.logicalLineDocumentYCache.length) {
             return Number(contentsView.logicalLineDocumentYCache[cacheIndex]) || 0;
         }
         return Math.max(0, (safeLineNumber - 1) * contentsView.editorLineHeight);
@@ -553,7 +636,6 @@ Item {
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
-            return contentsView.gutterMarkerCurrentColor;
 
     }
     function markerHeight(markerSpec) {
@@ -573,28 +655,6 @@ Item {
         const startLine = Math.max(1, Number(markerSpec.startLine) || 1);
         return contentsView.lineY(startLine);
     }
-    function buildVisibleGutterLineEntries() {
-        const visibleLines = [];
-        const firstVisibleLine = contentsView.firstVisibleLogicalLine();
-        for (let lineNumber = firstVisibleLine; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
-            const resolvedLineY = contentsView.lineY(lineNumber);
-            if (resolvedLineY > contentsView.gutterViewportHeight)
-                break;
-            if (resolvedLineY + contentsView.lineVisualHeight(lineNumber, 1) < 0)
-                continue;
-            visibleLines.push({
-                    "lineNumber": lineNumber,
-                    "y": resolvedLineY
-                });
-        }
-        if (visibleLines.length === 0) {
-            visibleLines.push({
-                    "lineNumber": firstVisibleLine,
-                    "y": contentsView.lineY(firstVisibleLine)
-                });
-        }
-        return visibleLines;
-    }
     function minimapBarWidth(characterCount) {
         const safeCount = Math.max(0, Number(characterCount) || 0);
         const maxWidth = Math.max(6, contentsView.minimapResolvedTrackWidth - 1);
@@ -605,12 +665,6 @@ Item {
     }
     function minimapContentHeight() {
         return Math.max(1, contentsView.editorOccupiedContentHeight());
-    }
-    function isMinimapScrollable() {
-        const flickable = contentsView.editorFlickable;
-        if (!flickable)
-            return false;
-        return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
     }
     function minimapContentYForLine(lineNumber) {
         const textStartY = contentsView.editorDocumentStartY;
@@ -694,11 +748,29 @@ Item {
         const visualIndex = rowSpec && rowSpec.visualIndex !== undefined ? Math.max(0, Number(rowSpec.visualIndex) || 0) : 0;
         return visualIndex * (contentsView.minimapRowGap + contentsView.minimapVisualRowPaintHeight(rowSpec));
     }
-    function requestViewHook(reason) {
-        const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (panelViewModel && panelViewModel.requestViewModelHook)
-            panelViewModel.requestViewModelHook(hookReason);
-        viewHookRequested();
+    function normalizeBodySourceForRichTextEditor(sourceText) {
+        return editorSelectionController.normalizeBodySourceForRichTextEditor(sourceText);
+    }
+    function normalizeInlineStyleTag(tagName) {
+        return editorSelectionController.normalizeInlineStyleTag(tagName);
+    }
+    function normalizeResourceFormat(formatValue) {
+        let normalizedFormat = formatValue === undefined || formatValue === null ? "" : String(formatValue).trim().toLowerCase();
+        if (normalizedFormat.length === 0)
+            normalizedFormat = ".bin";
+        if (normalizedFormat.charAt(0) !== ".")
+            normalizedFormat = "." + normalizedFormat;
+
+    }
+    function normalizeResourceType(typeValue) {
+        const normalizedType = typeValue === undefined || typeValue === null ? "" : String(typeValue).trim().toLowerCase();
+        return normalizedType.length > 0 ? normalizedType : "other";
+    }
+    function openEditorSelectionContextMenu(localX, localY) {
+        return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
+    }
+    function persistEditorTextImmediately(nextText) {
+        return editorSelectionController.persistEditorTextImmediately(nextText);
     }
     function pollSelectedNoteSnapshot() {
         if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
@@ -706,33 +778,55 @@ Item {
         selectionBridge.refreshSelectedNoteSnapshot();
         contentsView.scheduleGutterRefresh(2);
     }
-    function focusEditorForPendingNote() {
-        const pendingNoteId = contentsView.pendingEditorFocusNoteId === undefined || contentsView.pendingEditorFocusNoteId === null
-                ? ""
-                : String(contentsView.pendingEditorFocusNoteId).trim();
-        const selectedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
-                ? ""
-                : String(contentsView.selectedNoteId).trim();
-        if (pendingNoteId.length === 0 || pendingNoteId !== selectedNoteId || !contentsView.hasSelectedNote)
-            return;
+    function queueInlineFormatWrap(tagName) {
+        return editorSelectionController.queueInlineFormatWrap(tagName);
+    }
+    function refreshMinimapSnapshot() {
+        const nextRows = contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0));
+        const nextSilhouetteHeight = contentsView.minimapSilhouetteHeight(nextRows);
+        const nextTrackHeight = Math.min(contentsView.minimapAvailableTrackHeight, nextSilhouetteHeight);
+        const nextScrollable = contentsView.isMinimapScrollable();
+        const nextViewportHeight = contentsView.minimapViewportHeight(nextTrackHeight);
+        const nextViewportY = contentsView.minimapViewportY(nextTrackHeight, nextViewportHeight);
+        const nextCurrentVisualRow = contentsView.minimapCurrentVisualRow(nextRows);
 
-        contentsView.pendingEditorFocusNoteId = "";
-        Qt.callLater(function () {
-            const activeNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
-                    ? ""
-                    : String(contentsView.selectedNoteId).trim();
-            if (activeNoteId !== pendingNoteId)
-                return;
+        contentsView.minimapVisualRows = nextRows;
+        contentsView.minimapResolvedSilhouetteHeight = nextSilhouetteHeight;
+        contentsView.minimapResolvedTrackHeight = nextTrackHeight;
+        contentsView.minimapScrollable = nextScrollable;
+        contentsView.minimapResolvedViewportHeight = nextViewportHeight;
+        contentsView.minimapResolvedViewportY = nextViewportY;
+        contentsView.minimapResolvedCurrentLineHeight = contentsView.minimapVisualRowPaintHeight(nextCurrentVisualRow);
+        contentsView.minimapResolvedCurrentLineWidth = contentsView.minimapBarWidth(nextCurrentVisualRow.charCount);
+        contentsView.minimapResolvedCurrentLineY = contentsView.minimapVisualRowPaintY(nextCurrentVisualRow);
+    }
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (panelViewModel && panelViewModel.requestViewModelHook)
+            panelViewModel.requestViewModelHook(hookReason);
+        viewHookRequested();
+    }
+    function resetEditorSelectionCache() {
+        editorSelectionController.resetEditorSelectionCache();
+    }
+    function resolveEditorFlickable() {
+        if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
+            return null;
+        const candidate = contentEditor.editorItem.parent.parent;
+        if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
+            return null;
 
-            const cursorPosition = Math.max(0, contentsView.logicalTextLength());
-            contentEditor.forceActiveFocus();
-            if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
-                contentEditor.editorItem.forceActiveFocus();
-            if (contentEditor.cursorPosition !== undefined)
-                contentEditor.cursorPosition = cursorPosition;
-            if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined)
-                contentEditor.editorItem.cursorPosition = cursorPosition;
-        });
+
+    }
+    function resourceTagTextForImportedEntry(entry) {
+        const resourceEntry = entry && typeof entry === "object" ? entry : ({});
+        const resourcePath = resourceEntry.resourcePath !== undefined ? String(resourceEntry.resourcePath).trim() : "";
+        if (resourcePath.length === 0)
+            return "";
+        const resourceType = contentsView.normalizeResourceType(resourceEntry.type);
+        const resourceFormat = contentsView.normalizeResourceFormat(resourceEntry.format);
+        const pathExpression = /\s/.test(resourcePath) ? "path=\"" + resourcePath + "\"" : "path=" + resourcePath;
+        return "<resource type=\"" + resourceType + "\" format=\"" + resourceFormat + "\" " + pathExpression + ">";
     }
     function scheduleEditorFocusForNote(noteId) {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
@@ -742,37 +836,23 @@ Item {
         contentsView.pendingEditorFocusNoteId = normalizedNoteId;
         contentsView.focusEditorForPendingNote();
     }
-    function flushEditorStateAfterInputSettles(attempt) {
-        const retryCount = Math.max(0, Number(attempt) || 0);
-        const activePreeditText = contentEditor && contentEditor.preeditText !== undefined
-                ? String(contentEditor.preeditText === undefined || contentEditor.preeditText === null ? "" : contentEditor.preeditText)
-                : "";
-        const inputMethodBusy = !!(contentEditor
-                                   && ((contentEditor.inputMethodComposing !== undefined && contentEditor.inputMethodComposing)
-                                       || activePreeditText.length > 0));
-        if (inputMethodBusy && retryCount < 6) {
-            Qt.callLater(function () {
-                contentsView.flushEditorStateAfterInputSettles(retryCount + 1);
-            });
-            return;
-        }
-        editorTypingController.handleEditorTextEdited();
-        editorSession.flushPendingEditorText();
-    }
-    function resolveEditorFlickable() {
-        if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
-            return null;
-        const candidate = contentEditor.editorItem.parent.parent;
-        if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
-            return null;
-
-        return candidate;
+    function scheduleEditorRichTextSurfaceSync() {
+        editorSelectionController.scheduleEditorRichTextSurfaceSync();
     }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
         contentsView.gutterRefreshPassesRemaining = Math.max(contentsView.gutterRefreshPassesRemaining, requestedPassCount);
         if (!gutterRefreshTimer.running)
             gutterRefreshTimer.start();
+    }
+    function scheduleMinimapSnapshotRefresh() {
+        if (contentsView.minimapSnapshotRefreshQueued)
+            return;
+        contentsView.minimapSnapshotRefreshQueued = true;
+        Qt.callLater(function () {
+            contentsView.minimapSnapshotRefreshQueued = false;
+            contentsView.refreshMinimapSnapshot();
+        });
     }
     function scrollEditorViewportToMinimapPosition(localY) {
         const flickable = contentsView.editorFlickable;
@@ -790,167 +870,18 @@ Item {
         const nextContentY = Math.max(0, Math.min(maxContentY, documentY - viewportHeight / 2));
         flickable.contentY = nextContentY;
     }
-    function extractResourceDropUrls(drop) {
-        const urls = [];
-        if (drop && drop.urls !== undefined && drop.urls !== null) {
-            if (Array.isArray(drop.urls)) {
-                for (let index = 0; index < drop.urls.length; ++index)
-                    urls.push(drop.urls[index]);
-            } else if (drop.urls.length !== undefined) {
-                for (let listIndex = 0; listIndex < drop.urls.length; ++listIndex)
-                    urls.push(drop.urls[listIndex]);
-            } else {
-                urls.push(drop.urls);
-            }
-        }
-        if (urls.length > 0)
-            return urls;
-        if (!drop || drop.getDataAsString === undefined)
-            return urls;
-        const rawUriList = String(drop.getDataAsString("text/uri-list") || "").trim();
-        if (rawUriList.length === 0)
-            return urls;
-        const uriLines = rawUriList.split(/\r?\n/);
-        for (let lineIndex = 0; lineIndex < uriLines.length; ++lineIndex) {
-            const line = String(uriLines[lineIndex] || "").trim();
-            if (line.length === 0 || line.charAt(0) === "#")
-                continue;
-            urls.push(line);
-        }
-        return urls;
-    }
-    function normalizeResourceType(typeValue) {
-        const normalizedType = typeValue === undefined || typeValue === null
-                ? ""
-                : String(typeValue).trim().toLowerCase();
-        return normalizedType.length > 0 ? normalizedType : "other";
-    }
-    function normalizeResourceFormat(formatValue) {
-        let normalizedFormat = formatValue === undefined || formatValue === null
-                ? ""
-                : String(formatValue).trim().toLowerCase();
-        if (normalizedFormat.length === 0)
-            normalizedFormat = ".bin";
-        if (normalizedFormat.charAt(0) !== ".")
-            normalizedFormat = "." + normalizedFormat;
-        return normalizedFormat;
-    }
-    function resourceTagTextForImportedEntry(entry) {
-        const resourceEntry = entry && typeof entry === "object" ? entry : ({});
-        const resourcePath = resourceEntry.resourcePath !== undefined
-                ? String(resourceEntry.resourcePath).trim()
-                : "";
-        if (resourcePath.length === 0)
-            return "";
-        const resourceType = contentsView.normalizeResourceType(resourceEntry.type);
-        const resourceFormat = contentsView.normalizeResourceFormat(resourceEntry.format);
-        const pathExpression = /\s/.test(resourcePath)
-                ? "path=\"" + resourcePath + "\""
-                : "path=" + resourcePath;
-        return "<resource type=\"" + resourceType + "\" format=\"" + resourceFormat + "\" " + pathExpression + ">";
-    }
-    function canAcceptResourceDropUrls(urls) {
-        if (!contentsView.hasSelectedNote || !contentsView.resourcesImportViewModel)
-            return false;
-        if (contentsView.showDedicatedResourceViewer || contentsView.showFormattedTextRenderer)
-            return false;
-        if (!Array.isArray(urls) || urls.length === 0)
-            return false;
-        if (contentsView.resourcesImportViewModel.canImportUrls === undefined)
-            return false;
-        return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
-    }
-    function persistEditorTextImmediately(nextText) {
-        return editorSelectionController.persistEditorTextImmediately(nextText);
-    }
-    function resetEditorSelectionCache() {
-        editorSelectionController.resetEditorSelectionCache();
-    }
-    function contextMenuEditorSelectionRange() {
-        return editorSelectionController.contextMenuEditorSelectionRange();
-    }
-    function currentSelectedEditorText() {
-        return editorSelectionController.currentSelectedEditorText();
-    }
-    function currentEditorCursorPosition() {
-        return editorSelectionController.currentEditorCursorPosition();
-    }
-    function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
-        return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
-    }
     function selectedEditorRange() {
         return editorSelectionController.selectedEditorRange();
     }
-    function normalizeInlineStyleTag(tagName) {
-        return editorSelectionController.normalizeInlineStyleTag(tagName);
-    }
-    function inlineStyleWrapTags(styleTag) {
-        return editorSelectionController.inlineStyleWrapTags(styleTag);
-    }
-    function handleInlineFormatShortcutKeyPress(event) {
-        return editorSelectionController.handleInlineFormatShortcutKeyPress(event);
-    }
-    function queueInlineFormatWrap(tagName) {
-        return editorSelectionController.queueInlineFormatWrap(tagName);
-    }
-    function normalizeBodySourceForRichTextEditor(sourceText) {
-        return editorSelectionController.normalizeBodySourceForRichTextEditor(sourceText);
-    }
-    function applyEditorRichTextSurface() {
-        editorSelectionController.applyEditorRichTextSurface();
-    }
-    function scheduleEditorRichTextSurfaceSync() {
-        editorSelectionController.scheduleEditorRichTextSurfaceSync();
-    }
-    function openEditorSelectionContextMenu(localX, localY) {
-        return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
-    }
-    function handleSelectionContextMenuEvent(eventName) {
-        editorSelectionController.handleSelectionContextMenuEvent(eventName);
-    }
     function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
         return editorSelectionController.wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange);
-    }
-    function insertImportedResourceTags(importedEntries) {
-        if (!Array.isArray(importedEntries) || importedEntries.length === 0)
-            return false;
-        const currentText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
-        const cursorPosition = Math.max(0, Math.min(
-                                           currentText.length,
-                                           contentEditor && contentEditor.cursorPosition !== undefined
-                                               ? Number(contentEditor.cursorPosition) || 0
-                                               : currentText.length));
-        const tagTexts = [];
-        for (let index = 0; index < importedEntries.length; ++index) {
-            const tagText = contentsView.resourceTagTextForImportedEntry(importedEntries[index]);
-            if (tagText.length > 0)
-                tagTexts.push(tagText);
-        }
-        if (tagTexts.length === 0)
-            return false;
-        const prefix = cursorPosition > 0 && currentText.charAt(cursorPosition - 1) !== "\n" ? "\n" : "";
-        const suffix = cursorPosition < currentText.length && currentText.charAt(cursorPosition) !== "\n" ? "\n" : "";
-        const insertionText = prefix + tagTexts.join("\n") + suffix;
-        const nextText = currentText.slice(0, cursorPosition) + insertionText + currentText.slice(cursorPosition);
-        contentsView.editorText = nextText;
-        editorSession.markLocalEditorAuthority();
-        const saved = contentsView.persistEditorTextImmediately(nextText);
-        if (!saved)
-            editorSession.scheduleEditorPersistence();
-        if (contentEditor && contentEditor.cursorPosition !== undefined)
-            contentEditor.cursorPosition = cursorPosition + insertionText.length;
-        contentsView.editorTextEdited(nextText);
-        bodyResourceRenderer.requestRenderRefresh();
-        return true;
     }
 
     clip: true
 
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
-        editorSession.syncEditorTextFromSelection(
-                    contentsView.selectedNoteId,
-                    contentsView.selectedNoteBodyText);
+        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(4);
@@ -988,9 +919,7 @@ Item {
         contentsView.resetEditorSelectionCache();
         if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
             editorSession.flushPendingEditorText();
-        editorSession.syncEditorTextFromSelection(
-                    contentsView.selectedNoteId,
-                    contentsView.selectedNoteBodyText);
+        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.focusEditorForPendingNote();
@@ -1007,6 +936,18 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
 
+    ContentsEditorSelectionController {
+        id: editorSelectionController
+
+        contentEditor: contentEditor
+        editorSession: editorSession
+        editorViewport: editorViewport
+        selectionBridge: selectionBridge
+        selectionContextMenu: editorSelectionContextMenu
+        textFormatRenderer: textFormatRenderer
+        textMetricsBridge: textMetricsBridge
+        view: contentsView
+    }
     ContentsEditorSelectionBridge {
         id: selectionBridge
 
@@ -1132,9 +1073,7 @@ Item {
         }
 
         ignoreUnknownSignals: true
-        target: contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem
-                ? contentEditor.editorItem.inputItem
-                : null
+        target: contentEditor && contentEditor.editorItem && contentEditor.editorItem.inputItem ? contentEditor.editorItem.inputItem : null
     }
     Connections {
         function onContentYChanged() {
@@ -1152,16 +1091,10 @@ Item {
     ColumnLayout {
         id: drawerView
 
-        readonly property real effectiveDrawerHeight: contentsView.drawerVisible
-                                                     ? contentsView.clampDrawerHeight(contentsView.drawerHeight)
-                                                     : 0
-        readonly property real drawerReservedHeight: contentsView.drawerVisible
-                                                    ? drawerView.effectiveDrawerHeight + contentsView.splitterThickness
-                                                    : 0
-        readonly property real availableDisplayHeight: Math.max(
-                                                           contentsView.minDisplayHeight,
-                                                           (Number(contentsView.height) || 0)
-                                                               - drawerView.drawerReservedHeight)
+        readonly property real availableDisplayHeight: Math.max(contentsView.minDisplayHeight, (Number(contentsView.height) || 0) - drawerView.drawerReservedHeight)
+        readonly property real drawerReservedHeight: contentsView.drawerVisible ? drawerView.effectiveDrawerHeight + contentsView.splitterThickness : 0
+        readonly property real effectiveDrawerHeight: contentsView.drawerVisible ? contentsView.clampDrawerHeight(contentsView.drawerHeight) : 0
+
         anchors.fill: parent
         spacing: LV.Theme.gapNone
 
@@ -1206,18 +1139,16 @@ Item {
                     markerYResolver: function (markerSpec) {
                         return contentsView.markerY(markerSpec);
                     }
-                    visible: !contentsView.showDedicatedResourceViewer
-                             && !contentsView.showPrintEditorLayout
-                             && !contentsView.showFormattedTextRenderer
+                    visible: contentsView.showEditorGutter
                     visibleLineNumbersModel: contentsView.visibleGutterLineEntries
                 }
                 Item {
                     id: editorViewport
 
-                    clip: true
                     Layout.fillHeight: true
                     Layout.fillWidth: true
                     Layout.minimumHeight: contentsView.minEditorHeight
+                    clip: true
 
                     Rectangle {
                         id: printEditorCanvas
@@ -1231,26 +1162,16 @@ Item {
                         Rectangle {
                             id: printEditorPage
 
-                            readonly property real availableWidth: Math.max(
-                                                                      0,
-                                                                      Number(parent ? parent.width : 0)
-                                                                          - contentsView.printPaperHorizontalMargin * 2)
-                            readonly property real fittedWidth: Math.max(
-                                                                    0,
-                                                                    Math.min(
-                                                                        contentsView.printPaperMaxWidth,
-                                                                        printEditorPage.availableWidth))
+                            readonly property real availableWidth: Math.max(0, Number(parent ? parent.width : 0) - contentsView.printPaperHorizontalMargin * 2)
+                            readonly property real fittedWidth: Math.max(0, Math.min(contentsView.printPaperMaxWidth, printEditorPage.availableWidth))
+
                             border.color: contentsView.printPaperBorderColor
                             border.width: 1
                             color: contentsView.printPaperColor
-                            height: contentsView.printPaperAspectRatio > 0
-                                    ? printEditorPage.width / contentsView.printPaperAspectRatio
-                                    : 0
+                            height: contentsView.printPaperAspectRatio > 0 ? printEditorPage.width / contentsView.printPaperAspectRatio : 0
                             radius: LV.Theme.radiusSm
                             width: printEditorPage.fittedWidth
-                            x: Math.max(
-                                   0,
-                                   (Number(parent ? parent.width : 0) - printEditorPage.width) / 2)
+                            x: Math.max(0, (Number(parent ? parent.width : 0) - printEditorPage.width) / 2)
                             y: contentsView.printPaperVerticalMargin
 
                             Canvas {
@@ -1258,11 +1179,6 @@ Item {
                                 visible: contentsView.showPrintMarginGuides
 
                                 onHeightChanged: requestPaint()
-                                onVisibleChanged: {
-                                    if (visible)
-                                        requestPaint();
-                                }
-                                onWidthChanged: requestPaint()
                                 onPaint: {
                                     const ctx = getContext("2d");
                                     ctx.clearRect(0, 0, width, height);
@@ -1300,41 +1216,22 @@ Item {
                                     }
                                     ctx.stroke();
                                 }
+                                onVisibleChanged: {
+                                    if (visible)
+                                        requestPaint();
+                                }
+                                onWidthChanged: requestPaint()
                             }
                         }
                     }
                     ContentsInlineFormatEditor {
                         id: contentEditor
 
+                        anchors.bottomMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(parent ? parent.height : 0) || 0) - ((Number(printEditorPage.y) || 0) + (Number(printEditorPage.height) || 0) - contentsView.printGuideVerticalInset)) : 0
                         anchors.fill: parent
-                        anchors.leftMargin: contentsView.showPrintEditorLayout
-                                            ? Math.max(
-                                                  0,
-                                                  (Number(printEditorPage.x) || 0)
-                                                      + contentsView.printGuideHorizontalInset)
-                                            : 0
-                        anchors.rightMargin: contentsView.showPrintEditorLayout
-                                             ? Math.max(
-                                                   0,
-                                                   (Number(parent ? parent.width : 0) || 0)
-                                                       - ((Number(printEditorPage.x) || 0)
-                                                          + (Number(printEditorPage.width) || 0)
-                                                          - contentsView.printGuideHorizontalInset))
-                                             : 0
-                        anchors.topMargin: contentsView.showPrintEditorLayout
-                                           ? Math.max(
-                                                 0,
-                                                 (Number(printEditorPage.y) || 0)
-                                                     + contentsView.printGuideVerticalInset)
-                                           : contentsView.editorDocumentStartY
-                        anchors.bottomMargin: contentsView.showPrintEditorLayout
-                                              ? Math.max(
-                                                    0,
-                                                    (Number(parent ? parent.height : 0) || 0)
-                                                        - ((Number(printEditorPage.y) || 0)
-                                                           + (Number(printEditorPage.height) || 0)
-                                                           - contentsView.printGuideVerticalInset))
-                                              : 0
+                        anchors.leftMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(printEditorPage.x) || 0) + contentsView.printGuideHorizontalInset) : 0
+                        anchors.rightMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(parent ? parent.width : 0) || 0) - ((Number(printEditorPage.x) || 0) + (Number(printEditorPage.width) || 0) - contentsView.printGuideHorizontalInset)) : 0
+                        anchors.topMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(printEditorPage.y) || 0) + contentsView.printGuideVerticalInset) : contentsView.editorDocumentStartY
                         autoFocusOnPress: true
                         backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         backgroundColorDisabled: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
@@ -1343,29 +1240,15 @@ Item {
                         backgroundColorPressed: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         centeredTextHeight: contentsView.editorTextLineBoxHeight
                         cornerRadius: 0
-                        editorHeight: contentsView.showPrintEditorLayout
-                                      ? Math.max(
-                                            0,
-                                            (Number(printEditorPage.height) || 0)
-                                                - contentsView.printGuideVerticalInset * 2)
-                                      : contentsView.editorSurfaceHeight
+                        editorHeight: contentsView.showPrintEditorLayout ? Math.max(0, (Number(printEditorPage.height) || 0) - contentsView.printGuideVerticalInset * 2) : contentsView.editorSurfaceHeight
                         enforceModeDefaults: false
-                        fieldMinHeight: contentsView.showPrintEditorLayout
-                                        ? Math.max(
-                                              1,
-                                              (Number(printEditorPage.height) || 0)
-                                                  - contentsView.printGuideVerticalInset * 2)
-                                        : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
+                        fieldMinHeight: contentsView.showPrintEditorLayout ? Math.max(1, (Number(printEditorPage.height) || 0) - contentsView.printGuideVerticalInset * 2) : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
                         fontFamily: LV.Theme.fontBody
                         fontLetterSpacing: 0
-                        fontPixelSize: 12
+                        fontPixelSize: contentsView.effectiveEditorFontPixelSize
                         fontWeight: Font.Medium
-                        insetHorizontal: contentsView.showPrintEditorLayout
-                                         ? 0
-                                         : contentsView.editorHorizontalInset
-                        insetVertical: contentsView.showPrintEditorLayout
-                                       ? 0
-                                       : contentsView.editorBottomInset
+                        insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
+                        insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
                         placeholderText: ""
                         selectByMouse: true
                         selectedTextColor: LV.Theme.textPrimary
@@ -1374,18 +1257,14 @@ Item {
                         showRenderedOutput: true
                         showScrollBar: false
                         text: contentsView.renderedEditorText
-                        textColor: contentsView.showPrintEditorLayout
-                                   ? contentsView.printPaperTextColor
-                                   : LV.Theme.bodyColor
+                        textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
                         textFormat: TextEdit.RichText
-                        visible: !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        visible: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
 
-                        Keys.onPressed: function(event) {
+                        Keys.onPressed: function (event) {
                             contentsView.handleInlineFormatShortcutKeyPress(event);
                         }
-
                         onFocusedChanged: {
                             if (!focused)
                                 contentsView.flushEditorStateAfterInputSettles(0);
@@ -1397,17 +1276,8 @@ Item {
                     Flickable {
                         id: formattedPreviewViewport
 
-                        anchors.fill: parent
-                        clip: true
-                        readonly property real horizontalInset: contentsView.showPrintEditorLayout
-                                                               ? (Number(printEditorPage.x) || 0) + contentsView.printGuideHorizontalInset
-                                                               : contentsView.editorHorizontalInset
-                        readonly property real topInset: contentsView.showPrintEditorLayout
-                                                        ? (Number(printEditorPage.y) || 0) + contentsView.printGuideVerticalInset
-                                                        : contentsView.editorDocumentStartY
-                        readonly property real bottomInset: contentsView.showPrintEditorLayout
-                                                           ? contentsView.printGuideVerticalInset
-                                                           : contentsView.editorBottomInset
+                        readonly property real bottomInset: contentsView.showPrintEditorLayout ? contentsView.printGuideVerticalInset : contentsView.editorBottomInset
+                        readonly property real horizontalInset: contentsView.showPrintEditorLayout ? (Number(printEditorPage.x) || 0) + contentsView.printGuideHorizontalInset : contentsView.editorHorizontalInset
                         readonly property real textWidth: {
                             if (contentsView.showPrintEditorLayout) {
                                 const pageWidth = Number(printEditorPage.width) || 0;
@@ -1415,11 +1285,11 @@ Item {
                             }
                             return Math.max(0, formattedPreviewViewport.width - contentsView.editorHorizontalInset * 2);
                         }
-                        contentHeight: Math.max(
-                                           height,
-                                           Math.max(0, Number(formattedPreviewText.paintedHeight) || 0)
-                                               + formattedPreviewViewport.topInset
-                                               + formattedPreviewViewport.bottomInset)
+                        readonly property real topInset: contentsView.showPrintEditorLayout ? (Number(printEditorPage.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
+
+                        anchors.fill: parent
+                        clip: true
+                        contentHeight: Math.max(height, Math.max(0, Number(formattedPreviewText.paintedHeight) || 0) + formattedPreviewViewport.topInset + formattedPreviewViewport.bottomInset)
                         contentWidth: width
                         interactive: contentHeight > height
                         visible: contentsView.showFormattedTextRenderer
@@ -1428,12 +1298,10 @@ Item {
                         Text {
                             id: formattedPreviewText
 
-                            color: contentsView.showPrintEditorLayout
-                                   ? contentsView.printPaperTextColor
-                                   : LV.Theme.bodyColor
+                            color: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
                             font.family: LV.Theme.fontBody
                             font.letterSpacing: 0
-                            font.pixelSize: 12
+                            font.pixelSize: contentsView.effectiveEditorFontPixelSize
                             font.weight: Font.Medium
                             text: textFormatRenderer.renderedHtml
                             textFormat: Text.RichText
@@ -1449,18 +1317,29 @@ Item {
                         border.width: contentsView.resourceDropActive ? 1 : 0
                         color: contentsView.resourceDropActive ? "#1A9DA0A8" : "transparent"
                         radius: LV.Theme.radiusSm
-                        visible: contentsView.resourceDropActive
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        visible: contentsView.resourceDropActive && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         z: 4
                     }
                     DropArea {
                         anchors.fill: parent
-                        enabled: !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         keys: ["text/uri-list"]
                         z: 5
 
+                        onDropped: function (drop) {
+                            const dropUrls = contentsView.extractResourceDropUrls(drop);
+                            if (!contentsView.canAcceptResourceDropUrls(dropUrls)) {
+                                if (drop)
+                                    drop.accepted = false;
+                                contentsView.resourceDropActive = false;
+                                return;
+                            }
+                            const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditor(dropUrls);
+                            const inserted = contentsView.insertImportedResourceTags(importedEntries);
+                            if (drop)
+                                drop.accepted = inserted;
+                            contentsView.resourceDropActive = false;
+                        }
                         onEntered: function (drag) {
                             const dropUrls = contentsView.extractResourceDropUrls(drag);
                             const accepted = contentsView.canAcceptResourceDropUrls(dropUrls);
@@ -1478,136 +1357,99 @@ Item {
                                 drag.accepted = accepted;
                             contentsView.resourceDropActive = accepted;
                         }
-                        onDropped: function (drop) {
-                            const dropUrls = contentsView.extractResourceDropUrls(drop);
-                            if (!contentsView.canAcceptResourceDropUrls(dropUrls)) {
-                                if (drop)
-                                    drop.accepted = false;
-                                contentsView.resourceDropActive = false;
-                                return;
-                            }
-                            const importedEntries = contentsView.resourcesImportViewModel.importUrlsForEditor(dropUrls);
-                            const inserted = contentsView.insertImportedResourceTags(importedEntries);
-                            if (drop)
-                                drop.accepted = inserted;
-                            contentsView.resourceDropActive = false;
-                        }
                     }
                     MouseArea {
-                        anchors.fill: parent
+                        property real lastPressX: 0
+                        property real lastPressY: 0
+
                         acceptedButtons: Qt.RightButton
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        anchors.fill: parent
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         hoverEnabled: false
                         preventStealing: false
                         propagateComposedEvents: true
                         z: 6
-                        property real lastPressX: 0
-                        property real lastPressY: 0
 
-                        onPressed: function(mouse) {
+                        onClicked: function (mouse) {
+                            if (mouse.button !== Qt.RightButton)
+                                return;
+                            Qt.callLater(function () {
+                                contentsView.openEditorSelectionContextMenu(lastPressX, lastPressY);
+                            });
+                        }
+                        onPressed: function (mouse) {
                             if (mouse.button !== Qt.RightButton)
                                 return;
                             lastPressX = mouse.x;
                             lastPressY = mouse.y;
                         }
-                        onClicked: function(mouse) {
-                            if (mouse.button !== Qt.RightButton)
-                                return;
-                            Qt.callLater(function () {
-                                contentsView.openEditorSelectionContextMenu(
-                                            lastPressX,
-                                            lastPressY);
-                            });
-                        }
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+B"
 
                         onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+B"
 
                         onActivated: contentsView.queueInlineFormatWrap("bold")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+I"
 
                         onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+I"
 
                         onActivated: contentsView.queueInlineFormatWrap("italic")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+U"
 
                         onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+U"
 
                         onActivated: contentsView.queueInlineFormatWrap("underline")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Shift+X"
 
                         onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Shift+X"
 
                         onActivated: contentsView.queueInlineFormatWrap("strikethrough")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
                     }
                     Shortcut {
                         context: Qt.WindowShortcut
-                        enabled: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
@@ -1621,32 +1463,15 @@ Item {
                         modal: false
                         parent: Controls.Overlay.overlay
 
-                        onItemEventTriggered: function(eventName, payload, index, item) {
+                        onItemEventTriggered: function (eventName, payload, index, item) {
                             contentsView.handleSelectionContextMenuEvent(eventName);
                         }
                     }
                     // Shared desktop/mobile contract: the outer editor surface owns the 16px top spacer, so LVRS top centering stays disabled.
                     Binding {
-                        property: "topPadding"
+                        "topPadding"
                         target: contentEditor.editorItem
                         value: contentsView.editorDocumentTopPadding
-                    }
-                    LV.Label {
-                        anchors.left: parent.left
-                        anchors.leftMargin: contentsView.showPrintEditorLayout
-                                           ? printEditorPage.x + contentsView.printGuideHorizontalInset
-                                           : contentsView.editorHorizontalInset
-                        anchors.top: parent.top
-                        anchors.topMargin: contentsView.showPrintEditorLayout
-                                          ? printEditorPage.y + contentsView.printGuideVerticalInset
-                                          : contentsView.editorDocumentStartY
-                        color: LV.Theme.textTertiary
-                        style: body
-                        text: "Start typing here"
-                        visible: contentEditor.empty
-                                 && contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
                     }
                     ContentsResourceViewer {
                         id: dedicatedResourceViewer
@@ -1666,10 +1491,7 @@ Item {
                         anchors.right: parent.right
                         anchors.rightMargin: contentsView.editorHorizontalInset
                         enabled: visible
-                        visible: contentsView.hasSelectedNote
-                                 && bodyResourceRenderer.resourceCount > 0
-                                 && !contentsView.showPrintEditorLayout
-                                 && !contentsView.showDedicatedResourceViewer
+                        visible: contentsView.hasSelectedNote && bodyResourceRenderer.resourceCount > 0 && !contentsView.showPrintEditorLayout && !contentsView.showDedicatedResourceViewer
                         z: 2
 
                         LV.VStack {
@@ -1684,15 +1506,9 @@ Item {
                                 delegate: Rectangle {
                                     id: resourceRenderCard
 
-                                    readonly property var resourceEntry: modelData && typeof modelData === "object" ? modelData : ({})
                                     readonly property string resourceDisplayName: resourceEntry.displayName !== undefined ? String(resourceEntry.displayName) : ""
-                                    readonly property string resourcePreviewText: resourceEntry.previewText !== undefined ? String(resourceEntry.previewText) : ""
-                                    readonly property string resourceType: resourceEntry.type !== undefined ? String(resourceEntry.type) : ""
+                                    readonly property var resourceEntry: modelData && typeof modelData === "object" ? modelData : ({})
                                     readonly property string resourceFormat: resourceEntry.format !== undefined ? String(resourceEntry.format) : ""
-                                    readonly property string resourcePath: resourceEntry.resourcePath !== undefined ? String(resourceEntry.resourcePath) : ""
-                                    readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
-                                    readonly property string resourceSource: resourceEntry.source !== undefined ? String(resourceEntry.source) : ""
-                                    readonly property bool resourceOpenable: resourceRenderCard.resourceSource.length > 0
                                     readonly property string resourceModeTitle: {
                                         if (resourceRenderCard.resourceRenderMode === "image")
                                             return "Image Resource";
@@ -1706,6 +1522,13 @@ Item {
                                             return "Text Resource";
                                         return "Document Resource";
                                     }
+                                    readonly property bool resourceOpenable: resourceRenderCard.resourceSource.length > 0
+                                    readonly property string resourcePath: resourceEntry.resourcePath !== undefined ? String(resourceEntry.resourcePath) : ""
+                                    readonly property string resourcePreviewText: resourceEntry.previewText !== undefined ? String(resourceEntry.previewText) : ""
+                                    readonly property string resourceRenderMode: resourceEntry.renderMode !== undefined ? String(resourceEntry.renderMode) : ""
+                                    readonly property string resourceSource: resourceEntry.source !== undefined ? String(resourceEntry.source) : ""
+                                    readonly property string resourceType: resourceEntry.type !== undefined ? String(resourceEntry.type) : ""
+
                                     border.color: contentsView.resourceRenderBorderColor
                                     border.width: 1
                                     color: contentsView.resourceRenderCardColor
@@ -1725,8 +1548,7 @@ Item {
                                             Layout.preferredWidth: 120
                                             color: "#CC0F141A"
                                             radius: LV.Theme.radiusSm
-                                            visible: resourceRenderCard.resourceRenderMode === "image"
-                                                     || resourceRenderCard.resourceRenderMode === "text"
+                                            visible: resourceRenderCard.resourceRenderMode === "image" || resourceRenderCard.resourceRenderMode === "text"
 
                                             Image {
                                                 anchors.fill: parent
@@ -1734,9 +1556,8 @@ Item {
                                                 asynchronous: true
                                                 cache: true
                                                 fillMode: Image.PreserveAspectFit
-                                                source: resourceRenderCard.resourceSource
-                                                visible: resourceRenderCard.resourceRenderMode === "image"
-                                                         && resourceRenderCard.resourceSource.length > 0
+                                                resourceRenderCard.resourceSource
+                                                visible: resourceRenderCard.resourceRenderMode === "image" && resourceRenderCard.resourceSource.length > 0
                                             }
                                             LV.Label {
                                                 anchors.fill: parent
@@ -1744,9 +1565,7 @@ Item {
                                                 color: LV.Theme.textSecondary
                                                 elide: Text.ElideRight
                                                 style: body
-                                                text: resourceRenderCard.resourcePreviewText.length > 0
-                                                      ? resourceRenderCard.resourcePreviewText
-                                                      : "No text preview"
+                                                text: resourceRenderCard.resourcePreviewText.length > 0 ? resourceRenderCard.resourcePreviewText : "No text preview"
                                                 visible: resourceRenderCard.resourceRenderMode === "text"
                                                 wrapMode: Text.Wrap
                                             }
@@ -1758,9 +1577,7 @@ Item {
                                             LV.Label {
                                                 color: LV.Theme.textPrimary
                                                 style: body
-                                                text: resourceRenderCard.resourceDisplayName.length > 0
-                                                      ? resourceRenderCard.resourceDisplayName
-                                                      : resourceRenderCard.resourceModeTitle
+                                                text: resourceRenderCard.resourceDisplayName.length > 0 ? resourceRenderCard.resourceDisplayName : resourceRenderCard.resourceModeTitle
                                             }
                                             LV.Label {
                                                 color: LV.Theme.textSecondary
@@ -1770,8 +1587,7 @@ Item {
                                             LV.Label {
                                                 color: LV.Theme.textSecondary
                                                 style: body
-                                                text: "type=" + resourceRenderCard.resourceType + "  format="
-                                                      + resourceRenderCard.resourceFormat
+                                                text: "type=" + resourceRenderCard.resourceType + "  format=" + resourceRenderCard.resourceFormat
                                             }
                                             LV.Label {
                                                 color: LV.Theme.textTertiary
@@ -1824,9 +1640,7 @@ Item {
                     scrollToMinimapPositionHandler: function (localY) {
                         contentsView.scrollEditorViewportToMinimapPosition(localY);
                     }
-                    visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer
-                             && !contentsView.showPrintEditorLayout
-                             && !contentsView.showFormattedTextRenderer
+                    visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
                 }
             }
         }

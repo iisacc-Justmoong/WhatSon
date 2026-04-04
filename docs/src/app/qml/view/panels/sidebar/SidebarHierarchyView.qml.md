@@ -130,7 +130,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   hierarchy-item locator. This keeps rename placement tied to the selected folder, not whichever generated row happens
   to be first in the rebuilt tree.
 - Note-drop preview state is represented by `noteDropHoverIndex`.
-- The `DropArea` at the bottom of the file routes pointer payloads into `noteIdFromDragPayload(...)`, which now ultimately lives in the note-drop controller helper.
+- The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
+  that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
+  drop.
 
 ## Architectural Reading
 This file should be read as a composed view, not as the place where hierarchy business rules live. If a change requires concrete knowledge about whether a domain can rename, reorder, or accept notes, the answer should come from the bridges and capability interfaces, not from hard-coded QML assumptions.
@@ -151,3 +153,4 @@ This file should be read as a composed view, not as the place where hierarchy bu
   - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.
   - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.
   - Chevron expand/collapse must not move the primary active selection to an unrelated sibling row.
+  - Dropping a multi-selected note-list group onto a folder must attempt folder assignment for every dragged note id.

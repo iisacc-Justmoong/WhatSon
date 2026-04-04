@@ -1,5 +1,6 @@
 #include "NoteListModelContractBridge.hpp"
 
+#include <QAbstractItemModel>
 #include <QMetaObject>
 #include <QMetaProperty>
 
@@ -9,6 +10,25 @@ namespace
 {
     constexpr auto kSetSearchTextSignature = "setSearchText(QString)";
     constexpr auto kSetCurrentIndexSignature = "setCurrentIndex(int)";
+
+    int roleForName(const QAbstractItemModel* model, const QByteArray& roleName)
+    {
+        if (model == nullptr || roleName.isEmpty())
+        {
+            return -1;
+        }
+
+        const QHash<int, QByteArray> roleNames = model->roleNames();
+        for (auto iterator = roleNames.constBegin(); iterator != roleNames.constEnd(); ++iterator)
+        {
+            if (iterator.value() == roleName)
+            {
+                return iterator.key();
+            }
+        }
+
+        return -1;
+    }
 }
 
 NoteListModelContractBridge::NoteListModelContractBridge(QObject* parent)
@@ -120,6 +140,39 @@ int NoteListModelContractBridge::readCurrentIndex() const
 QString NoteListModelContractBridge::readCurrentNoteId() const
 {
     return currentNoteId();
+}
+
+QString NoteListModelContractBridge::readNoteIdAt(int index) const
+{
+    const auto* model = qobject_cast<QAbstractItemModel*>(m_noteListModel.data());
+    if (model == nullptr)
+    {
+        return {};
+    }
+
+    const int normalizedIndex = std::max(-1, index);
+    if (normalizedIndex < 0 || normalizedIndex >= model->rowCount())
+    {
+        return {};
+    }
+
+    const QModelIndex modelIndex = model->index(normalizedIndex, 0);
+    if (!modelIndex.isValid())
+    {
+        return {};
+    }
+
+    int noteIdRole = roleForName(model, QByteArrayLiteral("noteId"));
+    if (noteIdRole < 0)
+    {
+        noteIdRole = roleForName(model, QByteArrayLiteral("id"));
+    }
+    if (noteIdRole < 0)
+    {
+        return {};
+    }
+
+    return modelIndex.data(noteIdRole).toString().trimmed();
 }
 
 bool NoteListModelContractBridge::pushCurrentIndex(int index)

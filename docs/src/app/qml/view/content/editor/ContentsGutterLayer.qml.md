@@ -27,6 +27,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 ## Collaborators
 
 - `ContentsDisplayView.qml`: computes the visible line-entry snapshot and normalized marker list.
+- `ContentsDisplayView.qml` also decides whether the gutter should exist at all; mobile editor surfaces now suppress the
+  gutter instead of reserving a transparent gutter column.
 - `ContentsGutterMarkerBridge`: prepares external marker payloads before the parent view hands them to the gutter.
 
 ## Regression Checks
@@ -34,3 +36,4 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 - Line numbers should remain vertically stable while scrolling rich text with wrapped lines.
 - Active line styling should track the current cursor line without creating repeated binding-loop warnings.
 - Marker pills should remain aligned with the same logical lines as the line-number snapshot.
+- Mobile editor routes should not instantiate visible gutter chrome or reserve gutter width.

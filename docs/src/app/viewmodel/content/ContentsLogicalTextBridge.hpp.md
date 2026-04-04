@@ -20,6 +20,8 @@
   raw editor source text (`m_text`).
 - `logicalText` is now exposed to QML so selection logic can compare the live highlighted substring against the same
   plain-text projection used by gutter/minimap metrics.
+- That logical projection may intentionally differ from the stored source text for editor-only display normalization
+  such as unordered-list bullets (`- ` / `* ` / `+ ` -> `• `).
 - `normalizeLogicalText(...)` is the private normalization entrypoint used before line-offset
   generation so QML gutter queries consume plain-text-aligned offsets.
 - `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert
@@ -50,3 +52,8 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+
+## Regression Checks
+
+- When the editor surface renders unordered-list markdown as `• `, `logicalText` must expose the same `• ` prefix so
+  QML selection offsets still match the editable RichText surface.

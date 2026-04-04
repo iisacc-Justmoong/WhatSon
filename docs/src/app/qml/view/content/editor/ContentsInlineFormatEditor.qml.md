@@ -45,6 +45,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   unchanged and only the RichText markup wrapper changed (for example after inline formatting wraps).
 - Selection/formatting controllers should prefer these wrapper-level Qt helpers over re-walking nested `editorItem` /
   `inputItem` objects.
+- Typography is host-driven through `fontPixelSize`; the current shared policy is `13px` on desktop and `15px` on
+  mobile via `ContentsDisplayView.qml`.
 
 ## Tests
 
@@ -56,3 +58,5 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
   - Hangul IME composition must not delete previously committed text when a syllable block is assembled
   - Hangul IME composition must not leave split jamo behind after the committed syllable lands
+  - the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
+    `12px` default

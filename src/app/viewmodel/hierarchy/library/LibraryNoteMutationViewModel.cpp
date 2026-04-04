@@ -1,6 +1,28 @@
 #include "LibraryNoteMutationViewModel.hpp"
 
+#include <QStringList>
 #include <QtGlobal>
+
+namespace
+{
+    QStringList normalizedUniqueNoteIds(const QVariantList& noteIds)
+    {
+        QStringList normalized;
+        normalized.reserve(noteIds.size());
+        for (const QVariant& noteIdValue : noteIds)
+        {
+            const QString normalizedNoteId = noteIdValue.toString().trimmed();
+            if (normalizedNoteId.isEmpty() || normalized.contains(normalizedNoteId))
+            {
+                continue;
+            }
+
+            normalized.push_back(normalizedNoteId);
+        }
+
+        return normalized;
+    }
+}
 
 LibraryNoteMutationViewModel::LibraryNoteMutationViewModel(QObject* parent)
     : QObject(parent)
@@ -69,9 +91,39 @@ bool LibraryNoteMutationViewModel::clearNoteFoldersById(const QString& noteId)
     return m_sourceCapability != nullptr && m_sourceCapability->clearNoteFoldersById(noteId);
 }
 
+bool LibraryNoteMutationViewModel::clearNoteFoldersByIds(const QVariantList& noteIds)
+{
+    const QStringList normalizedNoteIds = normalizedUniqueNoteIds(noteIds);
+    bool clearedAny = false;
+    for (const QString& noteId : normalizedNoteIds)
+    {
+        if (clearNoteFoldersById(noteId))
+        {
+            clearedAny = true;
+        }
+    }
+
+    return clearedAny;
+}
+
 bool LibraryNoteMutationViewModel::deleteNoteById(const QString& noteId)
 {
     return m_sourceCapability != nullptr && m_sourceCapability->deleteNoteById(noteId);
+}
+
+bool LibraryNoteMutationViewModel::deleteNotesByIds(const QVariantList& noteIds)
+{
+    const QStringList normalizedNoteIds = normalizedUniqueNoteIds(noteIds);
+    bool deletedAny = false;
+    for (const QString& noteId : normalizedNoteIds)
+    {
+        if (deleteNoteById(noteId))
+        {
+            deletedAny = true;
+        }
+    }
+
+    return deletedAny;
 }
 
 void LibraryNoteMutationViewModel::handleSourceDestroyed()

@@ -5,6 +5,7 @@
 #include <QMetaObject>
 #include <QObject>
 #include <QPointer>
+#include <QVariantList>
 
 class LibraryNoteMutationViewModel final : public QObject
 {
@@ -19,7 +20,9 @@ public:
 
     Q_INVOKABLE bool createEmptyNote();
     Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId);
+    Q_INVOKABLE bool clearNoteFoldersByIds(const QVariantList& noteIds);
     Q_INVOKABLE bool deleteNoteById(const QString& noteId);
+    Q_INVOKABLE bool deleteNotesByIds(const QVariantList& noteIds);
 
 signals:
     void sourceViewModelChanged();

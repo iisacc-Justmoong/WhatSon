@@ -2,6 +2,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 
 #include <QChar>
+#include <QStringList>
 #include <QStringView>
 #include <algorithm>
 #include <limits>
@@ -97,6 +98,50 @@ namespace
         }
 
         return 0;
+    }
+
+    QString normalizeMarkdownDisplayPlainText(QString text)
+    {
+        text = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(text);
+        if (text.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        bool insideCodeFence = false;
+        for (QString& line : lines)
+        {
+            int cursor = 0;
+            while (cursor < line.size()
+                   && (line.at(cursor) == QLatin1Char(' ')
+                       || line.at(cursor) == QLatin1Char('\t')))
+            {
+                ++cursor;
+            }
+
+            if (line.mid(cursor).startsWith(QStringLiteral("```")))
+            {
+                insideCodeFence = !insideCodeFence;
+                continue;
+            }
+
+            if (insideCodeFence)
+            {
+                continue;
+            }
+
+            if (cursor + 1 < line.size()
+                && (line.at(cursor) == QLatin1Char('-')
+                    || line.at(cursor) == QLatin1Char('*')
+                    || line.at(cursor) == QLatin1Char('+'))
+                && line.at(cursor + 1).isSpace())
+            {
+                line[cursor] = QChar(0x2022);
+            }
+        }
+
+        return lines.join(QLatin1Char('\n'));
     }
 } // namespace
 
@@ -212,7 +257,8 @@ QString ContentsLogicalTextBridge::normalizeLogicalText(const QString& text)
 {
     const QString serializedBodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), text);
-    return WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
+    return normalizeMarkdownDisplayPlainText(
+        WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument));
 }
 
 QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& text)

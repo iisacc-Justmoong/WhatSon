@@ -1,6 +1,7 @@
 #include "ContentsTextFormatRenderer.hpp"
 #include "ContentsTextHighlightRenderer.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteMarkdownStyleObject.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -17,6 +18,12 @@
 
 namespace
 {
+    enum class LiteralRenderMode
+    {
+        MarkdownAware,
+        SourceEditing,
+    };
+
     int boundedQStringSize(const QString& text) noexcept
     {
         constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
@@ -53,6 +60,174 @@ namespace
         text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
         text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
         return text;
+    }
+
+    QString whitespaceToHtml(const QString& value)
+    {
+        QString html;
+        html.reserve(value.size() * 6);
+        for (const QChar ch : value)
+        {
+            if (ch == QLatin1Char(' '))
+            {
+                html += QStringLiteral("&nbsp;");
+            }
+            else if (ch == QLatin1Char('\t'))
+            {
+                html += QStringLiteral("&nbsp;&nbsp;&nbsp;&nbsp;");
+            }
+            else
+            {
+                html += escapeHtmlText(QString(ch));
+            }
+        }
+        return html;
+    }
+
+    int markdownLinkTokenLengthAt(const QString& text, const int startOffset)
+    {
+        if (startOffset < 0
+            || startOffset >= text.size()
+            || text.at(startOffset) != QLatin1Char('['))
+        {
+            return 0;
+        }
+
+        const int labelEnd = text.indexOf(QLatin1Char(']'), startOffset + 1);
+        if (labelEnd <= startOffset + 1
+            || labelEnd + 1 >= text.size()
+            || text.at(labelEnd + 1) != QLatin1Char('('))
+        {
+            return 0;
+        }
+
+        const int urlEnd = text.indexOf(QLatin1Char(')'), labelEnd + 2);
+        if (urlEnd <= labelEnd + 2)
+        {
+            return 0;
+        }
+
+        const QString label = text.mid(startOffset + 1, labelEnd - startOffset - 1);
+        const QString url = text.mid(labelEnd + 2, urlEnd - labelEnd - 2).trimmed();
+        if (label.contains(QLatin1Char('\n'))
+            || label.contains(QLatin1Char('\r'))
+            || url.isEmpty()
+            || url.contains(QLatin1Char('\n'))
+            || url.contains(QLatin1Char('\r')))
+        {
+            return 0;
+        }
+
+        return urlEnd - startOffset + 1;
+    }
+
+    int inlineCodeTokenLengthAt(const QString& text, const int startOffset)
+    {
+        if (startOffset < 0
+            || startOffset >= text.size()
+            || text.at(startOffset) != QLatin1Char('`'))
+        {
+            return 0;
+        }
+
+        const int endOffset = text.indexOf(QLatin1Char('`'), startOffset + 1);
+        if (endOffset <= startOffset + 1)
+        {
+            return 0;
+        }
+
+        return endOffset - startOffset + 1;
+    }
+
+    QString renderStyledLiteralTextToHtml(const QString& text, const LiteralRenderMode renderMode)
+    {
+        if (text.isEmpty())
+        {
+            return {};
+        }
+
+        QString html;
+        html.reserve(text.size() * 2);
+
+        int cursor = 0;
+        while (cursor < text.size())
+        {
+            const int codeTokenLength = inlineCodeTokenLengthAt(text, cursor);
+            if (renderMode == LiteralRenderMode::MarkdownAware && codeTokenLength > 0)
+            {
+                const QString token = text.mid(cursor, codeTokenLength);
+                html += WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                    WhatSon::WhatSonNoteMarkdownStyleObject::Role::InlineCode,
+                    escapeHtmlText(token));
+                cursor += codeTokenLength;
+                continue;
+            }
+
+            const int linkTokenLength = markdownLinkTokenLengthAt(text, cursor);
+            if (renderMode == LiteralRenderMode::MarkdownAware && linkTokenLength > 0)
+            {
+                const QString token = text.mid(cursor, linkTokenLength);
+                html += WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                    WhatSon::WhatSonNoteMarkdownStyleObject::Role::LinkLiteral,
+                    escapeHtmlText(token));
+                cursor += linkTokenLength;
+                continue;
+            }
+
+            html += escapeHtmlText(QString(text.at(cursor)));
+            ++cursor;
+        }
+
+        return html;
+    }
+
+    QString renderInlineStyleEditingSurfaceHtml(const QString& sourceText);
+
+    QString normalizeRenderedMarkdownGlyphsToSource(QString text)
+    {
+        text = normalizeLineEndings(text);
+        if (text.isEmpty())
+        {
+            return {};
+        }
+
+        QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        bool insideCodeFence = false;
+        for (QString& line : lines)
+        {
+            int cursor = 0;
+            while (cursor < line.size()
+                   && (line.at(cursor) == QLatin1Char(' ')
+                       || line.at(cursor) == QLatin1Char('\t')))
+            {
+                ++cursor;
+            }
+
+            if (line.mid(cursor).startsWith(QStringLiteral("```")))
+            {
+                insideCodeFence = !insideCodeFence;
+                continue;
+            }
+
+            if (insideCodeFence)
+            {
+                continue;
+            }
+
+            if (cursor + 1 < line.size()
+                && line.at(cursor) == QChar(0x2022)
+                && line.at(cursor + 1).isSpace())
+            {
+                const QString canonicalMarker =
+                    WhatSon::WhatSonNoteMarkdownStyleObject::canonicalUnorderedListSourceMarker();
+                if (!canonicalMarker.isEmpty())
+                {
+                    line.replace(cursor, 1, canonicalMarker);
+                }
+            }
+        }
+
+        return lines.join(QLatin1Char('\n'));
     }
 
     QString canonicalInlineStyleTagName(const QString& elementName)
@@ -414,7 +589,9 @@ namespace
         }
     }
 
-    QString renderInlineTaggedTextToHtml(const QString& sourceText)
+    QString renderInlineTaggedTextFragmentToHtml(
+        const QString& sourceText,
+        const LiteralRenderMode renderMode = LiteralRenderMode::MarkdownAware)
     {
         const QString normalizedText = normalizeLineEndings(sourceText);
         if (normalizedText.isEmpty())
@@ -443,7 +620,7 @@ namespace
 
             if (tagStart > cursor)
             {
-                html += escapeHtmlText(normalizedText.mid(cursor, tagStart - cursor));
+                html += renderStyledLiteralTextToHtml(normalizedText.mid(cursor, tagStart - cursor), renderMode);
             }
 
             const QString fullTagToken = match.captured(0);
@@ -534,7 +711,7 @@ namespace
 
         if (cursor < normalizedText.size())
         {
-            html += escapeHtmlText(normalizedText.mid(cursor));
+            html += renderStyledLiteralTextToHtml(normalizedText.mid(cursor), renderMode);
         }
 
         for (int index = openStyleTags.size() - 1; index >= 0; --index)
@@ -542,11 +719,10 @@ namespace
             html += closingEditorTagForStyle(openStyleTags.at(index));
         }
 
-        html.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
         return html;
     }
 
-    QString normalizeInlineStyleAliasesForEditorSurface(const QString& sourceText)
+    QString renderMarkdownAwareTextToHtml(const QString& sourceText)
     {
         const QString normalizedText = normalizeLineEndings(sourceText);
         if (normalizedText.isEmpty())
@@ -554,122 +730,134 @@ namespace
             return {};
         }
 
-        static const QRegularExpression tagPattern(
-            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+        static const QRegularExpression unorderedListPattern(
+            QStringLiteral(R"(^([ \t]*)([-+*])(\s+)(.*)$)"));
+        static const QRegularExpression orderedListPattern(
+            QStringLiteral(R"(^([ \t]*)(\d+)([.)])(\s+)(.*)$)"));
+        static const QRegularExpression headingPattern(
+            QStringLiteral(R"(^([ \t]*)(#{1,6})(\s+)(.*)$)"));
+        static const QRegularExpression blockquotePattern(
+            QStringLiteral(R"(^([ \t]*)(>)(\s?)(.*)$)"));
+        static const QRegularExpression codeFencePattern(
+            QStringLiteral(R"(^([ \t]*)```(.*)$)"));
+        static const QRegularExpression horizontalRulePattern(
+            QStringLiteral(R"(^[ \t]{0,3}(([-*_])(?:[ \t]*\2){2,})[ \t]*$)"));
 
-        QString output;
-        QStringList openStyleTags;
-        QVector<QStringList> spanStyleStack;
-        qsizetype cursor = 0;
+        const QStringList lines = normalizedText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList htmlLines;
+        htmlLines.reserve(lines.size());
 
-        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedText);
-        while (iterator.hasNext())
+        bool insideCodeFence = false;
+        for (const QString& line : lines)
         {
-            const QRegularExpressionMatch match = iterator.next();
-            const qsizetype tagStart = match.capturedStart(0);
-            const qsizetype tagEnd = match.capturedEnd(0);
-            if (tagStart < 0 || tagEnd <= tagStart)
+            const QRegularExpressionMatch codeFenceMatch = codeFencePattern.match(line);
+            if (codeFenceMatch.hasMatch())
             {
+                htmlLines.push_back(
+                    whitespaceToHtml(codeFenceMatch.captured(1))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::CodeFence,
+                        escapeHtmlText(line.mid(codeFenceMatch.capturedLength(1)))));
+                insideCodeFence = !insideCodeFence;
                 continue;
             }
 
-            if (tagStart > cursor)
+            if (insideCodeFence)
             {
-                output += normalizedText.mid(cursor, tagStart - cursor);
-            }
-
-            const QString fullTagToken = match.captured(0);
-            const QString rawTagName = match.captured(1);
-            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
-            const bool closingTag = isClosingTagToken(fullTagToken);
-            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
-
-            if (normalizedTagName == QStringLiteral("br"))
-            {
-                output += QStringLiteral("<br/>");
-                cursor = tagEnd;
+                htmlLines.push_back(
+                    WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::CodeBody,
+                        whitespaceToHtml(line)));
                 continue;
             }
 
-            if (normalizedTagName == QStringLiteral("span"))
+            const QRegularExpressionMatch unorderedListMatch = unorderedListPattern.match(line);
+            if (unorderedListMatch.hasMatch())
             {
-                if (closingTag)
-                {
-                    if (!spanStyleStack.isEmpty())
-                    {
-                        const QStringList spanTags = spanStyleStack.takeLast();
-                        for (int index = spanTags.size() - 1; index >= 0; --index)
-                        {
-                            closeMatchingTag(&openStyleTags, &output, spanTags.at(index));
-                        }
-                    }
-                    else
-                    {
-                        output += fullTagToken;
-                    }
-                }
-                else if (selfClosingTag)
-                {
-                    output += fullTagToken;
-                }
-                else
-                {
-                    const QStringList spanTags = spanInlineStyleTagsFromCssDeclaration(
-                        cssStyleAttributeFromTagToken(fullTagToken));
-                    if (spanTags.isEmpty())
-                    {
-                        output += fullTagToken;
-                    }
-                    else
-                    {
-                        for (const QString& spanTag : spanTags)
-                        {
-                            output += openingEditorTagForStyle(spanTag);
-                            openStyleTags.append(spanTag);
-                        }
-                        spanStyleStack.push_back(spanTags);
-                    }
-                }
-                cursor = tagEnd;
+                const QString trailingSpacing =
+                    whitespaceToHtml(unorderedListMatch.captured(3).mid(1));
+                htmlLines.push_back(
+                    whitespaceToHtml(unorderedListMatch.captured(1))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::UnorderedListMarker,
+                        QString(QChar(0x2022)))
+                    + QStringLiteral("&nbsp;")
+                    + trailingSpacing
+                    + renderInlineTaggedTextFragmentToHtml(unorderedListMatch.captured(4)));
                 continue;
             }
 
-            QString styleTag = canonicalInlineStyleTagName(rawTagName);
-            if (styleTag.isEmpty() && ContentsTextHighlightRenderer::isHighlightTagAlias(rawTagName))
+            const QRegularExpressionMatch orderedListMatch = orderedListPattern.match(line);
+            if (orderedListMatch.hasMatch())
             {
-                styleTag = QStringLiteral("highlight");
-            }
-            if (!styleTag.isEmpty())
-            {
-                if (closingTag)
-                {
-                    closeMatchingTag(&openStyleTags, &output, styleTag);
-                }
-                else if (!selfClosingTag)
-                {
-                    output += openingEditorTagForStyle(styleTag);
-                    openStyleTags.append(styleTag);
-                }
-                cursor = tagEnd;
+                const QString markerToken =
+                    orderedListMatch.captured(2) + orderedListMatch.captured(3);
+                htmlLines.push_back(
+                    whitespaceToHtml(orderedListMatch.captured(1))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::OrderedListMarker,
+                        escapeHtmlText(markerToken))
+                    + whitespaceToHtml(orderedListMatch.captured(4))
+                    + renderInlineTaggedTextFragmentToHtml(orderedListMatch.captured(5)));
                 continue;
             }
 
-            output += fullTagToken;
-            cursor = tagEnd;
+            const QRegularExpressionMatch headingMatch = headingPattern.match(line);
+            if (headingMatch.hasMatch())
+            {
+                const int headingLevel = headingMatch.captured(2).size();
+                htmlLines.push_back(
+                    whitespaceToHtml(headingMatch.captured(1))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::HeadingMarker,
+                        escapeHtmlText(headingMatch.captured(2) + headingMatch.captured(3)))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::HeadingBody,
+                        renderInlineTaggedTextFragmentToHtml(headingMatch.captured(4)),
+                        headingLevel));
+                continue;
+            }
+
+            const QRegularExpressionMatch blockquoteMatch = blockquotePattern.match(line);
+            if (blockquoteMatch.hasMatch())
+            {
+                htmlLines.push_back(
+                    whitespaceToHtml(blockquoteMatch.captured(1))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::BlockquoteMarker,
+                        escapeHtmlText(blockquoteMatch.captured(2)))
+                    + whitespaceToHtml(blockquoteMatch.captured(3))
+                    + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::BlockquoteBody,
+                        renderInlineTaggedTextFragmentToHtml(blockquoteMatch.captured(4))));
+                continue;
+            }
+
+            if (horizontalRulePattern.match(line).hasMatch())
+            {
+                htmlLines.push_back(
+                    WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
+                        WhatSon::WhatSonNoteMarkdownStyleObject::Role::HorizontalRule,
+                        escapeHtmlText(line)));
+                continue;
+            }
+
+            htmlLines.push_back(renderInlineTaggedTextFragmentToHtml(line));
         }
 
-        if (cursor < normalizedText.size())
-        {
-            output += normalizedText.mid(cursor);
-        }
+        return htmlLines.join(QStringLiteral("<br/>"));
+    }
 
-        for (int index = openStyleTags.size() - 1; index >= 0; --index)
-        {
-            output += closingEditorTagForStyle(openStyleTags.at(index));
-        }
+    QString renderInlineStyleEditingSurfaceHtml(const QString& sourceText)
+    {
+        QString html = renderInlineTaggedTextFragmentToHtml(sourceText, LiteralRenderMode::SourceEditing);
+        html.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
+        return html;
+    }
 
-        output.replace(QLatin1Char('\n'), QStringLiteral("<br/>"));
-        return output;
+    QString normalizeInlineStyleAliasesForEditorSurface(const QString& sourceText)
+    {
+        return renderMarkdownAwareTextToHtml(sourceText);
     }
 } // namespace
 
@@ -704,12 +892,12 @@ QString ContentsTextFormatRenderer::renderedHtml() const
 
 QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) const
 {
-    return renderInlineTaggedTextToHtml(sourceText);
+    return renderMarkdownAwareTextToHtml(sourceText);
 }
 
 QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const QString& sourceText) const
 {
-    return normalizeInlineStyleAliasesForEditorSurface(sourceText);
+    return renderMarkdownAwareTextToHtml(sourceText);
 }
 
 QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QString& surfaceText) const
@@ -721,7 +909,8 @@ QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QSt
 
     const QString serializedBodyDocument =
         WhatSon::NoteBodyPersistence::serializeBodyDocument(QStringLiteral("note"), surfaceText);
-    return WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
+    return normalizeRenderedMarkdownGlyphsToSource(
+        WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument));
 }
 
 QString ContentsTextFormatRenderer::applyPlainTextReplacementToSource(
@@ -797,6 +986,64 @@ QString ContentsTextFormatRenderer::applyInlineStyleToSelectionSource(
     return normalizeEditorSurfaceTextToSource(document.toHtml());
 }
 
+QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(
+    const QString& sourceText,
+    int selectionStart,
+    int selectionEnd,
+    const QString& styleTag) const
+{
+    const QString normalizedSourceText = normalizeLineEndings(sourceText);
+    if (normalizedSourceText.isEmpty())
+    {
+        return {};
+    }
+
+    const QString normalizedStyleTag = normalizeSupportedInlineStyleTag(styleTag);
+    if (normalizedStyleTag.isEmpty())
+    {
+        return normalizedSourceText;
+    }
+
+    QTextDocument document;
+    document.setHtml(renderInlineStyleEditingSurfaceHtml(normalizedSourceText));
+
+    const int boundedStart = boundedDocumentSelectionPosition(document, std::min(selectionStart, selectionEnd));
+    const int boundedEnd = boundedDocumentSelectionPosition(document, std::max(selectionStart, selectionEnd));
+    if (boundedEnd <= boundedStart)
+    {
+        return normalizedSourceText;
+    }
+
+    QTextCursor cursor(&document);
+    cursor.setPosition(boundedStart);
+    cursor.setPosition(boundedEnd, QTextCursor::KeepAnchor);
+    if (!cursor.hasSelection())
+    {
+        return normalizedSourceText;
+    }
+
+    cursor.beginEditBlock();
+    if (normalizedStyleTag == QStringLiteral("plain"))
+    {
+        const QString replacementText = plainSelectedText(cursor);
+        cursor.removeSelectedText();
+        cursor.insertText(replacementText, plainTextCharFormat());
+    }
+    else if (selectionFullyHasInlineStyle(cursor, normalizedStyleTag))
+    {
+        const QString replacementText = plainSelectedText(cursor);
+        cursor.removeSelectedText();
+        cursor.insertText(replacementText, plainTextCharFormat());
+    }
+    else
+    {
+        cursor.mergeCharFormat(textCharFormatForInlineStyle(normalizedStyleTag));
+    }
+    cursor.endEditBlock();
+
+    return normalizeEditorSurfaceTextToSource(document.toHtml());
+}
+
 void ContentsTextFormatRenderer::requestRenderRefresh()
 {
     refreshRenderedHtml();
@@ -804,7 +1051,7 @@ void ContentsTextFormatRenderer::requestRenderRefresh()
 
 void ContentsTextFormatRenderer::refreshRenderedHtml()
 {
-    const QString nextRenderedHtml = renderInlineTaggedTextToHtml(m_sourceText);
+    const QString nextRenderedHtml = renderMarkdownAwareTextToHtml(m_sourceText);
     if (m_renderedHtml == nextRenderedHtml)
     {
         return;

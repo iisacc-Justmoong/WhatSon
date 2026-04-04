@@ -96,6 +96,9 @@ selection state machine lives in a sibling controller file.
   (for example, occasional `Cmd`/`Shift` loss on macOS pointer release dispatch).
 - Multi-selection state is held in `selectedNoteIndices`; model-authoritative `currentIndex/currentNoteId` remains the
   primary note for downstream domain routing.
+- The list now resolves `selectedNoteIndices` back into stable note ids through
+  `NoteListModelContractBridge.readNoteIdAt(...)`,
+  so batch note-list actions do not depend on delegate visibility.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
 - `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
   not need to own all dynamic contract detection.
@@ -107,17 +110,25 @@ selection state machine lives in a sibling controller file.
   - primary contract: committed `currentIndex`
   - fallback contract: committed `currentNoteId` equality
   so the selected row stays visually active even when the model momentarily reorders or defers index stabilization.
-- `FocusedNoteDeletionBridge` keeps keyboard delete behavior aligned with whichever note card is visually focused.
-- Focused-note sync now reads `resolvedNoteListModel.currentNoteId` first, so keyboard-delete focus
-  follows the model-authoritative current note contract.
+- `FocusedNoteDeletionBridge` still tracks the focused single note as a fallback, but keyboard delete now prefers the
+  resolved multi-selection note-id set when one exists.
+- Focused-note sync still reads `resolvedNoteListModel.currentNoteId` first, so single-note delete fallback follows the
+  model-authoritative current note contract.
 
 ## Drag And Context Menu
 
 - Desktop uses immediate internal drag for note-to-folder assignment; mobile defers drag pickup to a `1000ms`
   long-press surface.
 - The drag preview is reparented into the overlay layer so the carried note card can cross panel boundaries.
-- Note-card context menus are centralized at the root through `contextMenuNoteId` and `openNoteContextMenu(...)`,
-  which keeps delegates free of per-row popup wiring.
+- Dragging a row that is already part of a multi-selection now exports the full selected note-id set, not just the
+  delegate under the pointer.
+- The drag preview adds a count badge when more than one selected note is being carried.
+- Note-card context menus are centralized at the root through `contextMenuNoteId`, `contextMenuNoteIds`, and
+  `openNoteContextMenu(...)`, which keeps delegates free of per-row popup wiring while preserving group actions.
+- Right-clicking or long-pressing a row that already belongs to the current multi-selection preserves that selection as
+  the context-menu target set.
+- Keyboard delete, context-menu delete, and `Clear all folders` now replay the action across the selected note ids via
+  `LibraryNoteMutationViewModel` batch helpers.
 - Pointer-drag hot-spot fallback now uses `noteItemDelegate.width/height` explicitly, so drag-start
   math remains bound to the delegate's own touch target.
 
@@ -129,3 +140,8 @@ selection state machine lives in a sibling controller file.
   - `Cmd/Ctrl + click` toggles row membership without collapsing to single-row selection.
   - `Cmd/Ctrl + Shift + click` unions the anchor range with existing selection.
   - Releasing modifier keys near pointer-up must still respect press-time intent.
+  - Pressing `Delete` with multiple selected notes must delete every selected note, not only `currentNoteId`.
+  - The note context menu must apply `Delete` and `Clear all folders` to the selected group when the invoked row is
+    already part of that group.
+  - Dragging one note from a selected group into the hierarchy sidebar must carry every selected note id in the drag
+    payload.
