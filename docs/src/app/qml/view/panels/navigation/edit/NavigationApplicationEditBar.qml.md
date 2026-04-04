@@ -31,7 +31,6 @@ The Figma node mapping is:
   - Agenda / Daily / Weekly / Monthly / Yearly calendar entries
   - New File
   - Preferences
-  - Show/Hide Detail Panel, but only while the compact detail affordance is visible on the mobile editor route
 
 ## Panel ViewModel Binding
 - Panel key: `navigation.NavigationApplicationEditBar`
@@ -48,7 +47,9 @@ The Figma node mapping is:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
 - The compact editor route now also renders the dedicated right-edge `columnIndex` detail button from
   Figma node `193:6606`, with the same `toggleDetailPanelRequested` signal path used by the desktop preference bar.
-- The detail-panel menu label is dynamic:
-  `"Show Detail Panel"` when collapsed, `"Hide Detail Panel"` otherwise.
+- That compact detail affordance opens the dedicated mobile detail page directly; it is intentionally not duplicated as
+  a context-menu entry.
+- The compact detail button now emits the hook reason `open-detail-page`, matching the routed-page behavior instead of
+  the older collapse/expand overlay wording.
 - `pragma ComponentBehavior: Bound` is enabled so compact/full nested `Component` branches can
   access `applicationEditBar` id members without unqualified-scope warnings.

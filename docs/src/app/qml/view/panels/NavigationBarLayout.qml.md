@@ -38,13 +38,14 @@
 - Added `pragma ComponentBehavior: Bound` so nested mode `Component` branches can safely reference
   `navigationBar` id members without unqualified-scope warnings.
 - Compact mobile right-group contract keeps two independent actions:
-  one `nodesnewFolder` add-folder button and one mode-specific context-menu button loaded from the
+  one `nodesnewFolder` add-folder button and one mode-specific application-bar slot loaded from the
   active View/Edit/Control application bar component.
 - `handleApplicationBarViewHook(...)` now maps `agenda` reasons into `agendaRequested()` so both
   View/Edit menus and the calendar icon row can open the Agenda route through shared wiring.
 - Compact mobile navigation now also forwards an explicit `compactDetailPanelVisible` contract into
   the active View/Edit/Control application bar component. This lets the editor route show a dedicated
-  right-edge detail-panel icon button without leaking that affordance into hierarchy or note-list routes.
+  right-edge detail-page icon button without leaking that affordance into hierarchy or note-list routes, and without
+  duplicating that action inside the compact context menus.
 
 ## Intended Detailed Sections
 - Responsibility and business role

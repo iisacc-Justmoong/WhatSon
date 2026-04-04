@@ -98,19 +98,6 @@ Item {
                 "showChevron": false
             }
         ];
-        if (applicationViewBar.compactDetailPanelVisible) {
-            items.push({
-                           "label": applicationViewBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
-                           "iconName": "columnIndex",
-                           "onTriggered": function () {
-                               applicationViewBar.requestViewHook(
-                                   applicationViewBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
-                               applicationViewBar.toggleDetailPanelRequested();
-                           },
-                           "keyVisible": false,
-                           "showChevron": false
-                       });
-        }
         return items;
     }
 
@@ -194,8 +181,7 @@ Item {
                 visible: applicationViewBar.compactDetailPanelVisible
 
                 onClicked: {
-                    applicationViewBar.requestViewHook(
-                        applicationViewBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                    applicationViewBar.requestViewHook("open-detail-page");
                     applicationViewBar.toggleDetailPanelRequested();
                 }
             }

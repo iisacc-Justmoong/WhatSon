@@ -8,9 +8,7 @@ Rectangle {
 
     readonly property var activePageRouter: bodyRouter
     readonly property var bodyItem: bodyRouter.currentPageItem
-    readonly property real bodyWidth: bodyHost.width
-    property Component bodyOverlayComponent: null
-    property bool bodyOverlayVisible: false
+    readonly property real bodyWidth: bodyRouter.width
     property string bodyInitialPath: "/"
     property var bodyRoutes: []
     readonly property int contentBottomPadding: LV.Theme.gap16
@@ -82,26 +80,14 @@ Rectangle {
             onWeekCalendarRequested: mobilePageScaffold.weekCalendarRequested()
             onYearCalendarRequested: mobilePageScaffold.yearCalendarRequested()
         }
-        Item {
-            id: bodyHost
+        LV.PageRouter {
+            id: bodyRouter
 
             Layout.fillHeight: true
             Layout.fillWidth: true
-
-            LV.PageRouter {
-                id: bodyRouter
-
-                anchors.fill: parent
-                initialPath: mobilePageScaffold.bodyInitialPath
-                registerAsGlobalNavigator: false
-                routes: mobilePageScaffold.bodyRoutes
-            }
-            Loader {
-                anchors.fill: parent
-                active: mobilePageScaffold.bodyOverlayVisible && mobilePageScaffold.bodyOverlayComponent !== null
-                sourceComponent: mobilePageScaffold.bodyOverlayComponent
-                z: 1
-            }
+            initialPath: mobilePageScaffold.bodyInitialPath
+            registerAsGlobalNavigator: false
+            routes: mobilePageScaffold.bodyRoutes
         }
         PanelView.StatusBarLayout {
             compactFieldColor: mobilePageScaffold.controlSurfaceColor

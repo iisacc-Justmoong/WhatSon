@@ -1,33 +1,40 @@
 # `src/app/qml/view/mobile/pages/MobileHierarchyPage.qml`
 
 ## Role
-`MobileHierarchyPage.qml` is the routed mobile workspace shell for hierarchy browsing, folder-scoped note lists, and note editing.
+`MobileHierarchyPage.qml` is the routed mobile workspace shell for hierarchy browsing, folder-scoped note lists, note
+editing, and the detail page.
 
 It does not own the domain data itself. Its job is to keep the mobile `LV.PageRouter` stack aligned with the already-bound hierarchy and note-list viewmodels that come from the desktop-style application root.
 
 ## Primary Responsibilities
-- Mount the three mobile body routes: hierarchy, note list, and editor.
+- Mount the four mobile body routes: hierarchy, note list, editor, and detail.
+- Mount the mobile detail route on the same `LV.PageRouter`, so note metadata is opened as a first-class page instead
+  of an editor overlay or context-menu action.
 - Preserve the selected hierarchy folder while the user moves between note list and editor pages.
 - Drive left-edge back-swipe gestures through `LV.PageTransitionController`.
 - Delegate newly created library-note promotion into a dedicated coordinator once the shared models are ready.
 - Keep compact navigation chrome route-aware so hierarchy-only controls do not leak into note-list or editor pages.
-- Keep the mobile detail panel route-aware: the compact navigation only exposes the detail affordance on
-  `/mobile/editor`, and the overlay is dismissed automatically when the route leaves the editor.
+- Keep the mobile detail route-aware: the compact navigation only exposes the detail affordance on `/mobile/editor`,
+  and that affordance pushes a real routed page instead of toggling overlay chrome.
 - Own the mobile panel hook directly through the `mobile.MobileHierarchyPage` panel key instead of routing that hook through a wrapper component, while keeping note creation on the dedicated `windowInteractions` shortcut path so generic route hooks never create files.
 
 ## Routing Model
-The file defines three route constants:
+The file defines four route constants:
 - `/mobile/hierarchy`
 - `/mobile/note-list`
 - `/mobile/editor`
+- `/mobile/detail`
 
-`mobileBodyRoutes` maps these paths to `HierarchySidebarLayout`, `ListBarLayout`, and `ContentViewLayout`.
+`mobileBodyRoutes` maps these paths to `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, and a dedicated
+detail-page wrapper around `DetailPanelLayout`.
 
 The important rule is that the route stack is only canonicalized when the visible body and the router state have genuinely diverged. The helper `displayedBodyRoutePath()` reads the currently mounted scaffold body first and only falls back to `activePageRouter.currentPath` when the body has not resolved yet.
 
 `hierarchyPageActive`, `noteListPageActive`, and `editorPageActive` are all derived from that resolved body path. The compact `settings` affordance is bound to `hierarchyPageActive`, which means the shared navigation bar only shows that button on `/mobile/hierarchy`.
-The compact detail-panel affordance is bound to `editorPageActive`, which means the new right-edge
-`columnIndex` button only appears on `/mobile/editor`.
+The compact detail-page affordance is bound to `editorPageActive`, which means the new right-edge
+`columnIndex` button only appears on `/mobile/editor` and pushes `/mobile/detail` instead of opening a context menu or overlay.
+That compact button emits the explicit hook reason `open-detail-page`, so the route push is no longer described as a
+collapse/expand action.
 
 `requestOpenNoteList(...)` is subscribed only to `HierarchySidebarLayout.hierarchyItemActivated(...)`.
 Chevron-only expansion in `SidebarHierarchyView.qml` is intentionally suppressed before that signal is
@@ -52,18 +59,17 @@ To keep calendar open behavior deterministic on mobile, the scaffold calendar ho
 `ensureCalendarSurfaceVisible()` canonicalizes the stack to the editor route when needed, then the corresponding
 calendar request signal is emitted. This prevents no-op calendar taps while the user is still on hierarchy or note-list
 routes.
-Opening any calendar overlay now also dismisses the mobile detail panel overlay so the editor surface does not stack
-detail and calendar chrome at the same time.
+Opening any calendar overlay now canonicalizes back to the editor route when needed, so calendar pages do not stack on
+top of `/mobile/detail`.
 
-## Mobile Detail Panel Overlay
-`MobilePageScaffold.qml` now exposes a route-body overlay slot, and this page uses that slot to mount the existing
-`DetailPanelLayout.qml` above the editor body when `detailPanelVisible == true`.
+## Mobile Detail Page
+The compact navigation's right-edge `DetailPanelControlButton` now routes into `/mobile/detail`.
 
-The overlay behavior is:
-- only visible on `/mobile/editor`
-- opened from the compact navigation's new right-edge `DetailPanelControlButton`
-- rendered as a right-anchored sheet with the existing detail-panel contents and toolbar
-- dismissed by route changes, calendar openings, or tapping the scrim outside the sheet
+The detail-page behavior is:
+- opened only from `/mobile/editor`
+- rendered through the existing `DetailPanelLayout.qml`
+- mounted as a normal routed page body, so it participates in the same back-swipe/page-stack model as note list and editor
+- no longer exposed as a compact context-menu item
 
 ## Selection Preservation
 `preservedNoteListSelectionIndex` caches the active hierarchy selection that produced the current note list.

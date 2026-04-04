@@ -37,10 +37,9 @@
 ## Recent Updates
 - Forwards `NavigationBarLayout` Agenda/day/week/month/year hook signals so mobile calendar routing can open overlays on
   the editor surface through `MobileHierarchyPage`.
-- Owns a dedicated `bodyHost` wrapper around `LV.PageRouter`, so route bodies can now render an editor-local overlay
-  component above the mobile page body without covering the compact navigation or status bar.
-- Forwards compact detail-panel state into `NavigationBarLayout` and re-emits
-  `toggleDetailPanelRequested()` back to `MobileHierarchyPage`.
+- Forwards compact detail-page state into `NavigationBarLayout` and re-emits `toggleDetailPanelRequested()` back to
+  `MobileHierarchyPage`, where that signal now pushes the dedicated `/mobile/detail` route instead of opening an
+  overlay or context-menu action.
 
 ## Intended Detailed Sections
 - Responsibility and business role
