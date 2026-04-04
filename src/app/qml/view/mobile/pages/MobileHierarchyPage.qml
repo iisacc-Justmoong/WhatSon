@@ -29,6 +29,7 @@ Item {
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
     property color controlSurfaceColor: LV.Theme.panelBackground10
+    property bool detailPanelVisible: false
     readonly property string editorRoutePath: "/mobile/editor"
     property var editorViewModeViewModel: null
     readonly property string hierarchyRoutePath: "/mobile/hierarchy"
@@ -73,6 +74,9 @@ Item {
     property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
+    readonly property bool detailPanelOverlayVisible: mobileHierarchyPage.editorPageActive && mobileHierarchyPage.detailPanelVisible
+    readonly property int mobileDetailPanelDefaultWidth: 194
+    readonly property int mobileDetailPanelMinWidth: 145
 
     signal agendaRequested
     signal agendaOverlayDismissRequested
@@ -117,6 +121,12 @@ Item {
         mobileHierarchyPage.activeContentViewModel.setHierarchySelectedIndex(-1);
         return true;
     }
+    function closeDetailPanel() {
+        if (!mobileHierarchyPage.detailPanelVisible)
+            return false;
+        mobileHierarchyPage.detailPanelVisible = false;
+        return true;
+    }
     function currentHierarchySelectionIndex() {
         if (!mobileHierarchyPage.activeContentViewModel
                 || mobileHierarchyPage.activeContentViewModel.hierarchySelectedIndex === undefined)
@@ -138,6 +148,23 @@ Item {
         if (!mobileScaffold.activePageRouter)
             return "";
         return String(mobileScaffold.activePageRouter.currentPath);
+    }
+    function resolvedDetailPanelWidth() {
+        const viewportWidth = Math.max(0, Math.floor(Number(mobileScaffold.bodyWidth) || Number(mobileHierarchyPage.width) || 0));
+        if (viewportWidth <= 0)
+            return mobileHierarchyPage.mobileDetailPanelDefaultWidth;
+        if (viewportWidth <= mobileHierarchyPage.mobileDetailPanelMinWidth)
+            return viewportWidth;
+        return Math.max(
+                    mobileHierarchyPage.mobileDetailPanelMinWidth,
+                    Math.min(mobileHierarchyPage.mobileDetailPanelDefaultWidth,
+                             Math.max(mobileHierarchyPage.mobileDetailPanelMinWidth, viewportWidth - LV.Theme.gap12)));
+    }
+    function toggleDetailPanelVisibility() {
+        if (!mobileHierarchyPage.editorPageActive)
+            return false;
+        mobileHierarchyPage.detailPanelVisible = !mobileHierarchyPage.detailPanelVisible;
+        return mobileHierarchyPage.detailPanelVisible;
     }
     function beginBackSwipeGesture(eventData) {
         if (!mobileHierarchyPage.backNavigationAvailable || !eventData || pageTransitionController.active)
@@ -289,6 +316,7 @@ Item {
         });
     }
     function requestBackToHierarchy() {
+        mobileHierarchyPage.closeDetailPanel();
         if (!mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
@@ -309,6 +337,7 @@ Item {
     function requestOpenNoteList(item, itemId, index) {
         if (!mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(itemId);
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
@@ -345,6 +374,7 @@ Item {
         const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
         if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
@@ -379,30 +409,35 @@ Item {
     function requestOpenAgenda() {
         if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
             return false;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.agendaRequested();
         return true;
     }
     function requestOpenDayCalendar() {
         if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
             return false;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.dayCalendarRequested();
         return true;
     }
     function requestOpenWeekCalendar() {
         if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
             return false;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.weekCalendarRequested();
         return true;
     }
     function requestOpenMonthCalendar() {
         if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
             return false;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.monthCalendarRequested();
         return true;
     }
     function requestOpenYearCalendar() {
         if (!mobileHierarchyPage.ensureCalendarSurfaceVisible())
             return false;
+        mobileHierarchyPage.closeDetailPanel();
         mobileHierarchyPage.yearCalendarRequested();
         return true;
     }
@@ -498,6 +533,10 @@ Item {
         mobileHierarchyPage.routeToHierarchyRoot();
     }
     onResolvedBodyRoutePathChanged: mobileHierarchyPage.syncRouteSelectionState()
+    onEditorPageActiveChanged: {
+        if (!mobileHierarchyPage.editorPageActive)
+            mobileHierarchyPage.closeDetailPanel();
+    }
 
     MobileView.MobileNoteCreationCoordinator {
         id: noteCreationCoordinator
@@ -528,14 +567,18 @@ Item {
         bodyRoutes: mobileHierarchyPage.mobileBodyRoutes
         canvasColor: mobileHierarchyPage.canvasColor
         compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive
+        compactDetailPanelVisible: mobileHierarchyPage.editorPageActive
         compactLeadingActionVisible: false
         compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive
         compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive
         controlSurfaceColor: mobileHierarchyPage.controlSurfaceColor
+        detailPanelCollapsed: !mobileHierarchyPage.detailPanelOverlayVisible
         editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
         navigationModeViewModel: mobileHierarchyPage.navigationModeViewModel
         statusPlaceholderText: mobileHierarchyPage.statusPlaceholderText
         statusSearchText: mobileHierarchyPage.statusSearchText
+        bodyOverlayComponent: detailPanelOverlayComponent
+        bodyOverlayVisible: mobileHierarchyPage.detailPanelOverlayVisible
         windowInteractions: mobileHierarchyPage.windowInteractions
 
         onCompactAddFolderRequested: mobileHierarchyPage.requestCreateFolder()
@@ -550,6 +593,7 @@ Item {
         onStatusSearchTextEdited: function (text) {
             mobileHierarchyPage.statusSearchText = text;
         }
+        onToggleDetailPanelRequested: mobileHierarchyPage.toggleDetailPanelVisibility()
         onViewHookRequested: mobileHierarchyPage.requestViewHook()
         onWeekCalendarRequested: mobileHierarchyPage.requestOpenWeekCalendar()
         onYearCalendarRequested: mobileHierarchyPage.requestOpenYearCalendar()
@@ -636,6 +680,40 @@ Item {
                                 Number(backSwipeDragHandler.centroid.position.y) - Number(backSwipeDragHandler.centroid.pressPosition.y),
                                 mobileHierarchyPage.backSwipeSessionId),
                             true);
+            }
+        }
+    }
+    Component {
+        id: detailPanelOverlayComponent
+
+        Item {
+            anchors.fill: parent
+
+            Rectangle {
+                anchors.fill: parent
+                color: Qt.rgba(0, 0, 0, 0.28)
+            }
+            MouseArea {
+                anchors.fill: parent
+
+                onClicked: mobileHierarchyPage.closeDetailPanel()
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.top: parent.top
+                border.color: mobileHierarchyPage.controlSurfaceColor
+                border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
+                color: mobileHierarchyPage.canvasColor
+                radius: LV.Theme.radiusXl
+                width: mobileHierarchyPage.resolvedDetailPanelWidth()
+
+                PanelView.DetailPanelLayout {
+                    anchors.fill: parent
+                    panelColor: "transparent"
+
+                    onViewHookRequested: mobileHierarchyPage.requestViewHook()
+                }
             }
         }
     }

@@ -18,7 +18,12 @@ This controller exists to keep plain typing separate from inline-format applicat
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
-  before persistence:
+  before persistence.
+- The continuation check is source-driven, not renderer-driven:
+  - it maps the logical cursor offset back into `view.editorText`
+  - it inspects the source-side line prefix there, so `-`, `*`, `+`, and ordered markers still continue correctly even
+    though the RichText editor may display unordered markers as a bullet glyph (`•`)
+- The continued marker is then written back into source before persistence:
   - unordered list lines (`- ` / `* ` / `+ `) continue with the same marker and indentation
   - ordered list lines (`1. ` / `2) `) continue with the next number, same delimiter, and same indentation
   - marker-only empty list lines do not auto-continue, so the controller does not force an endless list
@@ -61,6 +66,8 @@ longer part of the normal typing path.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
 - Typing `- item` or `1. item` should persist the literal markdown marker text in source rather than an already-expanded
   bullet/number glyph representation.
+- Pressing `Enter` on an unordered markdown list that is visually rendered with a bullet glyph in the editor must still
+  continue with the original source marker (`-`, `*`, or `+`) instead of degrading to a bare newline.
 - Pressing `Enter` at the end or middle of a non-empty markdown bullet line should persist `\n- ` / `\n* ` / `\n+ `
   continuation text instead of a bare newline.
 - Pressing `Enter` on a non-empty ordered markdown list line should persist the incremented next prefix (`1.` -> `2.`,

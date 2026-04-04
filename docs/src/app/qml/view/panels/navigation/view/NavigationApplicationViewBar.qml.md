@@ -17,6 +17,7 @@ The Figma node mapping is:
   - `NavigationApplicationPreferenceBar`
 - Compact mode (`compactMode: true`):
   - one `LV.IconMenuButton` trigger
+  - one optional `LV.IconButton` detail-panel trigger when `compactDetailPanelVisible == true`
   - one `LV.ContextMenu` rendered on `Controls.Overlay.overlay`
 
 ## Interaction Contract
@@ -30,7 +31,7 @@ The Figma node mapping is:
   - Agenda / Daily / Weekly / Monthly / Yearly calendar entries
   - New File
   - Preferences
-  - Show/Hide Detail Panel
+  - Show/Hide Detail Panel, but only while the compact detail affordance is visible on the mobile editor route
 
 ## Panel ViewModel Binding
 - Panel key: `navigation.NavigationApplicationViewBar`
@@ -45,6 +46,8 @@ The Figma node mapping is:
   consistent menu affordance pattern.
 - Compact trigger follows the shared menu-button padding contract used by control mode:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
+- The compact editor route now also renders the dedicated right-edge `columnIndex` detail button from
+  Figma node `193:6606`, with the same `toggleDetailPanelRequested` signal path used by the desktop preference bar.
 - The detail-panel menu label is dynamic:
   `"Show Detail Panel"` when collapsed, `"Hide Detail Panel"` otherwise.
 - `pragma ComponentBehavior: Bound` is enabled so compact/full nested `Component` branches can

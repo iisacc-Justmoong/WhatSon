@@ -7,7 +7,8 @@ On desktop it mounts the full control row. On mobile compact mode it collapses i
 
 ## Compact Variants
 The file exposes two compact variants:
-- hierarchy/control route: a single `toolwindowtodo` menu trigger with the built-in LVRS chevron indicator
+- hierarchy/editor-control route: a `toolwindowtodo` menu trigger with the built-in LVRS chevron indicator, plus the
+  optional right-edge `columnIndex` detail-panel button when `compactDetailPanelVisible == true`
 - note-list route: `sortByType`, `cwmPermissionView`, and the same `toolwindowtodo` menu trigger
 
 The hierarchy/control compact trigger follows the Figma `174:4993` chrome rather than the old project-structure glyph. Both compact menu triggers use `leftPadding: 2`, `rightPadding: 4`, `topPadding: 2`, `bottomPadding: 2`, and `spacing: 0` so the icon-plus-chevron footprint matches the mobile navigation bar frame.
@@ -34,3 +35,6 @@ The desktop row preserves the Figma child order:
 ## Recent Updates
 - Added `pragma ComponentBehavior: Bound` so compact/full mode nested `Component` branches can
   access `applicationControlBar` id members with LVRS-standard bound component scope.
+- The mobile editor/control route now also renders the dedicated right-edge `columnIndex` detail button from
+  Figma node `193:6606`, and the compact menu only exposes `Show/Hide Detail Panel` while that route-level affordance
+  is actually visible.

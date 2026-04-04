@@ -15,6 +15,7 @@ Rectangle {
     readonly property int bottomInset: LV.Theme.gap2
     readonly property int compactHorizontalInset: LV.Theme.gapNone
     readonly property int compactLeftGroupSpacing: LV.Theme.gap4
+    property bool compactDetailPanelVisible: false
     property bool compactNoteListControlsVisible: false
     property bool compactSettingsVisible: true
     readonly property int compactRightGroupSpacing: LV.Theme.gap12
@@ -214,6 +215,7 @@ Rectangle {
 
         NavigationViewMode.NavigationApplicationViewBar {
             compactMode: navigationBar.compactMode
+            compactDetailPanelVisible: navigationBar.compactDetailPanelVisible
             detailPanelCollapsed: navigationBar.detailPanelCollapsed
 
             onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
@@ -227,6 +229,7 @@ Rectangle {
 
         NavigationEditMode.NavigationApplicationEditBar {
             compactMode: navigationBar.compactMode
+            compactDetailPanelVisible: navigationBar.compactDetailPanelVisible
             detailPanelCollapsed: navigationBar.detailPanelCollapsed
 
             onToggleDetailPanelRequested: navigationBar.toggleDetailPanelRequested()
@@ -240,6 +243,7 @@ Rectangle {
 
         NavigationControlMode.NavigationApplicationControlBar {
             compactMode: navigationBar.compactMode
+            compactDetailPanelVisible: navigationBar.compactDetailPanelVisible
             compactNoteListControlsVisible: navigationBar.compactNoteListControlsVisible
             detailPanelCollapsed: navigationBar.detailPanelCollapsed
 

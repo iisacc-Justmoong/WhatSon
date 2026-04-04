@@ -9,93 +9,13 @@ import ".." as NavigationShared
 Item {
     id: applicationEditBar
 
-    property var applicationEditMenuItems: [
-        {
-            "label": "Agenda",
-            "iconName": "toolWindowCheckDetails",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("edit-open-agenda");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Daily Calendar",
-            "iconName": "newUIlightThemeSelected",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("edit-open-daily-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Weekly Calendar",
-            "iconName": "table",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("edit-open-weekly-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Monthly Calendar",
-            "iconName": "pnpm",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("edit-open-monthly-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Yearly Calendar",
-            "iconName": "runshowCurrentFrame",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("edit-open-yearly-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "New File",
-            "iconName": "addFile",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("create-note");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "Preferences",
-            "iconName": "audioToAudio",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook("edit-open-preferences");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": applicationEditBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
-            "iconName": "columnIndex",
-            "onTriggered": function () {
-                applicationEditBar.requestViewHook(
-                    applicationEditBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
-                applicationEditBar.toggleDetailPanelRequested();
-            },
-            "keyVisible": false,
-            "showChevron": false
-        }
-    ]
     property bool compactMode: false
+    property bool compactDetailPanelVisible: false
     property bool detailPanelCollapsed: false
     property int menuItemWidth: 196
     property int menuYOffset: 2
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar") : null
+    readonly property var applicationEditMenuItems: applicationEditBar.buildApplicationEditMenuItems()
 
     signal toggleDetailPanelRequested
     signal viewHookRequested(string reason)
@@ -105,6 +25,93 @@ Item {
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested(hookReason);
+    }
+    function buildApplicationEditMenuItems() {
+        const items = [
+            {
+                "label": "Agenda",
+                "iconName": "toolWindowCheckDetails",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("edit-open-agenda");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Daily Calendar",
+                "iconName": "newUIlightThemeSelected",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("edit-open-daily-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Weekly Calendar",
+                "iconName": "table",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("edit-open-weekly-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Monthly Calendar",
+                "iconName": "pnpm",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("edit-open-monthly-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Yearly Calendar",
+                "iconName": "runshowCurrentFrame",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("edit-open-yearly-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "New File",
+                "iconName": "addFile",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("create-note");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "Preferences",
+                "iconName": "audioToAudio",
+                "onTriggered": function () {
+                    applicationEditBar.requestViewHook("edit-open-preferences");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            }
+        ];
+        if (applicationEditBar.compactDetailPanelVisible) {
+            items.push({
+                           "label": applicationEditBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
+                           "iconName": "columnIndex",
+                           "onTriggered": function () {
+                               applicationEditBar.requestViewHook(
+                                   applicationEditBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                               applicationEditBar.toggleDetailPanelRequested();
+                           },
+                           "keyVisible": false,
+                           "showChevron": false
+                       });
+        }
+        return items;
     }
 
     implicitHeight: applicationEditRow.implicitHeight
@@ -153,7 +160,7 @@ Item {
         LV.HStack {
             id: compactApplicationEditBar
 
-            spacing: LV.Theme.gapNone
+            spacing: LV.Theme.gap12
 
             LV.IconMenuButton {
                 id: applicationEditMenuButton
@@ -175,6 +182,21 @@ Item {
                         applicationEditMenuButton,
                         applicationEditMenuButton.width,
                         applicationEditMenuButton.height + applicationEditBar.menuYOffset);
+                }
+            }
+            LV.IconButton {
+                horizontalPadding: LV.Theme.gap2
+                iconName: "columnIndex"
+                rotation: 180
+                tone: LV.AbstractButton.Borderless
+                transformOrigin: Item.Center
+                verticalPadding: LV.Theme.gap2
+                visible: applicationEditBar.compactDetailPanelVisible
+
+                onClicked: {
+                    applicationEditBar.requestViewHook(
+                        applicationEditBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                    applicationEditBar.toggleDetailPanelRequested();
                 }
             }
         }

@@ -9,93 +9,13 @@ import ".." as NavigationShared
 Item {
     id: applicationViewBar
 
-    property var applicationViewMenuItems: [
-        {
-            "label": "Agenda",
-            "iconName": "toolWindowCheckDetails",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-agenda");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Daily Calendar",
-            "iconName": "newUIlightThemeSelected",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-daily-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Weekly Calendar",
-            "iconName": "table",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-weekly-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Monthly Calendar",
-            "iconName": "pnpm",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-monthly-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Yearly Calendar",
-            "iconName": "runshowCurrentFrame",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-yearly-calendar");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "New File",
-            "iconName": "addFile",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("create-note");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "Preferences",
-            "iconName": "audioToAudio",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook("view-open-preferences");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": applicationViewBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
-            "iconName": "columnIndex",
-            "onTriggered": function () {
-                applicationViewBar.requestViewHook(
-                    applicationViewBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
-                applicationViewBar.toggleDetailPanelRequested();
-            },
-            "keyVisible": false,
-            "showChevron": false
-        }
-    ]
     property bool compactMode: false
+    property bool compactDetailPanelVisible: false
     property bool detailPanelCollapsed: false
     property int menuItemWidth: 196
     property int menuYOffset: 2
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationViewBar") : null
+    readonly property var applicationViewMenuItems: applicationViewBar.buildApplicationViewMenuItems()
 
     signal toggleDetailPanelRequested
     signal viewHookRequested(string reason)
@@ -105,6 +25,93 @@ Item {
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested(hookReason);
+    }
+    function buildApplicationViewMenuItems() {
+        const items = [
+            {
+                "label": "Agenda",
+                "iconName": "toolWindowCheckDetails",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-agenda");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Daily Calendar",
+                "iconName": "newUIlightThemeSelected",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-daily-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Weekly Calendar",
+                "iconName": "table",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-weekly-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Monthly Calendar",
+                "iconName": "pnpm",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-monthly-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Yearly Calendar",
+                "iconName": "runshowCurrentFrame",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-yearly-calendar");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "New File",
+                "iconName": "addFile",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("create-note");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "Preferences",
+                "iconName": "audioToAudio",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-preferences");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            }
+        ];
+        if (applicationViewBar.compactDetailPanelVisible) {
+            items.push({
+                           "label": applicationViewBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
+                           "iconName": "columnIndex",
+                           "onTriggered": function () {
+                               applicationViewBar.requestViewHook(
+                                   applicationViewBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                               applicationViewBar.toggleDetailPanelRequested();
+                           },
+                           "keyVisible": false,
+                           "showChevron": false
+                       });
+        }
+        return items;
     }
 
     implicitHeight: applicationViewRow.implicitHeight
@@ -153,7 +160,7 @@ Item {
         LV.HStack {
             id: compactApplicationViewBar
 
-            spacing: LV.Theme.gapNone
+            spacing: LV.Theme.gap12
 
             LV.IconMenuButton {
                 id: applicationViewMenuButton
@@ -175,6 +182,21 @@ Item {
                         applicationViewMenuButton,
                         applicationViewMenuButton.width,
                         applicationViewMenuButton.height + applicationViewBar.menuYOffset);
+                }
+            }
+            LV.IconButton {
+                horizontalPadding: LV.Theme.gap2
+                iconName: "columnIndex"
+                rotation: 180
+                tone: LV.AbstractButton.Borderless
+                transformOrigin: Item.Center
+                verticalPadding: LV.Theme.gap2
+                visible: applicationViewBar.compactDetailPanelVisible
+
+                onClicked: {
+                    applicationViewBar.requestViewHook(
+                        applicationViewBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                    applicationViewBar.toggleDetailPanelRequested();
                 }
             }
         }

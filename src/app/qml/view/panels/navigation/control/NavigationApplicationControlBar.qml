@@ -29,91 +29,14 @@ Item {
             "showChevron": false
         }
     ]
-    property var applicationControlMenuItems: [
-        {
-            "label": "Show Structure",
-            "iconName": "generalpaste",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Pin Window",
-            "iconName": "pin",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Alerts",
-            "iconName": "toolwindownotifications",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "iconName": "startTimer",
-            "label": "Timer",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "Export",
-            "iconName": "generalupload",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Print",
-            "iconName": "generalprint",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": "Mail",
-            "iconName": "mailer",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "New File",
-            "iconName": "addFile",
-            "onTriggered": function () {
-                applicationControlBar.requestViewHook("create-note");
-            },
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "type": "divider"
-        },
-        {
-            "label": "Preferences",
-            "iconName": "audioToAudio",
-            "keyVisible": false,
-            "showChevron": false
-        },
-        {
-            "label": applicationControlBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
-            "iconName": "columnIndex",
-            "onTriggered": function () {
-                applicationControlBar.requestViewHook(
-                    applicationControlBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
-                applicationControlBar.toggleDetailPanelRequested();
-            },
-            "keyVisible": false,
-            "showChevron": false
-        }
-    ]
     property bool compactMode: false
+    property bool compactDetailPanelVisible: false
     property bool compactNoteListControlsVisible: false
     property int menuItemWidth: 176
     property int menuYOffset: 2
     property bool detailPanelCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationControlBar") : null
+    readonly property var applicationControlMenuItems: applicationControlBar.buildApplicationControlMenuItems()
 
     signal toggleDetailPanelRequested
     signal viewHookRequested
@@ -123,6 +46,90 @@ Item {
         if (panelViewModel && panelViewModel.requestViewModelHook)
             panelViewModel.requestViewModelHook(hookReason);
         viewHookRequested();
+    }
+    function buildApplicationControlMenuItems() {
+        const items = [
+            {
+                "label": "Show Structure",
+                "iconName": "generalpaste",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Pin Window",
+                "iconName": "pin",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Alerts",
+                "iconName": "toolwindownotifications",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "iconName": "startTimer",
+                "label": "Timer",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "Export",
+                "iconName": "generalupload",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Print",
+                "iconName": "generalprint",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Mail",
+                "iconName": "mailer",
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "New File",
+                "iconName": "addFile",
+                "onTriggered": function () {
+                    applicationControlBar.requestViewHook("create-note");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "Preferences",
+                "iconName": "audioToAudio",
+                "keyVisible": false,
+                "showChevron": false
+            }
+        ];
+        if (applicationControlBar.compactDetailPanelVisible) {
+            items.push({
+                           "label": applicationControlBar.detailPanelCollapsed ? "Show Detail Panel" : "Hide Detail Panel",
+                           "iconName": "columnIndex",
+                           "onTriggered": function () {
+                               applicationControlBar.requestViewHook(
+                                   applicationControlBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                               applicationControlBar.toggleDetailPanelRequested();
+                           },
+                           "keyVisible": false,
+                           "showChevron": false
+                       });
+        }
+        return items;
     }
 
     implicitHeight: applicationControlRow.implicitHeight
@@ -186,7 +193,7 @@ Item {
         LV.HStack {
             id: compactApplicationControlBar
 
-            spacing: 0
+            spacing: LV.Theme.gap12
 
             LV.IconMenuButton {
                 id: applicationControlMenuButton
@@ -208,6 +215,21 @@ Item {
                         applicationControlMenuButton,
                         applicationControlMenuButton.width,
                         applicationControlMenuButton.height + applicationControlBar.menuYOffset);
+                }
+            }
+            LV.IconButton {
+                horizontalPadding: LV.Theme.gap2
+                iconName: "columnIndex"
+                rotation: 180
+                tone: LV.AbstractButton.Borderless
+                transformOrigin: Item.Center
+                verticalPadding: LV.Theme.gap2
+                visible: applicationControlBar.compactDetailPanelVisible
+
+                onClicked: {
+                    applicationControlBar.requestViewHook(
+                        applicationControlBar.detailPanelCollapsed ? "expand-detail-panel" : "collapse-detail-panel");
+                    applicationControlBar.toggleDetailPanelRequested();
                 }
             }
         }

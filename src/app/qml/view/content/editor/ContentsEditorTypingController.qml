@@ -11,21 +11,23 @@ QtObject {
     property var textFormatRenderer: null
     property var textMetricsBridge: null
 
-    function continuedListInsertion(previousText, replacementDelta) {
-        const previous = previousText === undefined || previousText === null ? "" : String(previousText);
+    function continuedListInsertion(replacementDelta, currentSourceText) {
+        const sourceText = currentSourceText === undefined || currentSourceText === null ? "" : String(currentSourceText);
         if (!replacementDelta || !replacementDelta.valid)
             return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
         if (replacementDelta.insertedText !== "\n" || replacementDelta.previousEnd !== replacementDelta.start)
             return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
 
         const insertionStart = Math.max(0, Math.floor(Number(replacementDelta.start) || 0));
-        const lineStart = insertionStart > 0 ? previous.lastIndexOf("\n", insertionStart - 1) + 1 : 0;
-        const currentLine = previous.slice(lineStart, insertionStart);
-        const unorderedMatch = /^([ \t]*)([-*+])(\s+)(.*)$/.exec(currentLine);
+        const sourceInsertionStart = controller.sourceOffsetForLogicalOffset(insertionStart);
+        const lineStart = sourceInsertionStart > 0 ? sourceText.lastIndexOf("\n", sourceInsertionStart - 1) + 1 : 0;
+        const currentLine = sourceText.slice(lineStart, sourceInsertionStart);
+        const unorderedMatch = /^([ \t]*)([-*+\u2022])(\s+)(.*)$/.exec(currentLine);
         if (unorderedMatch) {
             if (String(unorderedMatch[4] || "").trim().length === 0)
                 return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
-            const continuedText = "\n" + unorderedMatch[1] + unorderedMatch[2] + unorderedMatch[3];
+            const continuedMarker = unorderedMatch[2] === "\u2022" ? "-" : unorderedMatch[2];
+            const continuedText = "\n" + unorderedMatch[1] + continuedMarker + unorderedMatch[3];
             return ({
                     "applied": true,
                     "cursorPosition": insertionStart + continuedText.length,
@@ -161,14 +163,13 @@ QtObject {
         const replacementDelta = controller.computePlainTextReplacementDelta(previousPlainText, nextPlainText);
         if (!replacementDelta.valid)
             return false;
-        const continuedListInsertion = controller.continuedListInsertion(previousPlainText, replacementDelta);
-        const normalizedInsertedText = continuedListInsertion.applied
-                ? continuedListInsertion.insertedText
-                : replacementDelta.insertedText;
-
         const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
                 ? ""
                 : String(controller.view.editorText);
+        const continuedListInsertion = controller.continuedListInsertion(replacementDelta, currentSourceText);
+        const normalizedInsertedText = continuedListInsertion.applied
+                ? continuedListInsertion.insertedText
+                : replacementDelta.insertedText;
         const sourceStart = controller.sourceOffsetForLogicalOffset(replacementDelta.start);
         const sourceEnd = controller.sourceOffsetForLogicalOffset(replacementDelta.previousEnd);
         const nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(

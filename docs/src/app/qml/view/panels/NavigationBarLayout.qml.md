@@ -42,6 +42,9 @@
   active View/Edit/Control application bar component.
 - `handleApplicationBarViewHook(...)` now maps `agenda` reasons into `agendaRequested()` so both
   View/Edit menus and the calendar icon row can open the Agenda route through shared wiring.
+- Compact mobile navigation now also forwards an explicit `compactDetailPanelVisible` contract into
+  the active View/Edit/Control application bar component. This lets the editor route show a dedicated
+  right-edge detail-panel icon button without leaking that affordance into hierarchy or note-list routes.
 
 ## Intended Detailed Sections
 - Responsibility and business role
