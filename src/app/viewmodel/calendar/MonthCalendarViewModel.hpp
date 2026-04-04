@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVariantList>
+#include <QVariantMap>
 
 class ICalendarBoardStore;
 class QCalendar;
@@ -59,6 +60,7 @@ public slots:
     Q_INVOKABLE void shiftMonth(int delta);
     Q_INVOKABLE void focusToday();
     Q_INVOKABLE void requestMonthView(const QString& reason = QString());
+    Q_INVOKABLE QVariantMap monthProjectionFor(int year, int month) const;
     Q_INVOKABLE bool addEvent(
         const QString& dateIso,
         const QString& timeText,
@@ -83,6 +85,7 @@ signals:
     void selectedDateEntriesChanged();
 
 private:
+    QVariantMap buildMonthProjection(int year, int month) const;
     void rebuildMonthModel();
     void refreshSelectedDateEntries();
     QCalendar resolveCalendarSystem() const;

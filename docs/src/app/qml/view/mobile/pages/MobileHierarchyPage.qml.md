@@ -98,7 +98,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - The mobile editor route intentionally relies on `ContentsDisplayView.qml` platform policy instead of forcing its own
   gutter metrics:
     - gutter is removed on mobile
-    - editor font size is `desktop + 2px`
+  - editor font size is `14px` (`desktop 12px + 2px`)
 - `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
   `<resource ...>` links through the same import pipeline.
 - `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same

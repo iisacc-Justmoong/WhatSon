@@ -308,6 +308,11 @@ void MonthCalendarViewModel::requestMonthView(const QString& reason)
     rebuildMonthModel();
 }
 
+QVariantMap MonthCalendarViewModel::monthProjectionFor(int year, int month) const
+{
+    return buildMonthProjection(year, month);
+}
+
 bool MonthCalendarViewModel::addEvent(
     const QString& dateIso,
     const QString& timeText,
@@ -367,30 +372,53 @@ bool MonthCalendarViewModel::setTaskCompleted(const QString& entryId, bool compl
     return m_calendarBoardStore->setTaskCompleted(entryId, completed);
 }
 
-void MonthCalendarViewModel::rebuildMonthModel()
+QVariantMap MonthCalendarViewModel::buildMonthProjection(int year, int month) const
 {
     const QCalendar calendar = resolveCalendarSystem();
     const QLocale locale = QLocale::system();
     const int firstWeekDay = static_cast<int>(locale.firstDayOfWeek());
     const QDate today = QDate::currentDate();
 
-    const int monthCount = qMax(1, calendar.monthsInYear(m_displayedYear));
-    const int boundedMonth = qBound(1, m_displayedMonth, monthCount);
-    if (boundedMonth != m_displayedMonth)
+    int normalizedYear = qBound(kMinimumSupportedYear, year, kMaximumSupportedYear);
+    int normalizedMonth = month;
+
+    while (normalizedMonth < 1)
     {
-        m_displayedMonth = boundedMonth;
-        emit displayedMonthChanged();
+        if (normalizedYear <= kMinimumSupportedYear)
+        {
+            normalizedYear = kMinimumSupportedYear;
+            normalizedMonth = 1;
+            break;
+        }
+        normalizedYear -= 1;
+        normalizedMonth += qMax(1, calendar.monthsInYear(normalizedYear));
     }
 
-    const QDate firstDate = calendar.dateFromParts(m_displayedYear, m_displayedMonth, 1);
+    while (normalizedYear < kMaximumSupportedYear)
+    {
+        const int monthCount = qMax(1, calendar.monthsInYear(normalizedYear));
+        if (normalizedMonth <= monthCount)
+        {
+            break;
+        }
+        normalizedMonth -= monthCount;
+        normalizedYear += 1;
+    }
+
+    const int monthCount = qMax(1, calendar.monthsInYear(normalizedYear));
+    normalizedMonth = qBound(1, normalizedMonth, monthCount);
+
+    QVariantMap projection;
+    projection.insert(QStringLiteral("year"), normalizedYear);
+    projection.insert(QStringLiteral("month"), normalizedMonth);
+
+    const QDate firstDate = calendar.dateFromParts(normalizedYear, normalizedMonth, 1);
     if (!firstDate.isValid())
     {
-        m_weekdayLabels.clear();
-        m_dayModels.clear();
-        m_monthLabel = QStringLiteral("Month");
-        emit monthViewChanged();
-        refreshSelectedDateEntries();
-        return;
+        projection.insert(QStringLiteral("weekdayLabels"), QStringList{});
+        projection.insert(QStringLiteral("dayModels"), QVariantList{});
+        projection.insert(QStringLiteral("monthLabel"), QStringLiteral("Month"));
+        return projection;
     }
 
     QStringList nextWeekdayLabels;
@@ -402,18 +430,18 @@ void MonthCalendarViewModel::rebuildMonthModel()
             calendar.standaloneWeekDayName(locale, weekDay, QLocale::ShortFormat));
     }
 
-    const int daysInMonth = qMax(1, calendar.daysInMonth(m_displayedMonth, m_displayedYear));
+    const int daysInMonth = qMax(1, calendar.daysInMonth(normalizedMonth, normalizedYear));
 
-    int previousYear = m_displayedYear;
-    int previousMonth = m_displayedMonth - 1;
+    int previousYear = normalizedYear;
+    int previousMonth = normalizedMonth - 1;
     if (previousMonth < 1)
     {
         previousYear -= 1;
         previousMonth = qMax(1, calendar.monthsInYear(previousYear));
     }
 
-    int nextYear = m_displayedYear;
-    int nextMonth = m_displayedMonth + 1;
+    int nextYear = normalizedYear;
+    int nextMonth = normalizedMonth + 1;
     if (nextMonth > monthCount)
     {
         nextYear += 1;
@@ -429,8 +457,8 @@ void MonthCalendarViewModel::rebuildMonthModel()
     {
         const int dayOffset = cell - firstMonthColumn;
 
-        int targetYear = m_displayedYear;
-        int targetMonth = m_displayedMonth;
+        int targetYear = normalizedYear;
+        int targetMonth = normalizedMonth;
         int targetDay = dayOffset + 1;
         bool inCurrentMonth = true;
 
@@ -476,17 +504,40 @@ void MonthCalendarViewModel::rebuildMonthModel()
 
     QString nextMonthLabel = calendar.standaloneMonthName(
         locale,
-        m_displayedMonth,
-        m_displayedYear,
+        normalizedMonth,
+        normalizedYear,
         QLocale::LongFormat);
     if (nextMonthLabel.trimmed().isEmpty())
     {
-        nextMonthLabel = QStringLiteral("Month %1").arg(m_displayedMonth);
+        nextMonthLabel = QStringLiteral("Month %1").arg(normalizedMonth);
     }
 
-    m_weekdayLabels = nextWeekdayLabels;
-    m_dayModels = nextDayModels;
-    m_monthLabel = nextMonthLabel;
+    projection.insert(QStringLiteral("weekdayLabels"), nextWeekdayLabels);
+    projection.insert(QStringLiteral("dayModels"), nextDayModels);
+    projection.insert(QStringLiteral("monthLabel"), nextMonthLabel);
+    return projection;
+}
+
+void MonthCalendarViewModel::rebuildMonthModel()
+{
+    const QVariantMap projection = buildMonthProjection(m_displayedYear, m_displayedMonth);
+    const int normalizedYear = projection.value(QStringLiteral("year"), m_displayedYear).toInt();
+    const int normalizedMonth = projection.value(QStringLiteral("month"), m_displayedMonth).toInt();
+
+    if (m_displayedYear != normalizedYear)
+    {
+        m_displayedYear = normalizedYear;
+        emit displayedYearChanged();
+    }
+    if (m_displayedMonth != normalizedMonth)
+    {
+        m_displayedMonth = normalizedMonth;
+        emit displayedMonthChanged();
+    }
+
+    m_weekdayLabels = projection.value(QStringLiteral("weekdayLabels")).toStringList();
+    m_dayModels = projection.value(QStringLiteral("dayModels")).toList();
+    m_monthLabel = projection.value(QStringLiteral("monthLabel"), QStringLiteral("Month")).toString();
     emit monthViewChanged();
     refreshSelectedDateEntries();
 }

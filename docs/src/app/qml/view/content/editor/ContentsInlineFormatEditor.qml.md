@@ -45,7 +45,7 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   unchanged and only the RichText markup wrapper changed (for example after inline formatting wraps).
 - Selection/formatting controllers should prefer these wrapper-level Qt helpers over re-walking nested `editorItem` /
   `inputItem` objects.
-- Typography is host-driven through `fontPixelSize`; the current shared policy is `13px` on desktop and `15px` on
+- Typography is host-driven through `fontPixelSize`; the current shared policy is `12px` on desktop and `14px` on
   mobile via `ContentsDisplayView.qml`.
 
 ## Tests

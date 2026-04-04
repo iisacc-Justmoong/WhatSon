@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/calendar`
 - Child directories: 0
-- Child files: 8
+- Child files: 9
 
 ## Child Directories
 - No child directories.
@@ -17,6 +17,7 @@
 - `CalendarTodayControl.qml`
 - `CalendarEventCell.qml`
 - `MonthCalendarDayCell.qml`
+- `MonthCalendarGridSurface.qml`
 - `MonthCalendarPage.qml`
 - `AgendaPage.qml`
 - `WeekCalendarPage.qml`
@@ -36,4 +37,5 @@
   timed events, and agenda-item completion rows inside the content-surface calendar route.
 - Shared Figma-aligned calendar navigation control (`Prev/Today/Next`) is centralized in `CalendarTodayControl.qml`.
 - Day/week pages keep only `CalendarTodayControl` in the top band and distribute 24 hourly slots across the remaining content height.
-- Monthly page mirrors Figma node `228:9666` with fixed header (`54`), weekday band (`39`), and a non-scrollable fill grid.
+- Monthly page mirrors Figma node `228:9666` with fixed header (`54`) and a reusable month-grid surface; mobile adds a
+  snap-paged horizontal month swiper while desktop keeps non-interactive paging.

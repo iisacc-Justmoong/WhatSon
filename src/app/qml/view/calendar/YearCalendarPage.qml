@@ -7,7 +7,6 @@ import LVRS 1.0 as LV
 Rectangle {
     id: yearCalendarPage
 
-    readonly property var calendarSystemOptions: calendarVm && calendarVm.calendarSystemOptions ? calendarVm.calendarSystemOptions : []
     readonly property var calendarVm: yearCalendarViewModel
     readonly property var monthModels: calendarVm && calendarVm.monthModels ? calendarVm.monthModels : []
     readonly property bool mobileYearListMode: LV.Theme.mobileTarget
@@ -53,7 +52,7 @@ Rectangle {
             return LV.Theme.titleHeaderColor;
         if (dayModel && dayModel.inCurrentMonth === true)
             return yearCalendarPage.activeDayColor;
-        return yearCalendarPage.adjacentDayColor;
+
     }
     function jumpToCurrentYear() {
         if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.focusToday) {
@@ -115,30 +114,6 @@ Rectangle {
                     }
                     Item {
                         Layout.fillWidth: true
-                    }
-                }
-                LV.HStack {
-                    spacing: LV.Theme.gap2
-                    visible: yearCalendarPage.mobileYearListMode
-
-                    Repeater {
-                        model: yearCalendarPage.calendarSystemOptions
-
-                        LV.LabelButton {
-                            id: calendarSystemButton
-
-                            required property var modelData
-                            readonly property var optionModel: calendarSystemButton.modelData
-
-                            text: optionModel && optionModel.label ? String(optionModel.label) : "System"
-                            tone: yearCalendarPage.calendarVm && optionModel && Number(optionModel.value) === Number(yearCalendarPage.calendarVm.calendarSystem) ? LV.AbstractButton.Primary : LV.AbstractButton.Borderless
-
-                            onClicked: {
-                                if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.setCalendarSystemByValue)
-                                    yearCalendarPage.calendarVm.setCalendarSystemByValue(Number(optionModel.value));
-                                yearCalendarPage.requestViewHook("calendar-system");
-                            }
-                        }
                     }
                 }
             }

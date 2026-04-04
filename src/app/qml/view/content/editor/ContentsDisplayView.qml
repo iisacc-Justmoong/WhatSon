@@ -25,7 +25,7 @@ Item {
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
-    readonly property int desktopEditorFontPixelSize: 13
+    readonly property int desktopEditorFontPixelSize: 12
     property color displayColor: "transparent"
     property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
@@ -636,7 +636,7 @@ Item {
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
-
+            return contentsView.gutterMarkerCurrentColor;
 
     }
     function markerHeight(markerSpec) {

@@ -7,112 +7,66 @@ import LVRS 1.0 as LV
 Rectangle {
     id: monthCalendarPage
 
-    readonly property var calendarVm: monthCalendarViewModel
-    readonly property var dayModels: calendarVm && calendarVm.dayModels ? calendarVm.dayModels : []
-    readonly property var weekdayLabels: calendarVm && calendarVm.weekdayLabels ? calendarVm.weekdayLabels : []
-    readonly property string monthTitleText: monthCalendarPage.calendarVm
-                                             ? String(monthCalendarPage.calendarVm.monthLabel)
-                                               + ", " + String(monthCalendarPage.calendarVm.displayedYear)
-                                             : "Month"
-    readonly property var visibleDayModels: monthCalendarPage.buildVisibleDayModels()
-    readonly property int visibleWeekRowCount: Math.max(
-                                                   1,
-                                                   Math.ceil(monthCalendarPage.visibleDayModels.length / 7))
-    readonly property int maxVisibleEntriesPerCell: 8
-    readonly property int eventBackgroundDefault: 0
-    readonly property int eventBackgroundColored: 1
-    readonly property int monthHeaderHeight: 54
-    readonly property int weekdayHeaderHeight: 39
-    readonly property int headerHorizontalPadding: 8
-    readonly property int weekdayCellHorizontalPadding: 12
     readonly property int bodyLabelPixelSize: 12
+    readonly property var calendarVm: monthCalendarViewModel
     readonly property string figmaNodeId: "228:9666"
+    readonly property int headerHorizontalPadding: 8
+    readonly property int maxVisibleEntriesPerCell: 8
     property var monthCalendarViewModel: null
+    readonly property int monthHeaderHeight: 54
+    property var monthPageModels: []
+    readonly property int monthPagerCenterIndex: 1
+    property bool monthPagerResetting: false
+    readonly property bool monthSwipeEnabled: LV.Theme.mobileTarget
+    readonly property string monthTitleText: monthCalendarPage.calendarVm ? String(monthCalendarPage.calendarVm.monthLabel) + ", " + String(monthCalendarPage.calendarVm.displayedYear) : "Month"
+    readonly property int weekdayCellHorizontalPadding: 12
+    readonly property int weekdayHeaderHeight: 39
 
     signal viewHookRequested(string reason)
 
-    function requestViewHook(reason) {
-        const hookReason = reason !== undefined ? String(reason) : "manual";
-        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.requestMonthView)
-            monthCalendarPage.calendarVm.requestMonthView(hookReason);
-        monthCalendarPage.viewHookRequested(hookReason);
-    }
-    function buildVisibleDayModels() {
-        if (!monthCalendarPage.dayModels || monthCalendarPage.dayModels.length === 0)
+    function buildMonthPageModels() {
+        if (!monthCalendarPage.calendarVm)
             return [];
-        var visibleCount = monthCalendarPage.dayModels.length;
-        while (visibleCount > 35) {
-            const rowStart = visibleCount - 7;
-            var hasCurrentMonthDate = false;
-            for (var index = rowStart; index < visibleCount; ++index) {
-                const model = monthCalendarPage.dayModels[index];
-                if (model && model.inCurrentMonth === true) {
-                    hasCurrentMonthDate = true;
-                    break;
-                }
-            }
-            if (hasCurrentMonthDate)
-                break;
-            visibleCount -= 7;
+
+        const displayedYear = Number(monthCalendarPage.calendarVm.displayedYear);
+        const displayedMonth = Number(monthCalendarPage.calendarVm.displayedMonth);
+        return [monthCalendarPage.buildMonthProjection(displayedYear, displayedMonth - 1), monthCalendarPage.buildMonthProjection(displayedYear, displayedMonth), monthCalendarPage.buildMonthProjection(displayedYear, displayedMonth + 1)];
+    }
+    function buildMonthProjection(year, month) {
+        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.monthProjectionFor !== undefined)
+            return monthCalendarPage.calendarVm.monthProjectionFor(year, month);
+        return {
+            "year": year,
+            "month": month,
+            "monthLabel": monthCalendarPage.monthTitleText,
+            "weekdayLabels": monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.weekdayLabels ? monthCalendarPage.calendarVm.weekdayLabels : [],
+            "dayModels": monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.dayModels ? monthCalendarPage.calendarVm.dayModels : []
+        };
+    }
+    function commitMonthSwipeDelta(delta) {
+        if (!monthCalendarPage.calendarVm || !monthCalendarPage.calendarVm.shiftMonth || delta === 0) {
+            monthCalendarPage.recenterMonthPager();
+            return;
         }
-        return monthCalendarPage.dayModels.slice(0, visibleCount);
-    }
-    function weekdayLabelText(label) {
-        if (label === undefined)
-            return "";
-        const normalizedText = String(label).trim();
-        if (normalizedText.length === 0)
-            return "";
-        return normalizedText.length > 3
-               ? normalizedText.slice(0, 3).toUpperCase()
-               : normalizedText.toUpperCase();
-    }
-    function entriesForDate(dayModel) {
-        if (!dayModel || dayModel.dateIso === undefined || !monthCalendarPage.calendarVm
-                || !monthCalendarPage.calendarVm.entriesForDate)
-            return [];
-        const dateIso = String(dayModel.dateIso).trim();
-        if (dateIso.length === 0)
-            return [];
-        return monthCalendarPage.calendarVm.entriesForDate(dateIso);
-    }
-    function entryAccent(entryModel) {
-        const entryType = entryModel && entryModel.type !== undefined ? String(entryModel.type) : "";
-        if (entryType === "task") {
-            const completed = entryModel && entryModel.completed === true;
-            return completed ? LV.Theme.descriptionColor : LV.Theme.warning;
+
+        const previousYear = Number(monthCalendarPage.calendarVm.displayedYear);
+        const previousMonth = Number(monthCalendarPage.calendarVm.displayedMonth);
+        monthCalendarPage.calendarVm.shiftMonth(delta);
+        const nextYear = Number(monthCalendarPage.calendarVm.displayedYear);
+        const nextMonth = Number(monthCalendarPage.calendarVm.displayedMonth);
+        if (previousYear === nextYear && previousMonth === nextMonth) {
+            monthCalendarPage.recenterMonthPager();
+            return;
         }
-        return LV.Theme.primary;
+        monthCalendarPage.requestViewHook(delta > 0 ? "next-month" : "previous-month");
     }
-    function entryLabel(entryModel) {
-        const title = entryModel && entryModel.title !== undefined && String(entryModel.title).trim().length > 0
-                      ? String(entryModel.title).trim()
-                      : "Untitled";
-        const timeText = entryModel && entryModel.time !== undefined
-                         ? String(entryModel.time).trim()
-                         : "";
-        if (timeText.length === 0)
-            return title;
-        return title + " " + timeText;
-    }
-    function buildEntryCellModels(dayEntries) {
-        var cellModels = [];
-        if (!dayEntries)
-            return cellModels;
-        for (var index = 0; index < dayEntries.length; ++index) {
-            const entryModel = dayEntries[index];
-            const entryType = entryModel && entryModel.type !== undefined
-                              ? String(entryModel.type)
-                              : "";
-            cellModels.push({
-                                "label": monthCalendarPage.entryLabel(entryModel),
-                                "backgroundType": entryType === "event"
-                                                  ? monthCalendarPage.eventBackgroundColored
-                                                  : monthCalendarPage.eventBackgroundDefault,
-                                "backgroundColor": monthCalendarPage.entryAccent(entryModel)
-                            });
-        }
-        return cellModels;
+    function handleMonthPagerMovementEnded() {
+        if (!monthCalendarPage.monthSwipeEnabled || monthCalendarPage.monthPagerResetting)
+            return;
+        const delta = monthCalendarMonthsView.currentIndex - monthCalendarPage.monthPagerCenterIndex;
+        if (delta === 0)
+            return;
+        monthCalendarPage.commitMonthSwipeDelta(delta);
     }
     function jumpToCurrentMonth() {
         if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.focusToday) {
@@ -128,14 +82,52 @@ Rectangle {
         }
         monthCalendarPage.requestViewHook("current-month");
     }
+    function rebuildMonthPager() {
+        monthCalendarPage.monthPageModels = monthCalendarPage.buildMonthPageModels();
+        monthCalendarPage.scheduleMonthPagerReset();
+    }
+    function recenterMonthPager() {
+        if (!monthCalendarMonthsView || monthCalendarPage.monthPageModels.length <= monthCalendarPage.monthPagerCenterIndex) {
+            monthCalendarPage.monthPagerResetting = false;
+            return;
+        }
+        monthCalendarPage.monthPagerResetting = true;
+        monthCalendarMonthsView.currentIndex = monthCalendarPage.monthPagerCenterIndex;
+        monthCalendarMonthsView.positionViewAtIndex(monthCalendarPage.monthPagerCenterIndex, ListView.Beginning);
+        Qt.callLater(function () {
+            monthCalendarPage.monthPagerResetting = false;
+        });
+    }
+    function requestViewHook(reason) {
+        const hookReason = reason !== undefined ? String(reason) : "manual";
+        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.requestMonthView)
+            monthCalendarPage.calendarVm.requestMonthView(hookReason);
+        monthCalendarPage.viewHookRequested(hookReason);
+    }
+    function scheduleMonthPagerReset() {
+        Qt.callLater(function () {
+            monthCalendarPage.recenterMonthPager();
+        });
+    }
 
-    color: "transparent"
-    radius: LV.Theme.radiusMd
     Layout.fillHeight: true
     Layout.fillWidth: true
+    color: "transparent"
+    radius: LV.Theme.radiusMd
 
-    Component.onCompleted: monthCalendarPage.requestViewHook("page-open")
+    Component.onCompleted: {
+        monthCalendarPage.rebuildMonthPager();
+        monthCalendarPage.requestViewHook("page-open");
+    }
 
+    Connections {
+        function onMonthViewChanged() {
+            monthCalendarPage.rebuildMonthPager();
+        }
+
+        ignoreUnknownSignals: true
+        target: monthCalendarPage.calendarVm
+    }
     Item {
         id: monthCalendarSurface
 
@@ -168,130 +160,70 @@ Rectangle {
                 CalendarTodayControl {
                     Layout.alignment: Qt.AlignVCenter
 
+                    onNextRequested: {
+                        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.shiftMonth)
+                            monthCalendarPage.calendarVm.shiftMonth(1);
+                        monthCalendarPage.requestViewHook("next-month");
+                    }
                     onPreviousRequested: {
                         if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.shiftMonth)
                             monthCalendarPage.calendarVm.shiftMonth(-1);
                         monthCalendarPage.requestViewHook("previous-month");
                     }
                     onTodayRequested: monthCalendarPage.jumpToCurrentMonth()
-                    onNextRequested: {
-                        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.shiftMonth)
-                            monthCalendarPage.calendarVm.shiftMonth(1);
-                        monthCalendarPage.requestViewHook("next-month");
-                    }
                 }
             }
         }
         Item {
             id: monthBody
 
+            anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: monthHeaderBand.bottom
-            anchors.bottom: parent.bottom
 
-            Rectangle {
-                id: weekdayHeaderBand
+            ListView {
+                id: monthCalendarMonthsView
 
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: monthCalendarPage.weekdayHeaderHeight
-                color: LV.Theme.panelBackground06
+                anchors.fill: parent
+                boundsBehavior: Flickable.StopAtBounds
+                cacheBuffer: Math.max(width, 1) * 2
+                clip: true
+                interactive: monthCalendarPage.monthSwipeEnabled && monthCalendarPage.monthPageModels.length > 1
+                model: monthCalendarPage.monthPageModels
+                orientation: ListView.Horizontal
+                snapMode: ListView.SnapOneItem
 
-                GridLayout {
-                    id: weekdayHeaderGrid
+                delegate: Item {
+                    id: monthPage
 
-                    anchors.fill: parent
-                    columns: 7
-                    rowSpacing: 0
-                    columnSpacing: 0
+                    required property var modelData
+                    readonly property var monthProjection: monthPage.modelData
 
-                    Repeater {
-                        model: monthCalendarPage.weekdayLabels
+                    height: monthCalendarMonthsView.height
+                    width: monthCalendarMonthsView.width
 
-                        Rectangle {
-                            id: weekdayCell
+                    MonthCalendarGridSurface {
+                        anchors.fill: parent
+                        bodyLabelPixelSize: monthCalendarPage.bodyLabelPixelSize
+                        calendarVm: monthCalendarPage.calendarVm
+                        maxVisibleEntries: monthCalendarPage.maxVisibleEntriesPerCell
+                        monthProjection: monthPage.monthProjection
+                        selectedDateIso: monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.selectedDateIso !== undefined ? String(monthCalendarPage.calendarVm.selectedDateIso) : ""
+                        weekdayCellHorizontalPadding: monthCalendarPage.weekdayCellHorizontalPadding
+                        weekdayHeaderHeight: monthCalendarPage.weekdayHeaderHeight
 
-                            required property var modelData
-
-                            Layout.fillWidth: true
-                            Layout.minimumHeight: monthCalendarPage.weekdayHeaderHeight
-                            Layout.preferredHeight: monthCalendarPage.weekdayHeaderHeight
-                            Layout.maximumHeight: monthCalendarPage.weekdayHeaderHeight
-                            border.color: LV.Theme.panelBackground06
-                            border.width: Math.max(1, LV.Theme.strokeThin)
-                            color: LV.Theme.panelBackground06
-
-                            LV.Label {
-                                anchors.left: parent.left
-                                anchors.leftMargin: monthCalendarPage.weekdayCellHorizontalPadding
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: LV.Theme.titleHeaderColor
-                                font.pixelSize: monthCalendarPage.bodyLabelPixelSize
-                                font.weight: Font.Medium
-                                text: monthCalendarPage.weekdayLabelText(weekdayCell.modelData)
-                            }
+                        onDateSelected: function (dateIso) {
+                            if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setSelectedDateIso)
+                                monthCalendarPage.calendarVm.setSelectedDateIso(dateIso);
+                            monthCalendarPage.requestViewHook("select-date");
                         }
                     }
                 }
-            }
-            GridLayout {
-                id: monthDayGrid
 
-                anchors.top: weekdayHeaderBand.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                columns: 7
-                rowSpacing: 0
-                columnSpacing: 0
-                readonly property int dayCellWidth: Math.max(1, Math.floor(monthDayGrid.width / 7))
-                readonly property int dayCellHeight: Math.max(1, Math.floor(monthDayGrid.height / monthCalendarPage.visibleWeekRowCount))
-
-                Repeater {
-                    model: monthCalendarPage.visibleDayModels
-
-                    MonthCalendarDayCell {
-                        id: dayCell
-
-                        required property var modelData
-                        readonly property var dayModel: dayCell.modelData
-                        readonly property bool isCurrentMonth: dayModel && dayModel.inCurrentMonth === true
-                        readonly property bool isSelectedDate: monthCalendarPage.calendarVm
-                                                                && dayModel
-                                                                && dayModel.dateIso !== undefined
-                                                                && String(dayModel.dateIso) === String(monthCalendarPage.calendarVm.selectedDateIso)
-                        readonly property bool isToday: dayModel && dayModel.isToday === true
-                        readonly property var dayEntries: monthCalendarPage.entriesForDate(dayCell.dayModel)
-                        readonly property var dayEntryCells: monthCalendarPage.buildEntryCellModels(dayCell.dayEntries)
-
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumWidth: monthDayGrid.dayCellWidth
-                        Layout.preferredWidth: monthDayGrid.dayCellWidth
-                        Layout.maximumWidth: monthDayGrid.dayCellWidth
-                        Layout.minimumHeight: monthDayGrid.dayCellHeight
-                        Layout.preferredHeight: monthDayGrid.dayCellHeight
-                        Layout.maximumHeight: monthDayGrid.dayCellHeight
-
-                        dayNumber: dayCell.dayModel && dayCell.dayModel.day !== undefined
-                                   ? Number(dayCell.dayModel.day)
-                                   : 0
-                        disable: !dayCell.isCurrentMonth
-                        entryCells: dayCell.dayEntryCells
-                        maxVisibleEntries: monthCalendarPage.maxVisibleEntriesPerCell
-                        selected: dayCell.isSelectedDate
-                        today: dayCell.isToday
-
-                        onClicked: {
-                            if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setSelectedDateIso
-                                    && dayCell.dayModel && dayCell.dayModel.dateIso !== undefined) {
-                                monthCalendarPage.calendarVm.setSelectedDateIso(String(dayCell.dayModel.dateIso));
-                                monthCalendarPage.requestViewHook("select-date");
-                            }
-                        }
-                    }
+                Component.onCompleted: monthCalendarPage.scheduleMonthPagerReset()
+                onMovementEnded: {
+                    monthCalendarPage.handleMonthPagerMovementEnded();
                 }
             }
         }

@@ -14,7 +14,7 @@ the year view acts as a high-level event/task heatmap.
   - root page keeps `color: "transparent"` so the app background shows through.
 - Header:
   - shared `CalendarTodayControl` (`Prev/Today/Next`) is always visible and drives year shift/focus actions.
-  - calendar-system selector row remains visible only on mobile.
+  - calendar-system switching is no longer exposed in this page; that control belongs to settings UI.
 - Body:
   - desktop: fixed 4x3 month-card grid (`desktopYearGridColumnCount = 4`),
   - mobile: vertical scroll year list (`mobileYearGridColumnCount = 1`),
@@ -29,7 +29,7 @@ the year view acts as a high-level event/task heatmap.
 ## LVRS/QML Standard Alignment
 - Enables `pragma ComponentBehavior: Bound` so nested delegates access outer IDs through explicit bound scope.
 - Repeater delegates use `required property var modelData` and ID-qualified mapping
-  (`calendarSystemButton.modelData`, `monthCard.modelData`, `dayCell.modelData`) instead of unqualified context reads.
+  (`monthCard.modelData`, `dayCell.modelData`) instead of unqualified context reads.
 - This keeps the calendar page compatible with the stricter LVRS/QML lint contract used by the workspace.
 
 ## Board Extensions
@@ -37,6 +37,13 @@ the year view acts as a high-level event/task heatmap.
 - The year view remains a high-density navigation surface for month/day context while keeping the board data contract
   from `YearCalendarViewModel`.
 - `YearCalendarViewModel::focusToday()` aligns the displayed year with the active calendar system.
+
+## Tests
+
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - Year calendar view must not render a calendar-system segmented control on mobile.
+    - Header prev/today/next actions must continue to work after removing the selector row.
 
 ## Collaborators
 - `src/app/calendar/CalendarBoardStore.hpp/.cpp`

@@ -8,8 +8,8 @@ positions from the same document origin.
 
 The shared surface also owns the cross-platform editor typography policy:
 
-- desktop editor text renders at `13px`
-- mobile editor text renders at `15px` (`desktop + 2`)
+- desktop editor text renders at `12px`
+- mobile editor text renders at `14px` (`desktop + 2`)
 - mobile hides the gutter entirely instead of reserving a transparent gutter column
 
 ## Composition Model
@@ -251,7 +251,7 @@ The root editor state now keeps two text projections:
   - choosing `Plain` removes inline tags from the selected source span
   - reapplying the same formatting action to an already formatted selection restores that selection to plain text
   - opening an empty note must not render a `Start typing here` placeholder overlay
-  - desktop editor text must render at `13px`
+  - desktop editor text must render at `12px`
   - mobile editor text must render `2px` larger than desktop
   - mobile editor route must not reserve or render the gutter column
   - qmlcache compilation must continue to accept the explicit `Binding.property` declaration for editor top padding
