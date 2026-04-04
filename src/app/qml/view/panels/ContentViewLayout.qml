@@ -18,6 +18,7 @@ Item {
     property int frameHorizontalInsetOverride: -1
     property color gutterColor: "transparent"
     property int gutterWidthOverride: -1
+    property bool isMobilePlatform: false
     property var libraryHierarchyViewModel: null
     property int lineNumberColumnLeftOverride: -1
     property int lineNumberColumnTextWidthOverride: -1
@@ -111,41 +112,10 @@ Item {
             Layout.fillWidth: true
             visible: !contentViewLayout.calendarOverlayVisible
 
-            ContentsDisplayView {
+            Loader {
                 anchors.fill: parent
-                contentViewModel: contentViewLayout.resolvedContentViewModel
-                displayColor: contentViewLayout.displayColor
-                drawerVisible: contentViewLayout.drawerVisible
-                drawerColor: contentViewLayout.drawerColor
-                drawerHeight: contentViewLayout.drawerHeight
-                editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
-                enabled: contentViewLayout.visible
-                editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
-                frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
-                gutterColor: contentViewLayout.gutterColor
-                gutterWidthOverride: contentViewLayout.gutterWidthOverride
-                libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
-                lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
-                lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
-                minDisplayHeight: contentViewLayout.minDisplayHeight
-                minDrawerHeight: contentViewLayout.minDrawerHeight
-                minimapVisible: contentViewLayout.minimapVisible
-                noteListModel: contentViewLayout.resolvedNoteListModel
-                panelViewModel: contentViewLayout.panelViewModel
-                resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
-                splitterColor: contentViewLayout.splitterColor
-                splitterHandleThickness: contentViewLayout.splitterHandleThickness
-                splitterThickness: contentViewLayout.splitterThickness
-
-                onDrawerHeightDragRequested: function (value) {
-                    contentViewLayout.drawerHeightDragRequested(value);
-                }
-                onEditorTextEdited: function (text) {
-                    contentViewLayout.editorTextEdited(text);
-                }
-                onViewHookRequested: {
-                    contentViewLayout.viewHookRequested();
-                }
+                active: editorContentSurface.visible
+                sourceComponent: contentViewLayout.isMobilePlatform ? mobileEditorSurfaceComponent : desktopEditorSurfaceComponent
             }
         }
         Item {
@@ -187,6 +157,86 @@ Item {
         function onCurrentIndexChanged() {
             if (contentViewLayout.calendarOverlayVisible)
                 contentViewLayout.requestActiveCalendarOverlayClose();
+        }
+    }
+    Component {
+        id: desktopEditorSurfaceComponent
+
+        ContentsDisplayView {
+            anchors.fill: parent
+            contentViewModel: contentViewLayout.resolvedContentViewModel
+            displayColor: contentViewLayout.displayColor
+            drawerVisible: contentViewLayout.drawerVisible
+            drawerColor: contentViewLayout.drawerColor
+            drawerHeight: contentViewLayout.drawerHeight
+            editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
+            enabled: contentViewLayout.visible
+            editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
+            frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
+            gutterColor: contentViewLayout.gutterColor
+            gutterWidthOverride: contentViewLayout.gutterWidthOverride
+            libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
+            lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
+            lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
+            minDisplayHeight: contentViewLayout.minDisplayHeight
+            minDrawerHeight: contentViewLayout.minDrawerHeight
+            minimapVisible: contentViewLayout.minimapVisible
+            noteListModel: contentViewLayout.resolvedNoteListModel
+            panelViewModel: contentViewLayout.panelViewModel
+            resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
+            splitterColor: contentViewLayout.splitterColor
+            splitterHandleThickness: contentViewLayout.splitterHandleThickness
+            splitterThickness: contentViewLayout.splitterThickness
+
+            onDrawerHeightDragRequested: function (value) {
+                contentViewLayout.drawerHeightDragRequested(value);
+            }
+            onEditorTextEdited: function (text) {
+                contentViewLayout.editorTextEdited(text);
+            }
+            onViewHookRequested: {
+                contentViewLayout.viewHookRequested();
+            }
+        }
+    }
+    Component {
+        id: mobileEditorSurfaceComponent
+
+        MobileContentsDisplayView {
+            anchors.fill: parent
+            contentViewModel: contentViewLayout.resolvedContentViewModel
+            displayColor: contentViewLayout.displayColor
+            drawerVisible: contentViewLayout.drawerVisible
+            drawerColor: contentViewLayout.drawerColor
+            drawerHeight: contentViewLayout.drawerHeight
+            editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
+            enabled: contentViewLayout.visible
+            editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
+            frameHorizontalInsetOverride: contentViewLayout.frameHorizontalInsetOverride
+            gutterColor: contentViewLayout.gutterColor
+            gutterWidthOverride: contentViewLayout.gutterWidthOverride
+            libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
+            lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
+            lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
+            minDisplayHeight: contentViewLayout.minDisplayHeight
+            minDrawerHeight: contentViewLayout.minDrawerHeight
+            minimapVisible: contentViewLayout.minimapVisible
+            noteListModel: contentViewLayout.resolvedNoteListModel
+            panelViewModel: contentViewLayout.panelViewModel
+            resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
+            splitterColor: contentViewLayout.splitterColor
+            splitterHandleThickness: contentViewLayout.splitterHandleThickness
+            splitterThickness: contentViewLayout.splitterThickness
+
+            onDrawerHeightDragRequested: function (value) {
+                contentViewLayout.drawerHeightDragRequested(value);
+            }
+            onEditorTextEdited: function (text) {
+                contentViewLayout.editorTextEdited(text);
+            }
+            onViewHookRequested: {
+                contentViewLayout.viewHookRequested();
+            }
         }
     }
     Component {

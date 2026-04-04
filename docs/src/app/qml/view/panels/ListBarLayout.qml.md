@@ -61,6 +61,11 @@ selection state machine lives in a sibling controller file.
 
 ## Viewport Contract
 
+- The visible `ListView` now renders `displayedNoteListEntries`, a view-owned snapshot array populated through
+  `NoteListModelContractBridge.readAllRows()`, instead of binding delegates directly to the resetting domain model.
+- `syncDisplayedNoteListEntries()` compares the new row snapshot to the previous one and only replaces the visible
+  array when the actual row content changed. Periodic model resets with identical content therefore no longer tear down
+  and rebuild every visible row.
 - The note list keeps `boundsBehavior` and `boundsMovement` on `Flickable.StopAtBounds` so the viewport does not
   overshoot and rebound when the user hits the first or last row.
 - `flickDeceleration` is forced to `1000000` and `onFlickStarted: noteListView.cancelFlick()` cancels inertial carry,
@@ -102,6 +107,8 @@ selection state machine lives in a sibling controller file.
 - `syncCurrentIndexFromModel()` prevents unsolicited `ListView.currentIndex` resets from leaking back into app state.
 - `NoteListModelContractBridge` centralizes search/current-index/current-note reflection and write calls so QML does
   not need to own all dynamic contract detection.
+- The bridge now also exposes `readAllRows()`, allowing the QML view to keep a stable render snapshot even while the
+  underlying `QAbstractItemModel` goes through `beginResetModel()/endResetModel()` refresh cycles.
 - Committed active-row state now reads `noteListContractBridge.currentIndex/currentNoteId` **property contracts**
   (not invokable snapshots), so QML binding reactivity tracks selection changes and avoids the first-row-fixed
   active-card regression.
@@ -131,6 +138,13 @@ selection state machine lives in a sibling controller file.
   `LibraryNoteMutationViewModel` batch helpers.
 - Pointer-drag hot-spot fallback now uses `noteItemDelegate.width/height` explicitly, so drag-start
   math remains bound to the delegate's own touch target.
+- While a note drag is active, visible note-row snapshot refreshes are now deferred through
+  `requestDisplayedNoteListEntriesSync(...)` instead of immediately replacing `displayedNoteListEntries`.
+  This prevents `itemsChanged()` / `dataChanged()` churn from tearing down the source delegate mid-drag.
+- `reuseItems` is now disabled during active drag, so `ListView` does not recycle the grabbed delegate while the drag
+  handler still owns pointer state.
+- The note-id helper functions used by drag payload construction now return concrete arrays/booleans again, removing
+  silent `undefined` paths that could abort multi-selection drag flows in QML JavaScript.
 
 ## Tests
 
@@ -145,3 +159,7 @@ selection state machine lives in a sibling controller file.
     already part of that group.
   - Dragging one note from a selected group into the hierarchy sidebar must carry every selected note id in the drag
     payload.
+  - Periodic note-list refreshes with unchanged row content must not visibly blink, because `displayedNoteListEntries`
+    remains stable across equivalent model resets.
+  - Periodic note-list refreshes that arrive during an active drag must be applied only after the drag ends, so the
+    source delegate is not recycled out from under `noteDragHandler`.

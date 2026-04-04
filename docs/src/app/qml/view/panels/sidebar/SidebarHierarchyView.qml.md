@@ -34,6 +34,9 @@ without changing delegate call sites.
   second search-panel slab.
 - The LVRS row primitive used underneath this view keeps inactive hierarchy rows transparent, so only active, hover,
   pressed, and drag states paint explicit fills.
+- The visible hierarchy model is now held in `displayedHierarchyModel`, a view-owned snapshot. The view compares the
+  projected hierarchy payload against the previous snapshot and only replaces the rendered model when the actual row
+  content changed.
 
 ## Important Outputs
 - `searchSubmitted(...)`
@@ -50,6 +53,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `hierarchyViewModel.requestViewModelHook()` if the active domain provides it.
 - `onHierarchyNodesChanged` no longer calls `requestViewModelHook()` directly.
   Instead, it only resynchronizes LVRS selection/focus presentation.
+- `onHierarchyNodesChanged` also refreshes `displayedHierarchyModel`, but only when the serialized row payload actually
+  differs. Periodic hierarchy refresh signals with unchanged content therefore no longer force a visible tree rebuild.
 - `requestHierarchyViewModelReload(reason)` now explicitly ignores `reason == "hierarchy.nodes.changed"` to prevent recursive reload loops when domain hooks emit `hierarchyModelChanged` during projection refresh.
 
 ## Selected Row Activation Contract
@@ -133,6 +138,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
   drop.
+- That folder-drop path depends on `SidebarHierarchyNoteDropController.normalizeNoteIds(...)` returning a concrete
+  array. If the helper falls through without `return normalized;`, the sidebar will reject every note-list-to-folder
+  drop as an empty payload.
 - The same `DropArea` now mirrors the drop-commit boolean into `drop.accepted`, so failed folder assignment attempts
   remain visibly rejected by the QML drag/drop contract instead of looking handled.
 - The note-drop hover pulse uses explicit `NumberAnimation.from` / `to` pairs on both opacity segments; bare numeric
@@ -160,9 +168,13 @@ This file should be read as a composed view, not as the place where hierarchy bu
   - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.
   - Chevron expand/collapse must not move the primary active selection to an unrelated sibling row.
   - Dropping a multi-selected note-list group onto a folder must attempt folder assignment for every dragged note id.
+- Folder-drop acceptance must not regress to an always-empty payload because the sidebar note-drop controller omitted its
+  normalized-array return path.
 - Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
   LVRS/Qt.
 - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
   qmlcache parsing does not fail on bare numeric tokens.
 - Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;
   replacing either with a bare numeric line breaks qmlcache code generation.
+- Periodic hierarchy refreshes with unchanged nodes must not visibly blink, because `displayedHierarchyModel` must
+  remain unchanged across equivalent `hierarchyNodesChanged` emissions.

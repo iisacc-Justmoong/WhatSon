@@ -27,3 +27,12 @@ can then upgrade the note header to the new attribute-based format.
 - An empty `<progress>` element is now treated as an explicit cleared state and parses to `-1` instead of silently falling back to `0`.
 - Unknown `<progress>` text that cannot be resolved as a numeric value or enum label now also
   resolves to `-1` (`No progress`) instead of coercing to `0` (`First draft`).
+
+## File Statistics Parsing Rules
+
+- The parser now reads the `.wsnhead <fileStat>...</fileStat>` block.
+- Missing statistic tags default to `0` for backwards compatibility with older note headers.
+- Negative or invalid numeric payloads are normalized back to `0`.
+- Existing top-level metadata (`project`, `folders`, `tags`, `created`, `lastModified`) remains the
+  source of truth for the non-numeric Figma rows; the `fileStat` block only stores explicit numeric
+  counters.

@@ -47,6 +47,10 @@ Rectangle {
     readonly property int noteListFlickDeceleration: 1000000
     readonly property bool noteListMode: listBarLayout.hasNoteListModel
     property var noteListModel: null
+    property var displayedNoteListEntries: []
+    property string displayedNoteListEntriesSignature: "[]"
+    property bool displayedNoteListEntriesSyncDeferred: false
+    property bool displayedNoteListEntriesForceRefreshDeferred: false
     readonly property int noteListScrollTick: LV.Theme.gap2
     readonly property bool noteListSearchContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.searchText !== undefined || listBarLayout.noteListModel.setSearchText !== undefined)
     property bool noteListViewportRestorePending: false
@@ -151,7 +155,7 @@ Rectangle {
         const cleared = listBarLayout.clearFoldersForNoteIds(targetNoteIds);
         if (cleared)
             noteListView.forceActiveFocus();
-
+        return cleared;
     }
     function clearFoldersForNoteIds(noteIds) {
         const normalizedNoteIds = listBarLayout.uniqueTrimmedStringList(noteIds);
@@ -169,7 +173,7 @@ Rectangle {
             if (listBarLayout.noteDeletionViewModel.clearNoteFoldersById(normalizedNoteIds[index]))
                 clearedAny = true;
         }
-
+        return clearedAny;
     }
     function clearInternalNoteDropPreview() {
         if (!listBarLayout.noteDropTarget || listBarLayout.noteDropTarget.clearNoteDropPreview === undefined)
@@ -243,7 +247,7 @@ Rectangle {
         const deleted = listBarLayout.deleteNoteIds(targetNoteIds);
         if (deleted)
             noteListView.forceActiveFocus();
-
+        return deleted;
     }
     function deleteCurrentNote() {
         if (!listBarLayout.noteDeletionContractAvailable)
@@ -252,8 +256,7 @@ Rectangle {
         const deleted = listBarLayout.deleteNoteIds(targetNoteIds);
         if (deleted)
             noteListView.forceActiveFocus();
-
-
+        return deleted;
     }
     function deleteNoteIds(noteIds) {
         const normalizedNoteIds = listBarLayout.uniqueTrimmedStringList(noteIds);
@@ -275,7 +278,15 @@ Rectangle {
             noteDeletionBridge.focusedNoteId = normalizedNoteIds[0];
             deletedAny = noteDeletionBridge.deleteFocusedNote();
         }
-
+        return deletedAny;
+    }
+    function flushDeferredDisplayedNoteListEntriesSync() {
+        if (!listBarLayout.displayedNoteListEntriesSyncDeferred)
+            return false;
+        const forceRefresh = listBarLayout.displayedNoteListEntriesForceRefreshDeferred;
+        listBarLayout.displayedNoteListEntriesSyncDeferred = false;
+        listBarLayout.displayedNoteListEntriesForceRefreshDeferred = false;
+        return listBarLayout.syncDisplayedNoteListEntries(forceRefresh);
     }
     function isDelegateActive(index, noteId) {
         const normalizedIndex = listBarLayout.normalizeCurrentIndex(index);
@@ -329,8 +340,26 @@ Rectangle {
             return "";
         return String(noteListContractBridge.readNoteIdAt(normalizedIndex) || "").trim();
     }
+    function noteListEntriesSignature(entries) {
+        const normalizedEntries = entries === undefined || entries === null ? [] : entries;
+        try {
+            return JSON.stringify(normalizedEntries);
+        } catch (error) {
+            return "";
+        }
+    }
     function noteListMaxContentY() {
         return Math.max(0, (Number(noteListView.contentHeight) || 0) - (Number(noteListView.height) || 0));
+    }
+    function readDisplayedNoteListEntriesFromModel() {
+        if (!noteListContractBridge || noteListContractBridge.readAllRows === undefined)
+            return [];
+        const rows = noteListContractBridge.readAllRows();
+        if (Array.isArray(rows))
+            return rows;
+        if (rows && rows.length !== undefined)
+            return Array.prototype.slice.call(rows);
+        return [];
     }
     function noteSelectionContainsIndex(index) {
         return noteSelectionController.noteSelectionContainsIndex(index);
@@ -428,7 +457,7 @@ Rectangle {
                 continue;
             noteIds.push(noteId);
         }
-
+        return noteIds;
     }
     function selectionModifierPressed(modifiers) {
         return noteSelectionController.selectionModifierPressed(modifiers);
@@ -459,6 +488,24 @@ Rectangle {
         if (noteListView.currentIndex !== normalizedIndex)
             noteListView.currentIndex = normalizedIndex;
         listBarLayout.syncingCurrentIndexFromModel = false;
+    }
+    function syncDisplayedNoteListEntries(forceRefresh) {
+        const nextEntries = listBarLayout.readDisplayedNoteListEntriesFromModel();
+        const nextSignature = listBarLayout.noteListEntriesSignature(nextEntries);
+        if (!Boolean(forceRefresh) && nextSignature === listBarLayout.displayedNoteListEntriesSignature)
+            return false;
+        listBarLayout.displayedNoteListEntries = nextEntries;
+        listBarLayout.displayedNoteListEntriesSignature = nextSignature;
+        return true;
+    }
+    function requestDisplayedNoteListEntriesSync(forceRefresh) {
+        const requestedForceRefresh = Boolean(forceRefresh);
+        if (listBarLayout.noteDragActive) {
+            listBarLayout.displayedNoteListEntriesSyncDeferred = true;
+            listBarLayout.displayedNoteListEntriesForceRefreshDeferred = listBarLayout.displayedNoteListEntriesForceRefreshDeferred || requestedForceRefresh;
+            return false;
+        }
+        return listBarLayout.syncDisplayedNoteListEntries(requestedForceRefresh);
     }
     function syncFocusedNoteDeletionState() {
         const bridgeNoteId = noteListContractBridge.currentNoteId;
@@ -495,7 +542,7 @@ Rectangle {
                 continue;
             normalized.push(normalizedValue);
         }
-
+        return normalized;
     }
     function updateInternalNoteDropPreview(delegateItem, localX, localY) {
         if (!listBarLayout.useInternalNoteDrag || !delegateItem || !listBarLayout.noteDropTarget)
@@ -520,6 +567,7 @@ Rectangle {
     color: panelColor
 
     Component.onCompleted: {
+        listBarLayout.syncDisplayedNoteListEntries(true);
         listBarLayout.syncCurrentIndexFromModel();
         listBarLayout.syncSelectionFromCommittedState();
         listBarLayout.syncFocusedNoteDeletionState();
@@ -545,11 +593,17 @@ Rectangle {
         listBarLayout.pressedNoteIndex = -1;
         noteSelectionState.requestRevision += 1;
         listBarLayout.applySearchTextToModel();
+        listBarLayout.syncDisplayedNoteListEntries(true);
         listBarLayout.syncCurrentIndexFromModel();
         listBarLayout.syncSelectionFromCommittedState();
         listBarLayout.syncFocusedNoteDeletionState();
     }
     onSearchTextChanged: applySearchTextToModel()
+    onNoteDragActiveChanged: {
+        if (listBarLayout.noteDragActive)
+            return;
+        listBarLayout.flushDeferredDisplayedNoteListEntriesSync();
+    }
 
     QtObject {
         id: noteSelectionState
@@ -699,12 +753,14 @@ Rectangle {
                     anchors.margins: 2
                     boundsBehavior: Flickable.StopAtBounds
                     boundsMovement: Flickable.StopAtBounds
+                    cacheBuffer: Math.max(0, height * 2)
                     clip: true
                     flickDeceleration: listBarLayout.noteListFlickDeceleration
                     interactive: contentHeight > height && !listBarLayout.noteDragActive
                     maximumFlickVelocity: listBarLayout.noteListScrollTick
-                    model: listBarLayout.resolvedNoteListModel
+                    model: listBarLayout.displayedNoteListEntries
                     pixelAligned: true
+                    reuseItems: !listBarLayout.noteDragActive
                     spacing: 2
                     synchronousDrag: true
                     visible: listBarLayout.noteListMode
@@ -1010,13 +1066,32 @@ Rectangle {
             if (listBarLayout.selectedNoteIndices.length === 0 || !listBarLayout.noteSelectionContainsIndex(listBarLayout.committedNoteIndex))
                 listBarLayout.syncSelectionFromCommittedState();
         }
+        function onItemsChanged() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+        }
         function onModelAboutToBeReset() {
             listBarLayout.captureNoteListViewport();
         }
         function onModelReset() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
             Qt.callLater(function () {
                 listBarLayout.restoreNoteListViewport();
             });
+        }
+        function onRowsInserted() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+        }
+        function onRowsMoved() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+        }
+        function onRowsRemoved() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+        }
+        function onDataChanged() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
+        }
+        function onLayoutChanged() {
+            listBarLayout.requestDisplayedNoteListEntriesSync(false);
         }
 
         ignoreUnknownSignals: true

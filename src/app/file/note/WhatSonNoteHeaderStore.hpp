@@ -43,6 +43,50 @@ public:
     QStringList tags() const;
     void setTags(QStringList tags);
 
+    int totalFolders() const noexcept;
+    void setTotalFolders(int totalFolders) noexcept;
+
+    int totalTags() const noexcept;
+    void setTotalTags(int totalTags) noexcept;
+
+    int letterCount() const noexcept;
+    void setLetterCount(int letterCount) noexcept;
+
+    int wordCount() const noexcept;
+    void setWordCount(int wordCount) noexcept;
+
+    int sentenceCount() const noexcept;
+    void setSentenceCount(int sentenceCount) noexcept;
+
+    int paragraphCount() const noexcept;
+    void setParagraphCount(int paragraphCount) noexcept;
+
+    int spaceCount() const noexcept;
+    void setSpaceCount(int spaceCount) noexcept;
+
+    int indentCount() const noexcept;
+    void setIndentCount(int indentCount) noexcept;
+
+    int lineCount() const noexcept;
+    void setLineCount(int lineCount) noexcept;
+
+    int openCount() const noexcept;
+    void setOpenCount(int openCount) noexcept;
+    void incrementOpenCount() noexcept;
+
+    int modifiedCount() const noexcept;
+    void setModifiedCount(int modifiedCount) noexcept;
+    void incrementModifiedCount() noexcept;
+
+    int backlinkToCount() const noexcept;
+    void setBacklinkToCount(int backlinkToCount) noexcept;
+
+    int backlinkByCount() const noexcept;
+    void setBacklinkByCount(int backlinkByCount) noexcept;
+
+    int includedResourceCount() const noexcept;
+    void setIncludedResourceCount(int includedResourceCount) noexcept;
+
     QStringList progressEnums() const;
     void setProgressEnums(QStringList progressEnums);
 
@@ -64,6 +108,20 @@ private:
     bool m_bookmarked = false;
     QStringList m_bookmarkColors;
     QStringList m_tags;
+    int m_totalFolders = 0;
+    int m_totalTags = 0;
+    int m_letterCount = 0;
+    int m_wordCount = 0;
+    int m_sentenceCount = 0;
+    int m_paragraphCount = 0;
+    int m_spaceCount = 0;
+    int m_indentCount = 0;
+    int m_lineCount = 0;
+    int m_openCount = 0;
+    int m_modifiedCount = 0;
+    int m_backlinkToCount = 0;
+    int m_backlinkByCount = 0;
+    int m_includedResourceCount = 0;
     QStringList m_progressEnums;
     int m_progress = -1;
     bool m_preset = false;

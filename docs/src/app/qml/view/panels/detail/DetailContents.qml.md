@@ -2,7 +2,8 @@
 
 ## Responsibility
 `DetailContents.qml` owns the state-switched body of the desktop detail panel.
-The implemented primary form is the Figma `Properties` example (`155:4582`), while the other toolbar states mount dedicated placeholder forms instead of reusing the properties body.
+The implemented primary forms are the Figma `Properties` example (`155:4582`) and the live `fileStat` statistics form.
+Only the remaining toolbar states still mount dedicated placeholders instead of reusing the properties body.
 
 ## Root Contract
 - Root `objectName`: `DetailContents`
@@ -11,6 +12,7 @@ The implemented primary form is the Figma `Properties` example (`155:4582`), whi
   - `activeContentViewModel`
   - `activeStateName`
   - `detailPanelViewModel`
+  - `fileStatViewModel`
   - `projectSelectionViewModel`
   - `bookmarkSelectionViewModel`
   - `progressSelectionViewModel`
@@ -74,6 +76,13 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 - Folder add confirmation writes through the detail-panel view-model instead of mutating the list locally, so the displayed list remains a direct mirror of persisted file state.
 - The visible `FoldersList` and `TagsList` must also refresh when the active note stays the same but its note-list model emits `itemsChanged()`, because that signal indicates the current `.wsnhead` metadata may have changed outside the detail-panel write path.
 
-## Non-Properties States
-For `fileStat`, `insert`, `fileHistory`, `layer`, and `help`, the file renders a distinct placeholder form with state-specific titles and summaries.
+## File Statistics State
+- The `fileStat` state now mounts `DetailFileStatForm.qml`.
+- That form receives the dedicated `fileStatViewModel` input when the resolved state is `fileStat`, so its text rows
+  are driven by the explicit `DetailFileStatViewModel` contract instead of a generic active-state object.
+- The statistics surface is no longer a placeholder; it renders the persisted `.wsnhead <fileStat>` values and the
+  current header metadata as three `description`-styled text blocks matching the Figma node `235:7734`.
+
+## Remaining Placeholder States
+For `insert`, `fileHistory`, `layer`, and `help`, the file still renders a distinct placeholder form with state-specific titles and summaries.
 This keeps the state switch explicit until each mode receives its final Figma form.

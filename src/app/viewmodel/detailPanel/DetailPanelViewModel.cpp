@@ -37,7 +37,7 @@ namespace
 DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
     : QObject(parent)
       , m_propertiesViewModel(this)
-      , m_fileStatViewModel(DetailContentState::FileStat, this)
+      , m_fileStatViewModel(this)
       , m_insertViewModel(DetailContentState::Insert, this)
       , m_fileHistoryViewModel(DetailContentState::FileHistory, this)
       , m_layerViewModel(DetailContentState::Layer, this)
@@ -118,7 +118,7 @@ QObject* DetailPanelViewModel::contentViewModelForState(int stateValue) const no
     case DetailContentState::Properties:
         return const_cast<DetailPropertiesViewModel*>(&m_propertiesViewModel);
     case DetailContentState::FileStat:
-        return const_cast<DetailContentSectionViewModel*>(&m_fileStatViewModel);
+        return const_cast<DetailFileStatViewModel*>(&m_fileStatViewModel);
     case DetailContentState::Insert:
         return const_cast<DetailContentSectionViewModel*>(&m_insertViewModel);
     case DetailContentState::FileHistory:
@@ -164,7 +164,7 @@ QObject* DetailPanelViewModel::progressSelectionViewModel() const noexcept
 
 QObject* DetailPanelViewModel::fileStatViewModel() const noexcept
 {
-    return const_cast<DetailContentSectionViewModel*>(&m_fileStatViewModel);
+    return const_cast<DetailFileStatViewModel*>(&m_fileStatViewModel);
 }
 
 QObject* DetailPanelViewModel::helpViewModel() const noexcept
@@ -518,7 +518,9 @@ void DetailPanelViewModel::reloadCurrentHeader(const bool forceReload)
         && !noteDirectoryPath.isEmpty()
         && m_noteHeaderSessionStore.ensureLoaded(noteId, noteDirectoryPath, &loadError, forceReload))
     {
-        m_propertiesViewModel.applyHeader(m_noteHeaderSessionStore.header(noteId));
+        const WhatSonNoteHeaderStore header = m_noteHeaderSessionStore.header(noteId);
+        m_propertiesViewModel.applyHeader(header);
+        m_fileStatViewModel.applyHeader(header);
         m_projectSelectionSourceViewModel.synchronize(false);
         m_bookmarkSelectionSourceViewModel.synchronize(false);
         m_progressSelectionSourceViewModel.synchronize(false);
@@ -526,6 +528,7 @@ void DetailPanelViewModel::reloadCurrentHeader(const bool forceReload)
     }
 
     m_propertiesViewModel.clearHeader();
+    m_fileStatViewModel.clearHeader();
 }
 
 void DetailPanelViewModel::synchronizeCurrentNoteMetadataConsumers(const QString& noteId)

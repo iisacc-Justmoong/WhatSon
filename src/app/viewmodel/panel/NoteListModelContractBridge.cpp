@@ -3,6 +3,7 @@
 #include <QAbstractItemModel>
 #include <QMetaObject>
 #include <QMetaProperty>
+#include <QVariantMap>
 
 #include <algorithm>
 
@@ -11,23 +12,43 @@ namespace
     constexpr auto kSetSearchTextSignature = "setSearchText(QString)";
     constexpr auto kSetCurrentIndexSignature = "setCurrentIndex(int)";
 
-    int roleForName(const QAbstractItemModel* model, const QByteArray& roleName)
+    QVariantMap rowSnapshotAt(const QAbstractItemModel* model, int row)
     {
-        if (model == nullptr || roleName.isEmpty())
+        QVariantMap snapshot;
+        if (model == nullptr)
         {
-            return -1;
+            return snapshot;
+        }
+
+        const int normalizedRow = std::max(-1, row);
+        if (normalizedRow < 0 || normalizedRow >= model->rowCount())
+        {
+            return snapshot;
+        }
+
+        const QModelIndex modelIndex = model->index(normalizedRow, 0);
+        if (!modelIndex.isValid())
+        {
+            return snapshot;
         }
 
         const QHash<int, QByteArray> roleNames = model->roleNames();
         for (auto iterator = roleNames.constBegin(); iterator != roleNames.constEnd(); ++iterator)
         {
-            if (iterator.value() == roleName)
+            const QByteArray roleName = iterator.value().trimmed();
+            if (roleName.isEmpty())
             {
-                return iterator.key();
+                continue;
             }
+            snapshot.insert(QString::fromUtf8(roleName), modelIndex.data(iterator.key()));
         }
 
-        return -1;
+        if (!snapshot.contains(QStringLiteral("noteId")) && snapshot.contains(QStringLiteral("id")))
+        {
+            snapshot.insert(QStringLiteral("noteId"), snapshot.value(QStringLiteral("id")));
+        }
+
+        return snapshot;
     }
 }
 
@@ -156,23 +177,34 @@ QString NoteListModelContractBridge::readNoteIdAt(int index) const
         return {};
     }
 
-    const QModelIndex modelIndex = model->index(normalizedIndex, 0);
-    if (!modelIndex.isValid())
+    const QVariantMap snapshot = rowSnapshotAt(model, normalizedIndex);
+    if (snapshot.isEmpty())
     {
         return {};
     }
 
-    int noteIdRole = roleForName(model, QByteArrayLiteral("noteId"));
-    if (noteIdRole < 0)
+    const QVariant noteIdValue = snapshot.contains(QStringLiteral("noteId"))
+        ? snapshot.value(QStringLiteral("noteId"))
+        : snapshot.value(QStringLiteral("id"));
+    return noteIdValue.toString().trimmed();
+}
+
+QVariantList NoteListModelContractBridge::readAllRows() const
+{
+    QVariantList rows;
+    const auto* model = qobject_cast<QAbstractItemModel*>(m_noteListModel.data());
+    if (model == nullptr)
     {
-        noteIdRole = roleForName(model, QByteArrayLiteral("id"));
-    }
-    if (noteIdRole < 0)
-    {
-        return {};
+        return rows;
     }
 
-    return modelIndex.data(noteIdRole).toString().trimmed();
+    const int rowCount = model->rowCount();
+    rows.reserve(std::max(0, rowCount));
+    for (int row = 0; row < rowCount; ++row)
+    {
+        rows.push_back(rowSnapshotAt(model, row));
+    }
+    return rows;
 }
 
 bool NoteListModelContractBridge::pushCurrentIndex(int index)

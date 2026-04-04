@@ -31,6 +31,8 @@ Rectangle {
     readonly property bool createFolderEnabled: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.createFolderEnabled) : false
     property int defaultToolbarIndex: 0
     readonly property bool deleteFolderEnabled: hierarchyInteractionBridge ? Boolean(hierarchyInteractionBridge.deleteFolderEnabled) : false
+    property var displayedHierarchyModel: []
+    property string displayedHierarchyModelSignature: "[]"
     property int editingHierarchyIndex: -1
     readonly property var editingHierarchyItem: sidebarHierarchyView.resolveVisibleHierarchyItem(sidebarHierarchyView.editingHierarchyIndex)
     readonly property var editingHierarchyItemPresentation: {
@@ -185,7 +187,7 @@ Rectangle {
         const revision = sidebarHierarchyView.hierarchySelectionVisualRevision;
         return sidebarHierarchyView.collectSelectedHierarchyOverlayRects();
     }
-    readonly property var standardHierarchyModel: sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : [])
+    readonly property var standardHierarchyModel: sidebarHierarchyView.displayedHierarchyModel
     readonly property int toolbarButtonSize: LV.Theme.gap20
     readonly property real toolbarButtonSpacing: sidebarHierarchyView.toolbarItems.length > 1 ? (sidebarHierarchyView.toolbarFrameWidth - sidebarHierarchyView.toolbarButtonSize * sidebarHierarchyView.toolbarItems.length) / (sidebarHierarchyView.toolbarItems.length - 1) : 0
     property int toolbarFrameWidth: 200
@@ -385,6 +387,14 @@ Rectangle {
     function normalizeHierarchySelectionIndices(indices) {
         return hierarchySelectionController.normalizeHierarchySelectionIndices(indices);
     }
+    function hierarchyModelSignature(modelValue) {
+        const normalizedModelValue = modelValue === undefined || modelValue === null ? [] : modelValue;
+        try {
+            return JSON.stringify(normalizedModelValue);
+        } catch (error) {
+            return "";
+        }
+    }
     function normalizedInteger(value, fallbackValue) {
         const numericValue = Number(value);
         if (!isFinite(numericValue))
@@ -562,6 +572,15 @@ Rectangle {
     function setSelectedHierarchyIndices(indices) {
         hierarchySelectionController.setSelectedHierarchyIndices(indices);
     }
+    function syncDisplayedHierarchyModel(forceRefresh) {
+        const nextModel = sidebarHierarchyView.projectedHierarchyModel(hierarchyViewModel ? hierarchyViewModel.hierarchyNodes : []);
+        const nextSignature = sidebarHierarchyView.hierarchyModelSignature(nextModel);
+        if (!Boolean(forceRefresh) && nextSignature === sidebarHierarchyView.displayedHierarchyModelSignature)
+            return false;
+        sidebarHierarchyView.displayedHierarchyModel = nextModel;
+        sidebarHierarchyView.displayedHierarchyModelSignature = nextSignature;
+        return true;
+    }
     function shouldSuppressHierarchyActivation(item, itemId, index) {
         if (!sidebarHierarchyView.hierarchyExpansionActivationSuppressed && !hierarchyExpansionActivationBlockTimer.running)
             return false;
@@ -600,6 +619,7 @@ Rectangle {
     focus: true
 
     Component.onCompleted: {
+        sidebarHierarchyView.syncDisplayedHierarchyModel(true);
         sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         bookmarkPaletteController.scheduleBookmarkPaletteVisualRefresh();
         sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.view.ready");
@@ -621,6 +641,7 @@ Rectangle {
     onHierarchyViewModelChanged: {
         sidebarHierarchyView.cancelHierarchyRename();
         sidebarHierarchyView.clearNoteDropPreview();
+        sidebarHierarchyView.syncDisplayedHierarchyModel(true);
         sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
         sidebarHierarchyView.requestHierarchyViewModelReload("hierarchy.viewModel.changed");
         Qt.callLater(function () {
@@ -675,6 +696,7 @@ Rectangle {
     }
     Connections {
         function onHierarchyNodesChanged() {
+            sidebarHierarchyView.syncDisplayedHierarchyModel(false);
             if (sidebarHierarchyView.renameEditingActive && !sidebarHierarchyView.canRenameIndex(sidebarHierarchyView.editingHierarchyIndex))
                 sidebarHierarchyView.cancelHierarchyRename();
             sidebarHierarchyView.clearNoteDropPreview();

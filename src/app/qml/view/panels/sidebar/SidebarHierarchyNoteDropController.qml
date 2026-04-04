@@ -35,7 +35,7 @@ QtObject {
             }
         }
         visitHierarchyDescendants(hierarchyTree);
-
+        return items;
     }
     function commitNoteDropAtPosition(x, y, noteIds, referenceItem) {
         const normalizedNoteIds = noteDropController.normalizeNoteIds(noteIds);
@@ -135,7 +135,7 @@ QtObject {
                 continue;
             normalized.push(normalizedNoteId);
         }
-
+        return normalized;
     }
     function normalizedInteger(value, fallbackValue) {
         const numericValue = Number(value);

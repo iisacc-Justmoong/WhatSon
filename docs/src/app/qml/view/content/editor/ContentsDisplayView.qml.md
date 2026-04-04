@@ -2,15 +2,15 @@
 
 ## Responsibility
 
-`ContentsDisplayView.qml` is the shared editor surface for desktop and mobile note editing. It composes the custom
-inline-format editor, gutter, minimap, and lower drawer into one geometry contract so every collaborator can resolve line
-positions from the same document origin.
+`ContentsDisplayView.qml` is the desktop editor surface. It composes the custom inline-format editor, gutter, minimap,
+and lower drawer into one geometry contract so every collaborator can resolve line positions from the same document
+origin.
 
-The shared surface also owns the cross-platform editor typography policy:
+Desktop policy owned by this file:
 
-- desktop editor text renders at `12px`
-- mobile editor text renders at `14px` (`desktop + 2`)
-- mobile hides the gutter entirely instead of reserving a transparent gutter column
+- desktop editor text renders at `12px` with `Font.Normal` weight
+- desktop keeps the gutter visible by default unless the dedicated resource viewer replaces the text editor
+- mobile now uses the duplicated `MobileContentsDisplayView.qml` file instead of sharing this implementation
 
 ## Composition Model
 
@@ -43,6 +43,8 @@ The root editor state now keeps two text projections:
   after reserving the fixed top spacer.
 - `effectiveEditorFontPixelSize` is the canonical editor font size and now drives both the editable RichText surface
   and the legacy formatted-preview fallback.
+- `desktopEditorFontWeight` is the canonical desktop body-text weight and keeps the editable RichText surface plus the
+  formatted-preview fallback at `Font.Normal` instead of the heavier medium weight.
 - `editorTextLineBoxHeight` follows that same effective font size so gutter/minimap fallback geometry does not keep the
   old `12px` line-box assumption after the editor typography changed.
 - `logicalTextLength()` is the canonical line-metric length source for gutter/minimap cursor geometry in RichText mode.
@@ -54,12 +56,17 @@ The root editor state now keeps two text projections:
   overlapping or skipped line-number rows when empty lines/wrapped edits jitter `positionToRectangle(...)`.
 - `visibleGutterLineEntries` is an imperative snapshot (`[{ lineNumber, y }]`) refreshed from
   `commitGutterRefresh()`. The gutter no longer asks the live editor geometry for every delegate binding evaluation.
+- `buildVisibleGutterLineEntries()` must return that snapshot array explicitly. If the function falls through without a
+  return, desktop gutter labels disappear even though the gutter column itself is still mounted.
 - Minimap viewport/current-line chrome is also exposed as numeric snapshots
   (`minimapResolvedViewportHeight`, `minimapResolvedViewportY`, `minimapResolvedCurrentLine*`) so the child minimap
   layer no longer re-enters editor geometry through callback bindings for those properties.
 - `minimapVisualRows`, `minimapScrollable`, `minimapResolvedTrackHeight`, and the viewport/current-line metrics are
   refreshed imperatively from a shared minimap snapshot path instead of `readonly` property bindings. This breaks the
   old cycle where editor layout and minimap layout could repeatedly reopen each other during note snapshot polling.
+- `buildFallbackMinimapVisualRows()`, `documentOccupiedBottomY()`, and `normalizeResourceFormat()` must also keep
+  explicit fallback returns; losing those returns silently collapses gutter/minimap/resource helper state after later
+  refactors.
 
 ## Key Collaborators
 
@@ -77,8 +84,8 @@ The root editor state now keeps two text projections:
 - `ContentsGutterMarkerBridge`: normalizes external marker specifications into a gutter-friendly model.
 - `ContentsEditorSession`: owns local-authority tracking, debounced saves, and note-switch synchronization.
 - `ContentsGutterLayer` and `ContentsMinimapLayer`: render against the shared geometry helpers exported by this file.
-  `ContentsGutterLayer` is mounted only for non-mobile editor surfaces; mobile no longer keeps a zero-value chrome
-  placeholder in the row layout.
+- `ContentViewLayout.qml`: mounts this desktop implementation only for non-mobile LVRS platforms and mounts
+  `MobileContentsDisplayView.qml` for mobile.
 - `DrawerMenuBar`, `DrawerContents`, and `DrawerToolbar`: compose the lower drawer as separate Figma-aligned modules
   instead of an inline placeholder rectangle.
 - Drawer/editor panel partition is computed in one place (`drawerView`):
@@ -93,6 +100,9 @@ The root editor state now keeps two text projections:
 - User edits flow through `editorSession.markLocalEditorAuthority()` and `editorSession.scheduleEditorPersistence()`.
 - Model-driven note swaps now feed canonical source text into `editorSession.syncEditorTextFromSelection(...)`, while
   `ContentsInlineFormatEditor` binds to `renderedEditorText`.
+- For newly created notes, successful immediate writes now keep local editor authority until the note list model echoes
+  the same `currentBodyText` back. The desktop editor must not accept a stale empty-body snapshot during the first few
+  keystrokes after note creation.
 - Focus-loss persistence now waits for IME preedit to settle before flushing pending editor text, so Hangul syllable
   composition is applied to source text before debounce/save cleanup runs.
 - The editor keeps a periodic note snapshot poll (`noteSnapshotRefreshTimer`, default `1200ms`) that calls
@@ -120,6 +130,7 @@ The root editor state now keeps two text projections:
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
+- `showEditorGutter` is desktop-local here and is derived only from the current text/resource-viewer state.
 - Inline formatting shortcuts persist semantic `.wsnbody` inline tags around the selected text through the save
   pipeline:
   - `Cmd/Ctrl+B` -> `<bold>...</bold>`
@@ -253,11 +264,15 @@ The root editor state now keeps two text projections:
   - choosing `Plain` removes inline tags from the selected source span
   - reapplying the same formatting action to an already formatted selection restores that selection to plain text
   - opening an empty note must not render a `Start typing here` placeholder overlay
-  - desktop editor text must render at `12px`
-  - mobile editor text must render `2px` larger than desktop
-  - mobile editor route must not reserve or render the gutter column
+  - desktop editor text must render at `12px` with regular weight
+  - desktop editor surfaces must still render the gutter column
+  - desktop gutter line numbers must still render because `buildVisibleGutterLineEntries()` returns a concrete
+    `[{ lineNumber, y }]` array instead of `undefined`
+  - mobile must not reuse this file for its gutter policy
   - qmlcache compilation must continue to accept the explicit `Binding.property` declaration for editor top padding
   - resource-card image preview must keep an explicit `Image.source` binding instead of a bare token line
+  - `markerColorForType(...)` must keep a default `return` after the `current` branch so later component blocks do not
+    collapse into parse errors such as `Expected token ','` near `Component.onCompleted`
 - In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally

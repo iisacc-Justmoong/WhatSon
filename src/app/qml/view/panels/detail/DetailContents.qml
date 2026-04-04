@@ -11,6 +11,7 @@ Item {
     property var activeContentViewModel: null
     property string activeStateName: "properties"
     property var detailPanelViewModel: null
+    property var fileStatViewModel: null
     property var projectSelectionViewModel: null
     property var bookmarkSelectionViewModel: null
     property var progressSelectionViewModel: null
@@ -771,8 +772,14 @@ Item {
             }
         }
     }
+    DetailFileStatForm {
+        anchors.fill: parent
+        fileStatViewModel: detailContents.resolvedActiveStateName === "fileStat" ? detailContents.fileStatViewModel : null
+        visible: detailContents.resolvedActiveStateName === "fileStat"
+    }
     DetailPlaceholderForm {
         visible: detailContents.resolvedActiveStateName !== "properties"
+            && detailContents.resolvedActiveStateName !== "fileStat"
     }
 
     states: [

@@ -24,9 +24,14 @@
 - `editorTextSynchronized`
 
 ## Persistence Guard Notes
-- `flushPendingEditorText()` now clears `localEditorAuthority` on successful save.
-- This prevents repeated save loops when the model returns a canonicalized body payload (for example normalized rich/source text) that differs from the in-flight editor buffer.
-- The next model update can then be accepted by `shouldAcceptModelBodyText(...)` and re-synchronize the editor state cleanly.
+- `acknowledgeSuccessfulEditorPersistence()` now clears only the pending-save/timer state after a successful write.
+- Successful writes no longer revoke `localEditorAuthority` immediately. The session keeps that authority until the same
+  note echoes the same body text back through `syncEditorTextFromSelection(...)`.
+- `syncEditorTextFromSelection(...)` now drops local authority only when the note changes or when the model payload
+  matches the current editor buffer exactly. This prevents newly created notes from accepting a stale empty
+  `currentBodyText` snapshot during the first few keystrokes.
+- `shouldAcceptModelBodyText(...)` therefore continues rejecting mismatched same-note model text while the editor still
+  owns the current local buffer.
 
 ## Intended Detailed Sections
 - Responsibility and business role

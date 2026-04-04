@@ -23,6 +23,22 @@
       <tag>${tag2}</tag>
       <tag>${tag3}</tag>
     </tags>
+    <fileStat>
+      <totalFolders>0</totalFolders>
+      <totalTags>0</totalTags>
+      <letterCount>0</letterCount>
+      <wordCount>0</wordCount>
+      <sentenceCount>0</sentenceCount>
+      <paragraphCount>0</paragraphCount>
+      <spaceCount>0</spaceCount>
+      <indentCount>0</indentCount>
+      <lineCount>0</lineCount>
+      <openCount>0</openCount>
+      <modifiedCount>0</modifiedCount>
+      <backlinkToCount>0</backlinkToCount>
+      <backlinkByCount>0</backlinkByCount>
+      <includedResourceCount>0</includedResourceCount>
+    </fileStat>
     <progress enums={"Ready", Pending, InProgress, Done"}>
         ${float: float}
     </progress>

@@ -7,13 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/detail`
 - Child directories: 0
-- Child files: 5
+- Child files: 6
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
 - `DetailContents.qml`
+- `DetailFileStatForm.qml`
 - `DetailPanel.qml`
 - `DetailPanelHeaderToolbar.qml`
 - `DetailPanelHeaderToolbarButton.qml`

@@ -19,6 +19,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 
 - Line-number delegates no longer call `lineY(...)` on every binding evaluation. They consume a precomputed
   `resolvedY` from `visibleLineNumbersModel`.
+- The parent snapshot function must hand this component a real array. If `visibleLineNumbersModel` is assigned from a
+  helper that forgot to `return visibleLines`, the gutter layer intentionally renders nothing rather than guessing.
 - Marker delegates still accept resolver callbacks, but all callback results pass through
   `resolveNumericResolverValue(...)` before use so invalid/undefined values collapse to safe numeric fallbacks.
 - Delegate payload is always accessed through `required property var modelData`, avoiding implicit delegate context
@@ -26,9 +28,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 
 ## Collaborators
 
-- `ContentsDisplayView.qml`: computes the visible line-entry snapshot and normalized marker list.
-- `ContentsDisplayView.qml` also decides whether the gutter should exist at all; mobile editor surfaces now suppress the
-  gutter instead of reserving a transparent gutter column.
+- `ContentsDisplayView.qml`: desktop owner that computes the visible line-entry snapshot and normalized marker list.
+- `MobileContentsDisplayView.qml`: mobile owner that keeps gutter visibility disabled entirely.
 - `ContentsDisplayView.qml` resolves marker colors for `current`, `changed`, and `conflict`, and unknown marker types
   now fall back to the primary/current color instead of leaving the resolver path incomplete.
 - `ContentsGutterMarkerBridge`: prepares external marker payloads before the parent view hands them to the gutter.
@@ -36,6 +37,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 ## Regression Checks
 
 - Line numbers should remain vertically stable while scrolling rich text with wrapped lines.
+- Line numbers should not disappear after editor refactors that touch the parent snapshot helpers; the gutter expects a
+  concrete `visibleLineNumbersModel` array at all times.
 - Active line styling should track the current cursor line without creating repeated binding-loop warnings.
 - Marker pills should remain aligned with the same logical lines as the line-number snapshot.
 - Marker color resolution should remain total for `current`, `changed`, `conflict`, and unexpected fallback input.

@@ -440,13 +440,9 @@ QtObject {
         if (!controller.selectionBridge || controller.selectionBridge.persistEditorTextForNote === undefined || !controller.view.contentPersistenceContractAvailable)
             return false;
         const saved = !!controller.selectionBridge.persistEditorTextForNote(noteId, nextText);
-        if (saved && controller.editorSession) {
-            if (controller.editorSession.pendingBodySave !== undefined)
-                controller.editorSession.pendingBodySave = false;
-            if (controller.editorSession.localEditorAuthority !== undefined)
-                controller.editorSession.localEditorAuthority = false;
-        }
-
+        if (saved && controller.editorSession && controller.editorSession.acknowledgeSuccessfulEditorPersistence !== undefined)
+            controller.editorSession.acknowledgeSuccessfulEditorPersistence();
+        return saved;
     }
     function queueInlineFormatWrap(tagName) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)

@@ -1,6 +1,7 @@
 #include "WhatSonHubNoteDeletionService.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/note/WhatSonNoteFileStatSupport.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -105,6 +106,9 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
     }
 
     const LibraryNoteRecord removedNote = request.notes.at(noteIndex);
+    const QStringList removedBacklinkTargets = WhatSon::NoteFileStatSupport::extractBacklinkTargets(
+        removedNote.bodySourceText.isEmpty() ? removedNote.bodyPlainText : removedNote.bodySourceText,
+        QString());
     const QString noteDirectoryPath = m_noteStorageValidator.resolveExistingNoteDirectoryPath(removedNote);
     const bool missingMaterializedDirectory = noteDirectoryPath.isEmpty() || !QFileInfo(noteDirectoryPath).isDir();
     QFileInfo noteDirectoryInfo(noteDirectoryPath);
@@ -301,6 +305,33 @@ bool WhatSonHubNoteDeletionService::deleteNote(Request request, Result* outResul
         }
 
         wroteStatFile = true;
+    }
+
+    const QString backlinkRefreshReferencePath = missingMaterializedDirectory
+                                                     ? normalizedLibraryPath
+                                                     : stagedNoteDirectoryPath;
+    for (const QString& backlinkTarget : removedBacklinkTargets)
+    {
+        if (backlinkTarget.trimmed().isEmpty() || backlinkTarget.trimmed() == normalizedNoteId)
+        {
+            continue;
+        }
+
+        QString backlinkRefreshError;
+        if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNoteId(
+                backlinkTarget,
+                backlinkRefreshReferencePath,
+                &backlinkRefreshError))
+        {
+            restoreStatFile();
+            restoreIndexFile();
+            restoreStagedDirectory();
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = backlinkRefreshError;
+            }
+            return false;
+        }
     }
 
     QString removeError;

@@ -30,3 +30,24 @@ paths; that responsibility belongs to higher-level services that know the curren
   `Ready/Pending/InProgress/Done` set.
 - Non-negative progress values are serialized as the `<progress>` element body.
 - A cleared progress state (`-1`) is serialized as an empty `<progress ...></progress>` element so the parser can round-trip the absence of progress instead of coercing it back to `0`.
+
+## File Statistics Serialization Rules
+
+- The serializer now emits a dedicated `<fileStat>` block directly under `.wsnhead <head>`.
+- Every statistic is written explicitly, even when the value is `0`, so new notes start with a
+  stable schema and older readers can ignore the block safely.
+- The block currently contains:
+  - `totalFolders`
+  - `totalTags`
+  - `letterCount`
+  - `wordCount`
+  - `sentenceCount`
+  - `paragraphCount`
+  - `spaceCount`
+  - `indentCount`
+  - `lineCount`
+  - `openCount`
+  - `modifiedCount`
+  - `backlinkToCount`
+  - `backlinkByCount`
+  - `includedResourceCount`

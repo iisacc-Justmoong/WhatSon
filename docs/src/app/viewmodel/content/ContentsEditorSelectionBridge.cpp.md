@@ -20,6 +20,14 @@
   - Invokes `reloadNoteMetadataForNoteId(QString)` on the bound content view-model when available.
   - Refreshes exported selection/count state (`selectedNoteId`, `selectedNoteBodyText`, `visibleNoteCount`) after
     reload attempts.
+- `refreshNoteSelectionState()` now also treats a note-id transition as a real "open" event for
+  `.wsnhead fileStat` tracking:
+  - Resolves `noteDirectoryPathForNoteId(QString)` from the active content view-model when that
+    contract exists.
+  - Calls `WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(..., incrementOpenCount=true)`
+    so `openCount` and incoming backlink counts are refreshed when the editor selection changes.
+  - Queues `reloadNoteMetadataForNoteId(QString)` back into the active hierarchy viewmodel so note-list
+    snapshots and the detail panel can re-read the just-updated header after the open-count write lands.
 
 ### Classes and Structs
 - None detected during scaffold generation.

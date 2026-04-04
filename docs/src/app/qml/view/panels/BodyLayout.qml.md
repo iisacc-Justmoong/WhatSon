@@ -49,6 +49,8 @@
   the note editor reuse the same `.wsresource` import path as menu-based imports.
 - `editorViewModeViewModel` is accepted on the desktop shell and forwarded to `ContentViewLayout`, so editor render
   modes (`Plain/Page/Print/Web/Presentation`) stay consistent between navigation controls and the content surface.
+- `isMobilePlatform` is forwarded from the root LVRS window into `ContentViewLayout`, even on the desktop shell, so
+  nested editor components consume the canonical LVRS platform detector instead of recomputing mobile mode locally.
 
 ## Intended Detailed Sections
 - Responsibility and business role

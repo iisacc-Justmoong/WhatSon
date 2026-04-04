@@ -26,7 +26,6 @@ Item {
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: "#FFF567"
     readonly property int desktopEditorFontPixelSize: 12
-    readonly property int desktopEditorFontWeight: Font.Normal
     property color displayColor: "transparent"
     property color drawerColor: "transparent"
     property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
@@ -62,6 +61,7 @@ Item {
         return false;
     }
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
+    readonly property int editorMobileFontPixelSizeOffset: 2
     property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
     readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)
     property alias editorText: editorSession.editorText
@@ -70,7 +70,7 @@ Item {
     property int editorTopInsetOverride: -1
     property var editorViewModeViewModel: null
     readonly property real editorViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
-    readonly property int effectiveEditorFontPixelSize: contentsView.desktopEditorFontPixelSize
+    readonly property int effectiveEditorFontPixelSize: contentsView.desktopEditorFontPixelSize + contentsView.editorMobileFontPixelSizeOffset
     readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
     readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
     readonly property var effectiveGutterMarkers: {
@@ -215,7 +215,7 @@ Item {
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
-    readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+    readonly property bool showEditorGutter: false
     readonly property bool showFormattedTextRenderer: false
     readonly property bool showPageEditorLayout: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && contentsView.activeEditorViewModeValue === contentsView.pageEditorViewModeValue
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
@@ -1245,7 +1245,7 @@ Item {
                         fontFamily: LV.Theme.fontBody
                         fontLetterSpacing: 0
                         fontPixelSize: contentsView.effectiveEditorFontPixelSize
-                        fontWeight: contentsView.desktopEditorFontWeight
+                        fontWeight: Font.Medium
                         insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
                         insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
                         placeholderText: ""
@@ -1301,7 +1301,7 @@ Item {
                             font.family: LV.Theme.fontBody
                             font.letterSpacing: 0
                             font.pixelSize: contentsView.effectiveEditorFontPixelSize
-                            font.weight: contentsView.desktopEditorFontWeight
+                            font.weight: Font.Medium
                             text: textFormatRenderer.renderedHtml
                             textFormat: Text.RichText
                             width: formattedPreviewViewport.textWidth

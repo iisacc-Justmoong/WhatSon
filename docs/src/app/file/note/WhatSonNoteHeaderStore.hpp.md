@@ -23,6 +23,32 @@ Modern code should prefer `setFolderBindings(...)` so both arrays stay synchroni
 - The enum-label array and the selected integer are intentionally separated so callers can preserve
   custom note-local progress taxonomies while still mutating the active selection.
 
+## File Statistics API
+
+`WhatSonNoteHeaderStore` now also owns the numeric `fileStat` metadata block that backs the Figma
+detail statistics panel.
+
+- Header-derived counters:
+  - `totalFolders`
+  - `totalTags`
+- Body-derived counters:
+  - `letterCount`
+  - `wordCount`
+  - `sentenceCount`
+  - `paragraphCount`
+  - `spaceCount`
+  - `indentCount`
+  - `lineCount`
+  - `backlinkToCount`
+  - `backlinkByCount`
+  - `includedResourceCount`
+- Runtime counters:
+  - `openCount`
+  - `modifiedCount`
+
+All counters are clamped to non-negative integers. `incrementOpenCount()` and
+`incrementModifiedCount()` are the intended mutation entrypoints for lifecycle tracking.
+
 ## Persistence Shape
 
 At serialization time, folder bindings are written as:
@@ -34,6 +60,15 @@ At serialization time, folder bindings are written as:
 ```
 
 The text node remains the readable path. The `uuid` attribute carries the stable semantic identity.
+
+The statistics block is serialized as:
+
+```xml
+<fileStat>
+  <totalFolders>0</totalFolders>
+  <openCount>0</openCount>
+</fileStat>
+```
 
 ## Main Collaborators
 

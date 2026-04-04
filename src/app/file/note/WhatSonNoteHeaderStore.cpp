@@ -168,6 +168,11 @@ namespace
 
         return sanitized;
     }
+
+    int sanitizeCountValue(const int value) noexcept
+    {
+        return std::max(value, 0);
+    }
 } // namespace
 
 WhatSonNoteHeaderStore::WhatSonNoteHeaderStore() = default;
@@ -188,6 +193,20 @@ void WhatSonNoteHeaderStore::clear()
     m_bookmarked = false;
     m_bookmarkColors.clear();
     m_tags.clear();
+    m_totalFolders = 0;
+    m_totalTags = 0;
+    m_letterCount = 0;
+    m_wordCount = 0;
+    m_sentenceCount = 0;
+    m_paragraphCount = 0;
+    m_spaceCount = 0;
+    m_indentCount = 0;
+    m_lineCount = 0;
+    m_openCount = 0;
+    m_modifiedCount = 0;
+    m_backlinkToCount = 0;
+    m_backlinkByCount = 0;
+    m_includedResourceCount = 0;
     m_progressEnums.clear();
     m_progress = -1;
     m_preset = false;
@@ -433,6 +452,212 @@ void WhatSonNoteHeaderStore::setTags(QStringList tags)
                               .arg(rawCount)
                               .arg(m_tags.size())
                               .arg(m_tags.join(QStringLiteral(", "))));
+}
+
+int WhatSonNoteHeaderStore::totalFolders() const noexcept
+{
+    return m_totalFolders;
+}
+
+void WhatSonNoteHeaderStore::setTotalFolders(int totalFolders) noexcept
+{
+    m_totalFolders = sanitizeCountValue(totalFolders);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setTotalFolders"),
+                              QStringLiteral("value=%1").arg(m_totalFolders));
+}
+
+int WhatSonNoteHeaderStore::totalTags() const noexcept
+{
+    return m_totalTags;
+}
+
+void WhatSonNoteHeaderStore::setTotalTags(int totalTags) noexcept
+{
+    m_totalTags = sanitizeCountValue(totalTags);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setTotalTags"),
+                              QStringLiteral("value=%1").arg(m_totalTags));
+}
+
+int WhatSonNoteHeaderStore::letterCount() const noexcept
+{
+    return m_letterCount;
+}
+
+void WhatSonNoteHeaderStore::setLetterCount(int letterCount) noexcept
+{
+    m_letterCount = sanitizeCountValue(letterCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setLetterCount"),
+                              QStringLiteral("value=%1").arg(m_letterCount));
+}
+
+int WhatSonNoteHeaderStore::wordCount() const noexcept
+{
+    return m_wordCount;
+}
+
+void WhatSonNoteHeaderStore::setWordCount(int wordCount) noexcept
+{
+    m_wordCount = sanitizeCountValue(wordCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setWordCount"),
+                              QStringLiteral("value=%1").arg(m_wordCount));
+}
+
+int WhatSonNoteHeaderStore::sentenceCount() const noexcept
+{
+    return m_sentenceCount;
+}
+
+void WhatSonNoteHeaderStore::setSentenceCount(int sentenceCount) noexcept
+{
+    m_sentenceCount = sanitizeCountValue(sentenceCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setSentenceCount"),
+                              QStringLiteral("value=%1").arg(m_sentenceCount));
+}
+
+int WhatSonNoteHeaderStore::paragraphCount() const noexcept
+{
+    return m_paragraphCount;
+}
+
+void WhatSonNoteHeaderStore::setParagraphCount(int paragraphCount) noexcept
+{
+    m_paragraphCount = sanitizeCountValue(paragraphCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setParagraphCount"),
+                              QStringLiteral("value=%1").arg(m_paragraphCount));
+}
+
+int WhatSonNoteHeaderStore::spaceCount() const noexcept
+{
+    return m_spaceCount;
+}
+
+void WhatSonNoteHeaderStore::setSpaceCount(int spaceCount) noexcept
+{
+    m_spaceCount = sanitizeCountValue(spaceCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setSpaceCount"),
+                              QStringLiteral("value=%1").arg(m_spaceCount));
+}
+
+int WhatSonNoteHeaderStore::indentCount() const noexcept
+{
+    return m_indentCount;
+}
+
+void WhatSonNoteHeaderStore::setIndentCount(int indentCount) noexcept
+{
+    m_indentCount = sanitizeCountValue(indentCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setIndentCount"),
+                              QStringLiteral("value=%1").arg(m_indentCount));
+}
+
+int WhatSonNoteHeaderStore::lineCount() const noexcept
+{
+    return m_lineCount;
+}
+
+void WhatSonNoteHeaderStore::setLineCount(int lineCount) noexcept
+{
+    m_lineCount = sanitizeCountValue(lineCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setLineCount"),
+                              QStringLiteral("value=%1").arg(m_lineCount));
+}
+
+int WhatSonNoteHeaderStore::openCount() const noexcept
+{
+    return m_openCount;
+}
+
+void WhatSonNoteHeaderStore::setOpenCount(int openCount) noexcept
+{
+    m_openCount = sanitizeCountValue(openCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setOpenCount"),
+                              QStringLiteral("value=%1").arg(m_openCount));
+}
+
+void WhatSonNoteHeaderStore::incrementOpenCount() noexcept
+{
+    setOpenCount(m_openCount + 1);
+}
+
+int WhatSonNoteHeaderStore::modifiedCount() const noexcept
+{
+    return m_modifiedCount;
+}
+
+void WhatSonNoteHeaderStore::setModifiedCount(int modifiedCount) noexcept
+{
+    m_modifiedCount = sanitizeCountValue(modifiedCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setModifiedCount"),
+                              QStringLiteral("value=%1").arg(m_modifiedCount));
+}
+
+void WhatSonNoteHeaderStore::incrementModifiedCount() noexcept
+{
+    setModifiedCount(m_modifiedCount + 1);
+}
+
+int WhatSonNoteHeaderStore::backlinkToCount() const noexcept
+{
+    return m_backlinkToCount;
+}
+
+void WhatSonNoteHeaderStore::setBacklinkToCount(int backlinkToCount) noexcept
+{
+    m_backlinkToCount = sanitizeCountValue(backlinkToCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setBacklinkToCount"),
+                              QStringLiteral("value=%1").arg(m_backlinkToCount));
+}
+
+int WhatSonNoteHeaderStore::backlinkByCount() const noexcept
+{
+    return m_backlinkByCount;
+}
+
+void WhatSonNoteHeaderStore::setBacklinkByCount(int backlinkByCount) noexcept
+{
+    m_backlinkByCount = sanitizeCountValue(backlinkByCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setBacklinkByCount"),
+                              QStringLiteral("value=%1").arg(m_backlinkByCount));
+}
+
+int WhatSonNoteHeaderStore::includedResourceCount() const noexcept
+{
+    return m_includedResourceCount;
+}
+
+void WhatSonNoteHeaderStore::setIncludedResourceCount(int includedResourceCount) noexcept
+{
+    m_includedResourceCount = sanitizeCountValue(includedResourceCount);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("note.header.store"),
+                              QStringLiteral("setIncludedResourceCount"),
+                              QStringLiteral("value=%1").arg(m_includedResourceCount));
 }
 
 QStringList WhatSonNoteHeaderStore::progressEnums() const

@@ -56,11 +56,15 @@ The controller talks to the editor through the stable `contentEditor` contract (
 
 - Mutations call `editorSession.markLocalEditorAuthority()` before persistence.
 - Immediate persistence goes through `selectionBridge.persistEditorTextForNote(...)` when the contract is available.
+- `persistEditorTextImmediately(...)` must return the real save result to its caller. The typing controller uses that
+  boolean to decide whether debounce persistence should be re-armed.
 - The save pipeline canonicalizes the edited RichText surface back into `.wsnbody` source tags, so shortcut/context
   formatting persists as semantic tags such as `<bold>...</bold>` and `<italic>...</italic>` instead of raw span CSS.
 - Ordinary typing no longer goes through this controller or its whole-document RichText normalization helper.
-- A successful immediate save clears the local-authority/pending-save window so the model can immediately feed the
-  canonical inline-tag source back into the editor normalization path.
+- A successful immediate save now clears only the pending-save window through
+  `ContentsEditorSession.acknowledgeSuccessfulEditorPersistence()`. It must not revoke local authority before the note
+  list model echoes the same body text back, otherwise newly created notes can collapse the first typed text to a stale
+  empty snapshot.
 - If immediate persistence is unavailable or fails, the controller falls back to
   `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)`; the controller owns the mutation decision but not the broader
@@ -78,3 +82,5 @@ The controller talks to the editor through the stable `contentEditor` contract (
   duplicate formatting from the same key chord.
 - Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
+- Immediate typing saves must return `true` on success so the typing controller does not schedule a redundant debounce
+  write after the note was already persisted.

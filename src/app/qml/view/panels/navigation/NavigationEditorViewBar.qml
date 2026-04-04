@@ -9,26 +9,31 @@ LV.HStack {
     readonly property string activeViewText: activeEditorViewModeViewModel && activeEditorViewModeViewModel.editorViewName !== undefined ? activeEditorViewModeViewModel.editorViewName : "Plain"
     readonly property var editorViewMenuItems: [
         {
+            iconName: "string",
             label: "Plain",
             keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 0
         },
         {
+            iconName: "fileSet",
             label: "Page",
             keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 1
         },
         {
+            iconName: "generalprint",
             label: "Print",
             keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 2
         },
         {
+            iconName: "toolwindowweb",
             label: "Web",
             keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 3
         },
         {
+            iconName: "procedure",
             label: "Presentation",
             keyVisible: false,
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 4
@@ -74,7 +79,7 @@ LV.HStack {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        itemWidth: 108
+        itemWidth: 141
         items: editorViewBar.editorViewMenuItems
         modal: false
         parent: Controls.Overlay.overlay

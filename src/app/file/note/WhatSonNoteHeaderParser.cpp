@@ -6,6 +6,8 @@
 
 #include <QRegularExpression>
 
+#include <algorithm>
+
 namespace
 {
     QString unescapeXmlText(QString value)
@@ -207,6 +209,13 @@ namespace
         return labels;
     }
 
+    int parseNonNegativeIntTagValue(const QString& source, const QString& tagName)
+    {
+        bool ok = false;
+        const int value = extractTagText(source, tagName).toInt(&ok);
+        return ok ? std::max(0, value) : 0;
+    }
+
     int parseProgressValue(const QString& source)
     {
         static const QRegularExpression progressTagRegex(
@@ -325,6 +334,21 @@ bool WhatSonNoteHeaderParser::parse(
     outStore->setBookmarkColors(WhatSon::Bookmarks::parseBookmarkColorsAttribute(
         extractAttributeValue(wsnHeadText, QStringLiteral("bookmarks"), QStringLiteral("colors"))));
     outStore->setTags(extractTagTexts(wsnHeadText, QStringLiteral("tag")));
+    outStore->setTotalFolders(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("totalFolders")));
+    outStore->setTotalTags(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("totalTags")));
+    outStore->setLetterCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("letterCount")));
+    outStore->setWordCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("wordCount")));
+    outStore->setSentenceCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("sentenceCount")));
+    outStore->setParagraphCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("paragraphCount")));
+    outStore->setSpaceCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("spaceCount")));
+    outStore->setIndentCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("indentCount")));
+    outStore->setLineCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("lineCount")));
+    outStore->setOpenCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("openCount")));
+    outStore->setModifiedCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("modifiedCount")));
+    outStore->setBacklinkToCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("backlinkToCount")));
+    outStore->setBacklinkByCount(parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("backlinkByCount")));
+    outStore->setIncludedResourceCount(
+        parseNonNegativeIntTagValue(wsnHeadText, QStringLiteral("includedResourceCount")));
     outStore->setProgressEnums(parseProgressEnums(
         extractAttributeValue(wsnHeadText, QStringLiteral("progress"), QStringLiteral("enums"))));
     outStore->setProgress(parseProgressValue(wsnHeadText));
@@ -340,11 +364,14 @@ bool WhatSonNoteHeaderParser::parse(
                               QStringLiteral("note.header.parser"),
                               QStringLiteral("parse.success"),
                               QStringLiteral(
-                                  "id=%1 folderCount=%2 bookmarkColorCount=%3 tagCount=%4 progressEnumCount=%5 progress=%6 bookmarked=%7 preset=%8")
+                                  "id=%1 folderCount=%2 tagCount=%3 openCount=%4 modifiedCount=%5 backlinkTo=%6 backlinkBy=%7 progressEnumCount=%8 progress=%9 bookmarked=%10 preset=%11")
                               .arg(outStore->noteId())
                               .arg(outStore->folders().size())
-                              .arg(outStore->bookmarkColors().size())
                               .arg(outStore->tags().size())
+                              .arg(outStore->openCount())
+                              .arg(outStore->modifiedCount())
+                              .arg(outStore->backlinkToCount())
+                              .arg(outStore->backlinkByCount())
                               .arg(outStore->progressEnums().size())
                               .arg(outStore->progress())
                               .arg(outStore->isBookmarked() ? QStringLiteral("true") : QStringLiteral("false"))

@@ -61,6 +61,7 @@ Item {
     property int panelSpacing: 10
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanel") : null
     readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()
+    readonly property var resolvedFileStatViewModel: detailPanel.resolveFileStatViewModel()
     readonly property var resolvedProjectSelectionViewModel: detailPanel.resolveProjectSelectionViewModel()
     readonly property var resolvedBookmarkSelectionViewModel: detailPanel.resolveBookmarkSelectionViewModel()
     readonly property var resolvedProgressSelectionViewModel: detailPanel.resolveProgressSelectionViewModel()
@@ -97,6 +98,11 @@ Item {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.activeContentViewModel === undefined)
             return null;
         return detailPanel.detailPanelVm.activeContentViewModel;
+    }
+    function resolveFileStatViewModel() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.fileStatViewModel === undefined)
+            return null;
+        return detailPanel.detailPanelVm.fileStatViewModel;
     }
     function resolveProjectSelectionViewModel() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.projectSelectionViewModel === undefined)
@@ -179,6 +185,7 @@ Item {
             activeStateName: detailPanel.resolvedActiveStateName
             bookmarkSelectionViewModel: detailPanel.resolvedBookmarkSelectionViewModel
             detailPanelViewModel: detailPanel.detailPanelVm
+            fileStatViewModel: detailPanel.resolvedFileStatViewModel
             height: detailPanel.detailContentsHeight
             progressSelectionViewModel: detailPanel.resolvedProgressSelectionViewModel
             projectSelectionViewModel: detailPanel.resolvedProjectSelectionViewModel

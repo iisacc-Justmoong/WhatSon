@@ -102,6 +102,17 @@ WhatSon is an LVRS-based Qt Quick application.
   still match notes whose header stores folder ancestry as separate `<folder>` entries or leaf-only values such as
   `/Competitor` instead of the full `Research/Competitor` path.
 
+## Detail Panel Surface
+
+- The detail panel `fileStat` tab is now backed by `src/app/viewmodel/detailPanel/DetailFileStatViewModel.*` instead of
+  a generic placeholder section object, so QML can bind directly to the persisted `.wsnhead <fileStat>` counters.
+- `src/app/qml/view/panels/detail/DetailFileStatForm.qml` now follows the Figma `235:7734` plain-text layout instead of
+  the earlier card grid, using `description` typography rows for project/folder/tag/date metadata and the tracked file
+  statistics.
+- `src/app/qml/view/panels/detail/DetailPanel.qml` now passes that statistics object into
+  `DetailContents.qml` through an explicit `fileStatViewModel` property instead of relying on a generic active-state
+  object for the statistics tab.
+
 ## Hierarchy Interaction
 
 - `SidebarHierarchyViewModel` is the single sidebar hierarchy state manager. `BodyLayout.qml` and
@@ -151,6 +162,8 @@ WhatSon is an LVRS-based Qt Quick application.
   shared position-based note-drop helper instead of relying only on native `DropArea` traffic.
 - The grabbed note card itself now drops to `25%` opacity, both for the moving overlay preview and the source row,
   so the hovered-folder highlight stays readable instead of being visually buried under the dragged note surface.
+- Note-list snapshot refreshes are now deferred while a drag is active, so background `itemsChanged()` /
+  `dataChanged()` churn does not tear down the grabbed delegate and abruptly cancel note-to-folder drags.
 - `ListBarLayout.qml` now groups transient note-selection replay state and drag-preview state into dedicated local
   `QtObject` blocks (`noteSelectionState`, `noteDragPreviewState`) so the shared note-list surface keeps a smaller
   root property contract without changing the selection or drag behavior.
@@ -900,6 +913,13 @@ Runtime IO components (`src/app/file/IO`):
 Bookmarks runtime behavior:
 
 - `.wsnhead` `<bookmarks state="...">` is parsed into bookmark state (`bool`) and bookmark colors (`string list`)
+- `.wsnhead` now also persists a numeric `<fileStat>` block for detail statistics:
+  `totalFolders`, `totalTags`, `letterCount`, `wordCount`, `sentenceCount`, `paragraphCount`,
+  `spaceCount`, `indentCount`, `lineCount`, `openCount`, `modifiedCount`, `backlinkToCount`,
+  `backlinkByCount`, and `includedResourceCount`
+- Note creation/update rewrites that `<fileStat>` block from the current header/body state, while
+  editor note-selection increments `openCount` and refreshes incoming backlink counts for the
+  opened note
 - Bookmark colors support name tokens and hex tokens; both are normalized to hex for note-list rendering
 - Bookmarks hierarchy list is derived from runtime note records and includes only notes where `bookmarked == true`
 - `WhatSonBookmarksHierarchyStore` maintains a canonical 10-color hex criteria set that matches `.wsnhead` bookmark color

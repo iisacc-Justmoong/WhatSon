@@ -3,6 +3,7 @@
 #include "DetailHierarchySelectionViewModel.hpp"
 #include "DetailContentSectionViewModel.hpp"
 #include "DetailCurrentNoteContextBridge.hpp"
+#include "DetailFileStatViewModel.hpp"
 #include "DetailPropertiesViewModel.hpp"
 #include "DetailNoteHeaderSelectionSourceViewModel.hpp"
 #include "DetailPanelState.hpp"
@@ -104,7 +105,7 @@ private:
 
     WhatSon::DetailPanel::ContentState m_activeState = WhatSon::DetailPanel::ContentState::Properties;
     DetailPropertiesViewModel m_propertiesViewModel;
-    DetailContentSectionViewModel m_fileStatViewModel;
+    DetailFileStatViewModel m_fileStatViewModel;
     DetailContentSectionViewModel m_insertViewModel;
     DetailContentSectionViewModel m_fileHistoryViewModel;
     DetailContentSectionViewModel m_layerViewModel;

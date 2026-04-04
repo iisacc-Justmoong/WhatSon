@@ -1,45 +1,52 @@
 # `src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
+
+`NavigationEditorViewBar.qml` owns the editor `View mode` selector mounted in the navigation strip.
+It shows the currently active editor view label in an `LV.ComboBox`, opens an `LV.ContextMenu`, and
+routes the selected index back into `EditorViewModeViewModel.requestViewModeChange(...)`.
 
 ## Source Metadata
+
 - Source path: `src/app/qml/view/panels/navigation/NavigationEditorViewBar.qml`
 - Source kind: QML view/component
-- File name: `NavigationEditorViewBar.qml`
-- Approximate line count: 89
-
-## QML Surface Snapshot
 - Root type: `LV.HStack`
+- Key ids:
+  - `editorViewBar`
+  - `editorViewCombo`
+  - `editorViewContextMenu`
 
-### Object IDs
-- `editorViewBar`
-- `editorViewCombo`
-- `editorViewContextMenu`
+## Surface Contract
 
-### Required Properties
-- None detected during scaffold generation.
+- `editorViewMenuItems` is the single source of truth for the context-menu entry order, labels, icons, and selected
+  state.
+- The menu keeps the editor-view enum order from `EditorViewState`:
+  - `0`: `Plain`
+  - `1`: `Page`
+  - `2`: `Print`
+  - `3`: `Web`
+  - `4`: `Presentation`
+- The context menu now matches Figma node `192:8693` for the important visible fields:
+  - `Plain` -> `string`
+  - `Page` -> `fileSet`
+  - `Print` -> `generalprint`
+  - `Web` -> `toolwindowweb`
+  - `Presentation` -> `procedure`
+- `itemWidth` is `141`, matching the Figma context-menu frame width so icon + label rows do not compress.
+- `selectedIndex` must resolve from `editorViewModeViewModel.activeViewMode`, so the currently active editor view
+  remains highlighted when the menu opens.
 
-### Signals
-- `viewHookRequested`
+## Interaction Contract
 
-## Recent Updates
-- Context-menu `selectedIndex` now resolves through `editorViewBar.editorViewModeViewModel` to
-  keep nested menu bindings explicitly scoped to the root id.
+- Clicking the combo box toggles the menu through `toggleEditorViewMenu()`.
+- Choosing a menu entry must call `editorViewModeViewModel.requestViewModeChange(index)`.
+- The view still emits `viewHookRequested` after menu open/select so panel-level hook instrumentation remains intact.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Tests
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Automated test files are not currently present in this repository.
+- Regression checklist for this file:
+  - The menu entry labels remain exactly `Plain`, `Page`, `Print`, `Web`, `Presentation`.
+  - Each menu entry keeps the Figma-aligned `iconName` token listed above.
+  - Opening the menu while each editor view is active highlights the matching row through `selectedIndex`.
+  - The `Presentation` row fits without clipping inside the `141px` menu width.

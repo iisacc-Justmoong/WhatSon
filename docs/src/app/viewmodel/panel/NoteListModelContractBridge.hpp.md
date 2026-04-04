@@ -16,6 +16,8 @@
   - `currentIndex`
   - `currentNoteId`
   - `readNoteIdAt(int)` for turning visual multi-selection row indexes back into stable note ids
+  - `readAllRows()` for exporting the current list rows as role-name keyed snapshots that QML can diff without binding
+    directly to a resetting `QAbstractItemModel`
 - Exposes write helpers:
   - `applySearchText(QString)`
   - `pushCurrentIndex(int)`

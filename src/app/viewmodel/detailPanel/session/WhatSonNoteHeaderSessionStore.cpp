@@ -1,13 +1,12 @@
 #include "WhatSonNoteHeaderSessionStore.hpp"
 
-#include "file/note/WhatSonNoteHeaderCreator.hpp"
 #include "file/note/WhatSonNoteFolderBindingService.hpp"
+#include "file/note/WhatSonLocalNoteFileStore.hpp"
 #include "file/note/WhatSonNoteHeaderParser.hpp"
 
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QTextStream>
 
 namespace
 {
@@ -387,24 +386,24 @@ const WhatSonNoteHeaderSessionStore::Entry* WhatSonNoteHeaderSessionStore::findE
 
 bool WhatSonNoteHeaderSessionStore::persistEntry(Entry& entry, QString* errorMessage)
 {
-    QDir().mkpath(QFileInfo(entry.headerFilePath).absolutePath());
-    WhatSonNoteHeaderCreator creator(entry.noteDirectoryPath, QString());
-    const QString text = creator.createHeaderText(entry.header);
+    WhatSonLocalNoteFileStore localNoteFileStore;
+    WhatSonLocalNoteFileStore::UpdateRequest updateRequest;
+    updateRequest.document.noteDirectoryPath = entry.noteDirectoryPath;
+    updateRequest.document.noteHeaderPath = entry.headerFilePath;
+    updateRequest.document.headerStore = entry.header;
+    updateRequest.persistHeader = true;
+    updateRequest.persistBody = false;
+    updateRequest.touchLastModified = true;
 
-    QFile file(entry.headerFilePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+    WhatSonLocalNoteDocument persistedDocument;
+    if (!localNoteFileStore.updateNote(std::move(updateRequest), &persistedDocument, errorMessage))
     {
-        if (errorMessage != nullptr)
-        {
-            *errorMessage = file.errorString();
-        }
         return false;
     }
 
-    QTextStream stream(&file);
-    stream.setEncoding(QStringConverter::Utf8);
-    stream << text;
-    file.close();
+    entry.header = persistedDocument.headerStore;
+    entry.noteDirectoryPath = persistedDocument.noteDirectoryPath;
+    entry.headerFilePath = persistedDocument.noteHeaderPath;
     entry.dirty = false;
     if (errorMessage != nullptr)
     {

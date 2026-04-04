@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QString>
+#include <QVariantList>
 
 class NoteListModelContractBridge : public QObject
 {
@@ -34,6 +35,7 @@ public:
     Q_INVOKABLE int readCurrentIndex() const;
     Q_INVOKABLE QString readCurrentNoteId() const;
     Q_INVOKABLE QString readNoteIdAt(int index) const;
+    Q_INVOKABLE QVariantList readAllRows() const;
     Q_INVOKABLE bool pushCurrentIndex(int index);
 
 signals:

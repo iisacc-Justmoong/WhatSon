@@ -2,6 +2,7 @@
 
 #include "WhatSonNoteBodyPersistence.hpp"
 #include "WhatSonNoteHeaderCreator.hpp"
+#include "WhatSonNoteFileStatSupport.hpp"
 #include "WhatSonNoteHeaderParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
 
@@ -12,6 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSet>
 #include <QUrl>
 
 #include <utility>
@@ -475,6 +477,24 @@ bool WhatSonLocalNoteFileStore::createNote(
         normalizedBodySourceText = normalizedBodyText;
     }
 
+    QString statsError;
+    if (!WhatSon::NoteFileStatSupport::applyTrackedStatistics(
+            &request.headerStore,
+            noteDirectoryPath,
+            normalizedBodySourceText,
+            bodyDocumentText,
+            &statsError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = statsError;
+        }
+        return false;
+    }
+    const QStringList trackedBacklinkTargets = WhatSon::NoteFileStatSupport::extractBacklinkTargets(
+        normalizedBodySourceText,
+        bodyDocumentText);
+
     WhatSonNoteHeaderCreator headerCreator(noteDirectoryPath, QString());
     QString writeError;
     if (!m_ioGateway.writeUtf8File(headerPath, headerCreator.createHeaderText(request.headerStore), &writeError))
@@ -511,6 +531,27 @@ bool WhatSonLocalNoteFileStore::createNote(
             *errorMessage = writeError;
         }
         return false;
+    }
+
+    for (const QString& backlinkTarget : trackedBacklinkTargets)
+    {
+        if (backlinkTarget.trimmed().isEmpty() || backlinkTarget.trimmed() == request.headerStore.noteId().trimmed())
+        {
+            continue;
+        }
+
+        QString targetRefreshError;
+        if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNoteId(
+                backlinkTarget,
+                noteDirectoryPath,
+                &targetRefreshError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = targetRefreshError;
+            }
+            return false;
+        }
     }
 
     if (outDocument != nullptr)
@@ -640,7 +681,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
         return false;
     }
 
-    const bool persistHeader = request.persistHeader || request.touchLastModified;
+    const bool persistHeader = request.persistHeader || request.touchLastModified || request.persistBody;
     const bool persistBody = request.persistBody;
     if (!persistHeader && !persistBody)
     {
@@ -684,6 +725,41 @@ bool WhatSonLocalNoteFileStore::updateNote(
         request.document.headerStore.setNoteId(resolvedNoteId);
     }
     QString serializedBodyDocument;
+    QString bodyDocumentForStats;
+    QStringList previousBacklinkTargets;
+    if ((persistHeader || persistBody) && !bodyPath.isEmpty() && QFileInfo(bodyPath).isFile())
+    {
+        QString existingBodyReadError;
+        const QString existingBodyDocument = [this, &bodyPath, &existingBodyReadError]()
+        {
+            QString rawText;
+            if (!m_ioGateway.readUtf8File(bodyPath, &rawText, &existingBodyReadError))
+            {
+                return QString();
+            }
+            return rawText;
+        }();
+        if (!existingBodyReadError.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = existingBodyReadError;
+            }
+            return false;
+        }
+
+        if (persistBody)
+        {
+            previousBacklinkTargets = WhatSon::NoteFileStatSupport::extractBacklinkTargets(
+                WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(existingBodyDocument),
+                existingBodyDocument);
+        }
+        else
+        {
+            bodyDocumentForStats = existingBodyDocument;
+        }
+    }
+
     if (persistBody)
     {
         QString bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(request.document.bodySourceText);
@@ -695,6 +771,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
         serializedBodyDocument = serializeBodyDocument(request.document.headerStore.noteId(), bodySourceText);
         request.document.bodyPlainText = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(serializedBodyDocument);
         request.document.bodySourceText = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(serializedBodyDocument);
+        bodyDocumentForStats = serializedBodyDocument;
     }
     else
     {
@@ -707,9 +784,38 @@ bool WhatSonLocalNoteFileStore::updateNote(
     }
     request.document.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(request.document.bodyPlainText);
 
+    QString bodySourceTextForStats = request.document.bodySourceText;
+    if (bodySourceTextForStats.isEmpty() && !bodyDocumentForStats.isEmpty())
+    {
+        bodySourceTextForStats = WhatSon::NoteBodyPersistence::sourceTextFromBodyDocument(bodyDocumentForStats);
+        if (bodySourceTextForStats.isEmpty())
+        {
+            bodySourceTextForStats = WhatSon::NoteBodyPersistence::plainTextFromBodyDocument(bodyDocumentForStats);
+        }
+    }
+
+    QString statsError;
+    if (persistHeader && !WhatSon::NoteFileStatSupport::applyTrackedStatistics(
+            &request.document.headerStore,
+            noteDirectoryPath,
+            bodySourceTextForStats,
+            bodyDocumentForStats,
+            &statsError))
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = statsError;
+        }
+        return false;
+    }
+
     if (request.touchLastModified)
     {
         request.document.headerStore.setLastModifiedAt(currentNoteTimestamp());
+    }
+    if (persistHeader || persistBody)
+    {
+        request.document.headerStore.incrementModifiedCount();
     }
 
     QString writeError;
@@ -771,6 +877,40 @@ bool WhatSonLocalNoteFileStore::updateNote(
                 *errorMessage = writeError;
             }
             return false;
+        }
+    }
+
+    if (persistBody)
+    {
+        const QStringList currentBacklinkTargets = WhatSon::NoteFileStatSupport::extractBacklinkTargets(
+            bodySourceTextForStats,
+            bodyDocumentForStats);
+        QSet<QString> affectedBacklinkTargets(previousBacklinkTargets.begin(), previousBacklinkTargets.end());
+        for (const QString& target : currentBacklinkTargets)
+        {
+            affectedBacklinkTargets.insert(target);
+        }
+
+        for (const QString& backlinkTarget : affectedBacklinkTargets)
+        {
+            if (backlinkTarget.trimmed().isEmpty()
+                || backlinkTarget.trimmed() == request.document.headerStore.noteId().trimmed())
+            {
+                continue;
+            }
+
+            QString targetRefreshError;
+            if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNoteId(
+                    backlinkTarget,
+                    noteDirectoryPath,
+                    &targetRefreshError))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = targetRefreshError;
+                }
+                return false;
+            }
         }
     }
 

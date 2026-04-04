@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Window
 import LVRS 1.0 as LV
 import ".." as MobileView
 import "../../panels" as PanelView
@@ -692,6 +693,9 @@ Item {
             drawerVisible: false
             editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
             frameHorizontalInsetOverride: LV.Theme.gapNone
+            isMobilePlatform: Window.window && Window.window.isMobilePlatform !== undefined
+                              ? Boolean(Window.window.isMobilePlatform)
+                              : false
             libraryHierarchyViewModel: noteCreationCoordinator.noteCreationViewModel
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel

@@ -16,6 +16,7 @@ Item {
     property var editorViewModeViewModel: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property color gutterColor: "transparent"
+    property bool isMobilePlatform: false
     property var libraryHierarchyViewModel: null
     property color listViewColor: "transparent"
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
@@ -205,6 +206,7 @@ Item {
                 drawerHeight: hStack.drawerHeight
                 editorViewModeViewModel: hStack.editorViewModeViewModel
                 gutterColor: hStack.gutterColor
+                isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
                 minDisplayHeight: hStack.minDisplayHeight
                 minDrawerHeight: hStack.minDrawerHeight

@@ -146,6 +146,37 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     }
     text += QStringLiteral("    </tags>\n");
 
+    text += QStringLiteral("    <fileStat>\n");
+    text += QStringLiteral("      <totalFolders>") + QString::number(store.totalFolders())
+        + QStringLiteral("</totalFolders>\n");
+    text += QStringLiteral("      <totalTags>") + QString::number(store.totalTags())
+        + QStringLiteral("</totalTags>\n");
+    text += QStringLiteral("      <letterCount>") + QString::number(store.letterCount())
+        + QStringLiteral("</letterCount>\n");
+    text += QStringLiteral("      <wordCount>") + QString::number(store.wordCount())
+        + QStringLiteral("</wordCount>\n");
+    text += QStringLiteral("      <sentenceCount>") + QString::number(store.sentenceCount())
+        + QStringLiteral("</sentenceCount>\n");
+    text += QStringLiteral("      <paragraphCount>") + QString::number(store.paragraphCount())
+        + QStringLiteral("</paragraphCount>\n");
+    text += QStringLiteral("      <spaceCount>") + QString::number(store.spaceCount())
+        + QStringLiteral("</spaceCount>\n");
+    text += QStringLiteral("      <indentCount>") + QString::number(store.indentCount())
+        + QStringLiteral("</indentCount>\n");
+    text += QStringLiteral("      <lineCount>") + QString::number(store.lineCount())
+        + QStringLiteral("</lineCount>\n");
+    text += QStringLiteral("      <openCount>") + QString::number(store.openCount())
+        + QStringLiteral("</openCount>\n");
+    text += QStringLiteral("      <modifiedCount>") + QString::number(store.modifiedCount())
+        + QStringLiteral("</modifiedCount>\n");
+    text += QStringLiteral("      <backlinkToCount>") + QString::number(store.backlinkToCount())
+        + QStringLiteral("</backlinkToCount>\n");
+    text += QStringLiteral("      <backlinkByCount>") + QString::number(store.backlinkByCount())
+        + QStringLiteral("</backlinkByCount>\n");
+    text += QStringLiteral("      <includedResourceCount>") + QString::number(store.includedResourceCount())
+        + QStringLiteral("</includedResourceCount>\n");
+    text += QStringLiteral("    </fileStat>\n");
+
     const QString progressText = store.progress() < 0 ? QString() : QString::number(store.progress());
     text += QStringLiteral("    <progress enums=\"")
         + escapeXmlText(serializeProgressEnumsAttribute(store.progressEnums()))
@@ -158,10 +189,12 @@ QString WhatSonNoteHeaderCreator::createHeaderText(const WhatSonNoteHeaderStore&
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("note.creator.header"),
                               QStringLiteral("createHeaderText"),
-                              QStringLiteral("id=%1 folderCount=%2 tagCount=%3 progress=%4 bytes=%5")
+                              QStringLiteral("id=%1 folderCount=%2 tagCount=%3 openCount=%4 modifiedCount=%5 progress=%6 bytes=%7")
                               .arg(store.noteId())
                               .arg(store.folders().size())
                               .arg(store.tags().size())
+                              .arg(store.openCount())
+                              .arg(store.modifiedCount())
                               .arg(store.progress())
                               .arg(text.toUtf8().size()));
     return text;

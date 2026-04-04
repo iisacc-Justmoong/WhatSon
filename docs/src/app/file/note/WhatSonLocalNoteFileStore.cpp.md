@@ -31,6 +31,13 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - `updateNote(...)` now canonicalizes body writes through `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - This allows RichText editor payloads to be accepted while still writing canonical `.wsnbody` inline tags.
 - During update, the store keeps `bodyPlainText` and `bodySourceText` synchronized from the serialized body so viewmodel/list binding and search/index projections do not drift.
+- Before persisting `.wsnhead`, the store now also recalculates the note-local `fileStat` block from
+  the current header/body state.
+- Body writes force a header write as well, because the body-derived counters live in `.wsnhead`.
+- Every successful update increments `modifiedCount`; open tracking is intentionally handled by the
+  editor-selection bridge instead of the generic read path.
+- When body backlink targets change, the store also refreshes the directly affected target note
+  headers so `backlinkByCount` does not stay stale on linked notes.
 
 ## Regression Coverage
   - leading/interior/trailing empty paragraph round-trip

@@ -1,5 +1,7 @@
 #include "ContentsEditorSelectionBridge.hpp"
 
+#include "file/note/WhatSonNoteFileStatSupport.hpp"
+
 #include <QMetaObject>
 #include <QMetaProperty>
 
@@ -9,6 +11,7 @@ namespace
 {
     constexpr auto kSaveBodyTextForNoteSignature = "saveBodyTextForNote(QString,QString)";
     constexpr auto kSaveCurrentBodyTextSignature = "saveCurrentBodyText(QString)";
+    constexpr auto kNoteDirectoryPathForNoteIdSignature = "noteDirectoryPathForNoteId(QString)";
     constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
 }
 
@@ -262,6 +265,33 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     {
         m_noteSelectionContractAvailable = nextContractAvailable;
         emit noteSelectionContractAvailableChanged();
+    }
+    if (m_selectedNoteId != nextNoteId && !nextNoteId.trimmed().isEmpty()
+        && hasInvokableMethod(m_contentViewModel, kNoteDirectoryPathForNoteIdSignature))
+    {
+        QString noteDirectoryPath;
+        if (QMetaObject::invokeMethod(
+                m_contentViewModel,
+                "noteDirectoryPathForNoteId",
+                Qt::DirectConnection,
+                Q_RETURN_ARG(QString, noteDirectoryPath),
+                Q_ARG(QString, nextNoteId)))
+        {
+            QString statRefreshError;
+            WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
+                nextNoteId,
+                noteDirectoryPath,
+                true,
+                &statRefreshError);
+            if (hasInvokableMethod(m_contentViewModel, kReloadNoteMetadataForNoteIdSignature))
+            {
+                QMetaObject::invokeMethod(
+                    m_contentViewModel,
+                    "reloadNoteMetadataForNoteId",
+                    Qt::QueuedConnection,
+                    Q_ARG(QString, nextNoteId));
+            }
+        }
     }
     if (m_selectedNoteId != nextNoteId)
     {

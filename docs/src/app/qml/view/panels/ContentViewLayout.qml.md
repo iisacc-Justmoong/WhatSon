@@ -42,7 +42,7 @@
   - `monthCalendarOverlayVisible` / `monthCalendarViewModel`
   - `yearCalendarOverlayVisible` / `yearCalendarViewModel`
 - Derives `activeSurfaceIndex` from `calendarOverlayVisible`:
-  - `0` => editor (`ContentsDisplayView`)
+  - `0` => editor (`ContentsDisplayView` on desktop, `MobileContentsDisplayView` on mobile)
   - `1` => calendar content surface
 - Resolves the active page by strict priority:
   - agenda
@@ -56,20 +56,21 @@
   - `weekCalendarOverlayCloseRequested`
   - `monthCalendarOverlayCloseRequested`
   - `yearCalendarOverlayCloseRequested`
-- The editor (`ContentsDisplayView`) and calendar content surface are mutually exclusive at the same anchor slot.
+- The editor surface is file-split by platform:
+  - desktop -> `ContentsDisplayView.qml`
+  - mobile -> `MobileContentsDisplayView.qml`
+- The chosen editor surface and calendar content surface are mutually exclusive at the same anchor slot.
 - The active note-list model's `currentNoteIdChanged` signal dispatches through
   `requestActiveCalendarOverlayClose()` so parent containers (`BodyLayout`, `MobileHierarchyPage`) keep visibility
   ownership and calendar state returns to the editor when a different note is selected.
 - The active note-list model's `currentIndexChanged` path also dispatches through
   `requestActiveCalendarOverlayClose()` so route recovery does not depend only on note-id churn.
-- The composed `ContentsDisplayView` binding path now keeps explicit root-id qualification for
-  ownership-sensitive bindings (`anchors.fill`, `enabled`) to preserve deterministic panel-level
-  scope resolution.
-- `resourcesImportViewModel` is now part of the wrapper contract and is forwarded into
-  `ContentsDisplayView`, enabling editor-side drag/drop packaging through the shared resource import pipeline.
-- `editorViewModeViewModel` is now part of the wrapper contract and is forwarded into
-  `ContentsDisplayView`, so editor mode selection in the navigation bar directly controls plain/print/preview rendering
-  behavior inside the text surface.
+- The editor slot now uses a `Loader` with platform-based `sourceComponent` selection, so desktop/mobile editor
+  behavior can diverge without reintroducing shared gutter suppression bugs.
+- `resourcesImportViewModel` and `editorViewModeViewModel` are forwarded into both editor variants, so editor mode
+  selection and editor-side drag/drop packaging stay aligned across desktop/mobile implementations.
+- `isMobilePlatform` now drives which editor file is instantiated instead of pushing mobile suppression flags into one
+  shared editor component.
 
 ## Intended Detailed Sections
 - Responsibility and business role

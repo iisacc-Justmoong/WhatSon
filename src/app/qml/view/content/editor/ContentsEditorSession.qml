@@ -14,6 +14,10 @@ Item {
 
     signal editorTextSynchronized
 
+    function acknowledgeSuccessfulEditorPersistence() {
+        editorSession.pendingBodySave = false;
+        bodySaveTimer.stop();
+    }
     function flushPendingEditorText() {
         if (!editorSession.pendingBodySave)
             return true;
@@ -28,9 +32,7 @@ Item {
         }
         const saved = editorSession.selectionBridge.persistEditorTextForNote(noteId, editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText));
         if (saved) {
-            editorSession.pendingBodySave = false;
-            bodySaveTimer.stop();
-            editorSession.localEditorAuthority = false;
+            editorSession.acknowledgeSuccessfulEditorPersistence();
             return true;
         }
         return false;
@@ -67,7 +69,7 @@ Item {
         bodySaveTimer.stop();
         editorSession.pendingBodySave = false;
         editorSession.editorBoundNoteId = nextNoteId;
-        if (noteChanged || textChanged)
+        if (noteChanged || !textChanged)
             editorSession.localEditorAuthority = false;
         editorSession.syncingEditorTextFromModel = true;
         if (textChanged)

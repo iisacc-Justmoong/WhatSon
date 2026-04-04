@@ -94,11 +94,12 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `MobileNoteCreationCoordinator.qml`: owns create-note dispatch plus pending-note promotion into the editor route.
 - `HierarchySidebarLayout.qml`: renders the hierarchy route body.
 - `ListBarLayout.qml`: renders the folder-scoped note list route body.
-- `ContentViewLayout.qml`: renders the editor route body.
-- The mobile editor route intentionally relies on `ContentsDisplayView.qml` platform policy instead of forcing its own
-  gutter metrics:
-    - gutter is removed on mobile
+- `ContentViewLayout.qml`: renders the editor route body and now selects `MobileContentsDisplayView.qml` for mobile.
+- The mobile editor route no longer relies on desktop editor code plus mobile suppression flags:
+  - gutter is removed by the mobile-only editor file itself
   - editor font size is `14px` (`desktop 12px + 2px`)
+- The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so editor file selection uses
+  the canonical platform detector instead of responsive-width guesses.
 - `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit
   `<resource ...>` links through the same import pipeline.
 - `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
@@ -110,5 +111,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.
 - Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
 - Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.
-- The mobile editor page must not reintroduce gutter width/line-number overrides now that the shared editor view owns
-  mobile gutter suppression directly.
+- The mobile editor page must not reintroduce gutter width/line-number overrides now that mobile gutter policy lives in
+  `MobileContentsDisplayView.qml`.
+- The mobile editor page must keep sourcing platform mode from the LVRS window detector, not from viewport width.
+- The mobile editor page must not fall back to the desktop editor file for mobile rendering.

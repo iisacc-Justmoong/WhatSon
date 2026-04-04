@@ -1,12 +1,13 @@
 # `src/app/viewmodel/detailPanel/DetailPanelViewModel.hpp`
 
 ## Responsibility
-`DetailPanelViewModel` owns the active detail-panel page state, toolbar selection state, and the three detail-local hierarchy selector copies used by the properties form.
+`DetailPanelViewModel` owns the active detail-panel page state, toolbar selection state, the dedicated `fileStat`
+statistics object, and the three detail-local hierarchy selector copies used by the properties form.
 
 ## Owned Objects
+- `DetailPropertiesViewModel` for `properties`
+- `DetailFileStatViewModel` for `fileStat`
 - `DetailContentSectionViewModel` instances for:
-  - `properties`
-  - `fileStat`
   - `insert`
   - `fileHistory`
   - `layer`
@@ -19,6 +20,7 @@
 ## Public Wiring Surface
 - `activeContentViewModel`
 - `activeStateName`
+- `fileStatViewModel`
 - `toolbarItems`
 - `projectSelectionViewModel`
 - `bookmarkSelectionViewModel`
@@ -36,6 +38,8 @@
 The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
 Instead, C++ injects those hierarchy viewmodels as read-only option sources into the owned selector-copy objects while a separate current-note context bridge resolves the active note id and note directory path.
 That bridge keeps the last valid note context when the active sidebar domain does not expose note-list or note-directory contracts, so the selectors can continue mirroring the open note header instead of dropping to `No ...`.
+The same loaded header snapshot is also applied to the dedicated `DetailFileStatViewModel`, so the statistics tab reads
+from the same persisted `.wsnhead` cache as the properties tab.
 `setCurrentNoteListModel(QObject*)` also observes an optional `itemsChanged()` signal from the active note-list model so the same selected note can force-refresh its `.wsnhead` metadata snapshot after out-of-band folder or tag edits.
 The private write path now also routes successful metadata edits back into the active hierarchy domain through `reloadNoteMetadataForNoteId(QString)`, keeping the note list and detail panel in lockstep.
 
