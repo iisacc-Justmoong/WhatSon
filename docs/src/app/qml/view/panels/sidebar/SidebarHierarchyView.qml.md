@@ -160,7 +160,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
   - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.
   - Chevron expand/collapse must not move the primary active selection to an unrelated sibling row.
   - Dropping a multi-selected note-list group onto a folder must attempt folder assignment for every dragged note id.
-  - Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
-    LVRS/Qt.
-  - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
-    qmlcache parsing does not fail on bare numeric tokens.
+- Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
+  LVRS/Qt.
+- The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
+  qmlcache parsing does not fail on bare numeric tokens.
+- Build-time regression guard: the first pulse segment must keep `from: 0.78` and the second must keep `from: 1.0`;
+  replacing either with a bare numeric line breaks qmlcache code generation.

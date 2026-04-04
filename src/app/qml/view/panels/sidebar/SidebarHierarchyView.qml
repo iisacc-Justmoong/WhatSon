@@ -851,13 +851,13 @@ Rectangle {
             NumberAnimation {
                 duration: 110
                 easing.type: Easing.OutQuad
-                0.78
+                from: 0.78
                 to: 1.0
             }
             NumberAnimation {
                 duration: 180
                 easing.type: Easing.InOutQuad
-                1.0
+                from: 1.0
                 to: 0.84
             }
         }
