@@ -177,12 +177,18 @@ The root editor state now keeps two text projections:
   - `Page` (`activeViewMode == 1`): paper-layout RichText editing surface (A4 portrait scaffold, no print guides)
   - `Print` (`activeViewMode == 2`): paper-layout RichText editing surface + dashed print-margin guides
   - `Web/Presentation`: same editable RichText surface, keeping document editing consistent across all editor views.
-- `Page`/`Print` paper scaffold keeps a fixed A4 aspect ratio (`210 / 297`) with width-first fitting
-  (`printEditorPage.availableWidth`) and no height-fit shrink pass, so the paper size no longer collapses to match
-  viewport height.
+- `Page`/`Print` paper document keeps a fixed A4 aspect ratio (`210 / 297`) with width-first fitting and no
+  height-fit shrink pass, so the paper size no longer collapses to match viewport height.
+- `Page`/`Print` now treat the paper as the active document viewport:
+  - `printDocumentViewport` owns vertical scrolling for the paper document
+  - `ContentsInlineFormatEditor` runs with `externalScroll: true`, so the live editor no longer traps scrolling inside
+    one page-height frame
+  - `printDocumentPageCount` grows the paper surface as the note content grows
 - `Page`/`Print` text layout now maps the editor frame directly to the printable rectangle inside the page:
   `left/right/top/bottom` margins are offset by `printGuideHorizontalInset` / `printGuideVerticalInset`, and
   editor-side `insetHorizontal` / `insetVertical` are pinned to `0` in paper layouts.
+- Repeated page separators now render at each computed page boundary so the paper behaves like a document surface
+  instead of a non-functional scaffold.
 - This keeps the first rendered line below the top print margin and prevents text from crossing the page guide even
   when the viewport height changes.
 - `Print` mode draws dashed margin guides for that printable area; `Page` mode uses the same margins for text layout
@@ -235,7 +241,7 @@ The root editor state now keeps two text projections:
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- Static regression guard: `scripts/test_page_editor_surface.py`
 - Editor formatting regression checklist for this file:
   - ordinary typing/backspace/delete/paste must not serialize fragment comment markup such as `<!--StartFragment-->`
     back into `.wsnbody`
@@ -271,9 +277,9 @@ The root editor state now keeps two text projections:
   - mobile must not reuse this file for its gutter policy
   - qmlcache compilation must continue to accept the explicit `Binding.property` declaration for editor top padding
   - resource-card image preview must keep an explicit `Image.source` binding instead of a bare token line
-  - `markerColorForType(...)` must keep a default `return` after the `current` branch so later component blocks do not
-    collapse into parse errors such as `Expected token ','` near `Component.onCompleted`
-- In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
+- `markerColorForType(...)` must keep a default `return` after the `current` branch so later component blocks do not
+  collapse into parse errors such as `Expected token ','` near `Component.onCompleted`
+- In `Page`/`Print`, the preview text geometry is aligned to the paper document surface and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally
   always editable for note-taking workflows.
@@ -289,6 +295,8 @@ The root editor state now keeps two text projections:
 
 - Minimap viewport math uses the outer editor viewport height, not the inner LVRS flickable height, because the shared
   top spacer is part of the visible editor frame.
+- In `Page`/`Print`, the outer paper document viewport must remain the active scroll owner. Reverting to an
+  editor-local page-height `Flickable` turns the paper back into a non-functional scaffold.
 - Scroll-to-minimap routing uses `editorOccupiedContentHeight()` so the minimap and gutter continue to agree on the
   same content span even after the fixed top spacer is reserved above the text surface.
 - `ContentsMinimapLayer` now receives viewport visibility/height/Y and current-line highlight geometry as resolved

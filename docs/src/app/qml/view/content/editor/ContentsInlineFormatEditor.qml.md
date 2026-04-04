@@ -33,6 +33,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Keeps the scroll contract compatible with the existing gutter/minimap code:
   - `editorItem.parent.y` follows the `Flickable.contentItem` offset
   - `editorItem.parent.parent` resolves back to the owning `Flickable`
+- Supports an external page-document scroll mode:
+  - `externalScroll: true` disables the wrapper's own vertical flicking
+  - `externalScrollViewport` points at the outer paper document viewport
+  - `resolvedFlickable` and `contentOffsetY` let the host keep gutter/minimap math aligned to the outer paper document
 - Preserves the legacy nested editor access pattern:
   - `editorItem`
   - `editorItem.activeFocus` (native `Item` focus state)
@@ -50,7 +54,7 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 
 ## Tests
 
-- Automated test files are not currently present in this repository.
+- Static regression guard: `scripts/test_page_editor_surface.py`
 - Regression checklist:
   - RichText spans derived from `.wsnbody` tags render visibly inside the live editor surface
   - cursor/selection updates still drive gutter and minimap geometry
@@ -62,3 +66,5 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
     `12px` default
   - the visible desktop editor text weight must follow the host-supplied regular-weight policy instead of staying at a
     heavier medium default
+  - page/print hosts must be able to switch the editor into the outer paper document scroll path without re-enabling
+    nested internal flicking

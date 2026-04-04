@@ -36,6 +36,8 @@
   gated through one shared desktop/mobile file.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
+- `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
+  the note instead of remaining a fixed-height scaffold.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

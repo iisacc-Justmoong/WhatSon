@@ -17,6 +17,8 @@ FocusScope {
     property real cornerRadius: 0
     property real editorHeight: 0
     property bool enforceModeDefaults: false
+    property bool externalScroll: false
+    property var externalScrollViewport: null
     property real fieldMinHeight: 0
     property string fontFamily: LV.Theme.fontBody
     property real fontLetterSpacing: 0
@@ -36,7 +38,17 @@ FocusScope {
     property int textFormat: TextEdit.PlainText
     property int wrapMode: TextEdit.NoWrap
 
-    readonly property real contentHeight: editorFlickable.contentHeight
+    readonly property real contentHeight: control.externalScroll ? editorShell.height : editorFlickable.contentHeight
+    readonly property real contentOffsetY: {
+        if (control.externalScroll) {
+            const viewport = control.resolvedFlickable;
+            const viewportContentY = viewport && viewport.contentY !== undefined ? Number(viewport.contentY) || 0 : 0;
+            return (Number(control.y) || 0) - viewportContentY;
+        }
+        if (!editorShell.parent)
+            return 0;
+        return Number(editorShell.parent.y) || 0;
+    }
     property alias cursorPosition: textInput.cursorPosition
     property alias editorItem: editorShell
     readonly property bool empty: textInput.length === 0
@@ -48,6 +60,8 @@ FocusScope {
     readonly property string preeditText: textInput.preeditText === undefined || textInput.preeditText === null
                                            ? ""
                                            : String(textInput.preeditText)
+    readonly property real inputContentHeight: Number(textInput.contentHeight) || 0
+    readonly property var resolvedFlickable: control.externalScroll && control.externalScrollViewport ? control.externalScrollViewport : editorFlickable
     readonly property string selectedText: textInput.selectedText
     readonly property int selectionEnd: textInput.selectionEnd
     readonly property int selectionStart: textInput.selectionStart
@@ -146,7 +160,7 @@ FocusScope {
         contentHeight: Math.max(height, editorShell.height)
         contentWidth: width
         flickableDirection: Flickable.VerticalFlick
-        interactive: contentHeight > height
+        interactive: !control.externalScroll && contentHeight > height
 
         Item {
             id: editorShell

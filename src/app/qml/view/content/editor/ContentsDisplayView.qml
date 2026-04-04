@@ -36,6 +36,8 @@ Item {
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
+        if (contentEditor && contentEditor.contentOffsetY !== undefined)
+            return Number(contentEditor.contentOffsetY) || 0;
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
             return 0;
         return Number(contentEditor.editorItem.parent.y) || 0;
@@ -171,12 +173,30 @@ Item {
     readonly property real printPaperAspectRatio: 210 / 297
     readonly property color printPaperBorderColor: "#19000000"
     readonly property color printPaperColor: "#FFFFFF"
+    readonly property real printPaperDocumentHeight: contentsView.printGuideVerticalInset * 2 + contentsView.printDocumentPageCount * contentsView.printPaperTextHeight
     readonly property int printPaperHorizontalMargin: LV.Theme.gap12
     readonly property int printPaperMaxWidth: 880
     readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
     readonly property int printPaperPaddingVertical: LV.Theme.gap8
+    readonly property int printPaperSeparatorThickness: 1
     readonly property color printPaperTextColor: "#000000"
+    readonly property real printPaperTextHeight: Math.max(1, contentsView.printPaperResolvedHeight - contentsView.printGuideVerticalInset * 2)
+    readonly property real printPaperTextWidth: Math.max(0, contentsView.printPaperResolvedWidth - contentsView.printGuideHorizontalInset * 2)
     readonly property int printPaperVerticalMargin: LV.Theme.gap4
+    readonly property int printDocumentPageCount: {
+        if (!contentsView.showPrintEditorLayout)
+            return 1;
+        const pageTextHeight = Math.max(1, contentsView.printPaperTextHeight);
+        const requiredHeight = Math.max(pageTextHeight, Number(contentEditor && contentEditor.inputContentHeight !== undefined ? contentEditor.inputContentHeight : 0) || 0);
+        return Math.max(1, Math.ceil(requiredHeight / pageTextHeight));
+    }
+    readonly property real printDocumentSurfaceHeight: Math.max(contentsView.editorViewportHeight, contentsView.printPaperDocumentHeight + contentsView.printPaperVerticalMargin * 2)
+    readonly property real printPaperResolvedHeight: contentsView.printPaperAspectRatio > 0 ? contentsView.printPaperResolvedWidth / contentsView.printPaperAspectRatio : 0
+    readonly property real printPaperResolvedWidth: {
+        const viewportWidth = Number(editorViewport ? editorViewport.width : 0) || 0;
+        const availableWidth = Math.max(0, viewportWidth - contentsView.printPaperHorizontalMargin * 2);
+        return Math.max(0, Math.min(contentsView.printPaperMaxWidth, availableWidth));
+    }
     readonly property string renderedEditorText: contentsView.normalizeBodySourceForRichTextEditor(contentsView.editorText)
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
@@ -809,13 +829,14 @@ Item {
         editorSelectionController.resetEditorSelectionCache();
     }
     function resolveEditorFlickable() {
+        if (contentEditor && contentEditor.resolvedFlickable !== undefined && contentEditor.resolvedFlickable)
+            return contentEditor.resolvedFlickable;
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
             return null;
         const candidate = contentEditor.editorItem.parent.parent;
         if (!candidate || candidate.contentY === undefined || candidate.contentHeight === undefined || candidate.height === undefined)
             return null;
-
-
+        return candidate;
     }
     function resourceTagTextForImportedEntry(entry) {
         const resourceEntry = entry && typeof entry === "object" ? entry : ({});
@@ -1149,88 +1170,115 @@ Item {
                     Layout.minimumHeight: contentsView.minEditorHeight
                     clip: true
 
-                    Rectangle {
-                        id: printEditorCanvas
+                    Flickable {
+                        id: printDocumentViewport
 
                         anchors.fill: parent
+                        boundsBehavior: Flickable.StopAtBounds
                         clip: true
-                        color: contentsView.printCanvasColor
+                        contentHeight: Math.max(height, printDocumentSurface.height)
+                        contentWidth: width
+                        flickableDirection: Flickable.VerticalFlick
+                        interactive: contentsView.showPrintEditorLayout && contentHeight > height
                         visible: contentsView.showPrintEditorLayout
                         z: 0
 
-                        Rectangle {
-                            id: printEditorPage
+                        Item {
+                            id: printDocumentSurface
 
-                            readonly property real availableWidth: Math.max(0, Number(parent ? parent.width : 0) - contentsView.printPaperHorizontalMargin * 2)
-                            readonly property real fittedWidth: Math.max(0, Math.min(contentsView.printPaperMaxWidth, printEditorPage.availableWidth))
+                            height: contentsView.printDocumentSurfaceHeight
+                            width: printDocumentViewport.width
 
-                            border.color: contentsView.printPaperBorderColor
-                            border.width: 1
-                            color: contentsView.printPaperColor
-                            height: contentsView.printPaperAspectRatio > 0 ? printEditorPage.width / contentsView.printPaperAspectRatio : 0
-                            radius: LV.Theme.radiusSm
-                            width: printEditorPage.fittedWidth
-                            x: Math.max(0, (Number(parent ? parent.width : 0) - printEditorPage.width) / 2)
-                            y: contentsView.printPaperVerticalMargin
+                            Rectangle {
+                                id: printEditorCanvas
 
-                            Canvas {
                                 anchors.fill: parent
-                                visible: contentsView.showPrintMarginGuides
+                                color: contentsView.printCanvasColor
+                            }
+                            Rectangle {
+                                id: printPaperColumn
 
-                                onHeightChanged: requestPaint()
-                                onPaint: {
-                                    const ctx = getContext("2d");
-                                    ctx.clearRect(0, 0, width, height);
-                                    if (!visible)
-                                        return;
+                                border.color: contentsView.printPaperBorderColor
+                                border.width: 1
+                                color: contentsView.printPaperColor
+                                height: contentsView.printPaperDocumentHeight
+                                radius: LV.Theme.radiusSm
+                                width: contentsView.printPaperResolvedWidth
+                                x: Math.max(0, (Number(parent ? parent.width : 0) - width) / 2)
+                                y: contentsView.printPaperVerticalMargin
+                            }
+                            Repeater {
+                                model: contentsView.printDocumentPageCount
 
-                                    const leftInset = Math.max(1, Number(contentsView.printGuideHorizontalInset) || 1);
-                                    const rightInset = Math.max(1, Number(contentsView.printGuideHorizontalInset) || 1);
-                                    const topInset = Math.max(1, Number(contentsView.printGuideVerticalInset) || 1);
-                                    const bottomInset = Math.max(1, Number(contentsView.printGuideVerticalInset) || 1);
-                                    const left = leftInset;
-                                    const top = topInset;
-                                    const right = Math.max(left + 1, width - rightInset);
-                                    const bottom = Math.max(top + 1, height - bottomInset);
+                                delegate: Item {
+                                    x: printPaperColumn.x
+                                    y: printPaperColumn.y + index * contentsView.printPaperTextHeight
+                                    width: printPaperColumn.width
+                                    height: contentsView.printPaperResolvedHeight
 
-                                    ctx.lineWidth = 1;
-                                    ctx.strokeStyle = "#66727D";
-                                    ctx.beginPath();
-                                    const segment = 6;
-                                    const gap = 4;
-
-                                    for (let x = left; x < right; x += segment + gap) {
-                                        const x2 = Math.min(right, x + segment);
-                                        ctx.moveTo(x, top);
-                                        ctx.lineTo(x2, top);
-                                        ctx.moveTo(x, bottom);
-                                        ctx.lineTo(x2, bottom);
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        color: contentsView.printPaperBorderColor
+                                        height: contentsView.printPaperSeparatorThickness
+                                        visible: index > 0
                                     }
-                                    for (let y = top; y < bottom; y += segment + gap) {
-                                        const y2 = Math.min(bottom, y + segment);
-                                        ctx.moveTo(left, y);
-                                        ctx.lineTo(left, y2);
-                                        ctx.moveTo(right, y);
-                                        ctx.lineTo(right, y2);
+                                    Canvas {
+                                        anchors.fill: parent
+                                        visible: contentsView.showPrintMarginGuides
+
+                                        onHeightChanged: requestPaint()
+                                        onPaint: {
+                                            const ctx = getContext("2d");
+                                            ctx.clearRect(0, 0, width, height);
+                                            if (!visible)
+                                                return;
+
+                                            const leftInset = Math.max(1, Number(contentsView.printGuideHorizontalInset) || 1);
+                                            const rightInset = Math.max(1, Number(contentsView.printGuideHorizontalInset) || 1);
+                                            const topInset = Math.max(1, Number(contentsView.printGuideVerticalInset) || 1);
+                                            const bottomInset = Math.max(1, Number(contentsView.printGuideVerticalInset) || 1);
+                                            const left = leftInset;
+                                            const top = topInset;
+                                            const right = Math.max(left + 1, width - rightInset);
+                                            const bottom = Math.max(top + 1, height - bottomInset);
+
+                                            ctx.lineWidth = 1;
+                                            ctx.strokeStyle = "#66727D";
+                                            ctx.beginPath();
+                                            const segment = 6;
+                                            const gap = 4;
+
+                                            for (let x = left; x < right; x += segment + gap) {
+                                                const x2 = Math.min(right, x + segment);
+                                                ctx.moveTo(x, top);
+                                                ctx.lineTo(x2, top);
+                                                ctx.moveTo(x, bottom);
+                                                ctx.lineTo(x2, bottom);
+                                            }
+                                            for (let y = top; y < bottom; y += segment + gap) {
+                                                const y2 = Math.min(bottom, y + segment);
+                                                ctx.moveTo(left, y);
+                                                ctx.lineTo(left, y2);
+                                                ctx.moveTo(right, y);
+                                                ctx.lineTo(right, y2);
+                                            }
+                                            ctx.stroke();
+                                        }
+                                        onVisibleChanged: {
+                                            if (visible)
+                                                requestPaint();
+                                        }
+                                        onWidthChanged: requestPaint()
                                     }
-                                    ctx.stroke();
                                 }
-                                onVisibleChanged: {
-                                    if (visible)
-                                        requestPaint();
-                                }
-                                onWidthChanged: requestPaint()
                             }
                         }
                     }
                     ContentsInlineFormatEditor {
                         id: contentEditor
 
-                        anchors.bottomMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(parent ? parent.height : 0) || 0) - ((Number(printEditorPage.y) || 0) + (Number(printEditorPage.height) || 0) - contentsView.printGuideVerticalInset)) : 0
-                        anchors.fill: parent
-                        anchors.leftMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(printEditorPage.x) || 0) + contentsView.printGuideHorizontalInset) : 0
-                        anchors.rightMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(parent ? parent.width : 0) || 0) - ((Number(printEditorPage.x) || 0) + (Number(printEditorPage.width) || 0) - contentsView.printGuideHorizontalInset)) : 0
-                        anchors.topMargin: contentsView.showPrintEditorLayout ? Math.max(0, (Number(printEditorPage.y) || 0) + contentsView.printGuideVerticalInset) : contentsView.editorDocumentStartY
                         autoFocusOnPress: true
                         backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         backgroundColorDisabled: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
@@ -1239,9 +1287,11 @@ Item {
                         backgroundColorPressed: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         centeredTextHeight: contentsView.editorTextLineBoxHeight
                         cornerRadius: 0
-                        editorHeight: contentsView.showPrintEditorLayout ? Math.max(0, (Number(printEditorPage.height) || 0) - contentsView.printGuideVerticalInset * 2) : contentsView.editorSurfaceHeight
+                        editorHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : contentsView.editorSurfaceHeight
                         enforceModeDefaults: false
-                        fieldMinHeight: contentsView.showPrintEditorLayout ? Math.max(1, (Number(printEditorPage.height) || 0) - contentsView.printGuideVerticalInset * 2) : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
+                        externalScroll: contentsView.showPrintEditorLayout
+                        externalScrollViewport: contentsView.showPrintEditorLayout ? printDocumentViewport : null
+                        fieldMinHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : Math.max(contentsView.minEditorHeight, contentsView.editorSurfaceHeight)
                         fontFamily: LV.Theme.fontBody
                         fontLetterSpacing: 0
                         fontPixelSize: contentsView.effectiveEditorFontPixelSize
@@ -1260,6 +1310,12 @@ Item {
                         textFormat: TextEdit.RichText
                         visible: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
+                        x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : 0
+                        y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
+                        width: contentsView.showPrintEditorLayout ? contentsView.printPaperTextWidth : (parent ? parent.width : 0)
+                        height: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : (parent ? Math.max(0, parent.height - contentsView.editorDocumentStartY) : 0)
+                        z: contentsView.showPrintEditorLayout ? 1 : 0
+                        parent: contentsView.showPrintEditorLayout ? printDocumentSurface : editorViewport
 
                         Keys.onPressed: function (event) {
                             contentsView.handleInlineFormatShortcutKeyPress(event);
@@ -1276,15 +1332,15 @@ Item {
                         id: formattedPreviewViewport
 
                         readonly property real bottomInset: contentsView.showPrintEditorLayout ? contentsView.printGuideVerticalInset : contentsView.editorBottomInset
-                        readonly property real horizontalInset: contentsView.showPrintEditorLayout ? (Number(printEditorPage.x) || 0) + contentsView.printGuideHorizontalInset : contentsView.editorHorizontalInset
+                        readonly property real horizontalInset: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : contentsView.editorHorizontalInset
                         readonly property real textWidth: {
                             if (contentsView.showPrintEditorLayout) {
-                                const pageWidth = Number(printEditorPage.width) || 0;
+                                const pageWidth = Number(printPaperColumn.width) || 0;
                                 return Math.max(0, pageWidth - contentsView.printGuideHorizontalInset * 2);
                             }
                             return Math.max(0, formattedPreviewViewport.width - contentsView.editorHorizontalInset * 2);
                         }
-                        readonly property real topInset: contentsView.showPrintEditorLayout ? (Number(printEditorPage.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
+                        readonly property real topInset: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
 
                         anchors.fill: parent
                         clip: true
