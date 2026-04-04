@@ -7,6 +7,13 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app`: LVRS-based UI application
 - `src/daemon`: background daemon skeleton
 
+## Verification Policy
+
+- WhatSon does not maintain or operate an in-repo automated test suite.
+- Python test scripts under `scripts/test_*.py` were removed and are not part of the project workflow anymore.
+- `scripts/build_*.py` and `scripts/runtime_smoke_matrix.py` remain optional developer automation utilities, not
+  project test suites or default completion gates.
+
 ## Adaptive Layout
 
 - `src/app/qml/Main.qml` now mounts the root shell through LVRS `ApplicationWindow` page-stack APIs:
@@ -1040,7 +1047,8 @@ python3 scripts/build_all.py \
 
 ## Runtime Smoke Matrix
 
-`scripts/runtime_smoke_matrix.py` provides an execution-focused verification layer on top of `build_all.py`.
+`scripts/runtime_smoke_matrix.py` provides an optional execution-focused verification utility on top of `build_all.py`.
+It is not a maintained project test suite or a default completion gate.
 It is intended to prove that the same UI codebase is built and launched across platforms with clean state.
 It emits the same `[state] {json}` debug snapshots for each phase and command.
 

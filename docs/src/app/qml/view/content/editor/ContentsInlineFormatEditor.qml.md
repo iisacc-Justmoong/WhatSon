@@ -52,9 +52,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Typography is host-driven through `fontPixelSize` and `fontWeight`; the current policy is `12px` regular via
   `ContentsDisplayView.qml` on desktop and `14px` via `MobileContentsDisplayView.qml` on mobile.
 
-## Tests
+## Regression Notes
 
-- Static regression guard: `scripts/test_page_editor_surface.py`
+- This repository no longer maintains a dedicated scripted test for the page/print editor surface.
 - Regression checklist:
   - RichText spans derived from `.wsnbody` tags render visibly inside the live editor surface
   - cursor/selection updates still drive gutter and minimap geometry

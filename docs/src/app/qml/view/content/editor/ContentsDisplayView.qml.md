@@ -239,9 +239,8 @@ The root editor state now keeps two text projections:
 - As a result, inline formatting is rendered directly inside the editable editor surface instead of showing raw style
   tag text, even when the LVRS shell component does not provide reliable RichText styling on its own.
 
-## Tests
+## Regression Notes
 
-- Static regression guard: `scripts/test_page_editor_surface.py`
 - Editor formatting regression checklist for this file:
   - ordinary typing/backspace/delete/paste must not serialize fragment comment markup such as `<!--StartFragment-->`
     back into `.wsnbody`
@@ -257,6 +256,10 @@ The root editor state now keeps two text projections:
   - existing `.wsnbody` `<bold>` regions render as visible bold text on load
   - typing `- item` must re-render as a bullet-list line in the editor surface
   - typing `1. item` must re-render as a numbered-list line in the editor surface
+  - pressing `Enter` inside a non-empty bullet-list line must continue the next line with the same markdown marker and
+    indentation
+  - pressing `Enter` inside a non-empty ordered-list line must continue the next line with the incremented number and
+    same delimiter
   - typing `# heading` or `> quote` must re-render with heading/blockquote styling without changing the stored source
     marker characters
   - fenced code blocks and inline code/link-shaped literals must re-render with markdown-aware styling while preserving
@@ -288,8 +291,8 @@ The root editor state now keeps two text projections:
 - `focusEditorForPendingNote()` moves focus and cursor placement after note creation or route changes resolve.
 - `drawerQuickNoteText` is a local drawer draft state for the inline Quick Note page. The drawer forwards toolbar and
   mode actions back through `requestViewHook(...)` so the panel-level owner can attach real behavior later.
-- Repository policy note: automated test files were removed; this document therefore treats the checklist above as the
-  expected regression surface for later runtime/manual verification.
+- Repository policy note: WhatSon does not operate automated or scripted tests; this checklist is documentation-only
+  and exists to preserve the intended regression surface for later manual review when explicitly needed.
 
 ## Scroll and Minimap Rules
 

@@ -36,8 +36,12 @@
   gated through one shared desktop/mobile file.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
+- Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
+  continuation stays source-driven instead of relying on RichText widget heuristics.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
   the note instead of remaining a fixed-height scaffold.
+- The repository no longer operates scripted editor tests; the per-file regression notes in this directory are
+  documentation-only behavior contracts.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

@@ -17,6 +17,11 @@ This controller exists to keep plain typing separate from inline-format applicat
   snapshots instead of transient Hangul/Japanese preedit fragments.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
+- When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
+  before persistence:
+  - unordered list lines (`- ` / `* ` / `+ `) continue with the same marker and indentation
+  - ordered list lines (`1. ` / `2) `) continue with the next number, same delimiter, and same indentation
+  - marker-only empty list lines do not auto-continue, so the controller does not force an endless list
 - Resolves the delta back into source offsets through `ContentsLogicalTextBridge.sourceOffsetForLogicalOffset(...)`.
 - Delegates the final source splice to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
 
@@ -27,6 +32,8 @@ longer part of the normal typing path.
 ## Persistence Rules
 
 - After source replacement, the controller updates `view.editorText`.
+- If list continuation inserted extra markdown marker text, the controller also restores the live cursor to the
+  continued item start after programmatic surface sync.
 - It marks local editor authority before save, matching the existing editor session contract.
 - It tries `view.persistEditorTextImmediately(...)` first.
 - If immediate persistence is unavailable or fails, it falls back to `editorSession.scheduleEditorPersistence()`.
@@ -45,6 +52,8 @@ longer part of the normal typing path.
 
 ## Regression Checks
 
+- Markdown-list continuation is now tracked as a documented behavior contract only; this repository no longer maintains
+  a dedicated scripted test for it.
 - Typing ordinary letters should update raw `.wsnbody` without serializing the whole RichText document.
 - `Space`, `Enter`, `Backspace`, and selection replacement should update the correct source span.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
@@ -52,3 +61,7 @@ longer part of the normal typing path.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
 - Typing `- item` or `1. item` should persist the literal markdown marker text in source rather than an already-expanded
   bullet/number glyph representation.
+- Pressing `Enter` at the end or middle of a non-empty markdown bullet line should persist `\n- ` / `\n* ` / `\n+ `
+  continuation text instead of a bare newline.
+- Pressing `Enter` on a non-empty ordered markdown list line should persist the incremented next prefix (`1.` -> `2.`,
+  `3)` -> `4)`).

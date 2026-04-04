@@ -749,12 +749,13 @@ namespace
             if (reader.isCharacters())
             {
                 const QString text = reader.text().toString();
+                const bool whitespaceOnlyText = text.trimmed().isEmpty();
                 if (blockDepth > 0)
                 {
                     currentBlockText += text;
                     currentBlockRichText += escapeHtmlText(text);
                 }
-                else if (!encounteredBlockElement || !text.trimmed().isEmpty())
+                else if (!whitespaceOnlyText)
                 {
                     fragments.fallbackText += text;
                     fragments.fallbackRichText += escapeHtmlText(text);

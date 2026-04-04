@@ -44,9 +44,10 @@ every turn.
 
 ## Automated Test Policy
 
-- The repository no longer ships an in-repo automated test suite (`tests/` was removed).
-- Do not add new test targets or `tests/*` source files unless explicitly requested again.
-- Verification is currently expected through runtime/manual checks and build-time tooling targets.
+- This repository does not maintain or operate an in-repo automated test suite.
+- Python test scripts under `scripts/test_*.py` were removed and must not be reintroduced unless the user explicitly changes that policy.
+- Do not add `tests/*`, `scripts/test_*.py`, or equivalent local test harnesses unless explicitly requested.
+- Default task flow must not run project-level tests, smoke suites, or verification builds. Only perform verification when the user explicitly asks for it, and keep all generated artifacts under `build/`.
 
 ### Hierarchy ViewModel Ownership (Critical)
 
@@ -77,7 +78,10 @@ every turn.
 
 ## Codex Init (`/init`) Procedure
 
-Initialization is considered complete when the following sequence succeeds.
+Initialization guidance in this section is reference material only.
+Do not execute this sequence during ordinary work unless the user explicitly asks for environment bootstrap or verification.
+
+When `/init` is explicitly requested, initialization is considered complete when the following sequence succeeds.
 
 1. Confirm LVRS package discoverability.
 2. Run CMake configure.
@@ -215,13 +219,12 @@ An exception is allowed only when all conditions are satisfied.
 
 ## Completion Checklist
 
-1. `cmake -S . -B build` passes.
-2. `cmake --build build --target WhatSon -j` passes.
-3. `cmake --build build --target WhatSon_daemon -j` passes.
-4. `build/src/daemon/WhatSon_daemon --healthcheck` returns `status=ok`.
-5. Updated QML keeps consistent LVRS imports and component usage.
-6. Model/viewmodel/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
+1. Updated docs reflect source changes and repository policy changes together.
+2. Updated QML keeps consistent LVRS imports and component usage.
+3. Model/viewmodel/view contracts preserve signal-slot hooks (`signals`+`slots` in C++, `signal` + callable hook
    function in QML views).
+4. If the user explicitly requests verification or generated artifacts, reuse `build/` and do not create alternate
+   build directories.
 
 ## Maintenance Rules
 
@@ -253,5 +256,6 @@ An exception is allowed only when all conditions are satisfied.
 - Use real repository files and logs as evidence instead of assumptions.
 - Keep changes small and verifiable.
 - In completion reports, include changed files, verification commands, and known limits.
+- When no tests were run, say so explicitly and cite the repository policy if that is the reason.
 - Use English only inside this project.
 - Rework `AGENTS.md` when major codebase changes or new requirements are introduced.

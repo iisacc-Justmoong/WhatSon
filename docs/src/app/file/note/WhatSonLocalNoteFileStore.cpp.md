@@ -23,6 +23,8 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - `bodySourceText` (editor-facing canonical inline-tag source from `.wsnbody`)
 - The read path also derives `bodyFirstLine` from `WhatSon::NoteBodyPersistence::firstLineFromBodyDocument(...)` so inline titles before the first paragraph survive indexing and editor reads consistently.
 - This means empty paragraphs and whitespace-only paragraphs survive file reads instead of being normalized away.
+- Formatting whitespace from an otherwise empty `<body>` no longer survives file reads, so a newly created empty note
+  binds to the editor as truly empty text instead of starting from a phantom second line.
 - `<resource ... resourcePath="...">` now accepts `.wsresource` package paths.
 - Resource attribute parsing now also supports unquoted values with path separators (for example `path=PreviewHub.wsresources/preview.wsresource`) so note bodies can reference package paths without forcing quote normalization first.
 - When the reference points to a package directory, the store resolves `resource.xml`, follows its `asset path`, and uses the real packaged asset file for preview thumbnail URLs.
@@ -39,7 +41,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - When body backlink targets change, the store also refreshes the directly affected target note
   headers so `backlinkByCount` does not stay stale on linked notes.
 
-## Regression Coverage
+## Regression Notes
+- This repository no longer maintains a dedicated scripted test for the empty-note load path; keep the behaviors below
+  as documentation-only regression expectations.
   - leading/interior/trailing empty paragraph round-trip
   - whitespace-only paragraph round-trip
   - inline-tag source serialization

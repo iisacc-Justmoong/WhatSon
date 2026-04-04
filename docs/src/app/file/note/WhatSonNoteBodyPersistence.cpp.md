@@ -15,6 +15,8 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
 - `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
+- The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
+  (`<body>\n  </body>`) no longer rehydrate as a leading blank line in the editor.
 - `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to explicit span styling:
   - `bold` / `b` / `strong` -> `<strong style="font-weight:900;">`
   - `italic` / `i` / `em` -> `<span style="font-style:italic;">`
@@ -31,6 +33,8 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
 - Empty paragraphs are emitted as empty lines instead of being dropped, including leading/trailing empty paragraphs the user intentionally created.
 - Whitespace-only paragraphs are preserved exactly as stored; the persistence layer no longer trims outer whitespace-only lines during read/normalization.
+- This whitespace filter applies only to top-level formatting whitespace around body markup. It must not strip
+  whitespace that belongs to actual paragraph/block content.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
   - inline-tag editor source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
@@ -39,3 +43,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 
 ## Why This Matters
 Before this change, RichText scaffolding could leak into the logical note body (`<!DOCTYPE HTML ...>` becoming first-line text). Canonicalizing through the `.wsnbody` serializer keeps parser/index behavior stable and preserves formatted editing semantics.
+The same rule now prevents empty-note body indentation from surfacing as a phantom first blank line during note
+creation.
+
+## Regression Notes
+- Empty-note `<body>` whitespace handling is now a documented behavior contract only; this repository no longer
+  maintains a dedicated scripted test for it.

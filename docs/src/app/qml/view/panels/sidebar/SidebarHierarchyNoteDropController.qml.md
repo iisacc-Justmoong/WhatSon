@@ -17,9 +17,9 @@
   single-note fallback for older capability surfaces.
 - Clears hover preview state whenever the payload is empty or the hovered folder cannot accept any of the dragged notes.
 
-## Tests
+## Regression Notes
 
-- Static regression guard: `scripts/test_sidebar_note_drop_controller.py`
+- This repository no longer maintains a dedicated scripted test for sidebar note-drop decoding.
 - Regression checklist:
     - JSON `application/x-whatson-note-ids` payloads must decode into a unique ordered note-id list.
     - Plain-text newline-separated payloads must still decode into the same note-id set.

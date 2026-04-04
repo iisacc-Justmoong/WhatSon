@@ -34,7 +34,7 @@ disable desktop gutter chrome through shared conditionals.
 
 ## Regression Checks
 
-- Static regression guard: `scripts/test_page_editor_surface.py`
+- This repository no longer maintains a dedicated scripted test for the mobile page/print editor surface.
 - mobile editor surfaces must not render or reserve gutter width
 - mobile editor text must render at `14px`
 - desktop gutter behavior must not depend on this file

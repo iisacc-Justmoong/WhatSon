@@ -1,6 +1,7 @@
 # Security Regression Checklist
 
-This repository currently has no in-repo automated test target. Use this checklist when reviewing trial/auth and resource-import changes.
+This repository does not operate automated or scripted tests. Use this checklist as manual review documentation when
+inspecting trial/auth and resource-import changes.
 
 ## Trial/Auth
 - Plain `QSettings` value `register/authenticated=true` must not unlock a trial build by itself.

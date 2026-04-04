@@ -51,8 +51,11 @@
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
 - Note creation, note update, and editor note selection all participate in keeping that block
   synchronized with the current body/header state.
-- The repository now also ships a static schema regression script:
-  `scripts/test_wsnhead_file_stat_schema.py`
+- The `fileStat` schema is tracked as a documented package contract; this repository no longer maintains a dedicated
+  scripted test for it.
+- Empty-note body parsing now strips formatting-only `<body>` indentation so a newly created note opens on the first
+  editable line instead of showing a phantom leading blank line.
+
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
