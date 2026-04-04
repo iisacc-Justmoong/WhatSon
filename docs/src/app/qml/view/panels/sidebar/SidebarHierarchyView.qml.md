@@ -133,6 +133,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The `DropArea` at the bottom of the file now routes pointer payloads into `noteIdsFromDragPayload(...)`, so a drag
   that originated from a multi-selected note-list group can assign every selected note to the hovered folder in one
   drop.
+- The same `DropArea` now mirrors the drop-commit boolean into `drop.accepted`, so failed folder assignment attempts
+  remain visibly rejected by the QML drag/drop contract instead of looking handled.
+- The note-drop hover pulse uses explicit `NumberAnimation.from` / `to` pairs on both opacity segments; bare numeric
+  tokens are not accepted by qmlcache and must never replace keyed animation properties.
 
 ## Architectural Reading
 This file should be read as a composed view, not as the place where hierarchy business rules live. If a change requires concrete knowledge about whether a domain can rename, reorder, or accept notes, the answer should come from the bridges and capability interfaces, not from hard-coded QML assumptions.
@@ -154,3 +158,7 @@ This file should be read as a composed view, not as the place where hierarchy bu
   - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.
   - Chevron expand/collapse must not move the primary active selection to an unrelated sibling row.
   - Dropping a multi-selected note-list group onto a folder must attempt folder assignment for every dragged note id.
+  - Failed note-drop commits must leave `drop.accepted == false`, so the drag contract continues to report rejection to
+    LVRS/Qt.
+  - The note-drop hover opacity animation must keep explicit `from:` / `to:` keys on both `NumberAnimation` blocks so
+    qmlcache parsing does not fail on bare numeric tokens.

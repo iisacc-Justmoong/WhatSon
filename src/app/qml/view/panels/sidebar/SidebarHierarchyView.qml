@@ -1032,8 +1032,9 @@ Rectangle {
 
         onDropped: function (drop) {
             const noteIds = sidebarHierarchyView.noteIdsFromDragPayload(drop);
-            if (!sidebarHierarchyView.commitNoteDropAtPosition(drop ? drop.x : 0, drop ? drop.y : 0, noteIds, noteDropSurface))
-
+            const committed = sidebarHierarchyView.commitNoteDropAtPosition(drop ? drop.x : 0, drop ? drop.y : 0, noteIds, noteDropSurface);
+            if (drop)
+                drop.accepted = committed;
         }
         onEntered: function (drag) {
             updateAcceptance(drag);

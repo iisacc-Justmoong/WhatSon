@@ -33,6 +33,8 @@ The root editor state now keeps two text projections:
   mutation of `editorItem.y`.
 - `editorDocumentTopPadding` remains `0` so LVRS vertical centering does not reintroduce hidden top padding inside the
   text area.
+- The corresponding `Binding` object uses an explicit `property: "topPadding"` assignment so qmlcache/AOT parsing keeps
+  accepting the shared editor top-padding contract.
 - `editorSurfaceHeight` is derived from `editorViewportHeight - editorDocumentStartY`, which keeps Fill sizing stable
   after reserving the fixed top spacer.
 - `effectiveEditorFontPixelSize` is the canonical editor font size and now drives both the editable RichText surface
@@ -107,6 +109,8 @@ The root editor state now keeps two text projections:
   - image: inline thumbnail
   - text: inline snippet preview (`previewText`)
   - non-inline formats: mode label + open action (`Qt.openUrlExternally(...)`)
+- The inline image-card preview keeps an explicit `source:` binding on its `Image` node so qmlcache does not see a
+  bare expression where a property binding is required.
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
@@ -246,6 +250,8 @@ The root editor state now keeps two text projections:
   - desktop editor text must render at `13px`
   - mobile editor text must render `2px` larger than desktop
   - mobile editor route must not reserve or render the gutter column
+  - qmlcache compilation must continue to accept the explicit `Binding.property` declaration for editor top padding
+  - resource-card image preview must keep an explicit `Image.source` binding instead of a bare token line
 - In `Page`/`Print`, the preview text geometry is aligned to `printEditorPage` and reuses the same guide inset math as
   the editor surface, so wrapped text width and top offset match the printable rectangle.
 - Mutation surfaces (`DropArea`, edit shortcuts, gutter/minimap) remain active because the editor is intentionally
