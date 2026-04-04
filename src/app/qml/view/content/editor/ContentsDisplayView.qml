@@ -636,7 +636,7 @@ Item {
         if (normalizedType === "changed")
             return contentsView.gutterMarkerChangedColor;
         if (normalizedType === "current")
-            
+            return contentsView.gutterMarkerCurrentColor;
 
     }
     function markerHeight(markerSpec) {
@@ -1557,7 +1557,7 @@ Item {
                                                 asynchronous: true
                                                 cache: true
                                                 fillMode: Image.PreserveAspectFit
-                                                source: resourceRenderCard.resourceSource
+                                                resourceRenderCard.resourceSource
                                                 visible: resourceRenderCard.resourceRenderMode === "image" && resourceRenderCard.resourceSource.length > 0
                                             }
                                             LV.Label {

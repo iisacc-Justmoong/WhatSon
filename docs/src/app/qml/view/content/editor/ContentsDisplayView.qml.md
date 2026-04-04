@@ -37,6 +37,8 @@ The root editor state now keeps two text projections:
   accepting the shared editor top-padding contract.
 - A bare string literal line inside `Binding { ... }` is invalid here; Xcode/qmlcache requires the explicit
   `Binding.property` form for this contract.
+- `markerColorForType(...)` must keep explicit returns for `conflict` / `changed` / `current` plus a default fallback;
+  leaving the `current` branch empty breaks the surrounding QML parse and surfaces follow-on errors near later blocks.
 - `editorSurfaceHeight` is derived from `editorViewportHeight - editorDocumentStartY`, which keeps Fill sizing stable
   after reserving the fixed top spacer.
 - `effectiveEditorFontPixelSize` is the canonical editor font size and now drives both the editable RichText surface
