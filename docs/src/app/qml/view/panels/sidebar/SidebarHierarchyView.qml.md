@@ -148,6 +148,8 @@ This file should be read as a composed view, not as the place where hierarchy bu
   overlay highlight path for non-primary selected rows.
 - Added press-time modifier capture and cached activation-modifier resolution so modifier-selection does not regress when
   LVRS activation callbacks are delivered after pointer-up.
+- Restored explicit `NumberAnimation.from` keys on the note-drop hover pulse so Xcode/qmlcache ahead-of-time parsing
+  accepts the sidebar animation object again.
 
 ## Tests
 

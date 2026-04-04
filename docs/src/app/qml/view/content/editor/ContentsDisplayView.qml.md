@@ -35,6 +35,8 @@ The root editor state now keeps two text projections:
   text area.
 - The corresponding `Binding` object uses an explicit `property: "topPadding"` assignment so qmlcache/AOT parsing keeps
   accepting the shared editor top-padding contract.
+- A bare string literal line inside `Binding { ... }` is invalid here; Xcode/qmlcache requires the explicit
+  `Binding.property` form for this contract.
 - `editorSurfaceHeight` is derived from `editorViewportHeight - editorDocumentStartY`, which keeps Fill sizing stable
   after reserving the fixed top spacer.
 - `effectiveEditorFontPixelSize` is the canonical editor font size and now drives both the editable RichText surface
@@ -111,6 +113,8 @@ The root editor state now keeps two text projections:
   - non-inline formats: mode label + open action (`Qt.openUrlExternally(...)`)
 - The inline image-card preview keeps an explicit `source:` binding on its `Image` node so qmlcache does not see a
   bare expression where a property binding is required.
+- Xcode uses the same ahead-of-time parser path here, so `Image { source: ... }` must remain explicit and must not be
+  reduced to a bare expression line.
 - The editor viewport also exposes a `DropArea` for file URLs. Drop handling calls
   `resourcesImportViewModel.importUrlsForEditor(...)`, inserts `<resource type=\"...\" format=\"...\" path=...>` tags
   at the cursor position, persists the updated body text, and refreshes `ContentsBodyResourceRenderer` immediately.
