@@ -239,16 +239,20 @@ Rectangle {
         weekCalendarPage.notifyViewHook(hookReason);
     }
     function resolveInitialDateIso() {
+        const todayIso = weekCalendarPage.toIsoDate(new Date());
+        const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(todayIso);
         const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined
                 ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim()
                 : "";
-        if (currentVmIso.length > 0)
+        if (currentVmIso.length > 0) {
+            if (currentVmIso === currentWeekStartIso)
+                return todayIso;
             return currentVmIso;
+        }
 
-        const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(weekCalendarPage.toIsoDate(new Date()));
         if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso)
             weekCalendarPage.calendarVm.setDisplayedWeekStartIso(currentWeekStartIso);
-        return currentWeekStartIso;
+        return todayIso;
     }
     function setViewportContentX(nextContentX) {
         weekCalendarPage.suppressViewportSync = true;
@@ -338,7 +342,7 @@ Rectangle {
 
     Component.onCompleted: {
         Qt.callLater(function() {
-            weekCalendarPage.initializeDateWindow(weekCalendarPage.resolveInitialDateIso(), false, "initialize-date-window");
+            weekCalendarPage.initializeDateWindow(weekCalendarPage.resolveInitialDateIso(), true, "initialize-date-window");
             weekCalendarPage.requestViewHook("page-open");
         });
     }

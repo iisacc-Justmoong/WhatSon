@@ -42,7 +42,8 @@
 - Week view now uses one continuous scaffold: the left time rail stays fixed, the right date columns flick horizontally
   without snap, the viewport is sized for three visible day columns, generic header/hour cells stay transparent
   instead of drawing per-column grid fills, and the day-column model stores only date metadata while entry lists are
-  resolved per date. `Today` recenters the surface so the real current date occupies the middle visible column.
+  resolved per date. Current-week initialization and `Today` both recenter the surface so the real current date
+  occupies the middle visible column.
 - Monthly page mirrors Figma node `228:9666` with fixed header (`54`) and a reusable month-grid surface; mobile adds a
   snap-paged horizontal month swiper while desktop keeps non-interactive paging.
 - Year view now acts as a routing surface into month view: month-title/day taps preconfigure the month overlay before

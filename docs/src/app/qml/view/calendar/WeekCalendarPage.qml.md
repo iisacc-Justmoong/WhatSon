@@ -34,7 +34,8 @@ but horizontal flicking advances across adjacent dates without page snapping.
   - horizontal scrolling has no snap behavior.
 
 ## Interaction/Data Flow
-1. `Component.onCompleted` initializes a centered lazy date window and requests `page-open`.
+1. `Component.onCompleted` initializes a centered lazy date window and, when opening the current week, uses the actual
+   current date as the initial focused middle column instead of the week-start Monday anchor.
 2. Horizontal movement updates only the right-side date-column surface; the time scaffold does not move.
 3. Near-edge access triggers lazy date growth:
    - left edge: `prependDates(...)`
@@ -55,6 +56,7 @@ but horizontal flicking advances across adjacent dates without page snapping.
     - Weekly calendar content width must stay within the viewport while showing exactly three day columns at rest.
     - Horizontal scrolling must move continuously without page snapping.
     - Initial page-open and week refresh must not emit `ListModel` role-type warnings for `entries`.
+    - Initial page-open for the current week must center the actual current date instead of the week-start Monday.
     - Clicking `Today` must not introduce visible borders on generic current-week header/hour cells.
     - Clicking `Today` must place the actual current date in the middle visible day column.
     - Generic header and hour cells must stay transparent for every date column.
