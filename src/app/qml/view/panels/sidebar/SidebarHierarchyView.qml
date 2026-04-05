@@ -81,6 +81,31 @@ Rectangle {
         }
         return false;
     }
+    property string hierarchyContextMenuKind: "options"
+    readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder"
+                                                     ? sidebarHierarchyView.hierarchyFolderContextMenuItems
+                                                     : sidebarHierarchyView.hierarchyViewOptionsMenuItems
+    property int hierarchyContextMenuTargetIndex: -1
+    readonly property bool hierarchyContextMenuTargetValid: sidebarHierarchyView.isFolderContextMenuTargetIndex(
+                                                                sidebarHierarchyView.hierarchyContextMenuTargetIndex)
+    readonly property var hierarchyFolderContextMenuItems: [
+        {
+            "label": "New Folder",
+            "iconName": "generaladd",
+            "eventName": "hierarchy.folder.create",
+            "enabled": sidebarHierarchyView.hierarchyContextMenuTargetValid && sidebarHierarchyView.createFolderEnabled,
+            "keyVisible": false,
+            "showChevron": false
+        },
+        {
+            "label": "Delete Folder",
+            "iconName": "generaldelete",
+            "eventName": "hierarchy.folder.delete",
+            "enabled": sidebarHierarchyView.hierarchyContextMenuTargetValid && sidebarHierarchyView.deleteFolderEnabled,
+            "keyVisible": false,
+            "showChevron": false
+        }
+    ]
     property var hierarchyDragDropBridge: null
     property bool hierarchyEditable: false
     property bool hierarchyExpansionActivationSuppressed: false
@@ -320,6 +345,21 @@ Rectangle {
     function hierarchyItemAtPosition(x, y) {
         return noteDropController.hierarchyItemAtPosition(x, y);
     }
+    function handleHierarchyContextMenuTrigger(index, eventName) {
+        const normalizedEventName = eventName === undefined || eventName === null ? "" : String(eventName).trim();
+        const normalizedIndex = Number(index);
+        if (sidebarHierarchyView.hierarchyContextMenuKind === "folder") {
+            const targetIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.hierarchyContextMenuTargetIndex, -1);
+            if (normalizedEventName === "hierarchy.folder.create" || normalizedIndex === 0)
+                sidebarHierarchyView.requestCreateFolder(targetIndex, "hierarchy.contextMenu.create");
+            else if (normalizedEventName === "hierarchy.folder.delete" || normalizedIndex === 1)
+                sidebarHierarchyView.requestDeleteFolder(targetIndex, "hierarchy.contextMenu.delete");
+            sidebarHierarchyView.hierarchyContextMenuTargetIndex = -1;
+            sidebarHierarchyView.hierarchyContextMenuKind = "options";
+            return;
+        }
+        sidebarHierarchyView.handleHierarchyViewOptionsTrigger(index, eventName);
+    }
     function hierarchyItemContainsPoint(item, x, y) {
         return noteDropController.hierarchyItemContainsPoint(item, x, y);
     }
@@ -380,6 +420,33 @@ Rectangle {
     }
     function leafHierarchyItemLabel(rawLabel) {
         return renameController.leafHierarchyItemLabel(rawLabel);
+    }
+    function hierarchyModelItemAt(index) {
+        const resolvedIndex = sidebarHierarchyView.normalizedInteger(index, -1);
+        if (resolvedIndex < 0 || resolvedIndex >= sidebarHierarchyView.standardHierarchyModel.length)
+            return null;
+        return sidebarHierarchyView.standardHierarchyModel[resolvedIndex];
+    }
+    function hierarchyModelItemKey(item) {
+        if (!item)
+            return "";
+        const itemKey = item.itemKey !== undefined && item.itemKey !== null ? String(item.itemKey).trim() : "";
+        if (itemKey.length > 0)
+            return itemKey;
+        const key = item.key !== undefined && item.key !== null ? String(item.key).trim() : "";
+        if (key.length > 0)
+            return key;
+        return "";
+    }
+    function isFolderContextMenuTargetIndex(index) {
+        const item = sidebarHierarchyView.hierarchyModelItemAt(index);
+        if (!item)
+            return false;
+        const itemKey = sidebarHierarchyView.hierarchyModelItemKey(item);
+        if (itemKey.startsWith("folder:"))
+            return true;
+        const uuid = item.uuid !== undefined && item.uuid !== null ? String(item.uuid).trim() : "";
+        return uuid.length > 0;
     }
     function normalizeHierarchyModel(modelValue) {
         return renameController.normalizeHierarchyModel(modelValue);
@@ -453,27 +520,63 @@ Rectangle {
         });
         return true;
     }
-    function requestCreateFolder() {
+    function openHierarchyFolderContextMenuAtPosition(x, y, referenceItem) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (!sidebarHierarchyView.createFolderEnabled || !sidebarHierarchyView.hierarchyViewModel)
-            return;
-        const activeHierarchyItemId = Number(hierarchyTree.activeListItemId);
-        if (isFinite(activeHierarchyItemId) && activeHierarchyItemId >= 0)
-            sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(Math.floor(activeHierarchyItemId));
+        const target = noteDropController.noteDropTargetAtPosition(x, y, referenceItem);
+        const targetIndex = sidebarHierarchyView.normalizedInteger(target.index, -1);
+        if (targetIndex < 0 || !sidebarHierarchyView.isFolderContextMenuTargetIndex(targetIndex)) {
+            sidebarHierarchyView.hierarchyContextMenuTargetIndex = -1;
+            sidebarHierarchyView.hierarchyContextMenuKind = "options";
+            if (hierarchyViewOptionsMenu.opened)
+                hierarchyViewOptionsMenu.close();
+            return false;
+        }
+        sidebarHierarchyView.requestHierarchySelection(target.item, targetIndex, Qt.NoModifier);
+        sidebarHierarchyView.hierarchyContextMenuTargetIndex = targetIndex;
+        sidebarHierarchyView.hierarchyContextMenuKind = "folder";
+        if (hierarchyViewOptionsMenu.opened)
+            hierarchyViewOptionsMenu.close();
+        hierarchyViewOptionsMenu.openFor(referenceItem ? referenceItem : hierarchyTree, Number(x) || 0, Number(y) || 0);
+        sidebarHierarchyView.requestViewHook("hierarchy.contextMenu.open");
+        return true;
+    }
+    function requestCreateFolder(targetIndex, reason) {
+        if (sidebarHierarchyView.renameEditingActive)
+            sidebarHierarchyView.cancelHierarchyRename();
+        if (!sidebarHierarchyView.createFolderEnabled || !sidebarHierarchyView.hierarchyViewModel || !sidebarHierarchyView.hierarchyInteractionBridge)
+            return false;
+        const explicitTargetIndex = sidebarHierarchyView.normalizedInteger(targetIndex, -1);
+        const activeHierarchyItemId = sidebarHierarchyView.normalizedInteger(hierarchyTree.activeListItemId, -1);
+        const selectionIndex = explicitTargetIndex >= 0 ? explicitTargetIndex : activeHierarchyItemId;
+        if (selectionIndex >= 0) {
+            sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(selectionIndex);
+            hierarchySelectionController.setSelectedHierarchyIndices([selectionIndex]);
+            hierarchySelectionController.selectionAnchorIndex = selectionIndex;
+        }
         sidebarHierarchyView.hierarchyInteractionBridge.createFolder();
-        sidebarHierarchyView.requestViewHook("hierarchy.footer.create");
+        sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.create");
         Qt.callLater(function () {
             sidebarHierarchyView.syncSelectedHierarchyItem(true);
         });
+        return true;
     }
-    function requestDeleteFolder() {
+    function requestDeleteFolder(targetIndex, reason) {
         if (sidebarHierarchyView.renameEditingActive)
             sidebarHierarchyView.cancelHierarchyRename();
-        if (!sidebarHierarchyView.deleteFolderEnabled || !sidebarHierarchyView.hierarchyInteractionBridge)
-            return;
+        if (!sidebarHierarchyView.hierarchyInteractionBridge)
+            return false;
+        const explicitTargetIndex = sidebarHierarchyView.normalizedInteger(targetIndex, -1);
+        if (explicitTargetIndex >= 0 && sidebarHierarchyView.hierarchyViewModel) {
+            sidebarHierarchyView.hierarchyViewModel.setHierarchySelectedIndex(explicitTargetIndex);
+            hierarchySelectionController.setSelectedHierarchyIndices([explicitTargetIndex]);
+            hierarchySelectionController.selectionAnchorIndex = explicitTargetIndex;
+        }
+        if (!sidebarHierarchyView.deleteFolderEnabled)
+            return false;
         sidebarHierarchyView.hierarchyInteractionBridge.deleteSelectedFolder();
-        sidebarHierarchyView.requestViewHook("hierarchy.footer.delete");
+        sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.delete");
+        return true;
     }
     function requestExpandAllHierarchyItems() {
         if (sidebarHierarchyView.renameEditingActive)
@@ -511,6 +614,8 @@ Rectangle {
             sidebarHierarchyView.cancelHierarchyRename();
         if (!sidebarHierarchyView.viewOptionsEnabled)
             return;
+        sidebarHierarchyView.hierarchyContextMenuKind = "options";
+        sidebarHierarchyView.hierarchyContextMenuTargetIndex = -1;
         if (hierarchyViewOptionsMenu.opened) {
             hierarchyViewOptionsMenu.close();
             return;
@@ -768,7 +873,7 @@ Rectangle {
         }
 
         TapHandler {
-            acceptedButtons: Qt.LeftButton
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             acceptedModifiers: Qt.KeyboardModifierMask
             gesturePolicy: TapHandler.DragThreshold
             target: null
@@ -776,8 +881,19 @@ Rectangle {
             onPressedChanged: {
                 if (!pressed)
                     return;
+                const pressedButton = point && point.button !== undefined ? point.button : Qt.NoButton;
+                if (pressedButton !== Qt.LeftButton)
+                    return;
                 const pressModifiers = point && point.modifiers !== undefined ? point.modifiers : Qt.application.keyboardModifiers;
                 sidebarHierarchyView.captureHierarchyPointerSelectionModifiers(pressModifiers);
+            }
+            onTapped: function (eventPoint, button) {
+                if (button !== Qt.RightButton)
+                    return;
+                sidebarHierarchyView.openHierarchyFolderContextMenuAtPosition(
+                            eventPoint && eventPoint.position !== undefined ? eventPoint.position.x : 0,
+                            eventPoint && eventPoint.position !== undefined ? eventPoint.position.y : 0,
+                            hierarchyTree);
             }
         }
     }
@@ -969,15 +1085,15 @@ Rectangle {
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
         itemWidth: 144
-        items: sidebarHierarchyView.hierarchyViewOptionsMenuItems
+        items: sidebarHierarchyView.hierarchyContextMenuItems
         modal: false
         parent: Controls.Overlay.overlay
 
         onItemEventTriggered: function (eventName, payload, index, item) {
-            sidebarHierarchyView.handleHierarchyViewOptionsTrigger(index, eventName);
+            sidebarHierarchyView.handleHierarchyContextMenuTrigger(index, eventName);
         }
         onItemTriggered: function (index) {
-            sidebarHierarchyView.handleHierarchyViewOptionsTrigger(index, "");
+            sidebarHierarchyView.handleHierarchyContextMenuTrigger(index, "");
         }
     }
     LV.ListFooter {

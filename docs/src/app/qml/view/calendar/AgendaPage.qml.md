@@ -1,7 +1,7 @@
 # `src/app/qml/view/calendar/AgendaPage.qml`
 
 ## Role
-`AgendaPage.qml` renders the Agenda calendar route with date navigation, weather/location summary, all-day events,
+`AgendaPage.qml` renders the Agenda calendar route with date navigation, location summary, all-day events,
 timed events, and agenda-item completion rows.
 
 ## View Contract
@@ -15,8 +15,6 @@ timed events, and agenda-item completion rows.
 - Header:
   - shared `CalendarTodayControl` (`Prev/Today/Next`) drives date cursor movement.
   - date label and location caption are rendered in the top row.
-- Weather card:
-  - `temperatureText`, `conditionText`, `highLowText`, and precipitation summary.
 - Body sections:
   - `All day`
   - `Timed`
@@ -27,6 +25,13 @@ timed events, and agenda-item completion rows.
 2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
 3. Agenda-item toggles call `agendaViewModel.toggleAgendaItemCompleted(...)`.
 4. Empty sections show dedicated placeholder labels.
+
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - Agenda header must keep date navigation and the location caption without rendering a secondary weather card.
+    - Agenda-item toggles must continue to call `agendaViewModel.toggleAgendaItemCompleted(...)`.
+    - Empty all-day/timed/agenda sections must continue to show their placeholder labels.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/AgendaViewModel.hpp/.cpp`

@@ -6,3 +6,4 @@
 ## Interface Alignment
 - Calendar board wiring now targets `ICalendarBoardStore`.
 - The viewmodel no longer requires the concrete in-memory board type.
+- Agenda projection now exposes only date label, location, section lists, and summary state.

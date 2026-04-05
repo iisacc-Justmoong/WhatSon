@@ -13,7 +13,6 @@ Rectangle {
     readonly property var agendaItemModels: agendaVm && agendaVm.agendaItems ? agendaVm.agendaItems : []
     readonly property var timedModels: agendaVm && agendaVm.timedEvents ? agendaVm.timedEvents : []
     readonly property var agendaVm: agendaViewModel
-    readonly property var weatherModel: agendaVm && agendaVm.weather ? agendaVm.weather : ({})
     property var agendaViewModel: null
 
     signal viewHookRequested(string reason)
@@ -103,46 +102,6 @@ Rectangle {
                         Layout.alignment: Qt.AlignVCenter
                         color: LV.Theme.descriptionColor
                         text: agendaPage.stringValue(agendaPage.locationModel.displayName, "")
-                    }
-                }
-                Rectangle {
-                    color: LV.Theme.panelBackground11
-                    height: weatherRow.implicitHeight + LV.Theme.gap4
-                    radius: LV.Theme.radiusSm
-                    width: parent.width
-
-                    LV.HStack {
-                        id: weatherRow
-
-                        anchors.fill: parent
-                        anchors.margins: LV.Theme.gap3
-                        spacing: LV.Theme.gap4
-
-                        LV.Label {
-                            color: LV.Theme.titleHeaderColor
-                            font.pixelSize: 20
-                            font.weight: Font.Medium
-                            text: agendaPage.stringValue(agendaPage.weatherModel.temperatureText, "--C")
-                        }
-                        LV.VStack {
-                            spacing: LV.Theme.gapNone
-
-                            LV.Label {
-                                color: LV.Theme.descriptionColor
-                                text: agendaPage.stringValue(agendaPage.weatherModel.conditionText, "Weather")
-                            }
-                            LV.Label {
-                                color: LV.Theme.descriptionColor
-                                text: agendaPage.stringValue(agendaPage.weatherModel.highLowText, "")
-                            }
-                        }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        LV.Label {
-                            color: LV.Theme.descriptionColor
-                            text: "Rain " + agendaPage.stringValue(agendaPage.weatherModel.precipitationText, "0%")
-                        }
                     }
                 }
             }

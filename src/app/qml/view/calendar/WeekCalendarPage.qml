@@ -11,148 +11,192 @@ Rectangle {
     readonly property int dayColumnSpacing: LV.Theme.gap2
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
     readonly property var hourSlots: weekCalendarPage.buildHourSlots()
-    readonly property int initialWeekRadius: 6
-    readonly property int lazyChunkSize: 4
-    readonly property int maxWeekWindowSize: 33
-    readonly property int preloadThreshold: 2
+    readonly property int initialDateRadius: 21
+    readonly property int lazyChunkSize: 14
+    readonly property int maxDateWindowSize: 120
+    readonly property int preloadThreshold: 12
+    readonly property int visibleDayColumnCount: 3
+    readonly property int centeredDayColumnOffset: Math.floor(weekCalendarPage.visibleDayColumnCount / 2)
+    property bool dateWindowInitialized: false
+    property bool suppressViewportSync: false
+    property var dateEntriesCache: ({})
     property var weekCalendarViewModel: null
-    property bool weekWindowInitialized: false
 
     signal viewHookRequested(string reason)
 
-    function appendWeeks(count) {
+    function appendDates(count) {
         if (count <= 0)
             return;
-        const anchorIso = weekModel.count > 0 ? String(weekModel.get(weekModel.count - 1).weekStartIso) : weekCalendarPage.resolveInitialWeekStartIso();
-        for (var offset = 1; offset <= count; ++offset) {
-            const weekStartIso = weekCalendarPage.shiftDateIso(anchorIso, offset * 7);
-            weekModel.append(weekCalendarPage.buildWeekModel(weekStartIso));
+        const anchorIso = dateModel.count > 0
+                        ? String(dateModel.get(dateModel.count - 1).dateIso)
+                        : weekCalendarPage.resolveInitialDateIso();
+        for (var offset = 1; offset <= count; ++offset)
+            dateModel.append(weekCalendarPage.buildDateModel(weekCalendarPage.shiftDateIso(anchorIso, offset)));
+    }
+    function buildDateModel(dateIso) {
+        const date = weekCalendarPage.parseIsoDate(dateIso);
+        if (!date)
+            return ({});
+
+        const normalizedDateIso = weekCalendarPage.toIsoDate(date);
+        const entries = weekCalendarPage.entriesForDate(normalizedDateIso);
+        const todayIso = weekCalendarPage.toIsoDate(new Date());
+        const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(todayIso);
+        var eventCount = 0;
+        var taskCount = 0;
+        for (var entryIndex = 0; entryIndex < entries.length; ++entryIndex) {
+            const entry = entries[entryIndex];
+            const entryType = entry && entry.type !== undefined ? String(entry.type) : "";
+            if (entryType === "event")
+                eventCount += 1;
+            else if (entryType === "task")
+                taskCount += 1;
         }
+
+        return {
+            "dateIso": normalizedDateIso,
+            "entryCount": entries.length,
+            "eventCount": eventCount,
+            "taskCount": taskCount,
+            "weekdayLabel": Qt.formatDate(date, "ddd"),
+            "dateLabel": Qt.formatDate(date, "M/d"),
+            "isInCurrentWeek": weekCalendarPage.normalizedWeekStartIso(normalizedDateIso) === currentWeekStartIso,
+            "isToday": normalizedDateIso === todayIso
+        };
     }
     function buildHourSlots() {
         var values = [];
         for (var hour = 0; hour < 24; ++hour)
             values.push(hour);
-
+        return values;
     }
-    function buildWeekDayModels(weekStartIso) {
-        const weekStartDate = weekCalendarPage.parseIsoDate(weekStartIso);
-        if (!weekStartDate)
-            return [];
-
-        const todayIso = weekCalendarPage.toIsoDate(new Date());
-        var models = [];
-        for (var offset = 0; offset < 7; ++offset) {
-            const date = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + offset);
-            const dateIso = weekCalendarPage.toIsoDate(date);
-            const entries = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.entriesForDate ? weekCalendarPage.calendarVm.entriesForDate(dateIso) : [];
-            var eventCount = 0;
-            var taskCount = 0;
-            for (var entryIndex = 0; entryIndex < entries.length; ++entryIndex) {
-                const entry = entries[entryIndex];
-                const entryType = entry && entry.type !== undefined ? String(entry.type) : "";
-                if (entryType === "event")
-                    eventCount += 1;
-                else if (entryType === "task")
-                    taskCount += 1;
-            }
-            models.push({
-                "dateIso": dateIso,
-                "day": date.getDate(),
-                "dayLabel": Qt.formatDate(date, "ddd d"),
-                "entries": entries,
-                "entryCount": entries.length,
-                "eventCount": eventCount,
-                "taskCount": taskCount,
-                "isToday": dateIso === todayIso
-            });
-        }
-
-
-    }
-    function buildWeekLabel(weekStartIso) {
-        const weekStartDate = weekCalendarPage.parseIsoDate(weekStartIso);
-        if (!weekStartDate)
-            return "Week";
-        const weekEndDate = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + 6);
-        return Qt.formatDate(weekStartDate, Qt.DefaultLocaleShortDate) + " - " + Qt.formatDate(weekEndDate, Qt.DefaultLocaleShortDate);
-    }
-    function buildWeekModel(weekStartIso) {
-        const normalizedIso = weekStartIso !== undefined ? String(weekStartIso).trim() : "";
-        return {
-            "weekStartIso": normalizedIso,
-            "weekLabel": weekCalendarPage.buildWeekLabel(normalizedIso),
-            "dayModels": weekCalendarPage.buildWeekDayModels(normalizedIso)
-        };
-    }
-    function centerOnWeek(weekStartIso) {
-        const normalizedIso = weekStartIso !== undefined ? String(weekStartIso).trim() : "";
+    function centerOnDate(dateIso) {
+        const normalizedIso = dateIso !== undefined ? String(dateIso).trim() : "";
         if (normalizedIso.length === 0)
             return;
 
-        for (var index = 0; index < weekModel.count; ++index) {
-            if (String(weekModel.get(index).weekStartIso) !== normalizedIso)
+        for (var index = 0; index < dateModel.count; ++index) {
+            if (String(dateModel.get(index).dateIso) !== normalizedIso)
                 continue;
-            weekCalendarWeeksView.currentIndex = index;
-            weekCalendarWeeksView.positionViewAtIndex(index, ListView.Beginning);
-            weekCalendarPage.ensureLazyWindow(index);
-            weekCalendarPage.syncDisplayedWeekForCurrentIndex("focus-week");
+            weekCalendarPage.setViewportContentX(
+                        Math.max(0, (index - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan));
+            weekCalendarPage.ensureLazyDates();
+            weekCalendarPage.syncDisplayedWeekForDate(normalizedIso, "focus-date");
             return;
         }
-        weekCalendarPage.initializeWeekWindow(normalizedIso);
+
+        weekCalendarPage.initializeDateWindow(normalizedIso, true, "focus-date");
     }
-    function ensureLazyWindow(index) {
-        if (index < 0 || weekModel.count <= 0)
+    function currentFocusedDateIndex() {
+        if (dateModel.count <= 0)
+            return -1;
+        if (timelineScaffold.dayColumnSpan <= 0)
+            return 0;
+        const viewportCenterX = dateColumnsFlickable.contentX + (timelineScaffold.dateViewportWidth / 2);
+        const centeredIndex = Math.round(
+                    (viewportCenterX - (timelineScaffold.dayColumnWidth / 2))
+                    / timelineScaffold.dayColumnSpan);
+        return Math.max(0, Math.min(dateModel.count - 1, centeredIndex));
+    }
+    function currentLeadingDateIndex() {
+        if (dateModel.count <= 0)
+            return -1;
+        if (timelineScaffold.dayColumnSpan <= 0)
+            return 0;
+        return Math.max(
+                    0,
+                    Math.min(
+                        dateModel.count - 1,
+                        Math.floor(dateColumnsFlickable.contentX / timelineScaffold.dayColumnSpan)));
+    }
+    function ensureLazyDates() {
+        if (!weekCalendarPage.dateWindowInitialized || dateModel.count <= 0)
             return;
-        if (index <= weekCalendarPage.preloadThreshold)
-            weekCalendarPage.prependWeeks(weekCalendarPage.lazyChunkSize);
-        if (index >= weekModel.count - 1 - weekCalendarPage.preloadThreshold)
-            weekCalendarPage.appendWeeks(weekCalendarPage.lazyChunkSize);
-        weekCalendarPage.trimWeekWindow();
+        const leadingIndex = weekCalendarPage.currentLeadingDateIndex();
+        if (leadingIndex <= weekCalendarPage.preloadThreshold)
+            weekCalendarPage.prependDates(weekCalendarPage.lazyChunkSize);
+        if (leadingIndex >= dateModel.count - weekCalendarPage.visibleDayColumnCount - weekCalendarPage.preloadThreshold)
+            weekCalendarPage.appendDates(weekCalendarPage.lazyChunkSize);
+        weekCalendarPage.trimDateWindow();
+    }
+    function entriesForDate(dateIso) {
+        const normalizedDateIso = dateIso !== undefined ? String(dateIso).trim() : "";
+        if (normalizedDateIso.length === 0)
+            return [];
+        if (weekCalendarPage.dateEntriesCache[normalizedDateIso] !== undefined)
+            return weekCalendarPage.dateEntriesCache[normalizedDateIso];
+        const resolvedEntries = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.entriesForDate
+                ? weekCalendarPage.calendarVm.entriesForDate(normalizedDateIso)
+                : [];
+        weekCalendarPage.dateEntriesCache[normalizedDateIso] = resolvedEntries;
+        return resolvedEntries;
     }
     function entriesForHour(dayModel, hour) {
-        if (!dayModel || !dayModel.entries)
+        if (!dayModel || dayModel.dateIso === undefined)
             return [];
+        const dayEntries = weekCalendarPage.entriesForDate(String(dayModel.dateIso));
         var matches = [];
-        for (var i = 0; i < dayModel.entries.length; ++i) {
-            var entry = dayModel.entries[i];
+        for (var index = 0; index < dayEntries.length; ++index) {
+            const entry = dayEntries[index];
             if (!entry || entry.time === undefined)
                 continue;
-            var timeParts = String(entry.time).split(":");
+            const timeParts = String(entry.time).split(":");
             if (timeParts.length === 0)
                 continue;
-            var entryHour = Number(timeParts[0]);
+            const entryHour = Number(timeParts[0]);
             if (!isFinite(entryHour) || Math.floor(entryHour) !== hour)
                 continue;
             matches.push(entry);
         }
-
+        return matches;
     }
-    function initializeWeekWindow(centerWeekStartIso) {
-        const resolvedCenterIso = centerWeekStartIso !== undefined ? String(centerWeekStartIso).trim() : "";
-        if (resolvedCenterIso.length === 0)
+    function initializeDateWindow(anchorDateIso, centerAnchor, syncReason) {
+        const resolvedAnchorIso = anchorDateIso !== undefined ? String(anchorDateIso).trim() : "";
+        if (resolvedAnchorIso.length === 0)
             return;
 
-        weekCalendarPage.weekWindowInitialized = false;
-        weekModel.clear();
-        for (var offset = -weekCalendarPage.initialWeekRadius; offset <= weekCalendarPage.initialWeekRadius; ++offset) {
-            const weekStartIso = weekCalendarPage.shiftDateIso(resolvedCenterIso, offset * 7);
-            weekModel.append(weekCalendarPage.buildWeekModel(weekStartIso));
-        }
+        weekCalendarPage.dateWindowInitialized = false;
+        weekCalendarPage.dateEntriesCache = ({});
+        dateModel.clear();
+        for (var offset = -weekCalendarPage.initialDateRadius; offset <= weekCalendarPage.initialDateRadius; ++offset)
+            dateModel.append(weekCalendarPage.buildDateModel(weekCalendarPage.shiftDateIso(resolvedAnchorIso, offset)));
 
-        weekCalendarWeeksView.currentIndex = weekCalendarPage.initialWeekRadius;
-        weekCalendarWeeksView.positionViewAtIndex(weekCalendarWeeksView.currentIndex, ListView.Beginning);
-        weekCalendarPage.weekWindowInitialized = true;
-        weekCalendarPage.ensureLazyWindow(weekCalendarWeeksView.currentIndex);
-        weekCalendarPage.syncDisplayedWeekForCurrentIndex("initialize-week-window");
+        Qt.callLater(function() {
+            const anchorIndex = weekCalendarPage.initialDateRadius;
+            const initialContentX = centerAnchor === true
+                    ? Math.max(0, (anchorIndex - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan)
+                    : anchorIndex * timelineScaffold.dayColumnSpan;
+            weekCalendarPage.setViewportContentX(initialContentX);
+            weekCalendarPage.dateWindowInitialized = true;
+            weekCalendarPage.ensureLazyDates();
+            if (centerAnchor === true)
+                weekCalendarPage.syncDisplayedWeekForDate(resolvedAnchorIso, syncReason !== undefined ? String(syncReason) : "initialize-date-window");
+            else
+                weekCalendarPage.syncDisplayedWeekFromViewport(syncReason !== undefined ? String(syncReason) : "initialize-date-window");
+        });
     }
     function jumpToCurrentWeek() {
         const todayIso = weekCalendarPage.toIsoDate(new Date());
-        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso)
-            weekCalendarPage.calendarVm.setDisplayedWeekStartIso(todayIso);
-        const centeredWeekIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso) : todayIso;
-        weekCalendarPage.centerOnWeek(centeredWeekIso);
+        weekCalendarPage.centerOnDate(todayIso);
         weekCalendarPage.requestViewHook("current-week");
+    }
+    function focusedDateIso() {
+        const focusedIndex = weekCalendarPage.currentFocusedDateIndex();
+        if (focusedIndex >= 0 && focusedIndex < dateModel.count)
+            return String(dateModel.get(focusedIndex).dateIso);
+        return weekCalendarPage.resolveInitialDateIso();
+    }
+    function normalizedWeekStartIso(dateIso) {
+        const baseDate = weekCalendarPage.parseIsoDate(dateIso);
+        if (!baseDate)
+            return "";
+        const dayOfWeek = baseDate.getDay();
+        const distanceFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const weekStartDate = new Date(
+                    baseDate.getFullYear(),
+                    baseDate.getMonth(),
+                    baseDate.getDate() - distanceFromMonday);
+        return weekCalendarPage.toIsoDate(weekStartDate);
     }
     function notifyViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -170,27 +214,22 @@ Rectangle {
             return null;
         return new Date(year, month - 1, day);
     }
-    function prependWeeks(count) {
-        if (count <= 0 || weekModel.count <= 0)
+    function prependDates(count) {
+        if (count <= 0 || dateModel.count <= 0)
             return;
-        const firstWeekIso = String(weekModel.get(0).weekStartIso);
-        var prependedWeeks = [];
-        for (var offset = count; offset >= 1; --offset) {
-            const weekStartIso = weekCalendarPage.shiftDateIso(firstWeekIso, -offset * 7);
-            prependedWeeks.push(weekCalendarPage.buildWeekModel(weekStartIso));
-        }
-        for (var prependIndex = 0; prependIndex < prependedWeeks.length; ++prependIndex)
-            weekModel.insert(prependIndex, prependedWeeks[prependIndex]);
-        if (weekCalendarWeeksView.currentIndex >= 0) {
-            weekCalendarWeeksView.currentIndex += prependedWeeks.length;
-            weekCalendarWeeksView.positionViewAtIndex(weekCalendarWeeksView.currentIndex, ListView.Beginning);
-        }
+        const firstDateIso = String(dateModel.get(0).dateIso);
+        var prependModels = [];
+        for (var offset = count; offset >= 1; --offset)
+            prependModels.push(weekCalendarPage.buildDateModel(weekCalendarPage.shiftDateIso(firstDateIso, -offset)));
+        for (var index = 0; index < prependModels.length; ++index)
+            dateModel.insert(index, prependModels[index]);
+        weekCalendarPage.setViewportContentX(dateColumnsFlickable.contentX + (prependModels.length * timelineScaffold.dayColumnSpan));
     }
-    function refreshLoadedWeeks() {
-        for (var index = 0; index < weekModel.count; ++index) {
-            const weekStartIso = String(weekModel.get(index).weekStartIso);
-            weekModel.setProperty(index, "weekLabel", weekCalendarPage.buildWeekLabel(weekStartIso));
-            weekModel.setProperty(index, "dayModels", weekCalendarPage.buildWeekDayModels(weekStartIso));
+    function refreshLoadedDates() {
+        weekCalendarPage.dateEntriesCache = ({});
+        for (var index = 0; index < dateModel.count; ++index) {
+            const dateIso = String(dateModel.get(index).dateIso);
+            dateModel.set(index, weekCalendarPage.buildDateModel(dateIso));
         }
     }
     function requestViewHook(reason) {
@@ -199,44 +238,34 @@ Rectangle {
             calendarVm.requestWeekView(hookReason);
         weekCalendarPage.notifyViewHook(hookReason);
     }
-    function resolveInitialWeekStartIso() {
-        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
+    function resolveInitialDateIso() {
+        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined
+                ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim()
+                : "";
         if (currentVmIso.length > 0)
             return currentVmIso;
 
-        const todayIso = weekCalendarPage.toIsoDate(new Date());
-        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso) {
-            weekCalendarPage.calendarVm.setDisplayedWeekStartIso(todayIso);
-            const normalizedVmIso = weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
-            if (normalizedVmIso.length > 0)
-                return normalizedVmIso;
-        }
-
+        const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(weekCalendarPage.toIsoDate(new Date()));
+        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso)
+            weekCalendarPage.calendarVm.setDisplayedWeekStartIso(currentWeekStartIso);
+        return currentWeekStartIso;
+    }
+    function setViewportContentX(nextContentX) {
+        weekCalendarPage.suppressViewportSync = true;
+        dateColumnsFlickable.contentX = Math.max(0, nextContentX);
+        Qt.callLater(function() {
+            weekCalendarPage.suppressViewportSync = false;
+        });
     }
     function shiftDateIso(dateIso, deltaDays) {
         const baseDate = weekCalendarPage.parseIsoDate(dateIso);
         if (!baseDate)
             return "";
-        const shiftedDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + deltaDays);
+        const shiftedDate = new Date(
+                    baseDate.getFullYear(),
+                    baseDate.getMonth(),
+                    baseDate.getDate() + deltaDays);
         return weekCalendarPage.toIsoDate(shiftedDate);
-    }
-    function shiftVisibleWeek(deltaWeeks) {
-        if (weekModel.count <= 0 || deltaWeeks === 0)
-            return;
-        const targetIndex = weekCalendarWeeksView.currentIndex + deltaWeeks;
-        if (targetIndex < 0) {
-            weekCalendarPage.prependWeeks(Math.max(weekCalendarPage.lazyChunkSize, -targetIndex));
-            weekCalendarPage.trimWeekWindow();
-        } else if (targetIndex >= weekModel.count) {
-            weekCalendarPage.appendWeeks(Math.max(weekCalendarPage.lazyChunkSize, targetIndex - weekModel.count + 1));
-            weekCalendarPage.trimWeekWindow();
-        }
-
-        const clampedIndex = Math.max(0, Math.min(weekModel.count - 1, weekCalendarWeeksView.currentIndex + deltaWeeks));
-        weekCalendarWeeksView.currentIndex = clampedIndex;
-        weekCalendarWeeksView.positionViewAtIndex(clampedIndex, ListView.Beginning);
-        weekCalendarPage.ensureLazyWindow(clampedIndex);
-        weekCalendarPage.syncDisplayedWeekForCurrentIndex(deltaWeeks > 0 ? "next-week" : "previous-week");
     }
     function slotBackgroundType(entries) {
         if (!entries || entries.length === 0)
@@ -248,20 +277,30 @@ Rectangle {
     function slotSummary(entries) {
         if (!entries || entries.length === 0)
             return "";
-        var firstEntry = entries[0];
-        var title = firstEntry && firstEntry.title !== undefined ? String(firstEntry.title) : "Item";
+        const firstEntry = entries[0];
+        const title = firstEntry && firstEntry.title !== undefined ? String(firstEntry.title) : "Item";
         if (entries.length === 1)
             return title;
         return title + " +" + String(entries.length - 1);
     }
-    function syncDisplayedWeekForCurrentIndex(reason) {
-        if (weekCalendarWeeksView.currentIndex < 0 || weekCalendarWeeksView.currentIndex >= weekModel.count)
-            return;
-        const activeWeekStartIso = String(weekModel.get(weekCalendarWeeksView.currentIndex).weekStartIso);
-        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim() : "";
-        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.setDisplayedWeekStartIso && currentVmIso !== activeWeekStartIso)
+    function syncDisplayedWeekForDate(dateIso, reason) {
+        const activeWeekStartIso = weekCalendarPage.normalizedWeekStartIso(dateIso);
+        const currentVmIso = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.displayedWeekStartIso !== undefined
+                ? String(weekCalendarPage.calendarVm.displayedWeekStartIso).trim()
+                : "";
+        if (weekCalendarPage.calendarVm
+                && weekCalendarPage.calendarVm.setDisplayedWeekStartIso
+                && activeWeekStartIso.length > 0
+                && currentVmIso !== activeWeekStartIso) {
             weekCalendarPage.calendarVm.setDisplayedWeekStartIso(activeWeekStartIso);
+        }
         weekCalendarPage.notifyViewHook(reason);
+    }
+    function syncDisplayedWeekFromViewport(reason) {
+        const focusedIndex = weekCalendarPage.currentFocusedDateIndex();
+        if (focusedIndex < 0 || focusedIndex >= dateModel.count)
+            return;
+        weekCalendarPage.syncDisplayedWeekForDate(String(dateModel.get(focusedIndex).dateIso), reason);
     }
     function toIsoDate(dateObject) {
         if (!dateObject)
@@ -273,15 +312,21 @@ Rectangle {
         const day = dayNumber < 10 ? "0" + String(dayNumber) : String(dayNumber);
         return year + "-" + month + "-" + day;
     }
-    function trimWeekWindow() {
-        while (weekModel.count > weekCalendarPage.maxWeekWindowSize) {
-            const trimHead = weekCalendarWeeksView.currentIndex > Math.floor(weekModel.count / 2);
-            if (trimHead) {
-                weekModel.remove(0, 1);
-                if (weekCalendarWeeksView.currentIndex > 0)
-                    weekCalendarWeeksView.currentIndex -= 1;
+    function trimDateWindow() {
+        while (dateModel.count > weekCalendarPage.maxDateWindowSize) {
+            const leadingIndex = weekCalendarPage.currentLeadingDateIndex();
+            const removeHead = leadingIndex > Math.floor(dateModel.count / 2);
+            const removeCount = Math.min(
+                        weekCalendarPage.lazyChunkSize,
+                        dateModel.count - weekCalendarPage.maxDateWindowSize);
+            if (removeCount <= 0)
+                return;
+            if (removeHead) {
+                dateModel.remove(0, removeCount);
+                weekCalendarPage.setViewportContentX(
+                            Math.max(0, dateColumnsFlickable.contentX - (removeCount * timelineScaffold.dayColumnSpan)));
             } else {
-                weekModel.remove(weekModel.count - 1, 1);
+                dateModel.remove(dateModel.count - removeCount, removeCount);
             }
         }
     }
@@ -292,23 +337,24 @@ Rectangle {
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: {
-        weekCalendarPage.initializeWeekWindow(weekCalendarPage.resolveInitialWeekStartIso());
-        weekCalendarPage.requestViewHook("page-open");
+        Qt.callLater(function() {
+            weekCalendarPage.initializeDateWindow(weekCalendarPage.resolveInitialDateIso(), false, "initialize-date-window");
+            weekCalendarPage.requestViewHook("page-open");
+        });
     }
 
     Connections {
         function onWeekViewChanged() {
-            weekCalendarPage.refreshLoadedWeeks();
+            weekCalendarPage.refreshLoadedDates();
         }
 
         ignoreUnknownSignals: true
         target: weekCalendarPage.calendarVm
     }
     ListModel {
-        id: weekModel
-
+        id: dateModel
     }
-    LV.VStack {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: LV.Theme.gap12
         spacing: LV.Theme.gap12
@@ -316,8 +362,8 @@ Rectangle {
         CalendarTodayControl {
             id: weekCalendarControl
 
-            onNextRequested: weekCalendarPage.shiftVisibleWeek(1)
-            onPreviousRequested: weekCalendarPage.shiftVisibleWeek(-1)
+            onNextRequested: weekCalendarPage.centerOnDate(weekCalendarPage.shiftDateIso(weekCalendarPage.focusedDateIso(), 7))
+            onPreviousRequested: weekCalendarPage.centerOnDate(weekCalendarPage.shiftDateIso(weekCalendarPage.focusedDateIso(), -7))
             onTodayRequested: weekCalendarPage.jumpToCurrentWeek()
         }
         Rectangle {
@@ -326,47 +372,166 @@ Rectangle {
             color: LV.Theme.panelBackground09
             radius: LV.Theme.radiusSm
 
-            ListView {
-                id: weekCalendarWeeksView
+            Item {
+                id: timelineScaffold
 
                 anchors.fill: parent
                 anchors.margins: LV.Theme.gap3
-                boundsBehavior: Flickable.StopAtBounds
-                cacheBuffer: Math.max(width, 1) * 2
-                clip: true
-                interactive: weekModel.count > 1
-                model: weekModel
-                orientation: ListView.Horizontal
-                snapMode: ListView.SnapOneItem
+                readonly property real dateViewportWidth: Math.max(1, width - weekCalendarPage.hourColumnWidth - weekCalendarPage.dayColumnSpacing)
+                readonly property real dayColumnWidth: Math.max(
+                                                           1,
+                                                           (dateViewportWidth
+                                                            - (weekCalendarPage.dayColumnSpacing
+                                                               * (weekCalendarPage.visibleDayColumnCount - 1)))
+                                                           / weekCalendarPage.visibleDayColumnCount)
+                readonly property real dayColumnSpan: dayColumnWidth + weekCalendarPage.dayColumnSpacing
+                readonly property real headerHeight: Math.max(44, LV.Theme.gap24 * 2)
+                readonly property int hourSlotCount: Math.max(1, weekCalendarPage.hourSlots.length)
+                readonly property real bodyHeight: Math.max(1, height - headerHeight - weekCalendarPage.dayColumnSpacing)
+                readonly property real hourRowHeight: Math.max(
+                                                          1,
+                                                          (bodyHeight
+                                                           - (weekCalendarPage.dayColumnSpacing * (hourSlotCount - 1)))
+                                                          / hourSlotCount)
 
-                delegate: Item {
-                    id: weekPage
+                Column {
+                    id: timeColumn
 
-                    readonly property real dayColumnWidth: weekPage.fittedDayColumnWidth
-                    required property var dayModels
-                    readonly property real fittedDayColumnWidth: Math.max(1, (weekPage.width - weekCalendarPage.hourColumnWidth - (weekCalendarPage.dayColumnSpacing * 7)) / 7)
-                    readonly property real hourRowHeight: Math.max(1, (weekTimelineViewport.height - (weekPage.hourRowSpacing * (weekPage.hourSlotCount - 1))) / weekPage.hourSlotCount)
-                    readonly property real hourRowSpacing: weekCalendarPage.dayColumnSpacing
-                    readonly property int hourSlotCount: Math.max(1, weekCalendarPage.hourSlots.length)
-                    required property string weekLabel
-                    required property string weekStartIso
-                    readonly property real weekTimelineWidth: weekPage.width
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    spacing: weekCalendarPage.dayColumnSpacing
+                    width: weekCalendarPage.hourColumnWidth
 
-                    height: weekCalendarWeeksView.height
-                    width: weekCalendarWeeksView.width
+                    Rectangle {
+                        color: LV.Theme.panelBackground11
+                        height: timelineScaffold.headerHeight
+                        radius: LV.Theme.radiusSm
+                        width: parent.width
+
+                        LV.Label {
+                            anchors.centerIn: parent
+                            color: LV.Theme.descriptionColor
+                            text: "Time"
+                        }
+                    }
+                    Repeater {
+                        model: weekCalendarPage.hourSlots
+
+                        Rectangle {
+                            id: hourLabelCell
+
+                            readonly property int hour: Number(hourLabelCell.modelData)
+                            required property var modelData
+
+                            color: LV.Theme.panelBackground12
+                            height: timelineScaffold.hourRowHeight
+                            radius: LV.Theme.radiusSm
+                            width: timeColumn.width
+
+                            LV.Label {
+                                anchors.centerIn: parent
+                                text: Qt.formatTime(new Date(2000, 0, 1, hourLabelCell.hour, 0, 0), "HH:mm")
+                            }
+                        }
+                    }
+                }
+                Flickable {
+                    id: dateColumnsFlickable
+
+                    anchors.bottom: parent.bottom
+                    anchors.left: timeColumn.right
+                    anchors.leftMargin: weekCalendarPage.dayColumnSpacing
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+                    contentHeight: height
+                    contentWidth: dateColumnsContent.width
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: dateModel.count > weekCalendarPage.visibleDayColumnCount
+
+                    onContentXChanged: {
+                        if (!weekCalendarPage.dateWindowInitialized || weekCalendarPage.suppressViewportSync)
+                            return;
+                        weekCalendarPage.ensureLazyDates();
+                    }
+                    onMovementEnded: {
+                        if (!weekCalendarPage.dateWindowInitialized || weekCalendarPage.suppressViewportSync)
+                            return;
+                        weekCalendarPage.ensureLazyDates();
+                        weekCalendarPage.syncDisplayedWeekFromViewport("date-scroll");
+                    }
 
                     Item {
-                        id: weekTimelineViewport
+                        id: dateColumnsContent
 
-                        anchors.fill: parent
-                        clip: true
+                        height: dateColumnsFlickable.height
+                        width: dateModel.count > 0
+                               ? (dateModel.count * timelineScaffold.dayColumnWidth)
+                                 + ((dateModel.count - 1) * weekCalendarPage.dayColumnSpacing)
+                               : 0
 
+                        Repeater {
+                            model: dateModel
+
+                            Rectangle {
+                                id: dayHeaderCell
+
+                                required property int index
+                                readonly property var dayModel: dayHeaderCell.modelData
+                                required property var modelData
+
+                                border.color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday
+                                              ? LV.Theme.accent
+                                              : LV.Theme.accentTransparent
+                                border.width: Math.max(1, LV.Theme.strokeThin)
+                                color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday
+                                       ? LV.Theme.accentTransparent
+                                       : "transparent"
+                                height: timelineScaffold.headerHeight
+                                radius: LV.Theme.radiusSm
+                                width: timelineScaffold.dayColumnWidth
+                                x: dayHeaderCell.index * timelineScaffold.dayColumnSpan
+                                y: 0
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: LV.Theme.gapNone
+
+                                    LV.Label {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isToday
+                                               ? LV.Theme.accent
+                                               : (dayHeaderCell.dayModel
+                                                  && dayHeaderCell.dayModel.isInCurrentWeek
+                                                  ? LV.Theme.titleHeaderColor
+                                                  : LV.Theme.descriptionColor)
+                                        font.weight: Font.Medium
+                                        text: dayHeaderCell.dayModel
+                                              && dayHeaderCell.dayModel.weekdayLabel !== undefined
+                                              ? String(dayHeaderCell.dayModel.weekdayLabel)
+                                              : ""
+                                    }
+                                    LV.Label {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        color: dayHeaderCell.dayModel && dayHeaderCell.dayModel.isInCurrentWeek
+                                               ? LV.Theme.descriptionColor
+                                               : Qt.darker(LV.Theme.descriptionColor, 1.2)
+                                        text: dayHeaderCell.dayModel
+                                              && dayHeaderCell.dayModel.dateLabel !== undefined
+                                              ? String(dayHeaderCell.dayModel.dateLabel)
+                                              : ""
+                                    }
+                                }
+                            }
+                        }
                         Column {
-                            id: weekTimelineColumn
-
-                            height: weekTimelineViewport.height
-                            spacing: weekPage.hourRowSpacing
-                            width: weekPage.weekTimelineWidth
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.topMargin: timelineScaffold.headerHeight + weekCalendarPage.dayColumnSpacing
+                            spacing: weekCalendarPage.dayColumnSpacing
+                            width: parent.width
 
                             Repeater {
                                 model: weekCalendarPage.hourSlots
@@ -377,54 +542,44 @@ Rectangle {
                                     readonly property int hour: Number(hourRow.modelData)
                                     required property var modelData
 
-                                    color: hourRow.hour % 2 === 0 ? LV.Theme.panelBackground10 : LV.Theme.panelBackground11
-                                    height: weekPage.hourRowHeight
+                                    color: "transparent"
+                                    height: timelineScaffold.hourRowHeight
                                     radius: LV.Theme.radiusSm
-                                    width: weekTimelineColumn.width
+                                    width: parent.width
 
-                                    Row {
-                                        anchors.fill: parent
-                                        spacing: weekCalendarPage.dayColumnSpacing
+                                    Repeater {
+                                        model: dateModel
 
                                         Rectangle {
-                                            color: LV.Theme.panelBackground12
-                                            height: parent.height
+                                            id: dayHourCell
+
+                                            required property int index
+                                            readonly property var dayModel: dayHourCell.modelData
+                                            required property var modelData
+                                            readonly property var slotEntries: weekCalendarPage.entriesForHour(
+                                                                                  dayHourCell.dayModel,
+                                                                                  hourRow.hour)
+
+                                            border.color: dayHourCell.dayModel && dayHourCell.dayModel.isToday
+                                                          ? LV.Theme.accentTransparent
+                                                          : LV.Theme.accentTransparent
+                                            border.width: Math.max(1, LV.Theme.strokeThin)
+                                            color: "transparent"
+                                            height: timelineScaffold.hourRowHeight
                                             radius: LV.Theme.radiusSm
-                                            width: weekCalendarPage.hourColumnWidth
+                                            width: timelineScaffold.dayColumnWidth
+                                            x: dayHourCell.index * timelineScaffold.dayColumnSpan
 
-                                            LV.Label {
-                                                anchors.centerIn: parent
-                                                text: Qt.formatTime(new Date(2000, 0, 1, hourRow.hour, 0, 0), "HH:mm")
-                                            }
-                                        }
-                                        Repeater {
-                                            model: weekPage.dayModels
-
-                                            Rectangle {
-                                                id: dayHourCell
-
-                                                readonly property var dayModel: dayHourCell.modelData
-                                                required property var modelData
-                                                readonly property var slotEntries: weekCalendarPage.entriesForHour(dayHourCell.dayModel, hourRow.hour)
-
-                                                border.color: LV.Theme.accentTransparent
-                                                border.width: Math.max(1, LV.Theme.strokeThin)
-                                                color: LV.Theme.accentTransparent
-                                                height: hourRow.height
-                                                radius: LV.Theme.radiusSm
-                                                width: weekPage.dayColumnWidth
-
-                                                CalendarEventCell {
-                                                    anchors.fill: parent
-                                                    backgroundType: weekCalendarPage.slotBackgroundType(dayHourCell.slotEntries)
-                                                    coloredBackgroundColor: LV.Theme.primary
-                                                    cornerRadius: LV.Theme.radiusSm
-                                                    defaultBackgroundColor: LV.Theme.panelBackground11
-                                                    horizontalInset: LV.Theme.gap2
-                                                    label: weekCalendarPage.slotSummary(dayHourCell.slotEntries)
-                                                    textColor: LV.Theme.titleHeaderColor
-                                                    visible: dayHourCell.slotEntries.length > 0
-                                                }
+                                            CalendarEventCell {
+                                                anchors.fill: parent
+                                                backgroundType: weekCalendarPage.slotBackgroundType(dayHourCell.slotEntries)
+                                                coloredBackgroundColor: LV.Theme.primary
+                                                cornerRadius: LV.Theme.radiusSm
+                                                defaultBackgroundColor: LV.Theme.panelBackground11
+                                                horizontalInset: LV.Theme.gap2
+                                                label: weekCalendarPage.slotSummary(dayHourCell.slotEntries)
+                                                textColor: LV.Theme.titleHeaderColor
+                                                visible: dayHourCell.slotEntries.length > 0
                                             }
                                         }
                                     }
@@ -432,18 +587,6 @@ Rectangle {
                             }
                         }
                     }
-                }
-
-                onCurrentIndexChanged: {
-                    if (!weekCalendarPage.weekWindowInitialized || currentIndex < 0)
-                        return;
-                    weekCalendarPage.ensureLazyWindow(currentIndex);
-                    weekCalendarPage.syncDisplayedWeekForCurrentIndex("week-scroll");
-                }
-                onMovementEnded: {
-                    if (!weekCalendarPage.weekWindowInitialized || currentIndex < 0)
-                        return;
-                    weekCalendarPage.ensureLazyWindow(currentIndex);
                 }
             }
         }

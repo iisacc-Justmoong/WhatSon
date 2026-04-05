@@ -25,7 +25,7 @@ Rectangle {
     readonly property color monthTitleColor: LV.Theme.accent
     readonly property color weekdayTextColor: LV.Theme.descriptionColor
     readonly property color activeDayColor: LV.Theme.titleHeaderColor
-    readonly property color adjacentDayColor: Qt.rgba(1.0, 1.0, 1.0, 0.28)
+    readonly property color adjacentDayColor: Qt.darker(yearCalendarPage.activeDayColor, 1.2)
     readonly property color todayBadgeColor: Qt.rgba(1.0, 1.0, 1.0, 0.22)
     readonly property int mobileMonthCardMinHeight: 260
     readonly property var weekdayLabels: calendarVm && calendarVm.weekdayLabels ? calendarVm.weekdayLabels : []
@@ -79,7 +79,7 @@ Rectangle {
             return LV.Theme.titleHeaderColor;
         if (dayModel && dayModel.inCurrentMonth === true)
             return yearCalendarPage.activeDayColor;
-
+        return yearCalendarPage.adjacentDayColor;
     }
     function jumpToCurrentYear() {
         if (yearCalendarPage.calendarVm && yearCalendarPage.calendarVm.focusToday) {

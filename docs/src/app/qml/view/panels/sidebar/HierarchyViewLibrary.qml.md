@@ -12,6 +12,9 @@
 
 ## QML Surface Snapshot
 - Root type: `SidebarHierarchyView`
+- Library folders inherit the shared sidebar right-click context-menu contract from `SidebarHierarchyView.qml`.
+- That contract currently exposes `New Folder` and `Delete Folder` and reuses the existing library hierarchy
+  viewmodel CRUD actions rather than introducing a library-specific menu controller.
 
 ### Object IDs
 - `hierarchyViewLibrary`

@@ -6,10 +6,9 @@ import LVRS 1.0 as LV
 LV.HStack {
     id: calendarTodayControl
 
-    readonly property string figmaNodeId: "227:8807"
+    readonly property string figmaNodeId: "238:7843"
     readonly property int controlButtonExtent: 20
-    readonly property int todayButtonWidth: 50
-    property string todayText: "Today"
+    readonly property int controlIconExtent: 16
 
     signal previousRequested
     signal todayRequested
@@ -26,10 +25,18 @@ LV.HStack {
     LV.IconButton {
         id: previousButton
 
+        backgroundColor: LV.Theme.panelBackground12
+        backgroundColorDisabled: LV.Theme.panelBackground12
+        backgroundColorHover: LV.Theme.panelBackground12
+        backgroundColorPressed: LV.Theme.panelBackground12
+        cornerRadius: LV.Theme.radiusSm
         height: calendarTodayControl.controlButtonExtent
         horizontalPadding: LV.Theme.gap2
-        iconName: "generalchevronLeft"
-        tone: LV.AbstractButton.Default
+        iconName: "generalchevronUpLarge"
+        iconSize: calendarTodayControl.controlIconExtent
+        rotation: -90
+        tone: LV.AbstractButton.Borderless
+        transformOrigin: Item.Center
         width: calendarTodayControl.controlButtonExtent
         verticalPadding: LV.Theme.gap2
 
@@ -38,17 +45,21 @@ LV.HStack {
             calendarTodayControl.requestViewHook("previous");
         }
     }
-    LV.LabelButton {
+    LV.IconButton {
         id: todayButton
 
-        font.pixelSize: 12
-        font.weight: Font.Medium
+        backgroundColor: LV.Theme.panelBackground12
+        backgroundColorDisabled: LV.Theme.panelBackground12
+        backgroundColorHover: LV.Theme.panelBackground12
+        backgroundColorPressed: LV.Theme.panelBackground12
+        cornerRadius: LV.Theme.radiusSm
         height: calendarTodayControl.controlButtonExtent
-        horizontalPadding: LV.Theme.gap8
-        text: calendarTodayControl.todayText
-        tone: LV.AbstractButton.Default
-        width: calendarTodayControl.todayButtonWidth
-        verticalPadding: LV.Theme.gap4
+        horizontalPadding: LV.Theme.gap2
+        iconName: "threadAtBreakpoint"
+        iconSize: calendarTodayControl.controlIconExtent
+        tone: LV.AbstractButton.Borderless
+        width: calendarTodayControl.controlButtonExtent
+        verticalPadding: LV.Theme.gap2
 
         onClicked: {
             calendarTodayControl.todayRequested();
@@ -58,11 +69,17 @@ LV.HStack {
     LV.IconButton {
         id: nextButton
 
+        backgroundColor: LV.Theme.panelBackground12
+        backgroundColorDisabled: LV.Theme.panelBackground12
+        backgroundColorHover: LV.Theme.panelBackground12
+        backgroundColorPressed: LV.Theme.panelBackground12
+        cornerRadius: LV.Theme.radiusSm
         height: calendarTodayControl.controlButtonExtent
         horizontalPadding: LV.Theme.gap2
-        iconName: "generalchevronLeft"
-        rotation: 180
-        tone: LV.AbstractButton.Default
+        iconName: "generalchevronUpLarge"
+        iconSize: calendarTodayControl.controlIconExtent
+        rotation: 90
+        tone: LV.AbstractButton.Borderless
         transformOrigin: Item.Center
         width: calendarTodayControl.controlButtonExtent
         verticalPadding: LV.Theme.gap2

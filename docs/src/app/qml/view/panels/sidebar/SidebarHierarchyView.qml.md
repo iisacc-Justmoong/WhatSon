@@ -97,6 +97,25 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `onItemEventTriggered(eventName, ...)`, preventing callback-type differences in LVRS context-menu dispatch from
   dropping bulk expansion actions.
 
+## Folder Context Menu
+
+- The same `LV.ContextMenu` instance is now reused for library-folder right-click actions instead of creating a second
+  popup owner.
+- Right-click hit testing routes through `SidebarHierarchyNoteDropController.noteDropTargetAtPosition(...)`, so the menu
+  opens only when the pointer is over a concrete visible hierarchy row.
+- The folder menu is intentionally limited to library folder nodes (`folder:*` / `uuid`-backed entries). Protected
+  system buckets such as `All`, `Draft`, and `Today` do not open this menu.
+- Before the menu opens, the clicked folder is promoted to the primary hierarchy selection through the existing
+  selection-routing path. This keeps context-menu actions aligned with the same selected-folder state used elsewhere in
+  the sidebar.
+- The menu exposes only two actions for now:
+  - `New Folder`, which forwards to the existing `HierarchyInteractionBridge.createFolder()` path after selecting the
+    clicked folder, so the library viewmodel creates the new folder as that folder's child.
+  - `Delete Folder`, which forwards to the existing `HierarchyInteractionBridge.deleteSelectedFolder()` path after
+    selecting the clicked folder.
+- No new backend/service object is introduced for this behavior; the sidebar only reuses the existing selection bridge,
+  CRUD bridge, and menu popup.
+
 ## Expansion Routing Guard
 
 - Chevron-driven expansion now records a resolved hierarchy index from stable model ids first
@@ -178,3 +197,9 @@ This file should be read as a composed view, not as the place where hierarchy bu
   replacing either with a bare numeric line breaks qmlcache code generation.
 - Periodic hierarchy refreshes with unchanged nodes must not visibly blink, because `displayedHierarchyModel` must
   remain unchanged across equivalent `hierarchyNodesChanged` emissions.
+- Right-clicking a library folder row must open a context menu with `New Folder` and `Delete Folder`.
+- Triggering `New Folder` from that menu must reuse the existing folder-creation path and insert the new folder as a
+  child of the clicked folder.
+- Triggering `Delete Folder` from that menu must reuse the existing delete path and remove the clicked folder instead of
+  whichever row was previously selected.
+- Right-clicking protected library buckets such as `All`, `Draft`, or `Today` must not open the folder context menu.

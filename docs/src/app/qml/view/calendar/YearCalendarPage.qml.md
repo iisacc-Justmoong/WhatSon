@@ -35,6 +35,8 @@ the year view acts as a high-level event/task heatmap.
 
 ## Board Extensions
 - Each day cell uses lightweight text rendering with `inCurrentMonth` dimming and a circular today highlight.
+- Adjacent overflow days now use `Qt.darker(activeDayColor, 1.2)`, so they stay readable while remaining about 20%
+  darker than in-month day text instead of falling back to the label default color.
 - The year view remains a high-density navigation surface for month/day context while keeping the board data contract
   from `YearCalendarViewModel`.
 - `YearCalendarViewModel::focusToday()` aligns the displayed year with the active calendar system.
@@ -50,6 +52,8 @@ the year view acts as a high-level event/task heatmap.
     - Tapping a month title must switch the content surface from year view to the corresponding month view.
     - Tapping an in-month or adjacent-month day must open the month view for that tapped date and preserve its selected
       ISO date.
+    - Adjacent overflow days such as `2/28` shown inside March must render with a theme-derived dimmed color, not pure
+      black/default label text.
 
 ## Collaborators
 - `src/app/calendar/CalendarBoardStore.hpp/.cpp`

@@ -16,7 +16,6 @@ class AgendaViewModel final : public QObject
     Q_PROPERTY(QString displayedDateIso READ displayedDateIso WRITE setDisplayedDateIso NOTIFY displayedDateIsoChanged)
     Q_PROPERTY(QString dateLabel READ dateLabel NOTIFY agendaChanged)
     Q_PROPERTY(QVariantMap location READ location NOTIFY agendaChanged)
-    Q_PROPERTY(QVariantMap weather READ weather NOTIFY agendaChanged)
     Q_PROPERTY(QVariantList allDayEvents READ allDayEvents NOTIFY agendaChanged)
     Q_PROPERTY(QVariantList timedEvents READ timedEvents NOTIFY agendaChanged)
     Q_PROPERTY(QVariantList agendaItems READ agendaItems NOTIFY agendaChanged)
@@ -28,7 +27,6 @@ public:
     QString displayedDateIso() const;
     QString dateLabel() const;
     QVariantMap location() const;
-    QVariantMap weather() const;
     QVariantList allDayEvents() const;
     QVariantList timedEvents() const;
     QVariantList agendaItems() const;
@@ -59,12 +57,6 @@ public slots:
         const QString& regionName,
         const QString& countryCode,
         const QString& timeZoneId = QString());
-    Q_INVOKABLE void setWeather(
-        const QString& conditionText,
-        int temperatureCelsius,
-        int highCelsius,
-        int lowCelsius,
-        int precipitationPercent);
 
 signals:
     void displayedDateIsoChanged();
@@ -80,24 +72,12 @@ private:
         QString timeZoneId;
     };
 
-    struct AgendaWeatherModel
-    {
-        QString conditionText;
-        QString iconName;
-        int temperatureCelsius = 0;
-        int highCelsius = 0;
-        int lowCelsius = 0;
-        int precipitationPercent = 0;
-    };
-
     static bool parseIsoDate(const QString& dateIso, QDate* outDate);
     static QString formatDateLabel(const QDate& date, const QLocale& locale);
     static bool isAllDayEvent(const QVariantMap& entry);
     static QVariantMap toEventModel(const QVariantMap& entry, bool allDay);
     static QVariantMap toAgendaItemModel(const QVariantMap& entry);
     static QVariantMap toLocationVariant(const AgendaLocationModel& model);
-    static QVariantMap toWeatherVariant(const AgendaWeatherModel& model);
-    static AgendaWeatherModel buildSampleWeatherForDate(const QDate& date);
 
     void rebuildAgenda();
 
@@ -105,8 +85,6 @@ private:
     QString m_displayedDateIso;
     QString m_dateLabel;
     AgendaLocationModel m_locationModel;
-    AgendaWeatherModel m_weatherModel;
-    bool m_customWeatherEnabled = false;
     QVariantList m_allDayEvents;
     QVariantList m_timedEvents;
     QVariantList m_agendaItems;

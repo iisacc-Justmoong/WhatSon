@@ -5,15 +5,18 @@
 (`Day`, `Week`, `Month`, `Year`).
 
 ## Figma Alignment
-- Reference node: `227:8807`
+- Reference node: `238:7843`
 - Layout contract:
   - horizontal stack spacing: `LV.Theme.gap2`
-  - previous/next icon buttons: fixed `20x20` (`controlButtonExtent`), `horizontalPadding = LV.Theme.gap2`, `verticalPadding = LV.Theme.gap2`
-  - today button: fixed width `50` and height `20`, `horizontalPadding = LV.Theme.gap8`, `verticalPadding = LV.Theme.gap4`, `font.pixelSize = 12`
-  - button tone uses `LV.AbstractButton.Default`
+  - all three buttons are fixed `20x20` icon buttons (`controlButtonExtent`)
+  - button padding stays `2` on both axes via `LV.Theme.gap2`
+  - button background is `LV.Theme.panelBackground12` across idle/hover/pressed/disabled states
+  - previous/next use `generalchevronUpLarge` rotated `-90` / `90`
+  - center action uses the LVRS `threadAtBreakpoint` icon to match the Figma orange-circle glyph
+  - button corner radius stays `LV.Theme.radiusSm`
+  - buttons use `LV.AbstractButton.Borderless` with explicit background colors
 
 ## Public QML Contract
-- `property string todayText`: label for center action button (`"Today"` default)
 - `signal previousRequested`
 - `signal todayRequested`
 - `signal nextRequested`
@@ -21,8 +24,15 @@
 
 ## Interaction
 1. Previous icon emits `previousRequested` and `viewHookRequested("previous")`.
-2. Today label button emits `todayRequested` and `viewHookRequested("today")`.
+2. Center icon button emits `todayRequested` and `viewHookRequested("today")`.
 3. Next icon emits `nextRequested` and `viewHookRequested("next")`.
+
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - The shared calendar control must render as three `20x20` icon buttons without a text `Today` label.
+    - The center button must use the orange `threadAtBreakpoint` glyph.
+    - Previous and next buttons must keep the rotated chevron treatment from the Figma node.
 
 ## Collaborators
 - `src/app/qml/view/calendar/DayCalendarPage.qml`

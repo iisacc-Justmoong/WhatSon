@@ -35,5 +35,7 @@
 ## Notes
 - `DayCalendarViewModel`, `WeekCalendarViewModel`, `MonthCalendarViewModel`, and `YearCalendarViewModel` are wired to
   the shared `src/app/calendar/CalendarBoardStore.*` backend for date/time-based event/task board semantics.
+- `WeekCalendarViewModel` continues to anchor the weekly route while the QML week surface now presents that data as
+  one continuous horizontal date surface sized for three visible day columns.
 - `AgendaViewModel` projects one date into Agenda-focused section models (`allDayEvents`, `timedEvents`, `agendaItems`) and
-  surfaces sample location/weather payloads for the Agenda route card layout.
+  exposes the date label, location caption, and summary counts needed by the Agenda route layout.
