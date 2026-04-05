@@ -18,6 +18,7 @@ It supports two variants through one boolean argument:
 ## Render Rules
 - Background: `LV.Theme.panelBackground04`
 - Disabled variant: `opacity: 0.5`
+- Today state: applies a soft border using `LV.Theme.strokeSoft` and `LV.Theme.strokeThin`
 - Content padding: `8`
 - Day number label style: `12 / Medium` (Body typography)
 - Entry chips: delegated to shared `CalendarEventCell` with `cornerRadius: 4` in month-grid usage
@@ -30,3 +31,9 @@ It supports two variants through one boolean argument:
 ## Collaborators
 - `src/app/qml/view/calendar/MonthCalendarPage.qml`
 - `src/app/qml/view/calendar/CalendarEventCell.qml`
+
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - The day cell mapped from `dayModel.isToday === true` must render with a visible but low-contrast border.
+    - Adjacent non-today overflow dates must continue to render without the added border.
