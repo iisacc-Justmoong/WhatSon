@@ -15,7 +15,7 @@ LV.HStack {
         viewHookRequested();
     }
 
-    spacing: 0
+    spacing: LV.Theme.gapNone
 
     LV.IconMenuButton {
         id: newFileButton

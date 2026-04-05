@@ -17,7 +17,7 @@ LV.HStack {
         viewHookRequested();
     }
 
-    spacing: 4
+    spacing: LV.Theme.gap4
 
     LV.IconButton {
         id: sidebarControlButton

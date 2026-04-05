@@ -15,7 +15,7 @@
 - Toolbar contract: `resolvedToolbarItems`
 
 ## Toolbar Layout
-- Gap between toolbar and contents: `10`
+- Gap between toolbar and contents: `LV.Theme.scaleMetric(10)`
 - The toolbar remains horizontally centered regardless of panel width.
 - Header height is derived from `DetailPanelHeaderToolbar.qml`'s implicit height instead of a fixed `20px` clamp.
 - The panel must not force the toolbar back to the legacy `145x20` frame on mobile or desktop.

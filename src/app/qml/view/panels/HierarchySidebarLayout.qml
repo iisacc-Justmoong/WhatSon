@@ -31,7 +31,7 @@ Item {
     property int searchListGap: LV.Theme.gapNone
     property int searchHeaderVerticalInset: LV.Theme.gap2
     property string searchText: ""
-    property int toolbarFrameWidth: 200
+    property int toolbarFrameWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(200)))
     property var toolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
     property int verticalInset: LV.Theme.gap2
 

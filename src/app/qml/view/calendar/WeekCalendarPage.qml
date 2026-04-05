@@ -11,7 +11,7 @@ Rectangle {
     readonly property int dayColumnSpacing: LV.Theme.gap2
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
     readonly property var hourSlots: weekCalendarPage.buildHourSlots()
-    readonly property int initialDateRadius: 21
+    readonly property int initialDateRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(21)))
     readonly property int lazyChunkSize: 14
     readonly property int maxDateWindowSize: 120
     readonly property int preloadThreshold: 12

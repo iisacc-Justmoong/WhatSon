@@ -55,11 +55,11 @@ LV.HStack {
             editorViewContextMenu.close();
             return;
         }
-        editorViewContextMenu.openFor(editorViewCombo, 0, editorViewCombo.height + 2);
+        editorViewContextMenu.openFor(editorViewCombo, 0, editorViewCombo.height + LV.Theme.gap2);
         editorViewBar.requestViewHook("open-editor-view-menu");
     }
 
-    spacing: 8
+    spacing: LV.Theme.gap8
 
     LV.Label {
         color: LV.Theme.bodyColor
@@ -79,7 +79,7 @@ LV.HStack {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        itemWidth: 141
+        itemWidth: LV.Theme.scaleMetric(141)
         items: editorViewBar.editorViewMenuItems
         modal: false
         parent: Controls.Overlay.overlay

@@ -22,8 +22,8 @@ Rectangle {
     readonly property color searchFieldColor: "transparent"
     readonly property int searchFieldHeight: LV.Theme.gap18
     readonly property int searchFieldHorizontalInset: LV.Theme.gap24
-    readonly property int searchFieldMaxWidth: 541
-    readonly property int searchFieldMinWidth: 220
+    readonly property int searchFieldMaxWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(541)))
+    readonly property int searchFieldMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(220)))
     property int searchFieldRadius: LV.Theme.radiusControl
     readonly property int searchFieldWidth: {
         var availableWidth = Math.max(0, width - searchFieldHorizontalInset * 2);

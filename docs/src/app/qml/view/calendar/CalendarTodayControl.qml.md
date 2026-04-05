@@ -8,7 +8,7 @@
 - Reference node: `238:7843`
 - Layout contract:
   - horizontal stack spacing: `LV.Theme.gap2`
-  - all three buttons are fixed `20x20` icon buttons (`controlButtonExtent`)
+  - all three buttons use `LV.Theme.scaleMetric(20)` for the button extent and `LV.Theme.scaleMetric(16)` for the icon extent
   - button padding stays `2` on both axes via `LV.Theme.gap2`
   - button background is `LV.Theme.panelBackground12` across idle/hover/pressed/disabled states
   - previous/next use `generalchevronUpLarge` rotated `-90` / `90`
@@ -30,7 +30,7 @@
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
-    - The shared calendar control must render as three `20x20` icon buttons without a text `Today` label.
+    - The shared calendar control must render as three LVRS-scaled icon buttons without a text `Today` label.
     - The center button must use the orange `threadAtBreakpoint` glyph.
     - Previous and next buttons must keep the rotated chevron treatment from the Figma node.
 

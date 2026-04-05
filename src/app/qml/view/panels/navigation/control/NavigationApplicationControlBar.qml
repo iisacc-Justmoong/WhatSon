@@ -32,8 +32,8 @@ Item {
     property bool compactMode: false
     property bool compactDetailPanelVisible: false
     property bool compactNoteListControlsVisible: false
-    property int menuItemWidth: 176
-    property int menuYOffset: 2
+    property int menuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(176)))
+    property int menuYOffset: LV.Theme.gap2
     property bool detailPanelCollapsed: false
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationControlBar") : null
     readonly property var applicationControlMenuItems: applicationControlBar.buildApplicationControlMenuItems()
@@ -147,7 +147,7 @@ Item {
         LV.HStack {
             id: fullApplicationControlBar
 
-            spacing: 12
+            spacing: LV.Theme.gap12
 
             NavigationAppControlBar {
                 id: appControlBar

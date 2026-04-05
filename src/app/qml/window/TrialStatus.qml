@@ -7,8 +7,8 @@ import LVRS 1.0 as LV
 Window {
     id: root
 
-    readonly property int fixedHeight: 372
-    readonly property int fixedWidth: 452
+    readonly property int fixedHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(372)))
+    readonly property int fixedWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(452)))
     readonly property bool hasTrialPolicy: root.trialActivationPolicy !== null
     readonly property bool bypassedByAuthentication: root.hasTrialPolicy
                                                     && root.trialActivationPolicy.bypassedByAuthentication !== undefined
@@ -28,7 +28,16 @@ Window {
                                            ? Number(root.trialActivationPolicy.trialLengthDays)
                                            : 0
     readonly property color chromeColor: LV.Theme.panelBackground06
+    readonly property int contentInset: LV.Theme.gap20
+    readonly property int dividerHeight: Math.max(1, Math.round(LV.Theme.strokeThin))
+    readonly property int headlineTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
     readonly property color surfaceColor: LV.Theme.panelBackground10
+    readonly property int primaryMetricTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
+    readonly property int summaryLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(22)))
+    readonly property int summaryTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
+    readonly property int surfaceRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
+    readonly property int trialDetailTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(13)))
+    readonly property int trialSectionTitleSize: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
     readonly property color headlineColor: {
         if (root.bypassedByAuthentication)
             return LV.Theme.accent;
@@ -114,31 +123,31 @@ Window {
             anchors.fill: parent
             anchors.margins: LV.Theme.gap4
             color: root.surfaceColor
-            radius: 24
+            radius: root.surfaceRadius
 
             Column {
                 anchors.fill: parent
-                anchors.margins: LV.Theme.gap20
+                anchors.margins: root.contentInset
                 spacing: LV.Theme.gap4
 
                 LV.Label {
                     color: root.headlineColor
                     font.bold: true
-                    font.pixelSize: 18
+                    font.pixelSize: root.headlineTextSize
                     text: root.headlineText
                 }
 
                 LV.Label {
                     color: LV.Theme.titleHeaderColor
                     font.bold: true
-                    font.pixelSize: 36
+                    font.pixelSize: root.primaryMetricTextSize
                     text: root.primaryMetricText
                 }
 
                 LV.Label {
                     color: LV.Theme.descriptionColor
-                    font.pixelSize: 14
-                    lineHeight: 22
+                    font.pixelSize: root.summaryTextSize
+                    lineHeight: root.summaryLineHeight
                     text: root.summaryText
                     width: parent.width
                     wrapMode: Text.WordWrap
@@ -146,7 +155,7 @@ Window {
 
                 Rectangle {
                     color: root.chromeColor
-                    height: 1
+                    height: root.dividerHeight
                     width: parent.width
                 }
 
@@ -156,31 +165,31 @@ Window {
                     LV.Label {
                         color: LV.Theme.titleHeaderColor
                         font.bold: true
-                        font.pixelSize: 14
+                        font.pixelSize: root.trialSectionTitleSize
                         text: "Trial details"
                     }
 
                     LV.Label {
                         color: LV.Theme.descriptionColor
-                        font.pixelSize: 13
+                        font.pixelSize: root.trialDetailTextSize
                         text: "Trial length: " + root.trialLengthDays + " days"
                     }
 
                     LV.Label {
                         color: LV.Theme.descriptionColor
-                        font.pixelSize: 13
+                        font.pixelSize: root.trialDetailTextSize
                         text: "Elapsed: " + root.elapsedDays + " days"
                     }
 
                     LV.Label {
                         color: LV.Theme.descriptionColor
-                        font.pixelSize: 13
+                        font.pixelSize: root.trialDetailTextSize
                         text: "Installed: " + root.formattedDate(root.hasTrialPolicy ? root.trialActivationPolicy.installDate : null)
                     }
 
                     LV.Label {
                         color: LV.Theme.descriptionColor
-                        font.pixelSize: 13
+                        font.pixelSize: root.trialDetailTextSize
                         text: "Last active day: " + root.formattedDate(root.hasTrialPolicy ? root.trialActivationPolicy.lastActiveDate : null)
                     }
                 }

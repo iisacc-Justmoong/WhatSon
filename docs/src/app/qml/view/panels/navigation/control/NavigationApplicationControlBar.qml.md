@@ -40,3 +40,5 @@ The desktop row preserves the Figma child order:
   duplicate context-menu action.
 - That compact detail button now emits the hook reason `open-detail-page`, matching the routed-page interaction instead
   of the older collapse/expand overlay wording.
+- Menu width/y-offset and the desktop full-row gap now route through `LV.Theme.scaleMetric(176)` and `LV.Theme.gap2/12`
+  instead of raw `176/2/12px` literals.

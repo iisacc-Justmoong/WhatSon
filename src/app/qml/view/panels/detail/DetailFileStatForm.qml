@@ -5,6 +5,9 @@ Item {
     id: detailFileStatForm
 
     property var fileStatViewModel: null
+    readonly property int formHorizontalInset: LV.Theme.gap8
+    readonly property int formTopInset: LV.Theme.gap2
+    readonly property int formVerticalSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
     readonly property var summaryLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.summaryLines : [])
     readonly property var textMetricLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.textMetricLines : [])
     readonly property var activityLines: detailFileStatForm.resolveTextLines(detailFileStatForm.fileStatViewModel ? detailFileStatForm.fileStatViewModel.activityLines : [])
@@ -67,18 +70,18 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         boundsMovement: Flickable.StopAtBounds
         clip: true
-        contentHeight: statsColumn.y + statsColumn.implicitHeight + 2
+        contentHeight: statsColumn.y + statsColumn.implicitHeight + detailFileStatForm.formTopInset
         contentWidth: width
         interactive: contentHeight > height
 
         Column {
             id: statsColumn
 
-            x: 8
-            y: 2
+            x: detailFileStatForm.formHorizontalInset
+            y: detailFileStatForm.formTopInset
             objectName: "Form"
-            spacing: 10
-            width: Math.max(0, parent.width - 16)
+            spacing: detailFileStatForm.formVerticalSpacing
+            width: Math.max(0, parent.width - detailFileStatForm.formHorizontalInset * 2)
 
             FileStatTextSection {
                 objectName: "SummaryStatsSection"

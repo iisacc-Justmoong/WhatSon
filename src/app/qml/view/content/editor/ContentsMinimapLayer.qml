@@ -8,22 +8,24 @@ Item {
 
     property var editorFlickable: null
     property var minimapBarWidthResolver: null
-    property color minimapCurrentLineColor: "#9DA0A8"
+    property color minimapCurrentLineColor: LV.Theme.accentGray
     property real minimapCurrentLineHeight: 1
     property real minimapCurrentLineWidth: 0
     property real minimapCurrentLineY: 0
-    property color minimapLineColor: "#4E5157"
+    property color minimapLineColor: LV.Theme.descriptionColor
     property real minimapSilhouetteHeight: 1
     property bool minimapScrollable: false
-    property int minimapTrackInset: 8
-    property int minimapTrackWidth: 36
-    property color minimapViewportFillColor: "#149DA0A8"
+    property int minimapThumbRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(3)))
+    property int minimapTrackInset: LV.Theme.gap8
+    property int minimapTrackWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
+    property color minimapViewportFillColor: LV.Theme.accentTransparent
     property real minimapViewportHeight: 0
     property real minimapViewportY: 0
     property var minimapVisualRowPaintHeightResolver: null
     property var minimapVisualRowPaintYResolver: null
     property var minimapVisualRows: []
     property var scrollToMinimapPositionHandler: null
+    readonly property int minimapCurrentLineRadius: Math.max(0, Math.round(LV.Theme.scaleMetric(1)))
     readonly property real trackHeight: minimapTrack.height
     readonly property real trackWidth: minimapTrack.width
 
@@ -55,9 +57,9 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: minimapLayer.minimapTrackInset
         anchors.top: parent.top
-        anchors.topMargin: 8
+        anchors.topMargin: minimapLayer.minimapTrackInset
         height: Math.min(
-                    Math.max(1, parent.height - 16),
+                    Math.max(1, parent.height - minimapLayer.minimapTrackInset * 2),
                     Math.max(1, Number(minimapLayer.minimapSilhouetteHeight) || 1))
         width: minimapLayer.minimapTrackWidth
 
@@ -102,7 +104,7 @@ Item {
             border.width: 0
             color: minimapLayer.minimapViewportFillColor
             height: Math.max(0, Number(minimapLayer.minimapViewportHeight) || 0)
-            radius: 3
+            radius: minimapLayer.minimapThumbRadius
             visible: minimapLayer.minimapScrollable
             y: Math.max(0, Number(minimapLayer.minimapViewportY) || 0)
         }
@@ -112,7 +114,7 @@ Item {
                         1,
                         Number(minimapLayer.minimapCurrentLineHeight) || 1)
             opacity: 0.8
-            radius: 1
+            radius: minimapLayer.minimapCurrentLineRadius
             width: Math.max(0, Number(minimapLayer.minimapCurrentLineWidth) || 0)
             x: 0
             y: Math.max(0, Number(minimapLayer.minimapCurrentLineY) || 0)

@@ -22,10 +22,10 @@ the year view acts as a high-level event/task heatmap.
   - month title color uses accent token (`monthTitleColor = LV.Theme.accent`) instead of fixed red,
   - desktop month cards scale responsively using `desktopResponsiveScale`, so grid gap/card padding/day-cell sizes
     change with window size (`yearGridSpacing`, `monthCardPadding`, `monthSectionSpacing`, `monthTitlePixelSize`),
-  - weekday/day numeric labels are standardized to body typography (`monthWeekdayPixelSize = 12`,
-    `monthDayPixelSize = 12`, both `Font.Medium`),
+  - weekday/day numeric labels now route through `LV.Theme.scaleMetric(12)` and remain `Font.Medium`,
   - weekday header row per card,
   - 42-cell day grid per month.
+- Mobile month-card minimum height also routes through `LV.Theme.scaleMetric(260)`.
 
 ## LVRS/QML Standard Alignment
 - Enables `pragma ComponentBehavior: Bound` so nested delegates access outer IDs through explicit bound scope.

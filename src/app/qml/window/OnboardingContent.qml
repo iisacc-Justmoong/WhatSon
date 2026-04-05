@@ -9,11 +9,15 @@ Item {
     id: root
 
     readonly property url appIconSource: "qrc:/whatson/AppIcon.png"
-    readonly property int appIconSize: 144
-    readonly property int closeColumnWidth: 48
+    readonly property int appIconSize: Math.max(0, Math.round(LV.Theme.scaleMetric(144)))
+    readonly property int closeButtonInset: LV.Theme.gap16
+    readonly property int closeButtonSize: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int closeColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
     readonly property url currentFolderUrl: hubSessionController ? hubSessionController.currentFolderUrl : ""
     readonly property string defaultCreateHubFileName: "Untitled.wshub"
-    readonly property int dragRegionHeight: 72
+    readonly property int desktopActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
+    readonly property int desktopContentWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(209)))
+    readonly property int dragRegionHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
     readonly property bool hasHubSelectionCandidates: root.hubSessionController && root.hubSessionController.hubSelectionCandidateNames.length > 0
     readonly property string onboardingSessionState: {
         if (!root.hubSessionController || root.hubSessionController.sessionState === undefined)
@@ -25,15 +29,24 @@ Item {
     readonly property bool useMobileCreateDirectoryFlow: root.isMobilePlatform
     readonly property color linkColor: LV.Theme.accent
     readonly property color mainSurfaceColor: root.panelColor
-    readonly property int mobileActionSpacing: 24
-    readonly property int mobileActionWidth: 180
-    readonly property int mobileContentSpacing: 32
-    readonly property int mobileContentWidth: 209
+    readonly property int mobileActionSpacing: LV.Theme.gap24
+    readonly property int mobileActionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(180)))
+    readonly property int mobileContentSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(32)))
+    readonly property int mobileContentWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(209)))
     readonly property int mobileDesignHeight: 762
     readonly property int mobileDesignWidth: 470
-    readonly property int mobileSurfaceRadius: 32
-    readonly property int mobileVersionWidth: 75
+    readonly property int mobileSurfaceRadius: LV.Theme.radiusXl * 2
+    readonly property int mobileVersionWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(75)))
     readonly property var owningWindow: root.hostWindow ? root.hostWindow : root.Window.window
+    readonly property int panelCornerRadius: LV.Theme.radiusXl * 2
+    readonly property int panelTextHorizontalInset: LV.Theme.gap16
+    readonly property int titleLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
+    readonly property int titleTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
+    readonly property int versionLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int versionTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int actionTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(15)))
+    readonly property int actionTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(15)))
+    readonly property int statusLabelLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(15)))
     readonly property int availableScreenHeight: {
         const targetScreen = root.owningWindow && root.owningWindow.screen ? root.owningWindow.screen : null;
         return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;
@@ -51,7 +64,11 @@ Item {
     property var hubSessionController: null
     property color panelColor: LV.Theme.panelBackground06
     property bool autoCompleteOnHubLoaded: true
-    readonly property int rightPanelWidth: Math.max(214, Math.min(306, Math.round(root.width * 306 / 867)))
+    readonly property int rightPanelWidth: Math.max(
+                                               Math.max(0, Math.round(LV.Theme.scaleMetric(214))),
+                                               Math.min(
+                                                   Math.max(0, Math.round(LV.Theme.scaleMetric(306))),
+                                                   Math.round(root.width * Math.max(0, Math.round(LV.Theme.scaleMetric(306))) / 867)))
     readonly property color secondarySurfaceColor: root.sidePanelColor
     readonly property string resolvedVersionText: {
         const value = root.versionText === undefined || root.versionText === null ? "" : String(root.versionText).trim();
@@ -199,7 +216,7 @@ Item {
         antialiasing: true
         clip: true
         color: root.mainSurfaceColor
-        radius: root.useMobileLayout ? root.mobileSurfaceRadius : 32
+        radius: root.useMobileLayout ? root.mobileSurfaceRadius : root.panelCornerRadius
 
         Item {
             anchors.fill: parent
@@ -230,16 +247,16 @@ Item {
                     id: closeButton
 
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: root.closeButtonInset
                     anchors.top: parent.top
-                    anchors.topMargin: 16
-                    height: 16
-                    width: 16
+                    anchors.topMargin: root.closeButtonInset
+                    height: root.closeButtonSize
+                    width: root.closeButtonSize
 
                     Rectangle {
                         anchors.fill: parent
-                        color: closeMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                        radius: 4
+                        color: closeMouseArea.containsMouse ? LV.Theme.panelBackground08 : "transparent"
+                        radius: LV.Theme.radiusSm
                     }
 
                     Canvas {
@@ -252,12 +269,14 @@ Item {
                             ctx.clearRect(0, 0, width, height);
                             ctx.strokeStyle = LV.Theme.accentGray;
                             ctx.lineCap = "round";
-                            ctx.lineWidth = 1.6;
+                            ctx.lineWidth = Math.max(1, width * 0.1);
+                            const start = width * 0.3125;
+                            const end = width * 0.6875;
                             ctx.beginPath();
-                            ctx.moveTo(5, 5);
-                            ctx.lineTo(11, 11);
-                            ctx.moveTo(11, 5);
-                            ctx.lineTo(5, 11);
+                            ctx.moveTo(start, start);
+                            ctx.lineTo(end, end);
+                            ctx.moveTo(end, start);
+                            ctx.lineTo(start, end);
                             ctx.stroke();
                         }
                     }
@@ -301,12 +320,12 @@ Item {
                     font.styleName: "SemiBold"
                     font.weight: Font.DemiBold
                     horizontalAlignment: Text.AlignHCenter
-                    lineHeight: 15
+                    lineHeight: root.statusLabelLineHeight
                     lineHeightMode: Text.FixedHeight
                     maximumLineCount: 1
                     style: header2
                     text: root.selectedHubStatusText
-                    width: Math.max(0, parent.width - 32)
+                    width: Math.max(0, parent.width - root.panelTextHorizontalInset * 2)
                     wrapMode: Text.NoWrap
                 }
             }
@@ -324,13 +343,13 @@ Item {
 
                     anchors.centerIn: parent
                     height: appPanelColumn.implicitHeight
-                    width: 209
+                    width: root.desktopContentWidth
 
                     Column {
                         id: appPanelColumn
 
                         anchors.centerIn: parent
-                        spacing: 32
+                        spacing: root.mobileContentSpacing
                         width: parent.width
 
                         Image {
@@ -347,7 +366,7 @@ Item {
                         LV.Label {
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: LV.Theme.textPrimary
-                            font.pixelSize: 48
+                            font.pixelSize: root.titleTextSize
                             font.styleName: "Bold"
                             font.weight: Font.Bold
                             horizontalAlignment: Text.AlignHCenter
@@ -358,11 +377,11 @@ Item {
                         LV.Label {
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: LV.Theme.descriptionColor
-                            font.pixelSize: 12
+                            font.pixelSize: root.versionTextSize
                             font.styleName: "SemiBold"
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignHCenter
-                            lineHeight: 12
+                            lineHeight: root.versionLineHeight
                             lineHeightMode: Text.FixedHeight
                             style: description
                             text: root.resolvedVersionText
@@ -371,8 +390,8 @@ Item {
 
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: 24
-                            width: 180
+                            spacing: root.mobileActionSpacing
+                            width: root.desktopActionWidth
 
                             ActionLink {
                                 id: createHubAction
@@ -467,11 +486,11 @@ Item {
                             LV.Label {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 color: LV.Theme.titleHeaderColor
-                                font.pixelSize: 48
+                                font.pixelSize: root.titleTextSize
                                 font.styleName: "Bold"
                                 font.weight: Font.Bold
                                 horizontalAlignment: Text.AlignHCenter
-                                lineHeight: 26
+                                lineHeight: root.titleLineHeight
                                 lineHeightMode: Text.FixedHeight
                                 maximumLineCount: 1
                                 style: title
@@ -482,11 +501,11 @@ Item {
                             LV.Label {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 color: LV.Theme.descriptionColor
-                                font.pixelSize: 12
+                                font.pixelSize: root.versionTextSize
                                 font.styleName: "SemiBold"
                                 font.weight: Font.DemiBold
                                 horizontalAlignment: Text.AlignHCenter
-                                lineHeight: 12
+                                lineHeight: root.versionLineHeight
                                 lineHeightMode: Text.FixedHeight
                                 style: description
                                 text: root.resolvedVersionText
@@ -593,11 +612,11 @@ Item {
 
             anchors.centerIn: parent
             color: actionLink.enabled ? root.linkColor : LV.Theme.descriptionColor
-            font.pixelSize: 15
+            font.pixelSize: root.actionTextSize
             font.styleName: "SemiBold"
             font.weight: Font.DemiBold
             horizontalAlignment: Text.AlignHCenter
-            lineHeight: 15
+            lineHeight: root.actionTextLineHeight
             lineHeightMode: Text.FixedHeight
             opacity: !actionLink.enabled ? 0.42 : actionMouseArea.pressed ? 0.68 : actionMouseArea.containsMouse ? 0.84 : 1
             style: header2

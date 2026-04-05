@@ -21,9 +21,10 @@ It supports two variants through one boolean argument:
 - Selected state: applies an accent border using `LV.Theme.accent` and `LV.Theme.strokeThin`
 - Today state: when the cell is not the selected date, applies a soft border using `LV.Theme.strokeSoft` and
   `LV.Theme.strokeThin`
-- Content padding: `8`
-- Day number label style: `12 / Medium` (Body typography)
-- Entry chips: delegated to shared `CalendarEventCell` with `cornerRadius: 4` in month-grid usage
+- Content padding: `LV.Theme.gap8`
+- Day number and overflow label typography use `LV.Theme.scaleMetric(12)`.
+- Day-label gap, event-row height, and event-row spacing use `LV.Theme.scaleMetric(10/16)` and `LV.Theme.gap2`.
+- Entry chips delegate to shared `CalendarEventCell` with `cornerRadius: LV.Theme.radiusSm` in month-grid usage.
 - Overflow state: renders `+N more` when visible entry capacity is exceeded
 
 ## Interaction

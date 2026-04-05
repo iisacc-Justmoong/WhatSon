@@ -15,6 +15,10 @@ Rectangle {
     property string contextMenuNoteId: ""
     property var contextMenuNoteIds: []
     property int contextMenuNoteIndex: -1
+    readonly property int dragCountBadgeHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
+    readonly property int dragCountBadgeInset: LV.Theme.gap8
+    readonly property int dragCountBadgeMinWidth: dragCountBadgeHeight
+    readonly property int dragCountBadgeWidthPadding: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
     readonly property real grabbedNoteOpacity: 0.25
     readonly property bool hasNoteListModel: listBarLayout.noteListModel !== null && listBarLayout.noteListModel !== undefined
     property bool headerVisible: true
@@ -47,6 +51,7 @@ Rectangle {
     readonly property int noteListFlickDeceleration: 1000000
     readonly property bool noteListMode: listBarLayout.hasNoteListModel
     property var noteListModel: null
+    readonly property int noteListViewportInset: LV.Theme.gap2
     property var displayedNoteListEntries: []
     property string displayedNoteListEntriesSignature: "[]"
     property bool displayedNoteListEntriesSyncDeferred: false
@@ -66,6 +71,7 @@ Rectangle {
     property alias selectedNoteIndices: noteSelectionController.selectedIndices
     property bool syncingCurrentIndexFromModel: false
     property bool syncingNoteListViewport: false
+    readonly property int topToolbarHeight: LV.Theme.gap24
     readonly property bool useInternalNoteDrag: !LV.Theme.mobileTarget
 
     signal noteActivated(int index, string noteId)
@@ -694,14 +700,15 @@ Rectangle {
         }
         Rectangle {
             anchors.right: parent.right
-            anchors.rightMargin: 8
+            anchors.rightMargin: listBarLayout.dragCountBadgeInset
             anchors.top: parent.top
-            anchors.topMargin: 8
+            anchors.topMargin: listBarLayout.dragCountBadgeInset
             color: LV.Theme.accentBlue
-            height: 20
+            height: listBarLayout.dragCountBadgeHeight
             radius: height * 0.5
             visible: noteDragPreviewState.noteIds.length > 1
-            width: Math.max(20, dragCountLabel.implicitWidth + 10)
+            width: Math.max(listBarLayout.dragCountBadgeMinWidth,
+                            dragCountLabel.implicitWidth + listBarLayout.dragCountBadgeWidthPadding)
 
             LV.Label {
                 id: dragCountLabel
@@ -724,7 +731,7 @@ Rectangle {
                 id: topToolbar
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: listBarLayout.headerVisible ? 24 : 0
+                Layout.preferredHeight: listBarLayout.headerVisible ? listBarLayout.topToolbarHeight : 0
                 visible: listBarLayout.headerVisible
 
                 ListBarHeader {
@@ -750,7 +757,7 @@ Rectangle {
                     id: noteListView
 
                     anchors.fill: parent
-                    anchors.margins: 2
+                    anchors.margins: listBarLayout.noteListViewportInset
                     boundsBehavior: Flickable.StopAtBounds
                     boundsMovement: Flickable.StopAtBounds
                     cacheBuffer: Math.max(0, height * 2)
@@ -761,7 +768,7 @@ Rectangle {
                     model: listBarLayout.displayedNoteListEntries
                     pixelAligned: true
                     reuseItems: !listBarLayout.noteDragActive
-                    spacing: 2
+                    spacing: listBarLayout.noteListViewportInset
                     synchronousDrag: true
                     visible: listBarLayout.noteListMode
 

@@ -26,6 +26,11 @@
 - `NavigationPreferenceBar.qml`
 - `NavigationPropertiesBar.qml`
 
+## Recent Notes
+- The small shared navigation bars now use `LV.Theme.gap...` tokens for their inter-button spacing instead of local
+  integer literals such as `2`, `4`, `8`, or `12`.
+- `NavigationEditorViewBar.qml` also moved its popup offset and menu width to LVRS token/scale-aware metrics.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

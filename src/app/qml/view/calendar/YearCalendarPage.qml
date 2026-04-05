@@ -15,19 +15,19 @@ Rectangle {
     readonly property int mobileYearGridColumnCount: 1
     readonly property int yearGridColumnCount: yearCalendarPage.mobileYearListMode ? yearCalendarPage.mobileYearGridColumnCount : yearCalendarPage.desktopYearGridColumnCount
     readonly property real desktopResponsiveScale: yearCalendarPage.mobileYearListMode ? 1.0 : Math.min(1.2, Math.max(0.72, Math.min(yearCalendarPage.width / 1600, yearCalendarPage.height / 1020)))
-    readonly property int yearGridSpacing: Math.max(4, Math.round(24 * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthCardPadding: Math.max(4, Math.round(14 * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthSectionSpacing: Math.max(2, Math.round(8 * yearCalendarPage.desktopResponsiveScale))
-    readonly property int monthTitlePixelSize: Math.max(18, Math.round(44 * yearCalendarPage.desktopResponsiveScale / 2))
-    readonly property int monthWeekdayPixelSize: 12
-    readonly property int monthDayPixelSize: 12
-    readonly property int monthCellWidthFloor: Math.max(10, Math.round(14 * yearCalendarPage.desktopResponsiveScale))
+    readonly property int yearGridSpacing: Math.max(LV.Theme.gap4, Math.round(LV.Theme.scaleMetric(24) * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthCardPadding: Math.max(LV.Theme.gap4, Math.round(LV.Theme.scaleMetric(14) * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthSectionSpacing: Math.max(LV.Theme.gap2, Math.round(LV.Theme.scaleMetric(8) * yearCalendarPage.desktopResponsiveScale))
+    readonly property int monthTitlePixelSize: Math.max(Math.max(0, Math.round(LV.Theme.scaleMetric(18))), Math.round(LV.Theme.scaleMetric(44) * yearCalendarPage.desktopResponsiveScale / 2))
+    readonly property int monthWeekdayPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int monthDayPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int monthCellWidthFloor: Math.max(Math.max(0, Math.round(LV.Theme.scaleMetric(10))), Math.round(LV.Theme.scaleMetric(14) * yearCalendarPage.desktopResponsiveScale))
     readonly property color monthTitleColor: LV.Theme.accent
     readonly property color weekdayTextColor: LV.Theme.descriptionColor
     readonly property color activeDayColor: LV.Theme.titleHeaderColor
     readonly property color adjacentDayColor: Qt.darker(yearCalendarPage.activeDayColor, 1.2)
     readonly property color todayBadgeColor: Qt.rgba(1.0, 1.0, 1.0, 0.22)
-    readonly property int mobileMonthCardMinHeight: 260
+    readonly property int mobileMonthCardMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(260)))
     readonly property var weekdayLabels: calendarVm && calendarVm.weekdayLabels ? calendarVm.weekdayLabels : []
     property var yearCalendarViewModel: null
 

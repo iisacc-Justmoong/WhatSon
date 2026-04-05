@@ -7,20 +7,20 @@ import LVRS 1.0 as LV
 Rectangle {
     id: monthCalendarPage
 
-    readonly property int bodyLabelPixelSize: 12
+    readonly property int bodyLabelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     readonly property var calendarVm: monthCalendarViewModel
     readonly property string figmaNodeId: "228:9666"
-    readonly property int headerHorizontalPadding: 8
+    readonly property int headerHorizontalPadding: LV.Theme.gap8
     readonly property int maxVisibleEntriesPerCell: 8
     property var monthCalendarViewModel: null
-    readonly property int monthHeaderHeight: 54
+    readonly property int monthHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(54)))
     property var monthPageModels: []
     readonly property int monthPagerCenterIndex: 1
     property bool monthPagerResetting: false
     readonly property bool monthSwipeEnabled: LV.Theme.mobileTarget
     readonly property string monthTitleText: monthCalendarPage.calendarVm ? String(monthCalendarPage.calendarVm.monthLabel) + ", " + String(monthCalendarPage.calendarVm.displayedYear) : "Month"
-    readonly property int weekdayCellHorizontalPadding: 12
-    readonly property int weekdayHeaderHeight: 39
+    readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12
+    readonly property int weekdayHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(39)))
 
     signal viewHookRequested(string reason)
 

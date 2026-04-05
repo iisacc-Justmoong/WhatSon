@@ -17,6 +17,8 @@
 - The window recenters itself against the host window when one is provided.
 - The window stays non-mobile and desktop-oriented: fixed size, decorated, and intended to coexist with the main workspace window.
 - All displayed values are read directly from `WhatSonTrialActivationPolicy`, so the view stays read-only and does not mutate trial state.
+- Fixed window size, card radius, divider thickness, and headline/body typography now route through `LV.Theme.scaleMetric(...)`
+  or `LV.Theme.strokeThin` instead of local pixel literals, so the trial surface follows LVRS density policy.
 
 ## Why This Exists
 - Trial builds previously had no explicit onboarding/status surface, so users could not tell whether the trial gate was active.

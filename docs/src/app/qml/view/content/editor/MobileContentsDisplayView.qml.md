@@ -12,6 +12,9 @@ suppression local to this file.
 - Gutter chrome remains disabled on mobile.
 - The content surface now fills the full available slot.
 - Minimap visibility is still controlled by the parent route/layout contract.
+- Mobile shares the same LVRS tokenized editor/gutter/minimap metric defaults as desktop, with the mobile font bump
+  layered on top through `editorMobileFontPixelSizeOffset`.
+- Print-paper/resource card border thickness also follows `LV.Theme.strokeThin`.
 - `Page` / `Print` mode still scroll the outer paper-document viewport instead of a fixed-height nested editor.
 
 ## Ownership

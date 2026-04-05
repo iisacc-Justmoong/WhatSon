@@ -17,6 +17,10 @@
 - `NavigationApplicationControlBar.qml`
 - `NavigationExportBar.qml`
 
+## Recent Notes
+- The compact control bars now use `LV.Theme.gap2` for shared inter-button spacing instead of repeating local `2px`
+  literals in each file.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

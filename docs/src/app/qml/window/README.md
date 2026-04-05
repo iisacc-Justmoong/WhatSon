@@ -22,6 +22,10 @@
 - `QuickNote.qml`
 - `TrialStatus.qml`
 
+## Current Notes
+- `Onboarding.qml`, `OnboardingContent.qml`, and `TrialStatus.qml` now route visible window geometry through LVRS
+  `gap`, `radius`, `stroke`, and `scaleMetric(...)` helpers instead of local pixel literals.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

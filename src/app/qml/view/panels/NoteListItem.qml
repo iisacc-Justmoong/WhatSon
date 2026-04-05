@@ -19,26 +19,30 @@ Item {
     readonly property url folderIconSource: LV.Theme.iconPath("folder@14x14")
     readonly property color folderLabelColor: LV.Theme.captionColor
     property var folders: []
-    readonly property int horizontalPadding: 12
+    readonly property int horizontalPadding: LV.Theme.gap12
     readonly property color hoverCardColor: LV.Theme.panelBackground08
     readonly property color pressedCardColor: noteListItem.hoverCardColor
     readonly property bool hovered: noteHoverHandler.hovered
     property bool image: false
     readonly property color imageBoxPlaceholderColor: "#D9D9D9"
-    readonly property int imagePreviewSize: 48
+    readonly property int imagePreviewSize: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
     property url imageSource: ""
-    readonly property int metadataIconFrameSize: 16
-    readonly property int metadataIconSize: 14
-    readonly property int metadataTextLineHeight: 11
-    readonly property int metadataTextSize: 11
+    readonly property int metadataGroupSpacing: LV.Theme.gap2
+    readonly property int metadataIconFrameSize: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int metadataIconSpacing: LV.Theme.gap8
+    readonly property int metadataIconSize: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
+    readonly property int metadataTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
+    readonly property int metadataTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(11)))
     property string noteId: ""
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("NoteListItem") : null
     property bool pressed: false
     property string primaryText: ""
     readonly property color primaryTextColor: LV.Theme.captionColor
-    readonly property int primaryTextBlockHeight: 24
-    readonly property int primaryTextLineHeight: 12
-    readonly property int primaryTextSize: 12
+    readonly property int primaryRowSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int primarySectionSpacing: LV.Theme.gap8
+    readonly property int primaryTextBlockHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
+    readonly property int primaryTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int primaryTextSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     readonly property string resolvedDisplayDate: {
         const value = noteListItem.displayDate === undefined || noteListItem.displayDate === null ? "" : String(noteListItem.displayDate).trim();
         return value.length > 0 ? value : noteListItem.displayDatePlaceholder;
@@ -46,7 +50,8 @@ Item {
     readonly property url tagIconSource: LV.Theme.iconPath("vcscurrentBranch")
     readonly property color tagLabelColor: LV.Theme.captionColor
     property var tags: []
-    readonly property int verticalPadding: 8
+    readonly property int secondaryTextLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int verticalPadding: LV.Theme.gap8
     readonly property var visibleFolders: metadataPreview(noteListItem.folders, true)
     readonly property var visibleTags: metadataPreview(noteListItem.tags, false)
 
@@ -94,8 +99,10 @@ Item {
     }
 
     clip: true
-    implicitHeight: noteListItem.image ? 126 : 102
-    implicitWidth: 194
+    implicitHeight: noteListItem.image
+                    ? Math.max(0, Math.round(LV.Theme.scaleMetric(126)))
+                    : Math.max(0, Math.round(LV.Theme.scaleMetric(102)))
+    implicitWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
 
     Rectangle {
         anchors.fill: parent
@@ -121,10 +128,10 @@ Item {
 
         Column {
             anchors.fill: parent
-            spacing: 8
+            spacing: noteListItem.primarySectionSpacing
 
             RowLayout {
-                spacing: 10
+                spacing: noteListItem.primaryRowSpacing
                 width: parent.width
 
                 Rectangle {
@@ -165,8 +172,8 @@ Item {
                 }
                 Item {
                     Layout.alignment: Qt.AlignTop
-                    Layout.preferredHeight: noteListItem.bookmarked ? 16 : 0
-                    Layout.preferredWidth: noteListItem.bookmarked ? 16 : 0
+                    Layout.preferredHeight: noteListItem.bookmarked ? noteListItem.metadataIconFrameSize : 0
+                    Layout.preferredWidth: noteListItem.bookmarked ? noteListItem.metadataIconFrameSize : 0
                     visible: noteListItem.bookmarked
 
                     Canvas {
@@ -176,12 +183,18 @@ Item {
                         onPaint: {
                             const ctx = getContext("2d");
                             ctx.clearRect(0, 0, width, height);
+                            const leftX = width * 0.25;
+                            const rightX = width * 0.75;
+                            const midX = width * 0.5;
+                            const topY = height * 0.09375;
+                            const notchY = height * 0.65625;
+                            const bottomY = height * 0.875;
                             ctx.beginPath();
-                            ctx.moveTo(4, 1.5);
-                            ctx.lineTo(12, 1.5);
-                            ctx.lineTo(12, 14);
-                            ctx.lineTo(8, 10.5);
-                            ctx.lineTo(4, 14);
+                            ctx.moveTo(leftX, topY);
+                            ctx.lineTo(rightX, topY);
+                            ctx.lineTo(rightX, bottomY);
+                            ctx.lineTo(midX, notchY);
+                            ctx.lineTo(leftX, bottomY);
                             ctx.closePath();
                             ctx.fillStyle = noteListItem.bookmarkColor;
                             ctx.fill();
@@ -190,23 +203,23 @@ Item {
                 }
             }
             Item {
-                height: 12
+                height: noteListItem.secondaryTextLineHeight
                 width: parent.width
 
                 LV.Label {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     color: noteListItem.captionColor
-                    font.pixelSize: 12
+                    font.pixelSize: noteListItem.secondaryTextLineHeight
                     font.weight: Font.DemiBold
-                    lineHeight: 12
+                    lineHeight: noteListItem.secondaryTextLineHeight
                     lineHeightMode: Text.FixedHeight
                     style: body
                     text: noteListItem.resolvedDisplayDate
                 }
             }
             Column {
-                spacing: 2
+                spacing: noteListItem.metadataGroupSpacing
                 visible: foldersRow.visible || tagsRow.visible
                 width: parent.width
 
@@ -221,7 +234,7 @@ Item {
                     Row {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: noteListItem.metadataIconSpacing
 
                         Repeater {
                             model: noteListItem.visibleFolders
@@ -230,7 +243,7 @@ Item {
                                 id: folderLabelRow
 
                                 required property var modelData
-                                spacing: 8
+                                spacing: noteListItem.metadataIconSpacing
 
                                 Item {
                                     height: noteListItem.metadataIconFrameSize
@@ -273,7 +286,7 @@ Item {
                     Row {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: noteListItem.metadataIconSpacing
 
                         Repeater {
                             model: noteListItem.visibleTags
@@ -282,7 +295,7 @@ Item {
                                 id: tagLabelRow
 
                                 required property var modelData
-                                spacing: 8
+                                spacing: noteListItem.metadataIconSpacing
 
                                 Item {
                                     height: noteListItem.metadataIconFrameSize

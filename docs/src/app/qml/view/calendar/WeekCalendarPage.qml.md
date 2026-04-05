@@ -32,6 +32,7 @@ but horizontal flicking advances across adjacent dates without page snapping.
   - the 3 day columns divide the remaining width after the hour column and the three inter-column gaps, so the
     timeline width matches the page viewport on both desktop and mobile,
   - horizontal scrolling has no snap behavior.
+- The centered-day highlight radius now routes through `LV.Theme.scaleMetric(21)` instead of a local pixel constant.
 
 ## Interaction/Data Flow
 1. `Component.onCompleted` initializes a centered lazy date window and, when opening the current week, uses the actual

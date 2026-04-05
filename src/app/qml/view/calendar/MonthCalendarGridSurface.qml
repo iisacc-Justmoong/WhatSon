@@ -7,7 +7,7 @@ import LVRS 1.0 as LV
 Item {
     id: monthCalendarGridSurface
 
-    property int bodyLabelPixelSize: 12
+    property int bodyLabelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     property var calendarVm: null
     readonly property var dayModels: monthCalendarGridSurface.monthProjection && monthCalendarGridSurface.monthProjection.dayModels ? monthCalendarGridSurface.monthProjection.dayModels : []
     readonly property int eventBackgroundColored: 1
@@ -17,8 +17,8 @@ Item {
     property string selectedDateIso: ""
     readonly property var visibleDayModels: monthCalendarGridSurface.buildVisibleDayModels()
     readonly property int visibleWeekRowCount: Math.max(1, Math.ceil(monthCalendarGridSurface.visibleDayModels.length / 7))
-    property int weekdayCellHorizontalPadding: 12
-    property int weekdayHeaderHeight: 39
+    property int weekdayCellHorizontalPadding: LV.Theme.gap12
+    property int weekdayHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(39)))
     readonly property var weekdayLabels: monthCalendarGridSurface.monthProjection && monthCalendarGridSurface.monthProjection.weekdayLabels ? monthCalendarGridSurface.monthProjection.weekdayLabels : []
 
     signal dateSelected(string dateIso)

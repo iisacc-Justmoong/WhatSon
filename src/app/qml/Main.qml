@@ -14,7 +14,7 @@ LV.ApplicationWindow {
 
     readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
-    readonly property int baseRightPanelWidth: 194
+    readonly property int baseRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
     readonly property int baseSidebarWidth: hierarchyToolbarWidth
     readonly property int bodyHeight: Math.max(0, height - adaptiveStatusBarHeight - navigationBarHeight)
     readonly property color bodySplitterColor: LV.Theme.panelBackground10
@@ -33,11 +33,11 @@ LV.ApplicationWindow {
     readonly property bool hideListView: false
     property bool hideRightPanel: false
     property bool hideSidebar: false
-    readonly property int hierarchyHorizontalInset: 2
+    readonly property int hierarchyHorizontalInset: LV.Theme.gap2
     readonly property int hierarchyToolbarButtonSize: LV.Theme.gap20
     readonly property int hierarchyToolbarCount: hierarchyToolbarIconNames.length
     readonly property var hierarchyToolbarIconNames: ["nodeslibraryFolder", "generalprojectStructure", "bookmarksbookmarksList", "vcscurrentBranch", "imageToImage", "chartBar", "dataView", "dataFile"]
-    readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? 40 / (hierarchyToolbarCount - 1) : 0
+    readonly property real hierarchyToolbarSpacing: hierarchyToolbarCount > 1 ? LV.Theme.scaleMetric(40) / (hierarchyToolbarCount - 1) : 0
     readonly property int hierarchyToolbarTrackWidth: hierarchyToolbarCount > 0 ? Math.round(hierarchyToolbarCount * hierarchyToolbarButtonSize + (hierarchyToolbarCount - 1) * hierarchyToolbarSpacing) : hierarchyToolbarButtonSize
     readonly property int hierarchyToolbarWidth: hierarchyToolbarTrackWidth + hierarchyHorizontalInset * 2
     readonly property var registeredViewModelKeys: LV.ViewModels.keys
@@ -60,7 +60,7 @@ LV.ApplicationWindow {
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
-    readonly property int minRightPanelWidth: 145
+    readonly property int minRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(145)))
     readonly property var rootNavigationModeViewModel: {
         const _ = applicationWindow.registeredViewModelKeys;
         return LV.ViewModels.get("navigationModeViewModel");
@@ -88,8 +88,8 @@ LV.ApplicationWindow {
     readonly property string onboardingRoutePath: "/onboarding"
     property var onboardingHubController: null
     property var onboardingRouteBootstrapController: null
-    readonly property int onboardingMinHeight: 420
-    readonly property int onboardingMinWidth: 620
+    readonly property int onboardingMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(420)))
+    readonly property int onboardingMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(620)))
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
     property int preferredSidebarWidth: baseSidebarWidth

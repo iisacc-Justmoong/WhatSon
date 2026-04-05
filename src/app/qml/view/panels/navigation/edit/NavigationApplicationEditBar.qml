@@ -12,8 +12,8 @@ Item {
     property bool compactMode: false
     property bool compactDetailPanelVisible: false
     property bool detailPanelCollapsed: false
-    property int menuItemWidth: 196
-    property int menuYOffset: 2
+    property int menuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(196)))
+    property int menuYOffset: LV.Theme.gap2
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationEditBar") : null
     readonly property var applicationEditMenuItems: applicationEditBar.buildApplicationEditMenuItems()
 

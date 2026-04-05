@@ -15,7 +15,7 @@ LV.HStack {
         viewHookRequested();
     }
 
-    spacing: 2
+    spacing: LV.Theme.gap2
 
     LV.IconButton {
         id: exportButton

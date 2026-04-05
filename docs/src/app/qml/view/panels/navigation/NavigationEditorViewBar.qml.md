@@ -32,13 +32,15 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
   - `Print` -> `generalprint`
   - `Web` -> `toolwindowweb`
   - `Presentation` -> `procedure`
-- `itemWidth` is `141`, matching the Figma context-menu frame width so icon + label rows do not compress.
+- `itemWidth` is routed through `LV.Theme.scaleMetric(141)`, matching the Figma context-menu frame width while still
+  scaling with LVRS UI density.
 - `selectedIndex` must resolve from `editorViewModeViewModel.activeViewMode`, so the currently active editor view
   remains highlighted when the menu opens.
 
 ## Interaction Contract
 
 - Clicking the combo box toggles the menu through `toggleEditorViewMenu()`.
+- The popup vertical offset uses `LV.Theme.gap2` instead of a fixed `2px` literal.
 - Choosing a menu entry must call `editorViewModeViewModel.requestViewModeChange(index)`.
 - The view still emits `viewHookRequested` after menu open/select so panel-level hook instrumentation remains intact.
 

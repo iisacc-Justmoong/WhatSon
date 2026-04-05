@@ -30,6 +30,8 @@
 
 - This component intentionally owns only month-grid rendering and day-cell interaction.
 - Month-level navigation and horizontal paging stay in `MonthCalendarPage.qml`.
+- Weekday header height, left padding, and label size now resolve through `LV.Theme.scaleMetric(...)` / `LV.Theme.gap12`
+  so the month grid follows LVRS density scaling instead of fixed `12/39px` values.
 
 ## Tests
 

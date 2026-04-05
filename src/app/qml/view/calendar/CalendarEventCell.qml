@@ -14,16 +14,16 @@ Rectangle {
     property color defaultBackgroundColor: LV.Theme.panelBackground08
     property color coloredBackgroundColor: LV.Theme.primary
     property color textColor: Qt.rgba(1.0, 1.0, 1.0, 0.8)
-    property int cornerRadius: 4
-    property int horizontalInset: 8
-    property int verticalInset: 2
-    property int labelPixelSize: 12
+    property int cornerRadius: LV.Theme.radiusSm
+    property int horizontalInset: LV.Theme.gap8
+    property int verticalInset: LV.Theme.gap2
+    property int labelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     property int labelWeight: Font.Medium
 
     color: calendarEventCell.backgroundType === calendarEventCell.backgroundColored
            ? calendarEventCell.coloredBackgroundColor
            : calendarEventCell.defaultBackgroundColor
-    height: 16
+    height: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
     radius: calendarEventCell.cornerRadius
 
     LV.Label {

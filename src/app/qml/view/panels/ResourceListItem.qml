@@ -11,20 +11,21 @@ Item {
     readonly property color activeCardColor: "#25324D"
     readonly property bool hovered: resourceHoverHandler.hovered
     readonly property color hoverCardColor: LV.Theme.panelBackground06
-    readonly property int framePadding: 8
+    readonly property int framePadding: LV.Theme.gap8
     property bool pressed: false
     readonly property color pressedCardColor: resourceListItem.hoverCardColor
     property url previewSource: ""
-    readonly property int thumbnailSize: 48
+    readonly property int rowSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int thumbnailSize: Math.max(0, Math.round(LV.Theme.scaleMetric(48)))
     readonly property color thumbnailPlaceholderColor: "#D9D9D9"
     property string titleText: ""
     readonly property color titleColor: LV.Theme.captionColor
-    readonly property int titleLineHeight: 12
-    readonly property int titlePixelSize: 12
+    readonly property int titleLineHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int titlePixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
 
     clip: true
     implicitHeight: resourceListItem.thumbnailSize + resourceListItem.framePadding * 2
-    implicitWidth: 194
+    implicitWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
 
     Rectangle {
         anchors.fill: parent
@@ -50,7 +51,7 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            spacing: 10
+            spacing: resourceListItem.rowSpacing
 
             Rectangle {
                 Layout.alignment: Qt.AlignTop

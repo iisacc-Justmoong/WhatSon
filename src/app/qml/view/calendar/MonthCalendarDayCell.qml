@@ -13,11 +13,11 @@ Rectangle {
     property bool today: false
     property int maxVisibleEntries: 8
     property var entryCells: []
-    readonly property int dayCellPadding: 8
-    readonly property int dayLabelHeight: 12
-    readonly property int dayLabelGap: 10
-    readonly property int eventRowHeight: 16
-    readonly property int eventRowSpacing: 2
+    readonly property int dayCellPadding: LV.Theme.gap8
+    readonly property int dayLabelHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
+    readonly property int dayLabelGap: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int eventRowHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int eventRowSpacing: LV.Theme.gap2
     readonly property int entryCapacity: Math.max(
                                             0,
                                             Math.floor(
@@ -56,7 +56,7 @@ Rectangle {
 
         LV.Label {
             color: LV.Theme.titleHeaderColor
-            font.pixelSize: 12
+            font.pixelSize: monthCalendarDayCell.dayLabelHeight
             font.weight: Font.Medium
             height: monthCalendarDayCell.dayLabelHeight
             text: String(monthCalendarDayCell.dayNumber)
@@ -80,7 +80,7 @@ Rectangle {
                     coloredBackgroundColor: eventCell.eventCellModel && eventCell.eventCellModel.backgroundColor !== undefined
                                             ? eventCell.eventCellModel.backgroundColor
                                             : LV.Theme.primary
-                    cornerRadius: 4
+                    cornerRadius: LV.Theme.radiusSm
                     height: monthCalendarDayCell.eventRowHeight
                     label: eventCell.eventCellModel && eventCell.eventCellModel.label !== undefined
                            ? String(eventCell.eventCellModel.label)
@@ -90,7 +90,7 @@ Rectangle {
             }
             LV.Label {
                 color: LV.Theme.descriptionColor
-                font.pixelSize: 12
+                font.pixelSize: monthCalendarDayCell.dayLabelHeight
                 text: "+" + String(monthCalendarDayCell.entryCells.length - monthCalendarDayCell.clippedEntryCount)
                       + " more"
                 visible: monthCalendarDayCell.needsOverflowIndicator

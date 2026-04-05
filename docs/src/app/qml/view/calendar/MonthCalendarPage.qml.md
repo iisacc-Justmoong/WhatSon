@@ -26,13 +26,15 @@ surface so left/right swipes move to the previous or next month.
 ## UI Composition
 
 - Header:
-  - fixed height `54` (`monthHeaderHeight`)
+  - header height resolves through `LV.Theme.scaleMetric(54)` (`monthHeaderHeight`)
   - left: active month title (`monthLabel, displayedYear`)
   - right: shared `CalendarTodayControl`
 - Body:
     - horizontal `ListView` with `ListView.SnapOneItem`
     - each page fills the calendar body viewport
     - each page renders one `MonthCalendarGridSurface.qml`
+- Header/body typography and weekday/header paddings now route through `LV.Theme.scaleMetric(...)` and `LV.Theme.gap8/12`
+  instead of raw `12/39/54px` literals.
 
 ## Interaction/Data Flow
 

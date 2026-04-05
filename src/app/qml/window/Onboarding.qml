@@ -8,13 +8,13 @@ import "." as WindowView
 Window {
     id: root
 
-    readonly property int desktopDesignHeight: 542
-    readonly property int desktopDesignWidth: 867
-    readonly property int desktopMinHeight: 420
-    readonly property int desktopMinWidth: 620
+    readonly property int desktopDesignHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(542)))
+    readonly property int desktopDesignWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(867)))
+    readonly property int desktopMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(420)))
+    readonly property int desktopMinWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(620)))
     readonly property bool isMobilePlatform: Qt.platform.os === "android" || Qt.platform.os === "ios"
-    readonly property int mobileDesignHeight: 762
-    readonly property int mobileDesignWidth: 470
+    readonly property int mobileDesignHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(762)))
+    readonly property int mobileDesignWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(470)))
     readonly property int availableScreenHeight: {
         const targetScreen = root.hostWindow && root.hostWindow.screen ? root.hostWindow.screen : root.screen;
         return targetScreen ? Math.round(targetScreen.height) : root.mobileDesignHeight;

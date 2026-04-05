@@ -60,6 +60,14 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 - The `trash` control keeps the Figma logical name but pins its rendered icon source to `generaldelete`, because that is the shipped trash-can asset in LVRS.
 - Uses LVRS typography and panel tokens instead of introducing ad-hoc colors or fonts.
 
+## Scale-Aware Layout
+- The shared properties form now derives section heights from their child layout instead of keeping fixed `33px` combo
+  or `155px` list-section clamps.
+- Compact rows, list cards, footer bars, and form insets use `LV.Theme.scaleMetric(...)` so LVRS mobile UI scaling
+  increases both control size and the surrounding gaps together.
+- The properties form must remain readable under the mobile `1.5x` LVRS scale; section titles, combo boxes, list
+  surfaces, and list footers must not overlap each other.
+
 ## Label Tokens
 The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text token color (`LV.Theme.captionColor`).
 
@@ -104,3 +112,5 @@ This keeps the state switch explicit until each mode receives its final Figma fo
   - `Cmd/Ctrl + click` and `Shift + click` must keep modifier-based multi-selection working in `FoldersList`.
   - The same selection rules must also hold for `TagsList`, because both lists share the same `DetailListSection` and
     selection controller.
+  - With LVRS mobile UI scaling enabled, the `Projects`, `Bookmark`, `Folders`, `Tags`, and `Progress` sections must
+    keep their vertical order without label/control or footer/next-section overlap.

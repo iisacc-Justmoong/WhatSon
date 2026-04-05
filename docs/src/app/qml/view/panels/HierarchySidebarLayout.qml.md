@@ -27,5 +27,9 @@ aligned to the same active domain object even when routed mobile pages reuse or 
 - `HierarchyDragDropBridge`: reorder and note-drop bridge.
 - `HierarchyInteractionBridge`: rename, create, delete, and expansion bridge.
 
+## Layout Notes
+- The shared toolbar frame width now resolves through `LV.Theme.scaleMetric(200)` instead of a raw `200px` constant,
+  keeping the sidebar toolbar track aligned with LVRS density scaling on desktop and mobile.
+
 ## Why This File Is Important
 This is the QML seam where the repository's "one hierarchy type, one dedicated viewmodel" rule is translated into a visual sidebar that can switch domains at runtime.

@@ -52,3 +52,5 @@
   relying on the label fallback color.
 - Month view now distinguishes the selected date with an accent border while preserving the softer today-only border for
   non-selected current-day cells.
+- Shared calendar chrome now routes visible chip/header/control metrics through LVRS `gap`, `radius`, `stroke`, and
+  `scaleMetric(...)` helpers instead of page-local pixel literals.

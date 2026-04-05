@@ -22,7 +22,7 @@ FocusScope {
     property real fieldMinHeight: 0
     property string fontFamily: LV.Theme.fontBody
     property real fontLetterSpacing: 0
-    property int fontPixelSize: 12
+    property int fontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     property int fontWeight: Font.Medium
     property real insetHorizontal: 0
     property real insetVertical: 0

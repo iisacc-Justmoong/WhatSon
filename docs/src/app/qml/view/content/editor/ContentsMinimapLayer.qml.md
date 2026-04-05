@@ -24,6 +24,9 @@ parent view and paints them without re-entering editor layout state.
 
 - The track height clamps against the parent height and the resolved `minimapSilhouetteHeight`; it no longer asks the
   parent for that value through a callback binding.
+- Track inset/width and thumb radii now come from `LV.Theme.gap8` and `LV.Theme.scaleMetric(...)`, and the minimap
+  colors now resolve from LVRS theme tokens (`accentGray`, `descriptionColor`, `accentTransparent`) instead of local
+  hex literals.
 - The viewport thumb and current-line highlight consume numeric snapshot properties directly, not resolver callbacks.
   This breaks the old cycle where the minimap could reopen editor layout computations while binding its own rectangles.
 - `minimapScrollable`, `minimapViewportHeight`, and `minimapViewportY` are expected to arrive as parent-owned snapshot

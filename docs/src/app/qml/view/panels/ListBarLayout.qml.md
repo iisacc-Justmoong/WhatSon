@@ -77,6 +77,8 @@ selection state machine lives in a sibling controller file.
   note-list refreshes do not yank the viewport back to the first row.
 - `LV.WheelScrollGuard` is mounted over the list viewport so wheel input follows the same small-step contract as drag
   scrolling.
+- The list viewport inset and row spacing now come from `LV.Theme.gap2`, and the top toolbar height comes from
+  `LV.Theme.gap24` instead of fixed `2px/24px` literals.
 
 ## Interaction Contract
 
@@ -130,6 +132,8 @@ selection state machine lives in a sibling controller file.
 - Dragging a row that is already part of a multi-selection now exports the full selected note-id set, not just the
   delegate under the pointer.
 - The drag preview adds a count badge when more than one selected note is being carried.
+- That badge now derives its inset from `LV.Theme.gap8` and its size from `LV.Theme.scaleMetric(20/10)`, so it scales
+  with LVRS mobile UI density instead of staying desktop-sized.
 - Note-card context menus are centralized at the root through `contextMenuNoteId`, `contextMenuNoteIds`, and
   `openNoteContextMenu(...)`, which keeps delegates free of per-row popup wiring while preserving group actions.
 - Right-clicking or long-pressing a row that already belongs to the current multi-selection preserves that selection as

@@ -12,6 +12,11 @@ that sit directly inside the editor viewport.
 - The root surface keeps `displayColor` as the only background fill for the editor area.
 - The desktop gutter remains visible when the selected surface is an editable note body.
 - The minimap remains desktop-only and is mounted beside the editor viewport.
+- Editor/gutter/minimap default geometry now routes through LVRS theme tokens:
+  - editor font size and horizontal/bottom insets use `LV.Theme.scaleMetric(...)` / `LV.Theme.gap16`
+  - gutter rails and width use `LV.Theme.gap2/gap4` plus `LV.Theme.scaleMetric(10/18/40/74/26/14)`
+  - minimap track width/inset and viewport minimum height use `LV.Theme.gap8` and `LV.Theme.scaleMetric(36/56/28)`
+  - print-paper/resource card border thickness uses `LV.Theme.strokeThin`
 - `Page` / `Print` mode still route the live editor through the outer paper-document viewport so scrolling owns the
   paper surface rather than a fixed-height nested editor.
 

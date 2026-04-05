@@ -56,7 +56,7 @@ Item {
         const _ = detailPanel.registeredViewModelKeys;
         return LV.ViewModels.get("detailPanelViewModel");
     }
-    property int panelSpacing: 10
+    property int panelSpacing: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanel") : null
     readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()
     readonly property var resolvedFileStatViewModel: detailPanel.resolveFileStatViewModel()

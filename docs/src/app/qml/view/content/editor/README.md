@@ -35,6 +35,8 @@
   `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
+- Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`
+  tokens instead of scattered local editor pixel literals.
 - Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
   continuation stays source-driven instead of relying on RichText widget heuristics or the editor's rendered bullet
   glyph representation.

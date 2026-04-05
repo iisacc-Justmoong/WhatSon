@@ -51,6 +51,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   `inputItem` objects.
 - Typography is host-driven through `fontPixelSize` and `fontWeight`; the current policy is `12px` regular via
   `ContentsDisplayView.qml` on desktop and `14px` via `MobileContentsDisplayView.qml` on mobile.
+- The wrapper default `fontPixelSize` itself now routes through `LV.Theme.scaleMetric(12)`, so callers that do not
+  override typography still remain inside LVRS density scaling.
 
 ## Regression Notes
 

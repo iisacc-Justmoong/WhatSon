@@ -21,6 +21,10 @@
 - `DetailPanelHeaderToolbarButton.qml`
 - `RightPanel.qml`
 
+## Recent Notes
+- `DetailContents.qml` is shared by desktop and mobile detail routes, so compact section spacing and fixed-height
+  surfaces must remain LVRS scale-aware instead of assuming desktop `1.0x` metrics.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

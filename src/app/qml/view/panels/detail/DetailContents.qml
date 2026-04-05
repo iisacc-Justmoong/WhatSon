@@ -36,6 +36,21 @@ Item {
     readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressSelectionViewModel)
     readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionViewModel, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
+    readonly property int scaledGap2: Math.max(0, Math.round(LV.Theme.scaleMetric(2)))
+    readonly property int scaledGap4: Math.max(0, Math.round(LV.Theme.scaleMetric(4)))
+    readonly property int scaledGap6: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
+    readonly property int scaledGap8: Math.max(0, Math.round(LV.Theme.scaleMetric(8)))
+    readonly property int scaledGap10: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int scaledGap16: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
+    readonly property int scaledCompactFrameWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(178)))
+    readonly property int scaledCompactRowHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(20)))
+    readonly property int scaledCompactRowWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(170)))
+    readonly property int scaledCompactListHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(140)))
+    readonly property int scaledCompactFooterHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
+    readonly property int scaledCompactFooterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(78)))
+    readonly property int scaledCompactListViewportHeight: Math.max(0, detailContents.scaledCompactListHeight - detailContents.scaledCompactFooterHeight)
+    readonly property int scaledInlineInputLeadingInset: Math.max(0, Math.round(LV.Theme.scaleMetric(25)))
+    readonly property int scaledPlaceholderCardHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
     readonly property var tagItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.tagItems : [])
 
     signal viewHookRequested
@@ -292,12 +307,12 @@ Item {
         hasChildItems: false
         iconName: rowIconName
         iconSource: rowIconSource
-        implicitHeight: 20
-        implicitWidth: 170
+        implicitHeight: detailContents.scaledCompactRowHeight
+        implicitWidth: detailContents.scaledCompactRowWidth
         itemWidth: width
         label: rowLabel
         objectName: rowObjectName
-        rowHeight: 20
+        rowHeight: detailContents.scaledCompactRowHeight
         selected: rowSelected
         showChevron: false
         textColorNormal: LV.Theme.bodyColor
@@ -325,8 +340,8 @@ Item {
         }
 
         readonly property string figmaNodeId: frameNodeId
-        implicitHeight: 33
-        implicitWidth: 178
+        implicitHeight: comboSectionColumn.implicitHeight
+        implicitWidth: Math.max(detailContents.scaledCompactFrameWidth, comboSectionColumn.implicitWidth)
         objectName: fieldObjectName
 
         signal menuItemTriggered(int index)
@@ -338,13 +353,15 @@ Item {
                 comboContextMenu.close();
                 return;
             }
-            comboContextMenu.openFor(comboField, 0, comboField.height + 2);
+            comboContextMenu.openFor(comboField, 0, comboField.height + detailContents.scaledGap2);
             detailContents.requestViewHook(comboSection.fieldObjectName + ".comboMenu");
         }
 
         Column {
+            id: comboSectionColumn
+
             anchors.fill: parent
-            spacing: 4
+            spacing: detailContents.scaledGap4
 
             DetailSectionTitle {
                 figmaTextNodeId: comboSection.labelNodeId
@@ -410,8 +427,8 @@ Item {
         required property string titleText
 
         readonly property string figmaNodeId: frameNodeId
-        implicitHeight: 155
-        implicitWidth: 178
+        implicitHeight: listSectionColumn.implicitHeight
+        implicitWidth: Math.max(detailContents.scaledCompactFrameWidth, listSectionColumn.implicitWidth)
         objectName: listObjectName
 
         signal itemTriggered(int index)
@@ -440,8 +457,10 @@ Item {
         }
 
         Column {
+            id: listSectionColumn
+
             anchors.fill: parent
-            spacing: 4
+            spacing: detailContents.scaledGap4
 
             DetailSectionTitle {
                 figmaTextNodeId: listSection.titleNodeId
@@ -460,7 +479,7 @@ Item {
                 readonly property string figmaNodeId: listSection.listNodeId
 
                 color: LV.Theme.panelBackground03
-                height: 140
+                height: detailContents.scaledCompactListViewportHeight + listFooter.height
                 objectName: listSection.listObjectName + "SmallList"
                 width: parent.width
 
@@ -468,7 +487,7 @@ Item {
                     readonly property string figmaNodeId: listSection.itemsNodeId
 
                     clip: true
-                    height: 116
+                    height: detailContents.scaledCompactListViewportHeight
                     objectName: listSection.listObjectName + "Items"
                     width: parent.width
 
@@ -481,7 +500,7 @@ Item {
                         Item {
                             visible: listSection.inlineInputVisible
                             width: parent.width
-                            height: visible ? 20 : 0
+                            height: visible ? detailContents.scaledCompactRowHeight : 0
 
                             DetailListRow {
                                 anchors.fill: parent
@@ -495,15 +514,15 @@ Item {
                                 id: inlineInputField
 
                                 anchors.fill: parent
-                                anchors.leftMargin: 25
-                                anchors.rightMargin: 6
+                                anchors.leftMargin: detailContents.scaledInlineInputLeadingInset
+                                anchors.rightMargin: detailContents.scaledGap6
                                 backgroundColor: LV.Theme.accentTransparent
                                 backgroundColorDisabled: LV.Theme.accentTransparent
                                 backgroundColorFocused: LV.Theme.accentTransparent
                                 backgroundColorHover: LV.Theme.accentTransparent
                                 backgroundColorPressed: LV.Theme.accentTransparent
                                 clearButtonVisible: false
-                                fieldMinHeight: 20
+                                fieldMinHeight: detailContents.scaledCompactRowHeight
                                 insetHorizontal: 0
                                 insetVertical: 0
                                 objectName: listSection.inlineInputObjectName
@@ -577,6 +596,8 @@ Item {
                     }
                 }
                 LV.ListFooter {
+                    id: listFooter
+
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     button1: ({
@@ -587,11 +608,11 @@ Item {
                             backgroundColorHover: "transparent",
                             backgroundColorPressed: "transparent",
                             enabled: listSection.addEnabled,
-                            horizontalPadding: 2,
+                            horizontalPadding: detailContents.scaledGap2,
                             onClicked: function () {
                                 detailContents.requestMetadataAdd(listSection.footerActionPrefix);
                             },
-                            verticalPadding: 2
+                            verticalPadding: detailContents.scaledGap2
                         })
                     button2: ({
                             type: "icon",
@@ -602,11 +623,11 @@ Item {
                             backgroundColorHover: "transparent",
                             backgroundColorPressed: "transparent",
                             enabled: listSection.deleteEnabled,
-                            horizontalPadding: 2,
+                            horizontalPadding: detailContents.scaledGap2,
                             onClicked: function () {
                                 detailContents.deleteActiveMetadataItem(listSection.footerActionPrefix);
                             },
-                            verticalPadding: 2
+                            verticalPadding: detailContents.scaledGap2
                         })
                     button3: ({
                             type: "menu",
@@ -616,20 +637,20 @@ Item {
                             backgroundColorHover: "transparent",
                             backgroundColorPressed: "transparent",
                             enabled: listSection.settingsEnabled,
-                            bottomPadding: 2,
-                            leftPadding: 2,
+                            bottomPadding: detailContents.scaledGap2,
+                            leftPadding: detailContents.scaledGap2,
                             onClicked: function () {
                                 detailContents.requestViewHook(listSection.footerActionPrefix + ".settings");
                             },
-                            rightPadding: 4,
-                            topPadding: 2
+                            rightPadding: detailContents.scaledGap4,
+                            topPadding: detailContents.scaledGap2
                     })
-                    height: 24
-                    horizontalPadding: 2
+                    height: detailContents.scaledCompactFooterHeight
+                    horizontalPadding: detailContents.scaledGap2
                     objectName: listSection.listObjectName + "Footer"
                     spacing: 0
-                    verticalPadding: 2
-                    width: 78
+                    verticalPadding: detailContents.scaledGap2
+                    width: detailContents.scaledCompactFooterWidth
                 }
             }
         }
@@ -643,10 +664,10 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            anchors.topMargin: 2
-            spacing: 10
+            anchors.leftMargin: detailContents.scaledGap8
+            anchors.rightMargin: detailContents.scaledGap8
+            anchors.topMargin: detailContents.scaledGap2
+            spacing: detailContents.scaledGap10
 
             DetailSectionTitle {
                 figmaTextNodeId: ""
@@ -658,16 +679,16 @@ Item {
             }
             Rectangle {
                 color: LV.Theme.panelBackground03
-                height: 72
+                height: detailContents.scaledPlaceholderCardHeight
                 radius: LV.Theme.radiusControl
                 width: parent.width
 
                 DetailSectionTitle {
                     anchors.fill: parent
-                    anchors.bottomMargin: 8
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    anchors.topMargin: 8
+                    anchors.bottomMargin: detailContents.scaledGap8
+                    anchors.leftMargin: detailContents.scaledGap8
+                    anchors.rightMargin: detailContents.scaledGap8
+                    anchors.topMargin: detailContents.scaledGap8
                     figmaTextNodeId: ""
                     labelColor: LV.Theme.bodyColor
                     objectName: detailContents.resolvedActiveStateName + "Description"
@@ -687,7 +708,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         boundsMovement: Flickable.StopAtBounds
         clip: true
-        contentHeight: formColumn.y + formColumn.implicitHeight + 2
+        contentHeight: formColumn.y + formColumn.implicitHeight + detailContents.scaledGap2
         contentWidth: width
         interactive: contentHeight > height
         visible: detailContents.resolvedActiveStateName === "properties"
@@ -697,11 +718,11 @@ Item {
 
             readonly property string figmaNodeId: "155:4583"
 
-            x: 8
-            y: 2
+            x: detailContents.scaledGap8
+            y: detailContents.scaledGap2
             objectName: "Form"
-            spacing: 10
-            width: Math.max(0, propertiesFlickable.width - 16)
+            spacing: detailContents.scaledGap10
+            width: Math.max(0, propertiesFlickable.width - detailContents.scaledGap16)
 
             DetailComboSection {
                 comboNodeId: "178:5496"

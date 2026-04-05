@@ -13,6 +13,14 @@
 ## QML Surface Snapshot
 - Root type: `Item`
 
+## Current Notes
+- Desktop/mobile onboarding chrome now routes its visible geometry through LVRS metrics:
+  - icon, close affordance, action widths, content widths, and panel widths use `LV.Theme.scaleMetric(...)`
+  - spacing and insets use `LV.Theme.gap16/gap24`
+  - outer surface radius uses `LV.Theme.radiusXl * 2`
+- The close glyph no longer depends on fixed `5/11/1.6px` canvas coordinates; it derives its stroke path from the
+  live button size so LVRS UI scaling keeps the icon centered and crisp.
+
 ### Object IDs
 - `root`
 - `createHubDialog`

@@ -18,10 +18,10 @@ cross-view usage.
 - `property int labelWeight`
 
 ## Render Rules
-- Base size: `height: 16` (callers may override).
-- Radius: `cornerRadius` (`4` default).
-- Insets: `horizontalInset` (`8` default), `verticalInset` (`2` default).
-- Font: `labelPixelSize` (`12`) and `labelWeight` (`Font.Medium`) by default.
+- Base size: `height` defaults through `LV.Theme.scaleMetric(16)` (callers may override).
+- Radius: `cornerRadius` defaults to `LV.Theme.radiusSm`.
+- Insets: `horizontalInset` / `verticalInset` default to `LV.Theme.gap8` / `LV.Theme.gap2`.
+- Font: `labelPixelSize` defaults through `LV.Theme.scaleMetric(12)` and `labelWeight` remains `Font.Medium`.
 - Background:
   - default: `defaultBackgroundColor` (`LV.Theme.panelBackground08`)
   - colored: `coloredBackgroundColor` (`LV.Theme.primary`)

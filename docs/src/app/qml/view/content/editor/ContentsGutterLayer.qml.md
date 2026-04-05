@@ -19,6 +19,8 @@ entries and marker geometry, then hands those values to the gutter as plain mode
 
 - Line-number delegates no longer call `lineY(...)` on every binding evaluation. They consume a precomputed
   `resolvedY` from `visibleLineNumbersModel`.
+- Rail offsets, marker width, line-number font size, and active/default gutter colors now come from LVRS gap/theme
+  tokens plus `LV.Theme.scaleMetric(...)`, so gutter chrome scales with the same density policy as the host editor.
 - The parent snapshot function must hand this component a real array. If `visibleLineNumbersModel` is assigned from a
   helper that forgot to `return visibleLines`, the gutter layer intentionally renders nothing rather than guessing.
 - Marker delegates still accept resolver callbacks, but all callback results pass through

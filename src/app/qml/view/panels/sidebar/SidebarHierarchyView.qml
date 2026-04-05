@@ -70,6 +70,10 @@ Rectangle {
         })
     property bool footerVisible: true
     property int hierarchyActivationPendingSerial: 0
+    readonly property int hierarchyCompactFooterHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(24)))
+    readonly property int hierarchyCompactFooterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(78)))
+    readonly property int hierarchyCompactInset: LV.Theme.gap2
+    readonly property int hierarchyCompactMenuItemWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(144)))
     readonly property bool hierarchyBulkExpansionEnabled: {
         if (!sidebarHierarchyView.hierarchyInteractionBridge)
             return false;
@@ -1056,10 +1060,10 @@ Rectangle {
                 backgroundColorPressed: activeToolbar ? LV.Theme.panelBackground12 : "transparent"
                 enabled: toolbarItem && toolbarItem.enabled !== undefined ? Boolean(toolbarItem.enabled) : true
                 height: sidebarHierarchyView.toolbarButtonSize
-                horizontalPadding: 2
+                horizontalPadding: sidebarHierarchyView.hierarchyCompactInset
                 iconName: toolbarItem && toolbarItem.iconName !== undefined ? String(toolbarItem.iconName) : ""
                 tone: activeToolbar ? LV.AbstractButton.Default : LV.AbstractButton.Borderless
-                verticalPadding: 2
+                verticalPadding: sidebarHierarchyView.hierarchyCompactInset
                 visible: toolbarItem && toolbarItem.visible !== undefined ? Boolean(toolbarItem.visible) : true
                 width: sidebarHierarchyView.toolbarButtonSize
 
@@ -1087,7 +1091,7 @@ Rectangle {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        itemWidth: 144
+        itemWidth: sidebarHierarchyView.hierarchyCompactMenuItemWidth
         items: sidebarHierarchyView.hierarchyContextMenuItems
         modal: false
         parent: Controls.Overlay.overlay
@@ -1114,11 +1118,11 @@ Rectangle {
                 backgroundColorHover: "transparent",
                 backgroundColorPressed: "transparent",
                 enabled: sidebarHierarchyView.createFolderEnabled,
-                horizontalPadding: 2,
+                horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
                 onClicked: function () {
                     sidebarHierarchyView.requestCreateFolder();
                 },
-                verticalPadding: 2
+                verticalPadding: sidebarHierarchyView.hierarchyCompactInset
             })
         button2: ({
                 type: "icon",
@@ -1128,11 +1132,11 @@ Rectangle {
                 backgroundColorHover: "transparent",
                 backgroundColorPressed: "transparent",
                 enabled: sidebarHierarchyView.deleteFolderEnabled,
-                horizontalPadding: 2,
+                horizontalPadding: sidebarHierarchyView.hierarchyCompactInset,
                 onClicked: function () {
                     sidebarHierarchyView.requestDeleteFolder();
                 },
-                verticalPadding: 2
+                verticalPadding: sidebarHierarchyView.hierarchyCompactInset
             })
         button3: ({
                 type: "menu",
@@ -1142,20 +1146,20 @@ Rectangle {
                 backgroundColorHover: "transparent",
                 backgroundColorPressed: "transparent",
                 enabled: sidebarHierarchyView.viewOptionsEnabled,
-                leftPadding: 2,
+                leftPadding: sidebarHierarchyView.hierarchyCompactInset,
                 onClicked: function () {
                     sidebarHierarchyView.requestViewOptions();
                 },
-                rightPadding: 4,
-                topPadding: 2,
-                bottomPadding: 2
+                rightPadding: LV.Theme.gap4,
+                topPadding: sidebarHierarchyView.hierarchyCompactInset,
+                bottomPadding: sidebarHierarchyView.hierarchyCompactInset
             })
-        height: 24
-        horizontalPadding: 2
+        height: sidebarHierarchyView.hierarchyCompactFooterHeight
+        horizontalPadding: sidebarHierarchyView.hierarchyCompactInset
         spacing: 0
-        verticalPadding: 2
+        verticalPadding: sidebarHierarchyView.hierarchyCompactInset
         visible: sidebarHierarchyView.footerVisible
-        width: 78
+        width: sidebarHierarchyView.hierarchyCompactFooterWidth
         z: 2
     }
     DropArea {

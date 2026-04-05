@@ -89,6 +89,8 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 ## Footer View Options
 
 - The right-most `LV.ListFooter` menu button now opens a dedicated `LV.ContextMenu` anchored from the footer edge.
+- The compact footer/menu metrics now route through `LV.Theme.gap2`, `LV.Theme.gap4`, and `LV.Theme.scaleMetric(...)`
+  (`144`, `78`, `24`) instead of fixed sidebar-local pixel literals, so mobile/desktop LVRS scale stays consistent.
 - That menu exposes `Expand All` and `Collapse All` actions in English, which matches the repository rule that
   project-facing strings stay in English.
 - Bulk expansion is enabled only when the projected hierarchy model currently contains at least one row with

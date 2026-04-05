@@ -21,18 +21,18 @@ Item {
     readonly property bool listVisible: hStack.listViewWidth > 0
     property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
-    property int minRightPanelWidth: 145
+    property int minRightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(145)))
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
     property var noteDeletionViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("BodyLayout") : null
     property var resourcesImportViewModel: null
     property color rightPanelColor: "transparent"
-    property int rightPanelWidth: 194
+    property int rightPanelWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(194)))
     readonly property bool rightVisible: hStack.rightPanelWidth > 0
     property color sidebarColor: "transparent"
     required property var sidebarHierarchyViewModel
     readonly property bool sidebarVisible: hStack.sidebarWidth > 0
-    property int sidebarHorizontalInset: 2
+    property int sidebarHorizontalInset: LV.Theme.gap2
     property int sidebarWidth: LV.Theme.gap24 * 9
     property color splitterColor: LV.Theme.panelBackground10
     property int splitterHandleThickness: LV.Theme.gap12

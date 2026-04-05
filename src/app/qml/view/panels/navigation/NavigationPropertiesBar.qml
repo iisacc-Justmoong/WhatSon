@@ -20,7 +20,7 @@ LV.HStack {
         viewHookRequested();
     }
 
-    spacing: 12
+    spacing: LV.Theme.gap12
 
     NavigationInformationBar {
         id: informationBar

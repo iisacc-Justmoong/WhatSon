@@ -17,16 +17,16 @@ Item {
         }
         return contentsView.plainEditorViewModeValue;
     }
-    readonly property color activeLineNumberColor: "#9DA0A8"
+    readonly property color activeLineNumberColor: LV.Theme.accentGray
     readonly property bool contentPersistenceContractAvailable: selectionBridge.contentPersistenceContractAvailable
     property var contentViewModel: null
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
     readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
-    readonly property color decorativeMarkerYellow: "#FFF567"
-    readonly property int desktopEditorFontPixelSize: 12
+    readonly property color decorativeMarkerYellow: LV.Theme.warning
+    readonly property int desktopEditorFontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     property color displayColor: "transparent"
-    readonly property int editorBottomInset: 16
+    readonly property int editorBottomInset: LV.Theme.gap16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
         if (contentEditor && contentEditor.contentOffsetY !== undefined)
@@ -42,7 +42,7 @@ Item {
     }
     readonly property int editorDocumentTopPadding: 0
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()
-    readonly property int editorHorizontalInset: 16
+    readonly property int editorHorizontalInset: LV.Theme.gap16
     readonly property bool editorInputFocused: {
         if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
             return true;
@@ -57,7 +57,7 @@ Item {
         return false;
     }
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
-    readonly property int editorMobileFontPixelSizeOffset: 2
+    readonly property int editorMobileFontPixelSizeOffset: LV.Theme.gap2
     property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
     readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)
     property alias editorText: editorSession.editorText
@@ -94,14 +94,14 @@ Item {
     readonly property int effectiveGutterWidth: contentsView.showEditorGutter ? (contentsView.gutterWidthOverride >= 0 ? contentsView.gutterWidthOverride : contentsView.gutterWidth) : 0
     readonly property int effectiveLineNumberColumnLeft: contentsView.lineNumberColumnLeftOverride >= 0 ? contentsView.lineNumberColumnLeftOverride : contentsView.lineNumberColumnLeft
     readonly property int effectiveLineNumberColumnTextWidth: contentsView.lineNumberColumnTextWidthOverride >= 0 ? contentsView.lineNumberColumnTextWidthOverride : contentsView.lineNumberColumnTextWidth
-    readonly property int frameHorizontalInset: 2
+    readonly property int frameHorizontalInset: LV.Theme.gap2
     property int frameHorizontalInsetOverride: -1
     property color gutterColor: "transparent"
-    readonly property int gutterCommentMarkerOffset: 2
-    readonly property int gutterCommentRailLeft: 4
-    readonly property int gutterCommentRailWidth: 10
-    readonly property int gutterIconRailLeft: 40
-    readonly property int gutterIconRailWidth: 18
+    readonly property int gutterCommentMarkerOffset: LV.Theme.gap2
+    readonly property int gutterCommentRailLeft: LV.Theme.gap4
+    readonly property int gutterCommentRailWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(10)))
+    readonly property int gutterIconRailLeft: Math.max(0, Math.round(LV.Theme.scaleMetric(40)))
+    readonly property int gutterIconRailWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(18)))
     readonly property color gutterMarkerChangedColor: contentsView.decorativeMarkerYellow
     readonly property color gutterMarkerConflictColor: LV.Theme.danger
     readonly property color gutterMarkerCurrentColor: LV.Theme.primary
@@ -109,16 +109,16 @@ Item {
     property int gutterRefreshPassesRemaining: 0
     property int gutterRefreshRevision: 0
     readonly property real gutterViewportHeight: contentsView.editorViewportHeight
-    readonly property int gutterWidth: 74
+    readonly property int gutterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(74)))
     property int gutterWidthOverride: -1
     readonly property bool hasSelectedNote: contentsView.selectedNoteId.length > 0
     property var libraryHierarchyViewModel: null
-    readonly property color lineNumberColor: "#4E5157"
-    readonly property int lineNumberColumnLeft: 14
+    readonly property color lineNumberColor: LV.Theme.descriptionColor
+    readonly property int lineNumberColumnLeft: Math.max(0, Math.round(LV.Theme.scaleMetric(14)))
     property int lineNumberColumnLeftOverride: -1
     readonly property int lineNumberColumnTextWidth: contentsView.gutterWidth - contentsView.lineNumberColumnLeft - contentsView.lineNumberRightInset
     property int lineNumberColumnTextWidthOverride: -1
-    readonly property int lineNumberColumnWidth: 26
+    readonly property int lineNumberColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
     readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
     property var logicalLineDocumentYCache: []
@@ -126,10 +126,10 @@ Item {
     property int logicalLineDocumentYCacheRevision: -1
     readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
-    readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - 16)
+    readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
     readonly property color minimapLineColor: contentsView.lineNumberColor
-    readonly property int minimapOuterWidth: 56
+    readonly property int minimapOuterWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(56)))
     property real minimapResolvedCurrentLineHeight: 1
     property real minimapResolvedCurrentLineWidth: 0
     property real minimapResolvedCurrentLineY: 0
@@ -138,13 +138,13 @@ Item {
     readonly property real minimapResolvedTrackWidth: contentsView.minimapTrackWidth
     property real minimapResolvedViewportHeight: 0
     property real minimapResolvedViewportY: 0
-    readonly property int minimapRowGap: 1
+    readonly property int minimapRowGap: Math.max(1, Math.round(LV.Theme.scaleMetric(1)))
     property bool minimapScrollable: false
     property bool minimapSnapshotRefreshQueued: false
-    readonly property int minimapTrackInset: 8
-    readonly property int minimapTrackWidth: 36
-    readonly property color minimapViewportFillColor: "#149DA0A8"
-    readonly property int minimapViewportMinHeight: 28
+    readonly property int minimapTrackInset: LV.Theme.gap8
+    readonly property int minimapTrackWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
+    readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
+    readonly property int minimapViewportMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(28)))
     property bool minimapVisible: true
     property var minimapVisualRows: []
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
@@ -167,10 +167,10 @@ Item {
     readonly property color printPaperColor: "#FFFFFF"
     readonly property real printPaperDocumentHeight: contentsView.printGuideVerticalInset * 2 + contentsView.printDocumentPageCount * contentsView.printPaperTextHeight
     readonly property int printPaperHorizontalMargin: LV.Theme.gap12
-    readonly property int printPaperMaxWidth: 880
+    readonly property int printPaperMaxWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(880)))
     readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
     readonly property int printPaperPaddingVertical: LV.Theme.gap8
-    readonly property int printPaperSeparatorThickness: 1
+    readonly property int printPaperSeparatorThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
     readonly property color printPaperTextColor: "#000000"
     readonly property real printPaperTextHeight: Math.max(1, contentsView.printPaperResolvedHeight - contentsView.printGuideVerticalInset * 2)
     readonly property real printPaperTextWidth: Math.max(0, contentsView.printPaperResolvedWidth - contentsView.printGuideHorizontalInset * 2)
@@ -1174,7 +1174,7 @@ Item {
                                 id: printPaperColumn
 
                                 border.color: contentsView.printPaperBorderColor
-                                border.width: 1
+                                border.width: contentsView.printPaperSeparatorThickness
                                 color: contentsView.printPaperColor
                                 height: contentsView.printPaperDocumentHeight
                                 radius: LV.Theme.radiusSm
@@ -1588,7 +1588,7 @@ Item {
                                     readonly property string resourceType: resourceEntry.type !== undefined ? String(resourceEntry.type) : ""
 
                                     border.color: contentsView.resourceRenderBorderColor
-                                    border.width: 1
+                                    border.width: Math.max(1, Math.round(LV.Theme.strokeThin))
                                     color: contentsView.resourceRenderCardColor
                                     implicitHeight: resourceRow.implicitHeight + LV.Theme.gap2 * 2
                                     radius: LV.Theme.radiusSm

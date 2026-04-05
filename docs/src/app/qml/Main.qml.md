@@ -46,6 +46,9 @@ This means the root scene stops behaving like a bag of globally mutable QObjects
 The file keeps both desktop and mobile layout branches alive.
 - Desktop uses the status bar, navigation bar, sidebar, list, content, and detail panel composition.
 - Mobile uses routed workspace pages and a scaffold tuned for compact navigation.
+- Root-owned sidebar/right-panel minimum and preferred widths, hierarchy toolbar inset/spacing, and onboarding minimum
+  window sizes now route through `LV.Theme.gap...` and `LV.Theme.scaleMetric(...)` instead of shell-local pixel
+  literals.
 - Onboarding can be embedded into the route stack or opened as a separate window depending on platform and adaptive mode.
 - Embedded mobile startup now keeps an app-owned watchdog around the routed page host. If the expected onboarding or
   workspace route exists in controller state but the active LVRS router has no current page item, `Main.qml` forces a
