@@ -15,6 +15,12 @@ The controller talks to the editor through the stable `contentEditor` contract (
 `getFormattedText(...)`, `cursorPosition`, `selectionStart`, `selectionEnd`, `selectedText`, `editorItem`,
 `inputItem`) so the host view can swap the concrete editor surface without rewriting formatting logic.
 
+It also owns keyboard-driven markdown block toggles for the list types the renderer currently supports:
+- unordered list
+- ordered list
+- task/checklist shortcuts are intentionally absent because the current renderer/source pipeline does not expose a
+  dedicated task-list block contract
+
 ## Public Contract
 
 - `contextMenuSelectionStart` / `contextMenuSelectionEnd`: selection snapshot captured when the context menu opens.
@@ -26,6 +32,8 @@ The controller talks to the editor through the stable `contentEditor` contract (
   `.wsnbody` source using the resolved logical editor selection range and persists the canonicalized result.
 - `handleSelectionContextMenuEvent(eventName)`: routes menu events through the same formatting mutation path as
   keyboard shortcuts.
+- `queueMarkdownListMutation(listKind)`: captures the current selection/cursor snapshot and toggles markdown list
+  prefixes on the touched logical lines one event-loop turn later.
 
 ## Range Mapping Rules
 
@@ -38,6 +46,19 @@ The controller talks to the editor through the stable `contentEditor` contract (
 - Shortcut-triggered wraps capture the resolved editor-surface selection range first, then queue the wrap one event-loop turn
   later. The queued mutation therefore reuses the original selection snapshot instead of re-reading a possibly collapsed
   post-shortcut selection.
+- Markdown list shortcuts follow the same queued-snapshot rule, but operate on whole logical lines instead of requiring
+  a non-empty text selection.
+- A collapsed cursor toggles only the current logical line.
+- A non-empty selection toggles every touched non-empty logical line in the captured range.
+- `Cmd+Shift+8` on macOS and `Alt+Shift+8` on Windows/Linux toggle an unordered markdown list and write canonical `- `
+  source prefixes.
+- `Cmd+Shift+7` on macOS and `Alt+Shift+7` on Windows/Linux toggle an ordered markdown list and write canonical `1. `
+  / `2. ` source prefixes.
+- Reapplying the same list shortcut to lines that are already uniformly in that list form removes the corresponding
+  list markers instead of stacking duplicates.
+- Mixed-line conversions are canonicalized:
+  - unordered toggle converts ordered/plain lines into canonical `- ` items
+  - ordered toggle converts unordered/plain lines into canonical `1. ` / `2. ` / `3. ` items
 - The controller no longer mutates the live markdown-rendered RichText surface directly for shortcut formatting.
 - It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
   markdown-neutral source-editing surface from the canonical `.wsnbody` text and applies `QTextDocument/QTextCursor`
@@ -74,6 +95,15 @@ The controller talks to the editor through the stable `contentEditor` contract (
 
 - Re-selecting a different span and pressing `Cmd/Ctrl+B` / `I` / `U` / `Shift+X` / `Shift+E` should wrap the latest
   visible selection from the live `TextEdit`, not an older fallback snapshot.
+- Pressing `Cmd+Shift+8` on macOS or `Alt+Shift+8` on Windows/Linux with a collapsed cursor on a plain line should
+  insert/remove a canonical unordered list prefix for that line without needing a mouse selection first.
+- Pressing `Cmd+Shift+7` on macOS or `Alt+Shift+7` on Windows/Linux with a collapsed cursor on a plain line should
+  insert/remove a canonical ordered list prefix for that line without needing a mouse selection first.
+- Applying either list shortcut to a multi-line selection should transform every touched non-empty line as one block,
+  not only the first line.
+- Reapplying the same list shortcut to a uniformly listed block should remove those markers instead of duplicating them.
+- Converting between unordered and ordered shortcuts should rewrite the source prefixes canonically (`- ` or `N. `)
+  rather than preserving mixed legacy markers inside one block.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already
   contains inline tags around nearby text.
 - Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.

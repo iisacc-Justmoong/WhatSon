@@ -31,6 +31,8 @@
 - The editor, gutter, minimap, and resource overlays now fill the entire `ContentsView` slot.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
+- `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
+  `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
 - Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
   continuation stays source-driven instead of relying on RichText widget heuristics or the editor's rendered bullet
   glyph representation.

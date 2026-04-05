@@ -784,6 +784,9 @@ Item {
     function queueInlineFormatWrap(tagName) {
         return editorSelectionController.queueInlineFormatWrap(tagName);
     }
+    function queueMarkdownListMutation(listKind) {
+        return editorSelectionController.queueMarkdownListMutation(listKind);
+    }
     function refreshMinimapSnapshot() {
         const nextRows = contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0));
         const nextSilhouetteHeight = contentsView.minimapSilhouetteHeight(nextRows);
@@ -1480,6 +1483,34 @@ Item {
                         sequence: "Ctrl+Shift+E"
 
                         onActivated: contentsView.queueInlineFormatWrap("highlight")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+Shift+7"
+
+                        onActivated: contentsView.queueMarkdownListMutation("ordered")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Alt+Shift+7"
+
+                        onActivated: contentsView.queueMarkdownListMutation("ordered")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+Shift+8"
+
+                        onActivated: contentsView.queueMarkdownListMutation("unordered")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Alt+Shift+8"
+
+                        onActivated: contentsView.queueMarkdownListMutation("unordered")
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu

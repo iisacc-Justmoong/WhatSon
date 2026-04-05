@@ -44,6 +44,7 @@ QtObject {
     property var editorSession: null
     property var editorViewport: null
     property var queuedInlineFormatWrapKeys: ({})
+    property var queuedMarkdownListMutationKeys: ({})
     property var selectionBridge: null
     property var selectionContextMenu: null
     property var textFormatRenderer: null
@@ -202,6 +203,220 @@ QtObject {
             return "";
         return String(controller.view.selectedNoteId).trim();
     }
+    function currentSourceText() {
+        if (!controller.view || controller.view.editorText === undefined || controller.view.editorText === null)
+            return "";
+        return String(controller.view.editorText);
+    }
+    function clampLogicalPosition(position, maximumLength) {
+        const numericPosition = Number(position);
+        if (!isFinite(numericPosition))
+            return 0;
+        return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, Number(maximumLength) || 0)));
+    }
+    function logicalLineStartForOffset(text, offset) {
+        const logicalText = text === undefined || text === null ? "" : String(text);
+        const safeOffset = controller.clampLogicalPosition(offset, logicalText.length);
+        if (safeOffset <= 0)
+            return 0;
+        return logicalText.lastIndexOf("\n", safeOffset - 1) + 1;
+    }
+    function logicalLineEndForStart(text, start) {
+        const logicalText = text === undefined || text === null ? "" : String(text);
+        const safeStart = controller.clampLogicalPosition(start, logicalText.length);
+        const newlineOffset = logicalText.indexOf("\n", safeStart);
+        return newlineOffset >= 0 ? newlineOffset : logicalText.length;
+    }
+    function normalizeMarkdownListKind(listKind) {
+        const normalizedKind = listKind === undefined || listKind === null ? "" : String(listKind).trim().toLowerCase();
+        if (normalizedKind === "unordered" || normalizedKind === "bullet" || normalizedKind === "bulleted")
+            return "unordered";
+        if (normalizedKind === "ordered" || normalizedKind === "numbered" || normalizedKind === "number")
+            return "ordered";
+        return "";
+    }
+    function sourceOffsetForLogicalOffset(logicalOffset) {
+        const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
+        if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
+            const mappedOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(safeOffset));
+            if (isFinite(mappedOffset))
+                return Math.max(0, Math.floor(mappedOffset));
+        }
+        const currentSourceText = controller.currentSourceText();
+        return Math.max(0, Math.min(currentSourceText.length, safeOffset));
+    }
+    function scheduleEditorSelection(selectionStart, selectionEnd, cursorPosition) {
+        const requestedStart = Number(selectionStart);
+        const requestedEnd = Number(selectionEnd);
+        const requestedCursor = Number(cursorPosition);
+        Qt.callLater(function () {
+            if (!controller.contentEditor)
+                return;
+            const logicalLength = controller.currentLogicalText().length;
+            const boundedStart = controller.clampLogicalPosition(requestedStart, logicalLength);
+            const boundedEnd = controller.clampLogicalPosition(requestedEnd, logicalLength);
+            const boundedCursor = controller.clampLogicalPosition(requestedCursor, logicalLength);
+            const editorItem = controller.contentEditor.editorItem ? controller.contentEditor.editorItem : null;
+            const inputItem = editorItem && editorItem.inputItem ? editorItem.inputItem : null;
+            if (isFinite(requestedStart) && isFinite(requestedEnd) && boundedEnd > boundedStart) {
+                if (inputItem && inputItem.select !== undefined)
+                    inputItem.select(boundedStart, boundedEnd);
+                return;
+            }
+            if (inputItem && inputItem.deselect !== undefined)
+                inputItem.deselect();
+            if (controller.contentEditor.cursorPosition !== undefined)
+                controller.contentEditor.cursorPosition = boundedCursor;
+            if (editorItem && editorItem.cursorPosition !== undefined)
+                editorItem.cursorPosition = boundedCursor;
+            if (inputItem && inputItem.cursorPosition !== undefined)
+                inputItem.cursorPosition = boundedCursor;
+        });
+    }
+    function markdownListTargetLineEntries(selectionSnapshot) {
+        const logicalText = controller.currentLogicalText();
+        const sourceText = controller.currentSourceText();
+        const resolvedSelection = controller.resolveSelectionSnapshot(selectionSnapshot || null);
+        const hasSelection = resolvedSelection.end > resolvedSelection.start;
+        const snapshotCursor = selectionSnapshot && selectionSnapshot.cursorPosition !== undefined
+                ? Number(selectionSnapshot.cursorPosition)
+                : controller.currentEditorCursorPosition();
+        const fallbackCursor = isFinite(snapshotCursor) ? snapshotCursor : 0;
+        const baseStart = hasSelection ? resolvedSelection.start : fallbackCursor;
+        const baseEnd = hasSelection ? resolvedSelection.end : fallbackCursor;
+        const boundedStart = controller.clampLogicalPosition(baseStart, logicalText.length);
+        const boundedEnd = controller.clampLogicalPosition(baseEnd, logicalText.length);
+        let inclusiveEndOffset = hasSelection ? Math.max(boundedStart, boundedEnd - 1) : boundedStart;
+        if (hasSelection
+                && inclusiveEndOffset > boundedStart
+                && inclusiveEndOffset < logicalText.length
+                && logicalText.charAt(inclusiveEndOffset) === "\n") {
+            inclusiveEndOffset -= 1;
+        }
+        const firstLineStart = controller.logicalLineStartForOffset(logicalText, boundedStart);
+        const lastLineStart = controller.logicalLineStartForOffset(logicalText, inclusiveEndOffset);
+        const entries = [];
+        let lineStart = firstLineStart;
+        while (lineStart <= logicalText.length) {
+            const lineEnd = controller.logicalLineEndForStart(logicalText, lineStart);
+            const sourceLineStart = controller.sourceOffsetForLogicalOffset(lineStart);
+            const sourceLineEnd = controller.sourceOffsetForLogicalOffset(lineEnd);
+            entries.push({
+                    "logicalEnd": lineEnd,
+                    "logicalLine": logicalText.slice(lineStart, lineEnd),
+                    "logicalStart": lineStart,
+                    "sourceEnd": sourceLineEnd,
+                    "sourceLine": sourceText.slice(sourceLineStart, sourceLineEnd),
+                    "sourceStart": sourceLineStart
+                });
+            if (lineStart === lastLineStart || lineEnd >= logicalText.length)
+                break;
+            lineStart = lineEnd + 1;
+        }
+        return {
+            "cursorPosition": controller.clampLogicalPosition(fallbackCursor, logicalText.length),
+            "hasSelection": hasSelection,
+            "lines": entries,
+            "selectionEnd": boundedEnd,
+            "selectionStart": boundedStart
+        };
+    }
+    function markdownListLineState(lineEntry) {
+        const sourceLine = lineEntry && lineEntry.sourceLine !== undefined && lineEntry.sourceLine !== null ? String(lineEntry.sourceLine) : "";
+        const unorderedMatch = /^([ \t]*)([-+*])(\s+)(.*)$/.exec(sourceLine);
+        if (unorderedMatch) {
+            return {
+                "body": unorderedMatch[4],
+                "indent": unorderedMatch[1],
+                "kind": "unordered",
+                "marker": unorderedMatch[2],
+                "prefixLength": unorderedMatch[1].length + unorderedMatch[2].length + unorderedMatch[3].length,
+                "sourceLine": sourceLine,
+                "spacing": unorderedMatch[3]
+            };
+        }
+        const orderedMatch = /^([ \t]*)(\d+)([.)])(\s+)(.*)$/.exec(sourceLine);
+        if (orderedMatch) {
+            return {
+                "body": orderedMatch[5],
+                "delimiter": orderedMatch[3],
+                "indent": orderedMatch[1],
+                "kind": "ordered",
+                "number": orderedMatch[2],
+                "prefixLength": orderedMatch[1].length + orderedMatch[2].length + orderedMatch[3].length + orderedMatch[4].length,
+                "sourceLine": sourceLine,
+                "spacing": orderedMatch[4]
+            };
+        }
+        const plainMatch = /^([ \t]*)(.*)$/.exec(sourceLine);
+        return {
+            "body": plainMatch ? plainMatch[2] : "",
+            "indent": plainMatch ? plainMatch[1] : "",
+            "kind": "plain",
+            "prefixLength": (plainMatch ? plainMatch[1] : "").length,
+            "sourceLine": sourceLine
+        };
+    }
+    function markdownListTransformedSourceLine(lineState, listKind, removeListMarker, orderedIndex) {
+        const normalizedKind = controller.normalizeMarkdownListKind(listKind);
+        if (normalizedKind.length === 0)
+            return lineState && lineState.sourceLine !== undefined ? String(lineState.sourceLine) : "";
+        if (!lineState)
+            return "";
+        if (removeListMarker) {
+            if (lineState.kind !== normalizedKind)
+                return lineState.sourceLine;
+            return lineState.indent + lineState.body;
+        }
+        if (normalizedKind === "unordered")
+            return lineState.indent + "- " + lineState.body;
+        return lineState.indent + String(Math.max(1, Number(orderedIndex) || 1)) + ". " + lineState.body;
+    }
+    function markdownListLineShouldTransform(lineEntry, hasSelection) {
+        if (!hasSelection)
+            return true;
+        const logicalLine = lineEntry && lineEntry.logicalLine !== undefined && lineEntry.logicalLine !== null ? String(lineEntry.logicalLine) : "";
+        return logicalLine.trim().length > 0;
+    }
+    function queueMarkdownListMutation(listKind) {
+        if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
+            return false;
+        const normalizedKind = controller.normalizeMarkdownListKind(listKind);
+        if (normalizedKind.length === 0)
+            return false;
+        const selectionRange = controller.selectedEditorRange();
+        const selectionSnapshot = controller.currentEditorSelectionSnapshot();
+        const capturedSnapshot = {
+            "cursorPosition": selectionSnapshot && selectionSnapshot.cursorPosition !== undefined ? Number(selectionSnapshot.cursorPosition) : controller.currentEditorCursorPosition(),
+            "end": selectionRange.end,
+            "selectedText": selectionSnapshot && selectionSnapshot.selectedText !== undefined ? selectionSnapshot.selectedText : controller.currentSelectedEditorText(),
+            "start": selectionRange.start,
+            "selectionEnd": selectionSnapshot && selectionSnapshot.selectionEnd !== undefined ? Number(selectionSnapshot.selectionEnd) : NaN,
+            "selectionStart": selectionSnapshot && selectionSnapshot.selectionStart !== undefined ? Number(selectionSnapshot.selectionStart) : NaN
+        };
+        const noteId = controller.currentSelectedNoteId();
+        const queueKey = noteId
+                + "::list::"
+                + normalizedKind
+                + "::"
+                + String(capturedSnapshot.start)
+                + "::"
+                + String(capturedSnapshot.end)
+                + "::"
+                + String(capturedSnapshot.cursorPosition);
+        if (controller.queuedMarkdownListMutationKeys[queueKey])
+            return true;
+        controller.queuedMarkdownListMutationKeys[queueKey] = true;
+        Qt.callLater(function () {
+            delete controller.queuedMarkdownListMutationKeys[queueKey];
+            if (!controller.view || !controller.view.hasSelectedNote)
+                return;
+            if (controller.currentSelectedNoteId() !== noteId)
+                return;
+            controller.toggleMarkdownListForSelection(normalizedKind, capturedSnapshot);
+        });
+        return true;
+    }
     function editorPlainTextSlice(start, end) {
         const surfaceLength = controller.currentEditorSurfaceLength();
         const boundedStart = Math.max(0, Math.min(surfaceLength, Math.floor(Number(start) || 0)));
@@ -220,29 +435,40 @@ QtObject {
             return false;
 
         const modifiers = event.modifiers;
-        const commandPressed = (modifiers & Qt.MetaModifier) || (modifiers & Qt.ControlModifier);
-        if (!commandPressed)
-            return false;
-
+        const commandPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.ControlModifier));
+        const listShortcutPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.AltModifier)) && !(modifiers & Qt.ControlModifier);
         const shiftPressed = !!(modifiers & Qt.ShiftModifier);
         let handled = false;
         switch (event.key) {
         case Qt.Key_B:
-            handled = controller.queueInlineFormatWrap("bold");
+            if (commandPressed)
+                handled = controller.queueInlineFormatWrap("bold");
             break;
         case Qt.Key_I:
-            handled = controller.queueInlineFormatWrap("italic");
+            if (commandPressed)
+                handled = controller.queueInlineFormatWrap("italic");
             break;
         case Qt.Key_U:
-            handled = controller.queueInlineFormatWrap("underline");
+            if (commandPressed)
+                handled = controller.queueInlineFormatWrap("underline");
             break;
         case Qt.Key_X:
-            if (shiftPressed)
+            if (shiftPressed && commandPressed)
                 handled = controller.queueInlineFormatWrap("strikethrough");
             break;
         case Qt.Key_E:
-            if (shiftPressed)
+            if (shiftPressed && commandPressed)
                 handled = controller.queueInlineFormatWrap("highlight");
+            break;
+        case Qt.Key_7:
+        case Qt.Key_Ampersand:
+            if (shiftPressed && listShortcutPressed)
+                handled = controller.queueMarkdownListMutation("ordered");
+            break;
+        case Qt.Key_8:
+        case Qt.Key_Asterisk:
+            if (shiftPressed && listShortcutPressed)
+                handled = controller.queueMarkdownListMutation("unordered");
             break;
         default:
             break;
@@ -250,7 +476,7 @@ QtObject {
 
         if (handled)
             event.accepted = true;
-
+        return handled;
     }
     function handleSelectionContextMenuEvent(eventName) {
         const contextSelectionRange = controller.contextMenuEditorSelectionSnapshot();
@@ -410,7 +636,7 @@ QtObject {
         normalizedText = normalizedText.replace(/\r/g, "\n");
         normalizedText = normalizedText.replace(/\u2028/g, "\n");
         normalizedText = normalizedText.replace(/\u2029/g, "\n");
-
+        return normalizedText;
     }
     function openEditorSelectionContextMenu(localX, localY) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
@@ -474,6 +700,105 @@ QtObject {
                 return;
             controller.wrapSelectedEditorTextWithTag(normalizedTagName, capturedSelectionRange);
         });
+        return true;
+    }
+    function toggleMarkdownListForSelection(listKind, selectionSnapshot) {
+        if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
+            return false;
+        const normalizedKind = controller.normalizeMarkdownListKind(listKind);
+        if (normalizedKind.length === 0)
+            return false;
+        const lineContext = controller.markdownListTargetLineEntries(selectionSnapshot || null);
+        if (!lineContext.lines || lineContext.lines.length === 0)
+            return false;
+        const currentSourceText = controller.currentSourceText();
+        const lineStates = [];
+        let transformableCount = 0;
+        let matchingCount = 0;
+        for (let index = 0; index < lineContext.lines.length; ++index) {
+            const lineEntry = lineContext.lines[index];
+            const state = controller.markdownListLineState(lineEntry);
+            const transformable = controller.markdownListLineShouldTransform(lineEntry, lineContext.hasSelection);
+            if (transformable) {
+                transformableCount += 1;
+                if (state.kind === normalizedKind)
+                    matchingCount += 1;
+            }
+            lineStates.push({
+                    "entry": lineEntry,
+                    "state": state,
+                    "transformable": transformable
+                });
+        }
+        if (transformableCount === 0 && lineStates.length > 0) {
+            lineStates[0].transformable = true;
+            transformableCount = 1;
+            matchingCount = lineStates[0].state.kind === normalizedKind ? 1 : 0;
+        }
+        const removeListMarker = transformableCount > 0 && matchingCount === transformableCount;
+        const blockSourceStart = lineStates[0].entry.sourceStart;
+        const blockSourceEnd = lineStates[lineStates.length - 1].entry.sourceEnd;
+        let nextBlockText = "";
+        let blockCursor = blockSourceStart;
+        let orderedIndex = 1;
+        let selectionLogicalLength = 0;
+        let nextCursorPosition = lineContext.cursorPosition;
+        for (let index = 0; index < lineStates.length; ++index) {
+            const lineInfo = lineStates[index];
+            const lineEntry = lineInfo.entry;
+            nextBlockText += currentSourceText.slice(blockCursor, lineEntry.sourceStart);
+            const transformedSourceLine = lineInfo.transformable
+                    ? controller.markdownListTransformedSourceLine(lineInfo.state, normalizedKind, removeListMarker, orderedIndex)
+                    : lineInfo.state.sourceLine;
+            if (lineInfo.transformable && !removeListMarker && normalizedKind === "ordered")
+                orderedIndex += 1;
+            nextBlockText += transformedSourceLine;
+            blockCursor = lineEntry.sourceEnd;
+            selectionLogicalLength += transformedSourceLine.length;
+            if (index + 1 < lineStates.length)
+                selectionLogicalLength += 1;
+            if (!lineContext.hasSelection && lineContext.cursorPosition >= lineEntry.logicalStart && lineContext.cursorPosition <= lineEntry.logicalEnd) {
+                const oldCursorInLine = lineContext.cursorPosition - lineEntry.logicalStart;
+                const boundedCursorInLine = Math.max(0, Math.min(lineEntry.logicalLine.length, oldCursorInLine));
+                const oldPrefixLength = Math.max(0, Number(lineInfo.state.prefixLength) || 0);
+                const transformedLineState = controller.markdownListLineState({ "sourceLine": transformedSourceLine });
+                const newPrefixLength = Math.max(0, Number(transformedLineState.prefixLength) || 0);
+                let newCursorInLine = 0;
+                if (removeListMarker && lineInfo.transformable && lineInfo.state.kind === normalizedKind) {
+                    if (boundedCursorInLine <= oldPrefixLength)
+                        newCursorInLine = transformedLineState.indent.length;
+                    else
+                        newCursorInLine = newPrefixLength + (boundedCursorInLine - oldPrefixLength);
+                } else {
+                    const contentOffset = Math.max(0, boundedCursorInLine - oldPrefixLength);
+                    newCursorInLine = newPrefixLength + contentOffset;
+                }
+                nextCursorPosition = lineEntry.logicalStart + Math.max(0, Math.min(transformedSourceLine.length, newCursorInLine));
+            }
+        }
+        nextBlockText += currentSourceText.slice(blockCursor, blockSourceEnd);
+        const nextText = currentSourceText.slice(0, blockSourceStart)
+                + nextBlockText
+                + currentSourceText.slice(blockSourceEnd);
+        if (controller.view.editorText !== nextText)
+            controller.view.editorText = nextText;
+        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
+            controller.editorSession.markLocalEditorAuthority();
+        const saved = controller.persistEditorTextImmediately(nextText);
+        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
+        if (lineContext.hasSelection) {
+            controller.scheduleEditorSelection(
+                        lineStates[0].entry.logicalStart,
+                        lineStates[0].entry.logicalStart + selectionLogicalLength,
+                        NaN);
+        } else {
+            controller.scheduleEditorSelection(NaN, NaN, nextCursorPosition);
+        }
+        controller.contextMenuSelectionStart = -1;
+        controller.contextMenuSelectionEnd = -1;
+        controller.contextMenuSelectionText = "";
+        controller.view.editorTextEdited(nextText);
         return true;
     }
     function resetEditorSelectionCache() {

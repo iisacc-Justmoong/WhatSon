@@ -34,6 +34,9 @@ that sit directly inside the editor viewport.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
+- Desktop window shortcuts mirror the selection controller contract for markdown lists:
+  - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
+  - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 
 ## Tests
 
@@ -43,3 +46,5 @@ that sit directly inside the editor viewport.
   - Gutter line numbers and minimap geometry must still align with the live editor surface.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
+  - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the
+    selection controller while the rich-text editor owns focus.

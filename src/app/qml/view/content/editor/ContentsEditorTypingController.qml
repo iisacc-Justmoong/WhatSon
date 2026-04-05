@@ -11,23 +11,54 @@ QtObject {
     property var textFormatRenderer: null
     property var textMetricsBridge: null
 
-    function continuedListInsertion(replacementDelta, currentSourceText) {
+    function continuedListInsertion(replacementDelta, currentSourceText, nextPlainText) {
         const sourceText = currentSourceText === undefined || currentSourceText === null ? "" : String(currentSourceText);
+        const plainText = nextPlainText === undefined || nextPlainText === null ? "" : String(nextPlainText);
         if (!replacementDelta || !replacementDelta.valid)
             return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
-        if (replacementDelta.insertedText !== "\n" || replacementDelta.previousEnd !== replacementDelta.start)
+
+        const insertedText = replacementDelta.insertedText === undefined || replacementDelta.insertedText === null
+                ? ""
+                : String(replacementDelta.insertedText);
+        if (!insertedText.endsWith("\n"))
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+        if ((insertedText.match(/\n/g) || []).length !== 1)
             return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
 
         const insertionStart = Math.max(0, Math.floor(Number(replacementDelta.start) || 0));
         const sourceInsertionStart = controller.sourceOffsetForLogicalOffset(insertionStart);
-        const lineStart = sourceInsertionStart > 0 ? sourceText.lastIndexOf("\n", sourceInsertionStart - 1) + 1 : 0;
-        const currentLine = sourceText.slice(lineStart, sourceInsertionStart);
-        const unorderedMatch = /^([ \t]*)([-*+\u2022])(\s+)(.*)$/.exec(currentLine);
+        const sourceLineStart = sourceInsertionStart > 0 ? sourceText.lastIndexOf("\n", sourceInsertionStart - 1) + 1 : 0;
+        const sourceLinePrefix = sourceText.slice(sourceLineStart, sourceInsertionStart);
+        const sourceLineEnd = sourceText.indexOf("\n", sourceInsertionStart);
+        const sourceCurrentLine = sourceText.slice(sourceLineStart, sourceLineEnd >= 0 ? sourceLineEnd : sourceText.length);
+        const logicalInsertionEnd = insertionStart + insertedText.length;
+        if (logicalInsertionEnd <= 0 || logicalInsertionEnd > plainText.length || plainText.charAt(logicalInsertionEnd - 1) !== "\n")
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+        const logicalLineEnd = logicalInsertionEnd - 1;
+        const logicalLineStart = logicalLineEnd > 0 ? plainText.lastIndexOf("\n", logicalLineEnd - 1) + 1 : 0;
+        const logicalLine = plainText.slice(logicalLineStart, logicalLineEnd);
+        const replacesWholeLogicalLine = replacementDelta.start === logicalLineStart
+                && insertedText.slice(0, Math.max(0, insertedText.length - 1)) === logicalLine;
+        if (replacementDelta.previousEnd !== replacementDelta.start && !replacesWholeLogicalLine)
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+        const sourceLineForMarkerLookup = replacesWholeLogicalLine ? sourceCurrentLine : sourceLinePrefix;
+
+        const unorderedMatch = /^([ \t]*)([-*+\u2022])(\s+)(.*)$/.exec(logicalLine);
         if (unorderedMatch) {
             if (String(unorderedMatch[4] || "").trim().length === 0)
                 return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
-            const continuedMarker = unorderedMatch[2] === "\u2022" ? "-" : unorderedMatch[2];
-            const continuedText = "\n" + unorderedMatch[1] + continuedMarker + unorderedMatch[3];
+            const sourceUnorderedMatch = /^([ \t]*)([-*+])(\s*)/.exec(sourceLineForMarkerLookup);
+            const continuedIndent = sourceUnorderedMatch ? sourceUnorderedMatch[1] : unorderedMatch[1];
+            const continuedMarker = sourceUnorderedMatch
+                    ? sourceUnorderedMatch[2]
+                    : (unorderedMatch[2] === "\u2022" ? "-" : unorderedMatch[2]);
+            const continuedSeparator = sourceUnorderedMatch && String(sourceUnorderedMatch[3] || "").length > 0
+                    ? sourceUnorderedMatch[3]
+                    : unorderedMatch[3];
+            const normalizedInsertedText = replacesWholeLogicalLine
+                    ? unorderedMatch[1] + continuedMarker + continuedSeparator + unorderedMatch[4] + "\n"
+                    : insertedText;
+            const continuedText = normalizedInsertedText + continuedIndent + continuedMarker + continuedSeparator;
             return ({
                     "applied": true,
                     "cursorPosition": insertionStart + continuedText.length,
@@ -35,15 +66,25 @@ QtObject {
                 });
         }
 
-        const orderedMatch = /^([ \t]*)(\d+)([.)])(\s+)(.*)$/.exec(currentLine);
+        const orderedMatch = /^([ \t]*)(\d+)([.)])([ \t]*)(.*)$/.exec(logicalLine);
         if (orderedMatch) {
-            if (String(orderedMatch[5] || "").trim().length === 0)
+            const orderedSpacing = String(orderedMatch[4] || "");
+            const orderedContent = String(orderedMatch[5] || "");
+            if (orderedContent.trim().length === 0)
                 return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            if (orderedSpacing.length === 0 && /^[0-9]/.test(orderedContent))
+                return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            const sourceOrderedMatch = /^([ \t]*)(\d+)([.)])([ \t]*)/.exec(sourceLineForMarkerLookup);
             const currentNumber = Number(orderedMatch[2]);
             if (!isFinite(currentNumber))
                 return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
             const nextNumber = Math.max(1, Math.floor(currentNumber) + 1);
-            const continuedText = "\n" + orderedMatch[1] + String(nextNumber) + orderedMatch[3] + orderedMatch[4];
+            const continuedIndent = sourceOrderedMatch ? sourceOrderedMatch[1] : orderedMatch[1];
+            const continuedDelimiter = sourceOrderedMatch ? sourceOrderedMatch[3] : orderedMatch[3];
+            const continuedSeparator = sourceOrderedMatch && String(sourceOrderedMatch[4] || "").length > 0
+                    ? sourceOrderedMatch[4]
+                    : (orderedSpacing.length > 0 ? orderedSpacing : " ");
+            const continuedText = insertedText + continuedIndent + String(nextNumber) + continuedDelimiter + continuedSeparator;
             return ({
                     "applied": true,
                     "cursorPosition": insertionStart + continuedText.length,
@@ -166,7 +207,7 @@ QtObject {
         const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
                 ? ""
                 : String(controller.view.editorText);
-        const continuedListInsertion = controller.continuedListInsertion(replacementDelta, currentSourceText);
+        const continuedListInsertion = controller.continuedListInsertion(replacementDelta, currentSourceText, nextPlainText);
         const normalizedInsertedText = continuedListInsertion.applied
                 ? continuedListInsertion.insertedText
                 : replacementDelta.insertedText;

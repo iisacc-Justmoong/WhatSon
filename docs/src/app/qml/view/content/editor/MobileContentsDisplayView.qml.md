@@ -20,6 +20,9 @@ suppression local to this file.
 - `MobileHierarchyPage.qml` reaches this file through `ContentViewLayout.qml`.
 - The editor session, typing controller, selection controller, renderer, and resource-viewer collaborators stay aligned
   with the desktop implementation.
+- Mobile keeps the same window-level markdown list shortcuts as desktop when a hardware keyboard is present:
+  - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
+  - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 
 ## Tests
 
@@ -29,3 +32,5 @@ suppression local to this file.
   - Mobile editor text must still render at `14px`.
   - Mobile note editing, resource rendering, and persistence must stay aligned with the desktop editor flow.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.
+  - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
+    must stay aligned with the desktop markdown list behavior.
