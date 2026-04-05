@@ -79,9 +79,6 @@ Item {
     property var weekCalendarViewModel: null
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
-    readonly property int mobileDetailPanelDefaultWidth: 194
-    readonly property int mobileDetailPanelMinWidth: 145
-
     signal agendaRequested
     signal agendaOverlayDismissRequested
     signal dayCalendarRequested
@@ -149,17 +146,6 @@ Item {
         if (!mobileScaffold.activePageRouter)
             return "";
         return String(mobileScaffold.activePageRouter.currentPath);
-    }
-    function resolvedDetailPanelPageWidth() {
-        const viewportWidth = Math.max(0, Math.floor(Number(mobileScaffold.bodyWidth) || Number(mobileHierarchyPage.width) || 0));
-        if (viewportWidth <= 0)
-            return mobileHierarchyPage.mobileDetailPanelDefaultWidth;
-        if (viewportWidth <= mobileHierarchyPage.mobileDetailPanelMinWidth)
-            return viewportWidth;
-        return Math.max(
-                    mobileHierarchyPage.mobileDetailPanelMinWidth,
-                    Math.min(mobileHierarchyPage.mobileDetailPanelDefaultWidth,
-                             Math.max(mobileHierarchyPage.mobileDetailPanelMinWidth, viewportWidth - LV.Theme.gap12)));
     }
     function requestOpenDetailPanelPage() {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
@@ -791,14 +777,12 @@ Item {
         id: detailBodyComponent
 
         Item {
+            anchors.fill: parent
             property bool detailPanelPage: true
 
             PanelView.DetailPanelLayout {
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
+                anchors.fill: parent
                 panelColor: "transparent"
-                width: mobileHierarchyPage.resolvedDetailPanelPageWidth()
 
                 onViewHookRequested: mobileHierarchyPage.requestViewHook()
             }

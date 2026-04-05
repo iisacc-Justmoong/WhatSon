@@ -38,6 +38,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
   - plain text for indexing/search/list summaries
   - inline-tag editor source text for editor binding (`<bold>`, `<italic>`, `<underline>`, `<strikethrough>`, `<highlight>`)
+- When `persistBodyPlainText(...)` does perform a filesystem write, it now opts out of `modifiedCount` increments.
+  The editor autosave path still updates the persisted body/header material and `lastModifiedAt`, but it no longer
+  treats each autosaved typing burst as a separate modification-count event.
 - Unordered-list display glyph recovery intentionally normalizes back to the canonical source marker `-` instead of
   preserving `*` / `+` source variants.
 
@@ -49,3 +52,4 @@ creation.
 ## Regression Notes
 - Empty-note `<body>` whitespace handling is now a documented behavior contract only; this repository no longer
   maintains a dedicated scripted test for it.
+- Editor autosave must not inflate `fileStat.modifiedCount` while the user types.

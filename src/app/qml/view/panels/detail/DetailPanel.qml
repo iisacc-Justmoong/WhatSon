@@ -56,8 +56,6 @@ Item {
         const _ = detailPanel.registeredViewModelKeys;
         return LV.ViewModels.get("detailPanelViewModel");
     }
-    property int headerToolbarHeight: 20
-    property int headerToolbarWidth: 145
     property int panelSpacing: 10
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailPanel") : null
     readonly property var resolvedActiveContentViewModel: detailPanel.resolveActiveContentViewModel()
@@ -67,6 +65,7 @@ Item {
     readonly property var resolvedProgressSelectionViewModel: detailPanel.resolveProgressSelectionViewModel()
     readonly property string resolvedActiveStateName: detailPanel.resolveActiveStateName()
     readonly property var resolvedToolbarItems: detailPanel.resolveToolbarItems()
+    readonly property int headerToolbarHeight: detailHeaderToolbar ? Math.max(0, Math.round(detailHeaderToolbar.implicitHeight || detailHeaderToolbar.height || 0)) : 0
 
     signal viewHookRequested
 
@@ -167,11 +166,11 @@ Item {
             height: detailPanel.headerToolbarHeight
 
             DetailPanelHeaderToolbar {
+                id: detailHeaderToolbar
+
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
-                height: detailPanel.headerToolbarHeight
                 toolbarButtonSpecs: detailPanel.resolvedToolbarItems
-                width: detailPanel.headerToolbarWidth
 
                 onDetailStateChangeRequested: function (stateValue) {
                     detailPanel.requestViewHook("detailStateChangeRequested.stateValue=" + stateValue);

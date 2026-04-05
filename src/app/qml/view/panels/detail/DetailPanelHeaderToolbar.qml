@@ -31,10 +31,12 @@ Item {
     }
 
     objectName: "DetailPanelHeaderToolbar"
-    implicitHeight: 20
-    implicitWidth: 145
+    implicitHeight: toolbarRow.implicitHeight
+    implicitWidth: toolbarRow.implicitWidth
 
     Row {
+        id: toolbarRow
+
         anchors.centerIn: parent
         spacing: detailPanelHeaderToolbar.buttonSpacing
 

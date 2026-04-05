@@ -31,6 +31,7 @@ public:
         bool persistHeader = true;
         bool persistBody = true;
         bool touchLastModified = false;
+        bool incrementModifiedCount = true;
     };
 
     struct DeleteRequest final

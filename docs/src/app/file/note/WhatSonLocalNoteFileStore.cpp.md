@@ -36,8 +36,11 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - Before persisting `.wsnhead`, the store now also recalculates the note-local `fileStat` block from
   the current header/body state.
 - Body writes force a header write as well, because the body-derived counters live in `.wsnhead`.
-- Every successful update increments `modifiedCount`; open tracking is intentionally handled by the
-  editor-selection bridge instead of the generic read path.
+- `UpdateRequest` now decides whether a successful write should increment `modifiedCount`.
+- Header / structural mutations still opt in to that counter by default.
+- Debounced editor body autosaves deliberately opt out: they still write the normalized `.wsnbody`, refresh
+  body-derived stats, and update `lastModifiedAt`, but they no longer inflate `modifiedCount` on every typing burst.
+- Open tracking is intentionally handled by the editor-selection bridge instead of the generic read path.
 - When body backlink targets change, the store also refreshes the directly affected target note
   headers so `backlinkByCount` does not stay stale on linked notes.
 
@@ -48,3 +51,5 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - whitespace-only paragraph round-trip
   - inline-tag source serialization
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags
+- Additional regression expectation:
+  - editor body autosave must not increment `modifiedCount`; only update requests that explicitly opt in may advance that counter.

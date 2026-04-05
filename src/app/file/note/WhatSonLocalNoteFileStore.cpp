@@ -813,7 +813,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
     {
         request.document.headerStore.setLastModifiedAt(currentNoteTimestamp());
     }
-    if (persistHeader || persistBody)
+    if (request.incrementModifiedCount && (persistHeader || persistBody))
     {
         request.document.headerStore.incrementModifiedCount();
     }

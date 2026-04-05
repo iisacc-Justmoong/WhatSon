@@ -2,14 +2,15 @@
 
 ## Responsibility
 `DetailPanelHeaderToolbar.qml` renders the six-button detail toolbar for Figma frame `155:4575`.
-It normalizes toolbar specs, keeps the `145x20` Figma frame, and emits `detailStateChangeRequested(int)` when a button is activated.
+It normalizes toolbar specs, sizes itself from the resolved button row, and emits `detailStateChangeRequested(int)` when a button is activated.
 
 ## Visual Contract
 - Root `objectName`: `DetailPanelHeaderToolbar`
 - Figma node id: `155:4575`
-- Frame size: `145 x 20`
+- Frame size: derived from the internal `Row` implicit size
 - Inter-button spacing: `5`
 - The toolbar is centered by its parent panel, while this file only preserves the internal row geometry.
+- The toolbar must not reintroduce a fixed `145x20` desktop clamp, because that makes the mobile detail header appear unnaturally small.
 
 ## Delegate Contract
 Each delegate receives a normalized spec object with:

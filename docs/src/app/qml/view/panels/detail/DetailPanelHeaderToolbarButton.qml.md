@@ -6,8 +6,7 @@ It adapts toolbar spec data into an `LV.IconButton` while preserving the Figma o
 
 ## Contract
 - Root type: `LV.IconButton`
-- Fixed frame: `20 x 20`
-- Icon size: `16`
+- Size source: LVRS `IconButton` default metrics (no local `20x20` clamp)
 - Selected tone: `LV.AbstractButton.Default`
 - Unselected tone: `LV.AbstractButton.Borderless`
 
@@ -22,3 +21,4 @@ It adapts toolbar spec data into an `LV.IconButton` while preserving the Figma o
 ## Behavior
 - Invalid or non-numeric `stateValue` is ignored and logged through the existing view-hook path.
 - Valid clicks emit `stateClickRequested(nextState)`.
+- The delegate must not force a reduced `20x20` frame, so the detail header can inherit platform-appropriate button sizing.

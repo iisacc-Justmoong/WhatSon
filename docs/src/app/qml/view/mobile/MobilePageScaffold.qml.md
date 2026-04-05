@@ -40,6 +40,8 @@
 - Forwards compact detail-page state into `NavigationBarLayout` and re-emits `toggleDetailPanelRequested()` back to
   `MobileHierarchyPage`, where that signal now pushes the dedicated `/mobile/detail` route instead of opening an
   overlay or context-menu action.
+- `bodyRouter` is the safe-area-bounded mobile body surface. Routed pages such as `/mobile/detail` are expected to fill
+  that width directly instead of applying their own centered fixed-width clamp.
 
 ## Intended Detailed Sections
 - Responsibility and business role

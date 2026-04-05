@@ -73,7 +73,11 @@ The detail-page behavior is:
 - opened only from `/mobile/editor`
 - rendered through the existing `DetailPanelLayout.qml`
 - mounted as a normal routed page body, so it participates in the same back-swipe/page-stack model as note list and editor
+- stretched to the full routed-body width provided by `MobilePageScaffold.qml`, so the detail surface reaches the mobile safe-area bounds instead of using a centered fixed-width card
 - no longer exposed as a compact context-menu item
+
+The detail route must not reintroduce its own width clamp. `MobilePageScaffold.qml` already constrains the routed body
+to the safe-area-aware mobile content width, so `/mobile/detail` should simply fill that body.
 
 ## Selection Preservation
 `preservedNoteListSelectionIndex` caches the active hierarchy selection that produced the current note list.
@@ -141,3 +145,5 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
   `MobileContentsDisplayView.qml`.
 - The mobile editor page must keep sourcing platform mode from the LVRS window detector, not from viewport width.
 - The mobile editor page must not fall back to the desktop editor file for mobile rendering.
+- The mobile detail route must fill the routed body width end-to-end; centered fixed-width detail cards are a regression on
+  mobile.

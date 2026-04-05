@@ -14,11 +14,11 @@
 - Active state contract: `resolvedActiveStateName`
 - Toolbar contract: `resolvedToolbarItems`
 
-## Figma Mapping
-- Toolbar frame width: `145`
-- Toolbar frame height: `20`
+## Toolbar Layout
 - Gap between toolbar and contents: `10`
 - The toolbar remains horizontally centered regardless of panel width.
+- Header height is derived from `DetailPanelHeaderToolbar.qml`'s implicit height instead of a fixed `20px` clamp.
+- The panel must not force the toolbar back to the legacy `145x20` frame on mobile or desktop.
 
 ## Toolbar Metadata
 The file keeps a Figma-scoped toolbar spec and uses its icon names as the canonical source even when C++ toolbar items are present.
@@ -42,3 +42,5 @@ composite `config.svg` asset.
   `resolvedFileStatViewModel`, the canonical `detailPanelViewModel` object, and the three detail-local selector-copy
   viewmodels.
 - This keeps detail-panel selector state independent from sidebar hierarchy selection state.
+- The header wrapper mirrors the toolbar's implicit size, so larger LVRS button metrics can surface without additional
+  panel-side edits.

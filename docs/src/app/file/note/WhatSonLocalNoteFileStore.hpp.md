@@ -21,6 +21,22 @@
 - `UpdateRequest`
 - `DeleteRequest`
 
+## UpdateRequest Contract
+
+- `UpdateRequest` carries the local note document plus persistence toggles for header/body writes.
+- `touchLastModified` updates the header timestamp during the write transaction.
+- `incrementModifiedCount` now independently controls whether that transaction advances the persisted `fileStat.modifiedCount`.
+- The intended split is:
+  - explicit metadata / structural note writes: keep `incrementModifiedCount == true`
+  - debounced editor body autosave: set `incrementModifiedCount == false`
+
+## Tests
+
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - callers must be able to update `lastModifiedAt` without also incrementing `modifiedCount`
+  - existing update callers that do not override `incrementModifiedCount` must keep the legacy increment behavior
+
 ### Enums
 - None detected during scaffold generation.
 
