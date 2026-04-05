@@ -30,6 +30,8 @@
   - inline tags are treated as zero-width source tokens
   - `<br>` counts as one logical line-break character
   - common HTML entities (`&lt;`, `&amp;`, `&#39;`, etc.) collapse to one logical character
+- That entity-collapse rule now intentionally matches the editor RichText surface, which renders RAW-safe entity tokens
+  as their real glyphs instead of exposing the literal escape strings.
 - `sourceOffsetForLogicalOffset(...)` exposes that table to QML so selection/context-menu formatting can mutate the
   correct source slice even when the editor cursor operates on rendered plain-text offsets.
 - Source-offset clamping is now normalized through an explicit `int`-bounded QString size helper before returning to
@@ -41,6 +43,8 @@
   RichText surface is rebound.
 - Fenced code blocks delimited by `` ``` `` must keep their raw markdown markers in `logicalText`; unordered-list marker
   rewriting must not fire inside that fenced region.
+- When the source contains RAW-safe entities such as `&lt;tag&gt;` or `Tom &amp; Jerry`, `logicalText` must expose the
+  visible `<tag>` / `Tom & Jerry` glyph sequence so cursor mapping stays aligned with the editor surface.
 
 ## Extracted Symbols
 - Declared namespaces present: no

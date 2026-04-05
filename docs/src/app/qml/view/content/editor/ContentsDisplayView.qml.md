@@ -34,6 +34,8 @@ that sit directly inside the editor viewport.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
+- RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
+  RichText editor surface instead of showing the literal escape sequences.
 - Desktop window shortcuts mirror the selection controller contract for markdown lists:
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
@@ -46,5 +48,7 @@ that sit directly inside the editor viewport.
   - Gutter line numbers and minimap geometry must still align with the live editor surface.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
+  - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
+    persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the
     selection controller while the rich-text editor owns focus.

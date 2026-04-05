@@ -64,9 +64,10 @@ namespace
 
     QString whitespaceToHtml(const QString& value)
     {
+        const QString decodedValue = decodeHtmlEntities(value);
         QString html;
-        html.reserve(value.size() * 6);
-        for (const QChar ch : value)
+        html.reserve(decodedValue.size() * 6);
+        for (const QChar ch : decodedValue)
         {
             if (ch == QLatin1Char(' '))
             {
@@ -141,21 +142,22 @@ namespace
 
     QString renderStyledLiteralTextToHtml(const QString& text, const LiteralRenderMode renderMode)
     {
-        if (text.isEmpty())
+        const QString displayText = decodeHtmlEntities(text);
+        if (displayText.isEmpty())
         {
             return {};
         }
 
         QString html;
-        html.reserve(text.size() * 2);
+        html.reserve(displayText.size() * 2);
 
         int cursor = 0;
-        while (cursor < text.size())
+        while (cursor < displayText.size())
         {
-            const int codeTokenLength = inlineCodeTokenLengthAt(text, cursor);
+            const int codeTokenLength = inlineCodeTokenLengthAt(displayText, cursor);
             if (renderMode == LiteralRenderMode::MarkdownAware && codeTokenLength > 0)
             {
-                const QString token = text.mid(cursor, codeTokenLength);
+                const QString token = displayText.mid(cursor, codeTokenLength);
                 html += WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
                     WhatSon::WhatSonNoteMarkdownStyleObject::Role::InlineCode,
                     escapeHtmlText(token));
@@ -163,10 +165,10 @@ namespace
                 continue;
             }
 
-            const int linkTokenLength = markdownLinkTokenLengthAt(text, cursor);
+            const int linkTokenLength = markdownLinkTokenLengthAt(displayText, cursor);
             if (renderMode == LiteralRenderMode::MarkdownAware && linkTokenLength > 0)
             {
-                const QString token = text.mid(cursor, linkTokenLength);
+                const QString token = displayText.mid(cursor, linkTokenLength);
                 html += WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
                     WhatSon::WhatSonNoteMarkdownStyleObject::Role::LinkLiteral,
                     escapeHtmlText(token));
@@ -174,7 +176,7 @@ namespace
                 continue;
             }
 
-            html += escapeHtmlText(QString(text.at(cursor)));
+            html += escapeHtmlText(QString(displayText.at(cursor)));
             ++cursor;
         }
 
@@ -757,7 +759,7 @@ namespace
                     whitespaceToHtml(codeFenceMatch.captured(1))
                     + WhatSon::WhatSonNoteMarkdownStyleObject::wrapHtmlSpan(
                         WhatSon::WhatSonNoteMarkdownStyleObject::Role::CodeFence,
-                        escapeHtmlText(line.mid(codeFenceMatch.capturedLength(1)))));
+                        escapeHtmlText(decodeHtmlEntities(line.mid(codeFenceMatch.capturedLength(1))))));
                 insideCodeFence = !insideCodeFence;
                 continue;
             }

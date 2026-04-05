@@ -33,11 +33,15 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   `.wsnbody` aliases and editor-generated HTML spans render through one path.
 - Auto-closes unmatched open style tags at end-of-input to keep emitted HTML structurally valid.
 - Emits `renderedHtmlChanged()` only when the derived HTML payload actually changes.
+- Decodes one entity layer from safe literal text fragments (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, `&nbsp;`)
+  before emitting RichText HTML, so RAW-safe source escapes render as their real glyphs in the editor while the
+  canonical source can still keep escaped tokens.
 - Exposes `normalizeInlineStyleAliasesForEditor(...)` for editor-surface normalization:
   - rewrites inline aliases into editable RichText tags (`bold` -> `<strong style="font-weight:900;">`, etc.)
   - preserves non-style tags such as `<resource ...>` unchanged
   - promotes canonical source LF characters to explicit `<br/>` tags before binding into `TextEdit.RichText`
-  - preserves escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` unchanged
+  - renders escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` as visible `<bold>...</bold>` glyphs without
+    promoting it into authoritative inline-style tags
 - Exposes `normalizeEditorSurfaceTextToSource(...)` so formatting-driven `QTextDocument` mutations can still be
   canonicalized back into inline `.wsnbody` tags when the whole RichText surface genuinely changed.
 - That whole-surface normalization also converts rendered unordered-list bullet glyphs (`• `) back into source markdown
@@ -75,6 +79,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Typing `` ``` `` fenced blocks should keep the fence markers visible and render the fenced body as code-styled text.
 - Typing `[label](https://example.com)` should keep the literal token in source while rendering it as a link-styled
   span.
+- Safe RAW entity tokens such as `&lt;`, `&gt;`, and `&amp;` must render as visible `<`, `>`, and `&` glyphs in the
+  editor surface without being promoted into executable markup.
+- Escaped safe text such as `&lt;bold&gt;demo&lt;/bold&gt;` must display the literal angle-bracket text in the editor
+  instead of the raw entity strings, while proprietary formatting still ignores it as source text.
 - Applying proprietary inline formatting to text inside a markdown bullet line must keep the stored source line prefix
   as
   `- ` instead of persisting the rendered `• ` glyph.
