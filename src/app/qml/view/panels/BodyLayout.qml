@@ -56,6 +56,7 @@ Item {
     signal viewHookRequested
     signal dayCalendarOverlayDismissRequested
     signal agendaOverlayDismissRequested
+    signal monthCalendarOverlayOpenRequested
     signal monthCalendarOverlayDismissRequested
     signal weekCalendarOverlayDismissRequested
     signal yearCalendarOverlayDismissRequested
@@ -216,6 +217,7 @@ Item {
 
                 onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
                 onAgendaOverlayCloseRequested: hStack.agendaOverlayDismissRequested()
+                onMonthCalendarOverlayOpenRequested: hStack.monthCalendarOverlayOpenRequested()
                 onMonthCalendarOverlayCloseRequested: hStack.monthCalendarOverlayDismissRequested()
                 onWeekCalendarOverlayCloseRequested: hStack.weekCalendarOverlayDismissRequested()
                 onYearCalendarOverlayCloseRequested: hStack.yearCalendarOverlayDismissRequested()

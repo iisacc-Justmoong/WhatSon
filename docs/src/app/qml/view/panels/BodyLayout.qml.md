@@ -14,6 +14,7 @@ right detail panel.
 - `viewHookRequested`
 - `agendaOverlayDismissRequested`
 - `dayCalendarOverlayDismissRequested`
+- `monthCalendarOverlayOpenRequested`
 - `monthCalendarOverlayDismissRequested`
 - `weekCalendarOverlayDismissRequested`
 - `yearCalendarOverlayDismissRequested`
@@ -22,6 +23,8 @@ right detail panel.
 
 - `ListBarLayout.noteActivated(...)` is re-emitted as `BodyLayout.noteActivated(...)`.
 - Calendar overlay visibility and viewmodel handles are forwarded to `ContentViewLayout.qml`.
+- Year-calendar month/day routing is also re-emitted upward as `monthCalendarOverlayOpenRequested`, so the desktop app
+  shell can swap from year view to month view without breaking the overlay ownership contract.
 - `resourcesImportViewModel`, `editorViewModeViewModel`, and `isMobilePlatform` are forwarded to the central content
   surface.
 - The contents surface now fills the center panel directly without an additional bottom-partition contract.
@@ -34,3 +37,4 @@ right detail panel.
   - The center content surface must still receive the active hierarchy viewmodel and note-list model.
   - Sidebar/list/right-panel splitters must keep their existing resize behavior.
   - Calendar dismiss routing must still return the body shell to the editor surface.
+  - A year-calendar month/day tap from the center content surface must still bubble up as a month-overlay open request.

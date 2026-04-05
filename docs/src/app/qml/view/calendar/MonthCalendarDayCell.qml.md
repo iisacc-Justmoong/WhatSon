@@ -18,7 +18,9 @@ It supports two variants through one boolean argument:
 ## Render Rules
 - Background: `LV.Theme.panelBackground04`
 - Disabled variant: `opacity: 0.5`
-- Today state: applies a soft border using `LV.Theme.strokeSoft` and `LV.Theme.strokeThin`
+- Selected state: applies an accent border using `LV.Theme.accent` and `LV.Theme.strokeThin`
+- Today state: when the cell is not the selected date, applies a soft border using `LV.Theme.strokeSoft` and
+  `LV.Theme.strokeThin`
 - Content padding: `8`
 - Day number label style: `12 / Medium` (Body typography)
 - Entry chips: delegated to shared `CalendarEventCell` with `cornerRadius: 4` in month-grid usage
@@ -35,5 +37,8 @@ It supports two variants through one boolean argument:
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
-    - The day cell mapped from `dayModel.isToday === true` must render with a visible but low-contrast border.
-    - Adjacent non-today overflow dates must continue to render without the added border.
+    - The selected date cell must render with an accent border even when it is not today.
+    - When today is also selected, the accent border must win over the soft today border.
+    - The day cell mapped from `dayModel.isToday === true` must still render with a visible but low-contrast border
+      when it is not the selected date.
+    - Adjacent non-today, non-selected overflow dates must continue to render without the added border.

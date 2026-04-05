@@ -24,6 +24,7 @@ into the selected editor surface.
 - `editorTextEdited(string text)`
 - `dayCalendarOverlayCloseRequested`
 - `agendaOverlayCloseRequested`
+- `monthCalendarOverlayOpenRequested`
 - `monthCalendarOverlayCloseRequested`
 - `weekCalendarOverlayCloseRequested`
 - `viewHookRequested`
@@ -36,6 +37,8 @@ into the selected editor surface.
 - `resourcesImportViewModel`, `editorViewModeViewModel`, and the resolved note-list/content viewmodels are forwarded
   into both editor variants.
 - `isMobilePlatform` still decides which editor file is instantiated.
+- `YearCalendarPage.qml` can now request a month-overlay open through this file. `ContentViewLayout.qml` applies the
+  requested year/month/date to `monthCalendarViewModel` first, then emits `monthCalendarOverlayOpenRequested`.
 
 ## Tests
 
@@ -44,3 +47,5 @@ into the selected editor surface.
   - Switching between editor and calendar surfaces must continue to use one shared content slot.
   - Desktop and mobile editor surfaces must both fill that slot without a reserved bottom partition.
   - Note selection changes must still dismiss any visible calendar surface.
+  - A year-calendar month/day tap must still propagate into a month-overlay open request with the month viewmodel
+    already synchronized to the requested month/date.

@@ -62,6 +62,10 @@ routes.
 Opening any calendar overlay now canonicalizes back to the editor route when needed, so calendar pages do not stack on
 top of `/mobile/detail`.
 
+`ContentViewLayout.qml` can now emit `monthCalendarOverlayOpenRequested()` from inside the mobile editor route when the
+user taps a month or day in `YearCalendarPage.qml`. `MobileHierarchyPage.qml` re-emits that signal so the app root can
+swap the visible overlay from year to month while keeping the overlay state owned above the router shell.
+
 ## Mobile Detail Page
 The compact navigation's right-edge `DetailPanelControlButton` now routes into `/mobile/detail`.
 

@@ -39,3 +39,7 @@
 - Day/week pages keep only `CalendarTodayControl` in the top band and distribute 24 hourly slots across the remaining content height.
 - Monthly page mirrors Figma node `228:9666` with fixed header (`54`) and a reusable month-grid surface; mobile adds a
   snap-paged horizontal month swiper while desktop keeps non-interactive paging.
+- Year view now acts as a routing surface into month view: month-title/day taps preconfigure the month overlay before
+  the host switches overlays.
+- Month view now distinguishes the selected date with an accent border while preserving the softer today-only border for
+  non-selected current-day cells.

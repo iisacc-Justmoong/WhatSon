@@ -42,6 +42,8 @@ surface so left/right swipes move to the previous or next month.
 4. `monthViewChanged` rebuilds pager projections so entry counts and month labels stay in sync with the shared
    `MonthCalendarViewModel`.
 5. Day selection is still delegated back into `monthCalendarViewModel.setSelectedDateIso(...)`.
+6. When opened from `YearCalendarPage.qml`, the host now preloads `displayedYear`, `displayedMonth`, and
+   `selectedDateIso` before this page becomes visible, so the routed month opens on the requested month/date.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/MonthCalendarViewModel.hpp/.cpp`
@@ -57,3 +59,5 @@ surface so left/right swipes move to the previous or next month.
     - Swipe completion must update the canonical displayed month, not leave the pager parked on a side slot.
     - Desktop month view must remain width-fitted without enabling unintended horizontal scrolling.
     - Day selection inside any visible month page must still update `selectedDateIso`.
+    - Opening the page from a year-calendar month/day tap must show the requested month immediately instead of the
+      previously displayed month.

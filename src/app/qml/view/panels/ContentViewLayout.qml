@@ -60,6 +60,7 @@ Item {
     signal editorTextEdited(string text)
     signal dayCalendarOverlayCloseRequested
     signal agendaOverlayCloseRequested
+    signal monthCalendarOverlayOpenRequested
     signal monthCalendarOverlayCloseRequested
     signal weekCalendarOverlayCloseRequested
     signal viewHookRequested
@@ -84,6 +85,28 @@ Item {
         }
         if (contentViewLayout.showingYearCalendarOverlay)
             contentViewLayout.yearCalendarOverlayCloseRequested();
+    }
+    function openMonthCalendarOverlayForSelection(year, month, selectedDateIso) {
+        const targetYear = Math.floor(Number(year) || 0);
+        const targetMonth = Math.floor(Number(month) || 0);
+        const normalizedDateIso = selectedDateIso === undefined || selectedDateIso === null
+                ? ""
+                : String(selectedDateIso).trim();
+        if (contentViewLayout.monthCalendarViewModel) {
+            if (contentViewLayout.yearCalendarViewModel
+                    && contentViewLayout.yearCalendarViewModel.calendarSystem !== undefined
+                    && contentViewLayout.monthCalendarViewModel.setCalendarSystemByValue !== undefined) {
+                contentViewLayout.monthCalendarViewModel.setCalendarSystemByValue(
+                            Number(contentViewLayout.yearCalendarViewModel.calendarSystem));
+            }
+            if (isFinite(targetYear) && targetYear > 0 && contentViewLayout.monthCalendarViewModel.setDisplayedYear !== undefined)
+                contentViewLayout.monthCalendarViewModel.setDisplayedYear(targetYear);
+            if (isFinite(targetMonth) && targetMonth > 0 && contentViewLayout.monthCalendarViewModel.setDisplayedMonth !== undefined)
+                contentViewLayout.monthCalendarViewModel.setDisplayedMonth(targetMonth);
+            if (normalizedDateIso.length > 0 && contentViewLayout.monthCalendarViewModel.setSelectedDateIso !== undefined)
+                contentViewLayout.monthCalendarViewModel.setSelectedDateIso(normalizedDateIso);
+        }
+        contentViewLayout.monthCalendarOverlayOpenRequested();
     }
 
     Layout.fillHeight: true
@@ -263,6 +286,9 @@ Item {
             anchors.fill: parent
             yearCalendarViewModel: contentViewLayout.yearCalendarViewModel
 
+            onMonthCalendarOpenRequested: function (year, month, selectedDateIso) {
+                contentViewLayout.openMonthCalendarOverlayForSelection(year, month, selectedDateIso);
+            }
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();
             }

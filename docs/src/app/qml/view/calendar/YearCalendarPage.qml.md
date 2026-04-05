@@ -7,6 +7,7 @@ the year view acts as a high-level event/task heatmap.
 ## View Contract
 - Input: `yearCalendarViewModel`
 - Hook signal: `viewHookRequested(string reason)`
+- Navigation signal: `monthCalendarOpenRequested(int year, int month, string selectedDateIso)`
 - Hook forwarder: `requestViewHook(reason)` delegates to `yearCalendarViewModel.requestYearView(reason)`
 
 ## UI Composition
@@ -37,6 +38,8 @@ the year view acts as a high-level event/task heatmap.
 - The year view remains a high-density navigation surface for month/day context while keeping the board data contract
   from `YearCalendarViewModel`.
 - `YearCalendarViewModel::focusToday()` aligns the displayed year with the active calendar system.
+- Month-title taps now request the matching month overlay using that card's first in-month date as the selected date.
+- Day taps now request the month overlay for the tapped date, so adjacent overflow days route into their real month.
 
 ## Tests
 
@@ -44,6 +47,9 @@ the year view acts as a high-level event/task heatmap.
 - Regression checklist:
     - Year calendar view must not render a calendar-system segmented control on mobile.
     - Header prev/today/next actions must continue to work after removing the selector row.
+    - Tapping a month title must switch the content surface from year view to the corresponding month view.
+    - Tapping an in-month or adjacent-month day must open the month view for that tapped date and preserve its selected
+      ISO date.
 
 ## Collaborators
 - `src/app/calendar/CalendarBoardStore.hpp/.cpp`

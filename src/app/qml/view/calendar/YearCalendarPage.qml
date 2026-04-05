@@ -32,7 +32,34 @@ Rectangle {
     property var yearCalendarViewModel: null
 
     signal viewHookRequested(string reason)
+    signal monthCalendarOpenRequested(int year, int month, string selectedDateIso)
 
+    function firstCurrentMonthDayModel(monthModel) {
+        const dayModels = monthModel && monthModel.days ? monthModel.days : [];
+        for (let index = 0; index < dayModels.length; ++index) {
+            const dayModel = dayModels[index];
+            if (dayModel && dayModel.inCurrentMonth === true && dayModel.dateIso !== undefined)
+                return dayModel;
+        }
+        return null;
+    }
+    function requestOpenMonthFromDayModel(dayModel, reason) {
+        if (!dayModel)
+            return;
+        const targetYear = Number(dayModel.year);
+        const targetMonth = Number(dayModel.month);
+        const selectedDateIso = dayModel.dateIso === undefined || dayModel.dateIso === null ? "" : String(dayModel.dateIso).trim();
+        if (!isFinite(targetYear) || !isFinite(targetMonth) || selectedDateIso.length === 0)
+            return;
+        yearCalendarPage.requestViewHook(reason !== undefined ? reason : "select-month-date");
+        yearCalendarPage.monthCalendarOpenRequested(Math.floor(targetYear), Math.floor(targetMonth), selectedDateIso);
+    }
+    function requestOpenMonthFromMonthModel(monthModel, reason) {
+        const firstCurrentMonthDay = yearCalendarPage.firstCurrentMonthDayModel(monthModel);
+        if (!firstCurrentMonthDay)
+            return;
+        yearCalendarPage.requestOpenMonthFromDayModel(firstCurrentMonthDay, reason !== undefined ? reason : "select-month");
+    }
     function requestViewHook(reason) {
         var hookReason = reason !== undefined ? String(reason) : "manual";
         if (calendarVm && calendarVm.requestYearView)
@@ -195,6 +222,12 @@ Rectangle {
                                 font.pixelSize: yearCalendarPage.monthTitlePixelSize
                                 font.weight: Font.Medium
                                 text: monthCard.monthModel && monthCard.monthModel.monthLabel ? String(monthCard.monthModel.monthLabel) : "Month"
+
+                                TapHandler {
+                                    gesturePolicy: TapHandler.DragThreshold
+
+                                    onTapped: yearCalendarPage.requestOpenMonthFromMonthModel(monthCard.monthModel, "select-month")
+                                }
                             }
                             Grid {
                                 id: weekdayGrid
@@ -236,6 +269,9 @@ Rectangle {
 
                                         required property var modelData
                                         readonly property var dayModel: dayCell.modelData
+                                        readonly property bool hasValidDate: dayCell.dayModel
+                                                                             && dayCell.dayModel.dateIso !== undefined
+                                                                             && String(dayCell.dayModel.dateIso).trim().length > 0
                                         readonly property bool isToday: dayModel && dayModel.isToday === true
                                         height: monthCard.dayCellHeight
                                         width: monthCard.dayCellWidth
@@ -254,6 +290,12 @@ Rectangle {
                                             font.pixelSize: yearCalendarPage.monthDayPixelSize
                                             font.weight: Font.Medium
                                             text: dayCell.dayModel && dayCell.dayModel.day !== undefined ? String(dayCell.dayModel.day) : ""
+                                        }
+                                        TapHandler {
+                                            enabled: dayCell.hasValidDate
+                                            gesturePolicy: TapHandler.DragThreshold
+
+                                            onTapped: yearCalendarPage.requestOpenMonthFromDayModel(dayCell.dayModel, "select-month-date")
                                         }
                                     }
                                 }

@@ -34,8 +34,12 @@ Rectangle {
 
     signal clicked
 
-    border.color: monthCalendarDayCell.today ? LV.Theme.strokeSoft : "transparent"
-    border.width: monthCalendarDayCell.today ? Math.max(1, LV.Theme.strokeThin) : 0
+    border.color: monthCalendarDayCell.selected
+                  ? LV.Theme.accent
+                  : (monthCalendarDayCell.today ? LV.Theme.strokeSoft : "transparent")
+    border.width: monthCalendarDayCell.selected || monthCalendarDayCell.today
+                  ? Math.max(1, LV.Theme.strokeThin)
+                  : 0
     clip: true
     color: LV.Theme.panelBackground04
     opacity: monthCalendarDayCell.disable ? 0.5 : 1.0

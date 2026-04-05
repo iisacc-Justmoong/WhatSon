@@ -9,6 +9,7 @@
 - Render the weekday header band and the 7-column day grid for one month projection.
 - Trim trailing all-adjacent-month rows from a 42-cell projection before computing visible row count.
 - Resolve per-day entry chips through `calendarVm.entriesForDate(...)`.
+- Forward `selectedDateIso` into each `MonthCalendarDayCell` so the chosen date can render its accent-border state.
 - Forward `dayModel.isToday` into each `MonthCalendarDayCell` so the current date can render its soft outline state.
 - Emit `dateSelected(dateIso)` when a day cell is tapped.
 
@@ -37,4 +38,5 @@
     - A 42-cell projection must collapse trailing out-of-month rows down to a 5-row grid when the sixth row is empty of
       current-month dates.
     - Day taps must continue to resolve entry chips and emit the selected ISO date.
+    - The visible cell for `selectedDateIso` must render the selected accent border after selection changes.
     - The visible cell for today's ISO date must keep its soft border when month projections are rebuilt.

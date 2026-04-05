@@ -741,6 +741,13 @@ LV.ApplicationWindow {
                     }
                     onAgendaOverlayDismissRequested: applicationWindow.agendaOverlayVisible = false
                     onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
+                    onMonthCalendarOverlayOpenRequested: {
+                        applicationWindow.agendaOverlayVisible = false;
+                        applicationWindow.dayCalendarOverlayVisible = false;
+                        applicationWindow.weekCalendarOverlayVisible = false;
+                        applicationWindow.monthCalendarOverlayVisible = true;
+                        applicationWindow.yearCalendarOverlayVisible = false;
+                    }
                     onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
                     onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
                     onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
@@ -810,6 +817,13 @@ LV.ApplicationWindow {
             }
             onAgendaOverlayDismissRequested: applicationWindow.agendaOverlayVisible = false
             onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
+            onMonthCalendarOverlayOpenRequested: {
+                applicationWindow.agendaOverlayVisible = false;
+                applicationWindow.dayCalendarOverlayVisible = false;
+                applicationWindow.weekCalendarOverlayVisible = false;
+                applicationWindow.monthCalendarOverlayVisible = true;
+                applicationWindow.yearCalendarOverlayVisible = false;
+            }
             onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
             onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
             onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false

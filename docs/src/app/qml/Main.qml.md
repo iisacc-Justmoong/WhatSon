@@ -22,6 +22,8 @@
   platform branch.
 - Own Agenda/day/week/month/year overlay visibility flags and keep them mutually exclusive across desktop and mobile
   route handlers.
+- Accept `monthCalendarOverlayOpenRequested` from both desktop and mobile content shells so a year-calendar selection
+  can swap overlays from year view to month view at the root owner without duplicating visibility state below.
 
 ## ViewModel Ownership
 The important architectural work in this file is not the layout math. It is the ownership hand-off.
@@ -57,6 +59,8 @@ The file keeps both desktop and mobile layout branches alive.
   panel navigation cannot fall into global note creation.
 - Desktop `BodyLayout.noteActivated(...)` now clears all Agenda/calendar visibility flags in `Main.qml`, so explicit note
   activation always restores the editor surface even when calendar mode was previously opened.
+- Desktop `BodyLayout` and mobile `MobileHierarchyPage` now also forward `monthCalendarOverlayOpenRequested`, which
+  closes agenda/day/week/year overlays and shows the month overlay in one root-owned transition.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
 - `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
   startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.

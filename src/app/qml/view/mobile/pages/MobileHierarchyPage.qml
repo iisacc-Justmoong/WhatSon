@@ -87,6 +87,7 @@ Item {
     signal dayCalendarRequested
     signal dayCalendarOverlayDismissRequested
     signal monthCalendarRequested
+    signal monthCalendarOverlayOpenRequested
     signal monthCalendarOverlayDismissRequested
     signal viewHookRequested
     signal weekCalendarRequested
@@ -780,6 +781,7 @@ Item {
             onViewHookRequested: mobileHierarchyPage.requestViewHook()
             onAgendaOverlayCloseRequested: mobileHierarchyPage.agendaOverlayDismissRequested()
             onDayCalendarOverlayCloseRequested: mobileHierarchyPage.dayCalendarOverlayDismissRequested()
+            onMonthCalendarOverlayOpenRequested: mobileHierarchyPage.monthCalendarOverlayOpenRequested()
             onMonthCalendarOverlayCloseRequested: mobileHierarchyPage.monthCalendarOverlayDismissRequested()
             onWeekCalendarOverlayCloseRequested: mobileHierarchyPage.weekCalendarOverlayDismissRequested()
             onYearCalendarOverlayCloseRequested: mobileHierarchyPage.yearCalendarOverlayDismissRequested()
