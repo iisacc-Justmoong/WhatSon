@@ -11,8 +11,6 @@ Item {
     property color compactCanvasColor: LV.Theme.panelBackground01
     property bool compactMode: false
     property color contentsDisplayColor: "transparent"
-    property color drawerColor: "transparent"
-    property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     property var editorViewModeViewModel: null
     readonly property int effectiveMinSidebarWidth: Math.max(minSidebarWidth, LV.Theme.gap20 * 7 + LV.Theme.gap12)
     property color gutterColor: "transparent"
@@ -22,8 +20,6 @@ Item {
     property int listViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property bool listVisible: hStack.listViewWidth > 0
     property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
-    property int minDisplayHeight: LV.Theme.gap20 * 8
-    property int minDrawerHeight: LV.Theme.gap20 * 6
     property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     property int minRightPanelWidth: 145
     property int minSidebarWidth: LV.Theme.gap20 * 7 + LV.Theme.gap12
@@ -53,7 +49,6 @@ Item {
     property bool yearCalendarOverlayVisible: false
     property var yearCalendarViewModel: null
 
-    signal drawerHeightDragRequested(int value)
     signal listViewWidthDragRequested(int value)
     signal noteActivated(int index, string noteId)
     signal rightPanelWidthDragRequested(int value)
@@ -202,18 +197,12 @@ Item {
                 Layout.minimumWidth: hStack.minContentWidth
                 contentViewModel: hStack.activeHierarchyViewModel
                 displayColor: hStack.contentsDisplayColor
-                drawerColor: hStack.drawerColor
-                drawerHeight: hStack.drawerHeight
                 editorViewModeViewModel: hStack.editorViewModeViewModel
                 gutterColor: hStack.gutterColor
                 isMobilePlatform: hStack.isMobilePlatform
                 libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
-                minDisplayHeight: hStack.minDisplayHeight
-                minDrawerHeight: hStack.minDrawerHeight
                 noteListModel: hStack.activeNoteListModel
                 resourcesImportViewModel: hStack.resourcesImportViewModel
-                splitterColor: hStack.splitterColor
-                splitterThickness: hStack.splitterThickness
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarViewModel: hStack.dayCalendarViewModel
                 agendaOverlayVisible: hStack.agendaOverlayVisible
@@ -225,9 +214,6 @@ Item {
                 yearCalendarOverlayVisible: hStack.yearCalendarOverlayVisible
                 yearCalendarViewModel: hStack.yearCalendarViewModel
 
-                onDrawerHeightDragRequested: function (value) {
-                    hStack.drawerHeightDragRequested(value);
-                }
                 onDayCalendarOverlayCloseRequested: hStack.dayCalendarOverlayDismissRequested()
                 onAgendaOverlayCloseRequested: hStack.agendaOverlayDismissRequested()
                 onMonthCalendarOverlayCloseRequested: hStack.monthCalendarOverlayDismissRequested()

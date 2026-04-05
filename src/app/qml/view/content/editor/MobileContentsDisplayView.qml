@@ -8,7 +8,6 @@ import LVRS 1.0 as LV
 Item {
     id: contentsView
 
-    property string activeDrawerMode: contentsView.drawerModeQuickNote
     readonly property int activeEditorViewModeValue: {
         const viewModeModel = contentsView.resolvedEditorViewModeViewModel;
         if (viewModeModel && viewModeModel.activeViewMode !== undefined) {
@@ -27,11 +26,6 @@ Item {
     readonly property color decorativeMarkerYellow: "#FFF567"
     readonly property int desktopEditorFontPixelSize: 12
     property color displayColor: "transparent"
-    property color drawerColor: "transparent"
-    property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
-    readonly property string drawerModeQuickNote: "QuickNote"
-    property string drawerQuickNoteText: ""
-    property bool drawerVisible: true
     readonly property int editorBottomInset: 16
     property alias editorBoundNoteId: editorSession.editorBoundNoteId
     readonly property real editorContentOffsetY: {
@@ -131,8 +125,6 @@ Item {
     property int logicalLineDocumentYCacheLineCount: 0
     property int logicalLineDocumentYCacheRevision: -1
     readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
-    property int minDisplayHeight: LV.Theme.gap20 * 8
-    property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - 16)
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
@@ -241,9 +233,6 @@ Item {
     readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
     readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
     readonly property bool showPrintModeActive: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue
-    property color splitterColor: "transparent"
-    property int splitterHandleThickness: LV.Theme.gap12
-    property int splitterThickness: LV.Theme.gapNone
     property alias syncingEditorTextFromModel: editorSession.syncingEditorTextFromModel
     readonly property real textOriginY: {
         return contentsView.editorDocumentStartY + contentsView.editorContentOffsetY;
@@ -256,7 +245,6 @@ Item {
     ]
     readonly property int visibleNoteCount: selectionBridge.visibleNoteCount
 
-    signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal viewHookRequested
 
@@ -374,10 +362,6 @@ Item {
         if (contentsView.resourcesImportViewModel.canImportUrls === undefined)
             return false;
         return !!contentsView.resourcesImportViewModel.canImportUrls(urls);
-    }
-    function clampDrawerHeight(value) {
-        var maxDrawer = Math.max(contentsView.minDrawerHeight, contentsView.height - contentsView.minDisplayHeight - contentsView.splitterThickness);
-        return Math.max(contentsView.minDrawerHeight, Math.min(maxDrawer, value));
     }
     function clampUnit(value) {
         return Math.max(0, Math.min(1, Number(value) || 0));
@@ -1108,86 +1092,74 @@ Item {
 
         target: contentsView.editorFlickable
     }
-    ColumnLayout {
-        id: drawerView
-
-        readonly property real availableDisplayHeight: Math.max(contentsView.minDisplayHeight, (Number(contentsView.height) || 0) - drawerView.drawerReservedHeight)
-        readonly property real drawerReservedHeight: contentsView.drawerVisible ? drawerView.effectiveDrawerHeight + contentsView.splitterThickness : 0
-        readonly property real effectiveDrawerHeight: contentsView.drawerVisible ? contentsView.clampDrawerHeight(contentsView.drawerHeight) : 0
+    Rectangle {
+        id: contentsDisplayView
 
         anchors.fill: parent
-        spacing: LV.Theme.gapNone
+        color: contentsView.displayColor
 
-        Rectangle {
-            id: contentsDisplayView
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
+            anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
+            spacing: 0
+            visible: contentsView.hasSelectedNote
 
-            Layout.fillWidth: true
-            Layout.minimumHeight: contentsView.minDisplayHeight
-            Layout.preferredHeight: drawerView.availableDisplayHeight
-            color: contentsView.displayColor
+            ContentsGutterLayer {
+                id: gutterLayer
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: contentsView.effectiveFrameHorizontalInset
-                anchors.rightMargin: contentsView.effectiveFrameHorizontalInset
-                spacing: 0
-                visible: contentsView.hasSelectedNote
-
-                ContentsGutterLayer {
-                    id: gutterLayer
-
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: contentsView.effectiveGutterWidth
-                    activeLineNumberColor: contentsView.activeLineNumberColor
-                    currentCursorLineNumber: contentsView.currentCursorLineNumber
-                    editorLineHeight: contentsView.editorLineHeight
-                    effectiveGutterMarkers: contentsView.effectiveGutterMarkers
-                    gutterColor: contentsView.gutterColor
-                    gutterCommentMarkerOffset: contentsView.gutterCommentMarkerOffset
-                    gutterCommentRailLeft: contentsView.gutterCommentRailLeft
-                    gutterIconRailLeft: contentsView.gutterIconRailLeft
-                    gutterIconRailWidth: contentsView.gutterIconRailWidth
-                    lineNumberColor: contentsView.lineNumberColor
-                    lineNumberColumnLeft: contentsView.effectiveLineNumberColumnLeft
-                    lineNumberColumnTextWidth: contentsView.effectiveLineNumberColumnTextWidth
-                    lineYResolver: function (lineNumber) {
-                        return contentsView.lineY(lineNumber);
-                    }
-                    markerHeightResolver: function (markerSpec) {
-                        return contentsView.markerHeight(markerSpec);
-                    }
-                    markerYResolver: function (markerSpec) {
-                        return contentsView.markerY(markerSpec);
-                    }
-                    visible: contentsView.showEditorGutter
-                    visibleLineNumbersModel: contentsView.visibleGutterLineEntries
+                Layout.fillHeight: true
+                Layout.preferredWidth: contentsView.effectiveGutterWidth
+                activeLineNumberColor: contentsView.activeLineNumberColor
+                currentCursorLineNumber: contentsView.currentCursorLineNumber
+                editorLineHeight: contentsView.editorLineHeight
+                effectiveGutterMarkers: contentsView.effectiveGutterMarkers
+                gutterColor: contentsView.gutterColor
+                gutterCommentMarkerOffset: contentsView.gutterCommentMarkerOffset
+                gutterCommentRailLeft: contentsView.gutterCommentRailLeft
+                gutterIconRailLeft: contentsView.gutterIconRailLeft
+                gutterIconRailWidth: contentsView.gutterIconRailWidth
+                lineNumberColor: contentsView.lineNumberColor
+                lineNumberColumnLeft: contentsView.effectiveLineNumberColumnLeft
+                lineNumberColumnTextWidth: contentsView.effectiveLineNumberColumnTextWidth
+                lineYResolver: function (lineNumber) {
+                    return contentsView.lineY(lineNumber);
                 }
-                Item {
-                    id: editorViewport
+                markerHeightResolver: function (markerSpec) {
+                    return contentsView.markerHeight(markerSpec);
+                }
+                markerYResolver: function (markerSpec) {
+                    return contentsView.markerY(markerSpec);
+                }
+                visible: contentsView.showEditorGutter
+                visibleLineNumbersModel: contentsView.visibleGutterLineEntries
+            }
+            Item {
+                id: editorViewport
 
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    Layout.minimumHeight: contentsView.minEditorHeight
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.minimumHeight: contentsView.minEditorHeight
+                clip: true
+
+                Flickable {
+                    id: printDocumentViewport
+
+                    anchors.fill: parent
+                    boundsBehavior: Flickable.StopAtBounds
                     clip: true
+                    contentHeight: Math.max(height, printDocumentSurface.height)
+                    contentWidth: width
+                    flickableDirection: Flickable.VerticalFlick
+                    interactive: contentsView.showPrintEditorLayout && contentHeight > height
+                    visible: contentsView.showPrintEditorLayout
+                    z: 0
 
-                    Flickable {
-                        id: printDocumentViewport
+                    Item {
+                        id: printDocumentSurface
 
-                        anchors.fill: parent
-                        boundsBehavior: Flickable.StopAtBounds
-                        clip: true
-                        contentHeight: Math.max(height, printDocumentSurface.height)
-                        contentWidth: width
-                        flickableDirection: Flickable.VerticalFlick
-                        interactive: contentsView.showPrintEditorLayout && contentHeight > height
-                        visible: contentsView.showPrintEditorLayout
-                        z: 0
-
-                        Item {
-                            id: printDocumentSurface
-
-                            height: contentsView.printDocumentSurfaceHeight
-                            width: printDocumentViewport.width
+                        height: contentsView.printDocumentSurfaceHeight
+                        width: printDocumentViewport.width
 
                             Rectangle {
                                 id: printEditorCanvas
@@ -1662,109 +1634,40 @@ Item {
                                 }
                             }
                         }
-                    }
-                }
-                ContentsMinimapLayer {
-                    id: minimapLayer
-
-                    Layout.fillHeight: true
-                    Layout.preferredWidth: contentsView.minimapOuterWidth
-                    editorFlickable: contentsView.editorFlickable
-                    minimapBarWidthResolver: function (characterCount) {
-                        return contentsView.minimapBarWidth(characterCount);
-                    }
-                    minimapCurrentLineColor: contentsView.minimapCurrentLineColor
-                    minimapCurrentLineHeight: contentsView.minimapResolvedCurrentLineHeight
-                    minimapCurrentLineWidth: contentsView.minimapResolvedCurrentLineWidth
-                    minimapCurrentLineY: contentsView.minimapResolvedCurrentLineY
-                    minimapLineColor: contentsView.minimapLineColor
-                    minimapScrollable: contentsView.minimapScrollable
-                    minimapSilhouetteHeight: contentsView.minimapResolvedSilhouetteHeight
-                    minimapTrackInset: contentsView.minimapTrackInset
-                    minimapTrackWidth: contentsView.minimapTrackWidth
-                    minimapViewportFillColor: contentsView.minimapViewportFillColor
-                    minimapViewportHeight: contentsView.minimapResolvedViewportHeight
-                    minimapViewportY: contentsView.minimapResolvedViewportY
-                    minimapVisualRowPaintHeightResolver: function (row) {
-                        return contentsView.minimapVisualRowPaintHeight(row);
-                    }
-                    minimapVisualRowPaintYResolver: function (row) {
-                        return contentsView.minimapVisualRowPaintY(row);
-                    }
-                    minimapVisualRows: contentsView.minimapVisualRows
-                    scrollToMinimapPositionHandler: function (localY) {
-                        contentsView.scrollEditorViewportToMinimapPosition(localY);
-                    }
-                    visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
                 }
             }
-        }
-        ContentsDrawerSplitter {
-            id: drawerSplitter
+            ContentsMinimapLayer {
+                id: minimapLayer
 
-            Layout.fillWidth: true
-            Layout.preferredHeight: contentsView.splitterThickness
-            clampDrawerHeightResolver: function (value) {
-                return contentsView.clampDrawerHeight(value);
-            }
-            drawerHeight: contentsView.drawerHeight
-            splitterColor: contentsView.splitterColor
-            splitterHandleThickness: contentsView.splitterHandleThickness
-            visible: contentsView.drawerVisible
-
-            onDrawerHeightDragRequested: function (value) {
-                contentsView.drawerHeightDragRequested(value);
-            }
-        }
-        Rectangle {
-            id: drawer
-
-            Layout.fillWidth: true
-            Layout.preferredHeight: drawerView.effectiveDrawerHeight
-            clip: true
-            color: contentsView.drawerColor
-            visible: contentsView.drawerVisible
-
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: LV.Theme.gapNone
-
-                DrawerMenuBar {
-                    Layout.fillWidth: true
-                    activeDrawerMode: contentsView.activeDrawerMode
-
-                    onDrawerModeRequested: function (modeName) {
-                        if (modeName !== contentsView.drawerModeQuickNote)
-                            return;
-                        if (contentsView.activeDrawerMode !== modeName)
-                            contentsView.activeDrawerMode = modeName;
-                    }
-                    onViewHookRequested: function (reason) {
-                        contentsView.requestViewHook(reason);
-                    }
+                Layout.fillHeight: true
+                Layout.preferredWidth: contentsView.minimapOuterWidth
+                editorFlickable: contentsView.editorFlickable
+                minimapBarWidthResolver: function (characterCount) {
+                    return contentsView.minimapBarWidth(characterCount);
                 }
-                DrawerContents {
-                    id: drawerContents
-
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    activeDrawerMode: contentsView.activeDrawerMode
-                    quickNoteText: contentsView.drawerQuickNoteText
-
-                    onQuickNoteTextEdited: function (text) {
-                        contentsView.drawerQuickNoteText = text;
-                    }
-                    onViewHookRequested: function (reason) {
-                        contentsView.requestViewHook(reason);
-                    }
+                minimapCurrentLineColor: contentsView.minimapCurrentLineColor
+                minimapCurrentLineHeight: contentsView.minimapResolvedCurrentLineHeight
+                minimapCurrentLineWidth: contentsView.minimapResolvedCurrentLineWidth
+                minimapCurrentLineY: contentsView.minimapResolvedCurrentLineY
+                minimapLineColor: contentsView.minimapLineColor
+                minimapScrollable: contentsView.minimapScrollable
+                minimapSilhouetteHeight: contentsView.minimapResolvedSilhouetteHeight
+                minimapTrackInset: contentsView.minimapTrackInset
+                minimapTrackWidth: contentsView.minimapTrackWidth
+                minimapViewportFillColor: contentsView.minimapViewportFillColor
+                minimapViewportHeight: contentsView.minimapResolvedViewportHeight
+                minimapViewportY: contentsView.minimapResolvedViewportY
+                minimapVisualRowPaintHeightResolver: function (row) {
+                    return contentsView.minimapVisualRowPaintHeight(row);
                 }
-                DrawerToolbar {
-                    Layout.fillWidth: true
-
-                    onViewHookRequested: function (reason) {
-                        contentsView.requestViewHook(reason);
-                    }
+                minimapVisualRowPaintYResolver: function (row) {
+                    return contentsView.minimapVisualRowPaintY(row);
                 }
+                minimapVisualRows: contentsView.minimapVisualRows
+                scrollToMinimapPositionHandler: function (localY) {
+                    contentsView.scrollEditorViewportToMinimapPosition(localY);
+                }
+                visible: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
             }
         }
     }

@@ -7,14 +7,13 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 13
+- Child files: 9
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
 - `ContentsDisplayView.qml`
-- `ContentsDrawerSplitter.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
 - `ContentsEditorTypingController.qml`
@@ -23,17 +22,13 @@
 - `ContentsMinimapLayer.qml`
 - `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
-- `DrawerContents.qml`
-- `DrawerMenuBar.qml`
-- `DrawerToolbar.qml`
 
 ## Current Notes
 
-- The lower editor drawer is now decomposed into three dedicated sibling QML files that mirror the Figma frames:
-  `DrawerMenuBar.qml` (`155:4565`), `DrawerContents.qml` (`174:6352`), and `DrawerToolbar.qml` (`155:4570`).
 - `ContentsDisplayView.qml` is now the desktop-only editor surface.
 - `MobileContentsDisplayView.qml` is the duplicated mobile-only editor surface, so gutter/font behavior is no longer
   gated through one shared desktop/mobile file.
+- The editor, gutter, minimap, and resource overlays now fill the entire `ContentsView` slot.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
 - Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list

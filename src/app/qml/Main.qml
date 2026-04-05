@@ -13,7 +13,6 @@ LV.ApplicationWindow {
     id: applicationWindow
 
     readonly property int adaptiveStatusBarHeight: adaptiveMobileLayout ? 0 : statusBarHeight
-    readonly property int baseDrawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     readonly property int baseListViewWidth: LV.Theme.inputWidthMd - LV.Theme.gap8
     readonly property int baseRightPanelWidth: 194
     readonly property int baseSidebarWidth: hierarchyToolbarWidth
@@ -31,7 +30,6 @@ LV.ApplicationWindow {
                                                                                       + (hideListView ? 0 : 1)
                                                                                       + 1
                                                                                       + (hideRightPanel ? 0 : 1)) - 1)
-    readonly property int drawerHeight: Math.max(minDrawerHeight, Math.min(preferredDrawerHeight, Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness)))
     readonly property bool hideListView: false
     property bool hideRightPanel: false
     property bool hideSidebar: false
@@ -61,8 +59,6 @@ LV.ApplicationWindow {
     }
     readonly property int listViewWidth: hideListView ? 0 : Math.max(minListViewWidth, preferredListViewWidth)
     readonly property int minContentWidth: LV.Theme.dialogMaxWidth - LV.Theme.gap20 * 2
-    readonly property int minDisplayHeight: LV.Theme.gap20 * 8
-    readonly property int minDrawerHeight: LV.Theme.gap20 * 6
     readonly property int minListViewWidth: LV.Theme.inputMinWidth - LV.Theme.gap24 * 2
     readonly property int minRightPanelWidth: 145
     readonly property var rootNavigationModeViewModel: {
@@ -94,7 +90,6 @@ LV.ApplicationWindow {
     property var onboardingRouteBootstrapController: null
     readonly property int onboardingMinHeight: 420
     readonly property int onboardingMinWidth: 620
-    property int preferredDrawerHeight: baseDrawerHeight
     property int preferredListViewWidth: baseListViewWidth
     property int preferredRightPanelWidth: baseRightPanelWidth
     property int preferredSidebarWidth: baseSidebarWidth
@@ -199,9 +194,6 @@ LV.ApplicationWindow {
         preferredSidebarWidth = Math.max(minSidebarWidth, preferredSidebarWidth);
         preferredListViewWidth = Math.max(minListViewWidth, preferredListViewWidth);
         preferredRightPanelWidth = Math.max(minRightPanelWidth, preferredRightPanelWidth);
-
-        var maxDrawerHeight = Math.max(minDrawerHeight, bodyHeight - minDisplayHeight - bodySplitterThickness);
-        preferredDrawerHeight = Math.max(minDrawerHeight, Math.min(maxDrawerHeight, preferredDrawerHeight));
     }
     function nativeMenuPlaceholderText() {
         return " ";
@@ -693,16 +685,12 @@ LV.ApplicationWindow {
                     compactCanvasColor: applicationWindow.canvasColor
                     compactMode: false
                     contentsDisplayColor: applicationWindow.desktopPanelSurfaceColor
-                    drawerColor: applicationWindow.desktopPanelSurfaceColor
-                    drawerHeight: applicationWindow.drawerHeight
                     editorViewModeViewModel: applicationWindow.rootEditorViewModeViewModel
                     isMobilePlatform: applicationWindow.isMobilePlatform
                     listViewColor: applicationWindow.desktopPanelSurfaceColor
                     listViewWidth: applicationWindow.listViewWidth
                     libraryHierarchyViewModel: applicationWindow.rootLibraryHierarchyViewModel
                     minContentWidth: applicationWindow.minContentWidth
-                    minDisplayHeight: applicationWindow.minDisplayHeight
-                    minDrawerHeight: applicationWindow.minDrawerHeight
                     minListViewWidth: applicationWindow.minListViewWidth
                     minRightPanelWidth: applicationWindow.minRightPanelWidth
                     minSidebarWidth: applicationWindow.minSidebarWidth
@@ -727,10 +715,6 @@ LV.ApplicationWindow {
                     yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
                     yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
 
-                    onDrawerHeightDragRequested: function (value) {
-                        if (value !== applicationWindow.preferredDrawerHeight)
-                            applicationWindow.preferredDrawerHeight = value;
-                    }
                     onNoteActivated: function (index, noteId) {
                         const normalizedNoteId = noteId === undefined || noteId === null
                             ? ""

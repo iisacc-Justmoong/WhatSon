@@ -6,14 +6,13 @@
 
 ## Scope
 - Mirrored source directory: `src/app/viewmodel`
-- Child directories: 11
+- Child directories: 10
 - Child files: 0
 
 ## Child Directories
 - `calendar`
 - `content`
 - `detailPanel`
-- `drawer`
 - `hierarchy`
 - `listMenu`
 - `navigationbar`

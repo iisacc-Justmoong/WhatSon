@@ -757,7 +757,6 @@ Item {
         PanelView.ContentViewLayout {
             contentViewModel: mobileHierarchyPage.activeContentViewModel
             displayColor: mobileHierarchyPage.canvasColor
-            drawerVisible: false
             editorViewModeViewModel: mobileHierarchyPage.editorViewModeViewModel
             frameHorizontalInsetOverride: LV.Theme.gapNone
             isMobilePlatform: Window.window && Window.window.isMobilePlatform !== undefined

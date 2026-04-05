@@ -209,7 +209,7 @@ WhatSon is an LVRS-based Qt Quick application.
   silently propagates `undefined`, and that can blank the gutter while leaving the rest of the editor visible.
 - The same rule now applies to MVVM-fed bindings: views should not scatter direct `viewModel.foo !== undefined` checks
   across delegates. Normalize the incoming model/view-model once, then bind children only to the resolved contract.
-- The desktop editor panel, gutter fill, and lower drawer now stay transparent so the same root
+- The desktop editor panel and gutter fill now stay transparent so the same root
   `LV.ApplicationWindow` `panelBackground01` canvas shows through, while the gutter still keeps `#4E5157` inactive
   caption line numbers and `#9DA0A8` active line numbers from the Figma frame.
 - The line-number text is right-aligned against the same `16px` inset used by the editor body, so the gutter numbers
@@ -296,7 +296,7 @@ WhatSon is an LVRS-based Qt Quick application.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
   through the whole remaining editor height when the cursor sits on the last logical line.
 - `ContentsDisplayView.qml` no longer reintroduces a second desktop panel fill inside the editor stack: the editor
-  surface, gutter fill, and lower drawer stay transparent and let the root `LV.ApplicationWindow` canvas read through
+  surface and gutter fill stay transparent and let the root `LV.ApplicationWindow` canvas read through
   the whole desktop content column.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
@@ -693,7 +693,7 @@ for hub/note hierarchy payloads.
   binds the same `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used on
   desktop, so note-card taps open the real editor for the selected note instead of a mobile-only text surface.
 - The mobile editor route only overrides layout knobs that differ from desktop Figma: it keeps the shared LVRS editor
-  session/persistence wiring, hides the minimap and drawer, keeps the same `16px` top inset as desktop, removes the
+  session/persistence wiring, hides the minimap, keeps the same `16px` top inset as desktop, removes the
   frame side inset, clears the gutter fill back to transparent, and narrows the gutter to `40px` with a `22px`
   line-number column.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list

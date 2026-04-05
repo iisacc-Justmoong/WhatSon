@@ -1,37 +1,16 @@
 # `src/app/qml/view/panels/BodyLayout.qml`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/qml/view/panels/BodyLayout.qml`
-- Source kind: QML view/component
-- File name: `BodyLayout.qml`
-- Approximate line count: 233
+`BodyLayout.qml` owns the desktop body shell that composes the hierarchy sidebar, list bar, content surface, and
+right detail panel.
 
-## QML Surface Snapshot
-- Root type: `Item`
+## Signals
 
-### Object IDs
-- `hStack`
-- `sideBar`
-- `sideBarSplitter`
-- `listBar`
-- `listSplitter`
-- `contentsView`
-- `rightSplitter`
-- `rightPanel`
-
-### Required Properties
-- `sidebarHierarchyViewModel`
-
-### Signals
-- `drawerHeightDragRequested`
-- `listViewWidthDragRequested`
-- `noteActivated`
-- `rightPanelWidthDragRequested`
-- `sidebarWidthDragRequested`
+- `listViewWidthDragRequested(int value)`
+- `noteActivated(int index, string noteId)`
+- `rightPanelWidthDragRequested(int value)`
+- `sidebarWidthDragRequested(int value)`
 - `viewHookRequested`
 - `agendaOverlayDismissRequested`
 - `dayCalendarOverlayDismissRequested`
@@ -39,31 +18,19 @@
 - `weekCalendarOverlayDismissRequested`
 - `yearCalendarOverlayDismissRequested`
 
-## Route Bridging Notes
+## Current Routing Notes
+
 - `ListBarLayout.noteActivated(...)` is re-emitted as `BodyLayout.noteActivated(...)`.
-- Root containers (for example `Main.qml`) can consume this bridge signal to reset calendar-route visibility and
-  guarantee editor resurfacing when a note is explicitly activated.
-- Agenda/day/week/month/year overlay visibility and viewmodel handles are forwarded to `ContentViewLayout` so panel-level
-  routing remains centralized in the root shell.
-- `resourcesImportViewModel` is accepted on the desktop shell and forwarded to `ContentViewLayout`, so file drops on
-  the note editor reuse the same `.wsresource` import path as menu-based imports.
-- `editorViewModeViewModel` is accepted on the desktop shell and forwarded to `ContentViewLayout`, so editor render
-  modes (`Plain/Page/Print/Web/Presentation`) stay consistent between navigation controls and the content surface.
-- `isMobilePlatform` is forwarded from the root LVRS window into `ContentViewLayout`, even on the desktop shell, so
-  nested editor components consume the canonical LVRS platform detector instead of recomputing mobile mode locally.
+- Calendar overlay visibility and viewmodel handles are forwarded to `ContentViewLayout.qml`.
+- `resourcesImportViewModel`, `editorViewModeViewModel`, and `isMobilePlatform` are forwarded to the central content
+  surface.
+- The contents surface now fills the center panel directly without an additional bottom-partition contract.
+- Sidebar, list, and right-panel splitters continue to own the desktop width-resize flow.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
+## Tests
 
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - The center content surface must still receive the active hierarchy viewmodel and note-list model.
+  - Sidebar/list/right-panel splitters must keep their existing resize behavior.
+  - Calendar dismiss routing must still return the body shell to the editor surface.

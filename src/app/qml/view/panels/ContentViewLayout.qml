@@ -10,9 +10,6 @@ Item {
 
     property var contentViewModel: null
     property color displayColor: "transparent"
-    property bool drawerVisible: true
-    property color drawerColor: "transparent"
-    property int drawerHeight: LV.Theme.controlHeightMd * 7 + LV.Theme.gap3
     property var editorViewModeViewModel: null
     property int editorTopInsetOverride: -1
     property int frameHorizontalInsetOverride: -1
@@ -22,17 +19,12 @@ Item {
     property var libraryHierarchyViewModel: null
     property int lineNumberColumnLeftOverride: -1
     property int lineNumberColumnTextWidthOverride: -1
-    property int minDisplayHeight: LV.Theme.gap20 * 8
-    property int minDrawerHeight: LV.Theme.gap20 * 6
     property bool minimapVisible: true
     property var noteListModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("ContentViewLayout") : null
     property var resourcesImportViewModel: null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
-    property color splitterColor: "transparent"
-    property int splitterHandleThickness: LV.Theme.gap12
-    property int splitterThickness: LV.Theme.gapNone
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
     property bool agendaOverlayVisible: false
@@ -65,7 +57,6 @@ Item {
                                                        && contentViewLayout.yearCalendarOverlayVisible
     readonly property int activeSurfaceIndex: contentViewLayout.calendarOverlayVisible ? 1 : 0
 
-    signal drawerHeightDragRequested(int value)
     signal editorTextEdited(string text)
     signal dayCalendarOverlayCloseRequested
     signal agendaOverlayCloseRequested
@@ -166,9 +157,6 @@ Item {
             anchors.fill: parent
             contentViewModel: contentViewLayout.resolvedContentViewModel
             displayColor: contentViewLayout.displayColor
-            drawerVisible: contentViewLayout.drawerVisible
-            drawerColor: contentViewLayout.drawerColor
-            drawerHeight: contentViewLayout.drawerHeight
             editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
             enabled: contentViewLayout.visible
             editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
@@ -178,19 +166,11 @@ Item {
             libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
             lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
             lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
-            minDisplayHeight: contentViewLayout.minDisplayHeight
-            minDrawerHeight: contentViewLayout.minDrawerHeight
             minimapVisible: contentViewLayout.minimapVisible
             noteListModel: contentViewLayout.resolvedNoteListModel
             panelViewModel: contentViewLayout.panelViewModel
             resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
-            splitterColor: contentViewLayout.splitterColor
-            splitterHandleThickness: contentViewLayout.splitterHandleThickness
-            splitterThickness: contentViewLayout.splitterThickness
 
-            onDrawerHeightDragRequested: function (value) {
-                contentViewLayout.drawerHeightDragRequested(value);
-            }
             onEditorTextEdited: function (text) {
                 contentViewLayout.editorTextEdited(text);
             }
@@ -206,9 +186,6 @@ Item {
             anchors.fill: parent
             contentViewModel: contentViewLayout.resolvedContentViewModel
             displayColor: contentViewLayout.displayColor
-            drawerVisible: contentViewLayout.drawerVisible
-            drawerColor: contentViewLayout.drawerColor
-            drawerHeight: contentViewLayout.drawerHeight
             editorViewModeViewModel: contentViewLayout.editorViewModeViewModel
             enabled: contentViewLayout.visible
             editorTopInsetOverride: contentViewLayout.editorTopInsetOverride
@@ -218,19 +195,11 @@ Item {
             libraryHierarchyViewModel: contentViewLayout.libraryHierarchyViewModel
             lineNumberColumnLeftOverride: contentViewLayout.lineNumberColumnLeftOverride
             lineNumberColumnTextWidthOverride: contentViewLayout.lineNumberColumnTextWidthOverride
-            minDisplayHeight: contentViewLayout.minDisplayHeight
-            minDrawerHeight: contentViewLayout.minDrawerHeight
             minimapVisible: contentViewLayout.minimapVisible
             noteListModel: contentViewLayout.resolvedNoteListModel
             panelViewModel: contentViewLayout.panelViewModel
             resourcesImportViewModel: contentViewLayout.resourcesImportViewModel
-            splitterColor: contentViewLayout.splitterColor
-            splitterHandleThickness: contentViewLayout.splitterHandleThickness
-            splitterThickness: contentViewLayout.splitterThickness
 
-            onDrawerHeightDragRequested: function (value) {
-                contentViewLayout.drawerHeightDragRequested(value);
-            }
             onEditorTextEdited: function (text) {
                 contentViewLayout.editorTextEdited(text);
             }
