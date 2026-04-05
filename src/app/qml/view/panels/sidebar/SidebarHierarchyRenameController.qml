@@ -24,6 +24,7 @@ QtObject {
         hostView.editingHierarchyIndex = renameIndex;
         hostView.refreshEditingHierarchyPresentation(true);
         hostView.editingHierarchyLabel = renameController.selectedHierarchyItemLabel();
+        hostView.syncDisplayedHierarchyModel(true);
         hostView.requestViewHook("hierarchy.rename.begin");
         Qt.callLater(function () {
             if (!hostView.renameEditingActive || hostView.editingHierarchyIndex !== renameIndex || !hierarchyRenameField)
@@ -53,6 +54,7 @@ QtObject {
         hostView.editingHierarchyIndex = -1;
         hostView.editingHierarchyLabel = "";
         hostView.clearEditingHierarchyPresentation();
+        hostView.syncDisplayedHierarchyModel(true);
         Qt.callLater(function () {
             hostView.syncSelectedHierarchyItem(true);
         });
@@ -89,6 +91,7 @@ QtObject {
         hostView.editingHierarchyIndex = -1;
         hostView.editingHierarchyLabel = "";
         hostView.clearEditingHierarchyPresentation();
+        hostView.syncDisplayedHierarchyModel(true);
         hostView.requestViewHook("hierarchy.rename.commit");
         Qt.callLater(function () {
             hostView.syncSelectedHierarchyItem(true);
@@ -129,8 +132,6 @@ QtObject {
         const projectedModel = normalizedModel.slice();
         const projectedItem = renameController.cloneHierarchyItem(projectedModel[editingIndex]);
         projectedItem.label = " ";
-        projectedItem.key = "";
-        projectedItem.itemKey = "";
         projectedModel[editingIndex] = projectedItem;
         return projectedModel;
     }

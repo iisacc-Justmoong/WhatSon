@@ -16,6 +16,11 @@ The directory is intentionally split between:
 
 This keeps the root sidebar view focused on composition, geometry, and signal forwarding.
 
+The rename path is intentionally split between `SidebarHierarchyView.qml` and
+`SidebarHierarchyRenameController.qml`: the controller owns the transaction, while the view owns the rendered
+`displayedHierarchyModel` snapshot so inline rename can hide only the visible label without dropping stable row
+identity.
+
 ## Relationship To C++
 This directory talks to C++ almost entirely through:
 - `IHierarchyViewModel`-compatible objects

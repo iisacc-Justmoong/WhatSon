@@ -557,7 +557,10 @@ Rectangle {
         sidebarHierarchyView.hierarchyInteractionBridge.createFolder();
         sidebarHierarchyView.requestViewHook(reason !== undefined ? reason : "hierarchy.footer.create");
         Qt.callLater(function () {
+            sidebarHierarchyView.syncHierarchySelectionFromSelectedFolder();
             sidebarHierarchyView.syncSelectedHierarchyItem(true);
+            if (sidebarHierarchyView.canRenameSelectedHierarchyItem())
+                sidebarHierarchyView.beginRenameSelectedHierarchyItem();
         });
         return true;
     }

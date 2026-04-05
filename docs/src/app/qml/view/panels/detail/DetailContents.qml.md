@@ -66,7 +66,14 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 ## Metadata List Interaction
 - `FoldersList` and `TagsList` derive their active row index from the properties content view-model instead of storing ad-hoc QML-only state.
 - `FoldersList` mirrors each `.wsnhead` folder path verbatim, so `Research/Ideas` remains `Research/Ideas` in the visible list instead of collapsing to the final segment.
-- Clicking a metadata row updates the corresponding `activeFolderIndex` or `activeTagIndex` property on the active properties view-model.
+- Clicking a metadata row now routes through `DetailMetadataSelectionController.qml`.
+- Selection behavior for both `FoldersList` and `TagsList`:
+  - plain click: single selection only
+  - `Cmd/Ctrl + click`: toggle selection
+  - `Shift + click`: contiguous range selection
+  - `Cmd/Ctrl + Shift + click`: union the range with the existing selection
+- The controller keeps a QML-local visual `selectedIndices` set, but still commits one primary active row back through
+  `activeFolderIndex` or `activeTagIndex` so existing delete and active-row behaviors continue to use a single index.
 - `FoldersList` now uses the footer `addFile` control to open an inline `LV.InputField` row inside the list viewport.
 - The inline folder editor is a temporary blank list item overlay, not a detached popup, so the add flow stays inside the Figma small-list surface.
 - The inline folder editor accepts raw folder text and forwards successful confirmation to `detailPanelViewModel.assignFolderByName(...)`.
@@ -75,6 +82,8 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 - When the footer `trash` action is triggered, `DetailContents.qml` calls `detailPanelViewModel.removeActiveFolder()` or `detailPanelViewModel.removeActiveTag()` directly so the selected `.wsnhead` metadata entry is removed from the file-backed session store instead of only emitting a view hook.
 - Folder add confirmation writes through the detail-panel view-model instead of mutating the list locally, so the displayed list remains a direct mirror of persisted file state.
 - The visible `FoldersList` and `TagsList` must also refresh when the active note stays the same but its note-list model emits `itemsChanged()`, because that signal indicates the current `.wsnhead` metadata may have changed outside the detail-panel write path.
+- The compact metadata rows disable `LV.HierarchyItem`'s standalone activation and rely on the explicit selection
+  controller instead, preventing stale per-row activation state from making the list look permanently multi-selected.
 
 ## File Statistics State
 - The `fileStat` state now mounts `DetailFileStatForm.qml`.
@@ -86,3 +95,12 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 ## Remaining Placeholder States
 For `insert`, `fileHistory`, `layer`, and `help`, the file still renders a distinct placeholder form with state-specific titles and summaries.
 This keeps the state switch explicit until each mode receives its final Figma form.
+
+## Tests
+
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - Plain click in `FoldersList` must clear any prior multi-selection and leave only the clicked row selected.
+  - `Cmd/Ctrl + click` and `Shift + click` must keep modifier-based multi-selection working in `FoldersList`.
+  - The same selection rules must also hold for `TagsList`, because both lists share the same `DetailListSection` and
+    selection controller.

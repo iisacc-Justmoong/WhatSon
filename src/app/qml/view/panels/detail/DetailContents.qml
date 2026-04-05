@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
+import "." as DetailView
 
 Item {
     id: detailContents
@@ -286,7 +287,7 @@ Item {
         property url rowIconSource: ""
         property bool rowSelected: false
 
-        activatable: true
+        activatable: false
         generatedByTreeModel: false
         hasChildItems: false
         iconName: rowIconName
@@ -404,6 +405,7 @@ Item {
         property string rowIconName: ""
         property url rowIconSource: ""
         property bool settingsEnabled: true
+        readonly property var selectedIndices: metadataSelectionController.selectedIndices
         required property string titleNodeId
         required property string titleText
 
@@ -417,6 +419,17 @@ Item {
         signal inlineInputCanceled()
         signal inlineInputTextEdited(string text)
 
+        function requestSelection(index, modifiers) {
+            metadataSelectionController.requestSelection(index, modifiers);
+        }
+
+        function selectionContainsIndex(index) {
+            return metadataSelectionController.selectionContainsIndex(index);
+        }
+
+        Component.onCompleted: metadataSelectionController.reconcileSelection()
+        onActiveIndexChanged: metadataSelectionController.reconcileSelection()
+        onListItemsChanged: metadataSelectionController.reconcileSelection()
         onInlineInputVisibleChanged: {
             if (!listSection.inlineInputVisible)
                 return;
@@ -435,6 +448,11 @@ Item {
                 objectName: listSection.listObjectName + "Label"
                 text: listSection.titleText
                 width: parent.width
+            }
+            DetailView.DetailMetadataSelectionController {
+                id: metadataSelectionController
+
+                section: listSection
             }
             Rectangle {
                 id: smallList
@@ -533,11 +551,26 @@ Item {
                                 rowIconSource: listSection.rowIconSource
                                 rowLabel: String(listSection.listItems[index])
                                 rowObjectName: listSection.listObjectName + "Item" + index
-                                rowSelected: index === listSection.activeIndex
+                                rowSelected: listSection.selectionContainsIndex(index)
                                 width: parent ? parent.width : listSection.width
 
+                                TapHandler {
+                                    acceptedButtons: Qt.LeftButton
+                                    acceptedModifiers: Qt.KeyboardModifierMask
+                                    gesturePolicy: TapHandler.DragThreshold
+                                    target: null
+
+                                    onPressedChanged: {
+                                        if (!pressed)
+                                            return;
+                                        const pressModifiers = point && point.modifiers !== undefined ? point.modifiers : Qt.application.keyboardModifiers;
+                                        metadataSelectionController.capturePointerSelectionModifiers(pressModifiers);
+                                    }
+                                }
                                 onClicked: function() {
-                                    listSection.itemTriggered(index);
+                                    const resolvedModifiers = metadataSelectionController.resolveSelectionModifiers(Qt.application.keyboardModifiers);
+                                    listSection.requestSelection(index, resolvedModifiers);
+                                    metadataSelectionController.clearPointerSelectionModifiers();
                                 }
                             }
                         }

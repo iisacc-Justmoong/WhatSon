@@ -65,6 +65,9 @@ These signals make the file a reusable visual surface instead of a hard-coded on
   `activateListItemById(...)` when no usable key is available.
 - This prevents post-insert index drift from activating the wrong row when a new hierarchy item is created and
   surrounding rows are reindexed by LVRS model refresh timing.
+- Folder creation now immediately re-syncs the primary hierarchy selection back from the viewmodel, promotes the created
+  row to the active LVRS item, and starts inline rename when the active domain supports renaming. This keeps newly
+  created hierarchy items ready for direct user editing instead of leaving focus parked on the parent row.
 
 ## Multi Selection Contract
 
@@ -111,6 +114,7 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - The menu exposes only two actions for now:
   - `New Folder`, which forwards to the existing `HierarchyInteractionBridge.createFolder()` path after selecting the
     clicked folder, so the library viewmodel creates the new folder as that folder's child.
+    After creation, the sidebar promotes the new row to the active selection and begins inline rename.
   - `Delete Folder`, which forwards to the existing `HierarchyInteractionBridge.deleteSelectedFolder()` path after
     selecting the clicked folder.
 - No new backend/service object is introduced for this behavior; the sidebar only reuses the existing selection bridge,
@@ -150,6 +154,10 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - Inline rename geometry is no longer derived only from the live LVRS row object. The view now keeps an
   `editingHierarchyPresentation` snapshot so the overlay stays attached to the selected row even if `LV.Hierarchy`
   regenerates items during a rename transaction.
+- Starting, committing, and cancelling inline rename now force a `displayedHierarchyModel` refresh so the temporary
+  blank-label projection is entered and exited immediately with the transaction state.
+- That rename projection now hides only the visible `label`. Stable row identity fields stay intact so LVRS activation
+  continues to target the same hierarchy item instead of surfacing internal fallback identifiers.
 - `resolveVisibleHierarchyItem(...)` prefers the active LVRS row for the selected id and falls back to the shared
   hierarchy-item locator. This keeps rename placement tied to the selected folder, not whichever generated row happens
   to be first in the rebuilt tree.
@@ -203,3 +211,6 @@ This file should be read as a composed view, not as the place where hierarchy bu
 - Triggering `Delete Folder` from that menu must reuse the existing delete path and remove the clicked folder instead of
   whichever row was previously selected.
 - Right-clicking protected library buckets such as `All`, `Draft`, or `Today` must not open the folder context menu.
+- Enter-driven folder rename must not leave the row blank after commit or cancel.
+- After a rename, later focus/selection/context-menu interactions must keep the folder label instead of exposing
+  `itemKey`, `uuid`, or other internal identifiers.
