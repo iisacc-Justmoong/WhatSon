@@ -47,6 +47,8 @@
 - Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
   continuation stays source-driven instead of relying on RichText widget heuristics or the editor's rendered bullet
   glyph representation.
+- Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
+  not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
   the note instead of remaining a fixed-height scaffold.
 - The repository no longer operates scripted editor tests; the per-file regression notes in this directory are

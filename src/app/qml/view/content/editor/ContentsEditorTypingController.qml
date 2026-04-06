@@ -19,19 +19,31 @@ QtObject {
                   && controller.editorSession.scheduleEditorPersistence !== undefined);
     }
 
+    function markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd) {
+        const replacementStart = Math.max(0, Math.floor(Number(logicalLineStart) || 0));
+        const replacementEnd = Math.max(replacementStart, Math.floor(Number(logicalLineEnd) || 0));
+        return ({
+                "applied": true,
+                "cursorPosition": replacementStart + 1,
+                "insertedText": "\n",
+                "replacementEnd": replacementEnd,
+                "replacementStart": replacementStart
+            });
+    }
+
     function continuedListInsertion(replacementDelta, currentSourceText, nextPlainText) {
         const sourceText = currentSourceText === undefined || currentSourceText === null ? "" : String(currentSourceText);
         const plainText = nextPlainText === undefined || nextPlainText === null ? "" : String(nextPlainText);
         if (!replacementDelta || !replacementDelta.valid)
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
 
         const insertedText = replacementDelta.insertedText === undefined || replacementDelta.insertedText === null
                 ? ""
                 : String(replacementDelta.insertedText);
         if (!insertedText.endsWith("\n"))
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
         if ((insertedText.match(/\n/g) || []).length !== 1)
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
 
         const insertionStart = Math.max(0, Math.floor(Number(replacementDelta.start) || 0));
         const sourceInsertionStart = controller.sourceOffsetForLogicalOffset(insertionStart);
@@ -41,20 +53,20 @@ QtObject {
         const sourceCurrentLine = sourceText.slice(sourceLineStart, sourceLineEnd >= 0 ? sourceLineEnd : sourceText.length);
         const logicalInsertionEnd = insertionStart + insertedText.length;
         if (logicalInsertionEnd <= 0 || logicalInsertionEnd > plainText.length || plainText.charAt(logicalInsertionEnd - 1) !== "\n")
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
         const logicalLineEnd = logicalInsertionEnd - 1;
         const logicalLineStart = logicalLineEnd > 0 ? plainText.lastIndexOf("\n", logicalLineEnd - 1) + 1 : 0;
         const logicalLine = plainText.slice(logicalLineStart, logicalLineEnd);
         const replacesWholeLogicalLine = replacementDelta.start === logicalLineStart
                 && insertedText.slice(0, Math.max(0, insertedText.length - 1)) === logicalLine;
         if (replacementDelta.previousEnd !== replacementDelta.start && !replacesWholeLogicalLine)
-            return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
         const sourceLineForMarkerLookup = replacesWholeLogicalLine ? sourceCurrentLine : sourceLinePrefix;
 
         const unorderedMatch = /^([ \t]*)([-*+\u2022])(\s+)(.*)$/.exec(logicalLine);
         if (unorderedMatch) {
             if (String(unorderedMatch[4] || "").trim().length === 0)
-                return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+                return controller.markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd);
             const sourceUnorderedMatch = /^([ \t]*)([-*+])(\s*)/.exec(sourceLineForMarkerLookup);
             const continuedIndent = sourceUnorderedMatch ? sourceUnorderedMatch[1] : unorderedMatch[1];
             const continuedMarker = sourceUnorderedMatch
@@ -79,13 +91,13 @@ QtObject {
             const orderedSpacing = String(orderedMatch[4] || "");
             const orderedContent = String(orderedMatch[5] || "");
             if (orderedContent.trim().length === 0)
-                return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+                return controller.markerOnlyListBreakInsertion(logicalLineStart, logicalLineEnd);
             if (orderedSpacing.length === 0 && /^[0-9]/.test(orderedContent))
-                return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+                return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
             const sourceOrderedMatch = /^([ \t]*)(\d+)([.)])([ \t]*)/.exec(sourceLineForMarkerLookup);
             const currentNumber = Number(orderedMatch[2]);
             if (!isFinite(currentNumber))
-                return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+                return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
             const nextNumber = Math.max(1, Math.floor(currentNumber) + 1);
             const continuedIndent = sourceOrderedMatch ? sourceOrderedMatch[1] : orderedMatch[1];
             const continuedDelimiter = sourceOrderedMatch ? sourceOrderedMatch[3] : orderedMatch[3];
@@ -100,7 +112,7 @@ QtObject {
                 });
         }
 
-        return ({ "applied": false, "cursorPosition": -1, "insertedText": "" });
+        return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
     }
 
     function normalizePlainText(text) {
@@ -219,8 +231,16 @@ QtObject {
         const normalizedInsertedText = continuedListInsertion.applied
                 ? continuedListInsertion.insertedText
                 : replacementDelta.insertedText;
-        const sourceStart = controller.sourceOffsetForLogicalOffset(replacementDelta.start);
-        const sourceEnd = controller.sourceOffsetForLogicalOffset(replacementDelta.previousEnd);
+        const logicalReplacementStart = continuedListInsertion.applied && continuedListInsertion.replacementStart !== undefined
+                && Number(continuedListInsertion.replacementStart) >= 0
+                ? Math.floor(Number(continuedListInsertion.replacementStart))
+                : replacementDelta.start;
+        const logicalReplacementEnd = continuedListInsertion.applied && continuedListInsertion.replacementEnd !== undefined
+                && Number(continuedListInsertion.replacementEnd) >= 0
+                ? Math.floor(Number(continuedListInsertion.replacementEnd))
+                : replacementDelta.previousEnd;
+        const sourceStart = controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
+        const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
         const nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
                                           currentSourceText,
                                           sourceStart,

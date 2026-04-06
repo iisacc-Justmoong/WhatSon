@@ -40,7 +40,8 @@ This controller exists to keep plain typing separate from inline-format applicat
   - if the unordered list line is re-sent from the rendered editor with a leading bullet glyph (`• item\n`), the
     controller rewrites that batch back to a source marker (`- item\n`, `* item\n`, `+ item\n`) before persistence so
     the list source does not collapse into display glyphs
-  - marker-only empty list lines do not auto-continue, so the controller does not force an endless list
+  - marker-only empty list lines do not auto-continue; pressing `Enter` on that empty continued list item now removes
+    the list marker and leaves a plain blank line, breaking the repeated list-continuation chain
 - Resolves the delta back into source offsets through `ContentsLogicalTextBridge.sourceOffsetForLogicalOffset(...)`.
 - Delegates the final source splice to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
 
@@ -90,11 +91,15 @@ longer part of the normal typing path.
   continue with the original source marker (`-`, `*`, or `+`) instead of degrading to a bare newline.
 - Pressing `Enter` at the end or middle of a non-empty markdown bullet line should persist `\n- ` / `\n* ` / `\n+ `
   continuation text instead of a bare newline.
+- Pressing `Enter` on an empty continued unordered list item (`- ` / `* ` / `+ ` / `• ` with no body text) should
+  remove that list marker and leave a plain blank line instead of creating another empty list continuation line.
 - Pressing `Enter` immediately after rapid typing on a non-empty markdown list line must still continue that list even
   when the committed edit batch includes both the final typed characters and the newline.
 - Pressing the first `Enter` on a newly typed unordered markdown line must still persist a real source marker and the
   continued next marker even when the committed edit batch contains the whole logical line plus newline.
 - Pressing `Enter` on a non-empty ordered markdown list line should persist the incremented next prefix (`1.` -> `2.`,
   `3)` -> `4)`).
+- Pressing `Enter` on an empty continued ordered markdown list item (`1. ` / `1) ` with no body text) should remove the
+  ordered marker and leave a plain blank line instead of extending the empty list.
 - Pressing `Enter` on a non-empty ordered line such as `1.hello` or `1)항목` should also continue the list even when
   the original source omitted the usual separator space.
