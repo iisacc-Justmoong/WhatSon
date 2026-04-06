@@ -733,7 +733,7 @@ namespace
         }
 
         static const QRegularExpression unorderedListPattern(
-            QStringLiteral(R"(^([ \t]*)([-+*])(\s+)(.*)$)"));
+            QStringLiteral(R"(^([ \t]*)([-+*\u2022])(\s+)(.*)$)"));
         static const QRegularExpression orderedListPattern(
             QStringLiteral(R"(^([ \t]*)(\d+)([.)])(\s+)(.*)$)"));
         static const QRegularExpression headingPattern(

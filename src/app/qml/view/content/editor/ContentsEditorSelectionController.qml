@@ -331,7 +331,7 @@ QtObject {
     }
     function markdownListLineState(lineEntry) {
         const sourceLine = lineEntry && lineEntry.sourceLine !== undefined && lineEntry.sourceLine !== null ? String(lineEntry.sourceLine) : "";
-        const unorderedMatch = /^([ \t]*)([-+*])(\s+)(.*)$/.exec(sourceLine);
+        const unorderedMatch = /^([ \t]*)([-+*\u2022])(\s+)(.*)$/.exec(sourceLine);
         if (unorderedMatch) {
             return {
                 "body": unorderedMatch[4],

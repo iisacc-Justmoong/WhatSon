@@ -59,6 +59,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Mixed-line conversions are canonicalized:
   - unordered toggle converts ordered/plain lines into canonical `- ` items
   - ordered toggle converts unordered/plain lines into canonical `1. ` / `2. ` / `3. ` items
+- Stored legacy/pasted bullet-glyph lines (`• item`) are treated as existing unordered-list lines for toggle/remove
+  decisions and are canonicalized back to `- ` when the controller rewrites that block.
 - The controller no longer mutates the live markdown-rendered RichText surface directly for shortcut formatting.
 - It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
   markdown-neutral source-editing surface from the canonical `.wsnbody` text and applies `QTextDocument/QTextCursor`
@@ -108,6 +110,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Reapplying the same list shortcut to a uniformly listed block should remove those markers instead of duplicating them.
 - Converting between unordered and ordered shortcuts should rewrite the source prefixes canonically (`- ` or `N. `)
   rather than preserving mixed legacy markers inside one block.
+- Reapplying the unordered-list shortcut on a stored `• item` line should remove that bullet as an unordered-list marker
+  instead of prepending a second canonical `- ` marker.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already
   contains inline tags around nearby text.
 - Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.

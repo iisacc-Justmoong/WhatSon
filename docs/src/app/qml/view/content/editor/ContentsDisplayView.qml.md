@@ -11,6 +11,8 @@ that sit directly inside the editor viewport.
 - The editor surface now fills the entire available content slot.
 - The root surface keeps `displayColor` as the only background fill for the editor area.
 - The desktop gutter remains visible when the selected surface is an editable note body.
+- The desktop gutter width is now hard-clamped to the tokenized gutter width, so editor-content relayout cannot
+  compress or expand the gutter during live typing.
 - The minimap remains desktop-only and is mounted beside the editor viewport.
 - Editor/gutter/minimap default geometry now routes through LVRS theme tokens:
   - editor font size and horizontal/bottom insets use `LV.Theme.scaleMetric(...)` / `LV.Theme.gap16`
@@ -50,6 +52,7 @@ that sit directly inside the editor viewport.
 - Automated test files are not currently present in this repository.
 - Regression checklist:
   - Desktop contents must render without reserving any extra bottom partition height.
+  - Markdown-style list authoring must not cause the desktop gutter width to oscillate while the editor relayouts.
   - Gutter line numbers and minimap geometry must still align with the live editor surface.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.

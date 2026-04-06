@@ -1114,6 +1114,8 @@ Item {
                 id: gutterLayer
 
                 Layout.fillHeight: true
+                Layout.maximumWidth: contentsView.effectiveGutterWidth
+                Layout.minimumWidth: contentsView.effectiveGutterWidth
                 Layout.preferredWidth: contentsView.effectiveGutterWidth
                 activeLineNumberColor: contentsView.activeLineNumberColor
                 currentCursorLineNumber: contentsView.currentCursorLineNumber

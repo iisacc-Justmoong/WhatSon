@@ -8,6 +8,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Escapes plain text segments to keep HTML output safe.
 - Recognizes markdown-style block prefixes without rewriting the stored source text:
     - unordered list markers (`- ` / `* ` / `+ `) render as bullet-list lines
+    - leading literal bullet markers (`• `) also render through the same unordered-list role so pasted or legacy source
+      lines do not fall back to plain black text in print/editor RichText views
     - ordered list markers (`1. ` / `2. ` / `3) `) render as numbered-list lines
     - heading markers (`#` ... `######`) render as larger title lines while keeping the marker text visible
     - blockquotes (`> `) render as muted italic quote lines
@@ -74,6 +76,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 ## Regression Checks
 
 - Typing `- item` in the note body should re-render as a bullet-list line without changing the stored source marker.
+- A stored source line that already begins with `• ` must render with the same unordered-list marker styling as `- `
+  instead of falling back to plain black text in print/editor RichText views.
 - Typing `1. item` should re-render as a numbered-list line.
 - Typing `# title` should re-render as a heading-like line while preserving literal `# ` in the source text.
 - Typing `` ``` `` fenced blocks should keep the fence markers visible and render the fenced body as code-styled text.

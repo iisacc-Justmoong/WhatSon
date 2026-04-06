@@ -42,6 +42,8 @@
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`
   tokens instead of scattered local editor pixel literals.
+- The desktop gutter layout is now hard-clamped to its resolved token width, so markdown-list relayouts cannot make the
+  gutter visibly squeeze or rebound while typing.
 - Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
   continuation stays source-driven instead of relying on RichText widget heuristics or the editor's rendered bullet
   glyph representation.
