@@ -34,6 +34,9 @@
   as their real glyphs instead of exposing the literal escape strings.
 - `sourceOffsetForLogicalOffset(...)` exposes that table to QML so selection/context-menu formatting can mutate the
   correct source slice even when the editor cursor operates on rendered plain-text offsets.
+- `logicalLengthForSourceText(...)` now reuses the same normalization path for ad-hoc fragments, giving QML list-toggle
+  code a stable way to measure rewritten source lines in logical editor coordinates before restoring selection/cursor
+  state.
 - Source-offset clamping is now normalized through an explicit `int`-bounded QString size helper before returning to
   QML, which avoids libc++ `std::clamp` template mismatches between `int` and `qsizetype` on Apple toolchains.
 
@@ -45,6 +48,8 @@
   rewriting must not fire inside that fenced region.
 - When the source contains RAW-safe entities such as `&lt;tag&gt;` or `Tom &amp; Jerry`, `logicalText` must expose the
   visible `<tag>` / `Tom & Jerry` glyph sequence so cursor mapping stays aligned with the editor surface.
+- When a single rewritten source line contains inline tags, entities, or resource tags, `logicalLengthForSourceText(...)`
+  must still return the rendered logical length that the editor selection uses after the rewrite.
 
 ## Extracted Symbols
 - Declared namespaces present: no

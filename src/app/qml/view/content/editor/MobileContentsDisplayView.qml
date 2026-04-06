@@ -890,7 +890,7 @@ Item {
 
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
-        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(4);
@@ -916,7 +916,7 @@ Item {
     onSelectedNoteBodyTextChanged: {
         const normalizedBodyText = contentsView.selectedNoteBodyText;
         if (editorSession.shouldAcceptModelBodyText(contentsView.selectedNoteId, normalizedBodyText)) {
-            editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, normalizedBodyText);
+            editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, normalizedBodyText);
         } else {
             editorSession.scheduleEditorPersistence();
         }
@@ -926,9 +926,7 @@ Item {
     }
     onSelectedNoteIdChanged: {
         contentsView.resetEditorSelectionCache();
-        if (contentsView.pendingBodySave && contentsView.editorBoundNoteId !== contentsView.selectedNoteId)
-            editorSession.flushPendingEditorText();
-        editorSession.syncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
         contentsView.scheduleEditorRichTextSurfaceSync();
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.focusEditorForPendingNote();

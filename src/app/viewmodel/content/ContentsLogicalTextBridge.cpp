@@ -241,6 +241,11 @@ int ContentsLogicalTextBridge::logicalLineCharacterCountAt(int index) const noex
     return std::max(0, nextOffset - startOffset - (safeIndex + 1 < m_logicalLineStartOffsets.size() ? 1 : 0));
 }
 
+int ContentsLogicalTextBridge::logicalLengthForSourceText(const QString& text) const
+{
+    return boundedQStringSize(normalizeLogicalText(text));
+}
+
 int ContentsLogicalTextBridge::sourceOffsetForLogicalOffset(int logicalOffset) const noexcept
 {
     const int maxSourceOffset = boundedQStringSize(m_text);

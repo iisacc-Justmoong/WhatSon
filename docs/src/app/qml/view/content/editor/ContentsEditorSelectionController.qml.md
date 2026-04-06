@@ -61,6 +61,10 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   - ordered toggle converts unordered/plain lines into canonical `1. ` / `2. ` / `3. ` items
 - Stored legacy/pasted bullet-glyph lines (`• item`) are treated as existing unordered-list lines for toggle/remove
   decisions and are canonicalized back to `- ` when the controller rewrites that block.
+- Markdown list toggles now recompute rewritten line lengths through `ContentsLogicalTextBridge` instead of using raw
+  source-text character counts. This keeps post-toggle selection spans and collapsed-cursor restoration aligned even
+  when the touched line body contains inline tags, escaped entities, or `<resource ...>` tags that are wider in source
+  than on the live logical editor surface.
 - The controller no longer mutates the live markdown-rendered RichText surface directly for shortcut formatting.
 - It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
   markdown-neutral source-editing surface from the canonical `.wsnbody` text and applies `QTextDocument/QTextCursor`
@@ -112,6 +116,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   rather than preserving mixed legacy markers inside one block.
 - Reapplying the unordered-list shortcut on a stored `• item` line should remove that bullet as an unordered-list marker
   instead of prepending a second canonical `- ` marker.
+- Applying a markdown list toggle to a line whose body already contains inline tags or `<resource ...>` source tokens
+  must keep the restored cursor and any rewritten selection anchored to the rendered logical text, not to the longer
+  canonical source-token length.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already
   contains inline tags around nearby text.
 - Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.

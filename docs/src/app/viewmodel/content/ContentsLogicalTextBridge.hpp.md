@@ -26,6 +26,8 @@
   generation so QML gutter queries consume plain-text-aligned offsets.
 - `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert
   RichText/plain-text selection offsets back into source-markup offsets before mutating the stored body text.
+- `logicalLengthForSourceText(QString)` is now also part of the public QML bridge surface so block-style mutations can
+  measure rewritten source fragments in the same logical-text coordinate system used by the live editor selection.
 - The header also carries a logical-to-source offset cache (`m_logicalToSourceOffsets`) that stays synchronized with
   the normalized plain-text projection.
 - The exposed offset contract remains `int`-based for QML callers, so implementation-side source bounds must be
@@ -57,3 +59,5 @@
 
 - When the editor surface renders unordered-list markdown as `• `, `logicalText` must expose the same `• ` prefix so
   QML selection offsets still match the editable RichText surface.
+- When QML rewrites one source line in isolation, `logicalLengthForSourceText(...)` must report the rendered logical
+  character count for that fragment rather than the raw source-token count.

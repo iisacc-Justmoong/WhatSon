@@ -235,6 +235,15 @@ QtObject {
         const newlineOffset = logicalText.indexOf("\n", safeStart);
         return newlineOffset >= 0 ? newlineOffset : logicalText.length;
     }
+    function logicalLengthForSourceText(sourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalLengthForSourceText !== undefined) {
+            const logicalLength = Number(controller.textMetricsBridge.logicalLengthForSourceText(normalizedSourceText));
+            if (isFinite(logicalLength))
+                return Math.max(0, Math.floor(logicalLength));
+        }
+        return normalizedSourceText.length;
+    }
     function normalizeMarkdownListKind(listKind) {
         const normalizedKind = listKind === undefined || listKind === null ? "" : String(listKind).trim().toLowerCase();
         if (normalizedKind === "unordered" || normalizedKind === "bullet" || normalizedKind === "bulleted")
@@ -758,11 +767,12 @@ QtObject {
             const transformedSourceLine = lineInfo.transformable
                     ? controller.markdownListTransformedSourceLine(lineInfo.state, normalizedKind, removeListMarker, orderedIndex)
                     : lineInfo.state.sourceLine;
+            const transformedLogicalLength = controller.logicalLengthForSourceText(transformedSourceLine);
             if (lineInfo.transformable && !removeListMarker && normalizedKind === "ordered")
                 orderedIndex += 1;
             nextBlockText += transformedSourceLine;
             blockCursor = lineEntry.sourceEnd;
-            selectionLogicalLength += transformedSourceLine.length;
+            selectionLogicalLength += transformedLogicalLength;
             if (index + 1 < lineStates.length)
                 selectionLogicalLength += 1;
             if (!lineContext.hasSelection && lineContext.cursorPosition >= lineEntry.logicalStart && lineContext.cursorPosition <= lineEntry.logicalEnd) {
@@ -781,7 +791,7 @@ QtObject {
                     const contentOffset = Math.max(0, boundedCursorInLine - oldPrefixLength);
                     newCursorInLine = newPrefixLength + contentOffset;
                 }
-                nextCursorPosition = lineEntry.logicalStart + Math.max(0, Math.min(transformedSourceLine.length, newCursorInLine));
+                nextCursorPosition = lineEntry.logicalStart + Math.max(0, Math.min(transformedLogicalLength, newCursorInLine));
             }
         }
         nextBlockText += currentSourceText.slice(blockCursor, blockSourceEnd);

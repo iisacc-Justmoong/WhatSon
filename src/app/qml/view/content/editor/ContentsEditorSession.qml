@@ -5,6 +5,9 @@ Item {
 
     property string editorBoundNoteId: ""
     property string editorText: ""
+    property string deferredSelectionNoteId: ""
+    property string deferredSelectionText: ""
+    property bool deferredSelectionPending: false
     property bool localEditorAuthority: false
     property bool pendingBodySave: false
     readonly property bool persistenceAvailable: selectionBridge && selectionBridge.contentPersistenceContractAvailable !== undefined ? !!selectionBridge.contentPersistenceContractAvailable : false
@@ -17,6 +20,11 @@ Item {
     function acknowledgeSuccessfulEditorPersistence() {
         editorSession.pendingBodySave = false;
         bodySaveTimer.stop();
+    }
+    function clearDeferredSelectionSync() {
+        editorSession.deferredSelectionPending = false;
+        editorSession.deferredSelectionNoteId = "";
+        editorSession.deferredSelectionText = "";
     }
     function flushPendingEditorText() {
         if (!editorSession.pendingBodySave)
@@ -32,10 +40,37 @@ Item {
         }
         const saved = editorSession.selectionBridge.persistEditorTextForNote(noteId, editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText));
         if (saved) {
+            const deferredPending = !!editorSession.deferredSelectionPending;
+            const deferredNoteId = editorSession.deferredSelectionNoteId === undefined || editorSession.deferredSelectionNoteId === null ? "" : String(editorSession.deferredSelectionNoteId);
+            const deferredText = editorSession.deferredSelectionText === undefined || editorSession.deferredSelectionText === null ? "" : String(editorSession.deferredSelectionText);
             editorSession.acknowledgeSuccessfulEditorPersistence();
+            if (deferredPending) {
+                editorSession.clearDeferredSelectionSync();
+                editorSession.syncEditorTextFromSelection(deferredNoteId, deferredText);
+            }
             return true;
         }
         return false;
+    }
+    function requestSyncEditorTextFromSelection(noteId, text) {
+        const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
+        const nextText = text === undefined || text === null ? "" : String(text);
+        const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
+        if (currentNoteId !== nextNoteId && editorSession.pendingBodySave) {
+            if (!editorSession.flushPendingEditorText()) {
+                editorSession.deferredSelectionPending = true;
+                editorSession.deferredSelectionNoteId = nextNoteId;
+                editorSession.deferredSelectionText = nextText;
+                if (!bodySaveTimer.running)
+                    bodySaveTimer.start();
+                return false;
+            }
+            if (editorSession.editorBoundNoteId === nextNoteId && editorSession.editorText === nextText)
+                return true;
+        }
+        editorSession.clearDeferredSelectionSync();
+        editorSession.syncEditorTextFromSelection(nextNoteId, nextText);
+        return true;
     }
     function releaseSyncGuard() {
         Qt.callLater(function () {

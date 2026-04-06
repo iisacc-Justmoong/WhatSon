@@ -38,6 +38,11 @@
   full routed mobile width.
 - `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
   `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
+- Markdown list toggles now restore selection/cursor using logical-text lengths from `ContentsLogicalTextBridge`, so
+  lines that contain inline tags, escaped entities, or `<resource ...>` tokens no longer jump selection after a list
+  rewrite.
+- `ContentsEditorSession.qml` now defers note swaps behind pending-body flushes, so a failed immediate save cannot
+  silently discard the old note buffer when the user changes selection.
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`

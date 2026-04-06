@@ -46,6 +46,8 @@ that sit directly inside the editor viewport.
 - Desktop window shortcuts mirror the selection controller contract for markdown lists:
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
+- Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
+  so a failed pending-body flush no longer lets a note switch silently overwrite the still-unsaved editor buffer.
 
 ## Tests
 
@@ -60,3 +62,5 @@ that sit directly inside the editor viewport.
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the
     selection controller while the rich-text editor owns focus.
+  - Switching desktop note selection while the current note still has a pending unsaved body must either flush that body
+    first or defer the editor swap; it must not drop the unsaved text.

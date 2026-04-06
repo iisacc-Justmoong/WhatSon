@@ -32,6 +32,17 @@
   `currentBodyText` snapshot during the first few keystrokes.
 - `shouldAcceptModelBodyText(...)` therefore continues rejecting mismatched same-note model text while the editor still
   owns the current local buffer.
+- Note-selection changes now enter through `requestSyncEditorTextFromSelection(...)`. When the user leaves a note with a
+  pending unsaved body and the immediate flush fails, the session keeps the old note bound, preserves the pending body,
+  and records the newly selected note as a deferred sync target instead of silently dropping the edit.
+- A later successful `flushPendingEditorText()` immediately applies that deferred selection sync, so the editor swaps to
+  the latest requested note only after the previous note body was durably written.
+
+## Regression Checks
+- Switching to another note while the current note still has a pending unsaved body must not clear `pendingBodySave` or
+  overwrite `editorText` with the new note body unless the old body flush actually succeeded.
+- Once the deferred flush eventually succeeds, the editor must automatically bind to the latest requested note body
+  without requiring a second manual re-selection.
 
 ## Intended Detailed Sections
 - Responsibility and business role
@@ -43,7 +54,6 @@
 - Threading, scheduling, or UI affinity constraints when relevant
 - Extension points, invariants, and known complexity hotspots
 - Test coverage and missing verification
-
 ## Authoring Notes For Next Pass
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
