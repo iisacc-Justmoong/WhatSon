@@ -37,6 +37,7 @@ FocusScope {
     property color textColor: LV.Theme.bodyColor
     property int textFormat: TextEdit.PlainText
     property int wrapMode: TextEdit.NoWrap
+    property bool preferNativeInputHandling: false
 
     readonly property real contentHeight: control.externalScroll ? editorShell.height : editorFlickable.contentHeight
     readonly property real contentOffsetY: {
@@ -68,6 +69,8 @@ FocusScope {
 
     property int _programmaticTextSyncDepth: 0
     property bool _compositionEditPending: false
+    property bool _hasDeferredProgrammaticText: false
+    property string _deferredProgrammaticText: ""
 
     signal textEdited(string text)
 
@@ -97,6 +100,23 @@ FocusScope {
         if (!isFinite(numericPosition))
             return 0;
         return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, maximumLength)));
+    }
+
+    function canDeferProgrammaticTextSync() {
+        return !!control.preferNativeInputHandling
+                && (control.focused || control.inputMethodComposing || control.preeditText.length > 0);
+    }
+
+    function flushDeferredProgrammaticText(force) {
+        if (!control._hasDeferredProgrammaticText)
+            return;
+        if (!force && control.canDeferProgrammaticTextSync())
+            return;
+
+        const deferredText = control._deferredProgrammaticText;
+        control._hasDeferredProgrammaticText = false;
+        control._deferredProgrammaticText = "";
+        control.setProgrammaticText(deferredText);
     }
 
     function setProgrammaticText(nextText) {
@@ -137,7 +157,21 @@ FocusScope {
             textChangedDispatchTimer.start();
     }
 
-    onTextChanged: setProgrammaticText(text)
+    onFocusedChanged: {
+        if (!focused)
+            control.flushDeferredProgrammaticText(true);
+    }
+    onTextChanged: {
+        const normalizedText = text === undefined || text === null ? "" : String(text);
+        if (control.canDeferProgrammaticTextSync()) {
+            control._deferredProgrammaticText = normalizedText;
+            control._hasDeferredProgrammaticText = true;
+            return;
+        }
+        control._hasDeferredProgrammaticText = false;
+        control._deferredProgrammaticText = "";
+        setProgrammaticText(normalizedText);
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -257,11 +291,15 @@ FocusScope {
         function onInputMethodComposingChanged() {
             if (!textInput.inputMethodComposing && control._compositionEditPending)
                 control.scheduleCommittedTextEditedDispatch();
+            if (!textInput.inputMethodComposing)
+                control.flushDeferredProgrammaticText(false);
         }
 
         function onPreeditTextChanged() {
             if (!textInput.inputMethodComposing && control._compositionEditPending && control.preeditText.length === 0)
                 control.scheduleCommittedTextEditedDispatch();
+            if (!textInput.inputMethodComposing && control.preeditText.length === 0)
+                control.flushDeferredProgrammaticText(false);
         }
 
         function onTextEdited() {

@@ -12,6 +12,11 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 
 - Accepts `renderedEditorText` as an input-only property (`text`) and syncs it into the underlying `TextEdit`
   programmatically.
+- Hosts can opt into `preferNativeInputHandling`:
+  - while the editor keeps focus or an IME preedit session is active, app-driven `text` resync is deferred
+  - the latest deferred payload is flushed after focus leaves or when no native input session is active anymore
+  - this lets mobile keep OS-native composition, double-tap selection, and repeat-backspace behavior ahead of the
+    app's RichText surface normalization
 - Exposes a `textEdited(string text)` signal as a change event for the host controllers.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
@@ -50,7 +55,7 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Selection/formatting controllers should prefer these wrapper-level Qt helpers over re-walking nested `editorItem` /
   `inputItem` objects.
 - Typography is host-driven through `fontPixelSize` and `fontWeight`; the current policy is `12px` regular via
-  `ContentsDisplayView.qml` on desktop and `14px` via `MobileContentsDisplayView.qml` on mobile.
+  both `ContentsDisplayView.qml` and `MobileContentsDisplayView.qml`.
 - The wrapper default `fontPixelSize` itself now routes through `LV.Theme.scaleMetric(12)`, so callers that do not
   override typography still remain inside LVRS density scaling.
 
@@ -61,11 +66,13 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - RichText spans derived from `.wsnbody` tags render visibly inside the live editor surface
   - cursor/selection updates still drive gutter and minimap geometry
   - programmatic note switches do not emit duplicate save mutations
-  - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
-  - Hangul IME composition must not delete previously committed text when a syllable block is assembled
-  - Hangul IME composition must not leave split jamo behind after the committed syllable lands
-  - the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
-    `12px` default
+- direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
+- Hangul IME composition must not delete previously committed text when a syllable block is assembled
+- Hangul IME composition must not leave split jamo behind after the committed syllable lands
+- when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text
+  reinjection before the native input session settles
+- the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
+  `12px` default
   - the visible desktop editor text weight must follow the host-supplied regular-weight policy instead of staying at a
     heavier medium default
   - page/print hosts must be able to switch the editor into the outer paper document scroll path without re-enabling

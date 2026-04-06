@@ -42,7 +42,7 @@ Item {
     }
     readonly property int editorDocumentTopPadding: 0
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()
-    readonly property int editorHorizontalInset: LV.Theme.gap16
+    readonly property int editorHorizontalInset: LV.Theme.gapNone
     readonly property bool editorInputFocused: {
         if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
             return true;
@@ -57,7 +57,6 @@ Item {
         return false;
     }
     readonly property real editorLineHeight: contentsView.editorTextLineBoxHeight
-    readonly property int editorMobileFontPixelSizeOffset: LV.Theme.gap2
     property alias editorSelectionContextMenuItems: editorSelectionController.contextMenuItems
     readonly property real editorSurfaceHeight: Math.max(0, contentsView.editorViewportHeight - contentsView.editorDocumentStartY)
     property alias editorText: editorSession.editorText
@@ -66,7 +65,7 @@ Item {
     property int editorTopInsetOverride: -1
     property var editorViewModeViewModel: null
     readonly property real editorViewportHeight: editorViewport ? Number(editorViewport.height) || 0 : 0
-    readonly property int effectiveEditorFontPixelSize: contentsView.desktopEditorFontPixelSize + contentsView.editorMobileFontPixelSizeOffset
+    readonly property int effectiveEditorFontPixelSize: contentsView.desktopEditorFontPixelSize
     readonly property int effectiveEditorTopInset: contentsView.editorTopInsetOverride >= 0 ? contentsView.editorTopInsetOverride : contentsView.editorTopInset
     readonly property int effectiveFrameHorizontalInset: contentsView.frameHorizontalInsetOverride >= 0 ? contentsView.frameHorizontalInsetOverride : contentsView.frameHorizontalInset
     readonly property var effectiveGutterMarkers: {
@@ -151,7 +150,7 @@ Item {
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
-    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused
     readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property int pageEditorViewModeValue: 1
     property var panelViewModel: null
@@ -190,6 +189,7 @@ Item {
         return Math.max(0, Math.min(contentsView.printPaperMaxWidth, availableWidth));
     }
     readonly property string renderedEditorText: contentsView.normalizeBodySourceForRichTextEditor(contentsView.editorText)
+    readonly property string mobileEditorDisplayText: textMetricsBridge.logicalText
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
             return contentsView.editorViewModeViewModel;
@@ -203,7 +203,9 @@ Item {
     readonly property int resourceRenderDisplayLimit: 3
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
+    readonly property bool preferNativeInputHandling: true
     readonly property int saveDebounceMs: 120
+    readonly property bool deferImmediateEditorPersistence: contentsView.preferNativeInputHandling
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
     readonly property bool selectedNoteIsResourcePackage: contentsView.selectedNoteId.trim().toLowerCase().endsWith(".wsresource")
@@ -1274,15 +1276,16 @@ Item {
                         insetHorizontal: contentsView.showPrintEditorLayout ? 0 : contentsView.editorHorizontalInset
                         insetVertical: contentsView.showPrintEditorLayout ? 0 : contentsView.editorBottomInset
                         placeholderText: ""
+                        preferNativeInputHandling: contentsView.preferNativeInputHandling
                         selectByMouse: true
                         selectedTextColor: LV.Theme.textPrimary
                         selectionColor: LV.Theme.accent
                         shapeStyle: shapeRoundRect
-                        showRenderedOutput: true
+                        showRenderedOutput: !contentsView.preferNativeInputHandling
                         showScrollBar: false
-                        text: contentsView.renderedEditorText
+                        text: contentsView.preferNativeInputHandling ? contentsView.mobileEditorDisplayText : contentsView.renderedEditorText
                         textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
-                        textFormat: TextEdit.RichText
+                        textFormat: contentsView.preferNativeInputHandling ? TextEdit.PlainText : TextEdit.RichText
                         visible: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
                         x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : 0

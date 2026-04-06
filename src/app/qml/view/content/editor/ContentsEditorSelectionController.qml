@@ -51,25 +51,33 @@ QtObject {
     property var textMetricsBridge: null
     property var view: null
 
+    function preferNativeInputHandling() {
+        return !!(controller.view
+                  && controller.view.preferNativeInputHandling !== undefined
+                  && controller.view.preferNativeInputHandling);
+    }
+
     function applyEditorRichTextSurface() {
         if (!controller.contentEditor)
             return;
-        if (controller.contentEditor.textFormat !== undefined && controller.contentEditor.textFormat !== TextEdit.RichText)
-            controller.contentEditor.textFormat = TextEdit.RichText;
-        if (controller.contentEditor.showRenderedOutput !== undefined && !controller.contentEditor.showRenderedOutput)
-            controller.contentEditor.showRenderedOutput = true;
+        const preferredTextFormat = controller.preferNativeInputHandling() ? TextEdit.PlainText : TextEdit.RichText;
+        const preferredRenderedOutput = !controller.preferNativeInputHandling();
+        if (controller.contentEditor.textFormat !== undefined && controller.contentEditor.textFormat !== preferredTextFormat)
+            controller.contentEditor.textFormat = preferredTextFormat;
+        if (controller.contentEditor.showRenderedOutput !== undefined && controller.contentEditor.showRenderedOutput !== preferredRenderedOutput)
+            controller.contentEditor.showRenderedOutput = preferredRenderedOutput;
         const editorItem = controller.contentEditor.editorItem;
         if (!editorItem)
             return;
-        if (editorItem.textFormat !== undefined && editorItem.textFormat !== TextEdit.RichText)
-            editorItem.textFormat = TextEdit.RichText;
-        if (editorItem.showRenderedOutput !== undefined && !editorItem.showRenderedOutput)
-            editorItem.showRenderedOutput = true;
+        if (editorItem.textFormat !== undefined && editorItem.textFormat !== preferredTextFormat)
+            editorItem.textFormat = preferredTextFormat;
+        if (editorItem.showRenderedOutput !== undefined && editorItem.showRenderedOutput !== preferredRenderedOutput)
+            editorItem.showRenderedOutput = preferredRenderedOutput;
         const inputItem = editorItem.inputItem;
         if (!inputItem)
             return;
-        if (inputItem.textFormat !== undefined && inputItem.textFormat !== TextEdit.RichText)
-            inputItem.textFormat = TextEdit.RichText;
+        if (inputItem.textFormat !== undefined && inputItem.textFormat !== preferredTextFormat)
+            inputItem.textFormat = preferredTextFormat;
         if (inputItem.selectByMouse !== undefined && !inputItem.selectByMouse)
             inputItem.selectByMouse = true;
     }

@@ -11,6 +11,14 @@ QtObject {
     property var textFormatRenderer: null
     property var textMetricsBridge: null
 
+    function shouldDeferImmediatePersistence() {
+        return !!(controller.view
+                  && controller.view.deferImmediateEditorPersistence !== undefined
+                  && controller.view.deferImmediateEditorPersistence
+                  && controller.editorSession
+                  && controller.editorSession.scheduleEditorPersistence !== undefined);
+    }
+
     function continuedListInsertion(replacementDelta, currentSourceText, nextPlainText) {
         const sourceText = currentSourceText === undefined || currentSourceText === null ? "" : String(currentSourceText);
         const plainText = nextPlainText === undefined || nextPlainText === null ? "" : String(nextPlainText);
@@ -226,6 +234,11 @@ QtObject {
             return true;
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
+        if (controller.shouldDeferImmediatePersistence()) {
+            controller.editorSession.scheduleEditorPersistence();
+            controller.view.editorTextEdited(nextSourceText);
+            return true;
+        }
         const saved = controller.view.persistEditorTextImmediately !== undefined
                 ? !!controller.view.persistEditorTextImmediately(nextSourceText)
                 : false;

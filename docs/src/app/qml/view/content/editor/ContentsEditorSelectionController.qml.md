@@ -90,6 +90,10 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)`; the controller owns the mutation decision but not the broader
   editor-shell lifecycle.
+- Hosts that expose `preferNativeInputHandling` can now override the editor surface policy:
+  - desktop keeps the RichText editing surface
+  - mobile/native-priority hosts force the live `TextEdit` surface back to `PlainText` so OS-native composition and
+    selection heuristics are not re-hooked by RichText reconfiguration
 
 ## Regression Checks
 
@@ -114,3 +118,5 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
 - Immediate typing saves must return `true` on success so the typing controller does not schedule a redundant debounce
   write after the note was already persisted.
+- A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection
+  controller after note changes, surface syncs, or shortcut handling.

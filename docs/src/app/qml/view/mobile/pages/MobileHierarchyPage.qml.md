@@ -127,7 +127,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `ContentViewLayout.qml`: renders the editor route body and now selects `MobileContentsDisplayView.qml` for mobile.
 - The mobile editor route no longer relies on desktop editor code plus mobile suppression flags:
   - gutter is removed by the mobile-only editor file itself
-  - editor font size is `14px` (`desktop 12px + 2px`)
+  - editor font size now stays aligned with the desktop `12px` baseline
 - The route forwards the LVRS window `isMobilePlatform` state into `ContentViewLayout`, so editor file selection uses
   the canonical platform detector instead of responsive-width guesses.
 - `resourcesImportViewModel`: forwarded into `ContentViewLayout` so editor drops on mobile can package files and emit

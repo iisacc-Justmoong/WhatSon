@@ -54,6 +54,10 @@ longer part of the normal typing path.
 - If list continuation inserted extra markdown marker text, the controller also restores the live cursor to the
   continued item start after programmatic surface sync.
 - It marks local editor authority before save, matching the existing editor session contract.
+- Hosts may opt into deferred persistence through `view.deferImmediateEditorPersistence`.
+  - when that flag is enabled, ordinary typing skips synchronous `persistEditorTextImmediately(...)`
+  - the controller arms `editorSession.scheduleEditorPersistence()` instead, so the OS input session is not blocked by
+    note-store writes on every committed mobile keystroke
 - It tries `view.persistEditorTextImmediately(...)` first.
 - If immediate persistence is unavailable or fails, it falls back to `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)` for the broader editor-shell lifecycle.
@@ -78,6 +82,8 @@ longer part of the normal typing path.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
+- when `view.deferImmediateEditorPersistence` is enabled, committed typing must not synchronously hit the content store
+  on each keystroke
 - Typing `- item` or `1. item` should persist the literal markdown marker text in source rather than an already-expanded
   bullet/number glyph representation.
 - Pressing `Enter` on an unordered markdown list that is visually rendered with a bullet glyph in the editor must still

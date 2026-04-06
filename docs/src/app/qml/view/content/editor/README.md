@@ -31,6 +31,11 @@
 - The editor, gutter, minimap, and resource overlays now fill the entire `ContentsView` slot.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
+- Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
+  pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
+  uses a plain logical-text input surface instead of the RichText editor projection.
+- `MobileContentsDisplayView.qml` also removes the mobile live-editor horizontal inset, so the content view spans the
+  full routed mobile width.
 - `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
   `Alt+Shift+7/8` on Windows/Linux) so block-level list toggles stay source-driven as well.
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
