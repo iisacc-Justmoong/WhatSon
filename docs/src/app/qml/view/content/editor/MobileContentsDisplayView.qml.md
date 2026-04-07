@@ -19,6 +19,11 @@ suppression local to this file.
     instead of editing the RichText projection directly
   - synchronous per-keystroke persistence is deferred to the existing debounce session path
   - periodic note snapshot polling pauses while the editor keeps input focus
+- Mobile still keeps the source/plain-text bridge current for typing diffs, but the expensive markdown-aware
+  `ContentsTextFormatRenderer` refresh plus full minimap snapshot now commit on a short idle timer or when the native
+  input session settles.
+- Cursor-only and scroll-only minimap updates now stay on cached geometry, and when the parent route disables the
+  minimap the mobile surface skips minimap sampling entirely.
 - Minimap visibility is still controlled by the parent route/layout contract.
 - Mobile shares the same LVRS tokenized editor/gutter/minimap metric defaults and editor typography baseline as desktop.
 - Print-paper/resource card border thickness also follows `LV.Theme.strokeThin`.
@@ -51,8 +56,12 @@ suppression local to this file.
   - Mobile editor text must stay aligned with the desktop `12px` baseline.
   - Mobile note editing, resource rendering, and deferred persistence must stay aligned with the desktop editor flow
     except for the mobile-only native-input priority rules.
+  - Mobile typing must not trigger whole-document markdown/RichText presentation refresh on every committed keystroke;
+    the renderer/minimap path should settle after the short idle timer or when focus leaves.
   - The mobile editor must render `ContentsLogicalTextBridge.logicalText` as the active input text so double-tap
     selection, repeat backspace, and IME composition remain OS-driven.
+  - iOS spacebar cursor-drag and other OS cursor-tracking gestures must not trigger full minimap resampling or any
+    app-side RichText surface reinjection while native input handling is active.
   - While the mobile editor is focused, note snapshot polling must not re-sync the current note body back into the live
     input surface.
   - Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the

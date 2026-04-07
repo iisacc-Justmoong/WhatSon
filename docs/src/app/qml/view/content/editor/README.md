@@ -28,9 +28,13 @@
 - `ContentsDisplayView.qml` is now the desktop-only editor surface.
 - `MobileContentsDisplayView.qml` is the duplicated mobile-only editor surface, so gutter/font behavior is no longer
   gated through one shared desktop/mobile file.
+- The shared live editor engine is already `QtQuick.TextEdit` wrapped by `ContentsInlineFormatEditor.qml`; this
+  directory no longer depends on an LVRS `LV.TextEditor` implementation.
 - The editor, gutter, minimap, and resource overlays now fill the entire `ContentsView` slot.
 - `ContentsEditorTypingController.qml` now owns ordinary text-entry mutation routing so typing no longer reserializes
   the whole RichText surface on every edit.
+- Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
+  `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
 - Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
   pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
   uses a plain logical-text input surface instead of the RichText editor projection.

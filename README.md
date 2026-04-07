@@ -218,16 +218,16 @@ WhatSon is an LVRS-based Qt Quick application.
   anchored from `x=14`, and the fixed `18px` icon-rail anchor at `x=40`.
 - The editor surface keeps Figma-style Fill height even when the body text is empty, and the editable text block is
   top-left aligned with a shared `16px` top / horizontal / bottom inset instead of vertical centering.
-- That shared top inset is now materialized as a real `LV.TextEditor` top margin while the internal LVRS
-  `topPadding` stays forced to `0`, so the 16px separation from the navigation bar remains visible even when the
-  editor viewport recalculates under Fill sizing on both desktop and mobile.
-- `LV.TextEditor` disables rendered preview output and forced wrap defaults
-  (`showRenderedOutput: false`, `enforceModeDefaults: false`) while enabling `wrapMode: TextEdit.Wrap`; the gutter
-  still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so wrapped visual rows do not renumber the
-  document.
-- `LV.TextEditor` now binds the body token more explicitly for this surface: `LV.Theme.fontBody`, `12px` medium weight,
-  zero letter spacing, explicit `LV.Theme.bodyColor` text color, and the standard LVRS input selection highlight
-  (`LV.Theme.accent`), matching the Figma `Body` token and the rest of the app's input controls.
+- That shared top inset is now materialized through the custom `ContentsInlineFormatEditor.qml` wrapper around
+  `QtQuick.TextEdit` while the internal `topPadding` stays forced to `0`, so the `16px` separation from the navigation
+  bar remains visible even when the editor viewport recalculates under Fill sizing on both desktop and mobile.
+- The wrapper disables rendered preview output and forced mode defaults where required while keeping
+  `wrapMode: TextEdit.Wrap`; the gutter still tracks logical `.wsnbody` lines through `positionToRectangle(...)`, so
+  wrapped visual rows do not renumber the document.
+- The same `QtQuick.TextEdit`-backed wrapper binds the body token explicitly for this surface:
+  `LV.Theme.fontBody`, `12px` host-driven weight/size policy, zero letter spacing, explicit `LV.Theme.bodyColor` text
+  color, and the standard LVRS selection highlight (`LV.Theme.accent`), matching the Figma `Body` token and the rest
+  of the app's input controls.
 - `LibraryNoteListModel` and `BookmarksNoteListModel` now carry each note's full `bodyText` plus current selection
   state (`currentIndex`, `currentNoteId`, `currentBodyText`) so the list pane and editor pane stay synchronized
   without cross-domain model reuse.
@@ -290,7 +290,8 @@ WhatSon is an LVRS-based Qt Quick application.
   `logicalLineNumberForDocumentY(...)`, which keeps the line-number model simpler while still matching the top visible
   logical document line.
 - The gutter also keeps an explicit refresh-revision pulse with a short multi-pass timer, so when a user re-enters the
-  editor surface, opens a different note, or the `TextEditor` finishes a delayed relayout, the visible line numbers
+  editor surface, opens a different note, or the underlying `QtQuick.TextEdit` finishes a delayed relayout, the visible
+  line numbers
   and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a
   previous note/session.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
@@ -301,7 +302,7 @@ WhatSon is an LVRS-based Qt Quick application.
 - The editor surface now also exposes a right-side Xcode-style minimap, but it is rendered as a borderless inline text
   silhouette instead of a framed rail. Its bar positions come from the editor's real content height and text-start
   offset, so short notes stay top-aligned and the minimap reflects the text body rather than gutter markers.
-- That silhouette is now painted from actual wrapped visual-row segments taken from the `TextEditor` layout rather than
+- That silhouette is now painted from actual wrapped visual-row segments taken from the `QtQuick.TextEdit` layout rather than
   from one height-scaled logical-line block, so wrapped paragraphs appear as separate thin text strokes instead of
   carved slabs.
 - Minimap rows are packed with a fixed `1px` gap between bars, which keeps the overview denser than the main editor and
@@ -309,6 +310,14 @@ WhatSon is an LVRS-based Qt Quick application.
 - The current cursor line on that minimap is reduced to the active line's own silhouette width, and the visible
   viewport is shown as a subtle translucent fill without an outline border. Click/drag plus wheel-routed scrolling are
   still supported.
+- Cursor-only and viewport-only minimap updates now reuse cached row geometry instead of rebuilding the whole minimap
+  snapshot on every cursor/scroll signal. When a route disables the minimap or mobile input runs through
+  `preferNativeInputHandling`, the editor skips that minimap sampling path entirely so OS cursor gestures such as the
+  iOS spacebar-drag session stay native.
+- Full-document RichText projection is no longer rebound directly from `editorText` on every edit. The desktop/mobile
+  editor views now keep the source-to-logical bridge hot for typing diffs, but defer the expensive
+  `ContentsTextFormatRenderer` render plus editor-surface/minimap snapshot commit to a short idle timer or an explicit
+  focus-loss / note-switch flush.
 - The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
   current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
 - Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts

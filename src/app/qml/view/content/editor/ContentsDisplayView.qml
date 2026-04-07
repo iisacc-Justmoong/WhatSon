@@ -140,12 +140,14 @@ Item {
     property real minimapResolvedViewportY: 0
     readonly property int minimapRowGap: Math.max(1, Math.round(LV.Theme.scaleMetric(1)))
     property bool minimapScrollable: false
+    property bool cursorDrivenUiRefreshQueued: false
     property bool minimapSnapshotRefreshQueued: false
     readonly property int minimapTrackInset: LV.Theme.gap8
     readonly property int minimapTrackWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
     readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
     readonly property int minimapViewportMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(28)))
     property bool minimapVisible: true
+    readonly property bool minimapRefreshEnabled: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
     property var minimapVisualRows: []
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
@@ -189,7 +191,8 @@ Item {
         const availableWidth = Math.max(0, viewportWidth - contentsView.printPaperHorizontalMargin * 2);
         return Math.max(0, Math.min(contentsView.printPaperMaxWidth, availableWidth));
     }
-    readonly property string renderedEditorText: contentsView.normalizeBodySourceForRichTextEditor(contentsView.editorText)
+    readonly property int documentPresentationRefreshIntervalMs: 120
+    property string renderedEditorText: ""
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
             return contentsView.editorViewModeViewModel;
@@ -203,6 +206,7 @@ Item {
     readonly property int resourceRenderDisplayLimit: 3
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
+    readonly property bool preferNativeInputHandling: false
     readonly property int saveDebounceMs: 120
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
@@ -539,6 +543,32 @@ Item {
     function handleSelectionContextMenuEvent(eventName) {
         editorSelectionController.handleSelectionContextMenuEvent(eventName);
     }
+    function commitDocumentPresentationRefresh() {
+        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== currentSourceText)
+            textFormatRenderer.sourceText = currentSourceText;
+        const nextRenderedText = textFormatRenderer && textFormatRenderer.renderedHtml !== undefined && textFormatRenderer.renderedHtml !== null
+                ? String(textFormatRenderer.renderedHtml)
+                : "";
+        if (contentsView.renderedEditorText !== nextRenderedText)
+            contentsView.renderedEditorText = nextRenderedText;
+        contentsView.scheduleEditorRichTextSurfaceSync();
+        contentsView.scheduleMinimapSnapshotRefresh();
+        if (minimapLayer && contentsView.minimapRefreshEnabled)
+            minimapLayer.requestRepaint();
+    }
+    function documentPresentationRenderDirty() {
+        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const rendererSourceText = textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== null
+                ? String(textFormatRenderer.sourceText)
+                : "";
+        if (rendererSourceText !== currentSourceText)
+            return true;
+        const rendererRenderedText = textFormatRenderer && textFormatRenderer.renderedHtml !== undefined && textFormatRenderer.renderedHtml !== null
+                ? String(textFormatRenderer.renderedHtml)
+                : "";
+        return contentsView.renderedEditorText !== rendererRenderedText;
+    }
     function inferSelectionRangeFromSelectedText(selectedText, cursorPosition) {
         return editorSelectionController.inferSelectionRangeFromSelectedText(selectedText, cursorPosition);
     }
@@ -788,23 +818,36 @@ Item {
         return editorSelectionController.queueMarkdownListMutation(listKind);
     }
     function refreshMinimapSnapshot() {
+        if (!contentsView.minimapRefreshEnabled)
+            return;
         const nextRows = contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0));
         const nextSilhouetteHeight = contentsView.minimapSilhouetteHeight(nextRows);
         const nextTrackHeight = Math.min(contentsView.minimapAvailableTrackHeight, nextSilhouetteHeight);
-        const nextScrollable = contentsView.isMinimapScrollable();
-        const nextViewportHeight = contentsView.minimapViewportHeight(nextTrackHeight);
-        const nextViewportY = contentsView.minimapViewportY(nextTrackHeight, nextViewportHeight);
-        const nextCurrentVisualRow = contentsView.minimapCurrentVisualRow(nextRows);
 
         contentsView.minimapVisualRows = nextRows;
         contentsView.minimapResolvedSilhouetteHeight = nextSilhouetteHeight;
         contentsView.minimapResolvedTrackHeight = nextTrackHeight;
-        contentsView.minimapScrollable = nextScrollable;
-        contentsView.minimapResolvedViewportHeight = nextViewportHeight;
-        contentsView.minimapResolvedViewportY = nextViewportY;
+        contentsView.refreshMinimapViewportTracking(nextTrackHeight);
+        contentsView.refreshMinimapCursorTracking(nextRows);
+    }
+    function refreshMinimapCursorTracking(rowsOverride) {
+        if (!contentsView.minimapRefreshEnabled)
+            return;
+        const nextCurrentVisualRow = contentsView.minimapCurrentVisualRow(rowsOverride);
         contentsView.minimapResolvedCurrentLineHeight = contentsView.minimapVisualRowPaintHeight(nextCurrentVisualRow);
         contentsView.minimapResolvedCurrentLineWidth = contentsView.minimapBarWidth(nextCurrentVisualRow.charCount);
         contentsView.minimapResolvedCurrentLineY = contentsView.minimapVisualRowPaintY(nextCurrentVisualRow);
+    }
+    function refreshMinimapViewportTracking(trackHeightOverride) {
+        if (!contentsView.minimapRefreshEnabled)
+            return;
+        const resolvedTrackHeight = Math.max(1, Number(trackHeightOverride) || contentsView.minimapResolvedTrackHeight);
+        const nextScrollable = contentsView.isMinimapScrollable();
+        const nextViewportHeight = contentsView.minimapViewportHeight(resolvedTrackHeight);
+        const nextViewportY = contentsView.minimapViewportY(resolvedTrackHeight, nextViewportHeight);
+        contentsView.minimapScrollable = nextScrollable;
+        contentsView.minimapResolvedViewportHeight = nextViewportHeight;
+        contentsView.minimapResolvedViewportY = nextViewportY;
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -846,13 +889,55 @@ Item {
     function scheduleEditorRichTextSurfaceSync() {
         editorSelectionController.scheduleEditorRichTextSurfaceSync();
     }
+    function scheduleDeferredDocumentPresentationRefresh() {
+        if (documentPresentationRefreshTimer.running)
+            documentPresentationRefreshTimer.stop();
+        documentPresentationRefreshTimer.start();
+    }
+    function scheduleDocumentPresentationRefresh(forceImmediate) {
+        const immediate = !!forceImmediate;
+        if (!contentsView.documentPresentationRenderDirty()) {
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+            if (immediate)
+                contentsView.scheduleEditorRichTextSurfaceSync();
+            contentsView.scheduleMinimapSnapshotRefresh();
+            if (minimapLayer && contentsView.minimapRefreshEnabled)
+                minimapLayer.requestRepaint();
+            return;
+        }
+        if (immediate || !contentsView.editorInputFocused) {
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+            contentsView.commitDocumentPresentationRefresh();
+            return;
+        }
+        contentsView.scheduleDeferredDocumentPresentationRefresh();
+    }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
         contentsView.gutterRefreshPassesRemaining = Math.max(contentsView.gutterRefreshPassesRemaining, requestedPassCount);
         if (!gutterRefreshTimer.running)
             gutterRefreshTimer.start();
     }
+    function scheduleCursorDrivenUiRefresh() {
+        if (!contentsView.minimapRefreshEnabled && contentsView.preferNativeInputHandling)
+            return;
+        if (contentsView.cursorDrivenUiRefreshQueued)
+            return;
+        contentsView.cursorDrivenUiRefreshQueued = true;
+        Qt.callLater(function () {
+            contentsView.cursorDrivenUiRefreshQueued = false;
+            contentsView.refreshMinimapCursorTracking();
+            if (minimapLayer && contentsView.minimapRefreshEnabled)
+                minimapLayer.requestRepaint();
+            if (!contentsView.preferNativeInputHandling)
+                contentsView.scheduleEditorRichTextSurfaceSync();
+        });
+    }
     function scheduleMinimapSnapshotRefresh() {
+        if (!contentsView.minimapRefreshEnabled)
+            return;
         if (contentsView.minimapSnapshotRefreshQueued)
             return;
         contentsView.minimapSnapshotRefreshQueued = true;
@@ -889,8 +974,7 @@ Item {
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
-        contentsView.scheduleEditorRichTextSurfaceSync();
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.scheduleGutterRefresh(4);
     }
     Component.onDestruction: {
@@ -902,14 +986,14 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
     onEditorTextChanged: {
-        contentsView.scheduleEditorRichTextSurfaceSync();
-        contentsView.scheduleMinimapSnapshotRefresh();
-        if (minimapLayer)
-            minimapLayer.requestRepaint();
+        contentsView.scheduleDocumentPresentationRefresh(false);
     }
     onHeightChanged: {
         contentsView.scheduleMinimapSnapshotRefresh();
         contentsView.scheduleGutterRefresh(2);
+    }
+    onMinimapVisibleChanged: {
+        contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {
         const normalizedBodyText = contentsView.selectedNoteBodyText;
@@ -918,21 +1002,19 @@ Item {
         } else {
             editorSession.scheduleEditorPersistence();
         }
-        contentsView.scheduleEditorRichTextSurfaceSync();
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
-        contentsView.scheduleEditorRichTextSurfaceSync();
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
     onVisibleChanged: {
         if (visible) {
-            contentsView.scheduleMinimapSnapshotRefresh();
+            contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
         }
     }
@@ -977,8 +1059,6 @@ Item {
     }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
-
-        sourceText: contentsView.editorText
     }
     ContentsLogicalTextBridge {
         id: textMetricsBridge
@@ -995,6 +1075,14 @@ Item {
 
         saveDebounceMs: contentsView.saveDebounceMs
         selectionBridge: selectionBridge
+    }
+    Timer {
+        id: documentPresentationRefreshTimer
+
+        interval: contentsView.documentPresentationRefreshIntervalMs
+        repeat: false
+
+        onTriggered: contentsView.commitDocumentPresentationRefresh()
     }
     Timer {
         id: gutterRefreshTimer
@@ -1031,6 +1119,7 @@ Item {
     }
     Connections {
         function onEditorTextSynchronized() {
+            contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
         }
 
@@ -1038,16 +1127,20 @@ Item {
     }
     Connections {
         function onContentHeightChanged() {
-            contentsView.scheduleMinimapSnapshotRefresh();
+            if (contentsView.editorInputFocused)
+                contentsView.scheduleDeferredDocumentPresentationRefresh();
+            else
+                contentsView.scheduleMinimapSnapshotRefresh();
             contentsView.scheduleGutterRefresh(2);
         }
         function onCursorPositionChanged() {
-            contentsView.scheduleMinimapSnapshotRefresh();
-            if (minimapLayer)
-                minimapLayer.requestRepaint();
+            contentsView.scheduleCursorDrivenUiRefresh();
         }
         function onLineCountChanged() {
-            contentsView.scheduleMinimapSnapshotRefresh();
+            if (contentsView.editorInputFocused)
+                contentsView.scheduleDeferredDocumentPresentationRefresh();
+            else
+                contentsView.scheduleMinimapSnapshotRefresh();
             contentsView.scheduleGutterRefresh(2);
         }
 
@@ -1056,8 +1149,8 @@ Item {
     }
     Connections {
         function onContentYChanged() {
-            contentsView.scheduleMinimapSnapshotRefresh();
-            if (minimapLayer)
+            contentsView.refreshMinimapViewportTracking();
+            if (minimapLayer && contentsView.minimapRefreshEnabled)
                 minimapLayer.requestRepaint();
         }
 
@@ -1066,7 +1159,7 @@ Item {
     }
     Connections {
         function onCursorPositionChanged() {
-            contentsView.scheduleEditorRichTextSurfaceSync();
+            contentsView.scheduleCursorDrivenUiRefresh();
         }
 
         ignoreUnknownSignals: true
@@ -1074,7 +1167,7 @@ Item {
     }
     Connections {
         function onCursorPositionChanged() {
-            contentsView.scheduleEditorRichTextSurfaceSync();
+            contentsView.scheduleCursorDrivenUiRefresh();
         }
 
         ignoreUnknownSignals: true
@@ -1296,8 +1389,10 @@ Item {
                             contentsView.handleInlineFormatShortcutKeyPress(event);
                         }
                         onFocusedChanged: {
-                            if (!focused)
+                            if (!focused) {
                                 contentsView.flushEditorStateAfterInputSettles(0);
+                                contentsView.scheduleDocumentPresentationRefresh(true);
+                            }
                         }
                         onTextEdited: function (_text) {
                             editorTypingController.handleEditorTextEdited();

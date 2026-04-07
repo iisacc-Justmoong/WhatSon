@@ -8,10 +8,17 @@ It keeps the editor contract expected by `ContentsDisplayView.qml` (`cursorPosit
 `selectionEnd`, `selectedText`, `contentHeight`, `editorItem`, `inputItem`, `positionToRectangle(...)`) while using a
 plain `QtQuick.TextEdit` as the actual rendering and input engine.
 
+- The repository does not route note editing through an LVRS-provided `LV.TextEditor` anymore.
+- Performance-sensitive editor work should therefore target this wrapper and the underlying `QtQuick.TextEdit`
+  lifecycle directly.
+
 ## Key Behavior
 
 - Accepts `renderedEditorText` as an input-only property (`text`) and syncs it into the underlying `TextEdit`
   programmatically.
+- Hosts now treat that `renderedEditorText` payload as a debounced presentation cache rather than a per-keystroke
+  whole-document mirror, so the wrapper is no longer asked to absorb a full RichText surface replacement on every
+  ordinary typing tick.
 - Hosts can opt into `preferNativeInputHandling`:
   - while the editor keeps focus or an IME preedit session is active, app-driven `text` resync is deferred
   - the latest deferred payload is flushed after focus leaves or when no native input session is active anymore
@@ -66,11 +73,15 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - RichText spans derived from `.wsnbody` tags render visibly inside the live editor surface
   - cursor/selection updates still drive gutter and minimap geometry
   - programmatic note switches do not emit duplicate save mutations
+  - the live note editor remains backed by `QtQuick.TextEdit`; no `LV.TextEditor` dependency should be reintroduced
 - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
 - Hangul IME composition must not delete previously committed text when a syllable block is assembled
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text
   reinjection before the native input session settles
+- desktop/mobile hosts must not feed the wrapper a fresh whole-document `renderedEditorText` payload on every
+  committed keystroke; ordinary typing should reach the wrapper's programmatic sync path only after the presentation
+  debounce or an explicit flush
 - the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
   `12px` default
   - the visible desktop editor text weight must follow the host-supplied regular-weight policy instead of staying at a

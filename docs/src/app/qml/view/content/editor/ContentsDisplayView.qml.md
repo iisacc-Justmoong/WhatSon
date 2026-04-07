@@ -41,6 +41,13 @@ that sit directly inside the editor viewport.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
+- Whole-document RichText projection now runs through a short presentation timer instead of a direct `editorText`
+  binding:
+  - live typing keeps `ContentsLogicalTextBridge` current for source/plain-text diffing
+  - `ContentsTextFormatRenderer.sourceText`, the cached `renderedEditorText`, and the full minimap snapshot refresh
+    are committed after a short idle window or immediately when focus leaves / note selection changes
+- Cursor-only and viewport-only minimap updates now reuse cached row geometry; full minimap resampling is limited to
+  text/layout changes or an explicit minimap re-enable.
 - RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
   RichText editor surface instead of showing the literal escape sequences.
 - Desktop window shortcuts mirror the selection controller contract for markdown lists:
@@ -56,6 +63,10 @@ that sit directly inside the editor viewport.
   - Desktop contents must render without reserving any extra bottom partition height.
   - Markdown-style list authoring must not cause the desktop gutter width to oscillate while the editor relayouts.
   - Gutter line numbers and minimap geometry must still align with the live editor surface.
+  - Moving the cursor through the desktop editor must update the minimap highlight without rebuilding the whole minimap
+    snapshot on every cursor tick.
+  - Desktop typing must not drive `ContentsTextFormatRenderer` and whole-editor RichText surface reinjection on every
+    committed keystroke; those presentation updates should land after the short idle debounce or on blur/note switch.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
