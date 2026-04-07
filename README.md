@@ -318,6 +318,9 @@ WhatSon is an LVRS-based Qt Quick application.
   editor views now keep the source-to-logical bridge hot for typing diffs, but defer the expensive
   `ContentsTextFormatRenderer` render plus editor-surface/minimap snapshot commit to a short idle timer or an explicit
   focus-loss / note-switch flush.
+- The shared `ContentsInlineFormatEditor.qml` wrapper now also forwards cursor/selection/geometry changes to
+  `Qt.inputMethod.update(...)` using the same `Qt::ImQueryInput` / cursor-rectangle queries documented by Qt, so iOS
+  keyboard trackpad-style cursor and selection gestures can keep following the live `TextEdit` state.
 - The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
   current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
 - Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts

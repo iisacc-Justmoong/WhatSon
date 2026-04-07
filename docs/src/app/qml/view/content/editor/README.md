@@ -35,6 +35,9 @@
   the whole RichText surface on every edit.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
+- `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
+  geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
+  live `TextEdit`.
 - Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
   pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
   uses a plain logical-text input surface instead of the RichText editor projection.

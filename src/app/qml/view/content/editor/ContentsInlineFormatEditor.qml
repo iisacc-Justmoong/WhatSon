@@ -102,6 +102,21 @@ FocusScope {
         return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, maximumLength)));
     }
 
+    function inputMethodGeometryQueryMask() {
+        return Qt.ImCursorRectangle | Qt.ImAnchorRectangle | Qt.ImInputItemClipRectangle;
+    }
+
+    function inputMethodSelectionQueryMask() {
+        return Qt.ImQueryInput;
+    }
+
+    function notifyInputMethod(queries) {
+        const queryMask = queries === undefined || queries === null
+                ? control.inputMethodSelectionQueryMask()
+                : queries;
+        InputMethod.update(queryMask);
+    }
+
     function canDeferProgrammaticTextSync() {
         return !!control.preferNativeInputHandling
                 && (control.focused || control.inputMethodComposing || control.preeditText.length > 0);
@@ -144,6 +159,8 @@ FocusScope {
             textInput.cursorPosition = restoredCursorPosition;
         }
         control._programmaticTextSyncDepth -= 1;
+        control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+        control.notifyInputMethod(control.inputMethodGeometryQueryMask());
     }
 
     function scheduleCommittedTextEditedDispatch() {
@@ -158,6 +175,7 @@ FocusScope {
     }
 
     onFocusedChanged: {
+        control.notifyInputMethod(Qt.ImQueryAll);
         if (!focused)
             control.flushDeferredProgrammaticText(true);
     }
@@ -256,8 +274,24 @@ FocusScope {
                 readonly property bool focused: activeFocus
                 property bool showRenderedOutput: control.showRenderedOutput
 
+                onActiveFocusChanged: {
+                    control.notifyInputMethod(Qt.ImQueryAll);
+                }
+                onCursorPositionChanged: {
+                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                }
+                onCursorRectangleChanged: {
+                    control.notifyInputMethod(control.inputMethodGeometryQueryMask());
+                }
+                onSelectionEndChanged: {
+                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                }
+                onSelectionStartChanged: {
+                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                }
                 onTextChanged: {
                     control.scheduleCommittedTextEditedDispatch();
+                    control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                 }
             }
         }
@@ -288,6 +322,19 @@ FocusScope {
     }
 
     Connections {
+        function onContentYChanged() {
+            control.notifyInputMethod(control.inputMethodGeometryQueryMask());
+        }
+
+        function onHeightChanged() {
+            control.notifyInputMethod(control.inputMethodGeometryQueryMask());
+        }
+
+        ignoreUnknownSignals: true
+        target: control.resolvedFlickable
+    }
+
+    Connections {
         function onInputMethodComposingChanged() {
             if (!textInput.inputMethodComposing && control._compositionEditPending)
                 control.scheduleCommittedTextEditedDispatch();
@@ -310,5 +357,8 @@ FocusScope {
         target: textInput
     }
 
-    Component.onCompleted: setProgrammaticText(text)
+    Component.onCompleted: {
+        setProgrammaticText(text);
+        control.notifyInputMethod(Qt.ImQueryAll);
+    }
 }

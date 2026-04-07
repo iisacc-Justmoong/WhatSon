@@ -19,6 +19,11 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Hosts now treat that `renderedEditorText` payload as a debounced presentation cache rather than a per-keystroke
   whole-document mirror, so the wrapper is no longer asked to absorb a full RichText surface replacement on every
   ordinary typing tick.
+- The wrapper now also mirrors editor-state changes back to `Qt.inputMethod.update(...)`:
+  - cursor / selection changes emit `Qt.ImQueryInput`
+  - cursor-geometry / clip changes emit cursor-rectangle queries including `Qt.ImAnchorRectangle`
+  - this follows Qt's documented mobile-text-selection contract, where selection handles and similar platform features
+    are surfaced through `QInputMethod`
 - Hosts can opt into `preferNativeInputHandling`:
   - while the editor keeps focus or an IME preedit session is active, app-driven `text` resync is deferred
   - the latest deferred payload is flushed after focus leaves or when no native input session is active anymore
@@ -82,6 +87,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - desktop/mobile hosts must not feed the wrapper a fresh whole-document `renderedEditorText` payload on every
   committed keystroke; ordinary typing should reach the wrapper's programmatic sync path only after the presentation
   debounce or an explicit flush
+- iOS cursor movement and selection gestures from the software keyboard must still work after wrapper-level cursor,
+  selection, or scroll changes; `Qt.inputMethod.update(...)` coverage must not regress
 - the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
   `12px` default
   - the visible desktop editor text weight must follow the host-supplied regular-weight policy instead of staying at a

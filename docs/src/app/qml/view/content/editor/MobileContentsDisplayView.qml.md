@@ -22,6 +22,8 @@ suppression local to this file.
 - Mobile still keeps the source/plain-text bridge current for typing diffs, but the expensive markdown-aware
   `ContentsTextFormatRenderer` refresh plus full minimap snapshot now commit on a short idle timer or when the native
   input session settles.
+- Mobile now also depends on the shared editor wrapper's `Qt.inputMethod.update(...)` path so iOS can re-query current
+  selection/cursor geometry while keyboard trackpad gestures are active.
 - Cursor-only and scroll-only minimap updates now stay on cached geometry, and when the parent route disables the
   minimap the mobile surface skips minimap sampling entirely.
 - Minimap visibility is still controlled by the parent route/layout contract.
@@ -62,6 +64,8 @@ suppression local to this file.
     selection, repeat backspace, and IME composition remain OS-driven.
   - iOS spacebar cursor-drag and other OS cursor-tracking gestures must not trigger full minimap resampling or any
     app-side RichText surface reinjection while native input handling is active.
+  - iOS keyboard-based selection gestures must continue to update the selected range after cursor/selection/scroll
+    changes because the wrapper keeps `Qt.inputMethod.update(...)` in sync with the live `TextEdit`.
   - While the mobile editor is focused, note snapshot polling must not re-sync the current note body back into the live
     input surface.
   - Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the
