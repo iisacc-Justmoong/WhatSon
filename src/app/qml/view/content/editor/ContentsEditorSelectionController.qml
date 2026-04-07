@@ -262,6 +262,41 @@ QtObject {
         const currentSourceText = controller.currentSourceText();
         return Math.max(0, Math.min(currentSourceText.length, safeOffset));
     }
+    function selectionCursorUsesStartEdge(cursorPosition, selectionStart, selectionEnd) {
+        const boundedStart = Math.max(0, Math.floor(Number(selectionStart) || 0));
+        const boundedEnd = Math.max(boundedStart, Math.floor(Number(selectionEnd) || 0));
+        const numericCursor = Number(cursorPosition);
+        if (!isFinite(numericCursor))
+            return false;
+        const boundedCursor = controller.clampLogicalPosition(numericCursor, boundedEnd);
+        if (boundedCursor <= boundedStart)
+            return true;
+        if (boundedCursor >= boundedEnd)
+            return false;
+        return Math.abs(boundedCursor - boundedStart) <= Math.abs(boundedCursor - boundedEnd);
+    }
+    function restoreEditorSelection(inputItem, selectionStart, selectionEnd, cursorPosition) {
+        if (!inputItem)
+            return false;
+        const boundedStart = Math.max(0, Math.floor(Number(selectionStart) || 0));
+        const boundedEnd = Math.max(boundedStart, Math.floor(Number(selectionEnd) || 0));
+        if (boundedEnd <= boundedStart)
+            return false;
+        const activeCursor = isFinite(Number(cursorPosition)) ? Number(cursorPosition) : controller.currentEditorCursorPosition();
+        const activeEdgeIsStart = controller.selectionCursorUsesStartEdge(activeCursor, boundedStart, boundedEnd);
+        if (inputItem.moveCursorSelection !== undefined) {
+            const anchorPosition = activeEdgeIsStart ? boundedEnd : boundedStart;
+            const activePosition = activeEdgeIsStart ? boundedStart : boundedEnd;
+            inputItem.cursorPosition = anchorPosition;
+            inputItem.moveCursorSelection(activePosition, TextEdit.SelectCharacters);
+            return true;
+        }
+        if (inputItem.select !== undefined) {
+            inputItem.select(boundedStart, boundedEnd);
+            return true;
+        }
+        return false;
+    }
     function scheduleEditorSelection(selectionStart, selectionEnd, cursorPosition) {
         const requestedStart = Number(selectionStart);
         const requestedEnd = Number(selectionEnd);
@@ -272,12 +307,12 @@ QtObject {
             const logicalLength = controller.currentLogicalText().length;
             const boundedStart = controller.clampLogicalPosition(requestedStart, logicalLength);
             const boundedEnd = controller.clampLogicalPosition(requestedEnd, logicalLength);
-            const boundedCursor = controller.clampLogicalPosition(requestedCursor, logicalLength);
+            const fallbackCursor = isFinite(requestedCursor) ? requestedCursor : controller.currentEditorCursorPosition();
+            const boundedCursor = controller.clampLogicalPosition(fallbackCursor, logicalLength);
             const editorItem = controller.contentEditor.editorItem ? controller.contentEditor.editorItem : null;
             const inputItem = editorItem && editorItem.inputItem ? editorItem.inputItem : null;
             if (isFinite(requestedStart) && isFinite(requestedEnd) && boundedEnd > boundedStart) {
-                if (inputItem && inputItem.select !== undefined)
-                    inputItem.select(boundedStart, boundedEnd);
+                controller.restoreEditorSelection(inputItem, boundedStart, boundedEnd, boundedCursor);
                 return;
             }
             if (inputItem && inputItem.deselect !== undefined)
@@ -809,7 +844,7 @@ QtObject {
             controller.scheduleEditorSelection(
                         lineStates[0].entry.logicalStart,
                         lineStates[0].entry.logicalStart + selectionLogicalLength,
-                        NaN);
+                        lineContext.cursorPosition);
         } else {
             controller.scheduleEditorSelection(NaN, NaN, nextCursorPosition);
         }

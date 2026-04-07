@@ -38,6 +38,12 @@
 - `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
   geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
   live `TextEdit`.
+- Both the wrapper and the selection controller now restore selections with `TextEdit.moveCursorSelection(...)` when an
+  active edge matters, so OS-driven selection expansion keeps one continuous anchor instead of degrading to repeated
+  fresh sub-selections.
+- `ContentsInlineFormatEditor.qml` now also supplements mobile native-input selection with passive touch multi-tap
+  handling, restoring double-tap word selection and triple-tap paragraph selection even though the live editor sits
+  inside a `Flickable`.
 - Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
   pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
   uses a plain logical-text input surface instead of the RichText editor projection.

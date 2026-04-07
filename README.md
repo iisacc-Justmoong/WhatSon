@@ -321,6 +321,12 @@ WhatSon is an LVRS-based Qt Quick application.
 - The shared `ContentsInlineFormatEditor.qml` wrapper now also forwards cursor/selection/geometry changes to
   `Qt.inputMethod.update(...)` using the same `Qt::ImQueryInput` / cursor-rectangle queries documented by Qt, so iOS
   keyboard trackpad-style cursor and selection gestures can keep following the live `TextEdit` state.
+- Programmatic selection restoration now uses `TextEdit.moveCursorSelection(...)` instead of plain `select(start, end)`
+  when an active edge must be preserved. This keeps iOS keyboard-driven range expansion from collapsing to only the
+  most recently traversed fragment after the app re-syncs the surface or reapplies a selection.
+- The shared editor wrapper now also supplements touch-only multi-tap selection on native-input mobile paths:
+  double-tap reselects the touched word and triple-tap expands to the surrounding paragraph so iOS selection gestures
+  are not lost when the live editor is hosted inside a `Flickable`.
 - The left marker rail is state-driven: the current cursor line is blue (`LV.Theme.primary`), lines changed in the
   current session are yellow (`#FFF567`), and externally supplied sync-conflict ranges are red (`LV.Theme.danger`).
 - Conflict detection and sync integration are not implemented yet, but `ContentsDisplayView.qml` already accepts

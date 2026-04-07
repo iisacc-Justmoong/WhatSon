@@ -24,6 +24,11 @@ suppression local to this file.
   input session settles.
 - Mobile now also depends on the shared editor wrapper's `Qt.inputMethod.update(...)` path so iOS can re-query current
   selection/cursor geometry while keyboard trackpad gestures are active.
+- Mobile also depends on the shared wrapper/controller preserving the active selection edge with
+  `TextEdit.moveCursorSelection(...)` whenever the app has to restore a selection programmatically.
+- Mobile also depends on the shared wrapper's passive touch multi-tap selection support:
+  - double-tap reselects the touched word
+  - triple-tap expands to the surrounding paragraph
 - Cursor-only and scroll-only minimap updates now stay on cached geometry, and when the parent route disables the
   minimap the mobile surface skips minimap sampling entirely.
 - Minimap visibility is still controlled by the parent route/layout contract.
@@ -66,6 +71,10 @@ suppression local to this file.
     app-side RichText surface reinjection while native input handling is active.
   - iOS keyboard-based selection gestures must continue to update the selected range after cursor/selection/scroll
     changes because the wrapper keeps `Qt.inputMethod.update(...)` in sync with the live `TextEdit`.
+  - iOS keyboard-based range selection must keep extending/shrinking one continuous range; the app must not collapse
+    the existing selection down to only the most recently traversed text fragment.
+  - iOS touch double-tap must still select the touched word while native input handling is active.
+  - iOS touch triple-tap must still select the surrounding paragraph while native input handling is active.
   - While the mobile editor is focused, note snapshot polling must not re-sync the current note body back into the live
     input surface.
   - Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the

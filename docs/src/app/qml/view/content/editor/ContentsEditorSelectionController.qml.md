@@ -100,6 +100,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   - desktop keeps the RichText editing surface
   - mobile/native-priority hosts force the live `TextEdit` surface back to `PlainText` so OS-native composition and
     selection heuristics are not re-hooked by RichText reconfiguration
+- Whenever the controller has to restore a non-empty selection after rewriting source text, it now prefers
+  `TextEdit.moveCursorSelection(...)` so the same active edge/cursor anchor survives the rewrite instead of being
+  normalized by `select(start, end)`.
 
 ## Regression Checks
 
@@ -119,6 +122,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Applying a markdown list toggle to a line whose body already contains inline tags or `<resource ...>` source tokens
   must keep the restored cursor and any rewritten selection anchored to the rendered logical text, not to the longer
   canonical source-token length.
+- Reapplying a selection after inline/list mutations must preserve the active selection edge, so iOS keyboard-based
+  range expansion or shrink does not collapse to only the newest traversed text fragment.
 - Formatting should apply to the exact rendered fragment under the current selection even when the note body already
   contains inline tags around nearby text.
 - Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.

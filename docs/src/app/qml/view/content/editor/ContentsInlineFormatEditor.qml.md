@@ -24,6 +24,14 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - cursor-geometry / clip changes emit cursor-rectangle queries including `Qt.ImAnchorRectangle`
   - this follows Qt's documented mobile-text-selection contract, where selection handles and similar platform features
     are surfaced through `QInputMethod`
+- When the wrapper must reapply an existing selection after a programmatic text sync, it now prefers
+  `TextEdit.moveCursorSelection(...)` over `select(start, end)` so the active cursor edge is preserved together with
+  the selected range.
+- On native-input mobile paths the wrapper also adds a passive touch `TapHandler` on top of `TextEdit`:
+  - double-tap reselects the touched word via `TextEdit.selectWord()`
+  - triple-tap expands to the surrounding newline-delimited paragraph
+  - the resulting programmatic selection still reuses the same input-method update path so iOS selection UI stays in
+    sync
 - Hosts can opt into `preferNativeInputHandling`:
   - while the editor keeps focus or an IME preedit session is active, app-driven `text` resync is deferred
   - the latest deferred payload is flushed after focus leaves or when no native input session is active anymore
@@ -89,6 +97,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   debounce or an explicit flush
 - iOS cursor movement and selection gestures from the software keyboard must still work after wrapper-level cursor,
   selection, or scroll changes; `Qt.inputMethod.update(...)` coverage must not regress
+- iOS keyboard-driven range selection must not collapse to only the newest delta after the wrapper reapplies text or
+  selection state; the original anchor edge must survive the sync path
+- iOS touch double-tap must keep selecting the touched word even though the editor is mounted inside a `Flickable`
+- iOS touch triple-tap must expand to the surrounding paragraph instead of leaving only the insertion cursor behind
 - the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
   `12px` default
   - the visible desktop editor text weight must follow the host-supplied regular-weight policy instead of staying at a

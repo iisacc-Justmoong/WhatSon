@@ -117,6 +117,114 @@ FocusScope {
         InputMethod.update(queryMask);
     }
 
+    function selectionCursorUsesStartEdge(cursorPosition, selectionStart, selectionEnd) {
+        const boundedStart = Math.max(0, Math.floor(Number(selectionStart) || 0));
+        const boundedEnd = Math.max(boundedStart, Math.floor(Number(selectionEnd) || 0));
+        const numericCursor = Number(cursorPosition);
+        if (!isFinite(numericCursor))
+            return false;
+        const boundedCursor = control.clampLogicalPosition(numericCursor, boundedEnd);
+        if (boundedCursor <= boundedStart)
+            return true;
+        if (boundedCursor >= boundedEnd)
+            return false;
+        return Math.abs(boundedCursor - boundedStart) <= Math.abs(boundedCursor - boundedEnd);
+    }
+
+    function restoreSelectionRange(selectionStart, selectionEnd, cursorPosition) {
+        const maximumLength = Number(textInput.length) || 0;
+        const boundedStart = control.clampLogicalPosition(selectionStart, maximumLength);
+        const boundedEnd = control.clampLogicalPosition(selectionEnd, maximumLength);
+        if (boundedEnd <= boundedStart)
+            return false;
+        const activeCursor = isFinite(Number(cursorPosition)) ? Number(cursorPosition) : boundedEnd;
+        const activeEdgeIsStart = control.selectionCursorUsesStartEdge(activeCursor, boundedStart, boundedEnd);
+        if (textInput.moveCursorSelection !== undefined) {
+            const anchorPosition = activeEdgeIsStart ? boundedEnd : boundedStart;
+            const activePosition = activeEdgeIsStart ? boundedStart : boundedEnd;
+            textInput.cursorPosition = anchorPosition;
+            textInput.moveCursorSelection(activePosition, TextEdit.SelectCharacters);
+            return true;
+        }
+        if (textInput.select !== undefined) {
+            textInput.select(boundedStart, boundedEnd);
+            return true;
+        }
+        return false;
+    }
+
+    function cursorPositionForPoint(point) {
+        const maximumLength = Number(textInput.length) || 0;
+        if (textInput.positionAt !== undefined && point) {
+            const pointX = Number(point.x);
+            const pointY = Number(point.y);
+            if (isFinite(pointX) && isFinite(pointY)) {
+                const resolvedPosition = Number(textInput.positionAt(
+                                                   Math.round(pointX),
+                                                   Math.round(pointY)));
+                if (isFinite(resolvedPosition))
+                    return control.clampLogicalPosition(resolvedPosition, maximumLength);
+            }
+        }
+        return control.clampLogicalPosition(Number(textInput.cursorPosition), maximumLength);
+    }
+
+    function paragraphSelectionRangeForPosition(position) {
+        const maximumLength = Number(textInput.length) || 0;
+        const editorText = textInput.getText !== undefined
+                ? String(textInput.getText(0, maximumLength))
+                : String(textInput.text === undefined || textInput.text === null ? "" : textInput.text);
+        if (editorText.length === 0)
+            return ({ "start": 0, "end": 0 });
+
+        let boundedPosition = control.clampLogicalPosition(position, editorText.length);
+        if (boundedPosition >= editorText.length)
+            boundedPosition = Math.max(0, editorText.length - 1);
+
+        let paragraphStart = boundedPosition;
+        while (paragraphStart > 0 && editorText.charAt(paragraphStart - 1) !== "\n")
+            --paragraphStart;
+
+        let paragraphEnd = boundedPosition;
+        while (paragraphEnd < editorText.length && editorText.charAt(paragraphEnd) !== "\n")
+            ++paragraphEnd;
+
+        return ({
+                "start": paragraphStart,
+                "end": paragraphEnd
+            });
+    }
+
+    function applyNativeSelectionRange(selectionStart, selectionEnd, cursorPosition) {
+        const restored = control.restoreSelectionRange(selectionStart, selectionEnd, cursorPosition);
+        if (restored) {
+            control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+            control.notifyInputMethod(control.inputMethodGeometryQueryMask());
+        }
+        return restored;
+    }
+
+    function selectWordAtPoint(point) {
+        const targetPosition = control.cursorPositionForPoint(point);
+        textInput.cursorPosition = targetPosition;
+        if (textInput.selectWord === undefined)
+            return false;
+        textInput.selectWord();
+        const selectionStart = Number(textInput.selectionStart);
+        const selectionEnd = Number(textInput.selectionEnd);
+        if (selectionEnd <= selectionStart)
+            return false;
+        return control.applyNativeSelectionRange(selectionStart, selectionEnd, selectionEnd);
+    }
+
+    function selectParagraphAtPoint(point) {
+        const targetPosition = control.cursorPositionForPoint(point);
+        const paragraphRange = control.paragraphSelectionRangeForPosition(targetPosition);
+        if (paragraphRange.end <= paragraphRange.start)
+            return false;
+        return control.applyNativeSelectionRange(paragraphRange.start, paragraphRange.end, paragraphRange.end);
+    }
+
     function canDeferProgrammaticTextSync() {
         return !!control.preferNativeInputHandling
                 && (control.focused || control.inputMethodComposing || control.preeditText.length > 0);
@@ -147,13 +255,11 @@ FocusScope {
         control._compositionEditPending = false;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
-        const maximumLength = Number(textInput.length) || 0;
-        const restoredSelectionStart = control.clampLogicalPosition(previousSelectionStart, maximumLength);
-        const restoredSelectionEnd = control.clampLogicalPosition(previousSelectionEnd, maximumLength);
-        const restoredCursorPosition = control.clampLogicalPosition(previousCursorPosition, maximumLength);
-        if (hadSelection && restoredSelectionEnd > restoredSelectionStart) {
-            textInput.select(restoredSelectionStart, restoredSelectionEnd);
+        if (hadSelection && previousSelectionEnd > previousSelectionStart) {
+            control.restoreSelectionRange(previousSelectionStart, previousSelectionEnd, previousCursorPosition);
         } else {
+            const maximumLength = Number(textInput.length) || 0;
+            const restoredCursorPosition = control.clampLogicalPosition(previousCursorPosition, maximumLength);
             if (textInput.deselect !== undefined)
                 textInput.deselect();
             textInput.cursorPosition = restoredCursorPosition;
@@ -292,6 +398,20 @@ FocusScope {
                 onTextChanged: {
                     control.scheduleCommittedTextEditedDispatch();
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                }
+
+                TapHandler {
+                    acceptedDevices: PointerDevice.TouchScreen
+                    enabled: control.preferNativeInputHandling
+                    gesturePolicy: TapHandler.DragThreshold
+
+                    onDoubleTapped: function (eventPoint, _button) {
+                        control.selectWordAtPoint(eventPoint.position);
+                    }
+                    onTapped: function (eventPoint, _button) {
+                        if (tapCount === 3)
+                            control.selectParagraphAtPoint(eventPoint.position);
+                    }
                 }
             }
         }
