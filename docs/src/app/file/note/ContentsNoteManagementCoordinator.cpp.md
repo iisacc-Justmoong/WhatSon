@@ -6,8 +6,8 @@
 
 ## Runtime Notes
 
-- The coordinator now centralizes the editor-adjacent note-management queue that used to live inside
-  `ContentsEditorSelectionBridge.cpp`.
+- The coordinator now centralizes the editor-adjacent note-management queue that sits downstream of
+  `file/sync/ContentsEditorIdleSyncController`.
 - Direct body persistence still uses `WhatSonLocalNoteFileStore`, but that worker request is now just one request kind
   inside the coordinator.
 - Non-editing maintenance work also lives here:

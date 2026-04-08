@@ -1,6 +1,6 @@
 #include "ContentsEditorSelectionBridge.hpp"
 
-#include "file/note/ContentsNoteManagementCoordinator.hpp"
+#include "file/sync/ContentsEditorIdleSyncController.hpp"
 
 #include <QMetaProperty>
 
@@ -9,15 +9,20 @@
 ContentsEditorSelectionBridge::ContentsEditorSelectionBridge(QObject* parent)
     : QObject(parent)
 {
-    m_noteManagementCoordinator = new ContentsNoteManagementCoordinator(this);
+    m_idleSyncController = new ContentsEditorIdleSyncController(this);
     connect(
-        m_noteManagementCoordinator,
-        &ContentsNoteManagementCoordinator::contentPersistenceContractAvailableChanged,
+        m_idleSyncController,
+        &ContentsEditorIdleSyncController::contentPersistenceContractAvailableChanged,
         this,
         &ContentsEditorSelectionBridge::contentPersistenceContractAvailableChanged);
     connect(
-        m_noteManagementCoordinator,
-        &ContentsNoteManagementCoordinator::editorTextPersistenceFinished,
+        m_idleSyncController,
+        &ContentsEditorIdleSyncController::editorTextPersistenceQueued,
+        this,
+        &ContentsEditorSelectionBridge::editorTextPersistenceQueued);
+    connect(
+        m_idleSyncController,
+        &ContentsEditorIdleSyncController::editorTextPersistenceFinished,
         this,
         &ContentsEditorSelectionBridge::editorTextPersistenceFinished);
 }
@@ -92,16 +97,16 @@ void ContentsEditorSelectionBridge::setContentViewModel(QObject* model)
             &ContentsEditorSelectionBridge::handleContentViewModelDestroyed);
     }
 
-    if (m_noteManagementCoordinator != nullptr)
+    if (m_idleSyncController != nullptr)
     {
-        m_noteManagementCoordinator->setContentViewModel(m_contentViewModel);
+        m_idleSyncController->setContentViewModel(m_contentViewModel);
         if (!m_selectedNoteId.trimmed().isEmpty())
         {
-            m_noteManagementCoordinator->bindSelectedNote(m_selectedNoteId);
+            m_idleSyncController->bindSelectedNote(m_selectedNoteId);
         }
         else
         {
-            m_noteManagementCoordinator->clearSelectedNote();
+            m_idleSyncController->clearSelectedNote();
         }
     }
 
@@ -120,8 +125,8 @@ bool ContentsEditorSelectionBridge::noteCountContractAvailable() const noexcept
 
 bool ContentsEditorSelectionBridge::contentPersistenceContractAvailable() const noexcept
 {
-    return m_noteManagementCoordinator != nullptr
-        && m_noteManagementCoordinator->contentPersistenceContractAvailable();
+    return m_idleSyncController != nullptr
+        && m_idleSyncController->contentPersistenceContractAvailable();
 }
 
 QString ContentsEditorSelectionBridge::selectedNoteId() const
@@ -141,20 +146,31 @@ int ContentsEditorSelectionBridge::visibleNoteCount() const noexcept
 
 bool ContentsEditorSelectionBridge::persistEditorTextForNote(const QString& noteId, const QString& text)
 {
-    return m_noteManagementCoordinator != nullptr
-        && m_noteManagementCoordinator->persistEditorTextForNote(noteId, text);
+    return stageEditorTextForIdleSync(noteId, text);
+}
+
+bool ContentsEditorSelectionBridge::stageEditorTextForIdleSync(const QString& noteId, const QString& text)
+{
+    return m_idleSyncController != nullptr
+        && m_idleSyncController->stageEditorTextForIdleSync(noteId, text);
+}
+
+bool ContentsEditorSelectionBridge::flushEditorTextForNote(const QString& noteId, const QString& text)
+{
+    return m_idleSyncController != nullptr
+        && m_idleSyncController->flushEditorTextForNote(noteId, text);
 }
 
 bool ContentsEditorSelectionBridge::directPersistenceAvailable() const noexcept
 {
-    return m_noteManagementCoordinator != nullptr
-        && m_noteManagementCoordinator->directPersistenceAvailable();
+    return m_idleSyncController != nullptr
+        && m_idleSyncController->directPersistenceAvailable();
 }
 
 bool ContentsEditorSelectionBridge::refreshSelectedNoteSnapshot()
 {
-    const bool reloaded = m_noteManagementCoordinator != nullptr
-        && m_noteManagementCoordinator->refreshNoteSnapshotForNote(m_selectedNoteId);
+    const bool reloaded = m_idleSyncController != nullptr
+        && m_idleSyncController->refreshNoteSnapshotForNote(m_selectedNoteId);
     refreshNoteSelectionState();
     refreshNoteCountState();
     return reloaded;
@@ -183,9 +199,9 @@ void ContentsEditorSelectionBridge::handleContentViewModelDestroyed()
 {
     disconnectContentViewModel();
     m_contentViewModel = nullptr;
-    if (m_noteManagementCoordinator != nullptr)
+    if (m_idleSyncController != nullptr)
     {
-        m_noteManagementCoordinator->setContentViewModel(nullptr);
+        m_idleSyncController->setContentViewModel(nullptr);
     }
     emit contentViewModelChanged();
 }
@@ -242,15 +258,15 @@ void ContentsEditorSelectionBridge::refreshNoteSelectionState()
     }
     if (m_selectedNoteId != nextNoteId)
     {
-        if (m_noteManagementCoordinator != nullptr)
+        if (m_idleSyncController != nullptr)
         {
             if (nextNoteId.trimmed().isEmpty())
             {
-                m_noteManagementCoordinator->clearSelectedNote();
+                m_idleSyncController->clearSelectedNote();
             }
             else
             {
-                m_noteManagementCoordinator->bindSelectedNote(nextNoteId);
+                m_idleSyncController->bindSelectedNote(nextNoteId);
             }
         }
         m_selectedNoteId = nextNoteId;

@@ -313,22 +313,25 @@ WhatSon is an LVRS-based Qt Quick application.
 - `ContentsDisplayView.qml` now composes four narrow editor helpers instead of one god-object bridge:
   `ContentsEditorSelectionBridge` for note selection/count/persistence contracts,
   `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,
-  and `ContentsEditorSession.qml` for debounce plus selection-to-editor text synchronization. The visual surface keeps
+  and `ContentsEditorSession.qml` for idle-sync session state plus selection-to-editor text synchronization. The visual surface keeps
   only editor-geometry sampling and render placement.
 - The live editor surface now treats markdown as part of the canonical `.wsnbody` source format instead of a separate
   preview grammar. `ContentsTextFormatRenderer` splits the cheap source-editing HTML surface from the optional
   markdown-aware preview HTML, and hidden preview paths no longer regenerate on every edit.
-- `ContentsEditorSelectionBridge` now binds the selected `.wsnote` path into a serialized direct-save session.
-  Debounced editor flushes only enqueue `{noteId, noteDirectoryPath, bodyText}` on the UI path; the background worker
-  re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead` through `WhatSonLocalNoteFileStore`, mirrors
-  normalized body state back into the active editable hierarchy viewmodel, and defers hub-wide `.wsnbody`
-  backlink/open-count scans to a later `requestTrackedStatisticsRefreshForNote(...)` pass owned by that viewmodel.
+- `ContentsEditorSelectionBridge` now forwards editor persistence into
+  `src/app/file/sync/ContentsEditorIdleSyncController.*`.
+  QML/editor code stages only `{noteId, bodyText}` snapshots; the sync controller decides editor idle asynchronously
+  after `1000ms` with a worker-thread timer and then forwards the approved snapshot into the downstream direct-save
+  session. The background note-management lane re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead`
+  through `WhatSonLocalNoteFileStore`, mirrors normalized body state back into the active editable hierarchy
+  viewmodel, and defers hub-wide `.wsnbody` backlink/open-count scans to a later
+  `requestTrackedStatisticsRefreshForNote(...)` pass owned by that viewmodel.
 - Note selection transitions no longer pay that hub-wide `.wsnbody` rescan. The selection bridge now resolves
   `{noteId, noteDirectoryPath}` from `.wsnhead`-backed metadata and increments `openCount` through a header-only
   rewrite path, so selecting another note stays decoupled from backlink recalculation.
-- Editor body persistence is now decoupled from live editing: debounce flushes enqueue direct `.wsnote` saves onto a
-  serialized background queue, and QML editor sessions only react to async completion when deciding whether to clear or
-  retry pending body saves.
+- Editor body persistence is now decoupled from live editing: staged snapshots wait behind the async `1000ms` idle
+  gate or an explicit note-exit flush, and QML editor sessions only react to queued/completed async events when
+  deciding whether to clear or retry pending body saves.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
   rewrites `.wsnbody` or strips existing empty/custom body tags that the editor did not modify.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
@@ -574,13 +577,11 @@ That same typing controller now also maintains incremental logical line-start of
 into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, while desktop/mobile line-geometry helpers reuse cached
 `minimapLineGroups` even when the minimap is hidden. As a result, ordinary typing no longer needs a whole-note bridge
 rebuild or a second whole-document line-rectangle sweep just to keep gutter/minimap helpers aligned.
-Non-editing note-management work now sits behind `src/app/file/note/ContentsNoteManagementCoordinator.*`.
-Editor/QML code only enqueues save intent through `ContentsEditorSelectionBridge`; direct `.wsnote` persistence,
-header open-count maintenance, tracked-stat refresh, and post-persist metadata resync are serialized by that separate
-coordinator outside the editor hot path.
-The editor save timer no longer waits for a full idle gap before touching disk. While a note body has pending local
-edits, `ContentsEditorSession.qml` now keeps a repeating `120ms` save cadence so continuous typing still commits the
-current buffer into the local filesystem regularly.
+Editor/QML code now stages save intent through `src/app/file/sync/ContentsEditorIdleSyncController.*`, which owns the
+worker-thread idle detector and note-exit flush promotion.
+Non-editing note-management work still sits behind `src/app/file/note/ContentsNoteManagementCoordinator.*`; direct
+`.wsnote` persistence, header open-count maintenance, tracked-stat refresh, and post-persist metadata resync are
+serialized there outside the editor hot path.
 Local note-file CRUD is now centralized under `src/app/file/note/WhatSonLocalNoteFileStore.*` and
 `src/app/file/note/WhatSonLocalNoteDocument.hpp`. That IO layer owns `.wsnhead` / `.wsnbody` create-read-update-delete
 operations plus per-note `.wsnhistory` append-only diff logging and `.wsnversion` manifest initialization for library
@@ -774,6 +775,9 @@ for hub/note hierarchy payloads.
   `panelBackground01` canvas, routes hierarchy row taps into that note-list body, and lets the shared list delegate
   emit `noteActivated(index, noteId)` so mobile routing can follow note selection without a second list-specific
   delegate stack.
+- That shared `ListBarLayout.qml` note/resource viewport now branches its flick contract by platform:
+  desktop keeps the existing quantized non-kinetic scroll, while mobile uses kinetic flick deceleration/velocity plus
+  overshoot bounds so note and resource lists behave like native iPhone inertial lists.
 - `MobileHierarchyPage.qml` now mounts the mobile editor body through the shared `ContentViewLayout.qml` contract and
   binds the same `SidebarHierarchyViewModel.resolvedHierarchyViewModel` plus `resolvedNoteListModel` pair used on
   desktop, so note-card taps open the real editor for the selected note instead of a mobile-only text surface.
@@ -781,6 +785,8 @@ for hub/note hierarchy payloads.
   session/persistence wiring, hides the minimap, keeps the same `16px` top inset as desktop, removes the
   frame side inset, clears the gutter fill back to transparent, and narrows the gutter to `40px` with a `22px`
   line-number column.
+- The shared `SidebarHierarchyView.qml` now lets row taps approve flick takeover on mobile, so the embedded
+  `LV.Hierarchy` scroller keeps inertial vertical scrolling instead of dead-stop drag behavior on touch devices.
 - `MobileHierarchyPage.qml` now suppresses the compact leading action on the mobile note-list view, so the routed list
   and editor views match the Figma top bar and leave page undo to swipe navigation instead of a visible back button.
 - The same mobile note-list route now also swaps the shared `NavigationBarLayout.qml` compact trailing controls to the

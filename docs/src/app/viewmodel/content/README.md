@@ -23,11 +23,10 @@
 ## Current Notes
 
 - `ContentsEditorSelectionBridge` no longer owns the asynchronous direct `.wsnote` save queue itself.
-- That queue and the related non-editing note-management work now live under the `file/note` domain in
-  `ContentsNoteManagementCoordinator`, while `ContentsEditorSelectionBridge` keeps only the note-selection-facing QML
-  contract.
-- The editor/UI path only enqueues body-write intent; the coordinator performs actual persistence, open-count
-  maintenance, and tracked-stat follow-up work later.
+- The editor/UI path now stages body-write intent into `file/sync/ContentsEditorIdleSyncController`, which owns the
+  worker-thread `1000ms` idle gate and explicit note-exit flush promotion.
+- Downstream note-management work still lives under the `file/note` domain in `ContentsNoteManagementCoordinator`,
+  which performs actual persistence, open-count maintenance, and tracked-stat follow-up later.
 - Note-selection changes now reuse the same `{noteId, noteDirectoryPath}` metadata session and no longer trigger a
   hub-wide `.wsnbody` stat refresh just to bump `openCount`.
 - The coordinator now applies persisted body state and schedules tracked-stat refresh after background completion returns

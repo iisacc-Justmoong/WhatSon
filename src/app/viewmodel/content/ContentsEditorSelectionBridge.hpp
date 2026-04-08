@@ -5,7 +5,7 @@
 #include <QPointer>
 #include <QString>
 
-class ContentsNoteManagementCoordinator;
+class ContentsEditorIdleSyncController;
 
 class ContentsEditorSelectionBridge : public QObject
 {
@@ -52,9 +52,13 @@ public:
     int visibleNoteCount() const noexcept;
 
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text);
+    Q_INVOKABLE bool stageEditorTextForIdleSync(const QString& noteId, const QString& text);
+    Q_INVOKABLE bool flushEditorTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool refreshSelectedNoteSnapshot();
 
     signals  :
+
+    void editorTextPersistenceQueued(const QString& noteId, const QString& text);
 
     void editorTextPersistenceFinished(
         const QString& noteId,
@@ -92,7 +96,7 @@ private:
 
     QPointer<QObject> m_noteListModel;
     QPointer<QObject> m_contentViewModel;
-    QPointer<ContentsNoteManagementCoordinator> m_noteManagementCoordinator;
+    QPointer<ContentsEditorIdleSyncController> m_idleSyncController;
     bool m_noteSelectionContractAvailable = false;
     bool m_noteCountContractAvailable = false;
     QString m_selectedNoteId;

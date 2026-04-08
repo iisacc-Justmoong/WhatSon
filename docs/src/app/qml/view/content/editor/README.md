@@ -68,13 +68,15 @@
   rewrite.
 - `ContentsEditorSession.qml` now defers note swaps behind pending-body flushes, so a failed immediate save cannot
   silently discard the old note buffer when the user changes selection.
-- Editor body persistence is now split into debounce enqueue vs background completion:
-  - `ContentsEditorSession.qml` owns pending/in-flight state
+- Editor body persistence is now split into async idle staging vs background completion:
+  - `ContentsEditorSession.qml` owns pending/in-flight state only
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
+  - `file/sync/ContentsEditorIdleSyncController` owns the worker-thread `1000ms` idle gate and explicit note-exit
+    flush promotion
   - `ContentsNoteManagementCoordinator` serializes direct `.wsnote` writes plus open-count/stat follow-up work on the
-    management side
-  - selection/typing controllers now treat `persistEditorTextForNote(...)` success as "request accepted", not
-    necessarily "disk write already finished"
+    downstream management side
+  - selection/typing controllers now treat persistence success as "snapshot accepted into the async idle-sync lane",
+    not "disk write already finished"
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`

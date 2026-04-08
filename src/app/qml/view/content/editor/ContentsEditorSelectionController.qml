@@ -710,26 +710,10 @@ QtObject {
         return true;
     }
     function persistEditorTextImmediately(nextText) {
-        if (!controller.view)
+        if (!controller.view || !controller.editorSession || controller.editorSession.scheduleEditorPersistence === undefined)
             return false;
-        const noteId = controller.view.selectedNoteId === undefined || controller.view.selectedNoteId === null ? "" : String(controller.view.selectedNoteId).trim();
-        if (noteId.length === 0)
-            return false;
-        if (!controller.selectionBridge || controller.selectionBridge.persistEditorTextForNote === undefined || !controller.view.contentPersistenceContractAvailable)
-            return false;
-        const saved = !!controller.selectionBridge.persistEditorTextForNote(noteId, nextText);
-        if (saved && controller.editorSession) {
-            const directPersistenceContractAvailable = controller.selectionBridge.directPersistenceContractAvailable !== undefined
-                    ? !!controller.selectionBridge.directPersistenceContractAvailable
-                    : false;
-            if (directPersistenceContractAvailable
-                    && controller.editorSession.acknowledgeQueuedEditorPersistence !== undefined) {
-                controller.editorSession.acknowledgeQueuedEditorPersistence(noteId, nextText);
-            } else if (controller.editorSession.acknowledgeSuccessfulEditorPersistence !== undefined) {
-                controller.editorSession.acknowledgeSuccessfulEditorPersistence(noteId, nextText);
-            }
-        }
-        return saved;
+        controller.editorSession.scheduleEditorPersistence();
+        return true;
     }
     function queueInlineFormatWrap(tagName) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)

@@ -72,6 +72,8 @@ that sit directly inside the editor viewport.
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so a failed pending-body flush no longer lets a note switch silently overwrite the still-unsaved editor buffer.
+- Desktop editor body writes are now staged into the async idle-sync boundary immediately on mutation, while actual
+  `.wsnote` synchronization waits for the worker-thread `1000ms` idle gate or an explicit note-exit flush.
 
 ## Tests
 
@@ -90,6 +92,8 @@ that sit directly inside the editor viewport.
     cheaper source-editing surface should be refreshed while preview is disabled.
   - Desktop single-character typing must not rebuild `ContentsLogicalTextBridge` from the whole note on every committed
     key; whole-document logical/source offset regeneration should wait for editor idle, blur, or note switch.
+  - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
+    async idle gate or explicit note-exit flush.
   - Desktop gutter line-Y queries must prefer cached `minimapLineGroups` geometry instead of falling back to a fresh
     whole-note `positionToRectangle(...)` sweep when the minimap is merely hidden.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.

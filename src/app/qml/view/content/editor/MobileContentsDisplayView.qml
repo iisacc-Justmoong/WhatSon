@@ -213,7 +213,7 @@ Item {
     property var resourcesImportViewModel: null
     readonly property string richTextHighlightOpenTag: "<span style=\"background-color:#8A4B00;color:#D6AE58;font-weight:600;\">"
     readonly property bool preferNativeInputHandling: true
-    readonly property int saveDebounceMs: 120
+    readonly property int editorIdleSyncThresholdMs: 1000
     readonly property bool deferImmediateEditorPersistence: contentsView.preferNativeInputHandling
     readonly property string selectedNoteBodyText: selectionBridge.selectedNoteBodyText
     readonly property string selectedNoteId: selectionBridge.selectedNoteId
@@ -1169,7 +1169,6 @@ Item {
     ContentsEditorSession {
         id: editorSession
 
-        saveDebounceMs: contentsView.saveDebounceMs
         selectionBridge: selectionBridge
     }
     Timer {

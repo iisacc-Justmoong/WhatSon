@@ -48,8 +48,12 @@ Rectangle {
     property var noteDropTarget: null
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
-    readonly property int noteListFlickDeceleration: 1000000
+    readonly property int noteListBoundsBehavior: LV.Theme.mobileTarget ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
+    readonly property int noteListBoundsMovement: LV.Theme.mobileTarget ? Flickable.FollowBoundsBehavior : Flickable.StopAtBounds
+    readonly property int noteListDesktopFlickDeceleration: 1000000
+    readonly property int noteListFlickDeceleration: LV.Theme.mobileTarget ? Math.max(0, Math.round(LV.Theme.scaleMetric(2800))) : listBarLayout.noteListDesktopFlickDeceleration
     readonly property bool noteListMode: listBarLayout.hasNoteListModel
+    readonly property int noteListMaximumFlickVelocity: LV.Theme.mobileTarget ? Math.max(0, Math.round(LV.Theme.scaleMetric(12000))) : listBarLayout.noteListScrollTick
     property var noteListModel: null
     readonly property int noteListViewportInset: LV.Theme.gap2
     property var displayedNoteListEntries: []
@@ -758,13 +762,13 @@ Rectangle {
 
                     anchors.fill: parent
                     anchors.margins: listBarLayout.noteListViewportInset
-                    boundsBehavior: Flickable.StopAtBounds
-                    boundsMovement: Flickable.StopAtBounds
+                    boundsBehavior: listBarLayout.noteListBoundsBehavior
+                    boundsMovement: listBarLayout.noteListBoundsMovement
                     cacheBuffer: Math.max(0, height * 2)
                     clip: true
                     flickDeceleration: listBarLayout.noteListFlickDeceleration
                     interactive: contentHeight > height && !listBarLayout.noteDragActive
-                    maximumFlickVelocity: listBarLayout.noteListScrollTick
+                    maximumFlickVelocity: listBarLayout.noteListMaximumFlickVelocity
                     model: listBarLayout.displayedNoteListEntries
                     pixelAligned: true
                     reuseItems: !listBarLayout.noteDragActive
@@ -1042,7 +1046,10 @@ Rectangle {
                             listBarLayout.syncFocusedNoteDeletionState();
                         });
                     }
-                    onFlickStarted: noteListView.cancelFlick()
+                    onFlickStarted: {
+                        if (!LV.Theme.mobileTarget)
+                            noteListView.cancelFlick();
+                    }
                     onHeightChanged: listBarLayout.settleNoteListViewport()
                     onMovementEnded: listBarLayout.settleNoteListViewport()
                 }

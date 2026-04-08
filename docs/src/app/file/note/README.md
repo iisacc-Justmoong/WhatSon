@@ -48,6 +48,9 @@
 - `WhatSonNoteHeaderStore.hpp`
 
 ## Current Focus Areas
+- `file/sync/ContentsEditorIdleSyncController` now owns the editor-side `1000ms` idle gate and note-exit flush
+  promotion. This `file/note` directory only owns the downstream note-package management queue once a snapshot is
+  already approved for sync.
 - `ContentsNoteManagementCoordinator` now owns editor-adjacent note-management orchestration:
   - direct `.wsnote` persistence serialization
   - header-only `openCount` updates

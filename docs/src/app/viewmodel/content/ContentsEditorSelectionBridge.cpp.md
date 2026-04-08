@@ -18,12 +18,13 @@
 - The bridge no longer owns the serialized persistence queue or stat-refresh helpers directly.
 - Instead it now:
   - keeps note-list property wiring (`currentNoteId`, `currentBodyText`, `itemCount`)
-  - forwards persistence/snapshot requests into `ContentsNoteManagementCoordinator`
-  - forwards `editorTextPersistenceFinished(...)` from that coordinator back to QML
-- `refreshNoteSelectionState()` now delegates note-id transitions into the coordinator through
+  - forwards persistence/snapshot requests into `file/sync/ContentsEditorIdleSyncController`
+  - forwards both `editorTextPersistenceQueued(...)` and `editorTextPersistenceFinished(...)` from that sync boundary
+    back to QML
+- `refreshNoteSelectionState()` now delegates note-id transitions into the sync controller through
   `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
-- `setContentViewModel(...)` now rebinds the same content view-model into the coordinator and re-seeds the currently
-  selected note session there.
+- `setContentViewModel(...)` now rebinds the same content view-model into the sync controller and re-seeds the
+  currently selected note session there.
 
 ### Classes and Structs
 - None detected during scaffold generation.
@@ -51,5 +52,5 @@
 
 - Note-list selection changes must still update `selectedNoteId` / `selectedNoteBodyText`, but they must no longer run
   open-count/stat maintenance directly inside the bridge implementation.
-- The bridge must continue forwarding coordinator persistence completion signals so `ContentsEditorSession.qml` behavior
+- The bridge must continue forwarding sync-boundary queued/completion signals so `ContentsEditorSession.qml` behavior
   does not regress.

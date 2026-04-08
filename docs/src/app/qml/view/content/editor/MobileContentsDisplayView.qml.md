@@ -64,6 +64,8 @@ suppression local to this file.
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so a failed pending-body flush cannot silently replace the current unsaved editor buffer with the newly selected note.
+- Mobile editor body writes now also stage immediately into the shared async idle-sync boundary, while actual `.wsnote`
+  synchronization waits for the worker-thread `1000ms` idle gate or an explicit note-exit flush.
 
 ## Tests
 
@@ -79,6 +81,8 @@ suppression local to this file.
     the markdown preview renderer should stay idle while the source editor remains active and preview is hidden.
   - Mobile single-character typing must also avoid whole-note `ContentsLogicalTextBridge` regeneration until the editor
     goes idle, loses focus, or switches notes.
+  - Mobile typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
+    async idle gate or explicit note-exit flush.
   - Mobile hidden-minimap states must still keep line geometry current through the incremental line-group cache rather
     than re-running whole-note text-geometry sampling for gutter helpers.
   - Mobile body edits must not force full-document minimap text-geometry sampling; only the changed logical-line

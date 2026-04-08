@@ -14,25 +14,28 @@ Item {
     property bool localEditorAuthority: false
     property bool pendingBodySave: false
     readonly property bool persistenceAvailable: selectionBridge && selectionBridge.contentPersistenceContractAvailable !== undefined ? !!selectionBridge.contentPersistenceContractAvailable : false
-    property int saveDebounceMs: 120
     property var selectionBridge: null
     property bool syncingEditorTextFromModel: false
 
     signal editorTextSynchronized
 
+    function applyDeferredSelectionIfReady() {
+        if (!editorSession.deferredSelectionPending || editorSession.pendingBodySave || editorSession.bodySaveInFlight)
+            return false;
+        const deferredNoteId = editorSession.deferredSelectionNoteId;
+        const deferredText = editorSession.deferredSelectionText;
+        editorSession.clearDeferredSelectionSync();
+        editorSession.syncEditorTextFromSelection(deferredNoteId, deferredText);
+        return true;
+    }
     function acknowledgeQueuedEditorPersistence(noteId, text) {
         editorSession.bodySaveInFlight = true;
         editorSession.lastQueuedBodySaveNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
         editorSession.lastQueuedBodySaveText = text === undefined || text === null ? "" : String(text);
-        editorSession.pendingBodySave = false;
-        bodySaveTimer.stop();
     }
     function acknowledgeSuccessfulEditorPersistence(noteId, text) {
         const completedNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
         const completedText = text === undefined || text === null ? "" : String(text);
-        const synchronousCompletion = !editorSession.bodySaveInFlight
-                && editorSession.lastQueuedBodySaveNoteId.length === 0
-                && editorSession.lastQueuedBodySaveText.length === 0;
         const trackedCompletion = editorSession.lastQueuedBodySaveNoteId === completedNoteId
                 && editorSession.lastQueuedBodySaveText === completedText;
         if (completedNoteId.length === 0
@@ -43,13 +46,14 @@ Item {
             editorSession.lastQueuedBodySaveNoteId = "";
             editorSession.lastQueuedBodySaveText = "";
         }
-        if (synchronousCompletion) {
+        const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
+        const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        if (currentNoteId === completedNoteId && currentText === completedText) {
             editorSession.pendingBodySave = false;
-            bodySaveTimer.stop();
-            return;
+        } else if (trackedCompletion && currentNoteId === completedNoteId) {
+            editorSession.pendingBodySave = currentText !== completedText;
         }
-        if (!editorSession.pendingBodySave)
-            bodySaveTimer.stop();
+        editorSession.applyDeferredSelectionIfReady();
     }
     function handleEditorPersistenceFinished(noteId, text, success) {
         const completedNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
@@ -67,10 +71,9 @@ Item {
         }
         if (editorSession.editorBoundNoteId === completedNoteId
                 && editorSession.editorText === completedText) {
-            editorSession.pendingBodySave = true;
-            if (!bodySaveTimer.running)
-                bodySaveTimer.start();
+            editorSession.scheduleEditorPersistence();
         }
+        editorSession.applyDeferredSelectionIfReady();
     }
     function clearDeferredSelectionSync() {
         editorSession.deferredSelectionPending = false;
@@ -83,25 +86,15 @@ Item {
         const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId).trim();
         if (noteId.length === 0) {
             editorSession.pendingBodySave = false;
-            bodySaveTimer.stop();
             return false;
         }
-        if (!editorSession.selectionBridge || editorSession.selectionBridge.persistEditorTextForNote === undefined || !editorSession.persistenceAvailable) {
+        if (!editorSession.selectionBridge
+                || editorSession.selectionBridge.flushEditorTextForNote === undefined
+                || !editorSession.persistenceAvailable) {
             return false;
         }
         const bodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
-        const saved = editorSession.selectionBridge.persistEditorTextForNote(noteId, bodyText);
-        if (saved) {
-            const directPersistenceContractAvailable = editorSession.selectionBridge.directPersistenceContractAvailable !== undefined
-                    ? !!editorSession.selectionBridge.directPersistenceContractAvailable
-                    : false;
-            if (directPersistenceContractAvailable)
-                editorSession.acknowledgeQueuedEditorPersistence(noteId, bodyText);
-            else
-                editorSession.acknowledgeSuccessfulEditorPersistence(noteId, bodyText);
-            return true;
-        }
-        return false;
+        return !!editorSession.selectionBridge.flushEditorTextForNote(noteId, bodyText);
     }
     function requestSyncEditorTextFromSelection(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
@@ -112,8 +105,6 @@ Item {
                 editorSession.deferredSelectionPending = true;
                 editorSession.deferredSelectionNoteId = nextNoteId;
                 editorSession.deferredSelectionText = nextText;
-                if (!bodySaveTimer.running)
-                    bodySaveTimer.start();
                 return false;
             }
             if (editorSession.editorBoundNoteId === nextNoteId && editorSession.editorText === nextText)
@@ -132,9 +123,21 @@ Item {
         editorSession.localEditorAuthority = true;
     }
     function scheduleEditorPersistence() {
+        const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
+                ? ""
+                : String(editorSession.editorBoundNoteId).trim();
+        if (noteId.length === 0) {
+            editorSession.pendingBodySave = false;
+            return;
+        }
         editorSession.pendingBodySave = true;
-        if (!bodySaveTimer.running)
-            bodySaveTimer.start();
+        if (!editorSession.selectionBridge
+                || editorSession.selectionBridge.stageEditorTextForIdleSync === undefined
+                || !editorSession.persistenceAvailable) {
+            return;
+        }
+        const bodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        editorSession.selectionBridge.stageEditorTextForIdleSync(noteId, bodyText);
     }
     function shouldAcceptModelBodyText(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
@@ -152,7 +155,6 @@ Item {
         const nextText = text === undefined || text === null ? "" : String(text);
         const noteChanged = editorSession.editorBoundNoteId !== nextNoteId;
         const textChanged = editorSession.editorText !== nextText;
-        bodySaveTimer.stop();
         editorSession.pendingBodySave = false;
         editorSession.editorBoundNoteId = nextNoteId;
         if (noteChanged || !textChanged)
@@ -166,22 +168,11 @@ Item {
 
     visible: false
 
-    Timer {
-        id: bodySaveTimer
-
-        interval: editorSession.saveDebounceMs
-        repeat: true
-
-        onTriggered: {
-            if (!editorSession.pendingBodySave) {
-                stop();
-                return;
-            }
-            if (editorSession.flushPendingEditorText() || !editorSession.pendingBodySave)
-                stop();
-        }
-    }
     Connections {
+        function onEditorTextPersistenceQueued(noteId, text) {
+            editorSession.acknowledgeQueuedEditorPersistence(noteId, text);
+        }
+
         function onEditorTextPersistenceFinished(noteId, text, success, errorMessage) {
             editorSession.handleEditorPersistenceFinished(noteId, text, success);
         }

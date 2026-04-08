@@ -6,9 +6,10 @@
 
 ## Responsibility
 
-`ContentsNoteManagementCoordinator` is the non-editing management boundary for the editor stack.
+`ContentsNoteManagementCoordinator` is the downstream non-editing management boundary for the editor stack.
 It owns note-package persistence enqueue, open-count maintenance, tracked-stat refresh scheduling, and metadata reload
-follow-ups so those actions no longer live inside the editor-facing selection bridge or QML typing path.
+follow-ups after the upstream `file/sync/ContentsEditorIdleSyncController` has already decided that an editor snapshot
+should synchronize to disk.
 
 ## Public Contract
 
@@ -17,8 +18,8 @@ follow-ups so those actions no longer live inside the editor-facing selection br
 - `contentPersistenceContractAvailable()`: reports whether either the direct `.wsnote` lane or the deferred fallback
   view-model persistence lane is available.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
-- `persistEditorTextForNote(noteId, text)`: accepts editor body writes and enqueues them onto the coordinator-owned
-  management queue instead of performing save/stat work inline on the editor path.
+- `persistEditorTextForNote(noteId, text)`: accepts an already-approved sync snapshot and enqueues it onto the
+  coordinator-owned management queue instead of performing save/stat work inline on the editor path.
 - `refreshNoteSnapshotForNote(noteId)`: reloads one note's metadata/body snapshot through the bound content view-model.
 - `bindSelectedNote(noteId)` / `clearSelectedNote()`: maintain the selected note session and enqueue header-only
   open-count maintenance outside the editor hot path.

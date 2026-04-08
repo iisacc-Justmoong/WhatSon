@@ -19,7 +19,7 @@ selection state machine lives in a sibling controller file.
 - Source path: `src/app/qml/view/panels/ListBarLayout.qml`
 - Source kind: QML view/component
 - File name: `ListBarLayout.qml`
-- Approximate line count: 756
+- Approximate line count: 762
 
 ## QML Surface Snapshot
 - Root type: `Rectangle`
@@ -66,10 +66,14 @@ selection state machine lives in a sibling controller file.
 - `syncDisplayedNoteListEntries()` compares the new row snapshot to the previous one and only replaces the visible
   array when the actual row content changed. Periodic model resets with identical content therefore no longer tear down
   and rebuild every visible row.
-- The note list keeps `boundsBehavior` and `boundsMovement` on `Flickable.StopAtBounds` so the viewport does not
-  overshoot and rebound when the user hits the first or last row.
-- `flickDeceleration` is forced to `1000000` and `onFlickStarted: noteListView.cancelFlick()` cancels inertial carry,
-  so the list behaves like immediate drag scrolling instead of a kinetic panel.
+- The note list now splits viewport motion by target form factor:
+  - desktop keeps `Flickable.StopAtBounds` and still cancels inertial carry on `onFlickStarted`, so wheel/drag motion
+    stays quantized to the existing narrow-step panel contract.
+  - mobile switches to `Flickable.DragAndOvershootBounds` plus `Flickable.FollowBoundsBehavior`, so note rows and
+    resource rows inherit kinetic overscroll instead of dead-stop dragging.
+- `flickDeceleration` and `maximumFlickVelocity` are now mobile-aware tokens. Mobile uses scaled kinetic values
+  (`LV.Theme.scaleMetric(2800/12000)`), while desktop keeps the previous low-velocity non-kinetic behavior through
+  `noteListScrollTick`.
 - `noteListScrollTick` is fixed to `LV.Theme.gap2`, and all viewport motion is quantized through
   `noteListMaxContentY()`, `quantizedNoteListContentY(value)`, `applyNoteListViewportStep(contentY)`, and
   `settleNoteListViewport()`.
@@ -167,3 +171,7 @@ selection state machine lives in a sibling controller file.
     remains stable across equivalent model resets.
   - Periodic note-list refreshes that arrive during an active drag must be applied only after the drag ends, so the
     source delegate is not recycled out from under `noteDragHandler`.
+  - On mobile, the shared note/resource list must keep inertial scrolling after touch release instead of stopping on
+    the release frame.
+  - On mobile, dragging a row must still require a long press; ordinary vertical swipes must be stealable by the list
+    viewport and continue scrolling with kinetic carry.

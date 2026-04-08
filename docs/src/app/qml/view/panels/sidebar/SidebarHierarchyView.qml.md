@@ -37,6 +37,8 @@ without changing delegate call sites.
 - The visible hierarchy model is now held in `displayedHierarchyModel`, a view-owned snapshot. The view compares the
   projected hierarchy payload against the previous snapshot and only replaces the rendered model when the actual row
   content changed.
+- The embedded `LV.Hierarchy` now lets the shared `TapHandler` explicitly approve flick takeover, so vertical swipes on
+  mobile routes are not trapped by row taps and the underlying LVRS hierarchy scroller can keep its inertial carry.
 
 ## Important Outputs
 - `searchSubmitted(...)`
@@ -187,6 +189,8 @@ This file should be read as a composed view, not as the place where hierarchy bu
   LVRS activation callbacks are delivered after pointer-up.
 - Restored explicit `NumberAnimation.from` keys on the note-drop hover pulse so Xcode/qmlcache ahead-of-time parsing
   accepts the sidebar animation object again.
+- Added mobile flick-takeover approval to the shared `LV.Hierarchy` host so the hierarchy list keeps inertial carry on
+  touch routes without changing the existing desktop routing hooks.
 
 ## Tests
 
@@ -216,3 +220,5 @@ This file should be read as a composed view, not as the place where hierarchy bu
 - Enter-driven folder rename must not leave the row blank after commit or cancel.
 - After a rename, later focus/selection/context-menu interactions must keep the folder label instead of exposing
   `itemKey`, `uuid`, or other internal identifiers.
+- On mobile, hierarchy rows must allow the list viewport to take over a vertical swipe and continue scrolling after
+  release with kinetic carry.

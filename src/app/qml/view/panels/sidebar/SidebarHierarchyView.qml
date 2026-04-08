@@ -883,6 +883,7 @@ Rectangle {
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             acceptedModifiers: Qt.KeyboardModifierMask
             gesturePolicy: TapHandler.DragThreshold
+            grabPermissions: PointerHandler.ApprovesTakeOverByAnything
             target: null
 
             onPressedChanged: {
