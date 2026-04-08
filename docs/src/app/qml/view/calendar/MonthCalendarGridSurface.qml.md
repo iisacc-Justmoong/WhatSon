@@ -10,6 +10,8 @@
 - Trim trailing all-adjacent-month rows from a 42-cell projection before computing visible row count.
 - Resolve per-day entry chips from `dayModel.entries` when the month projection already carries them, and only fall
   back to `calendarVm.entriesForDate(...)` when that payload is absent.
+- Resolve visible day cells by numeric index through `dayModelForIndex(...)` so rebuilt month projections do not leave
+  old `modelData` snapshots attached to the wrong calendar date.
 - Keep manual calendar events and projected note lifecycle chips on the same day-cell surface.
 - Preserve each projected note chip's `noteId` in the day-cell payload so calendar hit-testing can reopen the note.
 - Forward `selectedDateIso` into each `MonthCalendarDayCell` so the chosen date can render its accent-border state.
@@ -52,5 +54,7 @@
     - Projected note entries marked `allDay` must not append `00:00` to the chip label.
     - A projected note chip must carry its `noteId` through `buildEntryCellModels(...)` and emit
       `noteOpenRequested(...)` when tapped.
+    - Initial month-grid rebuilds must not misplace a note from a current-month date such as `2026-04-01` into an
+      adjacent-month disabled cell such as `2026-05-01`.
     - The visible cell for `selectedDateIso` must render the selected accent border after selection changes.
     - The visible cell for today's ISO date must keep its soft border when month projections are rebuilt.

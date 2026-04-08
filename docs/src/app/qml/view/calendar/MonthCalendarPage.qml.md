@@ -20,6 +20,8 @@ surface so left/right swipes move to the previous or next month.
     - current displayed month
     - next month
 - Those projections come from `MonthCalendarViewModel.monthProjectionFor(year, month)`.
+- The `ListView` pager now binds delegates by numeric index and resolves the live projection through
+  `monthProjectionForIndex(...)` instead of relying on a stale `modelData` snapshot from an older pager rebuild.
 - After a swipe completes, `commitMonthSwipeDelta(...)` shifts the canonical displayed month in the viewmodel and then
   recenters the local pager back to the middle slot.
 - Desktop keeps the same shell but disables interactive swipe paging; header controls still drive month changes.
@@ -66,4 +68,5 @@ surface so left/right swipes move to the previous or next month.
     - Day selection inside any visible month page must still update `selectedDateIso`.
     - Opening the page from a year-calendar month/day tap must show the requested month immediately instead of the
       previously displayed month.
+    - Initial month-page open must not leave current-month note chips attached to an older pager snapshot.
     - Clicking or tapping a visible month note chip must bubble `noteOpenRequested(...)` out of the page.

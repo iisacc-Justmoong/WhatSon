@@ -44,6 +44,12 @@ Rectangle {
             "dayModels": monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.dayModels ? monthCalendarPage.calendarVm.dayModels : []
         };
     }
+    function monthProjectionForIndex(index) {
+        const normalizedIndex = Math.floor(Number(index));
+        if (!isFinite(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= monthCalendarPage.monthPageModels.length)
+            return null;
+        return monthCalendarPage.monthPageModels[normalizedIndex];
+    }
     function commitMonthSwipeDelta(delta) {
         if (!monthCalendarPage.calendarVm || !monthCalendarPage.calendarVm.shiftMonth || delta === 0) {
             monthCalendarPage.recenterMonthPager();
@@ -191,15 +197,15 @@ Rectangle {
                 cacheBuffer: Math.max(width, 1) * 2
                 clip: true
                 interactive: monthCalendarPage.monthSwipeEnabled && monthCalendarPage.monthPageModels.length > 1
-                model: monthCalendarPage.monthPageModels
+                model: monthCalendarPage.monthPageModels.length
                 orientation: ListView.Horizontal
                 snapMode: ListView.SnapOneItem
 
                 delegate: Item {
                     id: monthPage
 
-                    required property var modelData
-                    readonly property var monthProjection: monthPage.modelData
+                    required property int index
+                    readonly property var monthProjection: monthCalendarPage.monthProjectionForIndex(monthPage.index)
 
                     height: monthCalendarMonthsView.height
                     width: monthCalendarMonthsView.width

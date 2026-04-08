@@ -61,6 +61,12 @@ Item {
         }
         return monthCalendarGridSurface.dayModels.slice(0, visibleCount);
     }
+    function dayModelForIndex(index) {
+        const normalizedIndex = Math.floor(Number(index));
+        if (!isFinite(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= monthCalendarGridSurface.visibleDayModels.length)
+            return null;
+        return monthCalendarGridSurface.visibleDayModels[normalizedIndex];
+    }
     function entriesForDate(dayModel) {
         if (!dayModel)
             return [];
@@ -172,18 +178,18 @@ Item {
         rowSpacing: 0
 
         Repeater {
-            model: monthCalendarGridSurface.visibleDayModels
+            model: monthCalendarGridSurface.visibleDayModels.length
 
             MonthCalendarDayCell {
                 id: dayCell
 
+                required property int index
+                readonly property var dayModel: monthCalendarGridSurface.dayModelForIndex(dayCell.index)
                 readonly property var dayEntries: monthCalendarGridSurface.entriesForDate(dayCell.dayModel)
                 readonly property var dayEntryCells: monthCalendarGridSurface.buildEntryCellModels(dayCell.dayEntries)
-                readonly property var dayModel: dayCell.modelData
                 readonly property bool isCurrentMonth: dayModel && dayModel.inCurrentMonth === true
                 readonly property bool isSelectedDate: dayModel && dayModel.dateIso !== undefined && String(dayModel.dateIso) === monthCalendarGridSurface.selectedDateIso
                 readonly property bool isToday: dayModel && dayModel.isToday === true
-                required property var modelData
 
                 Layout.fillHeight: true
                 Layout.fillWidth: true

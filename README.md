@@ -101,6 +101,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - Projected note chips in Agenda/day/week/month views can now reopen the backing library note in the editor on
   click/touch. Week view keeps that affordance only for slot chips that represent exactly one note entry, because the
   current `title +N` summary chip does not expose a unique note target.
+- The monthly pager and month-grid delegates now resolve live projections/day-cells by index instead of holding stale
+  JS `modelData` snapshots, which keeps notes on their real dates during initial month-view bootstrap instead of
+  leaking them into adjacent disabled cells.
 - Navigation-driven calendar opens now reset Agenda/day/week/month/year overlays back to today's date context, while
   year-view drill-down into month view still preserves the explicitly tapped month/date.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
