@@ -284,6 +284,11 @@ bool AgendaViewModel::isAllDayEvent(const QVariantMap& entry)
         return false;
     }
 
+    if (entry.contains(QStringLiteral("allDay")))
+    {
+        return entry.value(QStringLiteral("allDay")).toBool();
+    }
+
     const QTime entryTime = QTime::fromString(entry.value(QStringLiteral("time")).toString(), QStringLiteral("HH:mm"));
     return entryTime.isValid() && entryTime.hour() == 0 && entryTime.minute() == 0;
 }

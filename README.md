@@ -85,6 +85,8 @@ WhatSon is an LVRS-based Qt Quick application.
   and yearly calendar view in the editor's inline content slot, reusing shared calendar view-model backends.
 - Calendar content surfaces now share a `CalendarBoardStore` backend so events and tasks can be created with explicit
   `date + time` arguments and projected back into day-cell counters across day/week/month/year views.
+- The same calendar board now also projects library notes by `createdAt` / `lastModifiedAt`, so a note modified on
+  `2026-04-08` appears in the April 8 calendar views alongside manual calendar event items instead of replacing them.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
   `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
   `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.
@@ -116,6 +118,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - `src/app/qml/view/panels/detail/DetailFileStatForm.qml` now follows the Figma `235:7734` plain-text layout instead of
   the earlier card grid, using `description` typography rows for project/folder/tag/date metadata and the tracked file
   statistics.
+- The file-stat summary now uses the same cleared-project fallback as the project selector, so empty project metadata is
+  shown as `No project` instead of `Untitled`.
 - `src/app/qml/view/panels/detail/DetailPanel.qml` now passes that statistics object into
   `DetailContents.qml` through an explicit `fileStatViewModel` property instead of relying on a generic active-state
   object for the statistics tab.

@@ -24,13 +24,17 @@ timed events, and agenda-item completion rows.
 1. `Component.onCompleted` requests `page-open`.
 2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
 3. Agenda-item toggles call `agendaViewModel.toggleAgendaItemCompleted(...)`.
-4. Empty sections show dedicated placeholder labels.
+4. Note lifecycle projections from the shared calendar board flow into the `All day` / `Timed` sections as ordinary
+   event rows, while tasks remain in `Agenda`.
+5. Empty sections show dedicated placeholder labels.
 
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
     - Agenda header must keep date navigation and the location caption without rendering a secondary weather card.
     - Agenda-item toggles must continue to call `agendaViewModel.toggleAgendaItemCompleted(...)`.
+    - Projected note entries with `allDay == true` must stay in the `All day` section instead of disappearing from the
+      Agenda route.
     - Empty all-day/timed/agenda sections must continue to show their placeholder labels.
 
 ## Collaborators

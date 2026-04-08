@@ -268,6 +268,11 @@ int main(int argc, char* argv[])
     startupRuntimeCoordinator.setParallelLoader(&runtimeParallelLoader);
 
     WhatSonHubSyncController hubSyncController;
+    const auto reloadCalendarProjectedNotes = [&calendarBoardStore, &hubSyncController]()
+    {
+        calendarBoardStore.setProjectedNotesHubPath(hubSyncController.currentHubPath());
+        calendarBoardStore.requestProjectedNotesReload();
+    };
     hubSyncController.setReloadCallback(
         [&startupRuntimeCoordinator](const QString& hubPath, QString* errorMessage) -> bool
         {
@@ -282,6 +287,30 @@ int main(int argc, char* argv[])
                 &bookmarksHierarchyViewModel,
                 &progressHierarchyViewModel
             });
+    QObject::connect(
+        &hubSyncController,
+        &WhatSonHubSyncController::syncReloaded,
+        &app,
+        [&calendarBoardStore](const QString& hubPath)
+        {
+            calendarBoardStore.setProjectedNotesHubPath(hubPath);
+            calendarBoardStore.reloadProjectedNotes();
+        });
+    QObject::connect(
+        &libraryHierarchyViewModel,
+        &LibraryHierarchyViewModel::hubFilesystemMutated,
+        &app,
+        reloadCalendarProjectedNotes);
+    QObject::connect(
+        &bookmarksHierarchyViewModel,
+        &BookmarksHierarchyViewModel::hubFilesystemMutated,
+        &app,
+        reloadCalendarProjectedNotes);
+    QObject::connect(
+        &progressHierarchyViewModel,
+        &ProgressHierarchyViewModel::hubFilesystemMutated,
+        &app,
+        reloadCalendarProjectedNotes);
     Q_UNUSED(hubSyncWiring);
     resourcesImportViewModel.setReloadResourcesCallback(
         [&startupRuntimeCoordinator, &hubSyncController](const QString& hubPath, QString* errorMessage) -> bool
@@ -310,13 +339,19 @@ int main(int argc, char* argv[])
         &onboardingHubController,
         &OnboardingHubController::hubLoaded,
         &app,
-        [&onboardingHubController, &selectedHubStore, &hubSyncController, &resourcesImportViewModel](const QString& hubPath)
+        [&onboardingHubController,
+         &selectedHubStore,
+         &hubSyncController,
+         &resourcesImportViewModel,
+         &calendarBoardStore](const QString& hubPath)
         {
             selectedHubStore.setSelectedHubSelection(
                 hubPath,
                 onboardingHubController.currentHubAccessBookmark());
             hubSyncController.setCurrentHubPath(hubPath);
             resourcesImportViewModel.setCurrentHubPath(hubPath);
+            calendarBoardStore.setProjectedNotesHubPath(hubPath);
+            calendarBoardStore.reloadProjectedNotes();
         });
 
     bool initialHubLoaded = false;
@@ -339,6 +374,8 @@ int main(int argc, char* argv[])
                 startupHubSelection.accessBookmark);
             hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
             resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
+            calendarBoardStore.setProjectedNotesHubPath(startupHubSelection.hubPath);
+            calendarBoardStore.reloadProjectedNotes();
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {

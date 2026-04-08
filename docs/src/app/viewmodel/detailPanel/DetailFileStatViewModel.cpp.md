@@ -14,6 +14,8 @@ This implementation translates `WhatSonNoteHeaderStore` into two parallel view s
   - tags list
   - created-at
   - modified-at
+- The `project` summary line must render `No project` when the persisted header field is blank, matching the clear
+  option used by the detail-panel project selector.
 - `textMetricLines` exposes the textual count rows exactly in the singular labels used by Figma:
   - `Letter`
   - `Word`
@@ -64,5 +66,6 @@ plain-text Figma layout.
 
 - Automated test files are not currently present in this repository.
 - Regression checklist:
+  - a note with an empty `.wsnhead <project>` field must render `Projects: No project` in the file-stat summary
   - typing in the editor and waiting for autosave must not continuously increase `modifiedCount`
   - explicit persisted metadata writes that still opt in must remain visible through `modifiedCount`

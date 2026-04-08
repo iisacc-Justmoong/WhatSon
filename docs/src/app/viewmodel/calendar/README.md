@@ -35,6 +35,8 @@
 ## Notes
 - `DayCalendarViewModel`, `WeekCalendarViewModel`, `MonthCalendarViewModel`, and `YearCalendarViewModel` are wired to
   the shared `src/app/calendar/CalendarBoardStore.*` backend for date/time-based event/task board semantics.
+- That shared board now merges manual calendar entries with note lifecycle projections keyed by note creation and
+  modification timestamps, so all calendar routes see the same note/event surface.
 - `WeekCalendarViewModel` continues to anchor the weekly route while the QML week surface now presents that data as
   one continuous horizontal date surface sized for three visible day columns.
 - `AgendaViewModel` projects one date into Agenda-focused section models (`allDayEvents`, `timedEvents`, `agendaItems`) and

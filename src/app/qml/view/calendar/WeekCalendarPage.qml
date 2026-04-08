@@ -278,6 +278,15 @@ Rectangle {
         const entryType = firstEntry && firstEntry.type !== undefined ? String(firstEntry.type) : "";
         return entryType === "event" ? 1 : 0;
     }
+    function slotAccent(entries) {
+        if (!entries || entries.length === 0)
+            return LV.Theme.primary;
+        const firstEntry = entries[0];
+        const sourceKind = firstEntry && firstEntry.sourceKind !== undefined ? String(firstEntry.sourceKind) : "";
+        if (sourceKind === "note")
+            return LV.Theme.accent;
+        return LV.Theme.primary;
+    }
     function slotSummary(entries) {
         if (!entries || entries.length === 0)
             return "";
@@ -577,7 +586,7 @@ Rectangle {
                                             CalendarEventCell {
                                                 anchors.fill: parent
                                                 backgroundType: weekCalendarPage.slotBackgroundType(dayHourCell.slotEntries)
-                                                coloredBackgroundColor: LV.Theme.primary
+                                                coloredBackgroundColor: weekCalendarPage.slotAccent(dayHourCell.slotEntries)
                                                 cornerRadius: LV.Theme.radiusSm
                                                 defaultBackgroundColor: LV.Theme.panelBackground11
                                                 horizontalInset: LV.Theme.gap2

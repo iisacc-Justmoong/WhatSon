@@ -18,7 +18,7 @@ namespace
     QString displayProjectName(const QString& project)
     {
         const QString trimmed = project.trimmed();
-        return trimmed.isEmpty() ? QStringLiteral("Untitled") : trimmed;
+        return trimmed.isEmpty() ? QStringLiteral("No project") : trimmed;
     }
 
     QString displayDateText(const QString& value)

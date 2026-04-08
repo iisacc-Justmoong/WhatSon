@@ -29,12 +29,21 @@ Rectangle {
         if (!entryModel)
             return "";
         const titleText = entryModel.title !== undefined ? String(entryModel.title).trim() : "";
+        const isAllDay = entryModel.allDay === true;
         const timeText = entryModel.time !== undefined ? String(entryModel.time).trim() : "";
-        if (timeText.length > 0 && titleText.length > 0)
+        if (!isAllDay && timeText.length > 0 && titleText.length > 0)
             return timeText + " " + titleText;
         if (titleText.length > 0)
             return titleText;
         return timeText;
+    }
+    function entryAccent(entryModel) {
+        if (!entryModel)
+            return LV.Theme.primary;
+        const sourceKind = entryModel.sourceKind !== undefined ? String(entryModel.sourceKind) : "";
+        if (sourceKind === "note")
+            return LV.Theme.accent;
+        return LV.Theme.primary;
     }
 
     color: "transparent"
@@ -150,7 +159,7 @@ Rectangle {
                                             backgroundType: entryModel && String(entryModel.type) === "event"
                                                             ? slotEntryCard.backgroundColored
                                                             : slotEntryCard.backgroundDefault
-                                            coloredBackgroundColor: LV.Theme.primary
+                                            coloredBackgroundColor: dayCalendarPage.entryAccent(slotEntryCard.entryModel)
                                             cornerRadius: LV.Theme.radiusSm
                                             defaultBackgroundColor: LV.Theme.panelBackground11
                                             height: timeSlotRow.slotEntryHeight

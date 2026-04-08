@@ -25,3 +25,7 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Notes
+- `CalendarBoardStore` owns both user-authored calendar board entries and read-only note lifecycle projections derived
+  from the current hub's library index.

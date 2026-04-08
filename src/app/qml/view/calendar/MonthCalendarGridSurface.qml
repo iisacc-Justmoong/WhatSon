@@ -37,7 +37,7 @@ Item {
                 "backgroundColor": monthCalendarGridSurface.entryAccent(entryModel)
             });
         }
-
+        return cellModels;
     }
     function buildVisibleDayModels() {
         if (!monthCalendarGridSurface.dayModels || monthCalendarGridSurface.dayModels.length === 0)
@@ -68,17 +68,21 @@ Item {
         return monthCalendarGridSurface.calendarVm.entriesForDate(dateIso);
     }
     function entryAccent(entryModel) {
+        const sourceKind = entryModel && entryModel.sourceKind !== undefined ? String(entryModel.sourceKind) : "";
+        if (sourceKind === "note")
+            return LV.Theme.accent;
         const entryType = entryModel && entryModel.type !== undefined ? String(entryModel.type) : "";
         if (entryType === "task") {
             const completed = entryModel && entryModel.completed === true;
             return completed ? LV.Theme.descriptionColor : LV.Theme.warning;
         }
-
+        return LV.Theme.primary;
     }
     function entryLabel(entryModel) {
         const title = entryModel && entryModel.title !== undefined && String(entryModel.title).trim().length > 0 ? String(entryModel.title).trim() : "Untitled";
+        const isAllDay = entryModel && entryModel.allDay === true;
         const timeText = entryModel && entryModel.time !== undefined ? String(entryModel.time).trim() : "";
-        if (timeText.length === 0)
+        if (isAllDay || timeText.length === 0)
             return title;
         return title + " " + timeText;
     }
