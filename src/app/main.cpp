@@ -280,6 +280,18 @@ int main(int argc, char* argv[])
         calendarBoardStore.reloadProjectedNotesFromSnapshot(
             libraryHierarchyViewModel.indexedNotesSnapshot());
     };
+    const auto upsertCalendarProjectedNoteFromRuntime =
+        [&calendarBoardStore, &libraryHierarchyViewModel](const QString& noteId)
+    {
+        LibraryNoteRecord note;
+        if (!libraryHierarchyViewModel.indexedNoteRecordById(noteId, &note))
+        {
+            calendarBoardStore.removeProjectedNoteBySourceId(noteId);
+            return;
+        }
+
+        calendarBoardStore.upsertProjectedNote(note);
+    };
     const auto requestCalendarProjectedNotesReload = [&calendarBoardStore, &hubSyncController]()
     {
         calendarBoardStore.setProjectedNotesHubPath(hubSyncController.currentHubPath());
@@ -314,6 +326,19 @@ int main(int argc, char* argv[])
         &LibraryHierarchyViewModel::indexedNotesSnapshotChanged,
         &app,
         reloadCalendarProjectedNotesFromRuntime);
+    QObject::connect(
+        &libraryHierarchyViewModel,
+        &LibraryHierarchyViewModel::indexedNoteUpserted,
+        &app,
+        upsertCalendarProjectedNoteFromRuntime);
+    QObject::connect(
+        &libraryHierarchyViewModel,
+        &LibraryHierarchyViewModel::noteDeleted,
+        &app,
+        [&calendarBoardStore](const QString& noteId)
+        {
+            calendarBoardStore.removeProjectedNoteBySourceId(noteId);
+        });
     QObject::connect(
         &bookmarksHierarchyViewModel,
         &BookmarksHierarchyViewModel::hubFilesystemMutated,

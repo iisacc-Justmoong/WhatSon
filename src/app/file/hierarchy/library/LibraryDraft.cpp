@@ -138,7 +138,7 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
 
     for (const LibraryNoteRecord& record : allNotes)
     {
-        if (headerDeclaresDraftMembership(record))
+        if (matches(record))
         {
             m_notes.push_back(record);
         }
@@ -161,6 +161,69 @@ bool LibraryDraft::rebuild(const QVector<LibraryNoteRecord>& allNotes)
     }
 
     return true;
+}
+
+bool LibraryDraft::matches(const LibraryNoteRecord& note)
+{
+    return headerDeclaresDraftMembership(note);
+}
+
+bool LibraryDraft::upsertNote(const LibraryNoteRecord& note)
+{
+    const QString normalizedNoteId = note.noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    if (!matches(note))
+    {
+        return removeNoteById(normalizedNoteId);
+    }
+
+    LibraryNoteRecord normalizedNote = note;
+    normalizedNote.noteId = normalizedNoteId;
+
+    for (int index = 0; index < m_notes.size(); ++index)
+    {
+        if (m_notes.at(index).noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        if (m_notes.at(index) == normalizedNote)
+        {
+            return false;
+        }
+
+        m_notes[index] = normalizedNote;
+        return true;
+    }
+
+    m_notes.push_back(normalizedNote);
+    return true;
+}
+
+bool LibraryDraft::removeNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    for (auto it = m_notes.begin(); it != m_notes.end(); ++it)
+    {
+        if (it->noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        m_notes.erase(it);
+        return true;
+    }
+
+    return false;
 }
 
 void LibraryDraft::setNotes(QVector<LibraryNoteRecord> notes)

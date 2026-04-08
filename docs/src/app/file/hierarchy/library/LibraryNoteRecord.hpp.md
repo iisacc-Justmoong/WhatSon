@@ -21,6 +21,8 @@ filtering and mutation logic rely on stable UUIDs.
 - Missing UUIDs are tolerated only as legacy fallbacks during import; modern writes should preserve
   UUIDs.
 - `progress == -1` represents `No progress` and is the neutral default for new/cleared notes.
+- Structural equality now covers the full record payload so incremental index layers can suppress no-op upserts and
+  avoid emitting wide rebuild signals when a note record did not actually change.
 
 ## Main Collaborators
 

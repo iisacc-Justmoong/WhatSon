@@ -1204,6 +1204,103 @@ void LibraryAll::setIndexedNotes(QString sourceWshubPath, QVector<LibraryNoteRec
                               QStringLiteral("path=%1 noteCount=%2").arg(m_sourceWshubPath).arg(m_notes.size()));
 }
 
+void LibraryAll::setSourceWshubPath(QString sourceWshubPath)
+{
+    m_sourceWshubPath = normalizePath(sourceWshubPath);
+}
+
+bool LibraryAll::upsertNote(const LibraryNoteRecord& note)
+{
+    const QString normalizedNoteId = note.noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    LibraryNoteRecord normalizedNote = note;
+    normalizedNote.noteId = normalizedNoteId;
+
+    for (int index = 0; index < m_notes.size(); ++index)
+    {
+        if (m_notes.at(index).noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        if (m_notes.at(index) == normalizedNote)
+        {
+            return false;
+        }
+
+        m_notes[index] = normalizedNote;
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.all"),
+                                  QStringLiteral("upsertNote.update"),
+                                  QStringLiteral("noteId=%1 count=%2").arg(normalizedNoteId).arg(m_notes.size()));
+        return true;
+    }
+
+    m_notes.push_back(normalizedNote);
+    WhatSon::Debug::traceSelf(this,
+                              QStringLiteral("library.all"),
+                              QStringLiteral("upsertNote.insert"),
+                              QStringLiteral("noteId=%1 count=%2").arg(normalizedNoteId).arg(m_notes.size()));
+    return true;
+}
+
+bool LibraryAll::removeNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    for (auto it = m_notes.begin(); it != m_notes.end(); ++it)
+    {
+        if (it->noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        m_notes.erase(it);
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.all"),
+                                  QStringLiteral("removeNoteById"),
+                                  QStringLiteral("noteId=%1 count=%2").arg(normalizedNoteId).arg(m_notes.size()));
+        return true;
+    }
+
+    return false;
+}
+
+bool LibraryAll::noteById(const QString& noteId, LibraryNoteRecord* outNote) const
+{
+    if (outNote == nullptr)
+    {
+        return false;
+    }
+
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    for (const LibraryNoteRecord& note : m_notes)
+    {
+        if (note.noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        *outNote = note;
+        return true;
+    }
+
+    return false;
+}
+
 void LibraryAll::clear()
 {
     WhatSon::Debug::traceSelf(this,

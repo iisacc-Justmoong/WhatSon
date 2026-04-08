@@ -103,6 +103,7 @@ public:
     Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
     Q_INVOKABLE bool activateNoteById(const QString& noteId);
     QVector<LibraryNoteRecord> indexedNotesSnapshot() const;
+    bool indexedNoteRecordById(const QString& noteId, LibraryNoteRecord* outNote) const;
     bool supportsHierarchyNodeReorder() const noexcept override;
     bool supportsHierarchyNoteDrop() const noexcept override;
 
@@ -133,6 +134,7 @@ public
     void loadStateChanged();
     void noteDeleted(const QString& noteId);
     void emptyNoteCreated(const QString& noteId);
+    void indexedNoteUpserted(const QString& noteId);
     void indexedNotesSnapshotChanged();
     void hubFilesystemMutated();
     void viewModelHookRequested();
@@ -170,7 +172,10 @@ private:
     static QString normalizeFolderKey(const QString& value);
     QString folderPathForIndex(int index) const;
     QString folderUuidForIndex(int index) const;
+    bool upsertIndexedNote(const LibraryNoteRecord& note);
+    bool removeIndexedNoteById(const QString& noteId);
     void invalidateNoteListItemCache() const;
+    void invalidateNoteListItemCacheForNoteId(const QString& noteId) const;
     void setIndexedStateNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes);
     void applyIndexedStateSnapshot(
         QString wshubPath,

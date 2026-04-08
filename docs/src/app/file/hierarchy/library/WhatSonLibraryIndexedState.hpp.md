@@ -10,6 +10,10 @@ library note set plus the derived `draft` and `today` smart buckets.
 - `indexFromWshub(...)`: index the mounted hub once and rebuild all derived buckets.
 - `applySnapshot(...)`: accept already computed runtime snapshot collections.
 - `setIndexedNotes(...)`: replace the canonical note set and rebuild the derived buckets.
+- `setSourceWshubPath(...)`: retarget the source hub path without touching the current note buckets.
+- `upsertNote(...)` / `removeNoteById(...)`: update one canonical note and propagate that change into the derived
+  `draft` / `today` buckets without forcing a full-state replacement.
+- `noteById(...)`: expose single-note lookup for mutation and projection collaborators.
 - `collectBookmarkedNotes(...)`: derive bookmark candidates from an existing library note vector
   without forcing another hub parse.
 

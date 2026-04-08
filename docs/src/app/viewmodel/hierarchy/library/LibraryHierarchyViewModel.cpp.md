@@ -8,9 +8,17 @@
 - Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
 - `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as
   `CalendarBoardStore` can project note lifecycle metadata from the already-loaded library snapshot.
+- Local note mutation paths now split into two classes:
+  - runtime-load / explicit full-snapshot paths still go through `setIndexedStateNotes(...)`,
+    `applyIndexedStateSnapshot(...)`, and `loadIndexedStateFromWshub(...)`
+  - note-save / metadata-reload / folder-assign / note-create / note-delete / folder-clear paths now prefer one-note
+    `upsertIndexedNote(...)` / `removeIndexedNoteById(...)` updates and only fall back to full snapshot replacement
+    when the mutation service does not return a resolvable target note
 - `setIndexedStateNotes(...)`, `applyIndexedStateSnapshot(...)`, and successful direct index loads now emit
   `indexedNotesSnapshotChanged()`, so calendar/runtime collaborators observe note-snapshot changes directly from the
   viewmodel instead of relying on a later page-open hook.
+- `upsertIndexedNote(...)` now invalidates only the affected note-list cache entry and emits `indexedNoteUpserted(...)`
+  when the underlying indexed-state mutation actually changed the note payload.
 - `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
   library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
   before selecting the requested note row.
@@ -27,9 +35,13 @@
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
-    - Startup/deferred runtime note loads must emit `indexedNotesSnapshotChanged()` so calendar projections refresh
-      before the user manually pokes the calendar surface.
-    - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
-    - An active library search filter must be cleared automatically when it hides the requested note.
-    - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.
-    - Failed activation must not switch the current note to an unrelated item.
+  - Startup/deferred runtime note loads must emit `indexedNotesSnapshotChanged()` so calendar projections refresh
+    before the user manually pokes the calendar surface.
+  - local single-note mutations such as `saveBodyTextForNote(...)` and `reloadNoteMetadataForNoteId(...)` must not
+    require copying/replacing the full `allNotes` vector
+  - create/delete/folder-clear mutation flows must prefer single-note upsert/remove and only fall back to full
+    snapshot replacement when the service result cannot resolve the target note
+  - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
+  - An active library search filter must be cleared automatically when it hides the requested note.
+  - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.
+  - Failed activation must not switch the current note to an unrelated item.

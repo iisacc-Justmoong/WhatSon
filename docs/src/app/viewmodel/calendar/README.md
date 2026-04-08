@@ -42,7 +42,10 @@
   page-open churn.
 - Calendar note projection refresh is now driven by the library runtime viewmodel's note-snapshot signal instead of a
   month-page open side effect, so note mounting stays deterministic even during deferred startup loads.
-- `WeekCalendarViewModel` continues to anchor the weekly route while the QML week surface now presents that data as
-  one continuous horizontal date surface sized for three visible day columns.
+- `WeekCalendarViewModel` now owns both the canonical week anchor and the lazy horizontal timeline day window, while
+  the QML week surface is reduced to viewport math and hit interaction for that data.
 - `AgendaViewModel` projects one date into Agenda-focused section models (`allDayEvents`, `timedEvents`, `agendaItems`) and
   exposes the date label, location caption, and summary counts needed by the Agenda route layout.
+- `requestDayView(...)`, `requestAgendaView(...)`, `requestWeekView(...)`, and `requestYearView(...)` are now
+  hook/log-only entry points. Rebuild ownership stays with actual cursor/system/store state changes so QML navigation
+  actions do not trigger the same calendar recomputation twice.

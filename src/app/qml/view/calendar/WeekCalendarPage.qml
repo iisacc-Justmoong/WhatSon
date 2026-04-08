@@ -15,55 +15,23 @@ Rectangle {
     readonly property int lazyChunkSize: 14
     readonly property int maxDateWindowSize: 120
     readonly property int preloadThreshold: 12
+    readonly property int timelineDayCount: weekCalendarPage.timelineDayModels.length
+    readonly property var timelineDayModels: weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.timelineDayModels
+                                            ? weekCalendarPage.calendarVm.timelineDayModels
+                                            : []
     readonly property int visibleDayColumnCount: 3
     readonly property int centeredDayColumnOffset: Math.floor(weekCalendarPage.visibleDayColumnCount / 2)
     property bool dateWindowInitialized: false
     property bool suppressViewportSync: false
-    property var dateEntriesCache: ({})
     property var weekCalendarViewModel: null
 
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function appendDates(count) {
-        if (count <= 0)
+        if (count <= 0 || !weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.appendTimelineDates)
             return;
-        const anchorIso = dateModel.count > 0
-                        ? String(dateModel.get(dateModel.count - 1).dateIso)
-                        : weekCalendarPage.resolveInitialDateIso();
-        for (var offset = 1; offset <= count; ++offset)
-            dateModel.append(weekCalendarPage.buildDateModel(weekCalendarPage.shiftDateIso(anchorIso, offset)));
-    }
-    function buildDateModel(dateIso) {
-        const date = weekCalendarPage.parseIsoDate(dateIso);
-        if (!date)
-            return ({});
-
-        const normalizedDateIso = weekCalendarPage.toIsoDate(date);
-        const entries = weekCalendarPage.entriesForDate(normalizedDateIso);
-        const todayIso = weekCalendarPage.toIsoDate(new Date());
-        const currentWeekStartIso = weekCalendarPage.normalizedWeekStartIso(todayIso);
-        var eventCount = 0;
-        var taskCount = 0;
-        for (var entryIndex = 0; entryIndex < entries.length; ++entryIndex) {
-            const entry = entries[entryIndex];
-            const entryType = entry && entry.type !== undefined ? String(entry.type) : "";
-            if (entryType === "event")
-                eventCount += 1;
-            else if (entryType === "task")
-                taskCount += 1;
-        }
-
-        return {
-            "dateIso": normalizedDateIso,
-            "entryCount": entries.length,
-            "eventCount": eventCount,
-            "taskCount": taskCount,
-            "weekdayLabel": Qt.formatDate(date, "ddd"),
-            "dateLabel": Qt.formatDate(date, "M/d"),
-            "isInCurrentWeek": weekCalendarPage.normalizedWeekStartIso(normalizedDateIso) === currentWeekStartIso,
-            "isToday": normalizedDateIso === todayIso
-        };
+        weekCalendarPage.calendarVm.appendTimelineDates(count);
     }
     function buildHourSlots() {
         var values = [];
@@ -76,8 +44,9 @@ Rectangle {
         if (normalizedIso.length === 0)
             return;
 
-        for (var index = 0; index < dateModel.count; ++index) {
-            if (String(dateModel.get(index).dateIso) !== normalizedIso)
+        for (var index = 0; index < weekCalendarPage.timelineDayCount; ++index) {
+            const dayModel = weekCalendarPage.timelineDayModels[index];
+            if (!dayModel || String(dayModel.dateIso) !== normalizedIso)
                 continue;
             weekCalendarPage.setViewportContentX(
                         Math.max(0, (index - weekCalendarPage.centeredDayColumnOffset) * timelineScaffold.dayColumnSpan));
@@ -89,7 +58,7 @@ Rectangle {
         weekCalendarPage.initializeDateWindow(normalizedIso, true, "focus-date");
     }
     function currentFocusedDateIndex() {
-        if (dateModel.count <= 0)
+        if (weekCalendarPage.timelineDayCount <= 0)
             return -1;
         if (timelineScaffold.dayColumnSpan <= 0)
             return 0;
@@ -97,45 +66,35 @@ Rectangle {
         const centeredIndex = Math.round(
                     (viewportCenterX - (timelineScaffold.dayColumnWidth / 2))
                     / timelineScaffold.dayColumnSpan);
-        return Math.max(0, Math.min(dateModel.count - 1, centeredIndex));
+        return Math.max(0, Math.min(weekCalendarPage.timelineDayCount - 1, centeredIndex));
     }
     function currentLeadingDateIndex() {
-        if (dateModel.count <= 0)
+        if (weekCalendarPage.timelineDayCount <= 0)
             return -1;
         if (timelineScaffold.dayColumnSpan <= 0)
             return 0;
         return Math.max(
                     0,
                     Math.min(
-                        dateModel.count - 1,
+                        weekCalendarPage.timelineDayCount - 1,
                         Math.floor(dateColumnsFlickable.contentX / timelineScaffold.dayColumnSpan)));
     }
     function ensureLazyDates() {
-        if (!weekCalendarPage.dateWindowInitialized || dateModel.count <= 0)
+        if (!weekCalendarPage.dateWindowInitialized || weekCalendarPage.timelineDayCount <= 0)
             return;
         const leadingIndex = weekCalendarPage.currentLeadingDateIndex();
         if (leadingIndex <= weekCalendarPage.preloadThreshold)
             weekCalendarPage.prependDates(weekCalendarPage.lazyChunkSize);
-        if (leadingIndex >= dateModel.count - weekCalendarPage.visibleDayColumnCount - weekCalendarPage.preloadThreshold)
+        if (leadingIndex >= weekCalendarPage.timelineDayCount - weekCalendarPage.visibleDayColumnCount - weekCalendarPage.preloadThreshold)
             weekCalendarPage.appendDates(weekCalendarPage.lazyChunkSize);
         weekCalendarPage.trimDateWindow();
-    }
-    function entriesForDate(dateIso) {
-        const normalizedDateIso = dateIso !== undefined ? String(dateIso).trim() : "";
-        if (normalizedDateIso.length === 0)
-            return [];
-        if (weekCalendarPage.dateEntriesCache[normalizedDateIso] !== undefined)
-            return weekCalendarPage.dateEntriesCache[normalizedDateIso];
-        const resolvedEntries = weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.entriesForDate
-                ? weekCalendarPage.calendarVm.entriesForDate(normalizedDateIso)
-                : [];
-        weekCalendarPage.dateEntriesCache[normalizedDateIso] = resolvedEntries;
-        return resolvedEntries;
     }
     function entriesForHour(dayModel, hour) {
         if (!dayModel || dayModel.dateIso === undefined)
             return [];
-        const dayEntries = weekCalendarPage.entriesForDate(String(dayModel.dateIso));
+        const dayEntries = dayModel.entries !== undefined && dayModel.entries !== null
+                ? dayModel.entries
+                : [];
         var matches = [];
         for (var index = 0; index < dayEntries.length; ++index) {
             const entry = dayEntries[index];
@@ -157,10 +116,8 @@ Rectangle {
             return;
 
         weekCalendarPage.dateWindowInitialized = false;
-        weekCalendarPage.dateEntriesCache = ({});
-        dateModel.clear();
-        for (var offset = -weekCalendarPage.initialDateRadius; offset <= weekCalendarPage.initialDateRadius; ++offset)
-            dateModel.append(weekCalendarPage.buildDateModel(weekCalendarPage.shiftDateIso(resolvedAnchorIso, offset)));
+        if (weekCalendarPage.calendarVm && weekCalendarPage.calendarVm.initializeTimelineWindow)
+            weekCalendarPage.calendarVm.initializeTimelineWindow(resolvedAnchorIso, weekCalendarPage.initialDateRadius);
 
         Qt.callLater(function() {
             const anchorIndex = weekCalendarPage.initialDateRadius;
@@ -183,8 +140,8 @@ Rectangle {
     }
     function focusedDateIso() {
         const focusedIndex = weekCalendarPage.currentFocusedDateIndex();
-        if (focusedIndex >= 0 && focusedIndex < dateModel.count)
-            return String(dateModel.get(focusedIndex).dateIso);
+        if (focusedIndex >= 0 && focusedIndex < weekCalendarPage.timelineDayCount)
+            return String(weekCalendarPage.timelineDayModels[focusedIndex].dateIso);
         return weekCalendarPage.resolveInitialDateIso();
     }
     function normalizedWeekStartIso(dateIso) {
@@ -216,22 +173,12 @@ Rectangle {
         return new Date(year, month - 1, day);
     }
     function prependDates(count) {
-        if (count <= 0 || dateModel.count <= 0)
+        if (count <= 0 || weekCalendarPage.timelineDayCount <= 0
+                || !weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.prependTimelineDates)
             return;
-        const firstDateIso = String(dateModel.get(0).dateIso);
-        var prependModels = [];
-        for (var offset = count; offset >= 1; --offset)
-            prependModels.push(weekCalendarPage.buildDateModel(weekCalendarPage.shiftDateIso(firstDateIso, -offset)));
-        for (var index = 0; index < prependModels.length; ++index)
-            dateModel.insert(index, prependModels[index]);
-        weekCalendarPage.setViewportContentX(dateColumnsFlickable.contentX + (prependModels.length * timelineScaffold.dayColumnSpan));
-    }
-    function refreshLoadedDates() {
-        weekCalendarPage.dateEntriesCache = ({});
-        for (var index = 0; index < dateModel.count; ++index) {
-            const dateIso = String(dateModel.get(index).dateIso);
-            dateModel.set(index, weekCalendarPage.buildDateModel(dateIso));
-        }
+        const prependedCount = Number(weekCalendarPage.calendarVm.prependTimelineDates(count));
+        if (isFinite(prependedCount) && prependedCount > 0)
+            weekCalendarPage.setViewportContentX(dateColumnsFlickable.contentX + (prependedCount * timelineScaffold.dayColumnSpan));
     }
     function requestViewHook(reason) {
         const hookReason = reason !== undefined ? String(reason) : "manual";
@@ -330,9 +277,9 @@ Rectangle {
     }
     function syncDisplayedWeekFromViewport(reason) {
         const focusedIndex = weekCalendarPage.currentFocusedDateIndex();
-        if (focusedIndex < 0 || focusedIndex >= dateModel.count)
+        if (focusedIndex < 0 || focusedIndex >= weekCalendarPage.timelineDayCount)
             return;
-        weekCalendarPage.syncDisplayedWeekForDate(String(dateModel.get(focusedIndex).dateIso), reason);
+        weekCalendarPage.syncDisplayedWeekForDate(String(weekCalendarPage.timelineDayModels[focusedIndex].dateIso), reason);
     }
     function toIsoDate(dateObject) {
         if (!dateObject)
@@ -345,21 +292,18 @@ Rectangle {
         return year + "-" + month + "-" + day;
     }
     function trimDateWindow() {
-        while (dateModel.count > weekCalendarPage.maxDateWindowSize) {
-            const leadingIndex = weekCalendarPage.currentLeadingDateIndex();
-            const removeHead = leadingIndex > Math.floor(dateModel.count / 2);
-            const removeCount = Math.min(
-                        weekCalendarPage.lazyChunkSize,
-                        dateModel.count - weekCalendarPage.maxDateWindowSize);
-            if (removeCount <= 0)
-                return;
-            if (removeHead) {
-                dateModel.remove(0, removeCount);
-                weekCalendarPage.setViewportContentX(
-                            Math.max(0, dateColumnsFlickable.contentX - (removeCount * timelineScaffold.dayColumnSpan)));
-            } else {
-                dateModel.remove(dateModel.count - removeCount, removeCount);
-            }
+        if (!weekCalendarPage.calendarVm || !weekCalendarPage.calendarVm.trimTimelineWindow)
+            return;
+        const trimResult = weekCalendarPage.calendarVm.trimTimelineWindow(
+                    weekCalendarPage.currentLeadingDateIndex(),
+                    weekCalendarPage.maxDateWindowSize,
+                    weekCalendarPage.lazyChunkSize);
+        const removedHead = trimResult && trimResult.removedHead !== undefined
+                ? Number(trimResult.removedHead)
+                : 0;
+        if (isFinite(removedHead) && removedHead > 0) {
+            weekCalendarPage.setViewportContentX(
+                        Math.max(0, dateColumnsFlickable.contentX - (removedHead * timelineScaffold.dayColumnSpan)));
         }
     }
 
@@ -373,18 +317,6 @@ Rectangle {
             weekCalendarPage.initializeDateWindow(weekCalendarPage.resolveInitialDateIso(), true, "initialize-date-window");
             weekCalendarPage.requestViewHook("page-open");
         });
-    }
-
-    Connections {
-        function onWeekViewChanged() {
-            weekCalendarPage.refreshLoadedDates();
-        }
-
-        ignoreUnknownSignals: true
-        target: weekCalendarPage.calendarVm
-    }
-    ListModel {
-        id: dateModel
     }
     ColumnLayout {
         anchors.fill: parent
@@ -481,7 +413,7 @@ Rectangle {
                     contentHeight: height
                     contentWidth: dateColumnsContent.width
                     flickableDirection: Flickable.HorizontalFlick
-                    interactive: dateModel.count > weekCalendarPage.visibleDayColumnCount
+                    interactive: weekCalendarPage.timelineDayCount > weekCalendarPage.visibleDayColumnCount
 
                     onContentXChanged: {
                         if (!weekCalendarPage.dateWindowInitialized || weekCalendarPage.suppressViewportSync)
@@ -499,13 +431,13 @@ Rectangle {
                         id: dateColumnsContent
 
                         height: dateColumnsFlickable.height
-                        width: dateModel.count > 0
-                               ? (dateModel.count * timelineScaffold.dayColumnWidth)
-                                 + ((dateModel.count - 1) * weekCalendarPage.dayColumnSpacing)
+                        width: weekCalendarPage.timelineDayCount > 0
+                               ? (weekCalendarPage.timelineDayCount * timelineScaffold.dayColumnWidth)
+                                 + ((weekCalendarPage.timelineDayCount - 1) * weekCalendarPage.dayColumnSpacing)
                                : 0
 
                         Repeater {
-                            model: dateModel
+                            model: weekCalendarPage.timelineDayModels
 
                             Rectangle {
                                 id: dayHeaderCell
@@ -580,7 +512,7 @@ Rectangle {
                                     width: parent.width
 
                                     Repeater {
-                                        model: dateModel
+                                        model: weekCalendarPage.timelineDayModels
 
                                         Rectangle {
                                             id: dayHourCell

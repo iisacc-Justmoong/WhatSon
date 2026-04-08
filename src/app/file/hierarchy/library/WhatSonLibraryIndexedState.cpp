@@ -43,6 +43,38 @@ void WhatSonLibraryIndexedState::setIndexedNotes(QString sourceWshubPath, QVecto
     rebuildDerivedBuckets();
 }
 
+void WhatSonLibraryIndexedState::setSourceWshubPath(QString sourceWshubPath)
+{
+    m_libraryAll.setSourceWshubPath(std::move(sourceWshubPath));
+}
+
+bool WhatSonLibraryIndexedState::upsertNote(const LibraryNoteRecord& note)
+{
+    const QString normalizedNoteId = note.noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const bool allChanged = m_libraryAll.upsertNote(note);
+    const bool draftChanged = m_libraryDraft.upsertNote(note);
+    const bool todayChanged = m_libraryToday.upsertNote(note);
+    return allChanged || draftChanged || todayChanged;
+}
+
+bool WhatSonLibraryIndexedState::removeNoteById(const QString& noteId)
+{
+    const bool allChanged = m_libraryAll.removeNoteById(noteId);
+    const bool draftChanged = m_libraryDraft.removeNoteById(noteId);
+    const bool todayChanged = m_libraryToday.removeNoteById(noteId);
+    return allChanged || draftChanged || todayChanged;
+}
+
+bool WhatSonLibraryIndexedState::noteById(const QString& noteId, LibraryNoteRecord* outNote) const
+{
+    return m_libraryAll.noteById(noteId, outNote);
+}
+
 void WhatSonLibraryIndexedState::clear()
 {
     m_libraryAll.clear();

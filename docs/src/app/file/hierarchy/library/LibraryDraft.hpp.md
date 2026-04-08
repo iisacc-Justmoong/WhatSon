@@ -1,37 +1,18 @@
 # `src/app/file/hierarchy/library/LibraryDraft.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/LibraryDraft.hpp`
-- Source kind: C++ header
-- File name: `LibraryDraft.hpp`
-- Approximate line count: 21
+`LibraryDraft` owns the derived "Draft" smart bucket.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Public Contract
 
-### Classes and Structs
-- `LibraryDraft`
+- `rebuild(...)`: rebuild the draft bucket from the canonical all-notes vector.
+- `matches(...)`: centralize the draft-membership rule used by both rebuild and incremental mutation paths.
+- `upsertNote(...)`: reevaluate one note against that rule and update the bucket in place.
+- `removeNoteById(...)`: prune one draft note without rebuilding the whole bucket.
 
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - body-only note saves that do not affect draft membership must not force a full `Draft` bucket rebuild
+  - removing draft membership must route through `removeNoteById(...)` when the updated note no longer matches

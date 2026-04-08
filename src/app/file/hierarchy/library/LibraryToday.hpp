@@ -12,6 +12,9 @@ public:
     ~LibraryToday();
 
     bool rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDate& today = QDate::currentDate());
+    static bool matches(const LibraryNoteRecord& note, const QDate& today = QDate::currentDate());
+    bool upsertNote(const LibraryNoteRecord& note, const QDate& today = QDate::currentDate());
+    bool removeNoteById(const QString& noteId);
     void setNotes(QVector<LibraryNoteRecord> notes);
     void clear();
 

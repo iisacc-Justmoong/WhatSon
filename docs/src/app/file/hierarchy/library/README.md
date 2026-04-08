@@ -41,5 +41,10 @@
 - Known hotspots and refactor priorities
 
 ## Notes
+- `LibraryNoteRecord` now exposes structural equality so incremental mutation layers can suppress no-op updates before
+  they fan out into note-list/calendar rebuilds.
+- `LibraryAll`, `LibraryDraft`, and `LibraryToday` now all support single-note upsert/remove operations, and
+  `WhatSonLibraryIndexedState` uses those paths to keep canonical and derived buckets synchronized without replacing
+  the whole note snapshot on every local edit.
 - `LibraryNotePreviewText.hpp` is the shared preview-text authority for library note cards and calendar note chips, so
   compact note renderers do not drift into separate headline rules.

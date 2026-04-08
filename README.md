@@ -91,6 +91,8 @@ WhatSon is an LVRS-based Qt Quick application.
 - Calendar note projection now refreshes from the live library runtime snapshot on startup and library-side note
   mutations, which prevents the calendar views from staying empty while still preserving the disk reindex fallback for
   bookmark/progress-originated note changes.
+- `CalendarBoardStore` now maintains date-keyed entry/count indexes for both manual and projected items, so
+  day/week/month/year viewmodels stop paying a full-board scan cost on every date query.
 - The monthly calendar projection now carries per-day `entries` payloads into the day-cell model itself, so note
   lifecycle chips render visually inside the month grid instead of relying on a late re-query path.
 - Calendar queries now also fall back to the live library note provider when the projected-entry cache is empty, so the
@@ -107,8 +109,16 @@ WhatSon is an LVRS-based Qt Quick application.
 - Library runtime note snapshots now push directly into `CalendarBoardStore` through a dedicated
   `LibraryHierarchyViewModel` signal, so month-view note chips do not depend on a later UI-triggered rebuild such as
   pressing `Today`.
+- Library note saves, metadata reloads, note creation, note deletion, and folder clears now prefer single-note
+  indexed-state upsert/remove paths instead of replacing the entire runtime note snapshot, which reduces rebuild fanout
+  into the note list and calendar projection surfaces.
 - Navigation-driven calendar opens now reset Agenda/day/week/month/year overlays back to today's date context, while
   year-view drill-down into month view still preserves the explicitly tapped month/date.
+- Day/Agenda/Week/Year calendar `request*View()` hooks are now log/hook-only and no longer rebuild their models after
+  QML has already changed the displayed cursor, which removes the duplicate recalculation path when opening or moving
+  those calendar routes.
+- Week calendar no longer keeps a second QML-side date model/cache above `WeekCalendarViewModel`; the viewmodel now
+  owns the lazy timeline date window and the page is limited to viewport synchronization and interaction.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
   `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
   `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.

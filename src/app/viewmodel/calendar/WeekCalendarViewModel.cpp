@@ -8,6 +8,9 @@
 #include <QTime>
 #include <QVariantMap>
 
+#include <algorithm>
+#include <utility>
+
 WeekCalendarViewModel::WeekCalendarViewModel(QObject* parent)
     : QObject(parent)
 {
@@ -37,6 +40,11 @@ QVariantList WeekCalendarViewModel::dayModels() const
     return m_dayModels;
 }
 
+QVariantList WeekCalendarViewModel::timelineDayModels() const
+{
+    return m_timelineDayModels;
+}
+
 void WeekCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore)
 {
     if (m_calendarBoardStore == calendarBoardStore)
@@ -55,10 +63,12 @@ void WeekCalendarViewModel::setCalendarBoardStore(ICalendarBoardStore* calendarB
         connect(m_calendarBoardStore, &ICalendarBoardStore::entriesChanged, this, [this]()
         {
             rebuildWeekModel();
+            refreshTimelineDayModels();
         });
     }
 
     rebuildWeekModel();
+    refreshTimelineDayModels();
 }
 
 void WeekCalendarViewModel::setDisplayedWeekStartIso(const QString& dateIso)
@@ -110,7 +120,139 @@ void WeekCalendarViewModel::requestWeekView(const QString& reason)
         QStringLiteral("weekStart=%1 reason=%2").arg(m_displayedWeekStartIso, normalizedReason));
 
     emit weekViewRequested(normalizedReason);
-    rebuildWeekModel();
+}
+
+void WeekCalendarViewModel::initializeTimelineWindow(const QString& anchorDateIso, int radius)
+{
+    QDate anchorDate;
+    if (!parseIsoDate(anchorDateIso, &anchorDate))
+    {
+        return;
+    }
+
+    const int boundedRadius = std::max(0, radius);
+    const QLocale locale = QLocale::system();
+    QVariantList nextTimelineDayModels;
+    nextTimelineDayModels.reserve((boundedRadius * 2) + 1);
+    for (int offset = -boundedRadius; offset <= boundedRadius; ++offset)
+    {
+        nextTimelineDayModels.push_back(buildTimelineDayModel(anchorDate.addDays(offset), locale));
+    }
+
+    m_timelineDayModels = std::move(nextTimelineDayModels);
+    emit timelineDayModelsChanged();
+}
+
+int WeekCalendarViewModel::prependTimelineDates(int count)
+{
+    if (count <= 0 || m_timelineDayModels.isEmpty())
+    {
+        return 0;
+    }
+
+    QDate firstDate;
+    if (!parseIsoDate(
+            m_timelineDayModels.constFirst().toMap().value(QStringLiteral("dateIso")).toString(),
+            &firstDate))
+    {
+        return 0;
+    }
+
+    const QLocale locale = QLocale::system();
+    QVariantList prependedDayModels;
+    prependedDayModels.reserve(count);
+    for (int offset = count; offset >= 1; --offset)
+    {
+        prependedDayModels.push_back(buildTimelineDayModel(firstDate.addDays(-offset), locale));
+    }
+
+    QVariantList nextTimelineDayModels;
+    nextTimelineDayModels.reserve(prependedDayModels.size() + m_timelineDayModels.size());
+    for (const QVariant& dayModel : prependedDayModels)
+    {
+        nextTimelineDayModels.push_back(dayModel);
+    }
+    for (const QVariant& dayModel : m_timelineDayModels)
+    {
+        nextTimelineDayModels.push_back(dayModel);
+    }
+
+    m_timelineDayModels = std::move(nextTimelineDayModels);
+    emit timelineDayModelsChanged();
+    return prependedDayModels.size();
+}
+
+int WeekCalendarViewModel::appendTimelineDates(int count)
+{
+    if (count <= 0 || m_timelineDayModels.isEmpty())
+    {
+        return 0;
+    }
+
+    QDate lastDate;
+    if (!parseIsoDate(
+            m_timelineDayModels.constLast().toMap().value(QStringLiteral("dateIso")).toString(),
+            &lastDate))
+    {
+        return 0;
+    }
+
+    const QLocale locale = QLocale::system();
+    for (int offset = 1; offset <= count; ++offset)
+    {
+        m_timelineDayModels.push_back(buildTimelineDayModel(lastDate.addDays(offset), locale));
+    }
+
+    emit timelineDayModelsChanged();
+    return count;
+}
+
+QVariantMap WeekCalendarViewModel::trimTimelineWindow(int leadingIndex, int maxWindowSize, int chunkSize)
+{
+    QVariantMap result{
+        {QStringLiteral("removedHead"), 0},
+        {QStringLiteral("removedTail"), 0}
+    };
+
+    if (maxWindowSize <= 0 || chunkSize <= 0 || m_timelineDayModels.size() <= maxWindowSize)
+    {
+        return result;
+    }
+
+    int mutableLeadingIndex = std::max(0, leadingIndex);
+    while (m_timelineDayModels.size() > maxWindowSize)
+    {
+        const bool removeHead = mutableLeadingIndex > (m_timelineDayModels.size() / 2);
+        const int removeCount = std::min(chunkSize, m_timelineDayModels.size() - maxWindowSize);
+        if (removeCount <= 0)
+        {
+            break;
+        }
+
+        if (removeHead)
+        {
+            m_timelineDayModels.erase(m_timelineDayModels.begin(), m_timelineDayModels.begin() + removeCount);
+            result.insert(
+                QStringLiteral("removedHead"),
+                result.value(QStringLiteral("removedHead")).toInt() + removeCount);
+            mutableLeadingIndex = std::max(0, mutableLeadingIndex - removeCount);
+        }
+        else
+        {
+            m_timelineDayModels.erase(m_timelineDayModels.end() - removeCount, m_timelineDayModels.end());
+            result.insert(
+                QStringLiteral("removedTail"),
+                result.value(QStringLiteral("removedTail")).toInt() + removeCount);
+        }
+    }
+
+    if (result.value(QStringLiteral("removedHead")).toInt() > 0
+        || result.value(QStringLiteral("removedTail")).toInt() > 0)
+    {
+        emit timelineDayModelsChanged();
+    }
+
+    return result;
 }
 
 bool WeekCalendarViewModel::addEvent(
@@ -166,6 +308,66 @@ bool WeekCalendarViewModel::setTaskCompleted(const QString& entryId, bool comple
     return m_calendarBoardStore->setTaskCompleted(entryId, completed);
 }
 
+QVariantMap WeekCalendarViewModel::buildTimelineDayModel(const QDate& date, const QLocale& locale) const
+{
+    if (!date.isValid())
+    {
+        return {};
+    }
+
+    const QString dateIso = date.toString(Qt::ISODate);
+    const QVariantList entries =
+        m_calendarBoardStore ? m_calendarBoardStore->entriesForDate(dateIso) : QVariantList{};
+    const QVariantMap entryCounts =
+        m_calendarBoardStore ? m_calendarBoardStore->countsForDate(dateIso) : QVariantMap{};
+    const QDate today = QDate::currentDate();
+    const QDate currentWeekStart = startOfWeek(today, locale);
+
+    QVariantMap dayModel;
+    dayModel.insert(QStringLiteral("dateIso"), dateIso);
+    dayModel.insert(QStringLiteral("day"), date.day());
+    dayModel.insert(QStringLiteral("dayLabel"), locale.toString(date, QStringLiteral("ddd d")));
+    dayModel.insert(QStringLiteral("weekdayLabel"), locale.toString(date, QStringLiteral("ddd")));
+    dayModel.insert(QStringLiteral("dateLabel"), locale.toString(date, QStringLiteral("M/d")));
+    dayModel.insert(QStringLiteral("isToday"), date == today);
+    dayModel.insert(QStringLiteral("isInCurrentWeek"), startOfWeek(date, locale) == currentWeekStart);
+    dayModel.insert(QStringLiteral("entries"), entries);
+    dayModel.insert(
+        QStringLiteral("eventCount"),
+        entryCounts.value(QStringLiteral("eventCount"), 0).toInt());
+    dayModel.insert(
+        QStringLiteral("taskCount"),
+        entryCounts.value(QStringLiteral("taskCount"), 0).toInt());
+    dayModel.insert(
+        QStringLiteral("entryCount"),
+        entryCounts.value(QStringLiteral("entryCount"), 0).toInt());
+    return dayModel;
+}
+
+void WeekCalendarViewModel::refreshTimelineDayModels()
+{
+    if (m_timelineDayModels.isEmpty())
+    {
+        return;
+    }
+
+    const QLocale locale = QLocale::system();
+    QVariantList nextTimelineDayModels;
+    nextTimelineDayModels.reserve(m_timelineDayModels.size());
+    for (const QVariant& dayModelValue : m_timelineDayModels)
+    {
+        QDate date;
+        if (!parseIsoDate(dayModelValue.toMap().value(QStringLiteral("dateIso")).toString(), &date))
+        {
+            continue;
+        }
+        nextTimelineDayModels.push_back(buildTimelineDayModel(date, locale));
+    }
+
+    m_timelineDayModels = std::move(nextTimelineDayModels);
+    emit timelineDayModelsChanged();
+}
+
 void WeekCalendarViewModel::rebuildWeekModel()
 {
     const QLocale locale = QLocale::system();
@@ -196,34 +398,12 @@ void WeekCalendarViewModel::rebuildWeekModel()
         nextWeekdayLabels.push_back(locale.standaloneDayName(weekDay, QLocale::ShortFormat));
     }
 
-    const QDate today = QDate::currentDate();
     QVariantList nextDayModels;
     nextDayModels.reserve(7);
     for (int dayOffset = 0; dayOffset < 7; ++dayOffset)
     {
         const QDate date = weekStartDate.addDays(dayOffset);
-        const QString dateIso = date.toString(Qt::ISODate);
-        const QVariantList entries =
-            m_calendarBoardStore ? m_calendarBoardStore->entriesForDate(dateIso) : QVariantList{};
-        const QVariantMap entryCounts =
-            m_calendarBoardStore ? m_calendarBoardStore->countsForDate(dateIso) : QVariantMap{};
-
-        QVariantMap dayModel;
-        dayModel.insert(QStringLiteral("dateIso"), dateIso);
-        dayModel.insert(QStringLiteral("day"), date.day());
-        dayModel.insert(QStringLiteral("dayLabel"), locale.toString(date, QStringLiteral("ddd d")));
-        dayModel.insert(QStringLiteral("isToday"), date == today);
-        dayModel.insert(QStringLiteral("entries"), entries);
-        dayModel.insert(
-            QStringLiteral("eventCount"),
-            entryCounts.value(QStringLiteral("eventCount"), 0).toInt());
-        dayModel.insert(
-            QStringLiteral("taskCount"),
-            entryCounts.value(QStringLiteral("taskCount"), 0).toInt());
-        dayModel.insert(
-            QStringLiteral("entryCount"),
-            entryCounts.value(QStringLiteral("entryCount"), 0).toInt());
-        nextDayModels.push_back(dayModel);
+        nextDayModels.push_back(buildTimelineDayModel(date, locale));
     }
 
     m_weekLabel = formatWeekLabel(weekStartDate, locale);

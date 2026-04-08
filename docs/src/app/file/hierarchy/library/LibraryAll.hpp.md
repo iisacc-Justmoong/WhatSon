@@ -1,37 +1,27 @@
 # `src/app/file/hierarchy/library/LibraryAll.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/LibraryAll.hpp`
-- Source kind: C++ header
-- File name: `LibraryAll.hpp`
-- Approximate line count: 28
+`LibraryAll` owns the canonical in-memory `all notes` bucket for the library domain.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Public Contract
 
-### Classes and Structs
-- `LibraryAll`
+- `indexFromWshub(...)`: parse the mounted hub and build the canonical note vector.
+- `setIndexedNotes(...)`: replace the full canonical note vector from a runtime snapshot or mutation result.
+- `setSourceWshubPath(...)`: update only the source hub identity when a caller wants to preserve the current note set
+  but change where future persistence should resolve from.
+- `upsertNote(...)`: insert or update one note in place and return `false` for structural no-op updates.
+- `removeNoteById(...)`: prune one note without replacing the whole bucket.
+- `noteById(...)`: resolve one note record for mutation or projection collaborators.
 
-### Enums
-- None detected during scaffold generation.
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - updating one note body/metadata must be representable through `upsertNote(...)` without rebuilding the full
+    canonical note vector
+  - deleting one note must be representable through `removeNoteById(...)`
+  - a no-op upsert must return `false` so higher layers can suppress unnecessary note-list/calendar rebuilds
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Architectural Role
+This header defines the stable mutation/query surface that `WhatSonLibraryIndexedState` uses to keep the canonical
+library note set synchronized while avoiding a full-snapshot replacement on every local note edit.

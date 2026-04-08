@@ -11,6 +11,9 @@ public:
     ~LibraryDraft();
 
     bool rebuild(const QVector<LibraryNoteRecord>& allNotes);
+    static bool matches(const LibraryNoteRecord& note);
+    bool upsertNote(const LibraryNoteRecord& note);
+    bool removeNoteById(const QString& noteId);
     void setNotes(QVector<LibraryNoteRecord> notes);
     void clear();
 

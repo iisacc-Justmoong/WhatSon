@@ -15,6 +15,10 @@ public:
 
     bool indexFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
     void setIndexedNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes);
+    void setSourceWshubPath(QString sourceWshubPath);
+    bool upsertNote(const LibraryNoteRecord& note);
+    bool removeNoteById(const QString& noteId);
+    bool noteById(const QString& noteId, LibraryNoteRecord* outNote) const;
     void clear();
 
     QString sourceWshubPath() const;

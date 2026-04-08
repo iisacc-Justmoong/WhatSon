@@ -128,7 +128,6 @@ void AgendaViewModel::requestAgendaView(const QString& reason)
         QStringLiteral("date=%1 reason=%2").arg(m_displayedDateIso, normalizedReason));
 
     emit agendaRequested(normalizedReason);
-    rebuildAgenda();
 }
 
 bool AgendaViewModel::addEvent(

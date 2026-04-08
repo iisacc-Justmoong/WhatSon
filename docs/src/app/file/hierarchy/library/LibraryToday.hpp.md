@@ -1,37 +1,18 @@
 # `src/app/file/hierarchy/library/LibraryToday.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Responsibility
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/LibraryToday.hpp`
-- Source kind: C++ header
-- File name: `LibraryToday.hpp`
-- Approximate line count: 22
+`LibraryToday` owns the derived "Today" smart bucket.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Public Contract
 
-### Classes and Structs
-- `LibraryToday`
+- `rebuild(...)`: rebuild the bucket from the canonical all-notes vector.
+- `matches(...)`: centralize the date-membership rule used by both rebuild and incremental mutation paths.
+- `upsertNote(...)`: re-evaluate one note against today's date and update the bucket in place.
+- `removeNoteById(...)`: prune one note without a full today-bucket rebuild.
 
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - saving a note whose effective today-membership does not change must not force a full `Today` bucket rebuild
+  - changing a note across the today/non-today boundary must be representable through one `upsertNote(...)` call

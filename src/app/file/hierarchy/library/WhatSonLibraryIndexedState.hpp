@@ -28,6 +28,10 @@ public:
         QVector<LibraryNoteRecord> draftNotes,
         QVector<LibraryNoteRecord> todayNotes);
     void setIndexedNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes);
+    void setSourceWshubPath(QString sourceWshubPath);
+    bool upsertNote(const LibraryNoteRecord& note);
+    bool removeNoteById(const QString& noteId);
+    bool noteById(const QString& noteId, LibraryNoteRecord* outNote) const;
     void clear();
 
     [[nodiscard]] Snapshot snapshot() const;

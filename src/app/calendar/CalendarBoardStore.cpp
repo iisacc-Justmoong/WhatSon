@@ -139,7 +139,7 @@ namespace
         return !left.hasExplicitTime && right.hasExplicitTime;
     }
 
-    CalendarBoardStore::CalendarEntry buildProjectedNoteEntry(
+    CalendarBoardStore::CalendarEntry buildProjectedNoteEntryFromTimestamp(
         const LibraryNoteRecord& note,
         const ParsedNoteTimestamp& timestamp,
         QString lifecycleKey)
@@ -212,6 +212,27 @@ namespace
         }
         return left.title < right.title;
     }
+
+    bool projectedEntryMapEqual(
+        const QHash<QString, CalendarBoardStore::CalendarEntry>& left,
+        const QHash<QString, CalendarBoardStore::CalendarEntry>& right)
+    {
+        if (left.size() != right.size())
+        {
+            return false;
+        }
+
+        for (auto it = left.constBegin(); it != left.constEnd(); ++it)
+        {
+            const auto rightIt = right.constFind(it.key());
+            if (rightIt == right.constEnd() || !calendarEntryEqual(it.value(), rightIt.value()))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 CalendarBoardStore::CalendarBoardStore(QObject* parent)
@@ -253,32 +274,13 @@ QVariantList CalendarBoardStore::entriesForDate(const QString& dateIso) const
         return {};
     }
 
-    QVector<CalendarEntry> matches;
-    matches.reserve(m_entries.size() + m_projectedEntries.size());
-    const QVector<CalendarEntry> projectedEntries = projectedEntriesForQueries();
-
-    const auto appendMatches = [&parsedDate, &matches](const QVector<CalendarEntry>& source)
-    {
-        for (const CalendarEntry& entry : source)
-        {
-            if (entry.date == parsedDate)
-            {
-                matches.push_back(entry);
-            }
-        }
-    };
-
-    appendMatches(m_entries);
-    appendMatches(projectedEntries);
-    sortEntries(&matches);
-
-    QVariantList entries;
-    entries.reserve(matches.size());
-    for (const CalendarEntry& entry : std::as_const(matches))
-    {
-        entries.push_back(toVariantMap(entry));
-    }
-    return entries;
+    const QString resolvedDateKey = dateKey(parsedDate);
+    const auto manualIt = m_entriesByDate.constFind(resolvedDateKey);
+    const QVector<CalendarEntry> projectedEntries = projectedEntriesForDateQuery(parsedDate);
+    const QVector<CalendarEntry> mergedEntries = mergeIndexedEntries(
+        manualIt != m_entriesByDate.constEnd() ? manualIt.value() : QVector<CalendarEntry>{},
+        projectedEntries);
+    return toVariantList(mergedEntries);
 }
 
 QVariantMap CalendarBoardStore::countsForDate(const QString& dateIso) const
@@ -286,43 +288,22 @@ QVariantMap CalendarBoardStore::countsForDate(const QString& dateIso) const
     QDate parsedDate;
     if (!parseIsoDate(dateIso, &parsedDate))
     {
-        return {
-            {QStringLiteral("eventCount"), 0},
-            {QStringLiteral("taskCount"), 0},
-            {QStringLiteral("entryCount"), 0}
-        };
+        return toCountsVariant({});
     }
 
-    int eventCount = 0;
-    int taskCount = 0;
-    const QVector<CalendarEntry> projectedEntries = projectedEntriesForQueries();
-    const auto accumulateCounts = [&parsedDate, &eventCount, &taskCount](const QVector<CalendarEntry>& source)
+    const QString resolvedDateKey = dateKey(parsedDate);
+    EntryCounts mergedCounts;
+    const auto manualIt = m_entryCountsByDate.constFind(resolvedDateKey);
+    if (manualIt != m_entryCountsByDate.constEnd())
     {
-        for (const CalendarEntry& entry : source)
-        {
-            if (entry.date != parsedDate)
-            {
-                continue;
-            }
+        mergedCounts.eventCount += manualIt.value().eventCount;
+        mergedCounts.taskCount += manualIt.value().taskCount;
+    }
 
-            if (entry.type == EntryType::Event)
-            {
-                eventCount += 1;
-                continue;
-            }
-
-            taskCount += 1;
-        }
-    };
-
-    accumulateCounts(m_entries);
-    accumulateCounts(projectedEntries);
-
-    return {
-        {QStringLiteral("eventCount"), eventCount},
-        {QStringLiteral("taskCount"), taskCount},
-        {QStringLiteral("entryCount"), eventCount + taskCount}
-    };
+    const EntryCounts projectedCounts = projectedCountsForDateQuery(parsedDate);
+    mergedCounts.eventCount += projectedCounts.eventCount;
+    mergedCounts.taskCount += projectedCounts.taskCount;
+    return toCountsVariant(mergedCounts);
 }
 
 bool CalendarBoardStore::removeEntry(const QString& entryId)
@@ -340,7 +321,9 @@ bool CalendarBoardStore::removeEntry(const QString& entryId)
             continue;
         }
 
+        const CalendarEntry removedEntry = *it;
         m_entries.erase(it);
+        removeIndexedEntry(removedEntry, &m_entriesByDate, &m_entryCountsByDate);
         emit entriesChanged();
         emit entryRemoved(normalizedEntryId);
         return true;
@@ -370,6 +353,7 @@ bool CalendarBoardStore::setTaskCompleted(const QString& entryId, bool completed
         }
 
         entry.completed = completed;
+        updateIndexedEntry(entry, &m_entriesByDate);
         emit entriesChanged();
         emit entryUpdated(normalizedEntryId);
         return true;
@@ -401,6 +385,10 @@ QString CalendarBoardStore::projectedNotesHubPath() const
 void CalendarBoardStore::setProjectedNotesProvider(std::function<QVector<LibraryNoteRecord>()> provider)
 {
     m_projectedNotesProvider = std::move(provider);
+    if (m_projectedEntriesBySourceId.isEmpty())
+    {
+        m_projectedEntriesInitialized = false;
+    }
 }
 
 void CalendarBoardStore::reloadProjectedNotesFromSnapshot(const QVector<LibraryNoteRecord>& notes)
@@ -413,7 +401,97 @@ void CalendarBoardStore::reloadProjectedNotesFromSnapshot(const QVector<LibraryN
         QStringLiteral("path=%1 noteCount=%2 projectedCount=%3")
             .arg(m_projectedNotesHubPath)
             .arg(notes.size())
-            .arg(m_projectedEntries.size()));
+            .arg(m_projectedEntriesBySourceId.size()));
+}
+
+bool CalendarBoardStore::upsertProjectedNote(const LibraryNoteRecord& note)
+{
+    const QString normalizedSourceId = note.noteId.trimmed();
+    if (normalizedSourceId.isEmpty())
+    {
+        return false;
+    }
+
+    CalendarEntry nextEntry;
+    const bool hasNextEntry = buildProjectedNoteEntry(note, &nextEntry);
+    const auto existingIt = m_projectedEntriesBySourceId.constFind(normalizedSourceId);
+    const bool hasExistingEntry = existingIt != m_projectedEntriesBySourceId.constEnd();
+    const CalendarEntry existingEntry = hasExistingEntry ? existingIt.value() : CalendarEntry{};
+
+    if (hasExistingEntry && hasNextEntry && calendarEntryEqual(existingEntry, nextEntry))
+    {
+        m_projectedEntriesInitialized = true;
+        return false;
+    }
+
+    if (hasExistingEntry)
+    {
+        removeIndexedEntry(existingEntry, &m_projectedEntriesByDate, &m_projectedEntryCountsByDate);
+        m_projectedEntriesBySourceId.remove(normalizedSourceId);
+    }
+
+    if (hasNextEntry)
+    {
+        m_projectedEntriesBySourceId.insert(normalizedSourceId, nextEntry);
+        insertIndexedEntry(nextEntry, &m_projectedEntriesByDate, &m_projectedEntryCountsByDate);
+    }
+
+    m_projectedEntriesInitialized = true;
+    emit entriesChanged();
+
+    if (hasExistingEntry && !hasNextEntry)
+    {
+        emit entryRemoved(existingEntry.id);
+    }
+    else if (!hasExistingEntry && hasNextEntry)
+    {
+        emit entryAdded(
+            nextEntry.id,
+            entryTypeName(nextEntry.type),
+            nextEntry.date.toString(Qt::ISODate),
+            nextEntry.time.toString(QStringLiteral("HH:mm")));
+    }
+    else if (hasNextEntry)
+    {
+        if (existingEntry.id != nextEntry.id)
+        {
+            emit entryRemoved(existingEntry.id);
+            emit entryAdded(
+                nextEntry.id,
+                entryTypeName(nextEntry.type),
+                nextEntry.date.toString(Qt::ISODate),
+                nextEntry.time.toString(QStringLiteral("HH:mm")));
+        }
+        else
+        {
+            emit entryUpdated(nextEntry.id);
+        }
+    }
+
+    return true;
+}
+
+bool CalendarBoardStore::removeProjectedNoteBySourceId(const QString& noteId)
+{
+    const QString normalizedSourceId = noteId.trimmed();
+    if (normalizedSourceId.isEmpty())
+    {
+        return false;
+    }
+
+    const auto existingIt = m_projectedEntriesBySourceId.constFind(normalizedSourceId);
+    if (existingIt == m_projectedEntriesBySourceId.constEnd())
+    {
+        return false;
+    }
+
+    const CalendarEntry removedEntry = existingIt.value();
+    removeIndexedEntry(removedEntry, &m_projectedEntriesByDate, &m_projectedEntryCountsByDate);
+    m_projectedEntriesBySourceId.remove(normalizedSourceId);
+    m_projectedEntriesInitialized = true;
+    emit entriesChanged();
+    emit entryRemoved(removedEntry.id);
+    return true;
 }
 
 void CalendarBoardStore::requestProjectedNotesReload()
@@ -448,7 +526,7 @@ bool CalendarBoardStore::reloadProjectedNotes(QString* errorMessage)
                     QStringLiteral("source=provider path=%1 noteCount=%2 projectedCount=%3")
                         .arg(m_projectedNotesHubPath)
                         .arg(notes.size())
-                        .arg(m_projectedEntries.size()));
+                        .arg(m_projectedEntriesBySourceId.size()));
                 return true;
             }
         }
@@ -485,7 +563,7 @@ bool CalendarBoardStore::reloadProjectedNotes(QString* errorMessage)
         QStringLiteral("path=%1 noteCount=%2 projectedCount=%3")
             .arg(m_projectedNotesHubPath)
             .arg(indexedState.allNotes().size())
-            .arg(m_projectedEntries.size()));
+            .arg(m_projectedEntriesBySourceId.size()));
     return true;
 }
 
@@ -545,6 +623,7 @@ bool CalendarBoardStore::addEntry(
     entry.sourceKind = QStringLiteral("board");
     m_entries.push_back(entry);
     sortEntries(&m_entries);
+    insertIndexedEntry(entry, &m_entriesByDate, &m_entryCountsByDate);
 
     emit entriesChanged();
     emit entryAdded(
@@ -553,6 +632,17 @@ bool CalendarBoardStore::addEntry(
         entry.date.toString(Qt::ISODate),
         entry.time.toString(QStringLiteral("HH:mm")));
     return true;
+}
+
+void CalendarBoardStore::rebuildProjectedIndexes()
+{
+    QVector<CalendarEntry> entries;
+    entries.reserve(m_projectedEntriesBySourceId.size());
+    for (auto it = m_projectedEntriesBySourceId.constBegin(); it != m_projectedEntriesBySourceId.constEnd(); ++it)
+    {
+        entries.push_back(it.value());
+    }
+    indexEntries(entries, &m_projectedEntriesByDate, &m_projectedEntryCountsByDate);
 }
 
 bool CalendarBoardStore::parseIsoDate(const QString& dateIso, QDate* outDate)
@@ -614,6 +704,11 @@ bool CalendarBoardStore::parseTimeText(const QString& timeText, QTime* outTime)
     return true;
 }
 
+QString CalendarBoardStore::dateKey(const QDate& date)
+{
+    return date.isValid() ? date.toString(Qt::ISODate) : QString();
+}
+
 QString CalendarBoardStore::entryTypeName(EntryType type)
 {
     switch (type)
@@ -625,6 +720,15 @@ QString CalendarBoardStore::entryTypeName(EntryType type)
     }
 
     return QStringLiteral("event");
+}
+
+QVariantMap CalendarBoardStore::toCountsVariant(const EntryCounts& counts)
+{
+    return {
+        {QStringLiteral("eventCount"), counts.eventCount},
+        {QStringLiteral("taskCount"), counts.taskCount},
+        {QStringLiteral("entryCount"), counts.eventCount + counts.taskCount}
+    };
 }
 
 QVariantMap CalendarBoardStore::toVariantMap(const CalendarEntry& entry)
@@ -655,49 +759,342 @@ void CalendarBoardStore::sortEntries(QVector<CalendarEntry>* entries)
     std::sort(entries->begin(), entries->end(), calendarEntryLessThan);
 }
 
-void CalendarBoardStore::clearProjectedEntries()
+void CalendarBoardStore::indexEntries(
+    const QVector<CalendarEntry>& source,
+    QHash<QString, QVector<CalendarEntry>>* entriesByDate,
+    QHash<QString, EntryCounts>* countsByDate)
 {
-    if (m_projectedEntries.isEmpty())
+    if (entriesByDate == nullptr || countsByDate == nullptr)
     {
         return;
     }
 
-    m_projectedEntries.clear();
+    entriesByDate->clear();
+    countsByDate->clear();
+
+    for (const CalendarEntry& entry : source)
+    {
+        insertIndexedEntry(entry, entriesByDate, countsByDate);
+    }
+}
+
+void CalendarBoardStore::insertIndexedEntry(
+    const CalendarEntry& entry,
+    QHash<QString, QVector<CalendarEntry>>* entriesByDate,
+    QHash<QString, EntryCounts>* countsByDate)
+{
+    if (entriesByDate == nullptr || countsByDate == nullptr)
+    {
+        return;
+    }
+
+    const QString resolvedDateKey = dateKey(entry.date);
+    if (resolvedDateKey.isEmpty())
+    {
+        return;
+    }
+
+    QVector<CalendarEntry>& dayEntries = (*entriesByDate)[resolvedDateKey];
+    auto insertIt = std::lower_bound(dayEntries.begin(), dayEntries.end(), entry, calendarEntryLessThan);
+    dayEntries.insert(insertIt, entry);
+
+    EntryCounts& counts = (*countsByDate)[resolvedDateKey];
+    if (entry.type == EntryType::Event)
+    {
+        counts.eventCount += 1;
+    }
+    else
+    {
+        counts.taskCount += 1;
+    }
+}
+
+void CalendarBoardStore::removeIndexedEntry(
+    const CalendarEntry& entry,
+    QHash<QString, QVector<CalendarEntry>>* entriesByDate,
+    QHash<QString, EntryCounts>* countsByDate)
+{
+    if (entriesByDate == nullptr || countsByDate == nullptr)
+    {
+        return;
+    }
+
+    const QString resolvedDateKey = dateKey(entry.date);
+    if (resolvedDateKey.isEmpty())
+    {
+        return;
+    }
+
+    auto entriesIt = entriesByDate->find(resolvedDateKey);
+    if (entriesIt == entriesByDate->end())
+    {
+        return;
+    }
+
+    QVector<CalendarEntry>& dayEntries = entriesIt.value();
+    for (auto it = dayEntries.begin(); it != dayEntries.end(); ++it)
+    {
+        if (it->id != entry.id)
+        {
+            continue;
+        }
+
+        dayEntries.erase(it);
+        break;
+    }
+
+    if (dayEntries.isEmpty())
+    {
+        entriesByDate->erase(entriesIt);
+    }
+
+    auto countsIt = countsByDate->find(resolvedDateKey);
+    if (countsIt == countsByDate->end())
+    {
+        return;
+    }
+
+    if (entry.type == EntryType::Event)
+    {
+        countsIt->eventCount = qMax(0, countsIt->eventCount - 1);
+    }
+    else
+    {
+        countsIt->taskCount = qMax(0, countsIt->taskCount - 1);
+    }
+
+    if (countsIt->eventCount == 0 && countsIt->taskCount == 0)
+    {
+        countsByDate->erase(countsIt);
+    }
+}
+
+void CalendarBoardStore::updateIndexedEntry(
+    const CalendarEntry& entry,
+    QHash<QString, QVector<CalendarEntry>>* entriesByDate)
+{
+    if (entriesByDate == nullptr)
+    {
+        return;
+    }
+
+    const QString resolvedDateKey = dateKey(entry.date);
+    if (resolvedDateKey.isEmpty())
+    {
+        return;
+    }
+
+    auto entriesIt = entriesByDate->find(resolvedDateKey);
+    if (entriesIt == entriesByDate->end())
+    {
+        return;
+    }
+
+    QVector<CalendarEntry>& dayEntries = entriesIt.value();
+    for (CalendarEntry& existingEntry : dayEntries)
+    {
+        if (existingEntry.id == entry.id)
+        {
+            existingEntry = entry;
+            return;
+        }
+    }
+}
+
+QVariantList CalendarBoardStore::toVariantList(const QVector<CalendarEntry>& entries)
+{
+    QVariantList values;
+    values.reserve(entries.size());
+    for (const CalendarEntry& entry : entries)
+    {
+        values.push_back(toVariantMap(entry));
+    }
+    return values;
+}
+
+QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::mergeIndexedEntries(
+    const QVector<CalendarEntry>& manualEntries,
+    const QVector<CalendarEntry>& projectedEntries)
+{
+    QVector<CalendarEntry> mergedEntries;
+    mergedEntries.reserve(manualEntries.size() + projectedEntries.size());
+
+    int manualIndex = 0;
+    int projectedIndex = 0;
+    while (manualIndex < manualEntries.size() && projectedIndex < projectedEntries.size())
+    {
+        if (calendarEntryLessThan(projectedEntries.at(projectedIndex), manualEntries.at(manualIndex)))
+        {
+            mergedEntries.push_back(projectedEntries.at(projectedIndex));
+            projectedIndex += 1;
+            continue;
+        }
+
+        mergedEntries.push_back(manualEntries.at(manualIndex));
+        manualIndex += 1;
+    }
+
+    while (manualIndex < manualEntries.size())
+    {
+        mergedEntries.push_back(manualEntries.at(manualIndex));
+        manualIndex += 1;
+    }
+
+    while (projectedIndex < projectedEntries.size())
+    {
+        mergedEntries.push_back(projectedEntries.at(projectedIndex));
+        projectedIndex += 1;
+    }
+
+    return mergedEntries;
+}
+
+void CalendarBoardStore::cacheProjectedEntriesForQueries(QVector<CalendarEntry> entries)
+{
+    sortEntries(&entries);
+
+    QHash<QString, CalendarEntry> cachedEntriesBySourceId;
+    cachedEntriesBySourceId.reserve(entries.size());
+    for (const CalendarEntry& entry : entries)
+    {
+        const QString sourceId = entry.sourceId.trimmed();
+        if (sourceId.isEmpty())
+        {
+            continue;
+        }
+        cachedEntriesBySourceId.insert(sourceId, entry);
+    }
+
+    m_projectedEntriesBySourceId = std::move(cachedEntriesBySourceId);
+    rebuildProjectedIndexes();
+    m_projectedEntriesInitialized = true;
+}
+
+void CalendarBoardStore::clearProjectedEntries()
+{
+    if (m_projectedEntriesBySourceId.isEmpty()
+        && m_projectedEntriesByDate.isEmpty()
+        && m_projectedEntryCountsByDate.isEmpty())
+    {
+        m_projectedEntriesInitialized = !m_projectedNotesProvider;
+        return;
+    }
+
+    m_projectedEntriesBySourceId.clear();
+    m_projectedEntriesByDate.clear();
+    m_projectedEntryCountsByDate.clear();
+    m_projectedEntriesInitialized = !m_projectedNotesProvider;
     emit entriesChanged();
 }
 
 void CalendarBoardStore::replaceProjectedEntries(QVector<CalendarEntry> entries)
 {
     sortEntries(&entries);
-    if (entries.size() == m_projectedEntries.size())
+    QHash<QString, CalendarEntry> nextEntriesBySourceId;
+    nextEntriesBySourceId.reserve(entries.size());
+    for (const CalendarEntry& entry : entries)
     {
-        bool unchanged = true;
-        for (int index = 0; index < entries.size(); ++index)
+        const QString sourceId = entry.sourceId.trimmed();
+        if (sourceId.isEmpty())
         {
-            if (!calendarEntryEqual(entries.at(index), m_projectedEntries.at(index)))
-            {
-                unchanged = false;
-                break;
-            }
+            continue;
         }
-        if (unchanged)
-        {
-            return;
-        }
+        nextEntriesBySourceId.insert(sourceId, entry);
     }
 
-    m_projectedEntries = std::move(entries);
+    if (projectedEntryMapEqual(m_projectedEntriesBySourceId, nextEntriesBySourceId))
+    {
+        m_projectedEntriesInitialized = true;
+        return;
+    }
+
+    m_projectedEntriesBySourceId = std::move(nextEntriesBySourceId);
+    rebuildProjectedIndexes();
+    m_projectedEntriesInitialized = true;
     emit entriesChanged();
 }
 
-QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::projectedEntriesForQueries() const
+bool CalendarBoardStore::buildProjectedNoteEntry(const LibraryNoteRecord& note, CalendarEntry* outEntry) const
 {
-    if (!m_projectedEntries.isEmpty() || !m_projectedNotesProvider)
+    if (outEntry == nullptr)
     {
-        return m_projectedEntries;
+        return false;
     }
 
-    return buildProjectedNoteEntries(m_projectedNotesProvider());
+    const QString noteId = note.noteId.trimmed();
+    if (noteId.isEmpty())
+    {
+        return false;
+    }
+
+    const ParsedNoteTimestamp createdTimestamp = parseNoteTimestamp(note.createdAt);
+    const ParsedNoteTimestamp modifiedTimestamp = parseNoteTimestamp(note.lastModifiedAt);
+    if (!createdTimestamp.valid && !modifiedTimestamp.valid)
+    {
+        return false;
+    }
+
+    ParsedNoteTimestamp effectiveTimestamp = createdTimestamp;
+    QString effectiveTimestampKey = QStringLiteral("created");
+    if (modifiedTimestamp.valid
+        && (!createdTimestamp.valid
+            || !noteTimestampLessThan(modifiedTimestamp, createdTimestamp)))
+    {
+        effectiveTimestamp = modifiedTimestamp;
+        effectiveTimestampKey = QStringLiteral("modified");
+    }
+
+    *outEntry = buildProjectedNoteEntryFromTimestamp(note, effectiveTimestamp, effectiveTimestampKey);
+    return true;
+}
+
+QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::projectedEntriesForDateQuery(const QDate& date) const
+{
+    const QString resolvedDateKey = dateKey(date);
+    if (resolvedDateKey.isEmpty())
+    {
+        return {};
+    }
+
+    const auto projectedIt = m_projectedEntriesByDate.constFind(resolvedDateKey);
+    if (projectedIt != m_projectedEntriesByDate.constEnd())
+    {
+        return projectedIt.value();
+    }
+
+    if (m_projectedEntriesInitialized || !m_projectedNotesProvider)
+    {
+        return {};
+    }
+
+    const QVector<CalendarEntry> fallbackEntries = buildProjectedNoteEntries(m_projectedNotesProvider());
+    const_cast<CalendarBoardStore*>(this)->cacheProjectedEntriesForQueries(fallbackEntries);
+    const auto refreshedIt = m_projectedEntriesByDate.constFind(resolvedDateKey);
+    return refreshedIt != m_projectedEntriesByDate.constEnd() ? refreshedIt.value() : QVector<CalendarEntry>{};
+}
+
+CalendarBoardStore::EntryCounts CalendarBoardStore::projectedCountsForDateQuery(const QDate& date) const
+{
+    const QString resolvedDateKey = dateKey(date);
+    if (resolvedDateKey.isEmpty())
+    {
+        return {};
+    }
+
+    const auto countsIt = m_projectedEntryCountsByDate.constFind(resolvedDateKey);
+    if (countsIt != m_projectedEntryCountsByDate.constEnd())
+    {
+        return countsIt.value();
+    }
+
+    if (m_projectedEntriesInitialized || !m_projectedNotesProvider)
+    {
+        return {};
+    }
+
+    const QVector<CalendarEntry> fallbackEntries = buildProjectedNoteEntries(m_projectedNotesProvider());
+    const_cast<CalendarBoardStore*>(this)->cacheProjectedEntriesForQueries(fallbackEntries);
+    return m_projectedEntryCountsByDate.value(resolvedDateKey);
 }
 
 QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::buildProjectedNoteEntries(
@@ -708,31 +1105,11 @@ QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::buildProjectedNot
 
     for (const LibraryNoteRecord& note : notes)
     {
-        const QString noteId = note.noteId.trimmed();
-        if (noteId.isEmpty())
+        CalendarEntry entry;
+        if (buildProjectedNoteEntry(note, &entry))
         {
-            continue;
+            entries.push_back(entry);
         }
-
-        const ParsedNoteTimestamp createdTimestamp = parseNoteTimestamp(note.createdAt);
-        const ParsedNoteTimestamp modifiedTimestamp = parseNoteTimestamp(note.lastModifiedAt);
-
-        if (!createdTimestamp.valid && !modifiedTimestamp.valid)
-        {
-            continue;
-        }
-
-        ParsedNoteTimestamp effectiveTimestamp = createdTimestamp;
-        QString effectiveTimestampKey = QStringLiteral("created");
-        if (modifiedTimestamp.valid
-            && (!createdTimestamp.valid
-                || !noteTimestampLessThan(modifiedTimestamp, createdTimestamp)))
-        {
-            effectiveTimestamp = modifiedTimestamp;
-            effectiveTimestampKey = QStringLiteral("modified");
-        }
-
-        entries.push_back(buildProjectedNoteEntry(note, effectiveTimestamp, effectiveTimestampKey));
     }
 
     return entries;

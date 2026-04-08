@@ -15,5 +15,7 @@ The library hierarchy remains the richest hierarchy domain in the repository bec
 The current direction is to stop exposing the full library hierarchy surface to every consumer.
 - Read flows should depend on `IHierarchyViewModel`.
 - Write flows should depend on explicit capabilities or `LibraryNoteMutationViewModel`.
+- Local note mutation flows now also prefer incremental indexed-state updates over full snapshot replacement, so this
+  directory is part of the runtime performance boundary for both the note list and the calendar projections.
 
 This directory is therefore one of the main places where the repository's MVVM decomposition is being pushed forward.

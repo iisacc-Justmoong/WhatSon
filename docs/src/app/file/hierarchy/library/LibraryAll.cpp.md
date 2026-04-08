@@ -29,6 +29,9 @@ their UUID counterparts so later filters can match notes by folder identity inst
 - Runtime body indexing now also carries a dedicated editor-source projection (`bodySourceText`) built from canonical
   `.wsnbody` inline tags, while keeping `bodyPlainText` for search/preview filtering.
 - Resource thumbnail extraction also understands `.wsresource` package references in `.wsnbody`, including unquoted shorthand resource tags like `path=Hub.wsresources/image.wsresource`, so library note cards now preview packaged assets instead of requiring raw file paths.
+- The canonical `all notes` bucket now also supports change-gated single-note `upsertNote(...)`, `removeNoteById(...)`,
+  and `noteById(...)` operations. Those operations are the basis for partial library/calendar refreshes after local
+  note edits.
 
 ## Why This Matters
 

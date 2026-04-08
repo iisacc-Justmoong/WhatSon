@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVariantList>
+#include <QVariantMap>
 
 class ICalendarBoardStore;
 class QDate;
@@ -19,6 +20,7 @@ class WeekCalendarViewModel final : public QObject
     Q_PROPERTY(QString weekLabel READ weekLabel NOTIFY weekViewChanged)
     Q_PROPERTY(QStringList weekdayLabels READ weekdayLabels NOTIFY weekViewChanged)
     Q_PROPERTY(QVariantList dayModels READ dayModels NOTIFY weekViewChanged)
+    Q_PROPERTY(QVariantList timelineDayModels READ timelineDayModels NOTIFY timelineDayModelsChanged)
 
 public:
     explicit WeekCalendarViewModel(QObject* parent = nullptr);
@@ -27,6 +29,7 @@ public:
     QString weekLabel() const;
     QStringList weekdayLabels() const;
     QVariantList dayModels() const;
+    QVariantList timelineDayModels() const;
     void setCalendarBoardStore(ICalendarBoardStore* calendarBoardStore);
 
 public slots:
@@ -34,6 +37,10 @@ public slots:
 
     Q_INVOKABLE void shiftWeek(int deltaWeeks);
     Q_INVOKABLE void requestWeekView(const QString& reason = QString());
+    Q_INVOKABLE void initializeTimelineWindow(const QString& anchorDateIso, int radius);
+    Q_INVOKABLE int prependTimelineDates(int count);
+    Q_INVOKABLE int appendTimelineDates(int count);
+    Q_INVOKABLE QVariantMap trimTimelineWindow(int leadingIndex, int maxWindowSize, int chunkSize);
     Q_INVOKABLE bool addEvent(
         const QString& dateIso,
         const QString& timeText,
@@ -51,10 +58,13 @@ public slots:
 signals:
     void displayedWeekStartIsoChanged();
     void weekViewChanged();
+    void timelineDayModelsChanged();
     void weekViewRequested(QString reason);
 
 private:
     void rebuildWeekModel();
+    QVariantMap buildTimelineDayModel(const QDate& date, const QLocale& locale) const;
+    void refreshTimelineDayModels();
     static bool parseIsoDate(const QString& dateIso, QDate* outDate);
     static QDate startOfWeek(const QDate& date, const QLocale& locale);
     static QString formatWeekLabel(const QDate& weekStartDate, const QLocale& locale);
@@ -64,4 +74,5 @@ private:
     QString m_weekLabel;
     QStringList m_weekdayLabels;
     QVariantList m_dayModels;
+    QVariantList m_timelineDayModels;
 };

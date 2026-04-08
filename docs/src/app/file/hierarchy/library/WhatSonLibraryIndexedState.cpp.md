@@ -17,6 +17,12 @@ single responsibility.
 canonical `all` notes collection. Callers that mutate notes only need to replace the canonical note
 set once.
 
+The implementation now also supports incremental mutation:
+
+- `setSourceWshubPath(...)` retargets the canonical hub identity without replacing the current notes
+- `upsertNote(...)` updates `LibraryAll`, `LibraryDraft`, and `LibraryToday` in place for one note
+- `removeNoteById(...)` removes one note from all three buckets without a full rebuild
+
 ## Shared Reuse
 
 `collectBookmarkedNotes(...)` provides the matching bookmark projection helper used by

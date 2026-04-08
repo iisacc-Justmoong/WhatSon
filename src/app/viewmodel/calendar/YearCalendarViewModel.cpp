@@ -191,7 +191,6 @@ void YearCalendarViewModel::requestYearView(const QString& reason)
         .arg(calendarSystemName(), normalizedReason));
 
     emit yearViewRequested(normalizedReason);
-    rebuildYearModel();
 }
 
 bool YearCalendarViewModel::addEvent(

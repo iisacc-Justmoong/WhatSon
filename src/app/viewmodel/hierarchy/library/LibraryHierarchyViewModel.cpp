@@ -2701,13 +2701,12 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
         return false;
     }
 
-    QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
     if (noteIndex < 0)
     {
         return false;
     }
 
-    LibraryNoteRecord& note = allNotes[noteIndex];
+    LibraryNoteRecord note = m_indexedState.allNotes().at(noteIndex);
     if (targetFolderPath.isEmpty() || headerPath.isEmpty())
     {
         return false;
@@ -2753,8 +2752,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     if (targetAlreadyAssigned && headerAlreadyMatchesAssignment)
     {
         syncNoteRecordFromDocument(&note, noteDocument);
-        setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
-        syncModel();
+        upsertIndexedNote(note);
         refreshNoteListForSelection();
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
@@ -2783,8 +2781,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
 
     syncNoteRecordFromDocument(&note, noteDocument);
 
-    setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
-    syncModel();
+    upsertIndexedNote(note);
     refreshNoteListForSelection();
 
     WhatSon::Debug::traceSelf(this,
@@ -2971,8 +2968,17 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     }
 
     const QString effectiveWshubPath = !result.wshubPath.isEmpty() ? result.wshubPath : sourceWshubPath;
-    setIndexedStateNotes(effectiveWshubPath, std::move(result.notes));
-    syncModel();
+    m_indexedState.setSourceWshubPath(effectiveWshubPath);
+
+    const int createdNoteIndexInResult = indexOfNoteRecordById(result.notes, result.noteId);
+    if (createdNoteIndexInResult >= 0 && createdNoteIndexInResult < result.notes.size())
+    {
+        upsertIndexedNote(result.notes.at(createdNoteIndexInResult));
+    }
+    else
+    {
+        setIndexedStateNotes(effectiveWshubPath, std::move(result.notes));
+    }
 
     if (!effectiveWshubPath.isEmpty())
     {
@@ -3061,8 +3067,11 @@ bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
         return false;
     }
 
-    setIndexedStateNotes(result.wshubPath, std::move(result.remainingNotes));
-    syncModel();
+    m_indexedState.setSourceWshubPath(result.wshubPath);
+    if (!removeIndexedNoteById(normalizedNoteId))
+    {
+        setIndexedStateNotes(result.wshubPath, std::move(result.remainingNotes));
+    }
 
     if (!result.wshubPath.isEmpty())
     {
@@ -3127,8 +3136,15 @@ bool LibraryHierarchyViewModel::clearNoteFoldersById(const QString& noteId)
         return false;
     }
 
-    setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(result.notes));
-    syncModel();
+    const int noteIndex = indexOfNoteRecordById(result.notes, normalizedNoteId);
+    if (noteIndex >= 0 && noteIndex < result.notes.size())
+    {
+        upsertIndexedNote(result.notes.at(noteIndex));
+    }
+    else
+    {
+        setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(result.notes));
+    }
     refreshNoteListForSelection();
 
     WhatSon::Debug::traceSelf(this,
@@ -3152,14 +3168,11 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
         return false;
     }
 
-    QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
-    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
-    if (noteIndex < 0)
+    LibraryNoteRecord note;
+    if (!m_indexedState.noteById(normalizedNoteId, &note))
     {
         return false;
     }
-
-    LibraryNoteRecord& note = allNotes[noteIndex];
     QString normalizedBodyText;
     QString normalizedBodySourceText;
     QString lastModifiedAt;
@@ -3189,8 +3202,7 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
         note.lastModifiedAt = lastModifiedAt;
     }
 
-    setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
-    syncModel();
+    upsertIndexedNote(note);
     refreshNoteListForSelection();
     emit hubFilesystemMutated();
     return true;
@@ -3227,9 +3239,8 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
         return false;
     }
 
-    QVector<LibraryNoteRecord> allNotes = m_indexedState.allNotes();
-    const int noteIndex = indexOfNoteRecordById(allNotes, normalizedNoteId);
-    if (noteIndex < 0 || noteIndex >= allNotes.size())
+    LibraryNoteRecord note;
+    if (!m_indexedState.noteById(normalizedNoteId, &note))
     {
         return false;
     }
@@ -3237,7 +3248,7 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
     WhatSonNoteFolderBindingRepository noteRepository;
     WhatSonLocalNoteDocument noteDocument;
     QString ioError;
-    if (!noteRepository.readDocument(allNotes.at(noteIndex), &noteDocument, &ioError))
+    if (!noteRepository.readDocument(note, &noteDocument, &ioError))
     {
         WhatSon::Debug::traceSelf(this,
                                   QStringLiteral("library.viewmodel"),
@@ -3246,9 +3257,8 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
         return false;
     }
 
-    syncNoteRecordFromDocument(&allNotes[noteIndex], noteDocument);
-    setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(allNotes));
-    syncModel();
+    syncNoteRecordFromDocument(&note, noteDocument);
+    upsertIndexedNote(note);
     refreshNoteListForSelection();
     return true;
 }
@@ -3305,6 +3315,11 @@ bool LibraryHierarchyViewModel::activateNoteById(const QString& noteId)
 QVector<LibraryNoteRecord> LibraryHierarchyViewModel::indexedNotesSnapshot() const
 {
     return m_indexedState.allNotes();
+}
+
+bool LibraryHierarchyViewModel::indexedNoteRecordById(const QString& noteId, LibraryNoteRecord* outNote) const
+{
+    return m_indexedState.noteById(noteId, outNote);
 }
 
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
@@ -3599,9 +3614,50 @@ QString LibraryHierarchyViewModel::folderUuidForIndex(int index) const
     return normalizeFolderUuid(m_items.at(index).folderUuid);
 }
 
+bool LibraryHierarchyViewModel::upsertIndexedNote(const LibraryNoteRecord& note)
+{
+    const QString normalizedNoteId = note.noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const bool changed = m_indexedState.upsertNote(note);
+    invalidateNoteListItemCacheForNoteId(normalizedNoteId);
+    if (changed)
+    {
+        emit indexedNoteUpserted(normalizedNoteId);
+    }
+    return changed;
+}
+
+bool LibraryHierarchyViewModel::removeIndexedNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const bool changed = m_indexedState.removeNoteById(normalizedNoteId);
+    invalidateNoteListItemCacheForNoteId(normalizedNoteId);
+    return changed;
+}
+
 void LibraryHierarchyViewModel::invalidateNoteListItemCache() const
 {
     m_noteListItemCache.clear();
+}
+
+void LibraryHierarchyViewModel::invalidateNoteListItemCacheForNoteId(const QString& noteId) const
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return;
+    }
+
+    m_noteListItemCache.remove(normalizedNoteId);
 }
 
 void LibraryHierarchyViewModel::setIndexedStateNotes(QString sourceWshubPath, QVector<LibraryNoteRecord> notes)

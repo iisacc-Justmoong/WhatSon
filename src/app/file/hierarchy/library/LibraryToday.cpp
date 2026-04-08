@@ -71,10 +71,7 @@ bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDa
 
     for (const LibraryNoteRecord& record : allNotes)
     {
-        const QDate createdDate = parseDate(record.createdAt);
-        const QDate modifiedDate = parseDate(record.lastModifiedAt);
-        if ((createdDate.isValid() && createdDate == today)
-            || (modifiedDate.isValid() && modifiedDate == today))
+        if (matches(record, today))
         {
             m_notes.push_back(record);
         }
@@ -100,6 +97,72 @@ bool LibraryToday::rebuild(const QVector<LibraryNoteRecord>& allNotes, const QDa
     }
 
     return true;
+}
+
+bool LibraryToday::matches(const LibraryNoteRecord& note, const QDate& today)
+{
+    const QDate createdDate = parseDate(note.createdAt);
+    const QDate modifiedDate = parseDate(note.lastModifiedAt);
+    return (createdDate.isValid() && createdDate == today)
+        || (modifiedDate.isValid() && modifiedDate == today);
+}
+
+bool LibraryToday::upsertNote(const LibraryNoteRecord& note, const QDate& today)
+{
+    const QString normalizedNoteId = note.noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    if (!matches(note, today))
+    {
+        return removeNoteById(normalizedNoteId);
+    }
+
+    LibraryNoteRecord normalizedNote = note;
+    normalizedNote.noteId = normalizedNoteId;
+
+    for (int index = 0; index < m_notes.size(); ++index)
+    {
+        if (m_notes.at(index).noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        if (m_notes.at(index) == normalizedNote)
+        {
+            return false;
+        }
+
+        m_notes[index] = normalizedNote;
+        return true;
+    }
+
+    m_notes.push_back(normalizedNote);
+    return true;
+}
+
+bool LibraryToday::removeNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    for (auto it = m_notes.begin(); it != m_notes.end(); ++it)
+    {
+        if (it->noteId.trimmed() != normalizedNoteId)
+        {
+            continue;
+        }
+
+        m_notes.erase(it);
+        return true;
+    }
+
+    return false;
 }
 
 void LibraryToday::setNotes(QVector<LibraryNoteRecord> notes)

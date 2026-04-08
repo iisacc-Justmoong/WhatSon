@@ -107,7 +107,6 @@ void DayCalendarViewModel::requestDayView(const QString& reason)
         QStringLiteral("date=%1 reason=%2").arg(m_displayedDateIso, normalizedReason));
 
     emit dayViewRequested(normalizedReason);
-    rebuildDayModel();
 }
 
 bool DayCalendarViewModel::addEvent(

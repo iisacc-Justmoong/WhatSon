@@ -29,8 +29,12 @@
 ## Notes
 - `CalendarBoardStore` owns both user-authored calendar board entries and read-only note lifecycle projections derived
   from the current hub's library index.
+- The store now keeps date-keyed entry/count indexes for both manual board items and projected note items, which
+  lowers the rebuild/query cost of month/year calendar viewmodels.
 - Calendar note projection now has two refresh sources: the live library runtime snapshot for startup/library flows and
   `.wshub` disk reindexing for fallback mutation flows outside the library viewmodel.
+- Library-originated note mutations can now update projected calendar mounts through single-note upsert/remove APIs
+  instead of replacing the entire projection on every note save.
 - Calendar query surfaces also have a live-provider fallback so note lifecycle items can still be resolved while the
   explicit projected cache is empty.
 - Each projected note now resolves to a single calendar item anchored to the more recent of `createdAt` and

@@ -1,37 +1,8 @@
 # `src/app/file/hierarchy/library/LibraryDraft.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Implementation Notes
 
-## Source Metadata
-- Source path: `src/app/file/hierarchy/library/LibraryDraft.cpp`
-- Source kind: C++ implementation
-- File name: `LibraryDraft.cpp`
-- Approximate line count: 187
-
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
-
-### Classes and Structs
-- None detected during scaffold generation.
-
-### Enums
-- None detected during scaffold generation.
-
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+- `matches(...)` is now the shared draft-membership predicate used by both full rebuilds and incremental note updates.
+- `upsertNote(...)` performs structural no-op detection so a body save that does not actually change the stored draft
+  record does not propagate a fake "changed" signal upstream.
+- `removeNoteById(...)` allows draft-bucket pruning without replacing the entire derived vector.
