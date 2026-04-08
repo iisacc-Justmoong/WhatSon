@@ -33,6 +33,7 @@ Rectangle {
     readonly property int clippedEntryCount: Math.max(0, Math.min(monthCalendarDayCell.entryCells.length, monthCalendarDayCell.maxVisibleEntries, monthCalendarDayCell.needsOverflowIndicator ? monthCalendarDayCell.entryCapacity - 1 : monthCalendarDayCell.entryCapacity))
 
     signal clicked
+    signal entryActivated(var entryCellModel)
 
     border.color: monthCalendarDayCell.selected
                   ? LV.Theme.accent
@@ -82,10 +83,15 @@ Rectangle {
                                             : LV.Theme.primary
                     cornerRadius: LV.Theme.radiusSm
                     height: monthCalendarDayCell.eventRowHeight
+                    interactive: eventCell.eventCellModel
+                                 && eventCell.eventCellModel.noteId !== undefined
+                                 && String(eventCell.eventCellModel.noteId).trim().length > 0
                     label: eventCell.eventCellModel && eventCell.eventCellModel.label !== undefined
                            ? String(eventCell.eventCellModel.label)
                            : ""
                     width: parent.width
+
+                    onActivated: monthCalendarDayCell.entryActivated(eventCell.eventCellModel)
                 }
             }
             LV.Label {

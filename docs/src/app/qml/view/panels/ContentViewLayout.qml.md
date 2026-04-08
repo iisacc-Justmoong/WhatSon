@@ -18,6 +18,8 @@ into the selected editor surface.
 - `YearCalendarPage.qml`
 - The editor surface now always fills the full content slot and no longer forwards any bottom-partition sizing
   contract.
+- Calendar note activation is also centralized here so every calendar surface can reuse one shared "open note in
+  editor" bridge.
 
 ## Signals
 
@@ -37,6 +39,9 @@ into the selected editor surface.
 - `resourcesImportViewModel`, `editorViewModeViewModel`, and the resolved note-list/content viewmodels are forwarded
   into both editor variants.
 - `isMobilePlatform` still decides which editor file is instantiated.
+- `requestOpenLibraryNote(noteId)` now uses `libraryHierarchyViewModel.activateNoteById(...)` together with
+  `sidebarHierarchyViewModel.setActiveHierarchyIndex(...)` so a calendar note tap can switch the active hierarchy back
+  to Library, select the note, and then dismiss the current calendar overlay.
 - `YearCalendarPage.qml` can now request a month-overlay open through this file. `ContentViewLayout.qml` applies the
   requested year/month/date to `monthCalendarViewModel` first, then emits `monthCalendarOverlayOpenRequested`.
 
@@ -49,3 +54,6 @@ into the selected editor surface.
   - Note selection changes must still dismiss any visible calendar surface.
   - A year-calendar month/day tap must still propagate into a month-overlay open request with the month viewmodel
     already synchronized to the requested month/date.
+  - A note tap from Agenda/day/week/month must reopen that library note and return the content slot to the editor
+    surface.
+  - Calendar note opening must switch the active hierarchy back to Library before the overlay is dismissed.

@@ -8,6 +8,7 @@ but horizontal flicking advances across adjacent dates without page snapping.
 
 ## View Contract
 - Input: `weekCalendarViewModel`
+- Output signal: `noteOpenRequested(string noteId)`
 - Hook signal: `viewHookRequested(string reason)`
 - Hook forwarder: `requestViewHook(reason)` delegates to `weekCalendarViewModel.requestWeekView(reason)`
 
@@ -48,6 +49,8 @@ but horizontal flicking advances across adjacent dates without page snapping.
 8. Per-date entry lookup is cached by ISO date and invalidated when the week view refreshes.
 9. Hour-slot labels are derived from `entriesForDate(dateIso)` and compressed by `slotSummary(...)`.
 10. Hour-slot entry chips are rendered by shared `CalendarEventCell` (default/colored background by entry type).
+11. Direct note opening is enabled only when a visible slot chip represents exactly one projected note entry. The
+    compressed `title +N` chip remains passive because it does not expose a unique note target.
 
 ## Tests
 
@@ -63,6 +66,8 @@ but horizontal flicking advances across adjacent dates without page snapping.
     - Generic header and hour cells must stay transparent for every date column.
     - The weekly page must render a dedicated day-header row above the hourly grid.
     - Today must remain visually distinguished in the day-header row.
+    - A week-slot chip backed by exactly one note entry must emit `noteOpenRequested(...)` on click/tap.
+    - A compressed multi-entry week-slot chip must remain non-openable until the slot UI exposes per-entry hit targets.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/WeekCalendarViewModel.hpp/.cpp`

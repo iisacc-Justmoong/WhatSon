@@ -5,6 +5,7 @@
 
 ## View Contract
 - Input: `dayCalendarViewModel`
+- Output signal: `noteOpenRequested(string noteId)`
 - Hook signal: `viewHookRequested(string reason)`
 - Hook forwarder: `requestViewHook(reason)` delegates to `dayCalendarViewModel.requestDayView(reason)`
 
@@ -23,6 +24,15 @@
 1. `Component.onCompleted` requests `page-open`.
 2. Header control actions mutate date cursor (`shiftDay`, `setDisplayedDateIso`) and request hooks.
 3. Timeline binds directly to `timeSlots` from `DayCalendarViewModel`.
+4. Tapping a projected note chip resolves its `sourceId` and emits `noteOpenRequested(noteId)` so the host can reopen
+   that note in the editor surface.
+
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - Day-view note chips must stay visible in the correct projected slot.
+    - Clicking or tapping a day-view note chip must emit `noteOpenRequested(...)`.
+    - Manual event chips must remain display-only and must not pretend to open a library note.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/DayCalendarViewModel.hpp/.cpp`

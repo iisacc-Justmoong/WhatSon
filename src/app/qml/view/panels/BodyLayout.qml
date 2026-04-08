@@ -204,6 +204,7 @@ Item {
                 libraryHierarchyViewModel: hStack.libraryHierarchyViewModel
                 noteListModel: hStack.activeNoteListModel
                 resourcesImportViewModel: hStack.resourcesImportViewModel
+                sidebarHierarchyViewModel: hStack.sidebarHierarchyViewModel
                 dayCalendarOverlayVisible: hStack.dayCalendarOverlayVisible
                 dayCalendarViewModel: hStack.dayCalendarViewModel
                 agendaOverlayVisible: hStack.agendaOverlayVisible

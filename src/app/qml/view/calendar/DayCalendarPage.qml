@@ -12,6 +12,7 @@ Rectangle {
     readonly property int hourColumnWidth: LV.Theme.gap24 * 2
     property var dayCalendarViewModel: null
 
+    signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
@@ -44,6 +45,23 @@ Rectangle {
         if (sourceKind === "note")
             return LV.Theme.accent;
         return LV.Theme.primary;
+    }
+    function noteIdForEntry(entryModel) {
+        if (!entryModel)
+            return "";
+        const sourceKind = entryModel.sourceKind !== undefined ? String(entryModel.sourceKind).trim() : "";
+        if (sourceKind !== "note")
+            return "";
+        return entryModel.sourceId !== undefined && entryModel.sourceId !== null
+                ? String(entryModel.sourceId).trim()
+                : "";
+    }
+    function requestOpenNote(entryModel) {
+        const noteId = dayCalendarPage.noteIdForEntry(entryModel);
+        if (noteId.length === 0)
+            return;
+        dayCalendarPage.requestViewHook("open-note");
+        dayCalendarPage.noteOpenRequested(noteId);
     }
 
     color: "transparent"
@@ -164,10 +182,13 @@ Rectangle {
                                             defaultBackgroundColor: LV.Theme.panelBackground11
                                             height: timeSlotRow.slotEntryHeight
                                             horizontalInset: LV.Theme.gap3
+                                            interactive: dayCalendarPage.noteIdForEntry(slotEntryCard.entryModel).length > 0
                                             label: dayCalendarPage.entryCardLabel(slotEntryCard.entryModel)
                                             textColor: LV.Theme.panelBackground01
                                             verticalInset: LV.Theme.gap2
                                             width: slotEntriesColumn.width
+
+                                            onActivated: dayCalendarPage.requestOpenNote(slotEntryCard.entryModel)
                                         }
                                     }
                                 }

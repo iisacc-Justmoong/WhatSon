@@ -9,6 +9,7 @@ surface so left/right swipes move to the previous or next month.
 ## View Contract
 
 - Input: `monthCalendarViewModel`
+- Output signal: `noteOpenRequested(string noteId)`
 - Hook signal: `viewHookRequested(string reason)`
 - Hook forwarder: `requestViewHook(reason)` delegates to `monthCalendarViewModel.requestMonthView(...)`
 
@@ -46,6 +47,8 @@ surface so left/right swipes move to the previous or next month.
 5. Day selection is still delegated back into `monthCalendarViewModel.setSelectedDateIso(...)`.
 6. When opened from `YearCalendarPage.qml`, the host now preloads `displayedYear`, `displayedMonth`, and
    `selectedDateIso` before this page becomes visible, so the routed month opens on the requested month/date.
+7. Note-chip taps from `MonthCalendarGridSurface.qml` bubble upward as `noteOpenRequested(noteId)` so the host can
+   reopen the selected note in the editor.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/MonthCalendarViewModel.hpp/.cpp`
@@ -63,3 +66,4 @@ surface so left/right swipes move to the previous or next month.
     - Day selection inside any visible month page must still update `selectedDateIso`.
     - Opening the page from a year-calendar month/day tap must show the requested month immediately instead of the
       previously displayed month.
+    - Clicking or tapping a visible month note chip must bubble `noteOpenRequested(...)` out of the page.

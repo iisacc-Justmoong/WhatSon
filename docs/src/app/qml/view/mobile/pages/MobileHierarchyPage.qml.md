@@ -65,6 +65,9 @@ top of `/mobile/detail`.
 `ContentViewLayout.qml` can now emit `monthCalendarOverlayOpenRequested()` from inside the mobile editor route when the
 user taps a month or day in `YearCalendarPage.qml`. `MobileHierarchyPage.qml` re-emits that signal so the app root can
 swap the visible overlay from year to month while keeping the overlay state owned above the router shell.
+The same content route also forwards `sidebarHierarchyViewModel` into `ContentViewLayout.qml`, so tapping a projected
+calendar note on mobile can switch the active hierarchy back to Library, select the note, dismiss the calendar
+overlay, and leave the user on the editor route with that note visible.
 
 ## Mobile Detail Page
 The compact navigation's right-edge `DetailPanelControlButton` now routes into `/mobile/detail`.
@@ -135,6 +138,8 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - `editorViewModeViewModel`: forwarded into `ContentViewLayout` so mobile editor mode selection uses the same
   plain/print/preview rendering policy as desktop.
 - `SidebarHierarchyViewModel`: supplies the active hierarchy domain, note-list model, and hierarchy selection.
+- The same shared sidebar viewmodel is also forwarded into `ContentViewLayout.qml`, so mobile calendar note taps reuse
+  the same library-selection path as desktop.
 - `windowInteractions`: routes the dedicated create-note action and resolves the writable note-mutation capability.
 
 ## Known Invariants
@@ -147,3 +152,5 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 - The mobile editor page must not fall back to the desktop editor file for mobile rendering.
 - The mobile detail route must fill the routed body width end-to-end; centered fixed-width detail cards are a regression on
   mobile.
+- Calendar note taps from the mobile editor route must keep using the shared library selection state instead of
+  introducing a mobile-only note activation store.

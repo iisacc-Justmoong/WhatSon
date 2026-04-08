@@ -22,6 +22,7 @@ Rectangle {
     property var dateEntriesCache: ({})
     property var weekCalendarViewModel: null
 
+    signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function appendDates(count) {
@@ -295,6 +296,24 @@ Rectangle {
         if (entries.length === 1)
             return title;
         return title + " +" + String(entries.length - 1);
+    }
+    function noteIdForEntries(entries) {
+        if (!entries || entries.length !== 1)
+            return "";
+        const firstEntry = entries[0];
+        const sourceKind = firstEntry && firstEntry.sourceKind !== undefined ? String(firstEntry.sourceKind).trim() : "";
+        if (sourceKind !== "note")
+            return "";
+        return firstEntry && firstEntry.sourceId !== undefined && firstEntry.sourceId !== null
+                ? String(firstEntry.sourceId).trim()
+                : "";
+    }
+    function requestOpenNoteForEntries(entries) {
+        const noteId = weekCalendarPage.noteIdForEntries(entries);
+        if (noteId.length === 0)
+            return;
+        weekCalendarPage.requestViewHook("open-note");
+        weekCalendarPage.noteOpenRequested(noteId);
     }
     function syncDisplayedWeekForDate(dateIso, reason) {
         const activeWeekStartIso = weekCalendarPage.normalizedWeekStartIso(dateIso);
@@ -590,9 +609,12 @@ Rectangle {
                                                 cornerRadius: LV.Theme.radiusSm
                                                 defaultBackgroundColor: LV.Theme.panelBackground11
                                                 horizontalInset: LV.Theme.gap2
+                                                interactive: weekCalendarPage.noteIdForEntries(dayHourCell.slotEntries).length > 0
                                                 label: weekCalendarPage.slotSummary(dayHourCell.slotEntries)
                                                 textColor: LV.Theme.titleHeaderColor
                                                 visible: dayHourCell.slotEntries.length > 0
+
+                                                onActivated: weekCalendarPage.requestOpenNoteForEntries(dayHourCell.slotEntries)
                                             }
                                         }
                                     }

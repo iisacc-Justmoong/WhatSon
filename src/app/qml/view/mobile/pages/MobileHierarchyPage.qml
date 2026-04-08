@@ -753,6 +753,7 @@ Item {
             minimapVisible: false
             noteListModel: mobileHierarchyPage.activeNoteListModel
             resourcesImportViewModel: mobileHierarchyPage.resourcesImportViewModel
+            sidebarHierarchyViewModel: mobileHierarchyPage.sidebarHierarchyViewModel
             agendaOverlayVisible: mobileHierarchyPage.agendaOverlayVisible
             agendaViewModel: mobileHierarchyPage.agendaViewModel
             dayCalendarOverlayVisible: mobileHierarchyPage.dayCalendarOverlayVisible

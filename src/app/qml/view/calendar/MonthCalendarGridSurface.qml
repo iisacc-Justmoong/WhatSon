@@ -22,6 +22,7 @@ Item {
     readonly property var weekdayLabels: monthCalendarGridSurface.monthProjection && monthCalendarGridSurface.monthProjection.weekdayLabels ? monthCalendarGridSurface.monthProjection.weekdayLabels : []
 
     signal dateSelected(string dateIso)
+    signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function buildEntryCellModels(dayEntries) {
@@ -34,7 +35,8 @@ Item {
             cellModels.push({
                 "label": monthCalendarGridSurface.entryLabel(entryModel),
                 "backgroundType": entryType === "event" ? monthCalendarGridSurface.eventBackgroundColored : monthCalendarGridSurface.eventBackgroundDefault,
-                "backgroundColor": monthCalendarGridSurface.entryAccent(entryModel)
+                "backgroundColor": monthCalendarGridSurface.entryAccent(entryModel),
+                "noteId": monthCalendarGridSurface.noteIdForEntry(entryModel)
             });
         }
         return cellModels;
@@ -81,6 +83,14 @@ Item {
             return completed ? LV.Theme.descriptionColor : LV.Theme.warning;
         }
         return LV.Theme.primary;
+    }
+    function noteIdForEntry(entryModel) {
+        const sourceKind = entryModel && entryModel.sourceKind !== undefined ? String(entryModel.sourceKind).trim() : "";
+        if (sourceKind !== "note")
+            return "";
+        return entryModel && entryModel.sourceId !== undefined && entryModel.sourceId !== null
+                ? String(entryModel.sourceId).trim()
+                : "";
     }
     function entryLabel(entryModel) {
         const title = entryModel && entryModel.title !== undefined && String(entryModel.title).trim().length > 0 ? String(entryModel.title).trim() : "Untitled";
@@ -198,6 +208,15 @@ Item {
                         return;
                     monthCalendarGridSurface.requestViewHook("select-date");
                     monthCalendarGridSurface.dateSelected(dateIso);
+                }
+                onEntryActivated: function(entryCellModel) {
+                    const noteId = entryCellModel && entryCellModel.noteId !== undefined
+                            ? String(entryCellModel.noteId).trim()
+                            : "";
+                    if (noteId.length === 0)
+                        return;
+                    monthCalendarGridSurface.requestViewHook("open-note");
+                    monthCalendarGridSurface.noteOpenRequested(noteId);
                 }
             }
         }

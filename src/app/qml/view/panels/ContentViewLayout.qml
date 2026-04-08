@@ -16,6 +16,7 @@ Item {
     property color gutterColor: "transparent"
     property int gutterWidthOverride: -1
     property bool isMobilePlatform: false
+    property int libraryHierarchyIndex: 0
     property var libraryHierarchyViewModel: null
     property int lineNumberColumnLeftOverride: -1
     property int lineNumberColumnTextWidthOverride: -1
@@ -25,6 +26,7 @@ Item {
     property var resourcesImportViewModel: null
     readonly property var resolvedContentViewModel: contentViewLayout.contentViewModel
     readonly property var resolvedNoteListModel: contentViewLayout.noteListModel
+    property var sidebarHierarchyViewModel: null
     property bool dayCalendarOverlayVisible: false
     property var dayCalendarViewModel: null
     property bool agendaOverlayVisible: false
@@ -107,6 +109,25 @@ Item {
                 contentViewLayout.monthCalendarViewModel.setSelectedDateIso(normalizedDateIso);
         }
         contentViewLayout.monthCalendarOverlayOpenRequested();
+    }
+    function requestOpenLibraryNote(noteId) {
+        const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+        if (normalizedNoteId.length === 0)
+            return false;
+        if (!contentViewLayout.libraryHierarchyViewModel
+                || contentViewLayout.libraryHierarchyViewModel.activateNoteById === undefined
+                || !contentViewLayout.sidebarHierarchyViewModel
+                || contentViewLayout.sidebarHierarchyViewModel.setActiveHierarchyIndex === undefined) {
+            return false;
+        }
+
+        const activated = Boolean(contentViewLayout.libraryHierarchyViewModel.activateNoteById(normalizedNoteId));
+        if (!activated)
+            return false;
+
+        contentViewLayout.sidebarHierarchyViewModel.setActiveHierarchyIndex(contentViewLayout.libraryHierarchyIndex);
+        contentViewLayout.requestActiveCalendarOverlayClose();
+        return true;
     }
 
     Layout.fillHeight: true
@@ -238,6 +259,9 @@ Item {
             anchors.fill: parent
             dayCalendarViewModel: contentViewLayout.dayCalendarViewModel
 
+            onNoteOpenRequested: function (noteId) {
+                contentViewLayout.requestOpenLibraryNote(noteId);
+            }
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();
             }
@@ -250,6 +274,9 @@ Item {
             anchors.fill: parent
             agendaViewModel: contentViewLayout.agendaViewModel
 
+            onNoteOpenRequested: function (noteId) {
+                contentViewLayout.requestOpenLibraryNote(noteId);
+            }
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();
             }
@@ -262,6 +289,9 @@ Item {
             anchors.fill: parent
             weekCalendarViewModel: contentViewLayout.weekCalendarViewModel
 
+            onNoteOpenRequested: function (noteId) {
+                contentViewLayout.requestOpenLibraryNote(noteId);
+            }
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();
             }
@@ -274,6 +304,9 @@ Item {
             anchors.fill: parent
             monthCalendarViewModel: contentViewLayout.monthCalendarViewModel
 
+            onNoteOpenRequested: function (noteId) {
+                contentViewLayout.requestOpenLibraryNote(noteId);
+            }
             onViewHookRequested: function (reason) {
                 contentViewLayout.viewHookRequested();
             }

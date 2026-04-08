@@ -22,6 +22,7 @@ Rectangle {
     readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12
     readonly property int weekdayHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(39)))
 
+    signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function buildMonthPageModels() {
@@ -217,6 +218,9 @@ Rectangle {
                             if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.setSelectedDateIso)
                                 monthCalendarPage.calendarVm.setSelectedDateIso(dateIso);
                             monthCalendarPage.requestViewHook("select-date");
+                        }
+                        onNoteOpenRequested: function (noteId) {
+                            monthCalendarPage.noteOpenRequested(noteId);
                         }
                     }
                 }

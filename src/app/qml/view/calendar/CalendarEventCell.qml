@@ -16,15 +16,24 @@ Rectangle {
     property color textColor: Qt.rgba(1.0, 1.0, 1.0, 0.8)
     property int cornerRadius: LV.Theme.radiusSm
     property int horizontalInset: LV.Theme.gap8
+    property bool interactive: false
     property int verticalInset: LV.Theme.gap2
     property int labelPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     property int labelWeight: Font.Medium
+
+    signal activated
 
     color: calendarEventCell.backgroundType === calendarEventCell.backgroundColored
            ? calendarEventCell.coloredBackgroundColor
            : calendarEventCell.defaultBackgroundColor
     height: Math.max(0, Math.round(LV.Theme.scaleMetric(16)))
     radius: calendarEventCell.cornerRadius
+
+    TapHandler {
+        enabled: calendarEventCell.interactive
+
+        onTapped: calendarEventCell.activated()
+    }
 
     LV.Label {
         anchors.left: parent.left

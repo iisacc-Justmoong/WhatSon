@@ -3252,6 +3252,55 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
     return true;
 }
 
+bool LibraryHierarchyViewModel::activateNoteById(const QString& noteId)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    auto visibleNoteIndexForId = [this, &normalizedNoteId]() -> int
+    {
+        const QVector<LibraryNoteListItem>& noteItems = m_noteListModel.items();
+        for (int index = 0; index < noteItems.size(); ++index)
+        {
+            if (noteItems.at(index).id.trimmed() == normalizedNoteId)
+            {
+                return index;
+            }
+        }
+        return -1;
+    };
+
+    int noteIndex = visibleNoteIndexForId();
+    if (noteIndex < 0 && !m_noteListModel.searchText().trimmed().isEmpty())
+    {
+        m_noteListModel.setSearchText(QString());
+        noteIndex = visibleNoteIndexForId();
+    }
+    if (noteIndex < 0 && m_selectedIndex != -1)
+    {
+        setSelectedIndex(-1);
+        noteIndex = visibleNoteIndexForId();
+    }
+    if (noteIndex < 0)
+    {
+        WhatSon::Debug::traceSelf(
+            this,
+            QStringLiteral("library.viewmodel"),
+            QStringLiteral("activateNoteById.missing"),
+            QStringLiteral("noteId=%1 selectedIndex=%2 noteCount=%3")
+                .arg(normalizedNoteId)
+                .arg(m_selectedIndex)
+                .arg(m_noteListModel.items().size()));
+        return false;
+    }
+
+    m_noteListModel.setCurrentIndex(noteIndex);
+    return m_noteListModel.currentNoteId().trimmed() == normalizedNoteId;
+}
+
 QVector<LibraryNoteRecord> LibraryHierarchyViewModel::indexedNotesSnapshot() const
 {
     return m_indexedState.allNotes();

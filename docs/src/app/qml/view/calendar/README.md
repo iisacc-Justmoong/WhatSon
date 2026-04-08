@@ -54,3 +54,15 @@
   non-selected current-day cells.
 - Shared calendar chrome now routes visible chip/header/control metrics through LVRS `gap`, `radius`, `stroke`, and
   `scaleMetric(...)` helpers instead of page-local pixel literals.
+- Projected note chips are now interactive across Agenda/day/week/month surfaces. When a chip resolves to a concrete
+  library note id, the host can reopen that note in the editor and dismiss the active calendar overlay.
+- Week view keeps one intentional limitation: the compressed `title +N` slot-summary chip cannot open a note directly
+  because the current weekly slot UI still represents multiple entries with one shared hit target.
+
+## Tests
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+    - Agenda/day/month note chips must emit a note-open request on both mouse click and touch tap.
+    - The host content surface must be able to close the active calendar overlay and reveal the editor after note
+      activation.
+    - Week view must only allow direct note open when one visible chip maps to exactly one note entry.

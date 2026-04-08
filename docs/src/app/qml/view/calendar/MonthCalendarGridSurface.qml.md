@@ -11,9 +11,11 @@
 - Resolve per-day entry chips from `dayModel.entries` when the month projection already carries them, and only fall
   back to `calendarVm.entriesForDate(...)` when that payload is absent.
 - Keep manual calendar events and projected note lifecycle chips on the same day-cell surface.
+- Preserve each projected note chip's `noteId` in the day-cell payload so calendar hit-testing can reopen the note.
 - Forward `selectedDateIso` into each `MonthCalendarDayCell` so the chosen date can render its accent-border state.
 - Forward `dayModel.isToday` into each `MonthCalendarDayCell` so the current date can render its soft outline state.
 - Emit `dateSelected(dateIso)` when a day cell is tapped.
+- Emit `noteOpenRequested(noteId)` when a note chip inside a day cell is tapped.
 
 ## Public Contract
 
@@ -24,6 +26,7 @@
     - sizing/style props such as `weekdayHeaderHeight`, `weekdayCellHorizontalPadding`, `bodyLabelPixelSize`
 - Signals:
     - `dateSelected(string dateIso)`
+    - `noteOpenRequested(string noteId)`
     - `viewHookRequested(string reason)`
 - Hook forwarder:
     - `requestViewHook(reason)`
@@ -47,5 +50,7 @@
       corresponding `MonthCalendarDayCell`.
     - `buildEntryCellModels(...)` must return visible chip payloads for both manual events and projected notes.
     - Projected note entries marked `allDay` must not append `00:00` to the chip label.
+    - A projected note chip must carry its `noteId` through `buildEntryCellModels(...)` and emit
+      `noteOpenRequested(...)` when tapped.
     - The visible cell for `selectedDateIso` must render the selected accent border after selection changes.
     - The visible cell for today's ISO date must keep its soft border when month projections are rebuilt.

@@ -14,6 +14,7 @@ It supports two variants through one boolean argument:
 - `property int maxVisibleEntries`
 - `property var entryCells`
 - `signal clicked`
+- `signal entryActivated(var entryCellModel)`
 
 ## Render Rules
 - Background: `LV.Theme.panelBackground04`
@@ -32,6 +33,8 @@ It supports two variants through one boolean argument:
 ## Interaction
 1. Whole cell is clickable through an internal `MouseArea`.
 2. Parent page handles `clicked` and updates selected date in `MonthCalendarViewModel`.
+3. Individual note chips can emit `entryActivated(entryCellModel)` so note-open gestures do not need to hijack the
+   whole day-cell click contract.
 
 ## Collaborators
 - `src/app/qml/view/calendar/MonthCalendarPage.qml`
@@ -45,3 +48,4 @@ It supports two variants through one boolean argument:
     - The day cell mapped from `dayModel.isToday === true` must still render with a visible but low-contrast border
       when it is not the selected date.
     - Adjacent non-today, non-selected overflow dates must continue to render without the added border.
+    - A visible note chip inside the cell must emit `entryActivated(...)` when clicked or tapped.

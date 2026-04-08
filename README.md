@@ -98,6 +98,9 @@ WhatSon is an LVRS-based Qt Quick application.
   number grid.
 - Projected note chips now label themselves with the same top-line body preview text used by `NoteListItem`, instead of
   prefixing the chip with lifecycle strings such as `Created note` or `Modified note`.
+- Projected note chips in Agenda/day/week/month views can now reopen the backing library note in the editor on
+  click/touch. Week view keeps that affordance only for slot chips that represent exactly one note entry, because the
+  current `title +N` summary chip does not expose a unique note target.
 - Navigation-driven calendar opens now reset Agenda/day/week/month/year overlays back to today's date context, while
   year-view drill-down into month view still preserves the explicitly tapped month/date.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
@@ -215,6 +218,9 @@ WhatSon is an LVRS-based Qt Quick application.
   in the `ContentDisplayView` slot of the editor surface, and the calendar pages are backed by shared context objects
   from `main.cpp`
   (`dayCalendarViewModel`, `weekCalendarViewModel`, `monthCalendarViewModel`, `yearCalendarViewModel`).
+- `ContentViewLayout.qml` now also owns the shared "open note from calendar" bridge. It activates the requested note
+  through `LibraryHierarchyViewModel::activateNoteById(...)`, switches the active hierarchy back to Library, and then
+  dismisses the visible calendar overlay so the editor shows the selected note.
 - The editor text is sourced from the active note-list model's selected note body, which is the parsed plain-text
   payload extracted from `.wsnbody` `<body>` content.
 - The left `74px` gutter is driven from the same `editorText` source as the editor itself, so line numbers react to

@@ -15,6 +15,7 @@ Rectangle {
     readonly property var agendaVm: agendaViewModel
     property var agendaViewModel: null
 
+    signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
     function requestViewHook(reason) {
@@ -44,6 +45,23 @@ Rectangle {
             return;
         agendaVm.toggleAgendaItemCompleted(String(agendaItemModel.id));
         agendaPage.requestViewHook("toggle-agenda-item");
+    }
+    function noteIdForEntry(entryModel) {
+        if (!entryModel)
+            return "";
+        const sourceKind = entryModel.sourceKind !== undefined ? String(entryModel.sourceKind).trim() : "";
+        if (sourceKind !== "note")
+            return "";
+        return entryModel.sourceId !== undefined && entryModel.sourceId !== null
+                ? String(entryModel.sourceId).trim()
+                : "";
+    }
+    function requestOpenNote(entryModel) {
+        const noteId = agendaPage.noteIdForEntry(entryModel);
+        if (noteId.length === 0)
+            return;
+        agendaPage.requestViewHook("open-note");
+        agendaPage.noteOpenRequested(noteId);
     }
 
     color: "transparent"
@@ -161,11 +179,18 @@ Rectangle {
                                 id: allDayItem
 
                                 required property var modelData
+                                readonly property string noteId: agendaPage.noteIdForEntry(allDayItem.modelData)
 
                                 color: LV.Theme.panelBackground11
                                 height: allDayText.implicitHeight + LV.Theme.gap4
                                 radius: LV.Theme.radiusSm
                                 width: parent.width
+
+                                TapHandler {
+                                    enabled: allDayItem.noteId.length > 0
+
+                                    onTapped: agendaPage.requestOpenNote(allDayItem.modelData)
+                                }
 
                                 LV.Label {
                                     id: allDayText
@@ -220,11 +245,18 @@ Rectangle {
                                 id: timedItem
 
                                 required property var modelData
+                                readonly property string noteId: agendaPage.noteIdForEntry(timedItem.modelData)
 
                                 color: LV.Theme.panelBackground11
                                 height: timedRow.implicitHeight + LV.Theme.gap4
                                 radius: LV.Theme.radiusSm
                                 width: parent.width
+
+                                TapHandler {
+                                    enabled: timedItem.noteId.length > 0
+
+                                    onTapped: agendaPage.requestOpenNote(timedItem.modelData)
+                                }
 
                                 LV.HStack {
                                     id: timedRow
