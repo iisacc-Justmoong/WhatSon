@@ -7,13 +7,22 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/panels/navigation/view`
 - Child directories: 0
-- Child files: 1
+- Child files: 4
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `NavigationApplicationViewCalendarBar.qml`
 - `NavigationApplicationViewBar.qml`
+- `NavigationApplicationViewModeBar.qml`
+- `NavigationApplicationViewOptionBar.qml`
+
+## Recent Notes
+- `NavigationApplicationViewBar.qml` now mirrors the Figma metadata order
+  `ViewOptionBar -> ModeBar -> CalendarBar -> AddNewBar -> PreferenceBar`.
+- View-only icon contracts that diverged from the shared navigation bars now live in local files under this
+  directory so edit/control mode wrappers stay isolated.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

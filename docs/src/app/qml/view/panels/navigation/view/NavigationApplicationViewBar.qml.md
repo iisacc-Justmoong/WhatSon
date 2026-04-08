@@ -6,13 +6,15 @@ navigation mode is `View`.
 
 The Figma node mapping is:
 - `149:4000` `ApplicationViewBar`
-- child order: `CalendarBar -> AddNewBar -> PreferenceBar`
+- child order: `ViewOptionBar -> ModeBar -> CalendarBar -> AddNewBar -> PreferenceBar`
 
 ## Layout Contract
 - Root object: `Item`
 - Public mode switch: `property bool compactMode`
 - Full mode (`compactMode: false`):
-  - `NavigationApplicationCalendarBar`
+  - `NavigationApplicationViewOptionBar`
+  - `NavigationApplicationViewModeBar`
+  - `NavigationApplicationViewCalendarBar`
   - `NavigationApplicationAddNewBar`
   - `NavigationApplicationPreferenceBar`
 - Compact mode (`compactMode: true`):
@@ -24,10 +26,11 @@ The Figma node mapping is:
 - Exposes `toggleDetailPanelRequested` and forwards it from `NavigationPreferenceBar`.
 - Exposes `viewHookRequested` and forwards mode-level hook reasons through
   `panelViewModel.requestViewModelHook(reason)`.
-- Full-mode `NavigationApplicationCalendarBar` hooks are now forwarded back into
-  `requestViewHook(reason)`, so year-calendar clicks in icon mode and compact-menu mode share the
-  same reason pipeline.
+- Full-mode view-only child bars (`ViewOptionBar`, `ModeBar`, `CalendarBar`) forward their hooks back
+  into `requestViewHook(reason)`, so full-mode icons and compact-menu rows share one reason pipeline.
 - Compact menu mirrors full-mode default tools:
+  - View options (`Read Only`, `Wrap Text`, `Center View`, `Text To Speech`, `Paper Options`)
+  - View modes (`Center View Mode`, `Focus Mode`, `Presentation`)
   - Agenda / Daily / Weekly / Monthly / Yearly calendar entries
   - New File
   - Preferences
@@ -37,8 +40,11 @@ The Figma node mapping is:
 - Binding: `panelViewModelRegistry.panelViewModel("navigation.NavigationApplicationViewBar")`
 
 ## Notes
-- Full-mode child frames reuse shared wrappers from `navigation/` so view and edit modes avoid
-  duplicated mode-local wrapper files.
+- Full-mode child frames now split the view-only Figma slices into dedicated local files under
+  `navigation/view/`, while `AddNewBar` and `PreferenceBar` stay shared under `navigation/`.
+- The view-only calendar cluster no longer reuses the shared root `NavigationCalendarBar.qml`, because
+  Figma `149:4001` changed the first icon from `toolWindowCheckDetails` to `validator` only for the
+  view-mode `ApplicationViewBar`.
 - On mobile compact shell, this menu button is rendered alongside (not instead of) the shared
   `nodesnewFolder` add-folder button from `NavigationBarLayout.qml`.
 - Compact trigger icon now matches control mode (`toolwindowtodo`) so mobile mode bars keep one
@@ -54,3 +60,8 @@ The Figma node mapping is:
   the older collapse/expand overlay wording.
 - `pragma ComponentBehavior: Bound` is enabled so compact/full nested `Component` branches can
   access `applicationViewBar` id members without unqualified-scope warnings.
+
+## Regression Checklist
+- Keep the child-frame order `ViewOptionBar -> ModeBar -> CalendarBar -> AddNewBar -> PreferenceBar`.
+- Keep the first calendar compact-menu entry on `validator`, matching Figma `TodoListButton`.
+- Keep the compact-menu section ordering aligned with the full desktop bar ordering.

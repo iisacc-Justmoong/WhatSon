@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as Controls
 import LVRS 1.0 as LV
+import "." as ViewNavigation
 import ".." as NavigationShared
 
 Item {
@@ -29,8 +30,86 @@ Item {
     function buildApplicationViewMenuItems() {
         const items = [
             {
+                "label": "Read Only",
+                "iconName": "readerMode",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-toggle-read-only");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Wrap Text",
+                "iconName": "textAutoGenerate",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-toggle-wrap-text");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Center View",
+                "iconName": "singleRecordView",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-option-center-view");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Text To Speech",
+                "iconName": "textToSpeech",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-text-to-speech-options");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Paper Options",
+                "iconName": "fileFormat",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-open-paper-options");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "label": "Center View Mode",
+                "iconName": "singleRecordView",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-mode-center-view");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Focus Mode",
+                "iconName": "imagefitContent",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-mode-focus");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "label": "Presentation",
+                "iconName": "runshowCurrentFrame",
+                "onTriggered": function () {
+                    applicationViewBar.requestViewHook("view-mode-presentation");
+                },
+                "keyVisible": false,
+                "showChevron": false
+            },
+            {
+                "type": "divider"
+            },
+            {
                 "label": "Agenda",
-                "iconName": "toolWindowCheckDetails",
+                "iconName": "validator",
                 "onTriggered": function () {
                     applicationViewBar.requestViewHook("view-open-agenda");
                 },
@@ -123,7 +202,27 @@ Item {
 
             spacing: LV.Theme.gap12
 
-            NavigationShared.NavigationApplicationCalendarBar {
+            ViewNavigation.NavigationApplicationViewOptionBar {
+                id: viewOptionBar
+
+                Layout.alignment: Qt.AlignVCenter
+
+                onViewHookRequested: function (reason) {
+                    applicationViewBar.requestViewHook(reason);
+                }
+            }
+            ViewNavigation.NavigationApplicationViewModeBar {
+                id: modeBar
+
+                Layout.alignment: Qt.AlignVCenter
+
+                onViewHookRequested: function (reason) {
+                    applicationViewBar.requestViewHook(reason);
+                }
+            }
+            ViewNavigation.NavigationApplicationViewCalendarBar {
+                id: calendarBar
+
                 Layout.alignment: Qt.AlignVCenter
 
                 onViewHookRequested: function (reason) {
@@ -131,9 +230,13 @@ Item {
                 }
             }
             NavigationShared.NavigationApplicationAddNewBar {
+                id: addNewBar
+
                 Layout.alignment: Qt.AlignVCenter
             }
             NavigationShared.NavigationApplicationPreferenceBar {
+                id: preferenceBar
+
                 Layout.alignment: Qt.AlignVCenter
                 detailPanelCollapsed: applicationViewBar.detailPanelCollapsed
 
