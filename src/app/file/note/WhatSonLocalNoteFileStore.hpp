@@ -32,6 +32,8 @@ public:
         bool persistBody = true;
         bool touchLastModified = false;
         bool incrementModifiedCount = true;
+        bool refreshIncomingBacklinkStatistics = true;
+        bool refreshAffectedBacklinkTargets = true;
     };
 
     struct DeleteRequest final

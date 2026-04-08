@@ -18,9 +18,8 @@
 - This keeps logical text identical to the same plain-text projection used by editor persistence,
   so gutter/minimap/selection geometry cannot drift when RichText whitespace or block markup is
   interpreted differently from the note-body parser.
-- After the persistence-layer plain-text projection is built, the bridge also applies the same unordered-list display
-  normalization used by the editor surface (`- ` / `* ` / `+ ` -> `• `, except inside fenced code blocks). This keeps
-  RichText cursor movement and source-offset mapping aligned after markdown-style list rendering is rebound.
+- The bridge no longer rewrites markdown list markers (`- ` / `* ` / `+ `) into `• `.
+  Logical text now preserves raw markdown markers so the source editor and `.wsnbody` format stay aligned.
 - `logicalLineCharacterCountAt(...)` uses normalized plain-text length (`m_logicalText`) instead of
   raw rich-text source length. This prevents gutter/minimap geometry drift when the source contains
   markup tokens that do not map 1:1 to cursor offsets.
@@ -42,10 +41,8 @@
 
 ## Regression Checks
 
-- When a stored note line begins with `- `, `* `, or `+ `, the bridge logical text must expose `• ` after the editor
-  RichText surface is rebound.
-- Fenced code blocks delimited by `` ``` `` must keep their raw markdown markers in `logicalText`; unordered-list marker
-  rewriting must not fire inside that fenced region.
+- When a stored note line begins with `- `, `* `, or `+ `, the bridge logical text must expose the same raw marker.
+- Fenced code blocks delimited by `` ``` `` must keep their raw markdown markers in `logicalText`.
 - When the source contains RAW-safe entities such as `&lt;tag&gt;` or `Tom &amp; Jerry`, `logicalText` must expose the
   visible `<tag>` / `Tom & Jerry` glyph sequence so cursor mapping stays aligned with the editor surface.
 - When a single rewritten source line contains inline tags, entities, or resource tags, `logicalLengthForSourceText(...)`

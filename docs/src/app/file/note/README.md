@@ -51,6 +51,8 @@
 - `.wsnhead` now carries a dedicated `fileStat` block for numeric detail-panel metadata.
 - Note creation, note update, and editor note selection all participate in keeping that block
   synchronized with the current body/header state.
+- Editor note selection now uses a header-only `openCount` rewrite path, so switching notes no longer forces a
+  hub-wide `.wsnbody` backlink rescan.
 - The `fileStat` schema is tracked as a documented package contract; this repository no longer maintains a dedicated
   scripted test for it.
 - Empty-note body parsing now strips formatting-only `<body>` indentation so a newly created note opens on the first

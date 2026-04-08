@@ -83,15 +83,17 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 
 - Mutations call `editorSession.markLocalEditorAuthority()` before persistence.
 - Immediate persistence goes through `selectionBridge.persistEditorTextForNote(...)` when the contract is available.
-- `persistEditorTextImmediately(...)` must return the real save result to its caller. The typing controller uses that
-  boolean to decide whether debounce persistence should be re-armed.
+- `persistEditorTextImmediately(...)` now returns whether the save request was accepted:
+  - on the direct `.wsnote` lane that means "accepted into the async save queue"
+  - on the synchronous fallback contracts that still means "write completed successfully"
+- The typing controller still uses that boolean to decide whether debounce persistence should be re-armed.
 - The save pipeline canonicalizes the edited RichText surface back into `.wsnbody` source tags, so shortcut/context
   formatting persists as semantic tags such as `<bold>...</bold>` and `<italic>...</italic>` instead of raw span CSS.
 - Ordinary typing no longer goes through this controller or its whole-document RichText normalization helper.
-- A successful immediate save now clears only the pending-save window through
-  `ContentsEditorSession.acknowledgeSuccessfulEditorPersistence()`. It must not revoke local authority before the note
-  list model echoes the same body text back, otherwise newly created notes can collapse the first typed text to a stale
-  empty snapshot.
+- A successful direct-lane enqueue now routes through `ContentsEditorSession.acknowledgeQueuedEditorPersistence(...)`,
+  while the bridge completion later routes through `acknowledgeSuccessfulEditorPersistence(...)`.
+  The controller must not revoke local authority before the note list model echoes the same body text back, otherwise
+  newly created notes can collapse the first typed text to a stale empty snapshot.
 - If immediate persistence is unavailable or fails, the controller falls back to
   `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)`; the controller owns the mutation decision but not the broader
@@ -132,7 +134,7 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   duplicate formatting from the same key chord.
 - Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
-- Immediate typing saves must return `true` on success so the typing controller does not schedule a redundant debounce
-  write after the note was already persisted.
+- Immediate typing saves must return `true` once the request is accepted so the typing controller does not schedule a
+  redundant debounce write after the note body is already in the async save queue.
 - A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection
   controller after note changes, surface syncs, or shortcut handling.

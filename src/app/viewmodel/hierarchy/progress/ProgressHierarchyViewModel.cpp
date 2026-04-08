@@ -7,6 +7,7 @@
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 
@@ -520,7 +521,7 @@ bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, cons
         return false;
     }
 
-    LibraryNoteRecord& note = m_allNotes[noteIndex];
+    const LibraryNoteRecord& note = m_allNotes.at(noteIndex);
     QString normalizedBodyText;
     QString normalizedBodySourceText;
     QString lastModifiedAt;
@@ -542,12 +543,47 @@ bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, cons
         return false;
     }
 
-    note.bodyPlainText = normalizedBodyText;
-    note.bodySourceText = normalizedBodySourceText;
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
-    if (!lastModifiedAt.isEmpty())
+    return applyPersistedBodyStateForNote(
+        normalizedNoteId,
+        normalizedBodyText,
+        normalizedBodySourceText,
+        lastModifiedAt);
+}
+
+bool ProgressHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+}
+
+bool ProgressHierarchyViewModel::applyPersistedBodyStateForNote(
+    const QString& noteId,
+    const QString& normalizedBodyText,
+    const QString& normalizedBodySourceText,
+    const QString& lastModifiedAt)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
     {
-        note.lastModifiedAt = lastModifiedAt;
+        return false;
+    }
+
+    const int noteIndex = indexOfNoteRecordById(m_allNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_allNotes.size())
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = m_allNotes[noteIndex];
+    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
+    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
+    if (note.bodySourceText.isEmpty())
+    {
+        note.bodySourceText = note.bodyPlainText;
+    }
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
+    if (!lastModifiedAt.trimmed().isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
     refreshNoteListForSelection();
@@ -555,9 +591,37 @@ bool ProgressHierarchyViewModel::saveBodyTextForNote(const QString& noteId, cons
     return true;
 }
 
-bool ProgressHierarchyViewModel::saveCurrentBodyText(const QString& text)
+bool ProgressHierarchyViewModel::requestTrackedStatisticsRefreshForNote(
+    const QString& noteId,
+    const bool incrementOpenCount)
 {
-    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QString noteDirectoryPath = noteDirectoryPathForNoteId(normalizedNoteId);
+    if (noteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    QString statRefreshError;
+    if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
+            normalizedNoteId,
+            noteDirectoryPath,
+            incrementOpenCount,
+            &statRefreshError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("requestTrackedStatisticsRefreshForNote.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, statRefreshError));
+        return false;
+    }
+
+    return reloadNoteMetadataForNoteId(normalizedNoteId);
 }
 
 QString ProgressHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const

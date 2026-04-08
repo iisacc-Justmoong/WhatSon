@@ -10,6 +10,9 @@ QtObject {
     property var editorSession: null
     property var textFormatRenderer: null
     property var textMetricsBridge: null
+    property string liveAuthoritativePlainText: ""
+    property var liveLogicalToSourceOffsets: [0]
+    property string liveSnapshotSourceText: ""
 
     function shouldDeferImmediatePersistence() {
         return !!(controller.view
@@ -125,7 +128,107 @@ QtObject {
         return normalizedText;
     }
 
+    function presentationSourceText() {
+        if (controller.view && controller.view.documentPresentationSourceText !== undefined)
+            return controller.view.documentPresentationSourceText === undefined || controller.view.documentPresentationSourceText === null
+                    ? ""
+                    : String(controller.view.documentPresentationSourceText);
+        if (controller.view && controller.view.editorText !== undefined)
+            return controller.view.editorText === undefined || controller.view.editorText === null
+                    ? ""
+                    : String(controller.view.editorText);
+        return "";
+    }
+
+    function identityOffsetArray(sourceLength) {
+        const safeLength = Math.max(0, Math.floor(Number(sourceLength) || 0));
+        const offsets = new Array(safeLength + 1);
+        for (let index = 0; index <= safeLength; ++index)
+            offsets[index] = index;
+        return offsets;
+    }
+
+    function normalizeOffsetArray(rawOffsets, logicalLength, fallbackSourceText) {
+        const safeLogicalLength = Math.max(0, Math.floor(Number(logicalLength) || 0));
+        const rawLength = rawOffsets && rawOffsets.length !== undefined
+                ? Math.max(0, Math.floor(Number(rawOffsets.length) || 0))
+                : 0;
+        if (rawLength === safeLogicalLength + 1) {
+            const offsets = new Array(rawLength);
+            for (let index = 0; index < rawLength; ++index) {
+                const numericOffset = Number(rawOffsets[index]);
+                offsets[index] = isFinite(numericOffset) ? Math.max(0, Math.floor(numericOffset)) : 0;
+            }
+            return offsets;
+        }
+        if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
+            const offsets = new Array(safeLogicalLength + 1);
+            for (let index = 0; index <= safeLogicalLength; ++index) {
+                const numericOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(index));
+                offsets[index] = isFinite(numericOffset) ? Math.max(0, Math.floor(numericOffset)) : 0;
+            }
+            return offsets;
+        }
+        return controller.identityOffsetArray(safeLogicalLength);
+    }
+
+    function escapedSourceLengthForCharacter(ch) {
+        const safeChar = ch === undefined || ch === null ? "" : String(ch);
+        if (safeChar === "&")
+            return 5;
+        if (safeChar === "<" || safeChar === ">")
+            return 4;
+        if (safeChar === "\"")
+            return 6;
+        if (safeChar === "'")
+            return 5;
+        return 1;
+    }
+
+    function buildReplacementSourceOffsets(text) {
+        const normalizedText = controller.normalizePlainText(text);
+        const offsets = [0];
+        let sourceOffset = 0;
+        for (let index = 0; index < normalizedText.length; ++index) {
+            sourceOffset += controller.escapedSourceLengthForCharacter(normalizedText.charAt(index));
+            offsets.push(sourceOffset);
+        }
+        return offsets;
+    }
+
+    function synchronizeLiveEditingStateFromPresentation() {
+        const snapshotSourceText = controller.presentationSourceText();
+        const presentationLogicalText = controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined
+                ? controller.normalizePlainText(controller.textMetricsBridge.logicalText)
+                : controller.normalizePlainText(snapshotSourceText);
+        let sourceOffsets = [];
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalToSourceOffsets !== undefined)
+            sourceOffsets = controller.textMetricsBridge.logicalToSourceOffsets();
+        controller.liveSnapshotSourceText = snapshotSourceText;
+        controller.liveAuthoritativePlainText = presentationLogicalText;
+        controller.liveLogicalToSourceOffsets = controller.normalizeOffsetArray(
+                    sourceOffsets,
+                    presentationLogicalText.length,
+                    snapshotSourceText);
+    }
+
+    function ensureLiveEditingStateReady() {
+        const snapshotSourceText = controller.presentationSourceText();
+        const currentOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : [];
+        if (controller.liveSnapshotSourceText !== snapshotSourceText
+                || currentOffsets.length !== controller.liveAuthoritativePlainText.length + 1) {
+            controller.synchronizeLiveEditingStateFromPresentation();
+        }
+    }
+
     function authoritativeSourcePlainText() {
+        controller.ensureLiveEditingStateReady();
+        if (controller.liveAuthoritativePlainText.length > 0
+                || controller.liveSnapshotSourceText.length > 0) {
+            return controller.liveAuthoritativePlainText;
+        }
         if (controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined)
             return controller.normalizePlainText(controller.textMetricsBridge.logicalText);
         if (controller.view && controller.view.selectedNoteBodyText !== undefined)
@@ -191,7 +294,17 @@ QtObject {
     }
 
     function sourceOffsetForLogicalOffset(logicalOffset) {
+        controller.ensureLiveEditingStateReady();
         const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
+        const offsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : [];
+        if (offsets.length > 0) {
+            const boundedOffset = Math.max(0, Math.min(offsets.length - 1, safeOffset));
+            const mappedOffset = Number(offsets[boundedOffset]);
+            if (isFinite(mappedOffset))
+                return Math.max(0, Math.floor(mappedOffset));
+        }
         if (controller.textMetricsBridge && controller.textMetricsBridge.sourceOffsetForLogicalOffset !== undefined) {
             const mappedOffset = Number(controller.textMetricsBridge.sourceOffsetForLogicalOffset(safeOffset));
             if (isFinite(mappedOffset))
@@ -201,6 +314,43 @@ QtObject {
                 ? String(controller.view.editorText)
                 : "";
         return Math.max(0, Math.min(currentSourceText.length, safeOffset));
+    }
+
+    function applyLiveEditingStateReplacement(logicalStart, logicalEnd, replacementText, sourceStart, sourceEnd) {
+        controller.ensureLiveEditingStateReady();
+        const previousLogicalText = controller.liveAuthoritativePlainText;
+        const boundedLogicalStart = Math.max(0, Math.min(previousLogicalText.length, Math.floor(Number(logicalStart) || 0)));
+        const boundedLogicalEnd = Math.max(boundedLogicalStart, Math.min(previousLogicalText.length, Math.floor(Number(logicalEnd) || 0)));
+        const boundedSourceStart = Math.max(0, Math.floor(Number(sourceStart) || 0));
+        const boundedSourceEnd = Math.max(boundedSourceStart, Math.floor(Number(sourceEnd) || 0));
+        const insertedText = controller.normalizePlainText(replacementText);
+        const insertedSourceOffsets = controller.buildReplacementSourceOffsets(insertedText);
+        const previousOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : controller.identityOffsetArray(previousLogicalText.length);
+        const previousLogicalLength = previousLogicalText.length;
+        const logicalRemovedLength = boundedLogicalEnd - boundedLogicalStart;
+        const logicalInsertedLength = insertedText.length;
+        const sourceRemovedLength = boundedSourceEnd - boundedSourceStart;
+        const sourceInsertedLength = Math.max(0, Number(insertedSourceOffsets[insertedSourceOffsets.length - 1]) || 0);
+        const sourceDelta = sourceInsertedLength - sourceRemovedLength;
+        const nextLogicalText = previousLogicalText.slice(0, boundedLogicalStart)
+                + insertedText
+                + previousLogicalText.slice(boundedLogicalEnd);
+        const nextOffsets = new Array(nextLogicalText.length + 1);
+
+        for (let index = 0; index < boundedLogicalStart; ++index)
+            nextOffsets[index] = Math.max(0, Number(previousOffsets[index]) || 0);
+        nextOffsets[boundedLogicalStart] = boundedSourceStart;
+        for (let index = 1; index <= logicalInsertedLength; ++index)
+            nextOffsets[boundedLogicalStart + index] = boundedSourceStart + Math.max(0, Number(insertedSourceOffsets[index]) || 0);
+        for (let previousIndex = boundedLogicalEnd; previousIndex <= previousLogicalLength; ++previousIndex) {
+            const nextIndex = boundedLogicalStart + logicalInsertedLength + (previousIndex - boundedLogicalEnd);
+            nextOffsets[nextIndex] = Math.max(0, Number(previousOffsets[previousIndex]) || 0) + sourceDelta;
+        }
+
+        controller.liveAuthoritativePlainText = nextLogicalText;
+        controller.liveLogicalToSourceOffsets = nextOffsets;
     }
 
     function handleEditorTextEdited() {
@@ -246,6 +396,12 @@ QtObject {
                                           sourceStart,
                                           sourceEnd,
                                           normalizedInsertedText));
+        controller.applyLiveEditingStateReplacement(
+                    logicalReplacementStart,
+                    logicalReplacementEnd,
+                    normalizedInsertedText,
+                    sourceStart,
+                    sourceEnd);
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;
         if (continuedListInsertion.applied)

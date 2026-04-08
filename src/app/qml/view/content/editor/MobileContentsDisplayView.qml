@@ -4,6 +4,7 @@ import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
+import "ContentsMinimapSnapshotSupport.js" as MinimapSnapshotSupport
 
 Item {
     id: contentsView
@@ -138,9 +139,12 @@ Item {
     property real minimapResolvedViewportHeight: 0
     property real minimapResolvedViewportY: 0
     readonly property int minimapRowGap: Math.max(1, Math.round(LV.Theme.scaleMetric(1)))
+    property var minimapLineGroups: []
     property bool minimapScrollable: false
+    property bool minimapSnapshotForceFullRefresh: true
     property bool cursorDrivenUiRefreshQueued: false
     property bool minimapSnapshotRefreshQueued: false
+    property string minimapSnapshotSourceText: ""
     readonly property int minimapTrackInset: LV.Theme.gap8
     readonly property int minimapTrackWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(36)))
     readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
@@ -256,84 +260,107 @@ Item {
     function applyEditorRichTextSurface() {
         editorSelectionController.applyEditorRichTextSurface();
     }
-    function buildFallbackMinimapVisualRows(textStartY) {
-        const rows = [];
-        for (let lineNumber = 1; lineNumber <= contentsView.logicalLineCount; ++lineNumber) {
-            const characterCount = textMetricsBridge.logicalLineCharacterCountAt(lineNumber - 1);
-            const rowCount = Math.max(1, Math.round(contentsView.lineVisualHeight(lineNumber, 1) / Math.max(1, contentsView.editorLineHeight)));
-            for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-                const segmentStart = Math.floor(rowIndex * characterCount / rowCount);
-                const segmentEnd = Math.ceil((rowIndex + 1) * characterCount / rowCount);
-                rows.push({
-                    "charCount": Math.max(0, segmentEnd - segmentStart),
-                    "contentHeight": contentsView.editorLineHeight,
-                    "contentY": textStartY + contentsView.lineDocumentY(lineNumber) + rowIndex * contentsView.editorLineHeight,
-                    "lineNumber": lineNumber,
-                    "visualIndex": rows.length
-                });
-            }
-        }
-        if (rows.length === 0) {
-            rows.push({
-                "charCount": 0,
-                "contentHeight": contentsView.editorLineHeight,
-                "contentY": textStartY,
-                "lineNumber": 1,
-                "visualIndex": 0
-            });
-        }
-        return rows;
-    }
-    function buildMinimapVisualRows(text, editorWidth, editorContentHeight) {
-        const _editorWidth = Number(editorWidth) || 0;
-        const _editorContentHeight = Number(editorContentHeight) || 0;
-        const value = text === undefined || text === null ? "" : String(text);
+    function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
+        const groups = [];
+        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
+        const safeEndLine = Math.max(safeStartLine, Math.min(contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
         const textStartY = contentsView.editorDocumentStartY;
-        if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined || _editorWidth <= 0 || _editorContentHeight <= 0)
-            return contentsView.buildFallbackMinimapVisualRows(textStartY);
-
-        const rows = [];
-        if (value.length === 0) {
-            rows.push({
+        for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
+            const contentHeight = Math.max(1, contentsView.lineVisualHeight(lineNumber, 1));
+            groups.push({
+                "charCount": Math.max(0, Number(textMetricsBridge.logicalLineCharacterCountAt(lineNumber - 1)) || 0),
+                "contentHeight": contentHeight,
+                "contentY": textStartY + contentsView.lineDocumentY(lineNumber),
+                "lineNumber": lineNumber,
+                "rowCount": Math.max(1, Math.round(contentHeight / Math.max(1, contentsView.editorLineHeight)))
+            });
+        }
+        if (groups.length === 0) {
+            groups.push({
                 "charCount": 0,
                 "contentHeight": contentsView.editorLineHeight,
                 "contentY": textStartY,
                 "lineNumber": 1,
-                "visualIndex": 0
+                "rowCount": 1
             });
-            return rows;
+        }
+        return groups;
+    }
+    function buildMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
+        const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
+        const safeEndLine = Math.max(safeStartLine, Math.min(contentsView.logicalLineCount, Number(endLineNumber) || safeStartLine));
+        const editorItem = contentEditor ? contentEditor.editorItem : null;
+        const editorWidth = Number(contentEditor ? contentEditor.width : 0) || 0;
+        const editorContentHeight = Number(contentEditor ? contentEditor.contentHeight : 0) || 0;
+        if (!editorItem
+                || editorItem.positionToRectangle === undefined
+                || editorWidth <= 0
+                || editorContentHeight <= 0) {
+            return contentsView.buildFallbackMinimapLineGroupsForRange(safeStartLine, safeEndLine);
         }
 
-        let segmentStartOffset = 0;
-        let segmentStartY = Number(contentEditor.editorItem.positionToRectangle(0).y) || 0;
-        for (let offset = 1; offset <= value.length; ++offset) {
-            let nextY = segmentStartY + contentsView.editorLineHeight;
-            if (offset < value.length) {
-                const nextRect = contentEditor.editorItem.positionToRectangle(offset);
-                const nextRectY = Number(nextRect.y);
-                if (isFinite(nextRectY))
-                    nextY = nextRectY;
+        const groups = [];
+        const textStartY = contentsView.editorDocumentStartY;
+        const logicalLength = contentsView.logicalTextLength();
+        let currentStartOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(safeStartLine - 1)) || 0);
+        let currentRect = editorItem.positionToRectangle(currentStartOffset);
+        for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
+            const safeCurrentRectY = Number(currentRect.y);
+            const currentRectY = isFinite(safeCurrentRectY) ? safeCurrentRectY : Math.max(0, contentsView.lineDocumentY(lineNumber));
+            const nextStartOffset = lineNumber < contentsView.logicalLineCount
+                    ? Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lineNumber)) || 0)
+                    : Math.max(0, logicalLength);
+            const nextRect = editorItem.positionToRectangle(nextStartOffset);
+            const safeNextRectY = Number(nextRect.y);
+            const safeNextRectHeight = Number(nextRect.height);
+            let contentHeight = contentsView.editorLineHeight;
+            if (lineNumber < contentsView.logicalLineCount) {
+                const nextRectY = isFinite(safeNextRectY) ? safeNextRectY : currentRectY + contentsView.editorLineHeight;
+                contentHeight = Math.max(contentsView.editorLineHeight, nextRectY - currentRectY);
+            } else {
+                const nextRectY = isFinite(safeNextRectY) ? safeNextRectY : currentRectY;
+                const nextRectHeight = isFinite(safeNextRectHeight) ? safeNextRectHeight : contentsView.editorLineHeight;
+                contentHeight = Math.max(contentsView.editorLineHeight, nextRectY + Math.max(contentsView.editorLineHeight, nextRectHeight) - currentRectY);
             }
-            const rowBreak = offset === value.length || nextY !== segmentStartY;
-            if (!rowBreak)
-                continue;
 
-            let characterCount = offset - segmentStartOffset;
-            if (offset > segmentStartOffset && value.charAt(offset - 1) === "\n")
-                characterCount -= 1;
-
-            rows.push({
-                "charCount": Math.max(0, characterCount),
-                "contentHeight": Math.max(1, nextY - segmentStartY),
-                "contentY": textStartY + segmentStartY,
-                "lineNumber": textMetricsBridge.logicalLineNumberForOffset(segmentStartOffset),
-                "visualIndex": rows.length
+            groups.push({
+                "charCount": Math.max(0, Number(textMetricsBridge.logicalLineCharacterCountAt(lineNumber - 1)) || 0),
+                "contentHeight": contentHeight,
+                "contentY": textStartY + currentRectY,
+                "lineNumber": lineNumber,
+                "rowCount": Math.max(1, Math.round(contentHeight / Math.max(1, contentsView.editorLineHeight)))
             });
-            segmentStartOffset = offset;
-            segmentStartY = nextY;
+            currentStartOffset = nextStartOffset;
+            currentRect = nextRect;
         }
 
-        return rows.length > 0 ? rows : contentsView.buildFallbackMinimapVisualRows(textStartY);
+        return groups.length > 0 ? groups : contentsView.buildFallbackMinimapLineGroupsForRange(safeStartLine, safeEndLine);
+    }
+    function currentMinimapSourceText() {
+        return contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+    }
+    function nextMinimapLineGroupsForCurrentState(currentSourceText) {
+        if (contentsView.minimapSnapshotForceFullRefresh
+                || !Array.isArray(contentsView.minimapLineGroups)
+                || contentsView.minimapLineGroups.length !== contentsView.logicalLineCount
+                || contentsView.minimapLineGroups.length === 0
+                || contentsView.minimapSnapshotSourceText.length === 0) {
+            return contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
+        }
+
+        const changeRange = MinimapSnapshotSupport.computeChangedLineRange(contentsView.minimapSnapshotSourceText, currentSourceText);
+        if (!changeRange.valid)
+            return contentsView.minimapLineGroups;
+
+        const replacementGroups = contentsView.buildMinimapLineGroupsForRange(changeRange.nextStartLine, changeRange.nextEndLine);
+        const mergedGroups = MinimapSnapshotSupport.spliceLineGroups(
+                    contentsView.minimapLineGroups,
+                    replacementGroups,
+                    changeRange.previousStartLine,
+                    changeRange.previousEndLine);
+        if (!Array.isArray(mergedGroups) || mergedGroups.length !== contentsView.logicalLineCount)
+            return contentsView.buildMinimapLineGroupsForRange(1, contentsView.logicalLineCount);
+        return mergedGroups;
     }
     function buildVisibleGutterLineEntries() {
         const visibleLines = [];
@@ -546,27 +573,39 @@ Item {
     }
     function commitDocumentPresentationRefresh() {
         const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
+        const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
+        if (!needsRichTextProjection) {
+            if (contentsView.renderedEditorText !== "")
+                contentsView.renderedEditorText = "";
+            contentsView.scheduleMinimapSnapshotRefresh(false);
+            if (minimapLayer && contentsView.minimapRefreshEnabled)
+                minimapLayer.requestRepaint();
+            return;
+        }
         if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== currentSourceText)
             textFormatRenderer.sourceText = currentSourceText;
-        const nextRenderedText = textFormatRenderer && textFormatRenderer.renderedHtml !== undefined && textFormatRenderer.renderedHtml !== null
-                ? String(textFormatRenderer.renderedHtml)
+        const nextRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
+                ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";
         if (contentsView.renderedEditorText !== nextRenderedText)
             contentsView.renderedEditorText = nextRenderedText;
         contentsView.scheduleEditorRichTextSurfaceSync();
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleMinimapSnapshotRefresh(false);
         if (minimapLayer && contentsView.minimapRefreshEnabled)
             minimapLayer.requestRepaint();
     }
     function documentPresentationRenderDirty() {
+        const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
+        if (!needsRichTextProjection)
+            return false;
         const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
         const rendererSourceText = textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== null
                 ? String(textFormatRenderer.sourceText)
                 : "";
         if (rendererSourceText !== currentSourceText)
             return true;
-        const rendererRenderedText = textFormatRenderer && textFormatRenderer.renderedHtml !== undefined && textFormatRenderer.renderedHtml !== null
-                ? String(textFormatRenderer.renderedHtml)
+        const rendererRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
+                ? String(textFormatRenderer.editorSurfaceHtml)
                 : "";
         return contentsView.renderedEditorText !== rendererRenderedText;
     }
@@ -821,10 +860,24 @@ Item {
     function refreshMinimapSnapshot() {
         if (!contentsView.minimapRefreshEnabled)
             return;
-        const nextRows = contentsView.buildMinimapVisualRows(contentsView.editorText, Number(contentEditor ? contentEditor.width : 0), Number(contentEditor ? contentEditor.contentHeight : 0));
+        const currentSourceText = contentsView.currentMinimapSourceText();
+        if (!contentsView.minimapSnapshotForceFullRefresh
+                && currentSourceText === contentsView.minimapSnapshotSourceText
+                && Array.isArray(contentsView.minimapLineGroups)
+                && contentsView.minimapLineGroups.length === contentsView.logicalLineCount) {
+            contentsView.refreshMinimapViewportTracking();
+            contentsView.refreshMinimapCursorTracking();
+            return;
+        }
+
+        const nextLineGroups = contentsView.nextMinimapLineGroupsForCurrentState(currentSourceText);
+        const nextRows = MinimapSnapshotSupport.flattenLineGroups(nextLineGroups, contentsView.editorLineHeight);
         const nextSilhouetteHeight = contentsView.minimapSilhouetteHeight(nextRows);
         const nextTrackHeight = Math.min(contentsView.minimapAvailableTrackHeight, nextSilhouetteHeight);
 
+        contentsView.minimapLineGroups = nextLineGroups;
+        contentsView.minimapSnapshotForceFullRefresh = false;
+        contentsView.minimapSnapshotSourceText = currentSourceText;
         contentsView.minimapVisualRows = nextRows;
         contentsView.minimapResolvedSilhouetteHeight = nextSilhouetteHeight;
         contentsView.minimapResolvedTrackHeight = nextTrackHeight;
@@ -902,7 +955,7 @@ Item {
                 documentPresentationRefreshTimer.stop();
             if (immediate)
                 contentsView.scheduleEditorRichTextSurfaceSync();
-            contentsView.scheduleMinimapSnapshotRefresh();
+            contentsView.scheduleMinimapSnapshotRefresh(false);
             if (minimapLayer && contentsView.minimapRefreshEnabled)
                 minimapLayer.requestRepaint();
             return;
@@ -936,9 +989,11 @@ Item {
                 contentsView.scheduleEditorRichTextSurfaceSync();
         });
     }
-    function scheduleMinimapSnapshotRefresh() {
+    function scheduleMinimapSnapshotRefresh(forceFull) {
         if (!contentsView.minimapRefreshEnabled)
             return;
+        if (forceFull)
+            contentsView.minimapSnapshotForceFullRefresh = true;
         if (contentsView.minimapSnapshotRefreshQueued)
             return;
         contentsView.minimapSnapshotRefreshQueued = true;
@@ -983,17 +1038,18 @@ Item {
         editorSession.flushPendingEditorText();
     }
     onEditorFlickableChanged: {
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleGutterRefresh(2);
     }
     onEditorTextChanged: {
         contentsView.scheduleDocumentPresentationRefresh(false);
     }
     onHeightChanged: {
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleGutterRefresh(2);
     }
     onMinimapVisibleChanged: {
+        contentsView.minimapSnapshotForceFullRefresh = true;
         contentsView.scheduleDocumentPresentationRefresh(true);
     }
     onSelectedNoteBodyTextChanged: {
@@ -1003,24 +1059,27 @@ Item {
         } else {
             editorSession.scheduleEditorPersistence();
         }
+        contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
     onVisibleChanged: {
         if (visible) {
+            contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
         }
     }
     onWidthChanged: {
-        contentsView.scheduleMinimapSnapshotRefresh();
+        contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleGutterRefresh(2);
     }
 
@@ -1060,6 +1119,8 @@ Item {
     }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
+
+        previewEnabled: contentsView.showFormattedTextRenderer
     }
     ContentsLogicalTextBridge {
         id: textMetricsBridge
@@ -1120,6 +1181,7 @@ Item {
     }
     Connections {
         function onEditorTextSynchronized() {
+            contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);
         }
@@ -1131,7 +1193,7 @@ Item {
             if (contentsView.editorInputFocused)
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
-                contentsView.scheduleMinimapSnapshotRefresh();
+                contentsView.scheduleMinimapSnapshotRefresh(false);
             contentsView.scheduleGutterRefresh(2);
         }
         function onCursorPositionChanged() {
@@ -1141,7 +1203,7 @@ Item {
             if (contentsView.editorInputFocused)
                 contentsView.scheduleDeferredDocumentPresentationRefresh();
             else
-                contentsView.scheduleMinimapSnapshotRefresh();
+                contentsView.scheduleMinimapSnapshotRefresh(false);
             contentsView.scheduleGutterRefresh(2);
         }
 

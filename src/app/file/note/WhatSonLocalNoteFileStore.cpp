@@ -795,7 +795,8 @@ bool WhatSonLocalNoteFileStore::updateNote(
     }
 
     QString statsError;
-    if (persistHeader && !WhatSon::NoteFileStatSupport::applyTrackedStatistics(
+    if (persistHeader && request.refreshIncomingBacklinkStatistics
+        && !WhatSon::NoteFileStatSupport::applyTrackedStatistics(
             &request.document.headerStore,
             noteDirectoryPath,
             bodySourceTextForStats,
@@ -807,6 +808,13 @@ bool WhatSonLocalNoteFileStore::updateNote(
             *errorMessage = statsError;
         }
         return false;
+    }
+    if (persistHeader && !request.refreshIncomingBacklinkStatistics)
+    {
+        WhatSon::NoteFileStatSupport::applyBodyDerivedStatistics(
+            &request.document.headerStore,
+            bodySourceTextForStats,
+            bodyDocumentForStats);
     }
 
     if (request.touchLastModified)
@@ -880,7 +888,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
         }
     }
 
-    if (persistBody)
+    if (persistBody && request.refreshAffectedBacklinkTargets)
     {
         const QStringList currentBacklinkTargets = WhatSon::NoteFileStatSupport::extractBacklinkTargets(
             bodySourceTextForStats,

@@ -22,6 +22,11 @@
 - `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
   library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
   before selecting the requested note row.
+- Editor persistence is now split into two viewmodel-facing phases:
+  - `applyPersistedBodyStateForNote(...)` mutates only the in-memory indexed note/body preview immediately after a
+    successful direct file-store write.
+  - `requestTrackedStatisticsRefreshForNote(...)` later pays the `.wsnbody` scan, rewrites tracked header stats, and
+    rehydrates the same note through `reloadNoteMetadataForNoteId(...)`.
 - `createFolder()` remains the authoritative library-folder creation path. When a non-protected folder is selected, it
   computes the insertion point after that folder's subtree, increases depth by one, expands the parent, and therefore
   creates the new folder as a child of the selected folder.
@@ -39,6 +44,8 @@
     before the user manually pokes the calendar surface.
   - local single-note mutations such as `saveBodyTextForNote(...)` and `reloadNoteMetadataForNoteId(...)` must not
     require copying/replacing the full `allNotes` vector
+  - editor autosave must be able to mirror normalized body text into the in-memory library note immediately without
+    forcing the same save path to rescan every `.wsnbody` in the hub
   - create/delete/folder-clear mutation flows must prefer single-note upsert/remove and only fall back to full
     snapshot replacement when the service result cannot resolve the target note
   - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.

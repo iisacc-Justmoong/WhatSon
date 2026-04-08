@@ -41,8 +41,12 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - Debounced editor body autosaves deliberately opt out: they still write the normalized `.wsnbody`, refresh
   body-derived stats, and update `lastModifiedAt`, but they no longer inflate `modifiedCount` on every typing burst.
 - Open tracking is intentionally handled by the editor-selection bridge instead of the generic read path.
-- When body backlink targets change, the store also refreshes the directly affected target note
-  headers so `backlinkByCount` does not stay stale on linked notes.
+- The same update contract now also splits local stat work from hub-wide backlink scans:
+  - `refreshIncomingBacklinkStatistics == false` skips the expensive `.wsnbody` sweep for the edited note's
+    `backlinkByCount`, but still rewrites all body-derived counters into the current header.
+  - `refreshAffectedBacklinkTargets == false` skips immediate refresh of linked target headers.
+- This lets latency-sensitive editor autosaves write the selected `.wsnote` package directly and leave backlink
+  fan-out work to a later owner-controlled pass.
 
 ## Regression Notes
 - This repository no longer maintains a dedicated scripted test for the empty-note load path; keep the behaviors below
@@ -53,3 +57,5 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags
 - Additional regression expectation:
   - editor body autosave must not increment `modifiedCount`; only update requests that explicitly opt in may advance that counter.
+  - editor hot-path writes that disable backlink refresh must still rewrite the current note's normalized body text,
+    header timestamp, and non-hub-derived counters

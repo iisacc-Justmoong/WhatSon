@@ -315,8 +315,20 @@ WhatSon is an LVRS-based Qt Quick application.
   `ContentsLogicalTextBridge` for logical-line parsing, `ContentsGutterMarkerBridge` for gutter-marker normalization,
   and `ContentsEditorSession.qml` for debounce plus selection-to-editor text synchronization. The visual surface keeps
   only editor-geometry sampling and render placement.
-- Body persistence still flows through the active hierarchy view-model's `saveBodyTextForNote(...)` contract with a
-  short idle debounce, so `.wsnbody` rewrites and note-list refreshes no longer happen on every keystroke.
+- The live editor surface now treats markdown as part of the canonical `.wsnbody` source format instead of a separate
+  preview grammar. `ContentsTextFormatRenderer` splits the cheap source-editing HTML surface from the optional
+  markdown-aware preview HTML, and hidden preview paths no longer regenerate on every edit.
+- `ContentsEditorSelectionBridge` now binds the selected `.wsnote` path into a serialized direct-save session.
+  Debounced editor flushes only enqueue `{noteId, noteDirectoryPath, bodyText}` on the UI path; the background worker
+  re-reads the current `.wsnote`, writes `.wsnbody` / `.wsnhead` through `WhatSonLocalNoteFileStore`, mirrors
+  normalized body state back into the active editable hierarchy viewmodel, and defers hub-wide `.wsnbody`
+  backlink/open-count scans to a later `requestTrackedStatisticsRefreshForNote(...)` pass owned by that viewmodel.
+- Note selection transitions no longer pay that hub-wide `.wsnbody` rescan. The selection bridge now resolves
+  `{noteId, noteDirectoryPath}` from `.wsnhead`-backed metadata and increments `openCount` through a header-only
+  rewrite path, so selecting another note stays decoupled from backlink recalculation.
+- Editor body persistence is now decoupled from live editing: debounce flushes enqueue direct `.wsnote` saves onto a
+  serialized background queue, and QML editor sessions only react to async completion when deciding whether to clear or
+  retry pending body saves.
 - The same save path now short-circuits when the normalized plain-text body is unchanged, so a no-op save no longer
   rewrites `.wsnbody` or strips existing empty/custom body tags that the editor did not modify.
 - When no note is selected, `ContentsDisplayView.qml` no longer pretends that an unsaved draft exists and does not
@@ -333,6 +345,9 @@ WhatSon is an LVRS-based Qt Quick application.
   line numbers
   and current-line markers are resampled from the settled editor geometry instead of stretching stale positions from a
   previous note/session.
+- Minimap snapshotting no longer walks the whole note text through `positionToRectangle(...)` on ordinary edits.
+  Desktop and mobile now share an incremental line-range diff helper, cache logical-line minimap groups, and only
+  resample the changed text window unless a layout reset or note switch forces a full rebuild.
 - The blue current-line gutter marker is bound to the cursor's active visual row, so the marker no longer stretches
   through the whole remaining editor height when the cursor sits on the last logical line.
 - `ContentsDisplayView.qml` no longer reintroduces a second desktop panel fill inside the editor stack: the editor

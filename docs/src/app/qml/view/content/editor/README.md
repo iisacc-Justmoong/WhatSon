@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 9
+- Child files: 10
 
 ## Child Directories
 - No child directories.
@@ -20,6 +20,7 @@
 - `ContentsGutterLayer.qml`
 - `ContentsInlineFormatEditor.qml`
 - `ContentsMinimapLayer.qml`
+- `ContentsMinimapSnapshotSupport.js`
 - `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
 
@@ -35,6 +36,8 @@
   the whole RichText surface on every edit.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
+- Desktop/mobile minimap snapshotting now also shares `ContentsMinimapSnapshotSupport.js`, so ordinary note edits only
+  re-sample the changed logical-line window instead of walking the full note text through `positionToRectangle(...)`.
 - `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
   geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
   live `TextEdit`.
@@ -56,6 +59,11 @@
   rewrite.
 - `ContentsEditorSession.qml` now defers note swaps behind pending-body flushes, so a failed immediate save cannot
   silently discard the old note buffer when the user changes selection.
+- Editor body persistence is now split into debounce enqueue vs background completion:
+  - `ContentsEditorSession.qml` owns pending/in-flight state
+  - `ContentsEditorSelectionBridge` serializes direct `.wsnote` writes on a background queue
+  - selection/typing controllers now treat `persistEditorTextForNote(...)` success as "request accepted", not
+    necessarily "disk write already finished"
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`

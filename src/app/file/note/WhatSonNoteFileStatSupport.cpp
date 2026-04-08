@@ -484,6 +484,78 @@ namespace
         return true;
     }
 
+    bool incrementOpenCountForHeaderInternal(
+        const QString& noteId,
+        const QString& noteDirectoryPath,
+        QString* errorMessage)
+    {
+        const QString normalizedNoteId = noteId.trimmed();
+        if (normalizedNoteId.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("noteId must not be empty.");
+            }
+            return false;
+        }
+
+        const QString headerPath = WhatSon::NoteBodyPersistence::resolveHeaderPath(QString(), noteDirectoryPath);
+        if (headerPath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral("Failed to resolve .wsnhead path for open-count increment.");
+            }
+            return false;
+        }
+
+        QString headerReadError;
+        const QString headerText = readUtf8File(headerPath, &headerReadError);
+        if (!headerReadError.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = headerReadError;
+            }
+            return false;
+        }
+
+        WhatSonNoteHeaderStore headerStore;
+        WhatSonNoteHeaderParser parser;
+        QString parseError;
+        if (!parser.parse(headerText, &headerStore, &parseError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = parseError;
+            }
+            return false;
+        }
+
+        if (headerStore.noteId().trimmed().isEmpty())
+        {
+            headerStore.setNoteId(normalizedNoteId);
+        }
+        headerStore.incrementOpenCount();
+
+        WhatSonNoteHeaderCreator creator(noteDirectoryPath, QString());
+        QString writeError;
+        if (!writeUtf8File(headerPath, creator.createHeaderText(headerStore), &writeError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = writeError;
+            }
+            return false;
+        }
+
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
     QString noteDirectoryPathForNoteIdInHub(const QString& noteId, const QString& hubRootPath)
     {
         if (noteId.trimmed().isEmpty() || hubRootPath.trimmed().isEmpty())
@@ -522,6 +594,19 @@ QStringList WhatSon::NoteFileStatSupport::extractBacklinkTargets(
     return extractBacklinkTargetSet(bodySourceText, bodyDocumentText).values();
 }
 
+void WhatSon::NoteFileStatSupport::applyBodyDerivedStatistics(
+    WhatSonNoteHeaderStore* headerStore,
+    const QString& bodySourceText,
+    const QString& bodyDocumentText)
+{
+    if (headerStore == nullptr)
+    {
+        return;
+    }
+
+    applyDerivedCounts(headerStore, bodySourceText, bodyDocumentText, headerStore->backlinkByCount());
+}
+
 bool WhatSon::NoteFileStatSupport::applyTrackedStatistics(
     WhatSonNoteHeaderStore* headerStore,
     const QString& noteDirectoryPath,
@@ -558,6 +643,14 @@ bool WhatSon::NoteFileStatSupport::applyTrackedStatistics(
         errorMessage->clear();
     }
     return true;
+}
+
+bool WhatSon::NoteFileStatSupport::incrementOpenCountForNoteHeader(
+    const QString& noteId,
+    const QString& noteDirectoryPath,
+    QString* errorMessage)
+{
+    return incrementOpenCountForHeaderInternal(noteId, noteDirectoryPath, errorMessage);
 }
 
 bool WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(

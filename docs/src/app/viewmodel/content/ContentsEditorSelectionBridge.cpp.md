@@ -20,14 +20,24 @@
   - Invokes `reloadNoteMetadataForNoteId(QString)` on the bound content view-model when available.
   - Refreshes exported selection/count state (`selectedNoteId`, `selectedNoteBodyText`, `visibleNoteCount`) after
     reload attempts.
-- `refreshNoteSelectionState()` now also treats a note-id transition as a real "open" event for
-  `.wsnhead fileStat` tracking:
-  - Resolves `noteDirectoryPathForNoteId(QString)` from the active content view-model when that
-    contract exists.
-  - Calls `WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(..., incrementOpenCount=true)`
-    so `openCount` and incoming backlink counts are refreshed when the editor selection changes.
-  - Queues `reloadNoteMetadataForNoteId(QString)` back into the active hierarchy viewmodel so note-list
-    snapshots and the detail panel can re-read the just-updated header after the open-count write lands.
+- `persistEditorTextForNote(...)` now prefers a direct file-store lane:
+  - Enqueues `{noteId, noteDirectoryPath, bodyText}` onto a serialized background queue instead of performing note-file
+    IO on the editor/UI path.
+  - Re-reads the current `.wsnote` package inside that worker before each write, so the async body save does not reuse
+    stale header snapshots from an earlier enqueue turn.
+  - Performs the `.wsnbody` / `.wsnhead` write entirely off the editor thread.
+  - Uses `editorTextPersistenceFinished(...)` as the only completion path back to QML.
+  - Mirrors normalized body text and `lastModifiedAt` back into the active editable hierarchy viewmodel only after the
+    background write succeeds.
+  - Queues `requestTrackedStatisticsRefreshForNote(...)` onto the content view-model so the expensive
+    `backlinkByCount` / `openCount` scan still happens outside the editor bridge itself.
+- Repeated autosaves for the same note now coalesce in the pending queue, so while one save is in flight the bridge
+  keeps only the newest queued body for that note instead of scheduling every intermediate debounce payload.
+- `refreshNoteSelectionState()` is now header-metadata-centered:
+  - a note-id transition only seeds the bound `{noteId, noteDirectoryPath}` session
+  - increments `openCount` through `WhatSonNoteFileStatSupport::incrementOpenCountForNoteHeader(...)`
+  - does not ask the content view-model to run `requestTrackedStatisticsRefreshForNote(..., true)` anymore
+  - therefore avoids the hub-wide `.wsnbody` backlink rescan on ordinary note selection changes
 
 ### Classes and Structs
 - None detected during scaffold generation.

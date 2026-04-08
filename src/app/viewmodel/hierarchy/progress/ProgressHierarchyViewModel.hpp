@@ -61,6 +61,12 @@ public:
     bool renameEnabled() const noexcept override;
     bool createFolderEnabled() const noexcept override;
     bool deleteFolderEnabled() const noexcept override;
+    Q_INVOKABLE bool applyPersistedBodyStateForNote(
+        const QString& noteId,
+        const QString& normalizedBodyText,
+        const QString& normalizedBodySourceText,
+        const QString& lastModifiedAt);
+    Q_INVOKABLE bool requestTrackedStatisticsRefreshForNote(const QString& noteId, bool incrementOpenCount);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;

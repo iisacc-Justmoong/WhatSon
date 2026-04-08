@@ -718,8 +718,17 @@ QtObject {
         if (!controller.selectionBridge || controller.selectionBridge.persistEditorTextForNote === undefined || !controller.view.contentPersistenceContractAvailable)
             return false;
         const saved = !!controller.selectionBridge.persistEditorTextForNote(noteId, nextText);
-        if (saved && controller.editorSession && controller.editorSession.acknowledgeSuccessfulEditorPersistence !== undefined)
-            controller.editorSession.acknowledgeSuccessfulEditorPersistence();
+        if (saved && controller.editorSession) {
+            const directPersistenceContractAvailable = controller.selectionBridge.directPersistenceContractAvailable !== undefined
+                    ? !!controller.selectionBridge.directPersistenceContractAvailable
+                    : false;
+            if (directPersistenceContractAvailable
+                    && controller.editorSession.acknowledgeQueuedEditorPersistence !== undefined) {
+                controller.editorSession.acknowledgeQueuedEditorPersistence(noteId, nextText);
+            } else if (controller.editorSession.acknowledgeSuccessfulEditorPersistence !== undefined) {
+                controller.editorSession.acknowledgeSuccessfulEditorPersistence(noteId, nextText);
+            }
+        }
         return saved;
     }
     function queueInlineFormatWrap(tagName) {
@@ -757,6 +766,7 @@ QtObject {
     function toggleMarkdownListForSelection(listKind, selectionSnapshot) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
             return false;
+        controller.refreshPresentationStateIfDirty();
         const normalizedKind = controller.normalizeMarkdownListKind(listKind);
         if (normalizedKind.length === 0)
             return false;
@@ -835,6 +845,7 @@ QtObject {
                 + currentSourceText.slice(blockSourceEnd);
         if (controller.view.editorText !== nextText)
             controller.view.editorText = nextText;
+        controller.refreshPresentationStateAfterProgrammaticChange();
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
         const saved = controller.persistEditorTextImmediately(nextText);
@@ -924,6 +935,20 @@ QtObject {
             controller.applyEditorRichTextSurface();
         });
     }
+    function refreshPresentationStateIfDirty() {
+        if (!controller.view
+                || controller.view.commitDocumentPresentationRefresh === undefined
+                || controller.view.documentPresentationRenderDirty === undefined) {
+            return;
+        }
+        if (controller.view.documentPresentationRenderDirty())
+            controller.view.commitDocumentPresentationRefresh();
+    }
+    function refreshPresentationStateAfterProgrammaticChange() {
+        if (!controller.view || controller.view.commitDocumentPresentationRefresh === undefined)
+            return;
+        controller.view.commitDocumentPresentationRefresh();
+    }
     function selectedEditorRange() {
         if (!controller.contentEditor)
             return ({
@@ -978,6 +1003,7 @@ QtObject {
     function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
             return false;
+        controller.refreshPresentationStateIfDirty();
         const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
         if (normalizedTagName.length === 0)
             return false;
@@ -1001,6 +1027,7 @@ QtObject {
             return false;
         if (controller.view.editorText !== nextText)
             controller.view.editorText = nextText;
+        controller.refreshPresentationStateAfterProgrammaticChange();
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
         const saved = controller.persistEditorTextImmediately(nextText);

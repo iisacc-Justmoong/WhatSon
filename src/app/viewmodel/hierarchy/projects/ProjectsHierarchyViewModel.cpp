@@ -6,6 +6,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
+#include "file/note/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"
@@ -815,6 +816,39 @@ bool ProjectsHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& note
         }
     }
     return true;
+}
+
+bool ProjectsHierarchyViewModel::requestTrackedStatisticsRefreshForNote(
+    const QString& noteId,
+    const bool incrementOpenCount)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QString noteDirectoryPath = noteDirectoryPathForNoteId(normalizedNoteId);
+    if (noteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    QString statRefreshError;
+    if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
+            normalizedNoteId,
+            noteDirectoryPath,
+            incrementOpenCount,
+            &statRefreshError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("requestTrackedStatisticsRefreshForNote.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, statRefreshError));
+        return false;
+    }
+
+    return reloadNoteMetadataForNoteId(normalizedNoteId);
 }
 
 QString ProjectsHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const

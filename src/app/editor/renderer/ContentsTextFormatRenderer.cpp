@@ -857,10 +857,6 @@ namespace
         return html;
     }
 
-    QString normalizeInlineStyleAliasesForEditorSurface(const QString& sourceText)
-    {
-        return renderMarkdownAwareTextToHtml(sourceText);
-    }
 } // namespace
 
 ContentsTextFormatRenderer::ContentsTextFormatRenderer(QObject* parent)
@@ -884,12 +880,34 @@ void ContentsTextFormatRenderer::setSourceText(const QString& sourceText)
 
     m_sourceText = sourceText;
     emit sourceTextChanged();
-    refreshRenderedHtml();
+    refreshRenderedOutputs();
+}
+
+QString ContentsTextFormatRenderer::editorSurfaceHtml() const
+{
+    return m_editorSurfaceHtml;
 }
 
 QString ContentsTextFormatRenderer::renderedHtml() const
 {
     return m_renderedHtml;
+}
+
+bool ContentsTextFormatRenderer::previewEnabled() const noexcept
+{
+    return m_previewEnabled;
+}
+
+void ContentsTextFormatRenderer::setPreviewEnabled(const bool enabled)
+{
+    if (m_previewEnabled == enabled)
+    {
+        return;
+    }
+
+    m_previewEnabled = enabled;
+    emit previewEnabledChanged();
+    refreshRenderedOutputs();
 }
 
 QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) const
@@ -899,7 +917,7 @@ QString ContentsTextFormatRenderer::renderRichText(const QString& sourceText) co
 
 QString ContentsTextFormatRenderer::normalizeInlineStyleAliasesForEditor(const QString& sourceText) const
 {
-    return renderMarkdownAwareTextToHtml(sourceText);
+    return renderInlineStyleEditingSurfaceHtml(sourceText);
 }
 
 QString ContentsTextFormatRenderer::normalizeEditorSurfaceTextToSource(const QString& surfaceText) const
@@ -1048,12 +1066,19 @@ QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(
 
 void ContentsTextFormatRenderer::requestRenderRefresh()
 {
-    refreshRenderedHtml();
+    refreshRenderedOutputs();
 }
 
-void ContentsTextFormatRenderer::refreshRenderedHtml()
+void ContentsTextFormatRenderer::refreshRenderedOutputs()
 {
-    const QString nextRenderedHtml = renderMarkdownAwareTextToHtml(m_sourceText);
+    const QString nextEditorSurfaceHtml = renderInlineStyleEditingSurfaceHtml(m_sourceText);
+    if (m_editorSurfaceHtml != nextEditorSurfaceHtml)
+    {
+        m_editorSurfaceHtml = nextEditorSurfaceHtml;
+        emit editorSurfaceHtmlChanged();
+    }
+
+    const QString nextRenderedHtml = m_previewEnabled ? renderMarkdownAwareTextToHtml(m_sourceText) : QString();
     if (m_renderedHtml == nextRenderedHtml)
     {
         return;

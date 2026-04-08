@@ -19,6 +19,20 @@
   - `persistEditorTextForNote(noteId, text)`
   - `refreshSelectedNoteSnapshot()`: triggers selected-note metadata/body refresh via connected content view-model
     contract (`reloadNoteMetadataForNoteId`) and re-synchronizes exposed selection/count properties.
+- The bridge now also exposes `directPersistenceContractAvailable`, so QML can distinguish the async direct `.wsnote`
+  save lane from the synchronous fallback `saveBodyTextForNote(...)` contracts.
+- `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is the completion signal for the editor save
+  pipeline. QML sessions now clear or re-arm debounce state from that completion instead of assuming the write already
+  finished when `persistEditorTextForNote(...)` returns.
+- The bridge now also owns a serialized bound-note persistence session:
+  - caches the selected note id / note directory path
+  - reuses that path session for repeated editor autosaves instead of rediscovering the note package each time
+  - also uses that metadata pair for note-selection open-count updates, so selection no longer depends on body scans
+  - leaves the actual `.wsnote` read-modify-write to the background worker, so no note-file IO remains on the editor
+    save enqueue path
+  - treats direct `.wsnote` persistence as an implementation detail and leaves hub-wide stat refresh to the connected
+    content view-model contract
+  - keeps async save requests serialized so background `.wsnbody` writes do not race each other for one bridge
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`

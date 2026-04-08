@@ -29,6 +29,7 @@ public:
     Q_INVOKABLE int logicalLineStartOffsetAt(int index) const noexcept;
     Q_INVOKABLE int logicalLineCharacterCountAt(int index) const noexcept;
     Q_INVOKABLE int logicalLengthForSourceText(const QString& text) const;
+    Q_INVOKABLE QVariantList logicalToSourceOffsets() const;
     Q_INVOKABLE int sourceOffsetForLogicalOffset(int logicalOffset) const noexcept;
 
     signals  :

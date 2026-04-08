@@ -6,10 +6,17 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 ## Key Behavior
 - Normalizes CRLF/CR to LF before parsing.
 - Escapes plain text segments to keep HTML output safe.
-- Recognizes markdown-style block prefixes without rewriting the stored source text:
+- The renderer now maintains two different HTML outputs:
+  - `editorSurfaceHtml`: cheap source-editing HTML for the live editor
+  - `renderedHtml`: optional markdown-aware preview HTML, recomputed only while preview is enabled
+- The live editor surface now treats markdown as raw `.wsnbody` source:
+  - list markers, headings, blockquotes, fenced code fences, inline code, and markdown links remain literal text in
+    `editorSurfaceHtml`
+  - only proprietary inline tags such as `<bold>` / `<italic>` / `<highlight>` are promoted into styled HTML spans
+- The preview path still recognizes markdown-style block prefixes without rewriting the stored source text:
     - unordered list markers (`- ` / `* ` / `+ `) render as bullet-list lines
     - leading literal bullet markers (`• `) also render through the same unordered-list role so pasted or legacy source
-      lines do not fall back to plain black text in print/editor RichText views
+      lines do not fall back to plain black text in markdown preview views
     - ordered list markers (`1. ` / `2. ` / `3) `) render as numbered-list lines
     - heading markers (`#` ... `######`) render as larger title lines while keeping the marker text visible
     - blockquotes (`> `) render as muted italic quote lines
@@ -44,6 +51,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - promotes canonical source LF characters to explicit `<br/>` tags before binding into `TextEdit.RichText`
   - renders escaped safe text such as `&lt;bold&gt;...&lt;/bold&gt;` as visible `<bold>...</bold>` glyphs without
     promoting it into authoritative inline-style tags
+  - deliberately stops promoting markdown syntax into list/heading/blockquote/code/link preview spans on the live
+    editor surface
 - Exposes `normalizeEditorSurfaceTextToSource(...)` so formatting-driven `QTextDocument` mutations can still be
   canonicalized back into inline `.wsnbody` tags when the whole RichText surface genuinely changed.
 - That whole-surface normalization also converts rendered unordered-list bullet glyphs (`• `) back into source markdown
@@ -75,9 +84,10 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 
 ## Regression Checks
 
-- Typing `- item` in the note body should re-render as a bullet-list line without changing the stored source marker.
+- Typing `- item` in the note body must keep `- ` visible on the live editor surface; the source marker must not be
+  replaced by a rendered bullet glyph in that editing path.
 - A stored source line that already begins with `• ` must render with the same unordered-list marker styling as `- `
-  instead of falling back to plain black text in print/editor RichText views.
+  instead of falling back to plain black text in markdown preview views.
 - Typing `1. item` should re-render as a numbered-list line.
 - Typing `# title` should re-render as a heading-like line while preserving literal `# ` in the source text.
 - Typing `` ``` `` fenced blocks should keep the fence markers visible and render the fenced body as code-styled text.
@@ -93,3 +103,4 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
   must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
   already-applied shortcut format.
+- When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

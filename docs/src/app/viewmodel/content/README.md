@@ -20,6 +20,16 @@
 - `ContentsLogicalTextBridge.cpp`
 - `ContentsLogicalTextBridge.hpp`
 
+## Current Notes
+
+- `ContentsEditorSelectionBridge` now owns the asynchronous direct `.wsnote` save queue for editor body writes.
+- The editor/UI path only enqueues `{noteId, noteDirectoryPath, bodyText}`; the worker thread re-reads and updates the
+  actual `.wsnote` package.
+- Note-selection changes now reuse the same `{noteId, noteDirectoryPath}` metadata session and no longer trigger a
+  hub-wide `.wsnbody` stat refresh just to bump `openCount`.
+- The bridge only applies persisted body state and requests tracked-stat refresh after background completion returns to
+  the main thread.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

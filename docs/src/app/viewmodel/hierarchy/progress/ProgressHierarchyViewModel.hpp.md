@@ -13,6 +13,8 @@ list.
   `applyRuntimeSnapshot(...)` for startup/runtime refreshes.
 - Exposes body persistence helpers and note-directory lookup so the active progress note can remain
   editable in shared editor flows.
+- The same editable surface now splits hot-path editor persistence from expensive stat refresh by exposing
+  `applyPersistedBodyStateForNote(...)` and `requestTrackedStatisticsRefreshForNote(...)`.
 - Exposes `requestViewModelHook()` as a file-backed refresh hook that reparses
   `Progress.wsprogress` and reindexes note metadata.
 - Emits `hubFilesystemMutated()` after successful `.wsnbody` writes so hub sync can treat progress-domain edits as

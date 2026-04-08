@@ -20,8 +20,8 @@
   raw editor source text (`m_text`).
 - `logicalText` is now exposed to QML so selection logic can compare the live highlighted substring against the same
   plain-text projection used by gutter/minimap metrics.
-- That logical projection may intentionally differ from the stored source text for editor-only display normalization
-  such as unordered-list bullets (`- ` / `* ` / `+ ` -> `• `).
+- That logical projection is now intended to stay as close as possible to the note's own `.wsnbody` plain-text view,
+  including raw markdown markers.
 - `normalizeLogicalText(...)` is the private normalization entrypoint used before line-offset
   generation so QML gutter queries consume plain-text-aligned offsets.
 - `sourceOffsetForLogicalOffset(int)` is now part of the public QML bridge surface so editor interactions can convert
@@ -57,7 +57,7 @@
 
 ## Regression Checks
 
-- When the editor surface renders unordered-list markdown as `• `, `logicalText` must expose the same `• ` prefix so
-  QML selection offsets still match the editable RichText surface.
+- When the editor surface contains unordered-list markdown, `logicalText` must preserve the same raw marker prefix so
+  QML selection offsets still match the source editor surface.
 - When QML rewrites one source line in isolation, `logicalLengthForSourceText(...)` must report the rendered logical
   character count for that fragment rather than the raw source-token count.

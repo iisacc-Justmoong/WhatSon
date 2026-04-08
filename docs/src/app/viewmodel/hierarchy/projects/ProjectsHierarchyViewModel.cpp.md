@@ -55,6 +55,9 @@ flat, the footer menu stays disabled because no row advertises `showChevron: tru
 - `reloadNoteMetadataForNoteId(...)` now re-reads a single note document from disk and rebuilds the
   filtered projection immediately, so project assignment writes do not require a later hub reload
   before the projects note list catches up.
+- `requestTrackedStatisticsRefreshForNote(...)` now owns the `.wsnbody` scan previously triggered by the editor
+  selection bridge for project-scoped note opens, then reuses `reloadNoteMetadataForNoteId(...)` to rehydrate the
+  updated header fields back into the projects projection.
 - When `reloadNoteMetadataForNoteId(...)` detects that a note's project label actually changed
   (for example `Untitled -> <empty>`), it triggers one extra full re-index pass from
   `ProjectLists.wsproj`/`Library.wslibrary` to guarantee that hierarchy badges and selected-project

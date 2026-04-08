@@ -3,11 +3,14 @@ import QtQuick
 Item {
     id: editorSession
 
+    property bool bodySaveInFlight: false
     property string editorBoundNoteId: ""
     property string editorText: ""
     property string deferredSelectionNoteId: ""
     property string deferredSelectionText: ""
     property bool deferredSelectionPending: false
+    property string lastQueuedBodySaveNoteId: ""
+    property string lastQueuedBodySaveText: ""
     property bool localEditorAuthority: false
     property bool pendingBodySave: false
     readonly property bool persistenceAvailable: selectionBridge && selectionBridge.contentPersistenceContractAvailable !== undefined ? !!selectionBridge.contentPersistenceContractAvailable : false
@@ -17,9 +20,57 @@ Item {
 
     signal editorTextSynchronized
 
-    function acknowledgeSuccessfulEditorPersistence() {
+    function acknowledgeQueuedEditorPersistence(noteId, text) {
+        editorSession.bodySaveInFlight = true;
+        editorSession.lastQueuedBodySaveNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
+        editorSession.lastQueuedBodySaveText = text === undefined || text === null ? "" : String(text);
         editorSession.pendingBodySave = false;
         bodySaveTimer.stop();
+    }
+    function acknowledgeSuccessfulEditorPersistence(noteId, text) {
+        const completedNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
+        const completedText = text === undefined || text === null ? "" : String(text);
+        const synchronousCompletion = !editorSession.bodySaveInFlight
+                && editorSession.lastQueuedBodySaveNoteId.length === 0
+                && editorSession.lastQueuedBodySaveText.length === 0;
+        const trackedCompletion = editorSession.lastQueuedBodySaveNoteId === completedNoteId
+                && editorSession.lastQueuedBodySaveText === completedText;
+        if (completedNoteId.length === 0
+                || trackedCompletion) {
+            editorSession.bodySaveInFlight = false;
+        }
+        if (trackedCompletion) {
+            editorSession.lastQueuedBodySaveNoteId = "";
+            editorSession.lastQueuedBodySaveText = "";
+        }
+        if (synchronousCompletion) {
+            editorSession.pendingBodySave = false;
+            bodySaveTimer.stop();
+            return;
+        }
+        if (!editorSession.pendingBodySave)
+            bodySaveTimer.stop();
+    }
+    function handleEditorPersistenceFinished(noteId, text, success) {
+        const completedNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
+        const completedText = text === undefined || text === null ? "" : String(text);
+        if (success) {
+            editorSession.acknowledgeSuccessfulEditorPersistence(completedNoteId, completedText);
+            return;
+        }
+
+        if (editorSession.lastQueuedBodySaveNoteId === completedNoteId
+                && editorSession.lastQueuedBodySaveText === completedText) {
+            editorSession.bodySaveInFlight = false;
+            editorSession.lastQueuedBodySaveNoteId = "";
+            editorSession.lastQueuedBodySaveText = "";
+        }
+        if (editorSession.editorBoundNoteId === completedNoteId
+                && editorSession.editorText === completedText) {
+            editorSession.pendingBodySave = true;
+            if (!bodySaveTimer.running)
+                bodySaveTimer.start();
+        }
     }
     function clearDeferredSelectionSync() {
         editorSession.deferredSelectionPending = false;
@@ -38,16 +89,16 @@ Item {
         if (!editorSession.selectionBridge || editorSession.selectionBridge.persistEditorTextForNote === undefined || !editorSession.persistenceAvailable) {
             return false;
         }
-        const saved = editorSession.selectionBridge.persistEditorTextForNote(noteId, editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText));
+        const bodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        const saved = editorSession.selectionBridge.persistEditorTextForNote(noteId, bodyText);
         if (saved) {
-            const deferredPending = !!editorSession.deferredSelectionPending;
-            const deferredNoteId = editorSession.deferredSelectionNoteId === undefined || editorSession.deferredSelectionNoteId === null ? "" : String(editorSession.deferredSelectionNoteId);
-            const deferredText = editorSession.deferredSelectionText === undefined || editorSession.deferredSelectionText === null ? "" : String(editorSession.deferredSelectionText);
-            editorSession.acknowledgeSuccessfulEditorPersistence();
-            if (deferredPending) {
-                editorSession.clearDeferredSelectionSync();
-                editorSession.syncEditorTextFromSelection(deferredNoteId, deferredText);
-            }
+            const directPersistenceContractAvailable = editorSession.selectionBridge.directPersistenceContractAvailable !== undefined
+                    ? !!editorSession.selectionBridge.directPersistenceContractAvailable
+                    : false;
+            if (directPersistenceContractAvailable)
+                editorSession.acknowledgeQueuedEditorPersistence(noteId, bodyText);
+            else
+                editorSession.acknowledgeSuccessfulEditorPersistence(noteId, bodyText);
             return true;
         }
         return false;
@@ -129,5 +180,13 @@ Item {
             if (editorSession.flushPendingEditorText() || !editorSession.pendingBodySave)
                 stop();
         }
+    }
+    Connections {
+        function onEditorTextPersistenceFinished(noteId, text, success, errorMessage) {
+            editorSession.handleEditorPersistenceFinished(noteId, text, success);
+        }
+
+        ignoreUnknownSignals: true
+        target: editorSession.selectionBridge
     }
 }

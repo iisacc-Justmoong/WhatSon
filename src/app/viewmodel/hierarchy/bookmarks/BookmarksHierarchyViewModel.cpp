@@ -6,6 +6,7 @@
 #include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QDir>
@@ -563,7 +564,7 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
         return false;
     }
 
-    LibraryNoteRecord& note = m_bookmarkedNotes[noteIndex];
+    const LibraryNoteRecord& note = m_bookmarkedNotes.at(noteIndex);
     QString normalizedBodyText;
     QString normalizedBodySourceText;
     QString lastModifiedAt;
@@ -585,12 +586,47 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
         return false;
     }
 
-    note.bodyPlainText = normalizedBodyText;
-    note.bodySourceText = normalizedBodySourceText;
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
-    if (!lastModifiedAt.isEmpty())
+    return applyPersistedBodyStateForNote(
+        normalizedNoteId,
+        normalizedBodyText,
+        normalizedBodySourceText,
+        lastModifiedAt);
+}
+
+bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+}
+
+bool BookmarksHierarchyViewModel::applyPersistedBodyStateForNote(
+    const QString& noteId,
+    const QString& normalizedBodyText,
+    const QString& normalizedBodySourceText,
+    const QString& lastModifiedAt)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
     {
-        note.lastModifiedAt = lastModifiedAt;
+        return false;
+    }
+
+    const int noteIndex = indexOfBookmarkedNoteById(m_bookmarkedNotes, normalizedNoteId);
+    if (noteIndex < 0 || noteIndex >= m_bookmarkedNotes.size())
+    {
+        return false;
+    }
+
+    LibraryNoteRecord& note = m_bookmarkedNotes[noteIndex];
+    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
+    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
+    if (note.bodySourceText.isEmpty())
+    {
+        note.bodySourceText = note.bodyPlainText;
+    }
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
+    if (!lastModifiedAt.trimmed().isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
     refreshNoteListForSelection();
@@ -598,9 +634,37 @@ bool BookmarksHierarchyViewModel::saveBodyTextForNote(const QString& noteId, con
     return true;
 }
 
-bool BookmarksHierarchyViewModel::saveCurrentBodyText(const QString& text)
+bool BookmarksHierarchyViewModel::requestTrackedStatisticsRefreshForNote(
+    const QString& noteId,
+    const bool incrementOpenCount)
 {
-    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QString noteDirectoryPath = noteDirectoryPathForNoteId(normalizedNoteId);
+    if (noteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    QString statRefreshError;
+    if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
+            normalizedNoteId,
+            noteDirectoryPath,
+            incrementOpenCount,
+            &statRefreshError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QString::fromLatin1(kScope),
+                                  QStringLiteral("requestTrackedStatisticsRefreshForNote.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, statRefreshError));
+        return false;
+    }
+
+    return reloadNoteMetadataForNoteId(normalizedNoteId);
 }
 
 QString BookmarksHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const

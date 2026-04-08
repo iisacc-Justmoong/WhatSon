@@ -19,9 +19,8 @@ suppression local to this file.
     instead of editing the RichText projection directly
   - synchronous per-keystroke persistence is deferred to the existing debounce session path
   - periodic note snapshot polling pauses while the editor keeps input focus
-- Mobile still keeps the source/plain-text bridge current for typing diffs, but the expensive markdown-aware
-  `ContentsTextFormatRenderer` refresh plus full minimap snapshot now commit on a short idle timer or when the native
-  input session settles.
+- Mobile still keeps the source/plain-text bridge current for typing diffs, but the markdown-aware preview renderer is
+  now completely skipped while the live source editor is active and no formatted preview is visible.
 - Mobile now also depends on the shared editor wrapper's `Qt.inputMethod.update(...)` path so iOS can re-query current
   selection/cursor geometry while keyboard trackpad gestures are active.
 - Mobile also depends on the shared wrapper/controller preserving the active selection edge with
@@ -31,6 +30,9 @@ suppression local to this file.
   - triple-tap expands to the surrounding paragraph
 - Cursor-only and scroll-only minimap updates now stay on cached geometry, and when the parent route disables the
   minimap the mobile surface skips minimap sampling entirely.
+- Minimap snapshotting now shares the same incremental logical-line cache as desktop.
+  Ordinary body edits only resample the changed text range through `positionToRectangle(...)`, while route/layout
+  resets still trigger a full minimap rebuild.
 - Minimap visibility is still controlled by the parent route/layout contract.
 - Mobile shares the same LVRS tokenized editor/gutter/minimap metric defaults and editor typography baseline as desktop.
 - Print-paper/resource card border thickness also follows `LV.Theme.strokeThin`.
@@ -42,11 +44,14 @@ suppression local to this file.
 - `MobileHierarchyPage.qml` reaches this file through `ContentViewLayout.qml`.
 - The editor session, typing controller, selection controller, renderer, and resource-viewer collaborators stay aligned
   with the desktop implementation.
+- `ContentsMinimapSnapshotSupport.js` is shared with desktop so the minimap diff/range-splice policy stays identical
+  across both editor surfaces.
 - RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
   mobile RichText editor surface as well.
 - While the mobile editor is focused, app-side note snapshot refresh does not preempt the live native input session.
 - Inline styling on mobile remains source-driven, but the live typing surface is now plain logical text rather than the
   RichText projection.
+- That logical text now preserves raw markdown markers instead of replacing unordered-list markers with `•`.
 - Mobile keeps the same window-level markdown list shortcuts as desktop when a hardware keyboard is present:
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
@@ -64,9 +69,12 @@ suppression local to this file.
   - Mobile note editing, resource rendering, and deferred persistence must stay aligned with the desktop editor flow
     except for the mobile-only native-input priority rules.
   - Mobile typing must not trigger whole-document markdown/RichText presentation refresh on every committed keystroke;
-    the renderer/minimap path should settle after the short idle timer or when focus leaves.
+    the markdown preview renderer should stay idle while the source editor remains active and preview is hidden.
+  - Mobile body edits must not force full-document minimap text-geometry sampling; only the changed logical-line
+    range should be re-sampled unless the editor layout changed.
   - The mobile editor must render `ContentsLogicalTextBridge.logicalText` as the active input text so double-tap
     selection, repeat backspace, and IME composition remain OS-driven.
+  - The mobile live input text must keep raw markdown markers visible instead of replacing list markers with `•`.
   - iOS spacebar cursor-drag and other OS cursor-tracking gestures must not trigger full minimap resampling or any
     app-side RichText surface reinjection while native input handling is active.
   - iOS keyboard-based selection gestures must continue to update the selected range after cursor/selection/scroll

@@ -97,6 +97,12 @@ public:
     Q_INVOKABLE bool createEmptyNote() override;
     Q_INVOKABLE bool clearNoteFoldersById(const QString& noteId) override;
     Q_INVOKABLE bool deleteNoteById(const QString& noteId) override;
+    Q_INVOKABLE bool applyPersistedBodyStateForNote(
+        const QString& noteId,
+        const QString& normalizedBodyText,
+        const QString& normalizedBodySourceText,
+        const QString& lastModifiedAt);
+    Q_INVOKABLE bool requestTrackedStatisticsRefreshForNote(const QString& noteId, bool incrementOpenCount);
     Q_INVOKABLE bool saveBodyTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;

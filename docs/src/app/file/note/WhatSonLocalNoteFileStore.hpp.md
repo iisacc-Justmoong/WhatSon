@@ -26,9 +26,15 @@
 - `UpdateRequest` carries the local note document plus persistence toggles for header/body writes.
 - `touchLastModified` updates the header timestamp during the write transaction.
 - `incrementModifiedCount` now independently controls whether that transaction advances the persisted `fileStat.modifiedCount`.
+- `refreshIncomingBacklinkStatistics` decides whether the update also pays the hub-wide `.wsnbody` scan needed to
+  recompute `backlinkByCount` for the edited note.
+- `refreshAffectedBacklinkTargets` decides whether changed backlink targets should have their own
+  `backlinkByCount` refreshed immediately in the same transaction.
 - The intended split is:
   - explicit metadata / structural note writes: keep `incrementModifiedCount == true`
   - debounced editor body autosave: set `incrementModifiedCount == false`
+  - editor hot-path body writes that must stay latency-sensitive: set both backlink-refresh flags to `false` and let a
+    higher-level owner trigger that hub scan later
 
 ## Tests
 
@@ -36,6 +42,8 @@
 - Regression checklist:
   - callers must be able to update `lastModifiedAt` without also incrementing `modifiedCount`
   - existing update callers that do not override `incrementModifiedCount` must keep the legacy increment behavior
+  - callers that disable backlink refresh must still get local body-derived counters (`lineCount`, `backlinkToCount`,
+    `includedResourceCount`, etc.) rewritten into `.wsnhead`
 
 ### Enums
 - None detected during scaffold generation.

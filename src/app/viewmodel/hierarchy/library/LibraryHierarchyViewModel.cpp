@@ -16,6 +16,7 @@
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
 #include "file/note/WhatSonHubNoteFolderClearService.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
+#include "file/note/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"
@@ -3194,12 +3195,46 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
         return false;
     }
 
-    note.bodyPlainText = normalizedBodyText;
-    note.bodySourceText = normalizedBodySourceText;
-    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(normalizedBodyText);
-    if (!lastModifiedAt.isEmpty())
+    return applyPersistedBodyStateForNote(
+        normalizedNoteId,
+        normalizedBodyText,
+        normalizedBodySourceText,
+        lastModifiedAt);
+}
+
+bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
+{
+    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+}
+
+bool LibraryHierarchyViewModel::applyPersistedBodyStateForNote(
+    const QString& noteId,
+    const QString& normalizedBodyText,
+    const QString& normalizedBodySourceText,
+    const QString& lastModifiedAt)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
     {
-        note.lastModifiedAt = lastModifiedAt;
+        return false;
+    }
+
+    LibraryNoteRecord note;
+    if (!m_indexedState.noteById(normalizedNoteId, &note))
+    {
+        return false;
+    }
+
+    note.bodyPlainText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodyText);
+    note.bodySourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(normalizedBodySourceText);
+    if (note.bodySourceText.isEmpty())
+    {
+        note.bodySourceText = note.bodyPlainText;
+    }
+    note.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(note.bodyPlainText);
+    if (!lastModifiedAt.trimmed().isEmpty())
+    {
+        note.lastModifiedAt = lastModifiedAt.trimmed();
     }
 
     upsertIndexedNote(note);
@@ -3208,9 +3243,37 @@ bool LibraryHierarchyViewModel::saveBodyTextForNote(const QString& noteId, const
     return true;
 }
 
-bool LibraryHierarchyViewModel::saveCurrentBodyText(const QString& text)
+bool LibraryHierarchyViewModel::requestTrackedStatisticsRefreshForNote(
+    const QString& noteId,
+    const bool incrementOpenCount)
 {
-    return saveBodyTextForNote(m_noteListModel.currentNoteId(), text);
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QString noteDirectoryPath = noteDirectoryPathForNoteId(normalizedNoteId);
+    if (noteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    QString statRefreshError;
+    if (!WhatSon::NoteFileStatSupport::refreshTrackedStatisticsForNote(
+            normalizedNoteId,
+            noteDirectoryPath,
+            incrementOpenCount,
+            &statRefreshError))
+    {
+        WhatSon::Debug::traceSelf(this,
+                                  QStringLiteral("library.viewmodel"),
+                                  QStringLiteral("requestTrackedStatisticsRefreshForNote.failed"),
+                                  QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, statRefreshError));
+        return false;
+    }
+
+    return reloadNoteMetadataForNoteId(normalizedNoteId);
 }
 
 QString LibraryHierarchyViewModel::noteDirectoryPathForNoteId(const QString& noteId) const

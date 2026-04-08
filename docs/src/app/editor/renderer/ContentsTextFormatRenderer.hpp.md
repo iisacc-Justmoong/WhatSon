@@ -2,8 +2,8 @@
 
 ## Responsibility
 
-Declares the editor-side rich-text renderer bridge that converts `.wsnbody` inline style tags and markdown-like note
-input into QML RichText HTML.
+Declares the editor-side renderer bridge that converts `.wsnbody` inline style tags into the editor's source-editing
+RichText surface and, only when explicitly requested, also materializes markdown-aware preview HTML.
 
 Highlight styling is delegated to the dedicated `ContentsTextHighlightRenderer` module so palette logic does not stay
 embedded in the generic inline-tag parser.
@@ -11,17 +11,27 @@ embedded in the generic inline-tag parser.
 ## Public Contract
 - `sourceText`
   Raw editor text payload (plain text plus inline tags such as `<bold>...</bold>`).
+- `editorSurfaceHtml`
+  Source-editing RichText HTML consumed by the live editor surface.
+  Markdown syntax now stays literal here and is treated as ordinary `.wsnbody` source text instead of a separate
+  display grammar.
 - `renderedHtml`
-  Render-ready HTML string consumed by QML `Text`/`TextEdit` in rich-text mode.
+  Optional markdown-aware preview HTML consumed by preview-only QML surfaces.
+- `previewEnabled`
+  Gates whether the expensive markdown-aware preview HTML should be recomputed at all.
 - `renderRichText(sourceText)`
-  Stateless helper to render any input text without mutating bridge ownership state.
-  This now includes markdown-style block rendering for:
+  Stateless helper to render preview HTML without mutating bridge ownership state.
+  This still includes markdown-style block rendering for:
     - ordered list prefixes such as `1. `
     - unordered list prefixes such as `- ` / `* ` / `+ `
     - headings (`#` ... `######`)
     - blockquotes (`> `)
     - fenced code blocks (`` ``` ``)
     - inline code and link-shaped literals
+- `normalizeInlineStyleAliasesForEditor(sourceText)`
+  Builds the cheaper source-editing HTML surface.
+  Markdown glyphs remain literal source text here; only proprietary `.wsnbody` inline tags are promoted into styled
+  spans for editing.
 - `normalizeEditorSurfaceTextToSource(surfaceText)`
   Converts RichText editor output back into canonical `.wsnbody` inline source tags.
 - `applyPlainTextReplacementToSource(sourceText, sourceStart, sourceEnd, replacementText)`
@@ -54,5 +64,5 @@ Markdown emphasis markers such as `**bold**`, `*italic*`, `~~strike~~`, or `==hi
 the formatting source of truth in this editor. Those styles remain bound to the proprietary `.wsnbody` inline tags and
 the existing shortcut/context-menu pipeline.
 
-Markdown presentation roles are now emitted through `WhatSonNoteMarkdownStyleObject`, so renderer-side RichText HTML
-and persistence-side markdown promotion share the same contract.
+Markdown presentation roles are now emitted through `WhatSonNoteMarkdownStyleObject` only for explicit preview HTML.
+The live editor surface no longer treats markdown as a second formatting authority.

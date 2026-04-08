@@ -39,6 +39,8 @@ materializing the matching note list from `.wsnhead` metadata.
   wiring.
 - Successful body saves now emit `hubFilesystemMutated()`, aligning progress note writes with hub sync baseline
   acknowledgement logic already used by other note-editable hierarchy domains.
+- Editor autosave can now mirror normalized body state immediately through `applyPersistedBodyStateForNote(...)` and
+  leave the expensive `.wsnbody` backlink/open-count scan to `requestTrackedStatisticsRefreshForNote(...)`.
 - `reloadNoteMetadataForNoteId(...)` re-reads one indexed note from disk and re-applies the active
   progress filter so a detail-panel progress write can immediately remove or keep the note in the
   visible list according to its new enum value.

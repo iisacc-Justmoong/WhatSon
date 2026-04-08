@@ -24,7 +24,15 @@ This helper owns the derived `.wsnhead <fileStat>` rules.
 
 ## Tracking Rules
 
-- `openCount` is incremented only through `refreshTrackedStatisticsForNote(..., true)`.
+- `applyBodyDerivedStatistics(...)` is the cheap path. It refreshes only counters that can be derived from the current
+  note's own body/header payload and leaves the previously known incoming-backlink count untouched.
+- `incrementOpenCountForNoteHeader(...)` is now the cheap note-selection path. It rewrites only `.wsnhead` metadata
+  and skips both local body parsing and hub-wide `.wsnbody` backlink scans.
+- `openCount` is still incremented through `refreshTrackedStatisticsForNote(..., true)` when a caller explicitly wants
+  the full tracked-stat refresh.
 - The helper intentionally does not mutate `modifiedCount`; write paths own that counter.
 - Incoming backlink counts are resolved by scanning other `.wsnbody` files under the enclosing
   `.wshub` package and skipping hidden staged-delete directories.
+- The save-path split therefore becomes:
+  - file store hot path: rewrite local body-derived stats immediately
+  - higher-level coordinator/viewmodel path: pay the hub scan later when `backlinkByCount` must be refreshed

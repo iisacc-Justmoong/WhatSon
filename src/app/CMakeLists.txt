@@ -387,6 +387,13 @@ file(GLOB_RECURSE WHATSON_APP_QML_FILES
 )
 list(SORT WHATSON_APP_QML_FILES)
 
+file(GLOB_RECURSE WHATSON_APP_QML_RESOURCE_FILES
+        CONFIGURE_DEPENDS
+        RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+        "qml/*.js"
+)
+list(SORT WHATSON_APP_QML_RESOURCE_FILES)
+
 if (NOT WHATSON_APP_QML_FILES)
     message(FATAL_ERROR "No QML files were discovered under src/app/qml.")
 endif ()
@@ -397,6 +404,8 @@ qt_add_qml_module(WhatSon
         RESOURCE_PREFIX "/qt/qml"
         QML_FILES
         ${WHATSON_APP_QML_FILES}
+        RESOURCES
+        ${WHATSON_APP_QML_RESOURCE_FILES}
 )
 
 if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
