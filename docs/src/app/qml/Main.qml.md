@@ -24,6 +24,8 @@
   route handlers.
 - Accept `monthCalendarOverlayOpenRequested` from both desktop and mobile content shells so a year-calendar selection
   can swap overlays from year view to month view at the root owner without duplicating visibility state below.
+- Reset navigation-opened Agenda/day/week/month/year overlays back to today's date context at the root owner, so a
+  reused long-lived calendar ViewModel does not reopen on a stale historical cursor.
 
 ## ViewModel Ownership
 The important architectural work in this file is not the layout math. It is the ownership hand-off.
@@ -64,10 +66,24 @@ The file keeps both desktop and mobile layout branches alive.
   activation always restores the editor surface even when calendar mode was previously opened.
 - Desktop `BodyLayout` and mobile `MobileHierarchyPage` now also forward `monthCalendarOverlayOpenRequested`, which
   closes agenda/day/week/year overlays and shows the month overlay in one root-owned transition.
+- Root calendar open helpers now distinguish two entry paths:
+  - navigation-bar open actions reset the relevant calendar cursor to today before showing the overlay,
+  - `monthCalendarOverlayOpenRequested` preserves the requested year/month/date coming from `YearCalendarPage.qml`
+    instead of overwriting it with today's month.
 - `Component.onCompleted` performs registry registration, ownership binding, and initial layout stabilization.
 - `syncEmbeddedRouteWatchdog(...)` and `recoverEmbeddedRouteHost(...)` provide a first-frame safety net for iOS/mobile
   startup so a missing routed page host turns into a controlled route rebuild instead of a blank screen.
 - `Component.onDestruction` releases owned view bindings so the registry does not retain stale writable handles.
+
+## Tests
+
+- Automated test files are not currently present in this repository.
+- Regression checklist:
+  - desktop navigation-bar `Agenda/Day/Week/Month/Year` actions must reopen their overlays on today's date context
+    even after the user previously navigated to another date
+  - mobile navigation-bar calendar actions must apply the same today-reset behavior
+  - a year-calendar month/day tap that emits `monthCalendarOverlayOpenRequested` must still open the requested
+    month/date instead of being reset back to today's month
 
 ## Practical Reading
 Read this file with:

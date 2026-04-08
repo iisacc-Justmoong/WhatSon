@@ -98,6 +98,8 @@ WhatSon is an LVRS-based Qt Quick application.
   number grid.
 - Projected note chips now label themselves with the same top-line body preview text used by `NoteListItem`, instead of
   prefixing the chip with lifecycle strings such as `Created note` or `Modified note`.
+- Navigation-driven calendar opens now reset Agenda/day/week/month/year overlays back to today's date context, while
+  year-view drill-down into month view still preserves the explicitly tapped month/date.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
   `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
   `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.

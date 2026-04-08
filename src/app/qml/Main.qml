@@ -189,6 +189,84 @@ LV.ApplicationWindow {
         LV.ViewModels.unbindView(applicationWindow.navigationModeViewId);
         LV.ViewModels.unbindView(applicationWindow.sidebarHierarchyViewId);
     }
+    function currentIsoDate() {
+        return Qt.formatDateTime(new Date(), "yyyy-MM-dd");
+    }
+    function resetAgendaOverlayCursorToToday() {
+        if (applicationWindow.rootAgendaViewModel
+                && applicationWindow.rootAgendaViewModel.setDisplayedDateIso !== undefined) {
+            applicationWindow.rootAgendaViewModel.setDisplayedDateIso(applicationWindow.currentIsoDate());
+        }
+    }
+    function resetDayCalendarCursorToToday() {
+        if (applicationWindow.rootDayCalendarViewModel
+                && applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso !== undefined) {
+            applicationWindow.rootDayCalendarViewModel.setDisplayedDateIso(applicationWindow.currentIsoDate());
+        }
+    }
+    function resetWeekCalendarCursorToToday() {
+        if (applicationWindow.rootWeekCalendarViewModel
+                && applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso !== undefined) {
+            applicationWindow.rootWeekCalendarViewModel.setDisplayedWeekStartIso(applicationWindow.currentIsoDate());
+        }
+    }
+    function resetMonthCalendarCursorToToday() {
+        if (applicationWindow.rootMonthCalendarViewModel
+                && applicationWindow.rootMonthCalendarViewModel.focusToday !== undefined) {
+            applicationWindow.rootMonthCalendarViewModel.focusToday();
+        }
+    }
+    function resetYearCalendarCursorToToday() {
+        if (applicationWindow.rootYearCalendarViewModel
+                && applicationWindow.rootYearCalendarViewModel.focusToday !== undefined) {
+            applicationWindow.rootYearCalendarViewModel.focusToday();
+        }
+    }
+    function openAgendaOverlay(resetToToday) {
+        if (resetToToday !== false)
+            applicationWindow.resetAgendaOverlayCursorToToday();
+        applicationWindow.agendaOverlayVisible = true;
+        applicationWindow.dayCalendarOverlayVisible = false;
+        applicationWindow.weekCalendarOverlayVisible = false;
+        applicationWindow.monthCalendarOverlayVisible = false;
+        applicationWindow.yearCalendarOverlayVisible = false;
+    }
+    function openDayCalendarOverlay(resetToToday) {
+        if (resetToToday !== false)
+            applicationWindow.resetDayCalendarCursorToToday();
+        applicationWindow.agendaOverlayVisible = false;
+        applicationWindow.dayCalendarOverlayVisible = true;
+        applicationWindow.weekCalendarOverlayVisible = false;
+        applicationWindow.monthCalendarOverlayVisible = false;
+        applicationWindow.yearCalendarOverlayVisible = false;
+    }
+    function openMonthCalendarOverlay(resetToToday) {
+        if (resetToToday !== false)
+            applicationWindow.resetMonthCalendarCursorToToday();
+        applicationWindow.agendaOverlayVisible = false;
+        applicationWindow.dayCalendarOverlayVisible = false;
+        applicationWindow.weekCalendarOverlayVisible = false;
+        applicationWindow.monthCalendarOverlayVisible = true;
+        applicationWindow.yearCalendarOverlayVisible = false;
+    }
+    function openWeekCalendarOverlay(resetToToday) {
+        if (resetToToday !== false)
+            applicationWindow.resetWeekCalendarCursorToToday();
+        applicationWindow.agendaOverlayVisible = false;
+        applicationWindow.dayCalendarOverlayVisible = false;
+        applicationWindow.weekCalendarOverlayVisible = true;
+        applicationWindow.monthCalendarOverlayVisible = false;
+        applicationWindow.yearCalendarOverlayVisible = false;
+    }
+    function openYearCalendarOverlay(resetToToday) {
+        if (resetToToday !== false)
+            applicationWindow.resetYearCalendarCursorToToday();
+        applicationWindow.agendaOverlayVisible = false;
+        applicationWindow.dayCalendarOverlayVisible = false;
+        applicationWindow.weekCalendarOverlayVisible = false;
+        applicationWindow.yearCalendarOverlayVisible = true;
+        applicationWindow.monthCalendarOverlayVisible = false;
+    }
 
     function clampPreferredSizes() {
         preferredSidebarWidth = Math.max(minSidebarWidth, preferredSidebarWidth);
@@ -641,41 +719,11 @@ LV.ApplicationWindow {
 
                     onToggleDetailPanelRequested: applicationWindow.toggleDetailPanelVisibility()
                     onToggleSidebarRequested: applicationWindow.toggleSidebarVisibility()
-                    onAgendaRequested: {
-                        applicationWindow.agendaOverlayVisible = true;
-                        applicationWindow.dayCalendarOverlayVisible = false;
-                        applicationWindow.weekCalendarOverlayVisible = false;
-                        applicationWindow.monthCalendarOverlayVisible = false;
-                        applicationWindow.yearCalendarOverlayVisible = false;
-                    }
-                    onDayCalendarRequested: {
-                        applicationWindow.agendaOverlayVisible = false;
-                        applicationWindow.dayCalendarOverlayVisible = true;
-                        applicationWindow.weekCalendarOverlayVisible = false;
-                        applicationWindow.monthCalendarOverlayVisible = false;
-                        applicationWindow.yearCalendarOverlayVisible = false;
-                    }
-                    onMonthCalendarRequested: {
-                        applicationWindow.agendaOverlayVisible = false;
-                        applicationWindow.dayCalendarOverlayVisible = false;
-                        applicationWindow.weekCalendarOverlayVisible = false;
-                        applicationWindow.monthCalendarOverlayVisible = true;
-                        applicationWindow.yearCalendarOverlayVisible = false;
-                    }
-                    onWeekCalendarRequested: {
-                        applicationWindow.agendaOverlayVisible = false;
-                        applicationWindow.dayCalendarOverlayVisible = false;
-                        applicationWindow.weekCalendarOverlayVisible = true;
-                        applicationWindow.monthCalendarOverlayVisible = false;
-                        applicationWindow.yearCalendarOverlayVisible = false;
-                    }
-                    onYearCalendarRequested: {
-                        applicationWindow.agendaOverlayVisible = false;
-                        applicationWindow.dayCalendarOverlayVisible = false;
-                        applicationWindow.weekCalendarOverlayVisible = false;
-                        applicationWindow.yearCalendarOverlayVisible = true;
-                        applicationWindow.monthCalendarOverlayVisible = false;
-                    }
+                    onAgendaRequested: applicationWindow.openAgendaOverlay(true)
+                    onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)
+                    onMonthCalendarRequested: applicationWindow.openMonthCalendarOverlay(true)
+                    onWeekCalendarRequested: applicationWindow.openWeekCalendarOverlay(true)
+                    onYearCalendarRequested: applicationWindow.openYearCalendarOverlay(true)
                 }
                 BodyPanelView.BodyLayout {
                     id: hStack
@@ -741,13 +789,7 @@ LV.ApplicationWindow {
                     }
                     onAgendaOverlayDismissRequested: applicationWindow.agendaOverlayVisible = false
                     onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
-                    onMonthCalendarOverlayOpenRequested: {
-                        applicationWindow.agendaOverlayVisible = false;
-                        applicationWindow.dayCalendarOverlayVisible = false;
-                        applicationWindow.weekCalendarOverlayVisible = false;
-                        applicationWindow.monthCalendarOverlayVisible = true;
-                        applicationWindow.yearCalendarOverlayVisible = false;
-                    }
+                    onMonthCalendarOverlayOpenRequested: applicationWindow.openMonthCalendarOverlay(false)
                     onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
                     onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
                     onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
@@ -780,50 +822,14 @@ LV.ApplicationWindow {
             yearCalendarOverlayVisible: applicationWindow.yearCalendarOverlayVisible
             yearCalendarViewModel: applicationWindow.rootYearCalendarViewModel
 
-            onAgendaRequested: {
-                applicationWindow.agendaOverlayVisible = true;
-                applicationWindow.dayCalendarOverlayVisible = false;
-                applicationWindow.weekCalendarOverlayVisible = false;
-                applicationWindow.monthCalendarOverlayVisible = false;
-                applicationWindow.yearCalendarOverlayVisible = false;
-            }
-            onDayCalendarRequested: {
-                applicationWindow.agendaOverlayVisible = false;
-                applicationWindow.dayCalendarOverlayVisible = true;
-                applicationWindow.weekCalendarOverlayVisible = false;
-                applicationWindow.monthCalendarOverlayVisible = false;
-                applicationWindow.yearCalendarOverlayVisible = false;
-            }
-            onMonthCalendarRequested: {
-                applicationWindow.agendaOverlayVisible = false;
-                applicationWindow.dayCalendarOverlayVisible = false;
-                applicationWindow.weekCalendarOverlayVisible = false;
-                applicationWindow.monthCalendarOverlayVisible = true;
-                applicationWindow.yearCalendarOverlayVisible = false;
-            }
-            onWeekCalendarRequested: {
-                applicationWindow.agendaOverlayVisible = false;
-                applicationWindow.dayCalendarOverlayVisible = false;
-                applicationWindow.weekCalendarOverlayVisible = true;
-                applicationWindow.monthCalendarOverlayVisible = false;
-                applicationWindow.yearCalendarOverlayVisible = false;
-            }
-            onYearCalendarRequested: {
-                applicationWindow.agendaOverlayVisible = false;
-                applicationWindow.dayCalendarOverlayVisible = false;
-                applicationWindow.weekCalendarOverlayVisible = false;
-                applicationWindow.yearCalendarOverlayVisible = true;
-                applicationWindow.monthCalendarOverlayVisible = false;
-            }
+            onAgendaRequested: applicationWindow.openAgendaOverlay(true)
+            onDayCalendarRequested: applicationWindow.openDayCalendarOverlay(true)
+            onMonthCalendarRequested: applicationWindow.openMonthCalendarOverlay(true)
+            onWeekCalendarRequested: applicationWindow.openWeekCalendarOverlay(true)
+            onYearCalendarRequested: applicationWindow.openYearCalendarOverlay(true)
             onAgendaOverlayDismissRequested: applicationWindow.agendaOverlayVisible = false
             onDayCalendarOverlayDismissRequested: applicationWindow.dayCalendarOverlayVisible = false
-            onMonthCalendarOverlayOpenRequested: {
-                applicationWindow.agendaOverlayVisible = false;
-                applicationWindow.dayCalendarOverlayVisible = false;
-                applicationWindow.weekCalendarOverlayVisible = false;
-                applicationWindow.monthCalendarOverlayVisible = true;
-                applicationWindow.yearCalendarOverlayVisible = false;
-            }
+            onMonthCalendarOverlayOpenRequested: applicationWindow.openMonthCalendarOverlay(false)
             onMonthCalendarOverlayDismissRequested: applicationWindow.monthCalendarOverlayVisible = false
             onWeekCalendarOverlayDismissRequested: applicationWindow.weekCalendarOverlayVisible = false
             onYearCalendarOverlayDismissRequested: applicationWindow.yearCalendarOverlayVisible = false
