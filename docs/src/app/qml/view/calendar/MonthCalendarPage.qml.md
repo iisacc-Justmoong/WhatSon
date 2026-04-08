@@ -19,9 +19,9 @@ surface so left/right swipes move to the previous or next month.
     - previous month
     - current displayed month
     - next month
-- Those projections come from `MonthCalendarViewModel.monthProjectionFor(year, month)`.
+- Those projections now come from `MonthCalendarViewModel.pagerMonthModels`.
 - The `ListView` pager now binds delegates by numeric index and resolves the live projection through
-  `monthProjectionForIndex(...)` instead of relying on a stale `modelData` snapshot from an older pager rebuild.
+  `monthProjectionForIndex(...)`.
 - After a swipe completes, `commitMonthSwipeDelta(...)` shifts the canonical displayed month in the viewmodel and then
   recenters the local pager back to the middle slot.
 - Desktop keeps the same shell but disables interactive swipe paging; header controls still drive month changes.
@@ -41,16 +41,18 @@ surface so left/right swipes move to the previous or next month.
 
 ## Interaction/Data Flow
 
-1. `Component.onCompleted` rebuilds the 3-slot pager and requests `page-open`.
+1. `Component.onCompleted` recenters the already-precomputed pager and requests `page-open`.
 2. Header prev/next still call `shiftMonth(-1|1)`.
 3. Mobile swipe completion also resolves to `shiftMonth(-1|1)`.
-4. `monthViewChanged` rebuilds pager projections so entry arrays, entry counts, and month labels stay in sync with the shared
-   `MonthCalendarViewModel`.
+4. `monthViewChanged` now only recenters the pager because the shared `MonthCalendarViewModel` already owns the updated
+   `pagerMonthModels`.
 5. Day selection is still delegated back into `monthCalendarViewModel.setSelectedDateIso(...)`.
 6. When opened from `YearCalendarPage.qml`, the host now preloads `displayedYear`, `displayedMonth`, and
    `selectedDateIso` before this page becomes visible, so the routed month opens on the requested month/date.
 7. Note-chip taps from `MonthCalendarGridSurface.qml` bubble upward as `noteOpenRequested(noteId)` so the host can
    reopen the selected note in the editor.
+8. `visible` re-entry also recenters the pager, so reopening the month overlay cannot leave the grid parked on the
+   previous-month page while the header already points at the current month.
 
 ## Collaborators
 - `src/app/viewmodel/calendar/MonthCalendarViewModel.hpp/.cpp`
@@ -68,5 +70,6 @@ surface so left/right swipes move to the previous or next month.
     - Day selection inside any visible month page must still update `selectedDateIso`.
     - Opening the page from a year-calendar month/day tap must show the requested month immediately instead of the
       previously displayed month.
-    - Initial month-page open must not leave current-month note chips attached to an older pager snapshot.
+    - Initial month-page open must not show the previous-month grid while the header already displays the current
+      month title.
     - Clicking or tapping a visible month note chip must bubble `noteOpenRequested(...)` out of the page.

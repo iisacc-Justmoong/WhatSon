@@ -104,6 +104,9 @@ WhatSon is an LVRS-based Qt Quick application.
 - The monthly pager and month-grid delegates now resolve live projections/day-cells by index instead of holding stale
   JS `modelData` snapshots, which keeps notes on their real dates during initial month-view bootstrap instead of
   leaking them into adjacent disabled cells.
+- Library runtime note snapshots now push directly into `CalendarBoardStore` through a dedicated
+  `LibraryHierarchyViewModel` signal, so month-view note chips do not depend on a later UI-triggered rebuild such as
+  pressing `Today`.
 - Navigation-driven calendar opens now reset Agenda/day/week/month/year overlays back to today's date context, while
   year-view drill-down into month view still preserves the explicitly tapped month/date.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,

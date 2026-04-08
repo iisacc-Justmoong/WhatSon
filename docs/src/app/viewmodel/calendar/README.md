@@ -37,6 +37,11 @@
   the shared `src/app/calendar/CalendarBoardStore.*` backend for date/time-based event/task board semantics.
 - That shared board now merges manual calendar entries with note lifecycle projections keyed by note creation and
   modification timestamps, so all calendar routes see the same note/event surface.
+- `MonthCalendarViewModel` now owns the `previous/current/next` month pager projections directly instead of asking QML
+  to assemble them ad hoc at render time, which keeps month bootstrap aligned with MVVM ownership and reduces
+  page-open churn.
+- Calendar note projection refresh is now driven by the library runtime viewmodel's note-snapshot signal instead of a
+  month-page open side effect, so note mounting stays deterministic even during deferred startup loads.
 - `WeekCalendarViewModel` continues to anchor the weekly route while the QML week surface now presents that data as
   one continuous horizontal date surface sized for three visible day columns.
 - `AgendaViewModel` projects one date into Agenda-focused section models (`allDayEvents`, `timedEvents`, `agendaItems`) and

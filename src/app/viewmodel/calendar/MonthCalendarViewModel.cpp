@@ -61,6 +61,11 @@ QVariantList MonthCalendarViewModel::dayModels() const
     return m_dayModels;
 }
 
+QVariantList MonthCalendarViewModel::pagerMonthModels() const
+{
+    return m_pagerMonthModels;
+}
+
 QString MonthCalendarViewModel::selectedDateIso() const
 {
     return m_selectedDateIso;
@@ -305,7 +310,6 @@ void MonthCalendarViewModel::requestMonthView(const QString& reason)
         .arg(calendarSystemName(), normalizedReason));
 
     emit monthViewRequested(normalizedReason);
-    rebuildMonthModel();
 }
 
 QVariantMap MonthCalendarViewModel::monthProjectionFor(int year, int month) const
@@ -523,9 +527,9 @@ QVariantMap MonthCalendarViewModel::buildMonthProjection(int year, int month) co
 
 void MonthCalendarViewModel::rebuildMonthModel()
 {
-    const QVariantMap projection = buildMonthProjection(m_displayedYear, m_displayedMonth);
-    const int normalizedYear = projection.value(QStringLiteral("year"), m_displayedYear).toInt();
-    const int normalizedMonth = projection.value(QStringLiteral("month"), m_displayedMonth).toInt();
+    const QVariantMap currentProjection = buildMonthProjection(m_displayedYear, m_displayedMonth);
+    const int normalizedYear = currentProjection.value(QStringLiteral("year"), m_displayedYear).toInt();
+    const int normalizedMonth = currentProjection.value(QStringLiteral("month"), m_displayedMonth).toInt();
 
     if (m_displayedYear != normalizedYear)
     {
@@ -538,9 +542,16 @@ void MonthCalendarViewModel::rebuildMonthModel()
         emit displayedMonthChanged();
     }
 
-    m_weekdayLabels = projection.value(QStringLiteral("weekdayLabels")).toStringList();
-    m_dayModels = projection.value(QStringLiteral("dayModels")).toList();
-    m_monthLabel = projection.value(QStringLiteral("monthLabel"), QStringLiteral("Month")).toString();
+    QVariantList nextPagerMonthModels;
+    nextPagerMonthModels.reserve(3);
+    nextPagerMonthModels.push_back(buildMonthProjection(normalizedYear, normalizedMonth - 1));
+    nextPagerMonthModels.push_back(currentProjection);
+    nextPagerMonthModels.push_back(buildMonthProjection(normalizedYear, normalizedMonth + 1));
+
+    m_weekdayLabels = currentProjection.value(QStringLiteral("weekdayLabels")).toStringList();
+    m_dayModels = currentProjection.value(QStringLiteral("dayModels")).toList();
+    m_monthLabel = currentProjection.value(QStringLiteral("monthLabel"), QStringLiteral("Month")).toString();
+    m_pagerMonthModels = nextPagerMonthModels;
     emit monthViewChanged();
     refreshSelectedDateEntries();
 }

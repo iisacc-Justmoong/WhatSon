@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
         });
     QObject::connect(
         &libraryHierarchyViewModel,
-        &LibraryHierarchyViewModel::hubFilesystemMutated,
+        &LibraryHierarchyViewModel::indexedNotesSnapshotChanged,
         &app,
         reloadCalendarProjectedNotesFromRuntime);
     QObject::connect(

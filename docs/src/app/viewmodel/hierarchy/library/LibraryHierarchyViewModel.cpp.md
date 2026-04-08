@@ -8,6 +8,9 @@
 - Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
 - `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as
   `CalendarBoardStore` can project note lifecycle metadata from the already-loaded library snapshot.
+- `setIndexedStateNotes(...)`, `applyIndexedStateSnapshot(...)`, and successful direct index loads now emit
+  `indexedNotesSnapshotChanged()`, so calendar/runtime collaborators observe note-snapshot changes directly from the
+  viewmodel instead of relying on a later page-open hook.
 - `activateNoteById(...)` is now the canonical cross-surface note-open path. It first searches the currently visible
   library note list, then clears any active search filter, then falls back to the implicit `All Library` selection
   before selecting the requested note row.
@@ -24,6 +27,8 @@
 ## Tests
 - Automated test files are not currently present in this repository.
 - Regression checklist:
+    - Startup/deferred runtime note loads must emit `indexedNotesSnapshotChanged()` so calendar projections refresh
+      before the user manually pokes the calendar surface.
     - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
     - An active library search filter must be cleared automatically when it hides the requested note.
     - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.

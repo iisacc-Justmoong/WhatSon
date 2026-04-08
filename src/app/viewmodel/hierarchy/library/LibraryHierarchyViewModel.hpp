@@ -133,6 +133,7 @@ public
     void loadStateChanged();
     void noteDeleted(const QString& noteId);
     void emptyNoteCreated(const QString& noteId);
+    void indexedNotesSnapshotChanged();
     void hubFilesystemMutated();
     void viewModelHookRequested();
 

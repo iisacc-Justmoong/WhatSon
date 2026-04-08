@@ -2000,6 +2000,7 @@ void LibraryHierarchyViewModel::applyRuntimeSnapshot(
     if (!loadSucceeded)
     {
         m_indexedState.clear();
+        emit indexedNotesSnapshotChanged();
         m_runtimeIndexLoaded = false;
         m_foldersHierarchyLoaded = false;
         m_items.clear();
@@ -3607,6 +3608,7 @@ void LibraryHierarchyViewModel::setIndexedStateNotes(QString sourceWshubPath, QV
 {
     m_indexedState.setIndexedNotes(std::move(sourceWshubPath), std::move(notes));
     invalidateNoteListItemCache();
+    emit indexedNotesSnapshotChanged();
 }
 
 void LibraryHierarchyViewModel::applyIndexedStateSnapshot(
@@ -3621,12 +3623,17 @@ void LibraryHierarchyViewModel::applyIndexedStateSnapshot(
         std::move(draftNotes),
         std::move(todayNotes));
     invalidateNoteListItemCache();
+    emit indexedNotesSnapshotChanged();
 }
 
 bool LibraryHierarchyViewModel::loadIndexedStateFromWshub(const QString& wshubPath, QString* errorMessage)
 {
     const bool succeeded = m_indexedState.indexFromWshub(wshubPath, errorMessage);
     invalidateNoteListItemCache();
+    if (succeeded)
+    {
+        emit indexedNotesSnapshotChanged();
+    }
     return succeeded;
 }
 

@@ -21,6 +21,7 @@ class MonthCalendarViewModel final : public QObject
     Q_PROPERTY(QString monthLabel READ monthLabel NOTIFY monthViewChanged)
     Q_PROPERTY(QStringList weekdayLabels READ weekdayLabels NOTIFY monthViewChanged)
     Q_PROPERTY(QVariantList dayModels READ dayModels NOTIFY monthViewChanged)
+    Q_PROPERTY(QVariantList pagerMonthModels READ pagerMonthModels NOTIFY monthViewChanged)
     Q_PROPERTY(QString selectedDateIso READ selectedDateIso WRITE setSelectedDateIso NOTIFY selectedDateIsoChanged)
     Q_PROPERTY(QVariantList selectedDateEntries READ selectedDateEntries NOTIFY selectedDateEntriesChanged)
     Q_PROPERTY(QVariantList calendarSystemOptions READ calendarSystemOptions CONSTANT)
@@ -45,6 +46,7 @@ public:
     QString monthLabel() const;
     QStringList weekdayLabels() const;
     QVariantList dayModels() const;
+    QVariantList pagerMonthModels() const;
     QString selectedDateIso() const;
     QVariantList selectedDateEntries() const;
     QVariantList calendarSystemOptions() const;
@@ -97,6 +99,7 @@ private:
     QString m_monthLabel;
     QStringList m_weekdayLabels;
     QVariantList m_dayModels;
+    QVariantList m_pagerMonthModels;
     ICalendarBoardStore* m_calendarBoardStore = nullptr;
     QString m_selectedDateIso;
     QVariantList m_selectedDateEntries;

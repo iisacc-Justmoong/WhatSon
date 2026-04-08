@@ -14,41 +14,22 @@ Rectangle {
     readonly property int maxVisibleEntriesPerCell: 8
     property var monthCalendarViewModel: null
     readonly property int monthHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(54)))
-    property var monthPageModels: []
     readonly property int monthPagerCenterIndex: 1
     property bool monthPagerResetting: false
     readonly property bool monthSwipeEnabled: LV.Theme.mobileTarget
     readonly property string monthTitleText: monthCalendarPage.calendarVm ? String(monthCalendarPage.calendarVm.monthLabel) + ", " + String(monthCalendarPage.calendarVm.displayedYear) : "Month"
+    readonly property var pagerMonthModels: monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.pagerMonthModels !== undefined ? monthCalendarPage.calendarVm.pagerMonthModels : []
     readonly property int weekdayCellHorizontalPadding: LV.Theme.gap12
     readonly property int weekdayHeaderHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(39)))
 
     signal noteOpenRequested(string noteId)
     signal viewHookRequested(string reason)
 
-    function buildMonthPageModels() {
-        if (!monthCalendarPage.calendarVm)
-            return [];
-
-        const displayedYear = Number(monthCalendarPage.calendarVm.displayedYear);
-        const displayedMonth = Number(monthCalendarPage.calendarVm.displayedMonth);
-        return [monthCalendarPage.buildMonthProjection(displayedYear, displayedMonth - 1), monthCalendarPage.buildMonthProjection(displayedYear, displayedMonth), monthCalendarPage.buildMonthProjection(displayedYear, displayedMonth + 1)];
-    }
-    function buildMonthProjection(year, month) {
-        if (monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.monthProjectionFor !== undefined)
-            return monthCalendarPage.calendarVm.monthProjectionFor(year, month);
-        return {
-            "year": year,
-            "month": month,
-            "monthLabel": monthCalendarPage.monthTitleText,
-            "weekdayLabels": monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.weekdayLabels ? monthCalendarPage.calendarVm.weekdayLabels : [],
-            "dayModels": monthCalendarPage.calendarVm && monthCalendarPage.calendarVm.dayModels ? monthCalendarPage.calendarVm.dayModels : []
-        };
-    }
     function monthProjectionForIndex(index) {
         const normalizedIndex = Math.floor(Number(index));
-        if (!isFinite(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= monthCalendarPage.monthPageModels.length)
+        if (!isFinite(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= monthCalendarPage.pagerMonthModels.length)
             return null;
-        return monthCalendarPage.monthPageModels[normalizedIndex];
+        return monthCalendarPage.pagerMonthModels[normalizedIndex];
     }
     function commitMonthSwipeDelta(delta) {
         if (!monthCalendarPage.calendarVm || !monthCalendarPage.calendarVm.shiftMonth || delta === 0) {
@@ -89,12 +70,12 @@ Rectangle {
         }
         monthCalendarPage.requestViewHook("current-month");
     }
-    function rebuildMonthPager() {
-        monthCalendarPage.monthPageModels = monthCalendarPage.buildMonthPageModels();
-        monthCalendarPage.scheduleMonthPagerReset();
-    }
     function recenterMonthPager() {
-        if (!monthCalendarMonthsView || monthCalendarPage.monthPageModels.length <= monthCalendarPage.monthPagerCenterIndex) {
+        if (!monthCalendarMonthsView || monthCalendarPage.pagerMonthModels.length <= monthCalendarPage.monthPagerCenterIndex) {
+            monthCalendarPage.monthPagerResetting = false;
+            return;
+        }
+        if (monthCalendarMonthsView.width <= 0 || monthCalendarMonthsView.height <= 0) {
             monthCalendarPage.monthPagerResetting = false;
             return;
         }
@@ -123,13 +104,17 @@ Rectangle {
     radius: LV.Theme.radiusMd
 
     Component.onCompleted: {
-        monthCalendarPage.rebuildMonthPager();
+        monthCalendarPage.scheduleMonthPagerReset();
         monthCalendarPage.requestViewHook("page-open");
+    }
+    onVisibleChanged: {
+        if (visible)
+            monthCalendarPage.scheduleMonthPagerReset();
     }
 
     Connections {
         function onMonthViewChanged() {
-            monthCalendarPage.rebuildMonthPager();
+            monthCalendarPage.scheduleMonthPagerReset();
         }
 
         ignoreUnknownSignals: true
@@ -196,8 +181,8 @@ Rectangle {
                 boundsBehavior: Flickable.StopAtBounds
                 cacheBuffer: Math.max(width, 1) * 2
                 clip: true
-                interactive: monthCalendarPage.monthSwipeEnabled && monthCalendarPage.monthPageModels.length > 1
-                model: monthCalendarPage.monthPageModels.length
+                interactive: monthCalendarPage.monthSwipeEnabled && monthCalendarPage.pagerMonthModels.length > 1
+                model: monthCalendarPage.pagerMonthModels.length
                 orientation: ListView.Horizontal
                 snapMode: ListView.SnapOneItem
 

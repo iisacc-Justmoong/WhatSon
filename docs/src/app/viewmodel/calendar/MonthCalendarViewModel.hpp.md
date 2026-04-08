@@ -5,5 +5,6 @@
 
 ## Interface Alignment
 - Calendar board injection now depends on `ICalendarBoardStore`.
-- `monthProjectionFor(year, month)` exposes an arbitrary month-grid projection so QML can render neighboring month pages
-  without mutating the canonical displayed month first.
+- `monthProjectionFor(year, month)` remains available for arbitrary month-grid queries.
+- The viewmodel now also exposes a precomputed `pagerMonthModels` property for the canonical `previous/current/next`
+  month pages, so `MonthCalendarPage.qml` no longer has to assemble neighboring month projections inside QML.
