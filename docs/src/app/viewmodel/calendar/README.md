@@ -44,6 +44,8 @@
   month-page open side effect, so note mounting stays deterministic even during deferred startup loads.
 - `WeekCalendarViewModel` now owns both the canonical week anchor and the lazy horizontal timeline day window, while
   the QML week surface is reduced to viewport math and hit interaction for that data.
+- `WeekCalendarViewModel::trimTimelineWindow(...)` explicitly normalizes Qt container sizes into integer window counts
+  before chunk trimming so timeline maintenance stays compatible with Qt 6 `qsizetype` APIs.
 - `AgendaViewModel` projects one date into Agenda-focused section models (`allDayEvents`, `timedEvents`, `agendaItems`) and
   exposes the date label, location caption, and summary counts needed by the Agenda route layout.
 - `requestDayView(...)`, `requestAgendaView(...)`, `requestWeekView(...)`, and `requestYearView(...)` are now

@@ -9,10 +9,15 @@
 
 namespace
 {
-    int boundedQStringSize(const QString& text) noexcept
+    int boundedContainerSize(const qsizetype size) noexcept
     {
         constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
-        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
+        return static_cast<int>(std::clamp(size, qsizetype{0}, maxIntSize));
+    }
+
+    int boundedQStringSize(const QString& text) noexcept
+    {
+        return boundedContainerSize(text.size());
     }
 
     QString normalizedHtmlTagName(const QStringView tagToken)
@@ -206,7 +211,7 @@ int ContentsLogicalTextBridge::logicalLengthForSourceText(const QString& text) c
 QVariantList ContentsLogicalTextBridge::logicalToSourceOffsets() const
 {
     QVariantList offsets;
-    offsets.reserve(std::max(0, m_logicalToSourceOffsets.size()));
+    offsets.reserve(boundedContainerSize(m_logicalToSourceOffsets.size()));
     for (const int offset : m_logicalToSourceOffsets)
     {
         offsets.push_back(offset);
@@ -308,7 +313,7 @@ QVariantList ContentsLogicalTextBridge::buildLogicalLineOffsets(const QString& t
 QVector<int> ContentsLogicalTextBridge::buildIntVector(const QVariantList& values)
 {
     QVector<int> converted;
-    converted.reserve(std::max(0, values.size()));
+    converted.reserve(boundedContainerSize(values.size()));
     for (const QVariant& value : values)
     {
         converted.push_back(std::max(0, value.toInt()));

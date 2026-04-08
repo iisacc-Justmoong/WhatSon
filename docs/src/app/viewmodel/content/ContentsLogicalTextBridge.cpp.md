@@ -48,6 +48,9 @@
   state.
 - Source-offset clamping is now normalized through an explicit `int`-bounded QString size helper before returning to
   QML, which avoids libc++ `std::clamp` template mismatches between `int` and `qsizetype` on Apple toolchains.
+- Cached offset export and incremental vector adoption now also normalize Qt container sizes through the same bounded
+  integer helper before `reserve(...)`, so Apple libc++ does not see mixed `int` / `qsizetype` `std::max(...)`
+  candidates while the bridge snapshots live typing state.
 
 ## Regression Checks
 
@@ -61,6 +64,8 @@
   post-idle typing-session reseed cannot shift source splices away from the intended logical cursor positions.
 - `adoptIncrementalState(...)` must not emit redundant change signals or rebuild offset tables when QML pushes an
   identical live-typing snapshot.
+- `logicalToSourceOffsets()` and `buildIntVector(...)` must keep compiling when Qt container `size()` returns
+  `qsizetype` on Apple toolchains.
 
 ## Extracted Symbols
 - Declared namespaces present: no

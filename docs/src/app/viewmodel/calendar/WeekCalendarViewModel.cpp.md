@@ -11,3 +11,8 @@
   `Today` can land on the actual current date while preserving a week-level anchor.
 - `requestWeekView(...)` is now hook/log-only; the real week rebuild stays behind `setDisplayedWeekStartIso(...)`,
   `setCalendarBoardStore(...)`, and board-entry mutations so page-open and prev/next navigation do not rebuild twice.
+- `trimTimelineWindow(...)` normalizes `QVariantList::size()` into explicit `int` window counts before calling
+  `std::min(...)`, which keeps the Qt 6 `qsizetype` container API from breaking the timeline trim compile path.
+
+## Regression Checks
+- `trimTimelineWindow(...)` should keep compiling when `QVariantList::size()` resolves to `qsizetype` on Qt 6.

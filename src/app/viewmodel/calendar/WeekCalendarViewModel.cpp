@@ -214,16 +214,30 @@ QVariantMap WeekCalendarViewModel::trimTimelineWindow(int leadingIndex, int maxW
         {QStringLiteral("removedTail"), 0}
     };
 
-    if (maxWindowSize <= 0 || chunkSize <= 0 || m_timelineDayModels.size() <= maxWindowSize)
+    const int maxWindowCount = std::max(0, maxWindowSize);
+    if (maxWindowCount == 0 || chunkSize <= 0)
+    {
+        return result;
+    }
+
+    const int initialTimelineCount = static_cast<int>(m_timelineDayModels.size());
+    if (initialTimelineCount <= maxWindowCount)
     {
         return result;
     }
 
     int mutableLeadingIndex = std::max(0, leadingIndex);
-    while (m_timelineDayModels.size() > maxWindowSize)
+    while (true)
     {
-        const bool removeHead = mutableLeadingIndex > (m_timelineDayModels.size() / 2);
-        const int removeCount = std::min(chunkSize, m_timelineDayModels.size() - maxWindowSize);
+        const int timelineCount = static_cast<int>(m_timelineDayModels.size());
+        if (timelineCount <= maxWindowCount)
+        {
+            break;
+        }
+
+        const bool removeHead = mutableLeadingIndex > (timelineCount / 2);
+        const int overflowCount = timelineCount - maxWindowCount;
+        const int removeCount = std::min(chunkSize, overflowCount);
         if (removeCount <= 0)
         {
             break;

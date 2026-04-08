@@ -37,6 +37,9 @@
   character.
 - `ContentsLogicalTextBridge` now also accepts incremental live typing adoption from QML, so the bridge no longer needs
   to rebuild line starts and logical/source offset tables from the whole note after every committed character.
+- `ContentsLogicalTextBridge` now normalizes Qt container `size()` values through a bounded integer helper before
+  reserve/export paths, which keeps Apple libc++ from failing mixed `int` / `qsizetype` template deduction in the
+  live-typing bridge code.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
