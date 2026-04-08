@@ -101,6 +101,7 @@ public:
     Q_INVOKABLE bool saveCurrentBodyText(const QString& text);
     Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
     Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
+    QVector<LibraryNoteRecord> indexedNotesSnapshot() const;
     bool supportsHierarchyNodeReorder() const noexcept override;
     bool supportsHierarchyNoteDrop() const noexcept override;
 

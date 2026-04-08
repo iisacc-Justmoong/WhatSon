@@ -174,6 +174,11 @@ int main(int argc, char* argv[])
     monthCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
     weekCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
     yearCalendarViewModel.setCalendarBoardStore(&calendarBoardStore);
+    calendarBoardStore.setProjectedNotesProvider(
+        [&libraryHierarchyViewModel]()
+        {
+            return libraryHierarchyViewModel.indexedNotesSnapshot();
+        });
 
     const auto requestNewLibraryNote = [&libraryNoteMutationViewModel, &sidebarHierarchyViewModel]()
     {
@@ -268,7 +273,14 @@ int main(int argc, char* argv[])
     startupRuntimeCoordinator.setParallelLoader(&runtimeParallelLoader);
 
     WhatSonHubSyncController hubSyncController;
-    const auto reloadCalendarProjectedNotes = [&calendarBoardStore, &hubSyncController]()
+    const auto reloadCalendarProjectedNotesFromRuntime =
+        [&calendarBoardStore, &hubSyncController, &libraryHierarchyViewModel]()
+    {
+        calendarBoardStore.setProjectedNotesHubPath(hubSyncController.currentHubPath());
+        calendarBoardStore.reloadProjectedNotesFromSnapshot(
+            libraryHierarchyViewModel.indexedNotesSnapshot());
+    };
+    const auto requestCalendarProjectedNotesReload = [&calendarBoardStore, &hubSyncController]()
     {
         calendarBoardStore.setProjectedNotesHubPath(hubSyncController.currentHubPath());
         calendarBoardStore.requestProjectedNotesReload();
@@ -291,26 +303,27 @@ int main(int argc, char* argv[])
         &hubSyncController,
         &WhatSonHubSyncController::syncReloaded,
         &app,
-        [&calendarBoardStore](const QString& hubPath)
+        [&calendarBoardStore, &libraryHierarchyViewModel](const QString& hubPath)
         {
             calendarBoardStore.setProjectedNotesHubPath(hubPath);
-            calendarBoardStore.reloadProjectedNotes();
+            calendarBoardStore.reloadProjectedNotesFromSnapshot(
+                libraryHierarchyViewModel.indexedNotesSnapshot());
         });
     QObject::connect(
         &libraryHierarchyViewModel,
         &LibraryHierarchyViewModel::hubFilesystemMutated,
         &app,
-        reloadCalendarProjectedNotes);
+        reloadCalendarProjectedNotesFromRuntime);
     QObject::connect(
         &bookmarksHierarchyViewModel,
         &BookmarksHierarchyViewModel::hubFilesystemMutated,
         &app,
-        reloadCalendarProjectedNotes);
+        requestCalendarProjectedNotesReload);
     QObject::connect(
         &progressHierarchyViewModel,
         &ProgressHierarchyViewModel::hubFilesystemMutated,
         &app,
-        reloadCalendarProjectedNotes);
+        requestCalendarProjectedNotesReload);
     Q_UNUSED(hubSyncWiring);
     resourcesImportViewModel.setReloadResourcesCallback(
         [&startupRuntimeCoordinator, &hubSyncController](const QString& hubPath, QString* errorMessage) -> bool
@@ -343,7 +356,8 @@ int main(int argc, char* argv[])
          &selectedHubStore,
          &hubSyncController,
          &resourcesImportViewModel,
-         &calendarBoardStore](const QString& hubPath)
+         &calendarBoardStore,
+         &libraryHierarchyViewModel](const QString& hubPath)
         {
             selectedHubStore.setSelectedHubSelection(
                 hubPath,
@@ -351,7 +365,8 @@ int main(int argc, char* argv[])
             hubSyncController.setCurrentHubPath(hubPath);
             resourcesImportViewModel.setCurrentHubPath(hubPath);
             calendarBoardStore.setProjectedNotesHubPath(hubPath);
-            calendarBoardStore.reloadProjectedNotes();
+            calendarBoardStore.reloadProjectedNotesFromSnapshot(
+                libraryHierarchyViewModel.indexedNotesSnapshot());
         });
 
     bool initialHubLoaded = false;
@@ -375,7 +390,8 @@ int main(int argc, char* argv[])
             hubSyncController.setCurrentHubPath(startupHubSelection.hubPath);
             resourcesImportViewModel.setCurrentHubPath(startupHubSelection.hubPath);
             calendarBoardStore.setProjectedNotesHubPath(startupHubSelection.hubPath);
-            calendarBoardStore.reloadProjectedNotes();
+            calendarBoardStore.reloadProjectedNotesFromSnapshot(
+                libraryHierarchyViewModel.indexedNotesSnapshot());
         }
         if (!initialHubLoaded && !errorMessage.trimmed().isEmpty())
         {

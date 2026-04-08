@@ -1,6 +1,7 @@
 #include "CalendarBoardStore.hpp"
 
 #include "file/WhatSonDebugTrace.hpp"
+#include "file/hierarchy/library/LibraryNotePreviewText.hpp"
 #include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"
 
@@ -100,30 +101,12 @@ namespace
         return {};
     }
 
-    QString firstLineFromBody(QString value)
-    {
-        value.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
-        value.replace(QLatin1Char('\r'), QLatin1Char('\n'));
-        const int newlineIndex = value.indexOf(QLatin1Char('\n'));
-        if (newlineIndex >= 0)
-        {
-            value = value.left(newlineIndex);
-        }
-        return value.trimmed();
-    }
-
     QString noteDisplayTitle(const LibraryNoteRecord& note)
     {
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        if (!firstLine.isEmpty())
+        const QString previewHeadline = WhatSon::LibraryPreview::notePrimaryHeadline(note);
+        if (!previewHeadline.isEmpty())
         {
-            return firstLine;
-        }
-
-        const QString bodyLine = firstLineFromBody(note.bodyPlainText);
-        if (!bodyLine.isEmpty())
-        {
-            return bodyLine;
+            return previewHeadline;
         }
 
         const QString noteId = note.noteId.trimmed();
@@ -135,15 +118,30 @@ namespace
         return QStringLiteral("Untitled note");
     }
 
-    QString noteLifecycleTitle(const QString& prefix, const QString& title)
+    bool noteTimestampLessThan(const ParsedNoteTimestamp& left, const ParsedNoteTimestamp& right)
     {
-        return QStringLiteral("%1: %2").arg(prefix, title);
+        if (left.date != right.date)
+        {
+            return left.date < right.date;
+        }
+
+        const QTime leftTime = left.hasExplicitTime && left.time.isValid()
+                                   ? left.time
+                                   : QTime(0, 0);
+        const QTime rightTime = right.hasExplicitTime && right.time.isValid()
+                                    ? right.time
+                                    : QTime(0, 0);
+        if (leftTime != rightTime)
+        {
+            return leftTime < rightTime;
+        }
+
+        return !left.hasExplicitTime && right.hasExplicitTime;
     }
 
     CalendarBoardStore::CalendarEntry buildProjectedNoteEntry(
         const LibraryNoteRecord& note,
         const ParsedNoteTimestamp& timestamp,
-        QString lifecycleLabel,
         QString lifecycleKey)
     {
         CalendarBoardStore::CalendarEntry entry;
@@ -154,7 +152,7 @@ namespace
         entry.type = CalendarBoardStore::EntryType::Event;
         entry.date = timestamp.date;
         entry.time = timestamp.hasExplicitTime ? timestamp.time : QTime(0, 0);
-        entry.title = noteLifecycleTitle(lifecycleLabel, noteDisplayTitle(note));
+        entry.title = noteDisplayTitle(note);
         entry.detail = note.noteId.trimmed();
         entry.allDay = !timestamp.hasExplicitTime;
         entry.readOnly = true;
@@ -257,6 +255,7 @@ QVariantList CalendarBoardStore::entriesForDate(const QString& dateIso) const
 
     QVector<CalendarEntry> matches;
     matches.reserve(m_entries.size() + m_projectedEntries.size());
+    const QVector<CalendarEntry> projectedEntries = projectedEntriesForQueries();
 
     const auto appendMatches = [&parsedDate, &matches](const QVector<CalendarEntry>& source)
     {
@@ -270,7 +269,7 @@ QVariantList CalendarBoardStore::entriesForDate(const QString& dateIso) const
     };
 
     appendMatches(m_entries);
-    appendMatches(m_projectedEntries);
+    appendMatches(projectedEntries);
     sortEntries(&matches);
 
     QVariantList entries;
@@ -296,6 +295,7 @@ QVariantMap CalendarBoardStore::countsForDate(const QString& dateIso) const
 
     int eventCount = 0;
     int taskCount = 0;
+    const QVector<CalendarEntry> projectedEntries = projectedEntriesForQueries();
     const auto accumulateCounts = [&parsedDate, &eventCount, &taskCount](const QVector<CalendarEntry>& source)
     {
         for (const CalendarEntry& entry : source)
@@ -316,7 +316,7 @@ QVariantMap CalendarBoardStore::countsForDate(const QString& dateIso) const
     };
 
     accumulateCounts(m_entries);
-    accumulateCounts(m_projectedEntries);
+    accumulateCounts(projectedEntries);
 
     return {
         {QStringLiteral("eventCount"), eventCount},
@@ -398,9 +398,27 @@ QString CalendarBoardStore::projectedNotesHubPath() const
     return m_projectedNotesHubPath;
 }
 
+void CalendarBoardStore::setProjectedNotesProvider(std::function<QVector<LibraryNoteRecord>()> provider)
+{
+    m_projectedNotesProvider = std::move(provider);
+}
+
+void CalendarBoardStore::reloadProjectedNotesFromSnapshot(const QVector<LibraryNoteRecord>& notes)
+{
+    replaceProjectedEntries(buildProjectedNoteEntries(notes));
+    WhatSon::Debug::traceSelf(
+        this,
+        QString::fromLatin1(kCalendarBoardScope),
+        QStringLiteral("reloadProjectedNotes.snapshot"),
+        QStringLiteral("path=%1 noteCount=%2 projectedCount=%3")
+            .arg(m_projectedNotesHubPath)
+            .arg(notes.size())
+            .arg(m_projectedEntries.size()));
+}
+
 void CalendarBoardStore::requestProjectedNotesReload()
 {
-    if (m_projectedNotesHubPath.isEmpty())
+    if (m_projectedNotesHubPath.isEmpty() && !m_projectedNotesProvider)
     {
         clearProjectedEntries();
         return;
@@ -413,6 +431,27 @@ bool CalendarBoardStore::reloadProjectedNotes(QString* errorMessage)
 {
     if (m_projectedNotesHubPath.isEmpty())
     {
+        if (m_projectedNotesProvider)
+        {
+            const QVector<LibraryNoteRecord> notes = m_projectedNotesProvider();
+            if (!notes.isEmpty())
+            {
+                replaceProjectedEntries(buildProjectedNoteEntries(notes));
+                if (errorMessage != nullptr)
+                {
+                    errorMessage->clear();
+                }
+                WhatSon::Debug::traceSelf(
+                    this,
+                    QString::fromLatin1(kCalendarBoardScope),
+                    QStringLiteral("reloadProjectedNotes.success"),
+                    QStringLiteral("source=provider path=%1 noteCount=%2 projectedCount=%3")
+                        .arg(m_projectedNotesHubPath)
+                        .arg(notes.size())
+                        .arg(m_projectedEntries.size()));
+                return true;
+            }
+        }
         clearProjectedEntries();
         return true;
     }
@@ -651,11 +690,21 @@ void CalendarBoardStore::replaceProjectedEntries(QVector<CalendarEntry> entries)
     emit entriesChanged();
 }
 
+QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::projectedEntriesForQueries() const
+{
+    if (!m_projectedEntries.isEmpty() || !m_projectedNotesProvider)
+    {
+        return m_projectedEntries;
+    }
+
+    return buildProjectedNoteEntries(m_projectedNotesProvider());
+}
+
 QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::buildProjectedNoteEntries(
     const QVector<LibraryNoteRecord>& notes) const
 {
     QVector<CalendarEntry> entries;
-    entries.reserve(notes.size() * 2);
+    entries.reserve(notes.size());
 
     for (const LibraryNoteRecord& note : notes)
     {
@@ -673,41 +722,17 @@ QVector<CalendarBoardStore::CalendarEntry> CalendarBoardStore::buildProjectedNot
             continue;
         }
 
-        if (createdTimestamp.valid && modifiedTimestamp.valid && createdTimestamp.date == modifiedTimestamp.date)
+        ParsedNoteTimestamp effectiveTimestamp = createdTimestamp;
+        QString effectiveTimestampKey = QStringLiteral("created");
+        if (modifiedTimestamp.valid
+            && (!createdTimestamp.valid
+                || !noteTimestampLessThan(modifiedTimestamp, createdTimestamp)))
         {
-            const ParsedNoteTimestamp effectiveTimestamp =
-                modifiedTimestamp.hasExplicitTime ? modifiedTimestamp : createdTimestamp;
-            const QString combinedLabel =
-                note.createdAt.trimmed() == note.lastModifiedAt.trimmed()
-                    ? QStringLiteral("Created note")
-                    : QStringLiteral("Created/modified note");
-            entries.push_back(
-                buildProjectedNoteEntry(
-                    note,
-                    effectiveTimestamp,
-                    combinedLabel,
-                    QStringLiteral("created-modified")));
-            continue;
+            effectiveTimestamp = modifiedTimestamp;
+            effectiveTimestampKey = QStringLiteral("modified");
         }
 
-        if (createdTimestamp.valid)
-        {
-            entries.push_back(
-                buildProjectedNoteEntry(
-                    note,
-                    createdTimestamp,
-                    QStringLiteral("Created note"),
-                    QStringLiteral("created")));
-        }
-        if (modifiedTimestamp.valid)
-        {
-            entries.push_back(
-                buildProjectedNoteEntry(
-                    note,
-                    modifiedTimestamp,
-                    QStringLiteral("Modified note"),
-                    QStringLiteral("modified")));
-        }
+        entries.push_back(buildProjectedNoteEntry(note, effectiveTimestamp, effectiveTimestampKey));
     }
 
     return entries;

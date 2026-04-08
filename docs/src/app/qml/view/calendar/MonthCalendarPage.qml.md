@@ -41,7 +41,7 @@ surface so left/right swipes move to the previous or next month.
 1. `Component.onCompleted` rebuilds the 3-slot pager and requests `page-open`.
 2. Header prev/next still call `shiftMonth(-1|1)`.
 3. Mobile swipe completion also resolves to `shiftMonth(-1|1)`.
-4. `monthViewChanged` rebuilds pager projections so entry counts and month labels stay in sync with the shared
+4. `monthViewChanged` rebuilds pager projections so entry arrays, entry counts, and month labels stay in sync with the shared
    `MonthCalendarViewModel`.
 5. Day selection is still delegated back into `monthCalendarViewModel.setSelectedDateIso(...)`.
 6. When opened from `YearCalendarPage.qml`, the host now preloads `displayedYear`, `displayedMonth`, and

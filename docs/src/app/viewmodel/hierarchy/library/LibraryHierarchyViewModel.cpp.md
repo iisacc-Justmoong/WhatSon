@@ -3,7 +3,11 @@
 ## Implementation Notes
 - `setSystemCalendarStore(...)` now binds to `ISystemCalendarStore` and its `systemInfoChanged` signal.
 - Note-list date formatting behavior is unchanged.
+- Note-list `primaryText` now comes from the shared `src/app/file/hierarchy/library/LibraryNotePreviewText.hpp`
+  helper, so the library list and calendar note chips read from the same preview-text contract.
 - Static `SystemCalendarStore::formatNoteDateForSystem(...)` remains the non-injected fallback helper.
+- `indexedNotesSnapshot()` returns the current `m_indexedState.allNotes()` copy so other runtime collaborators such as
+  `CalendarBoardStore` can project note lifecycle metadata from the already-loaded library snapshot.
 - `createFolder()` remains the authoritative library-folder creation path. When a non-protected folder is selected, it
   computes the insertion point after that folder's subtree, increases depth by one, expands the parent, and therefore
   creates the new folder as a child of the selected folder.

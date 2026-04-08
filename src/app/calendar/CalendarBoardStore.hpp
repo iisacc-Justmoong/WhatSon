@@ -8,6 +8,8 @@
 #include <QTimer>
 #include <QVector>
 
+#include <functional>
+
 class CalendarBoardStore final : public ICalendarBoardStore
 {
     Q_OBJECT
@@ -32,6 +34,8 @@ public:
     Q_INVOKABLE bool setTaskCompleted(const QString& entryId, bool completed) override;
     void setProjectedNotesHubPath(const QString& wshubPath);
     QString projectedNotesHubPath() const;
+    void setProjectedNotesProvider(std::function<QVector<LibraryNoteRecord>()> provider);
+    void reloadProjectedNotesFromSnapshot(const QVector<LibraryNoteRecord>& notes);
     bool reloadProjectedNotes(QString* errorMessage = nullptr);
 
 public slots:
@@ -76,9 +80,11 @@ private:
     void clearProjectedEntries();
     void replaceProjectedEntries(QVector<CalendarEntry> entries);
     QVector<CalendarEntry> buildProjectedNoteEntries(const QVector<LibraryNoteRecord>& notes) const;
+    QVector<CalendarEntry> projectedEntriesForQueries() const;
 
     QVector<CalendarEntry> m_entries;
     QVector<CalendarEntry> m_projectedEntries;
     QString m_projectedNotesHubPath;
     QTimer m_projectedNotesReloadTimer;
+    std::function<QVector<LibraryNoteRecord>()> m_projectedNotesProvider;
 };

@@ -26,6 +26,8 @@ It supports two variants through one boolean argument:
 - Day-label gap, event-row height, and event-row spacing use `LV.Theme.scaleMetric(10/16)` and `LV.Theme.gap2`.
 - Entry chips delegate to shared `CalendarEventCell` with `cornerRadius: LV.Theme.radiusSm` in month-grid usage.
 - Overflow state: renders `+N more` when visible entry capacity is exceeded
+- The parent grid may now pass note/event chip payloads that already originated from `dayModel.entries` inside the
+  month projection, so visible calendar items stay aligned with the rebuilt month snapshot.
 
 ## Interaction
 1. Whole cell is clickable through an internal `MouseArea`.

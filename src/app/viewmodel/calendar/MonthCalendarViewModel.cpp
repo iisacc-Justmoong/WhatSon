@@ -479,6 +479,8 @@ QVariantMap MonthCalendarViewModel::buildMonthProjection(int year, int month) co
 
         const QDate cellDate = calendar.dateFromParts(targetYear, targetMonth, targetDay);
         const QString dateIso = cellDate.isValid() ? cellDate.toString(Qt::ISODate) : QString();
+        const QVariantList entries =
+            m_calendarBoardStore ? m_calendarBoardStore->entriesForDate(dateIso) : QVariantList{};
         const QVariantMap entryCounts = m_calendarBoardStore
                                             ? m_calendarBoardStore->countsForDate(dateIso)
                                             : QVariantMap{};
@@ -490,6 +492,7 @@ QVariantMap MonthCalendarViewModel::buildMonthProjection(int year, int month) co
         dayModel.insert(QStringLiteral("dateIso"), dateIso);
         dayModel.insert(QStringLiteral("inCurrentMonth"), inCurrentMonth);
         dayModel.insert(QStringLiteral("isToday"), cellDate.isValid() && cellDate == today);
+        dayModel.insert(QStringLiteral("entries"), entries);
         dayModel.insert(
             QStringLiteral("eventCount"),
             entryCounts.value(QStringLiteral("eventCount"), 0).toInt());

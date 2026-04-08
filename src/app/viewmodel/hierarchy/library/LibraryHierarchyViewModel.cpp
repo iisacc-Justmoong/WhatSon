@@ -7,6 +7,7 @@
 #include "file/hierarchy/WhatSonFolderIdentity.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyParser.hpp"
 #include "file/hierarchy/folders/WhatSonFoldersHierarchyStore.hpp"
+#include "file/hierarchy/library/LibraryNotePreviewText.hpp"
 #include "file/hierarchy/library/WhatSonLibraryFolderHierarchyMutationService.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyCreator.hpp"
 #include "file/hierarchy/library/WhatSonLibraryHierarchyStore.hpp"
@@ -40,58 +41,11 @@
 
 namespace
 {
-    constexpr int kMaxNoteListSummaryLines = 5;
     constexpr auto kLibraryDraftLabel = "Draft";
     constexpr auto kLibraryAllLabel = "All Library";
     constexpr auto kLibraryTodayLabel = "Today";
 
     QStringList noteListFolders(const LibraryNoteRecord& note);
-
-    QString truncateToMaxLines(const QString& value, int maxLines)
-    {
-        if (maxLines <= 0)
-        {
-            return {};
-        }
-
-        const QStringList lines = value.split(QLatin1Char('\n'));
-        if (lines.size() <= maxLines)
-        {
-            return value;
-        }
-
-        QStringList truncated;
-        truncated.reserve(maxLines);
-        for (int index = 0; index < maxLines; ++index)
-        {
-            truncated.push_back(lines.at(index));
-        }
-        return truncated.join(QLatin1Char('\n'));
-    }
-
-    QString notePrimaryText(const LibraryNoteRecord& note)
-    {
-        const QString firstLine = note.bodyFirstLine.trimmed();
-        const QString bodyPlainText = truncateToMaxLines(note.bodyPlainText.trimmed(), kMaxNoteListSummaryLines);
-        if (!firstLine.isEmpty())
-        {
-            if (bodyPlainText.isEmpty())
-            {
-                return firstLine;
-            }
-
-            if (!bodyPlainText.startsWith(firstLine))
-            {
-                return firstLine + QLatin1Char('\n') + bodyPlainText;
-            }
-        }
-
-        if (!bodyPlainText.isEmpty())
-        {
-            return bodyPlainText;
-        }
-        return {};
-    }
 
     QString noteSearchableText(const LibraryNoteRecord& note, const QStringList& folderLabels)
     {
@@ -3298,6 +3252,11 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
     return true;
 }
 
+QVector<LibraryNoteRecord> LibraryHierarchyViewModel::indexedNotesSnapshot() const
+{
+    return m_indexedState.allNotes();
+}
+
 void LibraryHierarchyViewModel::setHubStore(WhatSonHubStore store)
 {
     const QString nextHubPath = store.hubPath().trimmed();
@@ -3429,7 +3388,7 @@ LibraryNoteListItem LibraryHierarchyViewModel::buildNoteListItem(
 
     LibraryNoteListItem item;
     item.id = noteId;
-    item.primaryText = notePrimaryText(note);
+    item.primaryText = WhatSon::LibraryPreview::notePrimaryText(note);
     item.searchableText = noteSearchableText(note, folderLabels);
     item.bodyText = note.bodySourceText.isEmpty() ? note.bodyPlainText : note.bodySourceText;
     item.createdAt = note.createdAt;

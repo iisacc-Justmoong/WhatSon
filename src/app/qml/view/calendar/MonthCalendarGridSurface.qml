@@ -60,7 +60,11 @@ Item {
         return monthCalendarGridSurface.dayModels.slice(0, visibleCount);
     }
     function entriesForDate(dayModel) {
-        if (!dayModel || dayModel.dateIso === undefined || !monthCalendarGridSurface.calendarVm || !monthCalendarGridSurface.calendarVm.entriesForDate)
+        if (!dayModel)
+            return [];
+        if (dayModel.entries !== undefined && dayModel.entries)
+            return dayModel.entries;
+        if (dayModel.dateIso === undefined || !monthCalendarGridSurface.calendarVm || !monthCalendarGridSurface.calendarVm.entriesForDate)
             return [];
         const dateIso = String(dayModel.dateIso).trim();
         if (dateIso.length === 0)

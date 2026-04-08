@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/hierarchy/library`
 - Child directories: 0
-- Child files: 17
+- Child files: 18
 
 ## Child Directories
 - No child directories.
@@ -18,6 +18,7 @@
 - `LibraryDraft.cpp`
 - `LibraryDraft.hpp`
 - `LibraryNoteRecord.hpp`
+- `LibraryNotePreviewText.hpp`
 - `LibraryToday.cpp`
 - `LibraryToday.hpp`
 - `WhatSonLibraryIndexedState.cpp`
@@ -38,3 +39,7 @@
 - Runtime ownership and lifecycle rules
 - Testing strategy and coverage map
 - Known hotspots and refactor priorities
+
+## Notes
+- `LibraryNotePreviewText.hpp` is the shared preview-text authority for library note cards and calendar note chips, so
+  compact note renderers do not drift into separate headline rules.

@@ -85,8 +85,19 @@ WhatSon is an LVRS-based Qt Quick application.
   and yearly calendar view in the editor's inline content slot, reusing shared calendar view-model backends.
 - Calendar content surfaces now share a `CalendarBoardStore` backend so events and tasks can be created with explicit
   `date + time` arguments and projected back into day-cell counters across day/week/month/year views.
-- The same calendar board now also projects library notes by `createdAt` / `lastModifiedAt`, so a note modified on
-  `2026-04-08` appears in the April 8 calendar views alongside manual calendar event items instead of replacing them.
+- The same calendar board now also projects library notes into a single calendar item per note. It anchors that item
+  to whichever of `createdAt` or `lastModifiedAt` is more recent, so a note modified on `2026-04-08` appears in the
+  April 8 calendar views alongside manual calendar event items instead of replacing them.
+- Calendar note projection now refreshes from the live library runtime snapshot on startup and library-side note
+  mutations, which prevents the calendar views from staying empty while still preserving the disk reindex fallback for
+  bookmark/progress-originated note changes.
+- The monthly calendar projection now carries per-day `entries` payloads into the day-cell model itself, so note
+  lifecycle chips render visually inside the month grid instead of relying on a late re-query path.
+- Calendar queries now also fall back to the live library note provider when the projected-entry cache is empty, so the
+  visible calendar surfaces can still render note chips for dates like `2026-04-08` instead of showing only the day
+  number grid.
+- Projected note chips now label themselves with the same top-line body preview text used by `NoteListItem`, instead of
+  prefixing the chip with lifecycle strings such as `Created note` or `Modified note`.
 - The desktop workspace shell now keeps the broad panel wrappers (`StatusBarLayout`, `NavigationBarLayout`,
   `HierarchySidebarLayout`, `ListBarLayout`, `ContentViewLayout`, `DetailPanelLayout`) transparent, so the root
   `LV.ApplicationWindow` `panelBackground01` canvas remains the only large desktop background surface.
