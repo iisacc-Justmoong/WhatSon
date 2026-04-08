@@ -6,7 +6,7 @@
 #include "file/hierarchy/library/WhatSonLibraryIndexedState.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/note/WhatSonNoteFileStatSupport.hpp"
+#include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 
 #include <QDir>

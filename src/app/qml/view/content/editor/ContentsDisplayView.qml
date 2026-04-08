@@ -126,6 +126,7 @@ Item {
     property int logicalLineDocumentYCacheLineCount: 0
     property int logicalLineDocumentYCacheRevision: -1
     readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
+    readonly property bool lineGeometryRefreshEnabled: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
@@ -400,8 +401,8 @@ Item {
     }
     function commitGutterRefresh() {
         contentsView.gutterRefreshRevision += 1;
-        contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
         contentsView.refreshMinimapSnapshot();
+        contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
         if (minimapLayer)
             minimapLayer.requestRepaint();
     }
@@ -472,9 +473,19 @@ Item {
         const editorY = contentsView.editorDocumentStartY;
         return editorY + documentY + contentsView.editorContentOffsetY;
     }
+    function incrementalLineGeometryAvailable() {
+        return Array.isArray(contentsView.minimapLineGroups)
+                && contentsView.minimapLineGroups.length === contentsView.logicalLineCount
+                && contentsView.minimapLineGroups.length > 0;
+    }
     function ensureLogicalLineDocumentYCache() {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const lineCount = contentsView.logicalLineCount;
+        if (contentsView.incrementalLineGeometryAvailable()) {
+            contentsView.logicalLineDocumentYCacheRevision = refreshRevision;
+            contentsView.logicalLineDocumentYCacheLineCount = lineCount;
+            return;
+        }
         if (contentsView.logicalLineDocumentYCacheRevision === refreshRevision && contentsView.logicalLineDocumentYCacheLineCount === lineCount && Array.isArray(contentsView.logicalLineDocumentYCache) && contentsView.logicalLineDocumentYCache.length === lineCount) {
             return;
         }
@@ -575,6 +586,9 @@ Item {
         const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null ? "" : String(contentsView.editorText);
         if (contentsView.documentPresentationSourceText !== currentSourceText)
             contentsView.documentPresentationSourceText = currentSourceText;
+        const presentationSourceText = contentsView.documentPresentationSourceText;
+        if (textMetricsBridge && textMetricsBridge.text !== undefined && textMetricsBridge.text !== presentationSourceText)
+            textMetricsBridge.text = presentationSourceText;
         const needsRichTextProjection = !contentsView.preferNativeInputHandling || contentsView.showFormattedTextRenderer;
         if (!needsRichTextProjection) {
             if (contentsView.renderedEditorText !== "")
@@ -585,7 +599,6 @@ Item {
             editorTypingController.synchronizeLiveEditingStateFromPresentation();
             return;
         }
-        const presentationSourceText = contentsView.documentPresentationSourceText;
         if (textFormatRenderer && textFormatRenderer.sourceText !== undefined && textFormatRenderer.sourceText !== presentationSourceText)
             textFormatRenderer.sourceText = presentationSourceText;
         const nextRenderedText = textFormatRenderer && textFormatRenderer.editorSurfaceHtml !== undefined && textFormatRenderer.editorSurfaceHtml !== null
@@ -661,8 +674,13 @@ Item {
         return contentsView.minimapContentHeight() > (Number(flickable.height) || 0);
     }
     function lineDocumentY(lineNumber) {
-        contentsView.ensureLogicalLineDocumentYCache();
         const safeLineNumber = Math.max(1, Math.min(contentsView.logicalLineCount, Number(lineNumber) || 1));
+        if (contentsView.incrementalLineGeometryAvailable()) {
+            const lineGroup = contentsView.minimapLineGroups[safeLineNumber - 1];
+            if (lineGroup && lineGroup.contentY !== undefined)
+                return Math.max(0, (Number(lineGroup.contentY) || 0) - contentsView.editorDocumentStartY);
+        }
+        contentsView.ensureLogicalLineDocumentYCache();
         const cacheIndex = safeLineNumber - 1;
         if (Array.isArray(contentsView.logicalLineDocumentYCache) && cacheIndex >= 0 && cacheIndex < contentsView.logicalLineDocumentYCache.length) {
             return Number(contentsView.logicalLineDocumentYCache[cacheIndex]) || 0;
@@ -672,6 +690,11 @@ Item {
     function lineVisualHeight(startLine, lineSpan) {
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLine) || 1));
         const safeLineSpan = Math.max(1, Number(lineSpan) || 1);
+        if (safeLineSpan === 1 && contentsView.incrementalLineGeometryAvailable()) {
+            const lineGroup = contentsView.minimapLineGroups[safeStartLine - 1];
+            if (lineGroup && lineGroup.contentHeight !== undefined)
+                return Math.max(1, Number(lineGroup.contentHeight) || contentsView.editorLineHeight);
+        }
         const startDocumentY = contentsView.lineDocumentY(safeStartLine);
         const nextLineNumber = safeStartLine + safeLineSpan;
         let endDocumentY = 0;
@@ -869,7 +892,7 @@ Item {
         return editorSelectionController.queueMarkdownListMutation(listKind);
     }
     function refreshMinimapSnapshot() {
-        if (!contentsView.minimapRefreshEnabled)
+        if (!contentsView.lineGeometryRefreshEnabled)
             return;
         const currentSourceText = contentsView.currentMinimapSourceText();
         if (!contentsView.minimapSnapshotForceFullRefresh
@@ -1001,7 +1024,7 @@ Item {
         });
     }
     function scheduleMinimapSnapshotRefresh(forceFull) {
-        if (!contentsView.minimapRefreshEnabled)
+        if (!contentsView.lineGeometryRefreshEnabled)
             return;
         if (forceFull)
             contentsView.minimapSnapshotForceFullRefresh = true;
@@ -1053,6 +1076,7 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
     onEditorTextChanged: {
+        contentsView.scheduleMinimapSnapshotRefresh(false);
         contentsView.scheduleDocumentPresentationRefresh(false);
     }
     onHeightChanged: {
@@ -1135,8 +1159,6 @@ Item {
     }
     ContentsLogicalTextBridge {
         id: textMetricsBridge
-
-        text: contentsView.documentPresentationSourceText
     }
     ContentsGutterMarkerBridge {
         id: gutterMarkerBridge

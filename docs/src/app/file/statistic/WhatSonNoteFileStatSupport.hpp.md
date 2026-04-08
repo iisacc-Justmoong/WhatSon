@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonNoteFileStatSupport.hpp`
+# `src/app/file/statistic/WhatSonNoteFileStatSupport.hpp`
 
 ## Responsibility
 

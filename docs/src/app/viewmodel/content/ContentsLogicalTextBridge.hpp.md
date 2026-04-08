@@ -28,6 +28,11 @@
   RichText/plain-text selection offsets back into source-markup offsets before mutating the stored body text.
 - `logicalLengthForSourceText(QString)` is now also part of the public QML bridge surface so block-style mutations can
   measure rewritten source fragments in the same logical-text coordinate system used by the live editor selection.
+- `logicalToSourceOffsets()` is now also exposed so `ContentsEditorTypingController.qml` can seed one whole-note
+  offset table at presentation-commit time and then update that table incrementally during ordinary typing.
+- `adoptIncrementalState(...)` is now also part of the public QML surface so the typing controller can push a freshly
+  spliced `{source text, logical text, line starts, logical->source offsets}` bundle back into the bridge after each
+  accepted typing mutation.
 - The header also carries a logical-to-source offset cache (`m_logicalToSourceOffsets`) that stays synchronized with
   the normalized plain-text projection.
 - The exposed offset contract remains `int`-based for QML callers, so implementation-side source bounds must be
@@ -61,3 +66,8 @@
   QML selection offsets still match the source editor surface.
 - When QML rewrites one source line in isolation, `logicalLengthForSourceText(...)` must report the rendered logical
   character count for that fragment rather than the raw source-token count.
+- When the host editor commits a new presentation snapshot, `logicalToSourceOffsets()` must expose an array with
+  `logicalText.length + 1` entries so the typing controller can reseed its incremental mapping state without walking
+  one QML-to-C++ call per character.
+- When QML pushes `adoptIncrementalState(...)`, the bridge must accept line-start offsets and logical/source offset
+  tables that already reflect the latest live keystroke, instead of rebuilding those tables from the whole note again.

@@ -15,12 +15,19 @@ suppression local to this file.
   mobile width.
 - Mobile typing now prioritizes OS-native input behavior over live app-side RichText resync:
   - the editor enables `preferNativeInputHandling`
-  - the live mobile input surface now binds to `ContentsLogicalTextBridge.logicalText` and stays in `TextEdit.PlainText`
-    instead of editing the RichText projection directly
+  - the live mobile input surface still consumes `ContentsLogicalTextBridge.logicalText`, but that bridge now follows
+    an idle/blur-scoped `documentPresentationSourceText` snapshot instead of rebuilding directly from every
+    `editorText` mutation
   - synchronous per-keystroke persistence is deferred to the existing debounce session path
   - periodic note snapshot polling pauses while the editor keeps input focus
-- Mobile still keeps the source/plain-text bridge current for typing diffs, but the markdown-aware preview renderer is
-  now completely skipped while the live source editor is active and no formatted preview is visible.
+- Mobile typing diffs now run from the shared incremental typing cache rather than forcing
+  `ContentsLogicalTextBridge` to rebuild for each committed character, and the markdown-aware preview renderer remains
+  completely skipped while the live source editor is active and no formatted preview is visible.
+- Mobile line geometry now also follows the shared incremental logical-line group cache:
+  - single-line gutter/minimap geometry queries reuse `minimapLineGroups` instead of rebuilding whole-document
+    line-rectangle caches
+  - the geometry refresh path stays active even while the parent route hides the minimap, so hiding the minimap does
+    not push line-Y math back onto full-document sampling
 - Mobile now also depends on the shared editor wrapper's `Qt.inputMethod.update(...)` path so iOS can re-query current
   selection/cursor geometry while keyboard trackpad gestures are active.
 - Mobile also depends on the shared wrapper/controller preserving the active selection edge with
@@ -70,6 +77,10 @@ suppression local to this file.
     except for the mobile-only native-input priority rules.
   - Mobile typing must not trigger whole-document markdown/RichText presentation refresh on every committed keystroke;
     the markdown preview renderer should stay idle while the source editor remains active and preview is hidden.
+  - Mobile single-character typing must also avoid whole-note `ContentsLogicalTextBridge` regeneration until the editor
+    goes idle, loses focus, or switches notes.
+  - Mobile hidden-minimap states must still keep line geometry current through the incremental line-group cache rather
+    than re-running whole-note text-geometry sampling for gutter helpers.
   - Mobile body edits must not force full-document minimap text-geometry sampling; only the changed logical-line
     range should be re-sampled unless the editor layout changed.
   - The mobile editor must render `ContentsLogicalTextBridge.logicalText` as the active input text so double-tap

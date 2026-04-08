@@ -7,13 +7,21 @@
 ## Scope
 - Mirrored source directory: `src/app/file/statistic`
 - Child directories: 0
-- Child files: 0
+- Child files: 2
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
-- No direct source files.
+- `WhatSonNoteFileStatSupport.cpp`
+- `WhatSonNoteFileStatSupport.hpp`
+
+## Current Focus Areas
+- `WhatSonNoteFileStatSupport` now owns reusable note-statistic support logic:
+  - local body-derived counter recomputation
+  - header-only `openCount` rewrites
+  - hub-wide tracked-stat refresh paths such as incoming backlink counts
+- The directory is no longer empty; statistic-specific logic now lives here instead of under `file/note`.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

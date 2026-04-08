@@ -6,7 +6,7 @@
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyParser.hpp"
 #include "file/hierarchy/projects/WhatSonProjectsHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
-#include "file/note/WhatSonNoteFileStatSupport.hpp"
+#include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/projects/ProjectsHierarchyViewModelSupport.hpp"
 #include "viewmodel/sidebar/SidebarHierarchyLvrsSupport.hpp"

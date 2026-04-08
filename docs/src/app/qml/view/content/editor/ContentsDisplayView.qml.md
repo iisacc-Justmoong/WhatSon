@@ -44,16 +44,25 @@ that sit directly inside the editor viewport.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
-- Whole-document RichText projection now runs through a short presentation timer instead of a direct `editorText`
-  binding:
-  - live typing keeps `ContentsLogicalTextBridge` current for source/plain-text diffing
-  - the live editor now consumes `ContentsTextFormatRenderer.editorSurfaceHtml`, which styles proprietary inline tags
+- Whole-document RichText/plain-text projection now runs through a dedicated `documentPresentationSourceText` snapshot
+  instead of a direct `editorText` binding:
+  - live typing mutates `editorText` immediately, but `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer`
+    now rebuild only after the short presentation timer fires or when blur/note-switch forces a commit
+  - `ContentsEditorTypingController.qml` keeps its own incremental plain-text / logical-to-source offset cache between
+    those presentation commits, so single-character edits no longer need a whole-document bridge rebuild
+  - the live editor still consumes `ContentsTextFormatRenderer.editorSurfaceHtml`, which styles proprietary inline tags
     but leaves markdown syntax literal
   - markdown-aware preview HTML is not rebuilt unless a preview surface explicitly asks for it
-  - the cached `renderedEditorText` is still committed after a short idle window or on blur/note switch
+  - explicit source-rewrite actions such as inline-format wraps and markdown-list toggles now trigger one immediate
+    presentation commit after the source rewrite so the bridge/renderer/minimap state catches up without waiting for
+    the idle timer
 - Minimap snapshotting now keeps a cached logical-line group model and only resamples the changed text range through
   `positionToRectangle(...)` during ordinary note edits.
   Full minimap rebuilds remain reserved for layout resets such as width/height changes, route re-entry, or note swaps.
+- Gutter line geometry now also reuses that incremental logical-line group cache:
+  - `lineDocumentY(...)` and single-line `lineVisualHeight(...)` read from `minimapLineGroups` when that cache is hot
+  - the editor keeps the line-geometry refresh path active even when the minimap is visually hidden, so hiding the
+    minimap no longer forces gutter math back onto whole-document `positionToRectangle(...)` scans
 - Cursor-only and viewport-only minimap updates now reuse cached row geometry; full minimap resampling is limited to
   text/layout changes or an explicit minimap re-enable.
 - RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
@@ -79,6 +88,10 @@ that sit directly inside the editor viewport.
     only the changed logical-line range should be resampled unless the editor layout itself changed.
   - Desktop typing must not drive markdown-aware preview HTML regeneration on every committed keystroke; only the
     cheaper source-editing surface should be refreshed while preview is disabled.
+  - Desktop single-character typing must not rebuild `ContentsLogicalTextBridge` from the whole note on every committed
+    key; whole-document logical/source offset regeneration should wait for editor idle, blur, or note switch.
+  - Desktop gutter line-Y queries must prefer cached `minimapLineGroups` geometry instead of falling back to a fresh
+    whole-note `positionToRectangle(...)` sweep when the minimap is merely hidden.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while

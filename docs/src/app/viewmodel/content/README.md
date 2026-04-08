@@ -22,13 +22,21 @@
 
 ## Current Notes
 
-- `ContentsEditorSelectionBridge` now owns the asynchronous direct `.wsnote` save queue for editor body writes.
-- The editor/UI path only enqueues `{noteId, noteDirectoryPath, bodyText}`; the worker thread re-reads and updates the
-  actual `.wsnote` package.
+- `ContentsEditorSelectionBridge` no longer owns the asynchronous direct `.wsnote` save queue itself.
+- That queue and the related non-editing note-management work now live under the `file/note` domain in
+  `ContentsNoteManagementCoordinator`, while `ContentsEditorSelectionBridge` keeps only the note-selection-facing QML
+  contract.
+- The editor/UI path only enqueues body-write intent; the coordinator performs actual persistence, open-count
+  maintenance, and tracked-stat follow-up work later.
 - Note-selection changes now reuse the same `{noteId, noteDirectoryPath}` metadata session and no longer trigger a
   hub-wide `.wsnbody` stat refresh just to bump `openCount`.
-- The bridge only applies persisted body state and requests tracked-stat refresh after background completion returns to
-  the main thread.
+- The coordinator now applies persisted body state and schedules tracked-stat refresh after background completion returns
+  to the main thread.
+- `ContentsLogicalTextBridge` now also exports its cached logical-to-source offset table in one QML call so the editor
+  typing hot path can reseed once per presentation commit and avoid whole-note bridge regeneration on every typed
+  character.
+- `ContentsLogicalTextBridge` now also accepts incremental live typing adoption from QML, so the bridge no longer needs
+  to rebuild line starts and logical/source offset tables from the whole note after every committed character.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

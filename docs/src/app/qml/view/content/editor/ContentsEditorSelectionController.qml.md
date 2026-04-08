@@ -69,6 +69,11 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
   markdown-neutral source-editing surface from the canonical `.wsnbody` text and applies `QTextDocument/QTextCursor`
   formatting against logical editor offsets.
+- Because ordinary typing now keeps `ContentsLogicalTextBridge` current through incremental adoption, explicit
+  formatting/list actions no longer need a pre-mutation whole-document bridge commit.
+- After a programmatic source rewrite finishes, the controller does trigger one immediate
+  `commitDocumentPresentationRefresh()` so renderer/bridge/minimap state catches up to the rewritten note without
+  waiting for the idle timer.
 - The context menu exposes `Plain` as a first-class formatting action. It routes through the same renderer path and
   clears all supported inline styles from the selected range before persisting canonical `.wsnbody`.
 - Reapplying the same inline style to a fully formatted selection now clears that selection back to plain text instead
@@ -117,6 +122,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Applying either list shortcut to a multi-line selection should transform every touched non-empty line as one block,
   not only the first line.
 - Reapplying the same list shortcut to a uniformly listed block should remove those markers instead of duplicating them.
+- Inline-format wraps and markdown-list toggles triggered while the editor has uncommitted live typing must still apply
+  to the correct current logical selection; they should rely on the incrementally maintained bridge state instead of
+  forcing a pre-mutation whole-document rebuild.
 - Converting between unordered and ordered shortcuts should rewrite the source prefixes canonically (`- ` or `N. `)
   rather than preserving mixed legacy markers inside one block.
 - Reapplying the unordered-list shortcut on a stored `• item` line should remove that bullet as an unordered-list marker

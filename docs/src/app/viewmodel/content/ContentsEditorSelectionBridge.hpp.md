@@ -15,24 +15,18 @@
 - QObject macro present: yes
 
 ## Current Implementation Notes
-- Public invokables include:
+- `ContentsEditorSelectionBridge` is now selection-facing only:
+  - exports `selectedNoteId`, `selectedNoteBodyText`, and `visibleNoteCount`
+  - keeps the note-list selection/count property wiring for QML
+  - forwards persistence and note-management requests to `ContentsNoteManagementCoordinator`
+- Public invokables remain:
   - `persistEditorTextForNote(noteId, text)`
-  - `refreshSelectedNoteSnapshot()`: triggers selected-note metadata/body refresh via connected content view-model
-    contract (`reloadNoteMetadataForNoteId`) and re-synchronizes exposed selection/count properties.
-- The bridge now also exposes `directPersistenceContractAvailable`, so QML can distinguish the async direct `.wsnote`
-  save lane from the synchronous fallback `saveBodyTextForNote(...)` contracts.
-- `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is the completion signal for the editor save
-  pipeline. QML sessions now clear or re-arm debounce state from that completion instead of assuming the write already
-  finished when `persistEditorTextForNote(...)` returns.
-- The bridge now also owns a serialized bound-note persistence session:
-  - caches the selected note id / note directory path
-  - reuses that path session for repeated editor autosaves instead of rediscovering the note package each time
-  - also uses that metadata pair for note-selection open-count updates, so selection no longer depends on body scans
-  - leaves the actual `.wsnote` read-modify-write to the background worker, so no note-file IO remains on the editor
-    save enqueue path
-  - treats direct `.wsnote` persistence as an implementation detail and leaves hub-wide stat refresh to the connected
-    content view-model contract
-  - keeps async save requests serialized so background `.wsnbody` writes do not race each other for one bridge
+  - `refreshSelectedNoteSnapshot()`
+  but both now delegate to the coordinator instead of performing note-management work inside the bridge itself.
+- The bridge still exposes `directPersistenceContractAvailable` and `contentPersistenceContractAvailable`, but those
+  values now come from the coordinator-owned management boundary.
+- `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is still the completion signal consumed by QML
+  editor sessions, but the bridge now only forwards the coordinator's result.
 
 ### Classes and Structs
 - `ContentsEditorSelectionBridge`
@@ -55,3 +49,10 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+
+## Regression Checks
+
+- Selection refresh must not directly execute note-file persistence, stat refresh, or open-count maintenance logic.
+- `persistEditorTextForNote(...)` must stay as an enqueue-facing contract for QML even after the management split.
+- Binding a new content view-model must also rebind the current selected note into the coordinator so note-path
+  resolution remains valid after model replacement.

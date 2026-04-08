@@ -11,6 +11,7 @@ QtObject {
     property var textFormatRenderer: null
     property var textMetricsBridge: null
     property string liveAuthoritativePlainText: ""
+    property var liveLogicalLineStartOffsets: [0]
     property var liveLogicalToSourceOffsets: [0]
     property string liveSnapshotSourceText: ""
 
@@ -148,6 +149,32 @@ QtObject {
         return offsets;
     }
 
+    function computeLineStartOffsets(text) {
+        const normalizedText = controller.normalizePlainText(text);
+        const offsets = [0];
+        for (let index = 0; index < normalizedText.length; ++index) {
+            if (normalizedText.charAt(index) === "\n")
+                offsets.push(index + 1);
+        }
+        return offsets;
+    }
+
+    function normalizeLineStartOffsets(rawOffsets, logicalText) {
+        const normalizedText = controller.normalizePlainText(logicalText);
+        const rawLength = rawOffsets && rawOffsets.length !== undefined
+                ? Math.max(0, Math.floor(Number(rawOffsets.length) || 0))
+                : 0;
+        if (rawLength > 0) {
+            const offsets = new Array(rawLength);
+            for (let index = 0; index < rawLength; ++index) {
+                const numericOffset = Number(rawOffsets[index]);
+                offsets[index] = isFinite(numericOffset) ? Math.max(0, Math.floor(numericOffset)) : 0;
+            }
+            return offsets;
+        }
+        return controller.computeLineStartOffsets(normalizedText);
+    }
+
     function normalizeOffsetArray(rawOffsets, logicalLength, fallbackSourceText) {
         const safeLogicalLength = Math.max(0, Math.floor(Number(logicalLength) || 0));
         const rawLength = rawOffsets && rawOffsets.length !== undefined
@@ -170,6 +197,31 @@ QtObject {
             return offsets;
         }
         return controller.identityOffsetArray(safeLogicalLength);
+    }
+
+    function lastLineIndexForOffset(lineStartOffsets, offset) {
+        const offsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0 ? lineStartOffsets : [0];
+        const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
+        let bestIndex = 0;
+        for (let index = 0; index < offsets.length; ++index) {
+            const lineOffset = Math.max(0, Number(offsets[index]) || 0);
+            if (lineOffset > safeOffset)
+                break;
+            bestIndex = index;
+        }
+        return bestIndex;
+    }
+
+    function firstLineIndexAtOrAfterOffset(lineStartOffsets, offset, minimumIndex) {
+        const offsets = Array.isArray(lineStartOffsets) && lineStartOffsets.length > 0 ? lineStartOffsets : [0];
+        const safeOffset = Math.max(0, Math.floor(Number(offset) || 0));
+        const safeMinimumIndex = Math.max(0, Math.floor(Number(minimumIndex) || 0));
+        for (let index = safeMinimumIndex; index < offsets.length; ++index) {
+            const lineOffset = Math.max(0, Number(offsets[index]) || 0);
+            if (lineOffset >= safeOffset)
+                return index;
+        }
+        return offsets.length;
     }
 
     function escapedSourceLengthForCharacter(ch) {
@@ -196,16 +248,45 @@ QtObject {
         return offsets;
     }
 
+    function buildReplacementLineStartOffsets(currentLineStart, text) {
+        const baseStart = Math.max(0, Math.floor(Number(currentLineStart) || 0));
+        const normalizedText = controller.normalizePlainText(text);
+        const offsets = [baseStart];
+        for (let index = 0; index < normalizedText.length; ++index) {
+            if (normalizedText.charAt(index) === "\n")
+                offsets.push(baseStart + index + 1);
+        }
+        return offsets;
+    }
+
+    function adoptLiveStateIntoBridge(sourceText) {
+        if (!controller.textMetricsBridge
+                || controller.textMetricsBridge.adoptIncrementalState === undefined) {
+            return;
+        }
+        controller.textMetricsBridge.adoptIncrementalState(
+                    sourceText,
+                    controller.liveAuthoritativePlainText,
+                    controller.liveLogicalLineStartOffsets,
+                    controller.liveLogicalToSourceOffsets);
+    }
+
     function synchronizeLiveEditingStateFromPresentation() {
         const snapshotSourceText = controller.presentationSourceText();
         const presentationLogicalText = controller.textMetricsBridge && controller.textMetricsBridge.logicalText !== undefined
                 ? controller.normalizePlainText(controller.textMetricsBridge.logicalText)
                 : controller.normalizePlainText(snapshotSourceText);
+        let lineStartOffsets = [];
+        if (controller.textMetricsBridge && controller.textMetricsBridge.logicalLineStartOffsets !== undefined)
+            lineStartOffsets = controller.textMetricsBridge.logicalLineStartOffsets;
         let sourceOffsets = [];
         if (controller.textMetricsBridge && controller.textMetricsBridge.logicalToSourceOffsets !== undefined)
             sourceOffsets = controller.textMetricsBridge.logicalToSourceOffsets();
         controller.liveSnapshotSourceText = snapshotSourceText;
         controller.liveAuthoritativePlainText = presentationLogicalText;
+        controller.liveLogicalLineStartOffsets = controller.normalizeLineStartOffsets(
+                    lineStartOffsets,
+                    presentationLogicalText);
         controller.liveLogicalToSourceOffsets = controller.normalizeOffsetArray(
                     sourceOffsets,
                     presentationLogicalText.length,
@@ -217,8 +298,12 @@ QtObject {
         const currentOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
                 ? controller.liveLogicalToSourceOffsets
                 : [];
+        const currentLineStartOffsets = Array.isArray(controller.liveLogicalLineStartOffsets)
+                ? controller.liveLogicalLineStartOffsets
+                : [];
         if (controller.liveSnapshotSourceText !== snapshotSourceText
-                || currentOffsets.length !== controller.liveAuthoritativePlainText.length + 1) {
+                || currentOffsets.length !== controller.liveAuthoritativePlainText.length + 1
+                || currentLineStartOffsets.length === 0) {
             controller.synchronizeLiveEditingStateFromPresentation();
         }
     }
@@ -325,11 +410,13 @@ QtObject {
         const boundedSourceEnd = Math.max(boundedSourceStart, Math.floor(Number(sourceEnd) || 0));
         const insertedText = controller.normalizePlainText(replacementText);
         const insertedSourceOffsets = controller.buildReplacementSourceOffsets(insertedText);
+        const previousLineStartOffsets = Array.isArray(controller.liveLogicalLineStartOffsets)
+                ? controller.liveLogicalLineStartOffsets
+                : [0];
         const previousOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
                 ? controller.liveLogicalToSourceOffsets
                 : controller.identityOffsetArray(previousLogicalText.length);
         const previousLogicalLength = previousLogicalText.length;
-        const logicalRemovedLength = boundedLogicalEnd - boundedLogicalStart;
         const logicalInsertedLength = insertedText.length;
         const sourceRemovedLength = boundedSourceEnd - boundedSourceStart;
         const sourceInsertedLength = Math.max(0, Number(insertedSourceOffsets[insertedSourceOffsets.length - 1]) || 0);
@@ -337,6 +424,24 @@ QtObject {
         const nextLogicalText = previousLogicalText.slice(0, boundedLogicalStart)
                 + insertedText
                 + previousLogicalText.slice(boundedLogicalEnd);
+        const startLineIndex = controller.lastLineIndexForOffset(previousLineStartOffsets, boundedLogicalStart);
+        const currentLineStart = Math.max(0, Number(previousLineStartOffsets[startLineIndex]) || 0);
+        const suffixStartIndex = controller.firstLineIndexAtOrAfterOffset(
+                    previousLineStartOffsets,
+                    boundedLogicalEnd,
+                    startLineIndex + 1);
+        const logicalDelta = logicalInsertedLength - (boundedLogicalEnd - boundedLogicalStart);
+        const replacementLineStartOffsets = controller.buildReplacementLineStartOffsets(currentLineStart, insertedText);
+        const nextLineStartOffsets = [];
+        for (let index = 0; index < startLineIndex; ++index)
+            nextLineStartOffsets.push(Math.max(0, Number(previousLineStartOffsets[index]) || 0));
+        for (let index = 0; index < replacementLineStartOffsets.length; ++index)
+            nextLineStartOffsets.push(replacementLineStartOffsets[index]);
+        for (let index = suffixStartIndex; index < previousLineStartOffsets.length; ++index) {
+            nextLineStartOffsets.push(Math.max(0, Number(previousLineStartOffsets[index]) || 0) + logicalDelta);
+        }
+        if (nextLineStartOffsets.length === 0 || Number(nextLineStartOffsets[0]) !== 0)
+            nextLineStartOffsets.unshift(0);
         const nextOffsets = new Array(nextLogicalText.length + 1);
 
         for (let index = 0; index < boundedLogicalStart; ++index)
@@ -350,6 +455,7 @@ QtObject {
         }
 
         controller.liveAuthoritativePlainText = nextLogicalText;
+        controller.liveLogicalLineStartOffsets = nextLineStartOffsets;
         controller.liveLogicalToSourceOffsets = nextOffsets;
     }
 
@@ -404,6 +510,7 @@ QtObject {
                     sourceEnd);
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;
+        controller.adoptLiveStateIntoBridge(nextSourceText);
         if (continuedListInsertion.applied)
             controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
         if (controller.view.syncingEditorTextFromModel)

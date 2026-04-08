@@ -7,7 +7,7 @@
 #include "file/hierarchy/progress/WhatSonProgressHierarchyStore.hpp"
 #include "file/note/WhatSonBookmarkColorPalette.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/note/WhatSonNoteFileStatSupport.hpp"
+#include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "viewmodel/hierarchy/progress/ProgressHierarchyViewModelSupport.hpp"
 

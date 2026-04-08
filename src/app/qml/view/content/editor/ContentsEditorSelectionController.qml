@@ -766,7 +766,6 @@ QtObject {
     function toggleMarkdownListForSelection(listKind, selectionSnapshot) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
             return false;
-        controller.refreshPresentationStateIfDirty();
         const normalizedKind = controller.normalizeMarkdownListKind(listKind);
         if (normalizedKind.length === 0)
             return false;
@@ -935,15 +934,6 @@ QtObject {
             controller.applyEditorRichTextSurface();
         });
     }
-    function refreshPresentationStateIfDirty() {
-        if (!controller.view
-                || controller.view.commitDocumentPresentationRefresh === undefined
-                || controller.view.documentPresentationRenderDirty === undefined) {
-            return;
-        }
-        if (controller.view.documentPresentationRenderDirty())
-            controller.view.commitDocumentPresentationRefresh();
-    }
     function refreshPresentationStateAfterProgrammaticChange() {
         if (!controller.view || controller.view.commitDocumentPresentationRefresh === undefined)
             return;
@@ -1003,7 +993,6 @@ QtObject {
     function wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
             return false;
-        controller.refreshPresentationStateIfDirty();
         const normalizedTagName = controller.normalizeInlineStyleTag(tagName);
         if (normalizedTagName.length === 0)
             return false;

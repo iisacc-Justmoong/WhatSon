@@ -33,6 +33,16 @@
   as their real glyphs instead of exposing the literal escape strings.
 - `sourceOffsetForLogicalOffset(...)` exposes that table to QML so selection/context-menu formatting can mutate the
   correct source slice even when the editor cursor operates on rendered plain-text offsets.
+- `logicalToSourceOffsets()` now exports the cached table in one QML-visible array so the typing controller can reseed
+  its incremental mapping state after each idle/blur presentation commit instead of asking C++ for one offset per
+  keystroke.
+- `adoptIncrementalState(...)` now lets QML push the already-spliced live typing state back into the bridge:
+  - source text
+  - logical text
+  - logical line-start offsets
+  - logical-to-source offsets
+- That adoption path updates the cached state and emits the same observable signals only when the pushed values actually
+  differ, so typing keeps bridge consumers synchronized without routing every character through `refreshTextState()`.
 - `logicalLengthForSourceText(...)` now reuses the same normalization path for ad-hoc fragments, giving QML list-toggle
   code a stable way to measure rewritten source lines in logical editor coordinates before restoring selection/cursor
   state.
@@ -47,6 +57,10 @@
   visible `<tag>` / `Tom & Jerry` glyph sequence so cursor mapping stays aligned with the editor surface.
 - When a single rewritten source line contains inline tags, entities, or resource tags, `logicalLengthForSourceText(...)`
   must still return the rendered logical length that the editor selection uses after the rewrite.
+- `logicalToSourceOffsets()` must stay aligned with the same normalized logical text that `logicalText` exposes, so a
+  post-idle typing-session reseed cannot shift source splices away from the intended logical cursor positions.
+- `adoptIncrementalState(...)` must not emit redundant change signals or rebuild offset tables when QML pushes an
+  identical live-typing snapshot.
 
 ## Extracted Symbols
 - Declared namespaces present: no

@@ -26,11 +26,13 @@
 ## Persistence Guard Notes
 - The session now distinguishes:
   - `pendingBodySave`: local edits waiting for debounce enqueue
-  - `bodySaveInFlight`: a background save request already accepted by `ContentsEditorSelectionBridge`
+  - `bodySaveInFlight`: a background save request already accepted by the selection-bridge/coordinator persistence lane
 - `acknowledgeQueuedEditorPersistence(noteId, text)` now clears only the pending-save/timer state and records the last
   accepted async payload.
 - `acknowledgeSuccessfulEditorPersistence(noteId, text)` now runs only from bridge completion, so the session no longer
   assumes file persistence finished on the same turn that the editor requested it.
+- The session still only talks to `ContentsEditorSelectionBridge`, but that bridge now forwards completion from
+  `ContentsNoteManagementCoordinator`; the session does not own save/stat/open-count behavior itself.
 - Async completion for an older payload must not clear a newer `pendingBodySave`. The session now only clears
   `pendingBodySave` on synchronous fallback completion; async completion merely clears the tracked in-flight payload.
 - Successful writes still do not revoke `localEditorAuthority` immediately. The session keeps that authority until the

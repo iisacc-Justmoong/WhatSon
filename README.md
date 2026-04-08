@@ -565,6 +565,19 @@ runtime loader and hierarchy viewmodels.
 Within `ContentsDisplayView.qml`, a selected note's live editor buffer becomes the source of truth after the user edits
 it once; divergent same-note storage payloads are rejected and re-persisted so runtime reloads cannot steal the caret
 or overwrite the active mobile/desktop editing session.
+The desktop/mobile editor surfaces now keep `documentPresentationSourceText` as a separate whole-document
+presentation snapshot. Ordinary typing updates raw `editorText` immediately, while `ContentsLogicalTextBridge` and
+`ContentsTextFormatRenderer` only rebuild from that snapshot after editor idle, blur, or note switch; the typing
+controller carries an incremental logical-to-source offset cache between those commits so single-character edits no
+longer force full-note plain-text diff/remap/rerender work.
+That same typing controller now also maintains incremental logical line-start offsets and pushes the full live state
+into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, while desktop/mobile line-geometry helpers reuse cached
+`minimapLineGroups` even when the minimap is hidden. As a result, ordinary typing no longer needs a whole-note bridge
+rebuild or a second whole-document line-rectangle sweep just to keep gutter/minimap helpers aligned.
+Non-editing note-management work now sits behind `src/app/file/note/ContentsNoteManagementCoordinator.*`.
+Editor/QML code only enqueues save intent through `ContentsEditorSelectionBridge`; direct `.wsnote` persistence,
+header open-count maintenance, tracked-stat refresh, and post-persist metadata resync are serialized by that separate
+coordinator outside the editor hot path.
 The editor save timer no longer waits for a full idle gap before touching disk. While a note body has pending local
 edits, `ContentsEditorSession.qml` now keeps a repeating `120ms` save cadence so continuous typing still commits the
 current buffer into the local filesystem regularly.

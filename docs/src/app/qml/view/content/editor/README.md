@@ -36,8 +36,17 @@
   the whole RichText surface on every edit.
 - Desktop/mobile editor views now keep a separate presentation timer for whole-document markdown/RichText refresh, so
   `ContentsTextFormatRenderer` and full minimap resampling no longer run directly on every committed keystroke.
+- Desktop/mobile editor views now also keep `documentPresentationSourceText` as the single whole-document presentation
+  snapshot. `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` bind to that snapshot instead of live
+  `editorText`, while `ContentsEditorTypingController.qml` carries the incremental plain-text/source-offset state
+  between idle commits.
+- `ContentsEditorTypingController.qml` now also maintains incremental logical line-start offsets and pushes the entire
+  live state into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, so bridge consumers stay current without a
+  whole-note rebuild per keystroke.
 - Desktop/mobile minimap snapshotting now also shares `ContentsMinimapSnapshotSupport.js`, so ordinary note edits only
   re-sample the changed logical-line window instead of walking the full note text through `positionToRectangle(...)`.
+- Desktop/mobile line geometry helpers now reuse that same logical-line group cache even when the minimap is hidden, so
+  gutter line-Y queries no longer need their own whole-document geometry sweep.
 - `ContentsInlineFormatEditor.qml` now also owns the `Qt.inputMethod.update(...)` bridge for cursor, selection, and
   geometry changes, keeping mobile platform text-selection handles and iOS keyboard trackpad gestures aligned with the
   live `TextEdit`.
@@ -61,7 +70,9 @@
   silently discard the old note buffer when the user changes selection.
 - Editor body persistence is now split into debounce enqueue vs background completion:
   - `ContentsEditorSession.qml` owns pending/in-flight state
-  - `ContentsEditorSelectionBridge` serializes direct `.wsnote` writes on a background queue
+  - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
+  - `ContentsNoteManagementCoordinator` serializes direct `.wsnote` writes plus open-count/stat follow-up work on the
+    management side
   - selection/typing controllers now treat `persistEditorTextForNote(...)` success as "request accepted", not
     necessarily "disk write already finished"
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like

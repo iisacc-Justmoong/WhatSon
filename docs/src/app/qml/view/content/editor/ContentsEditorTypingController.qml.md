@@ -11,7 +11,13 @@ This controller exists to keep plain typing separate from inline-format applicat
 
 ## Mutation Model
 
-- Reads the authoritative previous plain text from `ContentsLogicalTextBridge.logicalText`.
+- Seeds its authoritative plain-text snapshot and logical-to-source offset table from
+  `ContentsLogicalTextBridge.logicalText` plus `logicalToSourceOffsets()` only when the host editor view commits a
+  new `documentPresentationSourceText` snapshot.
+- Between those presentation commits, it keeps an incremental live cache of:
+  - the previous authoritative plain text
+  - logical line-start offsets
+  - the logical-to-source offset table needed to splice `.wsnbody`
 - Reads the live edited plain text from `contentEditor.getText(0, length)`.
 - Receives committed edit notifications only after IME composition settles, so diffing is based on stable plain-text
   snapshots instead of transient Hangul/Japanese preedit fragments.
@@ -42,7 +48,11 @@ This controller exists to keep plain typing separate from inline-format applicat
     the list source does not collapse into display glyphs
   - marker-only empty list lines do not auto-continue; pressing `Enter` on that empty continued list item now removes
     the list marker and leaves a plain blank line, breaking the repeated list-continuation chain
-- Resolves the delta back into source offsets through `ContentsLogicalTextBridge.sourceOffsetForLogicalOffset(...)`.
+- Resolves the delta back into source offsets through the incremental live offset cache first, only reseeding from
+  `ContentsLogicalTextBridge` when the presentation snapshot is refreshed.
+- After each accepted typing mutation, the controller now pushes that incremental logical-text / line-start /
+  logical-to-source state back into `ContentsLogicalTextBridge` through `adoptIncrementalState(...)`, so gutter,
+  selection, and cursor helpers do not need a whole-note bridge rebuild to stay current while the user is typing.
 - Delegates the final source splice to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
 
 This means ordinary typing no longer round-trips the entire RichText surface through
@@ -79,6 +89,12 @@ longer part of the normal typing path.
 - Markdown-list continuation is now tracked as a documented behavior contract only; this repository no longer maintains
   a dedicated scripted test for it.
 - Typing ordinary letters should update raw `.wsnbody` without serializing the whole RichText document.
+- Typing ordinary letters must not require a full `ContentsLogicalTextBridge` rebuild or full logical/source offset-map
+  regeneration on every committed keystroke.
+- Typing ordinary letters should keep `ContentsLogicalTextBridge.logicalLineCount`, line-start offsets, and
+  logical-to-source offsets current through incremental adoption instead of waiting for a whole-note bridge refresh.
+- Typing a single newline insertion or deletion must update the incremental line-start-offset cache in place instead of
+  rebuilding line boundaries for the whole note through the bridge.
 - `Space`, `Enter`, `Backspace`, and selection replacement should update the correct source span.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.

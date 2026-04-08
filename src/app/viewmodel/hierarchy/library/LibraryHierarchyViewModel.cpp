@@ -16,7 +16,7 @@
 #include "file/note/WhatSonHubNoteDeletionService.hpp"
 #include "file/note/WhatSonHubNoteFolderClearService.hpp"
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
-#include "file/note/WhatSonNoteFileStatSupport.hpp"
+#include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "file/note/WhatSonNoteFolderBindingRepository.hpp"
 #include "file/note/WhatSonNoteFolderBindingService.hpp"
 #include "file/note/WhatSonNoteFolderSemantics.hpp"

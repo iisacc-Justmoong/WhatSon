@@ -15,29 +15,15 @@
 - QObject macro present: no
 
 ## Current Implementation Notes
-- `refreshSelectedNoteSnapshot()` now supports polling-style sync from QML editors:
-  - Reads the currently selected note id from the bound note-list model.
-  - Invokes `reloadNoteMetadataForNoteId(QString)` on the bound content view-model when available.
-  - Refreshes exported selection/count state (`selectedNoteId`, `selectedNoteBodyText`, `visibleNoteCount`) after
-    reload attempts.
-- `persistEditorTextForNote(...)` now prefers a direct file-store lane:
-  - Enqueues `{noteId, noteDirectoryPath, bodyText}` onto a serialized background queue instead of performing note-file
-    IO on the editor/UI path.
-  - Re-reads the current `.wsnote` package inside that worker before each write, so the async body save does not reuse
-    stale header snapshots from an earlier enqueue turn.
-  - Performs the `.wsnbody` / `.wsnhead` write entirely off the editor thread.
-  - Uses `editorTextPersistenceFinished(...)` as the only completion path back to QML.
-  - Mirrors normalized body text and `lastModifiedAt` back into the active editable hierarchy viewmodel only after the
-    background write succeeds.
-  - Queues `requestTrackedStatisticsRefreshForNote(...)` onto the content view-model so the expensive
-    `backlinkByCount` / `openCount` scan still happens outside the editor bridge itself.
-- Repeated autosaves for the same note now coalesce in the pending queue, so while one save is in flight the bridge
-  keeps only the newest queued body for that note instead of scheduling every intermediate debounce payload.
-- `refreshNoteSelectionState()` is now header-metadata-centered:
-  - a note-id transition only seeds the bound `{noteId, noteDirectoryPath}` session
-  - increments `openCount` through `WhatSonNoteFileStatSupport::incrementOpenCountForNoteHeader(...)`
-  - does not ask the content view-model to run `requestTrackedStatisticsRefreshForNote(..., true)` anymore
-  - therefore avoids the hub-wide `.wsnbody` backlink rescan on ordinary note selection changes
+- The bridge no longer owns the serialized persistence queue or stat-refresh helpers directly.
+- Instead it now:
+  - keeps note-list property wiring (`currentNoteId`, `currentBodyText`, `itemCount`)
+  - forwards persistence/snapshot requests into `ContentsNoteManagementCoordinator`
+  - forwards `editorTextPersistenceFinished(...)` from that coordinator back to QML
+- `refreshNoteSelectionState()` now delegates note-id transitions into the coordinator through
+  `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
+- `setContentViewModel(...)` now rebinds the same content view-model into the coordinator and re-seeds the currently
+  selected note session there.
 
 ### Classes and Structs
 - None detected during scaffold generation.
@@ -60,3 +46,10 @@
 - Read the real implementation and adjacent headers before replacing this scaffold.
 - Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
 - Cross-link this file with peer modules in the same directory once the detailed pass begins.
+
+## Regression Checks
+
+- Note-list selection changes must still update `selectedNoteId` / `selectedNoteBodyText`, but they must no longer run
+  open-count/stat maintenance directly inside the bridge implementation.
+- The bridge must continue forwarding coordinator persistence completion signals so `ContentsEditorSession.qml` behavior
+  does not regress.
