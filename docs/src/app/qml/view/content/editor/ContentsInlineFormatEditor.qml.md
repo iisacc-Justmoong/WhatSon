@@ -28,10 +28,16 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   `TextEdit.moveCursorSelection(...)` over `select(start, end)` so the active cursor edge is preserved together with
   the selected range.
 - On native-input mobile paths the wrapper also adds a passive touch `TapHandler` on top of `TextEdit`:
+  - when the software keyboard is hidden, touch `press` no longer immediately focuses `TextEdit` or moves selection
+  - a single tap (`tapCount === 1`) now activates input at the tapped cursor position and explicitly requests keyboard
+    show
   - double-tap reselects the touched word via `TextEdit.selectWord()`
   - triple-tap expands to the surrounding newline-delimited paragraph
   - the resulting programmatic selection still reuses the same input-method update path so iOS selection UI stays in
     sync
+- In native-input mobile mode, `activeFocusOnPress` and `selectByMouse` are now gated by keyboard visibility:
+  - keyboard hidden: `press`/drag path stays scroll-first and non-editing
+  - keyboard visible: cursor placement/selection behavior remains enabled
 - Hosts can opt into `preferNativeInputHandling`:
   - while the editor keeps focus or an IME preedit session is active, app-driven `text` resync is deferred
   - the latest deferred payload is flushed after focus leaves or when no native input session is active anymore
@@ -120,6 +126,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   selection state; the original anchor edge must survive the sync path
 - iOS touch double-tap must keep selecting the touched word even though the editor is mounted inside a `Flickable`
 - iOS touch triple-tap must expand to the surrounding paragraph instead of leaving only the insertion cursor behind
+- when native-input mode is active and the software keyboard is hidden, dragging on the editor surface must scroll
+  without triggering immediate cursor move/focus on press
+- in that same hidden-keyboard state, a single tap must place the cursor, focus the editor, and show the keyboard once
 - the visible editor text size must follow the host-supplied platform policy instead of falling back to the legacy
   `12px` default
   - the visible desktop editor text weight must follow the host-supplied regular-weight policy instead of staying at a

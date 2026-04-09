@@ -56,6 +56,9 @@ FocusScope {
     readonly property bool focused: activeFocus || textInput.activeFocus
     readonly property bool hasSelection: textInput.selectionEnd > textInput.selectionStart
     readonly property bool inputMethodComposing: textInput.inputMethodComposing
+    readonly property bool inputMethodVisible: Qt.inputMethod && Qt.inputMethod.visible !== undefined
+                                               ? Qt.inputMethod.visible
+                                               : false
     readonly property int length: textInput.length
     readonly property int lineCount: textInput.lineCount
     readonly property string preeditText: textInput.preeditText === undefined || textInput.preeditText === null
@@ -241,6 +244,20 @@ FocusScope {
         return control.applyNativeSelectionRange(paragraphRange.start, paragraphRange.end, paragraphRange.end);
     }
 
+    function activateInputAtPoint(point) {
+        if (!control.preferNativeInputHandling || control.inputMethodVisible)
+            return false;
+        const targetPosition = control.cursorPositionForPoint(point);
+        if (textInput.deselect !== undefined)
+            textInput.deselect();
+        control.setCursorPositionPreservingInputMethod(targetPosition);
+        textInput.forceActiveFocus();
+        control.notifyInputMethod(Qt.ImQueryAll);
+        if (Qt.inputMethod && Qt.inputMethod.show !== undefined)
+            Qt.inputMethod.show();
+        return true;
+    }
+
     function canDeferProgrammaticTextSync() {
         return control.inputMethodSessionActive()
                 || (!!control.preferNativeInputHandling && control.focused);
@@ -386,6 +403,7 @@ FocusScope {
 
                 anchors.fill: parent
                 activeFocusOnPress: control.autoFocusOnPress
+                                    && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 bottomPadding: control.insetVertical
                 color: control.textColor
                 cursorVisible: control.activeFocus
@@ -398,6 +416,7 @@ FocusScope {
                 readOnly: false
                 rightPadding: control.insetHorizontal
                 selectByMouse: control.selectByMouse
+                               && (!control.preferNativeInputHandling || control.inputMethodVisible)
                 selectedTextColor: control.selectedTextColor
                 selectionColor: control.selectionColor
                 textFormat: control.textFormat
@@ -436,6 +455,10 @@ FocusScope {
                         control.selectWordAtPoint(eventPoint.position);
                     }
                     onTapped: function (eventPoint, _button) {
+                        if (tapCount === 1) {
+                            control.activateInputAtPoint(eventPoint.position);
+                            return;
+                        }
                         if (tapCount === 3)
                             control.selectParagraphAtPoint(eventPoint.position);
                     }

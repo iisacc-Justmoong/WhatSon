@@ -1475,7 +1475,7 @@ Item {
                     ContentsInlineFormatEditor {
                         id: contentEditor
 
-                        autoFocusOnPress: true
+                        autoFocusOnPress: !contentsView.preferNativeInputHandling
                         backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         backgroundColorDisabled: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
                         backgroundColorFocused: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor

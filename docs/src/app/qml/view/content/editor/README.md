@@ -60,6 +60,10 @@
 - `ContentsInlineFormatEditor.qml` now also supplements mobile native-input selection with passive touch multi-tap
   handling, restoring double-tap word selection and triple-tap paragraph selection even though the live editor sits
   inside a `Flickable`.
+- In mobile native-input mode, the shared wrapper now also separates scroll-vs-edit activation:
+  - keyboard hidden: touch `press`/drag stays scroll-first and does not immediately move cursor/focus
+  - single tap: places cursor at the tapped point and opens the keyboard
+  - keyboard visible: normal cursor placement/selection remains enabled
 - Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
   pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
   uses a plain logical-text input surface instead of the RichText editor projection.

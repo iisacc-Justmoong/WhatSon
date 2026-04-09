@@ -13,6 +13,9 @@ suppression local to this file.
 - The content surface now fills the full available slot.
 - The live mobile content surface now removes its left/right editor inset, so the content view reaches the full routed
   mobile width.
+- The mobile host now disables `autoFocusOnPress` for the live editor wrapper in native-input mode.
+  Keyboard-hidden touch input is therefore scroll-first by default, and editing starts only after an explicit tap
+  activation.
 - Mobile typing now prioritizes OS-native input behavior over live app-side RichText resync:
   - the editor enables `preferNativeInputHandling`
   - the live mobile input surface still consumes `ContentsLogicalTextBridge.logicalText`, but that bridge now follows
