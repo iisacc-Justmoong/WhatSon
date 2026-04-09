@@ -76,6 +76,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Exposes `applyInlineStyleToLogicalSelectionSource(...)` for shortcut/context-menu formatting that must ignore markdown
   presentation roles:
     - no longer routes the selection through `QTextDocument` fragment formatting as the source of truth
+    - reuses the same local tag-token and entity classifiers as the rest of the renderer pipeline, so RAW-source
+      coverage scans and HTML/source parsing stay aligned
     - instead scans the RAW editor source, computes logical character coverage for each proprietary inline style, and
       rebuilds canonical `<bold>` / `<italic>` / `<underline>` / `<strikethrough>` / `<highlight>` tags directly from
       that coverage

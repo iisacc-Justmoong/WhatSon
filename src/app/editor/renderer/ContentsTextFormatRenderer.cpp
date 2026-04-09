@@ -353,6 +353,9 @@ namespace
         return tagToken.mid(nameStart, cursor - nameStart).trimmed().toCaseFolded();
     }
 
+    bool isClosingTagToken(const QString& token);
+    bool isSelfClosingTagToken(QString token);
+
     QStringList spanInlineStyleTagsFromCssDeclaration(const QString& cssDeclaration)
     {
         const QString normalizedCss = cssDeclaration.toCaseFolded();
@@ -675,7 +678,7 @@ namespace
             return;
         }
         const int boundedStart = std::max(0, selectionStart);
-        const int boundedEnd = std::min(selectionEnd, styleCoverage->size());
+        const int boundedEnd = std::min(selectionEnd, static_cast<int>(styleCoverage->size()));
         for (int logicalOffset = boundedStart; logicalOffset < boundedEnd; ++logicalOffset)
         {
             (*styleCoverage)[logicalOffset] = nextActive;
