@@ -50,6 +50,8 @@ QVariant TagsHierarchyModel::data(const QModelIndex& index, int role) const
         return item.depth;
     case AccentRole:
         return item.accent;
+    case IconNameRole:
+        return tagsHierarchyIconName(item);
     case ExpandedRole:
         return item.expanded;
     case ShowChevronRole:
@@ -72,6 +74,7 @@ QHash<int, QByteArray> TagsHierarchyModel::roleNames() const
         {DepthRole, "depth"},
         {IndentLevelRole, "indentLevel"},
         {AccentRole, "accent"},
+        {IconNameRole, "iconName"},
         {ExpandedRole, "expanded"},
         {ShowChevronRole, "showChevron"}
     };
@@ -139,6 +142,7 @@ void TagsHierarchyModel::setItems(QVector<TagsHierarchyItem> items)
         }
 
         const QString originalId = item.id;
+        item.iconName = item.iconName.trimmed();
         const QString originalLabel = item.label;
         item.id = item.id.trimmed();
         item.label = item.label.trimmed();

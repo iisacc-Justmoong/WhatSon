@@ -27,6 +27,8 @@
   is not Tags.
 - Tag hierarchy rows now also expose live subtree note counts derived from the indexed note cache,
   so sidebar badges change in lockstep with tag projection refreshes instead of staying pinned to `0`.
+- Tag hierarchy rows now also expose the canonical `vcscurrentBranch` tag icon, matching the icon
+  already used by note-list tag metadata instead of falling back to a generic hierarchy glyph.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

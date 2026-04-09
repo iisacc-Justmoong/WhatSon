@@ -11,9 +11,20 @@ struct TagsHierarchyItem
     int depth = 0;
     bool accent = false;
     bool expanded = false;
+    QString iconName;
     QString label;
     bool showChevron = true;
 };
+
+inline QString tagsHierarchyIconName(const TagsHierarchyItem& item)
+{
+    const QString normalizedIconName = item.iconName.trimmed();
+    if (!normalizedIconName.isEmpty())
+    {
+        return normalizedIconName;
+    }
+    return QStringLiteral("vcscurrentBranch");
+}
 
 class TagsHierarchyModel final : public QAbstractListModel
 {
@@ -32,6 +43,7 @@ public:
         DepthRole,
         IndentLevelRole,
         AccentRole,
+        IconNameRole,
         ExpandedRole,
         ShowChevronRole
     };

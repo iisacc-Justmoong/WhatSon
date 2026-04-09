@@ -10,6 +10,8 @@ expansion hooks for the tag tree.
 
 - Exposes `itemModel`, `hierarchyModel`, `selectedIndex`, `itemCount`, and load-state properties to
   QML.
+- Publishes the canonical tag icon through both the Qt item model and the `hierarchyModel` row maps so LVRS sidebar
+  rows render the same tag glyph used by note metadata views.
 - Exposes `noteListModel` so the Tags sidebar domain can drive the shared list bar with tag-filtered
   notes instead of leaving the domain without a note projection.
 - Implements `IHierarchyViewModel`, `IHierarchyRenameCapability`, `IHierarchyCrudCapability`, and

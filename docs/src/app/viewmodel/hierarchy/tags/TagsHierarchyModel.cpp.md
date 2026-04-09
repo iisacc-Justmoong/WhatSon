@@ -20,6 +20,13 @@
 ### Enums
 - None detected during scaffold generation.
 
+## Current Implementation Notes
+- `data(...)` now returns a canonical `iconName` role for every tag row.
+- The fallback glyph is `vcscurrentBranch`, so the tags hierarchy uses the same icon family as note-list tag metadata
+  instead of inheriting a generic folder-like hierarchy icon.
+- Sanitization trims any explicit `iconName` coming from upstream row state but still preserves the canonical fallback
+  when no tag-specific icon was supplied.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

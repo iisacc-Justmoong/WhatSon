@@ -42,6 +42,8 @@ as a passive notification only.
   selected tag subtree against note header tags.
 - `depthItems()` now computes each row's `count` from that same subtree projection, so the sidebar
   badge and the note list are backed by one matching rule instead of diverging contracts.
+- `depthItems()` also now emits `iconName: vcscurrentBranch` for each tag row, aligning the sidebar
+  hierarchy icon with the icon already used by tag metadata chips in note cards/details.
 - Subtree matching is inclusive: selecting a parent tag includes notes assigned to any descendant
   tag id/label/path that belongs to that subtree.
 - `reloadNoteMetadataForNoteId(...)` re-reads one note document and immediately re-applies the tag

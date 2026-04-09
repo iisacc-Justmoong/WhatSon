@@ -21,6 +21,13 @@
 ### Enums
 - `Role`
 
+## Current Implementation Notes
+- `TagsHierarchyItem` now carries a dedicated `iconName` field for LVRS hierarchy presentation.
+- `tagsHierarchyIconName(...)` defines the canonical fallback tag glyph as `vcscurrentBranch`, matching the icon
+  already used for note tag metadata chips/cards elsewhere in the app.
+- `TagsHierarchyModel::Role` now exports that presentation value through the `iconName` role so any row consumer that
+  binds directly to the Qt model can render the same tag icon consistently.
+
 ## Intended Detailed Sections
 - Responsibility and business role
 - Ownership and lifecycle

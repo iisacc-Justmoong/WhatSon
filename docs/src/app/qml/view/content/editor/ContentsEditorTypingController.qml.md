@@ -19,8 +19,8 @@ This controller exists to keep plain typing separate from inline-format applicat
   - logical line-start offsets
   - the logical-to-source offset table needed to splice `.wsnbody`
 - Reads the live edited plain text from `contentEditor.getText(0, length)`.
-- Receives committed edit notifications only after IME composition settles, so diffing is based on stable plain-text
-  snapshots instead of transient Hangul/Japanese preedit fragments.
+- Receives committed edit notifications only after the native `TextEdit` input-method session settles, so diffing is
+  based on stable plain-text snapshots instead of transient Hangul/Japanese preedit fragments.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
@@ -103,6 +103,8 @@ longer part of the normal typing path.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
+- The typing controller must not depend on wrapper-owned synthetic IME commit flags; it should only react to the
+  native `TextEdit` state that survives after composition settles.
 - Post-`Enter` list-continuation cursor restore must not land on the wrong logical offset because multiple nested
   cursor objects were rewritten out of order.
 - when `view.deferImmediateEditorPersistence` is enabled, committed typing must not synchronously hit the content store

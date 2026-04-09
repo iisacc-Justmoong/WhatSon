@@ -604,6 +604,7 @@ QVariantList TagsHierarchyViewModel::depthItems() const
             {QStringLiteral("label"), item.label},
             {QStringLiteral("depth"), item.depth},
             {QStringLiteral("accent"), item.accent},
+            {QStringLiteral("iconName"), tagsHierarchyIconName(item)},
             {QStringLiteral("expanded"), item.expanded},
             {QStringLiteral("showChevron"), item.showChevron},
             {QStringLiteral("count"), noteCount}

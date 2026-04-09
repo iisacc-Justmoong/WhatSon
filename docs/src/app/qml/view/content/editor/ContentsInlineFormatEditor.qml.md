@@ -45,9 +45,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
   `editorItem`, and `inputItem` separately.
 - The wrapper no longer keeps a separate `0ms` queued committed-edit timer for ordinary typing.
-  Once a non-composition text change lands, `textEdited(...)` is emitted immediately on that same turn.
-  IME preedit still stays deferred through `_compositionEditPending`, but ordinary click-driven cursor movement no
-  longer has to race a delayed committed-edit dispatch.
+  Ordinary edits now prefer the native `TextEdit` edited signal when that path exists, and older runtimes only fall
+  back to one deferred `textChanged` re-check after the platform input session settles.
+  The wrapper no longer keeps its own synthetic `_compositionEditPending` commit state.
 - Exposes a `textEdited(string text)` signal as a change event for the host controllers.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
@@ -57,9 +57,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   markup into note editing.
 - IME composition is now treated as a first-class input state:
   - wrapper-level `inputMethodComposing` / `preeditText` surface the native `TextEdit` composition state
-  - `textEdited(...)` is deferred while preedit text is active
-  - the wrapper emits one committed edit after composition ends instead of replaying every intermediate Hangul syllable
-    assembly step back into the host mutation pipeline
+  - app-driven persistence/mutation dispatch is suppressed while preedit text is active
+  - once the native input session settles, the wrapper forwards the resulting committed `TextEdit` state without
+    replaying intermediate Hangul jamo assembly steps back into the host mutation pipeline
 - Exposes direct Qt-style selection/text helpers on the wrapper itself:
   - `selectionSnapshot()`
   - `getText(start, end)`
@@ -103,6 +103,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
 - Hangul IME composition and desktop RichText typing must not receive a programmatic `text` reinjection while
   preedit/composition is still active
+- The wrapper must prefer the native `TextEdit` edited-signal path over app-synthesized composition commit state when
+  the runtime provides that signal.
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text
   reinjection before the native input session settles
 - wrapper-driven cursor restore must go through one cursor path only; the app must not fight itself by rewriting the

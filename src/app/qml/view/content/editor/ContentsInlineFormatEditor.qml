@@ -68,9 +68,10 @@ FocusScope {
     readonly property int selectionStart: textInput.selectionStart
 
     property int _programmaticTextSyncDepth: 0
-    property bool _compositionEditPending: false
     property bool _hasDeferredProgrammaticText: false
     property string _deferredProgrammaticText: ""
+    property bool _fallbackTextEditedDispatchQueued: false
+    property int _nativeTextEditedSerial: 0
 
     signal textEdited(string text)
 
@@ -257,6 +258,15 @@ FocusScope {
         control.setProgrammaticText(deferredText);
     }
 
+    function dispatchCommittedTextEditedIfReady() {
+        if (control._programmaticTextSyncDepth > 0)
+            return false;
+        if (control.inputMethodSessionActive())
+            return false;
+        control.textEdited(textInput.text);
+        return true;
+    }
+
     function setProgrammaticText(nextText) {
         const normalizedText = nextText === undefined || nextText === null ? "" : String(nextText);
         if (textInput.text === normalizedText)
@@ -266,7 +276,6 @@ FocusScope {
         const previousSelectionEnd = Number(textInput.selectionEnd);
         const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
                 && previousSelectionEnd > previousSelectionStart;
-        control._compositionEditPending = false;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
         if (hadSelection && previousSelectionEnd > previousSelectionStart) {
@@ -286,14 +295,16 @@ FocusScope {
     function scheduleCommittedTextEditedDispatch() {
         if (control._programmaticTextSyncDepth > 0)
             return;
-        if (control.inputMethodComposing || control.preeditText.length > 0) {
-            control._compositionEditPending = true;
+        if (control._fallbackTextEditedDispatchQueued)
             return;
-        }
-        if (control._compositionEditPending)
-            return;
-        control._compositionEditPending = false;
-        control.textEdited(textInput.text);
+        const scheduledNativeTextEditedSerial = control._nativeTextEditedSerial;
+        control._fallbackTextEditedDispatchQueued = true;
+        Qt.callLater(function () {
+            control._fallbackTextEditedDispatchQueued = false;
+            if (control._nativeTextEditedSerial !== scheduledNativeTextEditedSerial)
+                return;
+            control.dispatchCommittedTextEditedIfReady();
+        });
     }
 
     onFocusedChanged: {
@@ -454,21 +465,22 @@ FocusScope {
 
     Connections {
         function onInputMethodComposingChanged() {
-            if (!textInput.inputMethodComposing && control._compositionEditPending) {
-                control._compositionEditPending = false;
+            if (!textInput.inputMethodComposing) {
                 control.scheduleCommittedTextEditedDispatch();
-            }
-            if (!textInput.inputMethodComposing)
                 control.flushDeferredProgrammaticText(false);
+            }
         }
 
         function onPreeditTextChanged() {
-            if (!textInput.inputMethodComposing && control._compositionEditPending && control.preeditText.length === 0) {
-                control._compositionEditPending = false;
+            if (!textInput.inputMethodComposing && control.preeditText.length === 0) {
                 control.scheduleCommittedTextEditedDispatch();
-            }
-            if (!textInput.inputMethodComposing && control.preeditText.length === 0)
                 control.flushDeferredProgrammaticText(false);
+            }
+        }
+
+        function onTextEdited() {
+            control._nativeTextEditedSerial += 1;
+            control.dispatchCommittedTextEditedIfReady();
         }
 
         ignoreUnknownSignals: true

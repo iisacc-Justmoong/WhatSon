@@ -103,8 +103,11 @@
   documentation-only behavior contracts.
 - Cursor restoration for ordinary typing/focus recovery now routes through the wrapper-level cursor setter instead of
   rewriting `cursorPosition` into the wrapper, `editorItem`, and `inputItem` together.
-- The shared editor wrapper no longer keeps a separate `0ms` committed-edit queue for ordinary typing, so a just-typed
-  word is no longer left behind a wrapper-local dispatch delay while the user immediately clicks to move the cursor.
+- The shared editor wrapper no longer depends on its own synthetic IME commit queue for ordinary typing, so a just-typed
+  word is no longer left behind a wrapper-local composition flag while the user immediately clicks to move the cursor.
+- The shared editor wrapper now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
+  instead of maintaining its own synthetic IME commit flag, aligning Hangul composition behavior with standard text
+  editors and word processors more closely.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
