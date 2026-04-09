@@ -46,6 +46,9 @@
   the active View/Edit/Control application bar component. This lets the editor route show a dedicated
   right-edge detail-page icon button without leaking that affordance into hierarchy or note-list routes, and without
   duplicating that action inside the compact context menus.
+- Compact mobile navigation now also exposes `compactEditorViewVisible`. When true, the left compact group
+  shows `NavigationEditorViewBar` (`showLabel: false`) next to `NavigationModeBar` and suppresses the hierarchy-only
+  `settings` icon, matching the dual-combo Figma mobile editor chrome (`174:5689`).
 
 ## Intended Detailed Sections
 - Responsibility and business role

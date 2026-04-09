@@ -39,8 +39,12 @@ LV.HStack {
             selected: editorViewModeViewModel && editorViewModeViewModel.activeViewMode === 4
         }
     ]
+    property int comboContextMenuWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(141)))
+    property int comboMenuYOffset: LV.Theme.gap2
+    property int compactComboWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(97)))
     property var editorViewModeViewModel: null
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("navigation.NavigationEditorViewBar") : null
+    property bool showLabel: true
 
     signal viewHookRequested
 
@@ -55,22 +59,24 @@ LV.HStack {
             editorViewContextMenu.close();
             return;
         }
-        editorViewContextMenu.openFor(editorViewCombo, 0, editorViewCombo.height + LV.Theme.gap2);
+        editorViewContextMenu.openFor(editorViewCombo, 0, editorViewCombo.height + editorViewBar.comboMenuYOffset);
         editorViewBar.requestViewHook("open-editor-view-menu");
     }
 
-    spacing: LV.Theme.gap8
+    spacing: editorViewBar.showLabel ? LV.Theme.gap8 : LV.Theme.gapNone
 
     LV.Label {
         color: LV.Theme.bodyColor
         style: body
         text: "View"
+        visible: editorViewBar.showLabel
     }
     LV.ComboBox {
         id: editorViewCombo
 
         text: editorViewBar.activeViewText
         tone: LV.ComboBox.Borderless
+        width: editorViewBar.showLabel ? implicitWidth : editorViewBar.compactComboWidth
 
         onClicked: editorViewBar.toggleEditorViewMenu()
     }
@@ -79,7 +85,7 @@ LV.HStack {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        itemWidth: LV.Theme.scaleMetric(141)
+        itemWidth: editorViewBar.comboContextMenuWidth
         items: editorViewBar.editorViewMenuItems
         modal: false
         parent: Controls.Overlay.overlay

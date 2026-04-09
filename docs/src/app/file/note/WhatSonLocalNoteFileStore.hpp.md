@@ -42,6 +42,8 @@
 - Regression checklist:
   - callers must be able to update `lastModifiedAt` without also incrementing `modifiedCount`
   - existing update callers that do not override `incrementModifiedCount` must keep the legacy increment behavior
+  - when `incrementModifiedCount` advances by exactly one, the same transaction must also emit a
+    `.wsnversion` snapshot labeled as `commit:<modifiedCount>`
   - callers that disable backlink refresh must still get local body-derived counters (`lineCount`, `backlinkToCount`,
     `includedResourceCount`, etc.) rewritten into `.wsnhead`
 

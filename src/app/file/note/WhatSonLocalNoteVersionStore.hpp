@@ -7,6 +7,15 @@
 #include <QString>
 #include <QVector>
 
+struct WhatSonNoteVersionDiffSegment
+{
+    int prefixLength = 0;
+    int suffixLength = 0;
+    QString removedText;
+    QString insertedText;
+    QString unifiedPatch;
+};
+
 struct WhatSonNoteVersionSnapshot
 {
     QString snapshotId;
@@ -16,9 +25,12 @@ struct WhatSonNoteVersionSnapshot
     QString operation;
     QString label;
     QString capturedAtUtc;
+    int commitModifiedCount = -1;
     QString headerText;
     QString bodyDocumentText;
     QString bodyPlainText;
+    WhatSonNoteVersionDiffSegment headerDiff;
+    WhatSonNoteVersionDiffSegment bodyDiff;
 };
 
 struct WhatSonNoteVersionState
@@ -27,14 +39,6 @@ struct WhatSonNoteVersionState
     QString currentSnapshotId;
     QString headSnapshotId;
     QVector<WhatSonNoteVersionSnapshot> snapshots;
-};
-
-struct WhatSonNoteVersionDiffSegment
-{
-    int prefixLength = 0;
-    int suffixLength = 0;
-    QString removedText;
-    QString insertedText;
 };
 
 struct WhatSonNoteVersionDiff
@@ -58,6 +62,7 @@ public:
     {
         WhatSonLocalNoteDocument document;
         QString label;
+        int commitModifiedCount = -1;
     };
 
     struct DiffRequest final
@@ -128,7 +133,11 @@ private:
         WhatSonLocalNoteDocument* outDocument = nullptr,
         QString* errorMessage = nullptr) const;
     int indexOfSnapshot(const WhatSonNoteVersionState& state, const QString& snapshotId) const;
-    WhatSonNoteVersionDiffSegment diffSegment(const QString& fromText, const QString& toText) const;
+    WhatSonNoteVersionDiffSegment diffSegment(
+        const QString& fromText,
+        const QString& toText,
+        const QString& fromLabel = QString(),
+        const QString& toLabel = QString()) const;
 
     WhatSonLocalNoteFileStore m_localNoteFileStore;
     WhatSonSystemIoGateway m_ioGateway;

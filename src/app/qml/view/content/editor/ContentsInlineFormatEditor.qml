@@ -33,11 +33,13 @@ FocusScope {
     property int shapeStyle: 0
     property bool showRenderedOutput: true
     property bool showScrollBar: false
+    property int tabIndentSpaceCount: 4
     property string text: ""
     property color textColor: LV.Theme.bodyColor
     property int textFormat: TextEdit.PlainText
     property int wrapMode: TextEdit.NoWrap
     property bool preferNativeInputHandling: false
+    readonly property int effectiveTabIndentSpaceCount: Math.max(1, Math.floor(Number(control.tabIndentSpaceCount) || 4))
 
     readonly property real contentHeight: control.externalScroll ? editorShell.height : editorFlickable.contentHeight
     readonly property real contentOffsetY: {
@@ -420,6 +422,10 @@ FocusScope {
                 selectedTextColor: control.selectedTextColor
                 selectionColor: control.selectionColor
                 textFormat: control.textFormat
+                tabStopDistance: Math.max(
+                                     1,
+                                     Number(tabStopTextMetrics.advanceWidth)
+                                     || Number(font.pixelSize) * control.effectiveTabIndentSpaceCount)
                 topPadding: 0
                 wrapMode: control.wrapMode
 
@@ -471,6 +477,16 @@ FocusScope {
 
     Controls.ScrollBar {
         id: verticalScrollBar
+    }
+
+    TextMetrics {
+        id: tabStopTextMetrics
+
+        font.family: control.fontFamily
+        font.letterSpacing: control.fontLetterSpacing
+        font.pixelSize: control.fontPixelSize
+        font.weight: control.fontWeight
+        text: Array(control.effectiveTabIndentSpaceCount + 1).join(" ")
     }
 
     Connections {

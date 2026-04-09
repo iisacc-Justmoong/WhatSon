@@ -87,6 +87,13 @@ Implements inline-format rendering from note-editor text to RichText HTML.
     - reapplying the same style toggles that style off by zeroing its RAW-source coverage inside the range
     - applying a style across text that is split by other proprietary tags now expands one continuous source-tag span
       over the whole logical selection
+    - markdown line prefixes are now style-protected during RAW coverage rebuild:
+      - leading indentation (`[ \t]*`)
+      - unordered list prefixes (`- ` / `+ ` / `* ` / `• `)
+      - ordered list prefixes (`N. ` / `N) `)
+      - heading prefixes (`#` .. `######` + whitespace)
+      - blockquote/fence prefixes (`>`, `` ``` ``)
+      so inline style tags are not inserted in front of structural markers
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so
   read-side rendering and editor rendering no longer diverge on weight/decoration styling.
 
@@ -108,6 +115,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Applying proprietary inline formatting to text inside a markdown bullet line must keep the stored source line prefix
   as
   `- ` instead of persisting the rendered `• ` glyph.
+- Applying `Strikethrough` (or any inline style) to a range that crosses indented/list lines must not delete or
+  visually collapse the line indentation; structural line prefixes must remain outside proprietary inline tags.
 - Applying proprietary inline formatting to a selection that spans multiple existing proprietary tags or multiple
   logical paragraphs must rebuild the target RAW source tags over the whole selected range, not only the first RichText
   fragment that happened to survive the context-menu click.

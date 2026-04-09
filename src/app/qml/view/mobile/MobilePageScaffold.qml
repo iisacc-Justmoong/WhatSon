@@ -18,6 +18,7 @@ Rectangle {
     property color canvasColor: LV.Theme.panelBackground01
     property bool compactAddFolderVisible: true
     property bool compactDetailPanelVisible: false
+    property bool compactEditorViewVisible: false
     property string compactLeadingActionIconName: "generalchevronLeft"
     property bool compactLeadingActionVisible: false
     property bool compactNoteListControlsVisible: false
@@ -60,6 +61,7 @@ Rectangle {
         PanelView.NavigationBarLayout {
             compactAddFolderVisible: mobilePageScaffold.compactAddFolderVisible
             compactDetailPanelVisible: mobilePageScaffold.compactDetailPanelVisible
+            compactEditorViewVisible: mobilePageScaffold.compactEditorViewVisible
             compactLeadingActionIconName: mobilePageScaffold.compactLeadingActionIconName
             compactLeadingActionVisible: mobilePageScaffold.compactLeadingActionVisible
             compactMode: true

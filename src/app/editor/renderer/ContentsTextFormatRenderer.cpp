@@ -685,6 +685,243 @@ namespace
         }
     }
 
+    int markdownLinePrefixLength(const QString& lineText)
+    {
+        if (lineText.isEmpty())
+        {
+            return 0;
+        }
+
+        int cursor = 0;
+        while (cursor < lineText.size()
+               && (lineText.at(cursor) == QLatin1Char(' ')
+                   || lineText.at(cursor) == QLatin1Char('\t')))
+        {
+            ++cursor;
+        }
+
+        const int leadingIndentLength = cursor;
+        if (cursor >= lineText.size())
+        {
+            return leadingIndentLength;
+        }
+
+        if (lineText.mid(cursor).startsWith(QStringLiteral("```")))
+        {
+            return cursor + 3;
+        }
+
+        if (lineText.at(cursor) == QLatin1Char('>'))
+        {
+            int prefixEnd = cursor + 1;
+            while (prefixEnd < lineText.size()
+                   && (lineText.at(prefixEnd) == QLatin1Char(' ')
+                       || lineText.at(prefixEnd) == QLatin1Char('\t')))
+            {
+                ++prefixEnd;
+            }
+            return prefixEnd;
+        }
+
+        int headingCursor = cursor;
+        while (headingCursor < lineText.size()
+               && lineText.at(headingCursor) == QLatin1Char('#')
+               && headingCursor - cursor < 6)
+        {
+            ++headingCursor;
+        }
+        if (headingCursor > cursor
+            && headingCursor < lineText.size()
+            && (lineText.at(headingCursor) == QLatin1Char(' ')
+                || lineText.at(headingCursor) == QLatin1Char('\t')))
+        {
+            int prefixEnd = headingCursor;
+            while (prefixEnd < lineText.size()
+                   && (lineText.at(prefixEnd) == QLatin1Char(' ')
+                       || lineText.at(prefixEnd) == QLatin1Char('\t')))
+            {
+                ++prefixEnd;
+            }
+            return prefixEnd;
+        }
+
+        const QChar marker = lineText.at(cursor);
+        if (marker == QLatin1Char('-')
+            || marker == QLatin1Char('+')
+            || marker == QLatin1Char('*')
+            || marker == QChar(0x2022))
+        {
+            int prefixEnd = cursor + 1;
+            while (prefixEnd < lineText.size()
+                   && (lineText.at(prefixEnd) == QLatin1Char(' ')
+                       || lineText.at(prefixEnd) == QLatin1Char('\t')))
+            {
+                ++prefixEnd;
+            }
+            if (prefixEnd > cursor + 1)
+            {
+                return prefixEnd;
+            }
+        }
+
+        int numberCursor = cursor;
+        while (numberCursor < lineText.size()
+               && lineText.at(numberCursor).isDigit())
+        {
+            ++numberCursor;
+        }
+        if (numberCursor > cursor
+            && numberCursor < lineText.size()
+            && (lineText.at(numberCursor) == QLatin1Char('.')
+                || lineText.at(numberCursor) == QLatin1Char(')')))
+        {
+            int prefixEnd = numberCursor + 1;
+            while (prefixEnd < lineText.size()
+                   && (lineText.at(prefixEnd) == QLatin1Char(' ')
+                       || lineText.at(prefixEnd) == QLatin1Char('\t')))
+            {
+                ++prefixEnd;
+            }
+            if (prefixEnd > numberCursor + 1)
+            {
+                return prefixEnd;
+            }
+        }
+
+        return leadingIndentLength;
+    }
+
+    QChar logicalCharForHtmlEntity(const QString& entityToken)
+    {
+        const QString lowered = entityToken.toCaseFolded();
+        if (lowered == QStringLiteral("&nbsp;"))
+        {
+            return QLatin1Char(' ');
+        }
+        if (lowered == QStringLiteral("&lt;"))
+        {
+            return QLatin1Char('<');
+        }
+        if (lowered == QStringLiteral("&gt;"))
+        {
+            return QLatin1Char('>');
+        }
+        if (lowered == QStringLiteral("&amp;"))
+        {
+            return QLatin1Char('&');
+        }
+        if (lowered == QStringLiteral("&quot;"))
+        {
+            return QLatin1Char('"');
+        }
+        if (lowered == QStringLiteral("&apos;")
+            || lowered == QStringLiteral("&#39;"))
+        {
+            return QLatin1Char('\'');
+        }
+        if (lowered.startsWith(QStringLiteral("&#x"))
+            || lowered.startsWith(QStringLiteral("&#")))
+        {
+            return QChar(0xFFFD);
+        }
+        return QChar(0xFFFD);
+    }
+
+    QString logicalTextForInlineStyleCoverage(const QString& sourceText)
+    {
+        const QString normalizedSourceText = normalizeLineEndings(sourceText);
+        if (normalizedSourceText.isEmpty())
+        {
+            return {};
+        }
+
+        QString logicalText;
+        logicalText.reserve(normalizedSourceText.size());
+
+        int sourceOffset = 0;
+        while (sourceOffset < normalizedSourceText.size())
+        {
+            if (normalizedSourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = normalizedSourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset)
+                {
+                    const QString fullTagToken =
+                        normalizedSourceText.mid(sourceOffset, tagEnd - sourceOffset + 1);
+                    const QString normalizedTagName = normalizedTagElementName(fullTagToken);
+                    if (normalizedTagName == QStringLiteral("br"))
+                    {
+                        logicalText += QLatin1Char('\n');
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const int entityLength = htmlEntityLengthAt(normalizedSourceText, sourceOffset);
+            if (entityLength > 0)
+            {
+                logicalText += logicalCharForHtmlEntity(
+                    normalizedSourceText.mid(sourceOffset, entityLength));
+                sourceOffset += entityLength;
+                continue;
+            }
+
+            logicalText += normalizedSourceText.at(sourceOffset);
+            sourceOffset += 1;
+        }
+
+        return logicalText;
+    }
+
+    void clearInlineStyleCoverageOnLinePrefixes(
+        InlineStyleCoverageMap* coverage,
+        const QString& sourceText,
+        const int logicalLength)
+    {
+        if (coverage == nullptr || logicalLength <= 0)
+        {
+            return;
+        }
+
+        const QString logicalText = logicalTextForInlineStyleCoverage(sourceText);
+        if (logicalText.isEmpty())
+        {
+            return;
+        }
+
+        int lineStartOffset = 0;
+        while (lineStartOffset <= logicalText.size())
+        {
+            const int lineEndOffset = logicalText.indexOf(QLatin1Char('\n'), lineStartOffset);
+            const int boundedLineEndOffset = lineEndOffset >= 0 ? lineEndOffset : logicalText.size();
+            const QString lineText = logicalText.mid(
+                lineStartOffset,
+                std::max(0, boundedLineEndOffset - lineStartOffset));
+            const int protectedPrefixLength = markdownLinePrefixLength(lineText);
+            if (protectedPrefixLength > 0)
+            {
+                const int protectedPrefixEndOffset = std::min(
+                    lineStartOffset + protectedPrefixLength,
+                    logicalLength);
+                for (int styleIndex = 0; styleIndex < kSupportedInlineStyleCount; ++styleIndex)
+                {
+                    applySourceInlineStyleCoverageRange(
+                        &(*coverage)[static_cast<std::size_t>(styleIndex)],
+                        lineStartOffset,
+                        protectedPrefixEndOffset,
+                        false);
+                }
+            }
+
+            if (lineEndOffset < 0)
+            {
+                break;
+            }
+            lineStartOffset = lineEndOffset + 1;
+        }
+    }
+
     void synchronizeOutputInlineStyleState(
         QString* output,
         QVector<int>* emittedStyleOrder,
@@ -1454,6 +1691,11 @@ QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(
             boundedEnd,
             !fullyStyled);
     }
+
+    clearInlineStyleCoverageOnLinePrefixes(
+        &desiredCoverage,
+        normalizedSourceText,
+        styleState.logicalLength);
 
     return rebuildSourceTextWithInlineStyleCoverage(
         normalizedSourceText,

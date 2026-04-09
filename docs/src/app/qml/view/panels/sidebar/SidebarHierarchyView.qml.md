@@ -136,12 +136,15 @@ These signals make the file a reusable visual surface instead of a hard-coded on
 - `onListItemActivated` is deferred by one turn (`Qt.callLater`) and re-checked through
   `shouldSuppressHierarchyActivation(item, itemId, index)` before it can select the folder or emit
   `hierarchyItemActivated(...)`.
-- Expansion suppression is now global for that short window: any activation other than the current
-  selected row is ignored while the expansion block timer is active.
+- Expansion suppression is now absolute for that short window: any activation is ignored while the
+  expansion block timer is active, including callbacks that resolve to the currently selected row.
 - This prevents LVRS internal active-row normalization from leaking into the application selection
   state when a chevron expand/collapse triggers a stray activation on a lower visible row.
 - This keeps the suppression stable even when LVRS emits activation and expansion callbacks in
   different order on mobile touch input.
+- `armHierarchyExpansionActivationSuppression(...)` now also increments
+  `hierarchyActivationPendingSerial`, so already queued activation callbacks from the same pointer
+  transaction are invalidated immediately when expansion is detected.
 - Activation and expansion bridge calls both use the same resolved hierarchy index, so deep rows
   such as `Resources > Other` map to the correct viewmodel item even when LVRS emits visual index
   values that differ from source-model ids.
@@ -205,6 +208,8 @@ This file should be read as a composed view, not as the place where hierarchy bu
   - `Cmd/Ctrl + click` toggles hierarchy rows without collapsing to single selection.
   - Activation callbacks that omit modifier bits must still honor the press-time modifier intent.
   - Chevron expand/collapse must not move the primary active selection to an unrelated sibling row.
+  - Chevron expand/collapse must not emit folder activation even when the tapped row is already the
+    currently selected folder.
   - Dropping a multi-selected note-list group onto a folder must attempt folder assignment for every dragged note id.
 - Folder-drop acceptance must not regress to an always-empty payload because the sidebar note-drop controller omitted its
   normalized-array return path.

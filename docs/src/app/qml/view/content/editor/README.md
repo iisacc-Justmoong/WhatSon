@@ -123,6 +123,8 @@
 - The shared editor wrapper now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
   instead of maintaining its own synthetic IME commit flag, aligning Hangul composition behavior with standard text
   editors and word processors more closely.
+- The shared editor wrapper now also normalizes tab indentation width through `TextEdit.tabStopDistance` using runtime
+  font metrics for four spaces, so Tab indent depth no longer jumps to an oversized default column.
 - `ContentsEditorTypingController.qml` no longer drops a committed `textEdited` mutation only because a transient
   model-sync guard bit is still set; committed user typing now always refreshes local authority and persistence staging.
 - The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or

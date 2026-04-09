@@ -42,6 +42,9 @@
   overlay or context-menu action.
 - `bodyRouter` is the safe-area-bounded mobile body surface. Routed pages such as `/mobile/detail` are expected to fill
   that width directly instead of applying their own centered fixed-width clamp.
+- Forwards `compactEditorViewVisible` into `NavigationBarLayout` so the compact mobile editor route can replace the
+  hierarchy-only settings affordance with the editor `View mode` combo (`NavigationEditorViewBar`) without introducing
+  route-local navigation bar forks.
 
 ## Intended Detailed Sections
 - Responsibility and business role

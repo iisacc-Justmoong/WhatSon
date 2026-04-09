@@ -73,6 +73,9 @@
   - new tags are inserted into `Tags.wstags` so the tags hierarchy can reload them as first-class entries
 - Body-save normalization now also preserves proprietary inline formatting across paragraph boundaries by reopening any
   still-active style tags at the next serialized `<paragraph>`.
+- `fileStat.modifiedCount` is now the local commit counter for note package history.
+  - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
+  - each snapshot includes git-style unified patch payloads for header/body deltas
 
 
 ## Intended Detailed Sections

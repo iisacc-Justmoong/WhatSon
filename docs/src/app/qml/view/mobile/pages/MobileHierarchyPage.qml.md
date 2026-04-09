@@ -33,6 +33,9 @@ The important rule is that the route stack is only canonicalized when the visibl
 `hierarchyPageActive`, `noteListPageActive`, and `editorPageActive` are all derived from that resolved body path. The compact `settings` affordance is bound to `hierarchyPageActive`, which means the shared navigation bar only shows that button on `/mobile/hierarchy`.
 The compact detail-page affordance is bound to `editorPageActive`, which means the new right-edge
 `columnIndex` button only appears on `/mobile/editor` and pushes `/mobile/detail` instead of opening a context menu or overlay.
+The compact editor-view selector is also bound to `editorPageActive` (`compactEditorViewVisible`), so
+`/mobile/editor` renders the dual-combo navigation row (`NavigationModeBar` + `NavigationEditorViewBar`)
+matching Figma node `174:5689`, while hierarchy and note-list routes keep their previous compact chrome.
 That compact button emits the explicit hook reason `open-detail-page`, so the route push is no longer described as a
 collapse/expand action.
 

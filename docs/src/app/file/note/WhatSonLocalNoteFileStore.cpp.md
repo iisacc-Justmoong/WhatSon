@@ -41,8 +41,13 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - Body writes force a header write as well, because the body-derived counters live in `.wsnhead`.
 - `UpdateRequest` now decides whether a successful write should increment `modifiedCount`.
 - Header / structural mutations still opt in to that counter by default.
+- Each successful `modifiedCount` increment is now treated as a commit boundary:
+  - after header/body files persist, the store captures a new `.wsnversion` snapshot
+  - snapshot label format: `commit:<modifiedCount>`
+  - snapshot metadata stores `commitModifiedCount` and git-style unified patches for `.wsnhead` / `.wsnbody`
 - Debounced editor body autosaves deliberately opt out: they still write the normalized `.wsnbody`, refresh
-  body-derived stats, and update `lastModifiedAt`, but they no longer inflate `modifiedCount` on every typing burst.
+  body-derived stats, and update `lastModifiedAt`, but they no longer create commit snapshots because
+  `incrementModifiedCount` is disabled on that path.
 - Open tracking is intentionally handled by the editor-selection bridge instead of the generic read path.
 - The same update contract now also splits local stat work from hub-wide backlink scans:
   - `refreshIncomingBacklinkStatistics == false` skips the expensive `.wsnbody` sweep for the edited note's
@@ -60,6 +65,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - Qt Rich HTML source serialization into canonical `.wsnbody` tags
 - Additional regression expectation:
   - editor body autosave must not increment `modifiedCount`; only update requests that explicitly opt in may advance that counter.
+  - every update transaction that advances `modifiedCount` by exactly one must append a corresponding snapshot to
+    `.wsnversion` with `commitModifiedCount == modifiedCount`
+  - each captured snapshot must include unified patch metadata for both header and body payloads
   - editor hot-path writes that disable backlink refresh must still rewrite the current note's normalized body text,
     header timestamp, and non-hub-derived counters
   - a saved body hashtag such as `#label` must materialize in three places together:

@@ -1,37 +1,44 @@
 # `src/app/file/note/WhatSonLocalNoteVersionStore.cpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+Implements `.wsnversion` persistence and snapshot lifecycle for one local note package.
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonLocalNoteVersionStore.cpp`
-- Source kind: C++ implementation
-- File name: `WhatSonLocalNoteVersionStore.cpp`
-- Approximate line count: 704
+## Core Flow
+1. `ensureState(...)`
+   - Resolves note ID and `.wsnversion` path.
+   - Materializes an empty version document if missing.
+   - Parses persisted snapshots into `WhatSonNoteVersionState`.
+2. `captureSnapshot(...)`
+   - Reads current `.wsnhead` and `.wsnbody` as the working tree snapshot.
+   - Appends a new snapshot with parent linkage.
+   - Persists commit metadata (`commitModifiedCount`) and precomputed diff payload (`headerDiff`, `bodyDiff`).
+3. `diffSnapshots(...)`
+   - Resolves two snapshots by ID.
+   - Computes diff segments with unified patch text for header/body.
+4. `checkoutSnapshot(...)` / `rollbackToSnapshot(...)`
+   - Writes snapshot payload back to working files.
+   - Updates `currentSnapshotId`.
+   - Rollback also records a new rollback snapshot in history.
 
-## Extracted Symbols
-- Declared namespaces present: yes
-- QObject macro present: no
+## Unified Patch Contract
+- Diff segments now include `unifiedPatch`.
+- Patch text uses a git-like unified format:
+  - `--- a/<label>`
+  - `+++ b/<label>`
+  - `@@ -x,n +y,m @@`
+  - removed (`-`) and inserted (`+`) lines
+- Body diffs are computed from `bodyDocumentText` so persisted `.wsnbody` deltas are trackable as file-level changes.
 
-### Classes and Structs
-- None detected during scaffold generation.
+## Error Handling
+- Any parse/read/write failure returns `false` and surfaces a human-readable message through `errorMessage`.
+- Capture/checkpoint operations are fail-fast; no best-effort partial append is allowed inside `.wsnversion`.
 
-### Enums
-- None detected during scaffold generation.
+## Regression Checks
+- Capturing a snapshot with no parent must still produce valid diff metadata (empty-base insertion patch).
+- Capturing with a parent must compute diffs against the parent snapshot payload.
+- Loading legacy snapshots with missing diff keys must keep defaults and remain readable.
+- Rollback snapshots must persist a new commit record with parent/source lineage.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Tests
+- In-repo automated tests are currently absent by repository policy.
+- Keep these regression checks updated when snapshot schema or patch formatting changes.

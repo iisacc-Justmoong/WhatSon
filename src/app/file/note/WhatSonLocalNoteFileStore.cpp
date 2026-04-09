@@ -2,6 +2,7 @@
 
 #include "WhatSonNoteBodyPersistence.hpp"
 #include "WhatSonNoteHeaderCreator.hpp"
+#include "WhatSonLocalNoteVersionStore.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "WhatSonNoteHeaderParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
@@ -1008,6 +1009,7 @@ bool WhatSonLocalNoteFileStore::updateNote(
             bodyDocumentForStats);
     }
 
+    const int modifiedCountBeforeUpdate = request.document.headerStore.modifiedCount();
     if (request.touchLastModified)
     {
         request.document.headerStore.setLastModifiedAt(currentNoteTimestamp());
@@ -1016,6 +1018,10 @@ bool WhatSonLocalNoteFileStore::updateNote(
     {
         request.document.headerStore.incrementModifiedCount();
     }
+    const int modifiedCountAfterUpdate = request.document.headerStore.modifiedCount();
+    const bool shouldCaptureVersionCommit = request.incrementModifiedCount
+        && (persistHeader || persistBody)
+        && modifiedCountAfterUpdate == modifiedCountBeforeUpdate + 1;
 
     QString writeError;
     if (!versionPath.isEmpty() && !m_ioGateway.exists(versionPath))
@@ -1110,6 +1116,29 @@ bool WhatSonLocalNoteFileStore::updateNote(
                 }
                 return false;
             }
+        }
+    }
+
+    if (shouldCaptureVersionCommit)
+    {
+        WhatSonLocalNoteVersionStore versionStore;
+        WhatSonLocalNoteVersionStore::CaptureRequest captureRequest;
+        captureRequest.document = request.document;
+        captureRequest.label = QStringLiteral("commit:%1").arg(modifiedCountAfterUpdate);
+        captureRequest.commitModifiedCount = modifiedCountAfterUpdate;
+
+        QString captureError;
+        if (!versionStore.captureSnapshot(
+                std::move(captureRequest),
+                nullptr,
+                nullptr,
+                &captureError))
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = captureError;
+            }
+            return false;
         }
     }
 

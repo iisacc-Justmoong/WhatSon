@@ -95,6 +95,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   both `ContentsDisplayView.qml` and `MobileContentsDisplayView.qml`.
 - The wrapper default `fontPixelSize` itself now routes through `LV.Theme.scaleMetric(12)`, so callers that do not
   override typography still remain inside LVRS density scaling.
+- The wrapper now normalizes `TextEdit.tabStopDistance` to `tabIndentSpaceCount` spaces (default: 4), measured with
+  the same runtime font metrics used by the editor surface.
 
 ## Regression Notes
 
@@ -135,3 +137,5 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
     heavier medium default
   - page/print hosts must be able to switch the editor into the outer paper document scroll path without re-enabling
     nested internal flicking
+- pressing `Tab` in the note editor must render one indent step as approximately four spaces, not an oversized default
+  tab column

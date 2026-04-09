@@ -20,6 +20,8 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
 
 - `editorViewMenuItems` is the single source of truth for the context-menu entry order, labels, icons, and selected
   state.
+- `showLabel` controls whether the left `View` label is rendered. Mobile compact navigation sets
+  `showLabel: false` so the selector can fit inside the `174:5689` dual-combo group.
 - The menu keeps the editor-view enum order from `EditorViewState`:
   - `0`: `Plain`
   - `1`: `Page`
@@ -34,13 +36,15 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
   - `Presentation` -> `procedure`
 - `itemWidth` is routed through `LV.Theme.scaleMetric(141)`, matching the Figma context-menu frame width while still
   scaling with LVRS UI density.
+- When `showLabel: false`, the combo width is constrained through `compactComboWidth` (`97` scaled px) so it matches
+  the compact mobile navigation slot width from Figma node `174:6000`.
 - `selectedIndex` must resolve from `editorViewModeViewModel.activeViewMode`, so the currently active editor view
   remains highlighted when the menu opens.
 
 ## Interaction Contract
 
 - Clicking the combo box toggles the menu through `toggleEditorViewMenu()`.
-- The popup vertical offset uses `LV.Theme.gap2` instead of a fixed `2px` literal.
+- The popup vertical offset is routed through `comboMenuYOffset` (`LV.Theme.gap2`) instead of a fixed literal.
 - Choosing a menu entry must call `editorViewModeViewModel.requestViewModeChange(index)`.
 - The view still emits `viewHookRequested` after menu open/select so panel-level hook instrumentation remains intact.
 
@@ -52,3 +56,4 @@ routes the selected index back into `EditorViewModeViewModel.requestViewModeChan
   - Each menu entry keeps the Figma-aligned `iconName` token listed above.
   - Opening the menu while each editor view is active highlights the matching row through `selectedIndex`.
   - The `Presentation` row fits without clipping inside the `141px` menu width.
+  - Mobile compact navigation (`showLabel: false`) keeps the combo width at the scaled `97px` slot and still opens the same context menu.

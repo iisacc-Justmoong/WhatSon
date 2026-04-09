@@ -626,6 +626,7 @@ Item {
         canvasColor: mobileHierarchyPage.canvasColor
         compactAddFolderVisible: !mobileHierarchyPage.noteListPageActive && !mobileHierarchyPage.editorPageActive
         compactDetailPanelVisible: mobileHierarchyPage.editorPageActive
+        compactEditorViewVisible: mobileHierarchyPage.editorPageActive
         compactLeadingActionVisible: false
         compactNoteListControlsVisible: mobileHierarchyPage.noteListPageActive
         compactSettingsVisible: mobileHierarchyPage.hierarchyPageActive

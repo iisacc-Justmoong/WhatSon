@@ -7,6 +7,9 @@ LV.HStack {
 
     readonly property string activeModeText: activeNavigationModeViewModel && activeNavigationModeViewModel.modeName !== undefined ? activeNavigationModeViewModel.modeName : "View"
     readonly property var activeNavigationModeViewModel: navigationModeViewModel && navigationModeViewModel.activeModeViewModel !== undefined ? navigationModeViewModel.activeModeViewModel : null
+    property int comboContextMenuWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(132)))
+    property int comboMenuYOffset: LV.Theme.gap2
+    property int compactComboWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(97)))
     readonly property var modeMenuItems: [
         {
             iconName: "generalshow",
@@ -44,7 +47,7 @@ LV.HStack {
             modeContextMenu.close();
             return;
         }
-        modeContextMenu.openFor(modeCombo, 0, modeCombo.height + 2);
+        modeContextMenu.openFor(modeCombo, 0, modeCombo.height + modeBar.comboMenuYOffset);
         modeBar.requestViewHook("open-navigation-mode-menu");
     }
 
@@ -61,6 +64,7 @@ LV.HStack {
 
         text: modeBar.activeModeText
         tone: LV.ComboBox.Tone.Primary
+        width: modeBar.showLabel ? implicitWidth : modeBar.compactComboWidth
 
         onClicked: modeBar.toggleModeMenu()
     }
@@ -69,7 +73,7 @@ LV.HStack {
 
         autoCloseOnTrigger: true
         closePolicy: Controls.Popup.CloseOnPressOutside | Controls.Popup.CloseOnPressOutsideParent | Controls.Popup.CloseOnEscape
-        itemWidth: 132
+        itemWidth: modeBar.comboContextMenuWidth
         items: modeBar.modeMenuItems
         modal: false
         parent: Controls.Overlay.overlay

@@ -259,6 +259,9 @@ Rectangle {
         bookmarkPaletteController.applyBookmarkPaletteVisuals();
     }
     function armHierarchyExpansionActivationSuppression(item, itemId, index) {
+        // Expansion originated from the chevron slot; invalidate any pending activation callback
+        // from the same pointer transaction before it can route to folder activation.
+        sidebarHierarchyView.hierarchyActivationPendingSerial += 1;
         sidebarHierarchyView.hierarchyExpansionActivationSuppressed = true;
         hierarchyExpansionActivationBlockTimer.restart();
     }
@@ -707,10 +710,6 @@ Rectangle {
     }
     function shouldSuppressHierarchyActivation(item, itemId, index) {
         if (!sidebarHierarchyView.hierarchyExpansionActivationSuppressed && !hierarchyExpansionActivationBlockTimer.running)
-            return false;
-        const selectedIndex = sidebarHierarchyView.normalizedInteger(sidebarHierarchyView.selectedFolderIndex, -1);
-        const resolvedIndex = sidebarHierarchyView.resolveHierarchyActivationIndex(item, itemId, index);
-        if (selectedIndex >= 0 && resolvedIndex >= 0 && resolvedIndex === selectedIndex)
             return false;
         return true;
     }

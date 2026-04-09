@@ -1,46 +1,42 @@
 # `src/app/file/note/WhatSonLocalNoteVersionStore.hpp`
 
-## Status
-- Documentation phase: scaffold generated from the live source tree.
-- Detail level: structural placeholder prepared for a later deep pass.
+## Role
+Declares the local note versioning contract that persists snapshot history in `.wsnversion`.
 
-## Source Metadata
-- Source path: `src/app/file/note/WhatSonLocalNoteVersionStore.hpp`
-- Source kind: C++ header
-- File name: `WhatSonLocalNoteVersionStore.hpp`
-- Approximate line count: 135
+The header models snapshots as commit-like records and exposes the store API for read/capture/diff/checkout/rollback
+operations.
 
-## Extracted Symbols
-- Declared namespaces present: no
-- QObject macro present: no
+## Snapshot Schema Contract
+- `WhatSonNoteVersionSnapshot` represents one persisted point-in-time state.
+- Snapshot identity and lineage:
+  - `snapshotId`
+  - `parentSnapshotId`
+  - `sourceSnapshotId` (used by rollback lineage)
+- Commit mapping:
+  - `commitModifiedCount` stores the `fileStat.modifiedCount` value that triggered this capture.
+- Payload:
+  - `headerText`
+  - `bodyDocumentText`
+  - `bodyPlainText`
+- Precomputed patch payload:
+  - `headerDiff`
+  - `bodyDiff`
+- `WhatSonNoteVersionDiffSegment` includes:
+  - prefix/suffix lengths
+  - removed/inserted text blocks
+  - `unifiedPatch` (`git diff`-style unified text)
 
-### Classes and Structs
-- `WhatSonNoteVersionSnapshot`
-- `WhatSonNoteVersionState`
-- `WhatSonNoteVersionDiffSegment`
-- `WhatSonNoteVersionDiff`
-- `WhatSonLocalNoteVersionStore`
-- `ReadRequest`
-- `CaptureRequest`
-- `DiffRequest`
-- `CheckoutRequest`
-- `RollbackRequest`
+## Request Types
+- `CaptureRequest` includes `commitModifiedCount` so callers can bind snapshot capture to a specific note commit.
+- `DiffRequest`, `CheckoutRequest`, and `RollbackRequest` provide explicit snapshot IDs and keep mutation flow
+  deterministic.
 
-### Enums
-- None detected during scaffold generation.
+## Regression Checks
+- Backward compatibility: loading old `.wsnversion` files without `commitModifiedCount` or `*Diff` fields must still
+  succeed with defaults.
+- New captures must persist both raw snapshot payload and unified patch metadata.
 
-## Intended Detailed Sections
-- Responsibility and business role
-- Ownership and lifecycle
-- Public API or externally observed bindings
-- Collaborators and dependency direction
-- Data flow and state transitions
-- Error handling and recovery paths
-- Threading, scheduling, or UI affinity constraints when relevant
-- Extension points, invariants, and known complexity hotspots
-- Test coverage and missing verification
-
-## Authoring Notes For Next Pass
-- Read the real implementation and adjacent headers before replacing this scaffold.
-- Document concrete signals, slots, invokables, persistence side effects, and LVRS/QML bindings where applicable.
-- Cross-link this file with peer modules in the same directory once the detailed pass begins.
+## Tests
+- This repository does not maintain in-repo automated tests for this module.
+- Keep the regression checks above synchronized with `WhatSonLocalNoteVersionStore.cpp` behavior when schema fields
+  change.

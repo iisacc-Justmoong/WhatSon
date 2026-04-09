@@ -149,6 +149,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   duplicate formatting from the same key chord.
 - Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
+- Applying `Strikethrough` through shortcut/context-menu on indented markdown lines must keep line indentation and
+  structural list/heading prefixes intact after the source rewrite.
 - Immediate typing saves must return `true` once the snapshot is accepted into the buffered fetch-sync stage so the
   typing controller does not schedule a redundant second staging request on the same turn.
 - A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection

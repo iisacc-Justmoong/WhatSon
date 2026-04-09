@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QStringList>
 #include <QUuid>
 
 #include <algorithm>
@@ -17,6 +18,118 @@
 namespace
 {
     constexpr auto kNoteVersionSchema = "whatson.note.version.store";
+
+    QString normalizeLineEndings(QString text)
+    {
+        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        text.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+        return text;
+    }
+
+    QStringList splitLinesForUnifiedPatch(const QString& text)
+    {
+        if (text.isEmpty())
+        {
+            return {};
+        }
+        return text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+    }
+
+    QString buildUnifiedPatch(
+        const QString& fromText,
+        const QString& toText,
+        const QString& fromLabel,
+        const QString& toLabel)
+    {
+        const QString normalizedFrom = normalizeLineEndings(fromText);
+        const QString normalizedTo = normalizeLineEndings(toText);
+        if (normalizedFrom == normalizedTo)
+        {
+            return {};
+        }
+
+        const QStringList fromLines = splitLinesForUnifiedPatch(normalizedFrom);
+        const QStringList toLines = splitLinesForUnifiedPatch(normalizedTo);
+
+        int prefixLines = 0;
+        const int maxPrefixLines = std::min(fromLines.size(), toLines.size());
+        while (prefixLines < maxPrefixLines && fromLines.at(prefixLines) == toLines.at(prefixLines))
+        {
+            ++prefixLines;
+        }
+
+        const int fromRemainingLines = fromLines.size() - prefixLines;
+        const int toRemainingLines = toLines.size() - prefixLines;
+        int suffixLines = 0;
+        const int maxSuffixLines = std::min(fromRemainingLines, toRemainingLines);
+        while (suffixLines < maxSuffixLines
+               && fromLines.at(fromLines.size() - suffixLines - 1)
+                      == toLines.at(toLines.size() - suffixLines - 1))
+        {
+            ++suffixLines;
+        }
+
+        const int removedLineCount = fromRemainingLines - suffixLines;
+        const int insertedLineCount = toRemainingLines - suffixLines;
+        const QStringList removedLines = fromLines.mid(prefixLines, removedLineCount);
+        const QStringList insertedLines = toLines.mid(prefixLines, insertedLineCount);
+
+        const QString normalizedFromLabel = fromLabel.trimmed().isEmpty() ? QStringLiteral("note.before") : fromLabel.trimmed();
+        const QString normalizedToLabel = toLabel.trimmed().isEmpty() ? QStringLiteral("note.after") : toLabel.trimmed();
+        const int fromStartLine = std::max(prefixLines + (removedLineCount > 0 ? 1 : 0), 1);
+        const int toStartLine = std::max(prefixLines + (insertedLineCount > 0 ? 1 : 0), 1);
+
+        QString patch;
+        patch += QStringLiteral("--- a/%1\n").arg(normalizedFromLabel);
+        patch += QStringLiteral("+++ b/%1\n").arg(normalizedToLabel);
+        patch += QStringLiteral("@@ -%1,%2 +%3,%4 @@\n")
+                     .arg(fromStartLine)
+                     .arg(std::max(removedLineCount, 0))
+                     .arg(toStartLine)
+                     .arg(std::max(insertedLineCount, 0));
+
+        for (const QString& removedLine : removedLines)
+        {
+            patch += QLatin1Char('-');
+            patch += removedLine;
+            patch += QLatin1Char('\n');
+        }
+        for (const QString& insertedLine : insertedLines)
+        {
+            patch += QLatin1Char('+');
+            patch += insertedLine;
+            patch += QLatin1Char('\n');
+        }
+        return patch;
+    }
+
+    QJsonObject diffSegmentToJson(const WhatSonNoteVersionDiffSegment& segment)
+    {
+        QJsonObject root;
+        root.insert(QStringLiteral("prefixLength"), segment.prefixLength);
+        root.insert(QStringLiteral("suffixLength"), segment.suffixLength);
+        root.insert(QStringLiteral("removedText"), segment.removedText);
+        root.insert(QStringLiteral("insertedText"), segment.insertedText);
+        root.insert(QStringLiteral("unifiedPatch"), segment.unifiedPatch);
+        return root;
+    }
+
+    WhatSonNoteVersionDiffSegment diffSegmentFromJson(const QJsonValue& value)
+    {
+        WhatSonNoteVersionDiffSegment segment;
+        if (!value.isObject())
+        {
+            return segment;
+        }
+
+        const QJsonObject object = value.toObject();
+        segment.prefixLength = object.value(QStringLiteral("prefixLength")).toInt(0);
+        segment.suffixLength = object.value(QStringLiteral("suffixLength")).toInt(0);
+        segment.removedText = object.value(QStringLiteral("removedText")).toString();
+        segment.insertedText = object.value(QStringLiteral("insertedText")).toString();
+        segment.unifiedPatch = object.value(QStringLiteral("unifiedPatch")).toString();
+        return segment;
+    }
 
     QString createEmptyVersionDocumentText(const QString& noteId)
     {
@@ -86,9 +199,12 @@ namespace
         root.insert(QStringLiteral("operation"), snapshot.operation);
         root.insert(QStringLiteral("label"), snapshot.label);
         root.insert(QStringLiteral("capturedAtUtc"), snapshot.capturedAtUtc);
+        root.insert(QStringLiteral("commitModifiedCount"), snapshot.commitModifiedCount);
         root.insert(QStringLiteral("headerText"), snapshot.headerText);
         root.insert(QStringLiteral("bodyDocumentText"), snapshot.bodyDocumentText);
         root.insert(QStringLiteral("bodyPlainText"), snapshot.bodyPlainText);
+        root.insert(QStringLiteral("headerDiff"), diffSegmentToJson(snapshot.headerDiff));
+        root.insert(QStringLiteral("bodyDiff"), diffSegmentToJson(snapshot.bodyDiff));
         return root;
     }
 
@@ -102,9 +218,12 @@ namespace
         snapshot.operation = object.value(QStringLiteral("operation")).toString().trimmed();
         snapshot.label = object.value(QStringLiteral("label")).toString();
         snapshot.capturedAtUtc = object.value(QStringLiteral("capturedAtUtc")).toString().trimmed();
+        snapshot.commitModifiedCount = object.value(QStringLiteral("commitModifiedCount")).toInt(-1);
         snapshot.headerText = object.value(QStringLiteral("headerText")).toString();
         snapshot.bodyDocumentText = object.value(QStringLiteral("bodyDocumentText")).toString();
         snapshot.bodyPlainText = object.value(QStringLiteral("bodyPlainText")).toString();
+        snapshot.headerDiff = diffSegmentFromJson(object.value(QStringLiteral("headerDiff")));
+        snapshot.bodyDiff = diffSegmentFromJson(object.value(QStringLiteral("bodyDiff")));
         return snapshot;
     }
 } // namespace
@@ -460,7 +579,11 @@ int WhatSonLocalNoteVersionStore::indexOfSnapshot(const WhatSonNoteVersionState&
     return -1;
 }
 
-WhatSonNoteVersionDiffSegment WhatSonLocalNoteVersionStore::diffSegment(const QString& fromText, const QString& toText) const
+WhatSonNoteVersionDiffSegment WhatSonLocalNoteVersionStore::diffSegment(
+    const QString& fromText,
+    const QString& toText,
+    const QString& fromLabel,
+    const QString& toLabel) const
 {
     WhatSonNoteVersionDiffSegment segment;
     const int maxPrefixLength = std::min(fromText.size(), toText.size());
@@ -482,6 +605,7 @@ WhatSonNoteVersionDiffSegment WhatSonLocalNoteVersionStore::diffSegment(const QS
 
     segment.removedText = fromText.mid(segment.prefixLength, fromRemainingLength - segment.suffixLength);
     segment.insertedText = toText.mid(segment.prefixLength, toRemainingLength - segment.suffixLength);
+    segment.unifiedPatch = buildUnifiedPatch(fromText, toText, fromLabel, toLabel);
     return segment;
 }
 
@@ -519,6 +643,24 @@ bool WhatSonLocalNoteVersionStore::captureSnapshot(
     snapshot.operation = QStringLiteral("capture");
     snapshot.label = request.label;
     snapshot.capturedAtUtc = currentTimestampUtc();
+    snapshot.commitModifiedCount = request.commitModifiedCount >= 0
+                                       ? request.commitModifiedCount
+                                       : request.document.headerStore.modifiedCount();
+
+    const QString noteLabelStem = snapshot.noteId.trimmed().isEmpty() ? QStringLiteral("note") : snapshot.noteId.trimmed();
+    const int parentIndex = indexOfSnapshot(state, snapshot.parentSnapshotId);
+    const QString parentHeaderText = parentIndex >= 0 ? state.snapshots.at(parentIndex).headerText : QString();
+    const QString parentBodyDocumentText = parentIndex >= 0 ? state.snapshots.at(parentIndex).bodyDocumentText : QString();
+    snapshot.headerDiff = diffSegment(
+        parentHeaderText,
+        snapshot.headerText,
+        noteLabelStem + QStringLiteral(".wsnhead"),
+        noteLabelStem + QStringLiteral(".wsnhead"));
+    snapshot.bodyDiff = diffSegment(
+        parentBodyDocumentText,
+        snapshot.bodyDocumentText,
+        noteLabelStem + QStringLiteral(".wsnbody"),
+        noteLabelStem + QStringLiteral(".wsnbody"));
 
     state.noteId = snapshot.noteId;
     state.snapshots.push_back(snapshot);
@@ -580,8 +722,17 @@ bool WhatSonLocalNoteVersionStore::diffSnapshots(
     diff.noteId = state.noteId;
     diff.fromSnapshotId = fromSnapshot.snapshotId;
     diff.toSnapshotId = toSnapshot.snapshotId;
-    diff.header = diffSegment(fromSnapshot.headerText, toSnapshot.headerText);
-    diff.body = diffSegment(fromSnapshot.bodyPlainText, toSnapshot.bodyPlainText);
+    const QString noteLabelStem = state.noteId.trimmed().isEmpty() ? QStringLiteral("note") : state.noteId.trimmed();
+    diff.header = diffSegment(
+        fromSnapshot.headerText,
+        toSnapshot.headerText,
+        noteLabelStem + QStringLiteral(".wsnhead"),
+        noteLabelStem + QStringLiteral(".wsnhead"));
+    diff.body = diffSegment(
+        fromSnapshot.bodyDocumentText,
+        toSnapshot.bodyDocumentText,
+        noteLabelStem + QStringLiteral(".wsnbody"),
+        noteLabelStem + QStringLiteral(".wsnbody"));
     *outDiff = diff;
     return true;
 }
@@ -677,6 +828,24 @@ bool WhatSonLocalNoteVersionStore::rollbackToSnapshot(
                                  ? QStringLiteral("rollback:%1").arg(state.snapshots.at(targetIndex).snapshotId)
                                  : request.label;
     rollbackSnapshot.capturedAtUtc = currentTimestampUtc();
+    rollbackSnapshot.commitModifiedCount = rolledBackDocument.headerStore.modifiedCount();
+
+    const QString noteLabelStem = rollbackSnapshot.noteId.trimmed().isEmpty()
+                                      ? QStringLiteral("note")
+                                      : rollbackSnapshot.noteId.trimmed();
+    const int parentIndex = indexOfSnapshot(state, rollbackSnapshot.parentSnapshotId);
+    const QString parentHeaderText = parentIndex >= 0 ? state.snapshots.at(parentIndex).headerText : QString();
+    const QString parentBodyDocumentText = parentIndex >= 0 ? state.snapshots.at(parentIndex).bodyDocumentText : QString();
+    rollbackSnapshot.headerDiff = diffSegment(
+        parentHeaderText,
+        rollbackSnapshot.headerText,
+        noteLabelStem + QStringLiteral(".wsnhead"),
+        noteLabelStem + QStringLiteral(".wsnhead"));
+    rollbackSnapshot.bodyDiff = diffSegment(
+        parentBodyDocumentText,
+        rollbackSnapshot.bodyDocumentText,
+        noteLabelStem + QStringLiteral(".wsnbody"),
+        noteLabelStem + QStringLiteral(".wsnbody"));
 
     state.noteId = rollbackSnapshot.noteId;
     state.snapshots.push_back(rollbackSnapshot);
