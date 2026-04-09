@@ -83,6 +83,13 @@ suppression local to this file.
   timer-driven stale-sync apply during active typing.
 - Mobile editor body writes now also stage immediately into the shared buffered fetch-sync boundary, while actual
   `.wsnote` synchronization waits for a later recurring fetch turn instead of an exact idle/flush moment.
+- Mobile editor entry now also performs a one-shot session/filesystem reconciliation path:
+  - when the editor route becomes visible (or a new note is selected), it calls
+    `ContentsEditorSelectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`
+  - this path first compares the current session text with filesystem RAW source text
+  - only when they differ does it trigger a RAW snapshot refresh into the bound note-list model
+  - the one-shot marker (`editorEntrySnapshotComparedNoteId`) prevents duplicate fetches for the same entry cycle
+  - reconciliation is deferred while `pendingBodySave`, active typing session, or focused editor input is true.
 
 ## Tests
 
@@ -136,3 +143,6 @@ suppression local to this file.
     until the shared context menu action runs.
   - Switching mobile note selection while the current note still has a pending staged body must not drop the old note
     text or block the new selection on an immediate-save success path.
+  - On mobile editor entry, notes with stale in-memory `currentBodyText` must reconcile against filesystem RAW once and
+    refresh before rendering, so formatting parse state does not lag behind saved source text.
+  - Entry reconciliation must not run during active typing/focused input or while `pendingBodySave` is true.

@@ -27,6 +27,10 @@
   currently selected note session there.
 - Persistence requests forwarded through the bridge now follow buffered fetch semantics rather than worker-thread idle
   semantics, so the bridge remains a pure adapter while the controller owns eventual filesystem sync.
+- The bridge now also exposes `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`:
+  - delegates session-vs-filesystem comparison to the sync layer
+  - refreshes bridge-side `selectedNoteId` / `selectedNoteBodyText` snapshots immediately after reconciliation so QML
+    can consume one consistent post-reconcile state.
 
 ### Classes and Structs
 - None detected during scaffold generation.
@@ -57,3 +61,5 @@
 - The bridge must continue forwarding sync-boundary queued/completion signals so `ContentsEditorSession.qml` behavior
   does not regress.
 - The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered fetch model.
+- Reconciliation requests must not bypass the bridge property refresh step; post-reconcile
+  `selectedNoteBodyText` must stay aligned with the note-list model snapshot consumed by QML.

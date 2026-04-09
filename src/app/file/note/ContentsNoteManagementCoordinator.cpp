@@ -2,6 +2,7 @@
 
 #include "file/WhatSonDebugTrace.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
+#include "WhatSonNoteBodyPersistence.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 
 #include <QCoreApplication>
@@ -79,6 +80,51 @@ bool ContentsNoteManagementCoordinator::persistEditorTextForNote(const QString& 
     }
 
     return enqueuePersistenceRequest(normalizedNoteId, text);
+}
+
+bool ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(
+    const QString& noteId,
+    const QString& viewSessionText)
+{
+    const QString normalizedNoteId = noteId.trimmed();
+    if (normalizedNoteId.isEmpty())
+    {
+        return false;
+    }
+
+    const QString noteDirectoryPath = resolveNoteDirectoryPathForNote(normalizedNoteId);
+    if (noteDirectoryPath.isEmpty())
+    {
+        return false;
+    }
+
+    WhatSonLocalNoteFileStore noteFileStore;
+    WhatSonLocalNoteFileStore::ReadRequest readRequest;
+    readRequest.noteId = normalizedNoteId;
+    readRequest.noteDirectoryPath = noteDirectoryPath;
+
+    WhatSonLocalNoteDocument document;
+    QString readError;
+    if (!noteFileStore.readNote(readRequest, &document, &readError))
+    {
+        WhatSon::Debug::traceSelf(
+            this,
+            QStringLiteral("content.note.management"),
+            QStringLiteral("reconcileViewSessionAndRefreshSnapshotForNote.read.failed"),
+            QStringLiteral("noteId=%1 error=%2").arg(normalizedNoteId, readError));
+        return false;
+    }
+
+    const QString normalizedSessionText =
+        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(viewSessionText);
+    const QString normalizedRawSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+        document.bodySourceText.isEmpty() ? document.bodyPlainText : document.bodySourceText);
+    if (normalizedSessionText == normalizedRawSourceText)
+    {
+        return true;
+    }
+
+    return refreshNoteSnapshotForNote(normalizedNoteId);
 }
 
 bool ContentsNoteManagementCoordinator::refreshNoteSnapshotForNote(const QString& noteId)

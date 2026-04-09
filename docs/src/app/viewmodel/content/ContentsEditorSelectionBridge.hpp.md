@@ -23,6 +23,7 @@
   - `persistEditorTextForNote(noteId, text)`
   - `stageEditorTextForIdleSync(noteId, text)`
   - `flushEditorTextForNote(noteId, text)`
+  - `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`
   - `refreshSelectedNoteSnapshot()`
   and they now delegate to the sync boundary instead of performing note-management work inside the bridge itself.
 - Those invokables no longer imply an idle-threshold or immediate-save guarantee:
@@ -65,3 +66,6 @@
   resolution remains valid after model replacement.
 - QML must still be able to request a best-effort immediate fetch through `flushEditorTextForNote(...)` when the editor
   lifecycle is ending, but ordinary note switches must not depend on that path.
+- Mobile entry-time reconciliation must be available through
+  `reconcileViewSessionAndRefreshSnapshotForNote(...)`, so QML can compare a live editor session snapshot against
+  filesystem RAW and only then request a refresh.

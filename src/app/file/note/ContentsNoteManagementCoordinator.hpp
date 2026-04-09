@@ -24,6 +24,9 @@ public:
     bool directPersistenceAvailable() const noexcept;
 
     bool persistEditorTextForNote(const QString& noteId, const QString& text);
+    bool reconcileViewSessionAndRefreshSnapshotForNote(
+        const QString& noteId,
+        const QString& viewSessionText);
     bool refreshNoteSnapshotForNote(const QString& noteId);
     void bindSelectedNote(const QString& noteId);
     void clearSelectedNote();

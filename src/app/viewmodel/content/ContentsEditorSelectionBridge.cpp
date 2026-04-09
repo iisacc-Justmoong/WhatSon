@@ -161,6 +161,22 @@ bool ContentsEditorSelectionBridge::flushEditorTextForNote(const QString& noteId
         && m_idleSyncController->flushEditorTextForNote(noteId, text);
 }
 
+bool ContentsEditorSelectionBridge::reconcileViewSessionAndRefreshSnapshotForNote(
+    const QString& noteId,
+    const QString& viewSessionText)
+{
+    const QString normalizedNoteId = noteId.trimmed().isEmpty()
+        ? m_selectedNoteId
+        : noteId.trimmed();
+    const bool refreshed = m_idleSyncController != nullptr
+        && m_idleSyncController->reconcileViewSessionAndRefreshSnapshotForNote(
+            normalizedNoteId,
+            viewSessionText);
+    refreshNoteSelectionState();
+    refreshNoteCountState();
+    return refreshed;
+}
+
 bool ContentsEditorSelectionBridge::directPersistenceAvailable() const noexcept
 {
     return m_idleSyncController != nullptr

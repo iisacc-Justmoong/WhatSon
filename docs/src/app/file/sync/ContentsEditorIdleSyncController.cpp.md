@@ -16,6 +16,8 @@
   `ContentsNoteManagementCoordinator::persistEditorTextForNote(...)`.
 - Explicit flush requests no longer mean "persist synchronously now"; they only request one immediate fetch-cycle
   enqueue attempt on top of the same buffered state.
+- Entry-time session/filesystem reconcile requests are forwarded as a dedicated pass-through operation to
+  `ContentsNoteManagementCoordinator`; this controller does not reimplement RAW comparison logic locally.
 - Failed writes keep the note dirty and wait for the next fetch turn instead of trying to force recovery inline on the
   editor path.
 
@@ -34,3 +36,5 @@
 - A later fetch turn must still write the newest buffered text after an earlier async completion or failure.
 - The controller must not depend on a worker-thread idle monitor or revision bookkeeping to preserve the latest editor
   buffer.
+- Reconcile operations must remain side-effect free for the buffered persistence queue state (no forced dirty-order
+  mutation).

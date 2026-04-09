@@ -20,6 +20,9 @@ should synchronize to disk.
 - `directPersistenceAvailable()`: reports whether the fast direct `.wsnote` lane is available.
 - `persistEditorTextForNote(noteId, text)`: accepts an already-approved sync snapshot and enqueues it onto the
   coordinator-owned management queue instead of performing save/stat work inline on the editor path.
+- `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: reads the current note RAW body source
+  from filesystem, compares it against the provided view-session text, and only requests snapshot refresh when they
+  differ.
 - `refreshNoteSnapshotForNote(noteId)`: reloads one note's metadata/body snapshot through the bound content view-model.
 - `bindSelectedNote(noteId)` / `clearSelectedNote()`: maintain the selected note session and enqueue header-only
   open-count maintenance outside the editor hot path.
@@ -47,3 +50,5 @@ should synchronize to disk.
   background lane instead of synchronously inside editor selection refresh.
 - When the content view-model contract is unavailable, the coordinator must reject persistence requests cleanly instead
   of letting QML assume the write succeeded.
+- Session/filesystem reconciliation must not force a metadata reload when the session text already matches filesystem
+  RAW.

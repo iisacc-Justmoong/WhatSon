@@ -163,6 +163,7 @@ Item {
     readonly property int pageEditorViewModeValue: 1
     property var panelViewModel: null
     property alias pendingBodySave: editorSession.pendingBodySave
+    property string editorEntrySnapshotComparedNoteId: ""
     property string pendingEditorFocusNoteId: ""
     readonly property int plainEditorViewModeValue: 0
     readonly property color printCanvasColor: "#F1F3F6"
@@ -895,6 +896,33 @@ Item {
         selectionBridge.refreshSelectedNoteSnapshot();
         contentsView.scheduleGutterRefresh(2);
     }
+    function reconcileEditorEntrySnapshotOnce() {
+        if (!contentsView.visible || !contentsView.hasSelectedNote)
+            return false;
+        const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (normalizedNoteId.length === 0)
+            return false;
+        if (contentsView.editorEntrySnapshotComparedNoteId === normalizedNoteId)
+            return false;
+        if (contentsView.editorInputFocused || contentsView.pendingBodySave || contentsView.typingSessionSyncProtected)
+            return false;
+        if (!selectionBridge
+                || selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote === undefined) {
+            return false;
+        }
+        const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
+                ? ""
+                : String(editorSession.editorText);
+        const reconciled = !!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
+                               normalizedNoteId,
+                               sessionText);
+        if (!reconciled)
+            return false;
+        contentsView.editorEntrySnapshotComparedNoteId = normalizedNoteId;
+        return true;
+    }
     function queueInlineFormatWrap(tagName) {
         return editorSelectionController.queueInlineFormatWrap(tagName);
     }
@@ -1088,6 +1116,7 @@ Item {
     Component.onCompleted: {
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        contentsView.reconcileEditorEntrySnapshotOnce();
         contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.scheduleGutterRefresh(4);
     }
@@ -1123,15 +1152,26 @@ Item {
         contentsView.scheduleGutterRefresh(4);
     }
     onSelectedNoteIdChanged: {
+        contentsView.editorEntrySnapshotComparedNoteId = "";
         contentsView.resetEditorSelectionCache();
         editorSession.requestSyncEditorTextFromSelection(contentsView.selectedNoteId, contentsView.selectedNoteBodyText);
+        contentsView.reconcileEditorEntrySnapshotOnce();
         contentsView.scheduleMinimapSnapshotRefresh(true);
         contentsView.scheduleDocumentPresentationRefresh(true);
         contentsView.focusEditorForPendingNote();
         contentsView.scheduleGutterRefresh(4);
     }
+    onPendingBodySaveChanged: {
+        if (!contentsView.pendingBodySave)
+            contentsView.reconcileEditorEntrySnapshotOnce();
+    }
+    onTypingSessionSyncProtectedChanged: {
+        if (!contentsView.typingSessionSyncProtected)
+            contentsView.reconcileEditorEntrySnapshotOnce();
+    }
     onVisibleChanged: {
         if (visible) {
+            contentsView.reconcileEditorEntrySnapshotOnce();
             contentsView.scheduleMinimapSnapshotRefresh(true);
             contentsView.scheduleDocumentPresentationRefresh(true);
             contentsView.scheduleGutterRefresh(4);

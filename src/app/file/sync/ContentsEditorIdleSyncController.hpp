@@ -36,6 +36,9 @@ public:
     Q_INVOKABLE bool persistEditorTextForNote(const QString& noteId, const QString& text);
     Q_INVOKABLE bool stageEditorTextForIdleSync(const QString& noteId, const QString& text);
     Q_INVOKABLE bool flushEditorTextForNote(const QString& noteId, const QString& text);
+    bool reconcileViewSessionAndRefreshSnapshotForNote(
+        const QString& noteId,
+        const QString& viewSessionText);
     bool refreshNoteSnapshotForNote(const QString& noteId);
     void bindSelectedNote(const QString& noteId);
     void clearSelectedNote();

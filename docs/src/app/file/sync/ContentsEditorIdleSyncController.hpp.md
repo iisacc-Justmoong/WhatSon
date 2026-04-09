@@ -24,6 +24,8 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
 - `persistEditorTextForNote(noteId, text)`: compatibility alias for the buffered stage path.
 - `refreshNoteSnapshotForNote(noteId)`, `bindSelectedNote(noteId)`, `clearSelectedNote()`: forward selection/session
   work to the downstream coordinator while keeping the sync boundary in `file/sync`.
+- `reconcileViewSessionAndRefreshSnapshotForNote(noteId, viewSessionText)`: compares one editor session snapshot
+  against filesystem RAW through the downstream coordinator and only refreshes note snapshot when mismatch is detected.
 - `editorTextPersistenceQueued(...)`: emitted when one buffered snapshot actually enters the downstream persistence
   queue.
 - `editorTextPersistenceFinished(...)`: forwarded once that queued persistence request completes.
@@ -50,3 +52,5 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
   fetch cycle missed it.
 - Switching notes must not depend on a synchronous or immediate-save success path before the old note buffer stays safe.
 - Failed persistence completion must keep that note dirty so a later fetch turn can retry the latest buffered text.
+- Session/filesystem reconciliation must not trigger unconditional reloads; filesystem refresh should happen only on
+  mismatch.

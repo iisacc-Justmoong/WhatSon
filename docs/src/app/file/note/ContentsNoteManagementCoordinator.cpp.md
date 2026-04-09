@@ -23,6 +23,10 @@
 - Successful tracked-stat refresh then asks the content view-model to reload that note's metadata snapshot.
 - The fallback persistence lane, when used, is also deferred behind the coordinator queue so the editor hot path still
   only observes enqueue acceptance rather than immediate management work.
+- The coordinator now also provides one-shot session/filesystem reconciliation for editor entry:
+  - loads note RAW through `WhatSonLocalNoteFileStore::readNote(...)`
+  - compares normalized session text with normalized RAW source text
+  - triggers `refreshNoteSnapshotForNote(...)` only when mismatch is detected.
 
 ## Queue Semantics
 
@@ -43,3 +47,5 @@
 - Destroying the bound content view-model during an in-flight request must not crash queued completion handling.
 - Fallback/direct body persistence for a Tags-selected note must still cause the active tags hierarchy view-model to
   re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
+- Session/filesystem reconciliation must return success without reload when RAW already matches the current view
+  session snapshot.

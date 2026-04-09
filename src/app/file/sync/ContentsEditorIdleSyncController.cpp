@@ -81,6 +81,16 @@ bool ContentsEditorIdleSyncController::flushEditorTextForNote(const QString& not
     return stageEditorSnapshot(noteId, text, true);
 }
 
+bool ContentsEditorIdleSyncController::reconcileViewSessionAndRefreshSnapshotForNote(
+    const QString& noteId,
+    const QString& viewSessionText)
+{
+    return m_noteManagementCoordinator != nullptr
+        && m_noteManagementCoordinator->reconcileViewSessionAndRefreshSnapshotForNote(
+            noteId,
+            viewSessionText);
+}
+
 bool ContentsEditorIdleSyncController::refreshNoteSnapshotForNote(const QString& noteId)
 {
     return m_noteManagementCoordinator != nullptr
