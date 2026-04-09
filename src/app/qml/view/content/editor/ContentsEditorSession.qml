@@ -6,7 +6,9 @@ Item {
     property string editorBoundNoteId: ""
     property string editorText: ""
     property bool localEditorAuthority: false
+    property double lastLocalEditTimestampMs: 0
     property bool pendingBodySave: false
+    property int typingIdleThresholdMs: 1000
     property var selectionBridge: null
     property bool syncingEditorTextFromModel: false
 
@@ -39,12 +41,34 @@ Item {
             return !!editorSession.selectionBridge.stageEditorTextForIdleSync(noteId, bodyText);
         return false;
     }
+    function currentTimestampMs() {
+        return Date.now();
+    }
+    function isTypingSessionActive() {
+        if (!editorSession.localEditorAuthority)
+            return false;
+        const thresholdMs = Math.max(0, Number(editorSession.typingIdleThresholdMs) || 0);
+        if (thresholdMs <= 0)
+            return true;
+        const lastEditTimestampMs = Math.max(0, Number(editorSession.lastLocalEditTimestampMs) || 0);
+        const elapsedMs = editorSession.currentTimestampMs() - lastEditTimestampMs;
+        if (!isFinite(elapsedMs) || elapsedMs < 0)
+            return true;
+        return elapsedMs < thresholdMs;
+    }
     function requestSyncEditorTextFromSelection(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
         const nextText = text === undefined || text === null ? "" : String(text);
         const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
+        const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
         if (currentNoteId !== nextNoteId && editorSession.pendingBodySave) {
             editorSession.scheduleEditorPersistence();
+        }
+        if (currentNoteId === nextNoteId && currentText === nextText)
+            return false;
+        if (currentNoteId === nextNoteId && !editorSession.shouldAcceptModelBodyText(nextNoteId, nextText)) {
+            editorSession.scheduleEditorPersistence();
+            return false;
         }
         editorSession.syncEditorTextFromSelection(nextNoteId, nextText);
         return true;
@@ -56,6 +80,7 @@ Item {
     }
     function markLocalEditorAuthority() {
         editorSession.localEditorAuthority = true;
+        editorSession.lastLocalEditTimestampMs = editorSession.currentTimestampMs();
     }
     function scheduleEditorPersistence() {
         const noteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null
@@ -82,22 +107,30 @@ Item {
             return true;
         if (currentText === nextText)
             return true;
-        return !editorSession.localEditorAuthority;
+        if (editorSession.isTypingSessionActive())
+            return false;
+        return !editorSession.pendingBodySave;
     }
     function syncEditorTextFromSelection(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
         const nextText = text === undefined || text === null ? "" : String(text);
         const noteChanged = editorSession.editorBoundNoteId !== nextNoteId;
         const textChanged = editorSession.editorText !== nextText;
+        if (!noteChanged && !textChanged)
+            return;
         if (noteChanged || textChanged)
             editorSession.pendingBodySave = false;
         editorSession.editorBoundNoteId = nextNoteId;
-        if (noteChanged)
+        if (noteChanged) {
             editorSession.localEditorAuthority = false;
-        editorSession.syncingEditorTextFromModel = true;
+            editorSession.lastLocalEditTimestampMs = 0;
+        }
+        if (textChanged)
+            editorSession.syncingEditorTextFromModel = true;
         if (textChanged)
             editorSession.editorText = nextText;
-        editorSession.releaseSyncGuard();
+        if (textChanged)
+            editorSession.releaseSyncGuard();
         editorSession.editorTextSynchronized();
     }
 

@@ -70,6 +70,14 @@ suppression local to this file.
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so the old note buffer stays staged in the fetch-sync controller while the newly selected note binds immediately.
+- The mobile host now also wires `ContentsEditorSession.typingIdleThresholdMs` from
+  `contentsView.editorIdleSyncThresholdMs`, so same-note model snapshots are only eligible for apply after the typing
+  session is idle.
+- While that typing-idle window is still active, same-note mismatched `currentBodyText` snapshots are dropped and do
+  not overwrite live mobile input text.
+- Mobile snapshot polling and deferred presentation commit now also share `typingSessionSyncProtected`
+  (`ContentsEditorSession.isTypingSessionActive()`) and `pendingBodySave` guards, so focus churn alone cannot reopen
+  timer-driven stale-sync apply during active typing.
 - Mobile editor body writes now also stage immediately into the shared buffered fetch-sync boundary, while actual
   `.wsnote` synchronization waits for a later recurring fetch turn instead of an exact idle/flush moment.
 
@@ -106,10 +114,14 @@ suppression local to this file.
     the existing selection down to only the most recently traversed text fragment.
   - iOS touch double-tap must still select the touched word while native input handling is active.
   - iOS touch triple-tap must still select the surrounding paragraph while native input handling is active.
-  - While the mobile editor is focused, note snapshot polling must not re-sync the current note body back into the live
-    input surface.
-  - Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the
-    active input session.
+- While the mobile editor is focused, note snapshot polling must not re-sync the current note body back into the live
+  input surface.
+- While the mobile typing session remains active or `pendingBodySave` is true, timer-driven snapshot polling must stay
+  paused even when focus reporting momentarily flaps.
+- Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the
+  active input session.
+- Mobile gutter/minimap line count must shrink immediately after newline removal or line-wrap collapse; deleting a
+  wrapped line break must not leave stale extra line indices.
   - Mobile cursor restoration after note focus or inline resource insertion must use one wrapper-level cursor path
     rather than rewriting the same cursor offset into multiple nested editor objects.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs on mobile while the

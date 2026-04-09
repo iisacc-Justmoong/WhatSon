@@ -423,9 +423,6 @@ QtObject {
         const boundedSourceEnd = Math.max(boundedSourceStart, Math.floor(Number(sourceEnd) || 0));
         const insertedText = controller.normalizePlainText(replacementText);
         const insertedSourceOffsets = controller.buildReplacementSourceOffsets(insertedText);
-        const previousLineStartOffsets = Array.isArray(controller.liveLogicalLineStartOffsets)
-                ? controller.liveLogicalLineStartOffsets
-                : [0];
         const previousOffsets = Array.isArray(controller.liveLogicalToSourceOffsets)
                 ? controller.liveLogicalToSourceOffsets
                 : controller.identityOffsetArray(previousLogicalText.length);
@@ -437,24 +434,7 @@ QtObject {
         const nextLogicalText = previousLogicalText.slice(0, boundedLogicalStart)
                 + insertedText
                 + previousLogicalText.slice(boundedLogicalEnd);
-        const startLineIndex = controller.lastLineIndexForOffset(previousLineStartOffsets, boundedLogicalStart);
-        const currentLineStart = Math.max(0, Number(previousLineStartOffsets[startLineIndex]) || 0);
-        const suffixStartIndex = controller.firstLineIndexAtOrAfterOffset(
-                    previousLineStartOffsets,
-                    boundedLogicalEnd,
-                    startLineIndex + 1);
-        const logicalDelta = logicalInsertedLength - (boundedLogicalEnd - boundedLogicalStart);
-        const replacementLineStartOffsets = controller.buildReplacementLineStartOffsets(currentLineStart, insertedText);
-        const nextLineStartOffsets = [];
-        for (let index = 0; index < startLineIndex; ++index)
-            nextLineStartOffsets.push(Math.max(0, Number(previousLineStartOffsets[index]) || 0));
-        for (let index = 0; index < replacementLineStartOffsets.length; ++index)
-            nextLineStartOffsets.push(replacementLineStartOffsets[index]);
-        for (let index = suffixStartIndex; index < previousLineStartOffsets.length; ++index) {
-            nextLineStartOffsets.push(Math.max(0, Number(previousLineStartOffsets[index]) || 0) + logicalDelta);
-        }
-        if (nextLineStartOffsets.length === 0 || Number(nextLineStartOffsets[0]) !== 0)
-            nextLineStartOffsets.unshift(0);
+        const nextLineStartOffsets = controller.computeLineStartOffsets(nextLogicalText);
         const nextOffsets = new Array(nextLogicalText.length + 1);
 
         for (let index = 0; index < boundedLogicalStart; ++index)
@@ -526,8 +506,6 @@ QtObject {
         controller.adoptLiveStateIntoBridge(nextSourceText);
         if (continuedListInsertion.applied)
             controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
-        if (controller.view.syncingEditorTextFromModel)
-            return true;
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
         if (controller.shouldDeferImmediatePersistence()) {

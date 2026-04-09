@@ -77,6 +77,17 @@
   bind immediately.
 - `ContentsEditorSession.qml` now also keeps local editor authority across same-note model echoes, so one successful
   echo cannot immediately reopen the door for the next stale polling snapshot to replace the current note body.
+- `ContentsEditorSession.qml` now also gates same-note model snapshot apply with an explicit typing-idle window
+  (`typingIdleThresholdMs` + last local edit timestamp), so non-idle typing turns cannot be overwritten by an older
+  snapshot captured before the latest user input.
+- Desktop/mobile hosts now inject that idle threshold through `editorIdleSyncThresholdMs`, keeping the apply policy
+  consistent across both surfaces.
+- Desktop/mobile editor views now also gate timer-driven snapshot polling and deferred presentation commits on
+  `typingSessionSyncProtected` plus `pendingBodySave`, not only focus state, so stale async snapshots cannot overwrite
+  active typing when focus reporting briefly flaps.
+- `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
+  text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
+  newline removal or line-wrap collapse.
 - Editor body persistence is now split into buffered fetch staging vs background completion:
   - `ContentsEditorSession.qml` owns pending/in-flight state only
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
@@ -108,6 +119,8 @@
 - The shared editor wrapper now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
   instead of maintaining its own synthetic IME commit flag, aligning Hangul composition behavior with standard text
   editors and word processors more closely.
+- `ContentsEditorTypingController.qml` no longer drops a committed `textEdited` mutation only because a transient
+  model-sync guard bit is still set; committed user typing now always refreshes local authority and persistence staging.
 - The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or
   mixed-inline dragged selections survive the menu-opening click instead of collapsing to one fragment before
   formatting.

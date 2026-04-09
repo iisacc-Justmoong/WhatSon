@@ -158,7 +158,8 @@ Item {
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
-    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused
+    readonly property bool typingSessionSyncProtected: editorSession && editorSession.isTypingSessionActive !== undefined && editorSession.isTypingSessionActive()
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
     readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property int pageEditorViewModeValue: 1
     property var panelViewModel: null
@@ -888,6 +889,8 @@ Item {
     function pollSelectedNoteSnapshot() {
         if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
             return;
+        if (contentsView.typingSessionSyncProtected || contentsView.pendingBodySave)
+            return;
         selectionBridge.refreshSelectedNoteSnapshot();
         contentsView.scheduleGutterRefresh(2);
     }
@@ -984,7 +987,7 @@ Item {
         editorSelectionController.scheduleEditorRichTextSurfaceSync();
     }
     function scheduleDeferredDocumentPresentationRefresh() {
-        if (contentsView.editorInputFocused) {
+        if (contentsView.editorInputFocused || contentsView.typingSessionSyncProtected) {
             contentsView.documentPresentationRefreshPendingWhileFocused = true;
             if (documentPresentationRefreshTimer.running)
                 documentPresentationRefreshTimer.stop();
@@ -1005,6 +1008,11 @@ Item {
             contentsView.scheduleMinimapSnapshotRefresh(false);
             if (minimapLayer && contentsView.minimapRefreshEnabled)
                 minimapLayer.requestRepaint();
+            return;
+        }
+        if (contentsView.typingSessionSyncProtected) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = true;
+            contentsView.scheduleDeferredDocumentPresentationRefresh();
             return;
         }
         if (immediate || !contentsView.editorInputFocused) {
@@ -1184,6 +1192,7 @@ Item {
         id: editorSession
 
         selectionBridge: selectionBridge
+        typingIdleThresholdMs: contentsView.editorIdleSyncThresholdMs
     }
     Timer {
         id: documentPresentationRefreshTimer
@@ -1192,7 +1201,7 @@ Item {
         repeat: false
 
         onTriggered: {
-            if (contentsView.editorInputFocused) {
+            if (contentsView.editorInputFocused || contentsView.typingSessionSyncProtected) {
                 contentsView.documentPresentationRefreshPendingWhileFocused = true;
                 stop();
                 return;

@@ -79,6 +79,15 @@ that sit directly inside the editor viewport.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
   immediate-save acceptance path.
+- The desktop host now wires `ContentsEditorSession.typingIdleThresholdMs` from
+  `contentsView.editorIdleSyncThresholdMs`, so same-note model snapshot apply is gated by an explicit typing-idle
+  window instead of raw arrival timing.
+- During that non-idle window, same-note mismatched `currentBodyText` snapshots are now dropped and do not rebind the
+  live editor buffer.
+- Desktop snapshot polling and deferred presentation commit now also share `typingSessionSyncProtected`
+  (`ContentsEditorSession.isTypingSessionActive()`) and `pendingBodySave` guards.
+  So even if focus churn briefly misreports, timer-driven snapshot/presentation refresh still cannot rebind stale text
+  while the user is in an active typing session.
 - Desktop editor body writes are now staged into the shared buffered fetch-sync boundary immediately on mutation, while
   actual `.wsnote` synchronization happens later on the controller's recurring `1000ms` fetch turn.
 - Desktop note snapshot polling now also pauses while the editor owns input focus.
@@ -106,10 +115,14 @@ that sit directly inside the editor viewport.
     live `TextEdit`; the whole-document commit should wait for blur or another explicit immediate refresh path.
   - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must flow through
     the buffered fetch boundary instead.
-  - While the desktop editor is focused, periodic note snapshot polling must not reapply an older same-note
-    `currentBodyText` payload into the live editor buffer.
-  - Desktop Hangul typing must not lose committed syllables or delete partial jamo because of a deferred presentation
-    refresh firing mid-edit.
+- While the desktop editor is focused, periodic note snapshot polling must not reapply an older same-note
+  `currentBodyText` payload into the live editor buffer.
+- While the desktop typing session remains active or `pendingBodySave` is true, timer-driven snapshot polling must stay
+  paused even if focus flags momentarily flap.
+- Desktop Hangul typing must not lose committed syllables or delete partial jamo because of a deferred presentation
+  refresh firing mid-edit.
+- Desktop gutter/minimap line count must decrease immediately after newline deletion or line-wrap collapse; it must not
+  monotonically grow because of stale incremental line-offset state.
   - Desktop cursor restoration after note focus or inline resource insertion must go through one logical cursor path;
     the app must not write conflicting positions into multiple nested editor objects on the same turn.
   - Desktop gutter line-Y queries must prefer cached `minimapLineGroups` geometry instead of falling back to a fresh

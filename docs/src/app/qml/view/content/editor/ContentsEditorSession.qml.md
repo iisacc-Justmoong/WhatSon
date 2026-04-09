@@ -8,7 +8,7 @@
 - Source path: `src/app/qml/view/content/editor/ContentsEditorSession.qml`
 - Source kind: QML view/component
 - File name: `ContentsEditorSession.qml`
-- Approximate line count: 95
+- Approximate line count: 121
 
 ## Fetch Sync Contract
 
@@ -45,8 +45,14 @@
 - `syncEditorTextFromSelection(...)` now drops local authority only when the note changes.
   Same-note echo payloads no longer clear that authority, so a later stale `currentBodyText` refresh cannot reclaim
   the live editor buffer one polling cycle after the correct body text already echoed back once.
-- `shouldAcceptModelBodyText(...)` therefore continues rejecting mismatched same-note model text while the editor still
-  owns the current local buffer.
+- `typingIdleThresholdMs` and `lastLocalEditTimestampMs` now define a non-idle typing window.
+- `shouldAcceptModelBodyText(...)` now rejects mismatched same-note model text while either:
+  - that typing window is still active
+  - the current local note body is still pending persistence completion
+- `requestSyncEditorTextFromSelection(...)` now short-circuits same-note no-op sync requests and blocks same-note
+  mismatched model snapshot application unless `shouldAcceptModelBodyText(...)` allows it.
+- `syncEditorTextFromSelection(...)` now arms `syncingEditorTextFromModel` only when the body text actually changes, so
+  same-note same-text sync turns no longer open a short-lived guard window.
 - Note-selection changes now enter through `requestSyncEditorTextFromSelection(...)`. When the user leaves a note with a
   pending staged body, the session simply re-stages the latest current-note text and then binds the next note
   immediately. The previous note stays buffered in the fetch-sync controller instead of blocking the UI.
@@ -63,6 +69,10 @@
   persistence completion.
 - A same-note model echo that exactly matches the current editor buffer must not revoke local authority and thereby make
   the next stale snapshot eligible to overwrite the live note body.
+- While typing remains inside `typingIdleThresholdMs`, mismatched same-note model snapshots must not overwrite
+  `editorText`.
+- Non-changing same-note model snapshots must not arm a temporary model-sync guard that can suppress the next user
+  `textEdited` processing turn.
 
 ## Intended Detailed Sections
 - Responsibility and business role

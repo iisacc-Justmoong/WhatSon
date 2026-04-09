@@ -53,6 +53,10 @@ This controller exists to keep plain typing separate from inline-format applicat
 - After each accepted typing mutation, the controller now pushes that incremental logical-text / line-start /
   logical-to-source state back into `ContentsLogicalTextBridge` through `adoptIncrementalState(...)`, so gutter,
   selection, and cursor helpers do not need a whole-note bridge rebuild to stay current while the user is typing.
+- Line-start offsets are now rebuilt from the post-edit logical text on every accepted mutation instead of splice-
+  merging prior offsets.
+  This keeps line-count shrink cases (line-wrap collapse, newline deletion, paragraph merge) from leaving stale line
+  starts behind in gutter/minimap geometry.
 - Delegates the final source splice to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
 - List-continuation cursor restoration now also waits for IME preedit to finish and then moves the cursor through the
   wrapper-level cursor setter only.
@@ -69,6 +73,9 @@ longer part of the normal typing path.
 - If list continuation inserted extra markdown marker text, the controller also restores the live cursor to the
   continued item start after programmatic surface sync.
 - It marks local editor authority before save, matching the existing editor session contract.
+- A committed `textEdited` turn is now always treated as user-authoritative typing input.
+  The controller no longer drops that turn only because `syncingEditorTextFromModel` happened to still be true from a
+  previous model-sync tick.
 - Hosts may opt into deferred persistence through `view.deferImmediateEditorPersistence`.
   - when that flag is enabled, ordinary typing skips synchronous `persistEditorTextImmediately(...)`
   - the controller arms `editorSession.scheduleEditorPersistence()` instead, so the OS input session is not blocked by
@@ -97,14 +104,17 @@ longer part of the normal typing path.
   regeneration on every committed keystroke.
 - Typing ordinary letters should keep `ContentsLogicalTextBridge.logicalLineCount`, line-start offsets, and
   logical-to-source offsets current through incremental adoption instead of waiting for a whole-note bridge refresh.
-- Typing a single newline insertion or deletion must update the incremental line-start-offset cache in place instead of
-  rebuilding line boundaries for the whole note through the bridge.
+- Typing a single newline insertion or deletion must keep `logicalLineStartOffsets` and `logicalLineCount` exact in
+  both growth and shrink directions; deleting a line break must reduce line count immediately without leaving stale
+  extra gutter lines.
 - `Space`, `Enter`, `Backspace`, and selection replacement should update the correct source span.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
 - The typing controller must not depend on wrapper-owned synthetic IME commit flags; it should only react to the
   native `TextEdit` state that survives after composition settles.
+- A user `textEdited` event must not skip local-authority marking/persistence staging solely due to a transient
+  model-sync guard bit from a prior same-note sync cycle.
 - Post-`Enter` list-continuation cursor restore must not land on the wrong logical offset because multiple nested
   cursor objects were rewritten out of order.
 - when `view.deferImmediateEditorPersistence` is enabled, committed typing must not synchronously hit the content store
