@@ -266,7 +266,6 @@ FocusScope {
         const previousSelectionEnd = Number(textInput.selectionEnd);
         const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
                 && previousSelectionEnd > previousSelectionStart;
-        textChangedDispatchTimer.stop();
         control._compositionEditPending = false;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
@@ -291,8 +290,8 @@ FocusScope {
             control._compositionEditPending = true;
             return;
         }
-        if (!textChangedDispatchTimer.running)
-            textChangedDispatchTimer.start();
+        control._compositionEditPending = false;
+        control.textEdited(textInput.text);
     }
 
     onFocusedChanged: {
@@ -438,24 +437,6 @@ FocusScope {
         id: verticalScrollBar
     }
 
-    Timer {
-        id: textChangedDispatchTimer
-
-        interval: 0
-        repeat: false
-
-        onTriggered: {
-            if (control._programmaticTextSyncDepth > 0)
-                return;
-            if (control.inputMethodComposing || control.preeditText.length > 0) {
-                control._compositionEditPending = true;
-                return;
-            }
-            control._compositionEditPending = false;
-            control.textEdited(textInput.text);
-        }
-    }
-
     Connections {
         function onContentYChanged() {
             control.notifyInputMethod(control.inputMethodGeometryQueryMask());
@@ -482,10 +463,6 @@ FocusScope {
                 control.scheduleCommittedTextEditedDispatch();
             if (!textInput.inputMethodComposing && control.preeditText.length === 0)
                 control.flushDeferredProgrammaticText(false);
-        }
-
-        function onTextEdited() {
-            control.scheduleCommittedTextEditedDispatch();
         }
 
         ignoreUnknownSignals: true

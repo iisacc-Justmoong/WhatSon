@@ -44,6 +44,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   `Qt.inputMethod` together with the logical cursor move.
   Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
   `editorItem`, and `inputItem` separately.
+- The wrapper no longer keeps a separate `0ms` queued committed-edit timer for ordinary typing.
+  Once a non-composition text change lands, `textEdited(...)` is emitted immediately on that same turn.
+  IME preedit still stays deferred through `_compositionEditPending`, but ordinary click-driven cursor movement no
+  longer has to race a delayed committed-edit dispatch.
 - Exposes a `textEdited(string text)` signal as a change event for the host controllers.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
@@ -103,6 +107,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   reinjection before the native input session settles
 - wrapper-driven cursor restore must go through one cursor path only; the app must not fight itself by rewriting the
   same cursor position into multiple nested editor objects on the same turn
+- clicking to move the cursor immediately after typing must not drop the newest word/chunk because ordinary committed
+  edits are no longer held behind a wrapper-local queued dispatch timer
 - desktop/mobile hosts must not feed the wrapper a fresh whole-document `renderedEditorText` payload on every
   committed keystroke; ordinary typing should reach the wrapper's programmatic sync path only after the presentation
   debounce or an explicit flush
