@@ -11,6 +11,7 @@ Item {
     readonly property string figmaNodeId: "155:4582"
     property var activeContentViewModel: null
     property string activeStateName: "properties"
+    property bool noteContextLinked: false
     property var detailPanelViewModel: null
     property var fileStatViewModel: null
     property var projectSelectionViewModel: null
@@ -47,6 +48,7 @@ Item {
     readonly property int progressMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.progressSelectionViewModel)
     readonly property string resolvedProgressSelectionText: detailContents.resolveHierarchySelectionText(detailContents.progressSelectionViewModel, "No progress")
     readonly property string resolvedActiveStateName: detailContents.normalizeStateName(detailContents.activeStateName)
+    readonly property string resolvedPanelStateName: detailContents.noteContextLinked ? detailContents.resolvedActiveStateName : "detached"
     readonly property int scaledGap2: Math.max(0, Math.round(LV.Theme.scaleMetric(2)))
     readonly property int scaledGap4: Math.max(0, Math.round(LV.Theme.scaleMetric(4)))
     readonly property int scaledGap6: Math.max(0, Math.round(LV.Theme.scaleMetric(6)))
@@ -389,10 +391,10 @@ Item {
     }
 
     objectName: "DetailContents"
-    state: detailContents.resolvedActiveStateName
+    state: detailContents.resolvedPanelStateName
 
-    onResolvedActiveStateNameChanged: {
-        if (detailContents.resolvedActiveStateName !== "properties") {
+    onResolvedPanelStateNameChanged: {
+        if (detailContents.resolvedPanelStateName !== "properties") {
             detailContents.closeMetadataPicker();
             detailContents.cancelFolderCreation();
         }
@@ -428,6 +430,7 @@ Item {
         label: rowLabel
         objectName: rowObjectName
         rowHeight: detailContents.scaledCompactRowHeight
+        rowBackgroundColorInactive: rowSelected ? LV.Theme.accentBlueMuted : "transparent"
         selected: rowSelected
         showChevron: false
         textColorNormal: LV.Theme.bodyColor
@@ -826,7 +829,7 @@ Item {
         contentHeight: formColumn.y + formColumn.implicitHeight + detailContents.scaledGap2
         contentWidth: width
         interactive: contentHeight > height
-        visible: detailContents.resolvedActiveStateName === "properties"
+        visible: detailContents.resolvedPanelStateName === "properties"
 
         Column {
             id: formColumn
@@ -964,12 +967,13 @@ Item {
     }
     DetailFileStatForm {
         anchors.fill: parent
-        fileStatViewModel: detailContents.resolvedActiveStateName === "fileStat" ? detailContents.fileStatViewModel : null
-        visible: detailContents.resolvedActiveStateName === "fileStat"
+        fileStatViewModel: detailContents.resolvedPanelStateName === "fileStat" ? detailContents.fileStatViewModel : null
+        visible: detailContents.resolvedPanelStateName === "fileStat"
     }
     DetailPlaceholderForm {
-        visible: detailContents.resolvedActiveStateName !== "properties"
-            && detailContents.resolvedActiveStateName !== "fileStat"
+        visible: detailContents.resolvedPanelStateName !== "detached"
+            && detailContents.resolvedPanelStateName !== "properties"
+            && detailContents.resolvedPanelStateName !== "fileStat"
     }
 
     states: [
@@ -990,6 +994,9 @@ Item {
         },
         State {
             name: "help"
+        },
+        State {
+            name: "detached"
         }
     ]
 }

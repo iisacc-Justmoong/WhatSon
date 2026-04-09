@@ -27,6 +27,9 @@ The exported `activeStateName()` now follows the corrected page ids:
 - The current note-list model is now also observed for an optional `itemsChanged()` signal; when the active note stays selected and metadata changes elsewhere, the detail panel force-reloads the same `.wsnhead` file instead of waiting for a note-id transition.
 - `reloadCurrentHeader(...)` now applies the loaded header snapshot to both `DetailPropertiesViewModel` and
   `DetailFileStatViewModel`, and clears both surfaces together when the note context is invalid.
+- The viewmodel now exports `noteContextLinked`; `reloadCurrentHeader(...)` sets it to `true` only when the active note
+  id/path resolve and the `.wsnhead` snapshot is loadable, otherwise it clears both content viewmodels and marks the
+  panel as detached.
 - `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, and `writeProgressSelection(...)` persist directly into the active note header file and then re-synchronize the selector copies from the file-backed session store.
 - The shared write path now short-circuits when the incoming selector index already matches the detail-local selector-copy `selectedIndex`, so repeated `No ...` or same-option clicks do not re-persist identical `.wsnhead` state.
 - After any detail-panel metadata write succeeds, the viewmodel now asks the active hierarchy domain,

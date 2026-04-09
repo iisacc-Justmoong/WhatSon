@@ -64,6 +64,8 @@ Item {
     readonly property var resolvedBookmarkSelectionViewModel: detailPanel.resolveBookmarkSelectionViewModel()
     readonly property var resolvedProgressSelectionViewModel: detailPanel.resolveProgressSelectionViewModel()
     readonly property string resolvedActiveStateName: detailPanel.resolveActiveStateName()
+    readonly property bool resolvedNoteContextLinked: detailPanel.resolveNoteContextLinked()
+    readonly property string resolvedPanelStateName: detailPanel.resolvedNoteContextLinked ? "linked" : "detached"
     readonly property var resolvedToolbarItems: detailPanel.resolveToolbarItems()
     readonly property int headerToolbarHeight: detailHeaderToolbar ? Math.max(0, Math.round(detailHeaderToolbar.implicitHeight || detailHeaderToolbar.height || 0)) : 0
 
@@ -124,6 +126,11 @@ Item {
         const stateName = String(detailPanel.detailPanelVm.activeStateName).trim();
         return stateName.length > 0 ? stateName : "properties";
     }
+    function resolveNoteContextLinked() {
+        if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.noteContextLinked === undefined)
+            return false;
+        return detailPanel.detailPanelVm.noteContextLinked === true;
+    }
     function resolveToolbarItems() {
         if (!detailPanel.detailPanelVm || detailPanel.detailPanelVm.toolbarItems === undefined || detailPanel.detailPanelVm.toolbarItems === null)
             return detailPanel.defaultToolbarItems;
@@ -155,11 +162,13 @@ Item {
     }
 
     objectName: "DetailPanel"
+    state: detailPanel.resolvedPanelStateName
     implicitWidth: detailPanel.detailContentsWidth > 0 ? detailPanel.detailContentsWidth : 194
 
     Column {
         anchors.fill: parent
         spacing: detailPanel.panelSpacing
+        visible: detailPanel.resolvedNoteContextLinked
 
         Item {
             width: parent.width
@@ -186,9 +195,24 @@ Item {
             detailPanelViewModel: detailPanel.detailPanelVm
             fileStatViewModel: detailPanel.resolvedFileStatViewModel
             height: detailPanel.detailContentsHeight
+            noteContextLinked: detailPanel.resolvedNoteContextLinked
             progressSelectionViewModel: detailPanel.resolvedProgressSelectionViewModel
             projectSelectionViewModel: detailPanel.resolvedProjectSelectionViewModel
             width: detailPanel.detailContentsWidth
         }
     }
+
+    Item {
+        anchors.fill: parent
+        visible: !detailPanel.resolvedNoteContextLinked
+    }
+
+    states: [
+        State {
+            name: "linked"
+        },
+        State {
+            name: "detached"
+        }
+    ]
 }

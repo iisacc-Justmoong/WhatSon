@@ -12,6 +12,7 @@
   - `resolvedBookmarkSelectionViewModel`
   - `resolvedProgressSelectionViewModel`
 - Active state contract: `resolvedActiveStateName`
+- Note-link contract: `resolvedNoteContextLinked` (from `detailPanelViewModel.noteContextLinked`)
 - Toolbar contract: `resolvedToolbarItems`
 
 ## Toolbar Layout
@@ -38,9 +39,13 @@ composite `config.svg` asset.
 
 ## Behavior
 - Toolbar clicks forward to `detailPanelViewModel.requestStateChange(stateValue)`.
+- The root panel now has explicit `linked` / `detached` states.
+- `linked`: show toolbar + `DetailContents`.
+- `detached`: render an empty panel surface only (no toolbar, no detail form content), so stale metadata cannot be
+  displayed when no note is bound.
 - The contents area always receives the resolved state name, the resolved active content view-model, the explicit
   `resolvedFileStatViewModel`, the canonical `detailPanelViewModel` object, and the three detail-local selector-copy
-  viewmodels.
+  viewmodels, plus `noteContextLinked`.
 - This keeps detail-panel selector state independent from sidebar hierarchy selection state.
 - The header wrapper mirrors the toolbar's implicit size, so larger LVRS button metrics can surface without additional
   panel-side edits.

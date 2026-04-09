@@ -11,12 +11,14 @@ Only the remaining toolbar states still mount dedicated placeholders instead of 
 - Inputs:
   - `activeContentViewModel`
   - `activeStateName`
+  - `noteContextLinked`
   - `detailPanelViewModel`
   - `fileStatViewModel`
   - `projectSelectionViewModel`
   - `bookmarkSelectionViewModel`
   - `progressSelectionViewModel`
 - Normalized state values:
+  - `detached`
   - `properties`
   - `fileStat`
   - `insert`
@@ -24,6 +26,7 @@ Only the remaining toolbar states still mount dedicated placeholders instead of 
   - `layer`
   - `help`
 - Legacy aliases are intentionally not accepted. Callers must send the canonical state ids above.
+- `detached` is resolved when the panel is not linked to a valid note context; in this state every form surface stays hidden.
 
 ## Implemented Properties Form
 The `properties` state renders the Figma `Form` node (`155:4583`) with the exact section order:
@@ -109,6 +112,11 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
 - The visible `FoldersList` and `TagsList` must also refresh when the active note stays the same but its note-list model emits `itemsChanged()`, because that signal indicates the current `.wsnhead` metadata may have changed outside the detail-panel write path.
 - The compact metadata rows disable `LV.HierarchyItem`'s standalone activation and rely on the explicit selection
   controller instead, preventing stale per-row activation state from making the list look permanently multi-selected.
+- Because those rows are non-activatable (`activatable: false`), the row's inactive fill is now explicitly bound to
+  `rowSelected`:
+  - unselected row: transparent background
+  - selected row: `LV.Theme.accentBlueMuted`
+  so `FoldersList` / `TagsList` no longer look selected when no row is selected.
 
 ## File Statistics State
 - The `fileStat` state now mounts `DetailFileStatForm.qml`.
@@ -116,6 +124,13 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
   are driven by the explicit `DetailFileStatViewModel` contract instead of a generic active-state object.
 - The statistics surface is no longer a placeholder; it renders the persisted `.wsnhead <fileStat>` values and the
   current header metadata as three `description`-styled text blocks matching the Figma node `235:7734`.
+
+## Detached State
+- The root `state` now resolves from `noteContextLinked` first:
+  - linked note context -> canonical active state (`properties`, `fileStat`, ...)
+  - unlinked note context -> `detached`
+- `detached` closes metadata pickers/inline folder editing and renders no form content, preventing stale note metadata
+  from remaining visible after the note link is lost.
 
 ## Remaining Placeholder States
 For `insert`, `fileHistory`, `layer`, and `help`, the file still renders a distinct placeholder form with state-specific titles and summaries.
@@ -138,3 +153,7 @@ This keeps the state switch explicit until each mode receives its final Figma fo
     targets.
   - With LVRS mobile UI scaling enabled, the `Projects`, `Bookmark`, `Folders`, `Tags`, and `Progress` sections must
     keep their vertical order without label/control or footer/next-section overlap.
+  - When `activeFolderIndex`/`activeTagIndex` is `-1`, every metadata row background in `FoldersList` and `TagsList`
+    must stay transparent (no pseudo-selected fill).
+  - When no note is selected (or the selected note cannot resolve/load `.wsnhead`), `DetailContents` must be in
+    `detached` and no properties/file-stat/placeholder form content should be visible.

@@ -20,6 +20,7 @@ statistics object, and the three detail-local hierarchy selector copies used by 
 ## Public Wiring Surface
 - `activeContentViewModel`
 - `activeStateName`
+- `noteContextLinked`
 - `fileStatViewModel`
 - `toolbarItems`
 - `projectSelectionViewModel`
@@ -42,6 +43,8 @@ Instead, C++ injects those hierarchy viewmodels as read-only option sources into
 That bridge keeps the last valid note context when the active sidebar domain does not expose note-list or note-directory contracts, so the selectors can continue mirroring the open note header instead of dropping to `No ...`.
 The same loaded header snapshot is also applied to the dedicated `DetailFileStatViewModel`, so the statistics tab reads
 from the same persisted `.wsnhead` cache as the properties tab.
+`noteContextLinked` is the gating contract for the panel surface: it flips to `true` only when the current note id and
+directory are both resolved and the active `.wsnhead` snapshot loads successfully.
 `setCurrentNoteListModel(QObject*)` also observes an optional `itemsChanged()` signal from the active note-list model so the same selected note can force-refresh its `.wsnhead` metadata snapshot after out-of-band folder or tag edits.
 The private write path now also routes successful metadata edits back into the active hierarchy domain through `reloadNoteMetadataForNoteId(QString)`, keeping the note list and detail panel in lockstep.
 It additionally tracks the canonical Tags hierarchy viewmodel as a secondary refresh target, so

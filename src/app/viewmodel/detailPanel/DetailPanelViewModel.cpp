@@ -126,6 +126,11 @@ QString DetailPanelViewModel::activeStateName() const
     return WhatSon::DetailPanel::stateName(m_activeState);
 }
 
+bool DetailPanelViewModel::noteContextLinked() const noexcept
+{
+    return m_noteContextLinked;
+}
+
 QObject* DetailPanelViewModel::contentViewModelForState(int stateValue) const noexcept
 {
     if (!WhatSon::DetailPanel::isValidStateValue(stateValue))
@@ -534,6 +539,17 @@ void DetailPanelViewModel::applyActiveContentViewModel(DetailContentState active
     m_activeContentViewModel = contentViewModelForState(WhatSon::DetailPanel::stateValue(activeState));
 }
 
+void DetailPanelViewModel::setNoteContextLinked(const bool linked)
+{
+    if (m_noteContextLinked == linked)
+    {
+        return;
+    }
+
+    m_noteContextLinked = linked;
+    emit noteContextLinkedChanged();
+}
+
 void DetailPanelViewModel::reconnectCurrentNoteListModelSignals(QObject* noteListModel)
 {
     disconnectCurrentNoteListModelSignals();
@@ -569,6 +585,7 @@ void DetailPanelViewModel::reloadCurrentHeader(const bool forceReload)
 {
     const QString noteId = m_currentNoteContextBridge.currentNoteId();
     const QString noteDirectoryPath = m_currentNoteContextBridge.currentNoteDirectoryPath();
+    bool linkedContext = false;
     QString loadError;
     if (!noteId.isEmpty()
         && !noteDirectoryPath.isEmpty()
@@ -580,11 +597,15 @@ void DetailPanelViewModel::reloadCurrentHeader(const bool forceReload)
         m_projectSelectionSourceViewModel.synchronize(false);
         m_bookmarkSelectionSourceViewModel.synchronize(false);
         m_progressSelectionSourceViewModel.synchronize(false);
-        return;
+        linkedContext = true;
+    }
+    else
+    {
+        m_propertiesViewModel.clearHeader();
+        m_fileStatViewModel.clearHeader();
     }
 
-    m_propertiesViewModel.clearHeader();
-    m_fileStatViewModel.clearHeader();
+    setNoteContextLinked(linkedContext);
 }
 
 void DetailPanelViewModel::synchronizeCurrentNoteMetadataConsumers(const QString& noteId)

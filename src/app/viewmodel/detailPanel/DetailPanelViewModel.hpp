@@ -21,6 +21,7 @@ class DetailPanelViewModel final : public QObject
     Q_PROPERTY(int activeState READ activeState WRITE setActiveState NOTIFY activeStateChanged)
     Q_PROPERTY(QObject* activeContentViewModel READ activeContentViewModel NOTIFY activeStateChanged)
     Q_PROPERTY(QString activeStateName READ activeStateName NOTIFY activeStateChanged)
+    Q_PROPERTY(bool noteContextLinked READ noteContextLinked NOTIFY noteContextLinkedChanged)
     Q_PROPERTY(QObject* fileHistoryViewModel READ fileHistoryViewModel CONSTANT)
     Q_PROPERTY(QObject* fileStatViewModel READ fileStatViewModel CONSTANT)
     Q_PROPERTY(QObject* helpViewModel READ helpViewModel CONSTANT)
@@ -41,6 +42,7 @@ public:
     int activeState() const noexcept;
     QObject* activeContentViewModel() const noexcept;
     QString activeStateName() const;
+    bool noteContextLinked() const noexcept;
     Q_INVOKABLE QObject* contentViewModelForState(int stateValue) const noexcept;
     QObject* fileHistoryViewModel() const noexcept;
     QObject* fileStatViewModel() const noexcept;
@@ -84,6 +86,7 @@ signals  :
 
 
     void activeStateChanged();
+    void noteContextLinkedChanged();
     void toolbarItemsChanged();
     void viewModelHookRequested();
 
@@ -92,6 +95,7 @@ private slots:
 
 private:
     void applyActiveContentViewModel(DetailContentState activeState);
+    void setNoteContextLinked(bool linked);
     void reconnectCurrentNoteListModelSignals(QObject* noteListModel);
     void disconnectCurrentNoteListModelSignals();
     void reloadCurrentHeader(bool forceReload);
@@ -123,6 +127,7 @@ private:
     DetailHierarchySelectionViewModel m_progressSelectionViewModel;
     QObject* m_tagsSourceViewModel = nullptr;
     QObject* m_activeContentViewModel = nullptr;
+    bool m_noteContextLinked = false;
     QVariantList m_toolbarItems;
     QMetaObject::Connection m_currentNoteListItemsChangedConnection;
 };
