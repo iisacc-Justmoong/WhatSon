@@ -330,17 +330,30 @@ QtObject {
         return controller.normalizePlainText(controller.contentEditor.getText(0, editorLength));
     }
 
-    function scheduleCursorPosition(position) {
+    function scheduleCursorPosition(position, attempt) {
         const targetPosition = Math.max(0, Math.floor(Number(position) || 0));
+        const retryCount = Math.max(0, Math.floor(Number(attempt) || 0));
         Qt.callLater(function () {
             if (!controller.contentEditor)
                 return;
+            const activePreeditText = controller.contentEditor.preeditText !== undefined
+                    ? String(controller.contentEditor.preeditText === undefined || controller.contentEditor.preeditText === null
+                                 ? ""
+                                 : controller.contentEditor.preeditText)
+                    : "";
+            const inputMethodBusy = (controller.contentEditor.inputMethodComposing !== undefined
+                                     && controller.contentEditor.inputMethodComposing)
+                    || activePreeditText.length > 0;
+            if (inputMethodBusy && retryCount < 6) {
+                controller.scheduleCursorPosition(targetPosition, retryCount + 1);
+                return;
+            }
+            if (controller.contentEditor.setCursorPositionPreservingInputMethod !== undefined) {
+                controller.contentEditor.setCursorPositionPreservingInputMethod(targetPosition);
+                return;
+            }
             if (controller.contentEditor.cursorPosition !== undefined)
                 controller.contentEditor.cursorPosition = targetPosition;
-            if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.cursorPosition !== undefined)
-                controller.contentEditor.editorItem.cursorPosition = targetPosition;
-            if (controller.contentEditor.editorItem && controller.contentEditor.editorItem.inputItem && controller.contentEditor.editorItem.inputItem.cursorPosition !== undefined)
-                controller.contentEditor.editorItem.inputItem.cursorPosition = targetPosition;
         });
     }
 

@@ -37,6 +37,13 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   - the latest deferred payload is flushed after focus leaves or when no native input session is active anymore
   - this lets mobile keep OS-native composition, double-tap selection, and repeat-backspace behavior ahead of the
     app's RichText surface normalization
+- IME preedit/composition now always outranks app-driven surface resync even on the desktop RichText host:
+  - any active `inputMethodComposing` / `preeditText` session defers `text` reinjection
+  - this prevents Hangul jamo assembly or backspace from being interrupted by a late programmatic note-body refresh
+- The wrapper now exposes a single cursor setter (`setCursorPositionPreservingInputMethod(...)`) that updates
+  `Qt.inputMethod` together with the logical cursor move.
+  Host controllers should use that wrapper-level path instead of writing `cursorPosition` into the wrapper,
+  `editorItem`, and `inputItem` separately.
 - Exposes a `textEdited(string text)` signal as a change event for the host controllers.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
@@ -90,8 +97,12 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
 - Hangul IME composition must not delete previously committed text when a syllable block is assembled
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands
+- Hangul IME composition and desktop RichText typing must not receive a programmatic `text` reinjection while
+  preedit/composition is still active
 - when `preferNativeInputHandling` is enabled, live typing/focus must not trigger whole-surface programmatic text
   reinjection before the native input session settles
+- wrapper-driven cursor restore must go through one cursor path only; the app must not fight itself by rewriting the
+  same cursor position into multiple nested editor objects on the same turn
 - desktop/mobile hosts must not feed the wrapper a fresh whole-document `renderedEditorText` payload on every
   committed keystroke; ordinary typing should reach the wrapper's programmatic sync path only after the presentation
   debounce or an explicit flush

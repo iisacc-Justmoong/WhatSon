@@ -95,11 +95,26 @@ FocusScope {
         };
     }
 
+    function inputMethodSessionActive() {
+        return control.inputMethodComposing || control.preeditText.length > 0;
+    }
+
     function clampLogicalPosition(position, maximumLength) {
         const numericPosition = Number(position);
         if (!isFinite(numericPosition))
             return 0;
         return Math.max(0, Math.min(Math.floor(numericPosition), Math.max(0, maximumLength)));
+    }
+
+    function setCursorPositionPreservingInputMethod(position) {
+        const maximumLength = Number(textInput.length) || 0;
+        const boundedPosition = control.clampLogicalPosition(position, maximumLength);
+        if (Number(textInput.cursorPosition) === boundedPosition)
+            return false;
+        textInput.cursorPosition = boundedPosition;
+        control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+        control.notifyInputMethod(control.inputMethodGeometryQueryMask());
+        return true;
     }
 
     function inputMethodGeometryQueryMask() {
@@ -226,8 +241,8 @@ FocusScope {
     }
 
     function canDeferProgrammaticTextSync() {
-        return !!control.preferNativeInputHandling
-                && (control.focused || control.inputMethodComposing || control.preeditText.length > 0);
+        return control.inputMethodSessionActive()
+                || (!!control.preferNativeInputHandling && control.focused);
     }
 
     function flushDeferredProgrammaticText(force) {
@@ -262,7 +277,7 @@ FocusScope {
             const restoredCursorPosition = control.clampLogicalPosition(previousCursorPosition, maximumLength);
             if (textInput.deselect !== undefined)
                 textInput.deselect();
-            textInput.cursorPosition = restoredCursorPosition;
+            control.setCursorPositionPreservingInputMethod(restoredCursorPosition);
         }
         control._programmaticTextSyncDepth -= 1;
         control.notifyInputMethod(control.inputMethodSelectionQueryMask());

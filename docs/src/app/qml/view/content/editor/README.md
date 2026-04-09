@@ -40,6 +40,10 @@
   snapshot. `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer` bind to that snapshot instead of live
   `editorText`, while `ContentsEditorTypingController.qml` carries the incremental plain-text/source-offset state
   between idle commits.
+- Desktop/mobile focused editing now also blocks that whole-document presentation timer from pushing a fresh editing
+  surface back into the live `TextEdit`.
+  Ordinary typing stays on the incremental live cache until blur or another explicit immediate refresh path, which
+  prevents dropped keys, Hangul jamo deletion, and stale cursor restoration during active note writing.
 - `ContentsEditorTypingController.qml` now also maintains incremental logical line-start offsets and pushes the entire
   live state into `ContentsLogicalTextBridge.adoptIncrementalState(...)`, so bridge consumers stay current without a
   whole-note rebuild per keystroke.
@@ -92,6 +96,8 @@
   the note instead of remaining a fixed-height scaffold.
 - The repository no longer operates scripted editor tests; the per-file regression notes in this directory are
   documentation-only behavior contracts.
+- Cursor restoration for ordinary typing/focus recovery now routes through the wrapper-level cursor setter instead of
+  rewriting `cursorPosition` into the wrapper, `editorItem`, and `inputItem` together.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

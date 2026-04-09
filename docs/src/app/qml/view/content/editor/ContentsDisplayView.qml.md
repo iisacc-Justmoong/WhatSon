@@ -56,6 +56,10 @@ that sit directly inside the editor viewport.
   - explicit source-rewrite actions such as inline-format wraps and markdown-list toggles now trigger one immediate
     presentation commit after the source rewrite so the bridge/renderer/minimap state catches up without waiting for
     the idle timer
+- While the desktop editor keeps focus, the whole-document presentation timer no longer commits a fresh RichText
+  surface back into the live editor.
+  Ordinary typing now relies on the incremental typing bridge until blur/explicit flush, preventing per-`120ms`
+  surface reinjection from dropping keys, deleting Hangul jamo, or snapping the cursor to a stale logical offset.
 - Minimap snapshotting now keeps a cached logical-line group model and only resamples the changed text range through
   `positionToRectangle(...)` during ordinary note edits.
   Full minimap rebuilds remain reserved for layout resets such as width/height changes, route re-entry, or note swaps.
@@ -92,8 +96,14 @@ that sit directly inside the editor viewport.
     cheaper source-editing surface should be refreshed while preview is disabled.
   - Desktop single-character typing must not rebuild `ContentsLogicalTextBridge` from the whole note on every committed
     key; whole-document logical/source offset regeneration should wait for editor idle, blur, or note switch.
+  - While the desktop editor is focused, the presentation timer must not reapply a fresh RichText surface into the
+    live `TextEdit`; the whole-document commit should wait for blur or another explicit immediate refresh path.
   - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
     async idle gate or explicit note-exit flush.
+  - Desktop Hangul typing must not lose committed syllables or delete partial jamo because of a deferred presentation
+    refresh firing mid-edit.
+  - Desktop cursor restoration after note focus or inline resource insertion must go through one logical cursor path;
+    the app must not write conflicting positions into multiple nested editor objects on the same turn.
   - Desktop gutter line-Y queries must prefer cached `minimapLineGroups` geometry instead of falling back to a fresh
     whole-note `positionToRectangle(...)` sweep when the minimap is merely hidden.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.

@@ -198,6 +198,7 @@ Item {
     }
     readonly property int documentPresentationRefreshIntervalMs: 120
     property string documentPresentationSourceText: ""
+    property bool documentPresentationRefreshPendingWhileFocused: false
     property string renderedEditorText: ""
     readonly property var resolvedEditorViewModeViewModel: {
         if (contentsView.editorViewModeViewModel)
@@ -570,10 +571,10 @@ Item {
             contentEditor.forceActiveFocus();
             if (contentEditor.editorItem && contentEditor.editorItem.forceActiveFocus !== undefined)
                 contentEditor.editorItem.forceActiveFocus();
-            if (contentEditor.cursorPosition !== undefined)
+            if (contentEditor.setCursorPositionPreservingInputMethod !== undefined)
+                contentEditor.setCursorPositionPreservingInputMethod(cursorPosition);
+            else if (contentEditor.cursorPosition !== undefined)
                 contentEditor.cursorPosition = cursorPosition;
-            if (contentEditor.editorItem && contentEditor.editorItem.cursorPosition !== undefined)
-                contentEditor.editorItem.cursorPosition = cursorPosition;
         });
     }
     function handleInlineFormatShortcutKeyPress(event) {
@@ -661,7 +662,9 @@ Item {
         const saved = contentsView.persistEditorTextImmediately(nextText);
         if (!saved)
             editorSession.scheduleEditorPersistence();
-        if (contentEditor && contentEditor.cursorPosition !== undefined)
+        if (contentEditor && contentEditor.setCursorPositionPreservingInputMethod !== undefined)
+            contentEditor.setCursorPositionPreservingInputMethod(cursorPosition + insertionText.length);
+        else if (contentEditor && contentEditor.cursorPosition !== undefined)
             contentEditor.cursorPosition = cursorPosition + insertionText.length;
         contentsView.editorTextEdited(nextText);
         bodyResourceRenderer.requestRenderRefresh();
@@ -978,6 +981,12 @@ Item {
         editorSelectionController.scheduleEditorRichTextSurfaceSync();
     }
     function scheduleDeferredDocumentPresentationRefresh() {
+        if (contentsView.editorInputFocused) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = true;
+            if (documentPresentationRefreshTimer.running)
+                documentPresentationRefreshTimer.stop();
+            return;
+        }
         if (documentPresentationRefreshTimer.running)
             documentPresentationRefreshTimer.stop();
         documentPresentationRefreshTimer.start();
@@ -985,6 +994,7 @@ Item {
     function scheduleDocumentPresentationRefresh(forceImmediate) {
         const immediate = !!forceImmediate;
         if (!contentsView.documentPresentationRenderDirty()) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
             if (documentPresentationRefreshTimer.running)
                 documentPresentationRefreshTimer.stop();
             if (immediate)
@@ -995,11 +1005,13 @@ Item {
             return;
         }
         if (immediate || !contentsView.editorInputFocused) {
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
             if (documentPresentationRefreshTimer.running)
                 documentPresentationRefreshTimer.stop();
             contentsView.commitDocumentPresentationRefresh();
             return;
         }
+        contentsView.documentPresentationRefreshPendingWhileFocused = true;
         contentsView.scheduleDeferredDocumentPresentationRefresh();
     }
     function scheduleGutterRefresh(passCount) {
@@ -1176,7 +1188,15 @@ Item {
         interval: contentsView.documentPresentationRefreshIntervalMs
         repeat: false
 
-        onTriggered: contentsView.commitDocumentPresentationRefresh()
+        onTriggered: {
+            if (contentsView.editorInputFocused) {
+                contentsView.documentPresentationRefreshPendingWhileFocused = true;
+                stop();
+                return;
+            }
+            contentsView.documentPresentationRefreshPendingWhileFocused = false;
+            contentsView.commitDocumentPresentationRefresh();
+        }
     }
     Timer {
         id: gutterRefreshTimer
@@ -1484,10 +1504,13 @@ Item {
                             contentsView.handleInlineFormatShortcutKeyPress(event);
                         }
                         onFocusedChanged: {
-                            if (!focused) {
-                                contentsView.flushEditorStateAfterInputSettles(0);
-                                contentsView.scheduleDocumentPresentationRefresh(true);
+                            if (focused) {
+                                if (documentPresentationRefreshTimer.running)
+                                    documentPresentationRefreshTimer.stop();
+                                return;
                             }
+                            contentsView.flushEditorStateAfterInputSettles(0);
+                            contentsView.scheduleDocumentPresentationRefresh(true);
                         }
                         onTextEdited: function (_text) {
                             editorTypingController.handleEditorTextEdited();

@@ -20,6 +20,10 @@ suppression local to this file.
     `editorText` mutation
   - synchronous per-keystroke persistence is deferred to the existing debounce session path
   - periodic note snapshot polling pauses while the editor keeps input focus
+- The mobile presentation timer now also refuses to commit a whole-document bridge/surface refresh while the live
+  editor still owns focus.
+  Ordinary typing stays on the incremental live cache until blur/explicit flush so the OS input session is not
+  interrupted by an app-side resync.
 - Mobile typing diffs now run from the shared incremental typing cache rather than forcing
   `ContentsLogicalTextBridge` to rebuild for each committed character, and the markdown-aware preview renderer remains
   completely skipped while the live source editor is active and no formatted preview is visible.
@@ -81,6 +85,8 @@ suppression local to this file.
     the markdown preview renderer should stay idle while the source editor remains active and preview is hidden.
   - Mobile single-character typing must also avoid whole-note `ContentsLogicalTextBridge` regeneration until the editor
     goes idle, loses focus, or switches notes.
+  - While the mobile editor is focused, the presentation timer must not reapply the whole-document editing surface back
+    into the live `TextEdit`; the commit must wait for blur or another explicit immediate refresh path.
   - Mobile typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
     async idle gate or explicit note-exit flush.
   - Mobile hidden-minimap states must still keep line geometry current through the incremental line-group cache rather
@@ -102,6 +108,8 @@ suppression local to this file.
     input surface.
   - Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the
     active input session.
+  - Mobile cursor restoration after note focus or inline resource insertion must use one wrapper-level cursor path
+    rather than rewriting the same cursor offset into multiple nested editor objects.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs on mobile while the
     source-driven persistence path remains unchanged.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.

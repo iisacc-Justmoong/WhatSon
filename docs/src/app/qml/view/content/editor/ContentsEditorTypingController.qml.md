@@ -54,6 +54,10 @@ This controller exists to keep plain typing separate from inline-format applicat
   logical-to-source state back into `ContentsLogicalTextBridge` through `adoptIncrementalState(...)`, so gutter,
   selection, and cursor helpers do not need a whole-note bridge rebuild to stay current while the user is typing.
 - Delegates the final source splice to `ContentsTextFormatRenderer.applyPlainTextReplacementToSource(...)`.
+- List-continuation cursor restoration now also waits for IME preedit to finish and then moves the cursor through the
+  wrapper-level cursor setter only.
+  The controller no longer writes the same logical cursor offset into the wrapper, `editorItem`, and `inputItem`
+  in parallel.
 
 This means ordinary typing no longer round-trips the entire RichText surface through
 `normalizeEditorSurfaceTextToSource(...)`, so fragment scaffold/comment markup from whole-document HTML export is no
@@ -99,6 +103,8 @@ longer part of the normal typing path.
 - Direct typing must not leak fragment comment markup such as `<!--StartFragment-->`.
 - Typing literal `<bold>` text should persist as literal text, not as an executable inline tag.
 - Hangul IME composition must mutate `.wsnbody` only once per committed syllable/result, not once per preedit step.
+- Post-`Enter` list-continuation cursor restore must not land on the wrong logical offset because multiple nested
+  cursor objects were rewritten out of order.
 - when `view.deferImmediateEditorPersistence` is enabled, committed typing must not synchronously hit the content store
   on each keystroke
 - Typing `- item` or `1. item` should persist the literal markdown marker text in source rather than an already-expanded
