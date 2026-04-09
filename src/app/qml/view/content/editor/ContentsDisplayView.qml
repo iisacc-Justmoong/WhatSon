@@ -158,7 +158,7 @@ Item {
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
     property var noteListModel: null
     readonly property bool noteSelectionContractAvailable: selectionBridge.noteSelectionContractAvailable
-    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable
+    readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused
     readonly property int noteSnapshotRefreshIntervalMs: 1200
     readonly property int pageEditorViewModeValue: 1
     property var panelViewModel: null

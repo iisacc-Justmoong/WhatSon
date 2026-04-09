@@ -44,10 +44,10 @@
   `ContentsEditorIdleSyncController`; the session does not own idle detection, save, stat, or open-count behavior.
 - Async completion for an older payload must not clear a newer `pendingBodySave`.
 - Successful writes still do not revoke `localEditorAuthority` immediately. The session keeps that authority until the
-  same note echoes the same body text back through `syncEditorTextFromSelection(...)`.
-- `syncEditorTextFromSelection(...)` now drops local authority only when the note changes or when the model payload
-  matches the current editor buffer exactly. This prevents newly created notes from accepting a stale empty
-  `currentBodyText` snapshot during the first few keystrokes.
+  bound note itself changes.
+- `syncEditorTextFromSelection(...)` now drops local authority only when the note changes.
+  Same-note echo payloads no longer clear that authority, so a later stale `currentBodyText` refresh cannot reclaim
+  the live editor buffer one polling cycle after the correct body text already echoed back once.
 - `shouldAcceptModelBodyText(...)` therefore continues rejecting mismatched same-note model text while the editor still
   owns the current local buffer.
 - Note-selection changes now enter through `requestSyncEditorTextFromSelection(...)`. When the user leaves a note with a
@@ -67,6 +67,8 @@
   pending idle-stage save.
 - If the currently bound note's async save completion reports failure and the editor buffer still matches that queued
   payload, `pendingBodySave` must remain armed so the idle-sync retry path remains alive.
+- A same-note model echo that exactly matches the current editor buffer must not revoke local authority and thereby make
+  the next stale snapshot eligible to overwrite the live note body.
 
 ## Intended Detailed Sections
 - Responsibility and business role

@@ -63,6 +63,8 @@
 - Mobile editor hosts now opt into native-input priority rules, so active mobile typing defers synchronous persistence,
   pauses note snapshot polling, delays app-driven RichText surface reinjection until the OS input session settles, and
   uses a plain logical-text input surface instead of the RichText editor projection.
+- Desktop editor hosts now also pause note snapshot polling while the live editor owns focus, so the periodic
+  `currentBodyText` refresh cannot overwrite the active buffer with a stale same-note snapshot mid-typing.
 - `MobileContentsDisplayView.qml` also removes the mobile live-editor horizontal inset, so the content view spans the
   full routed mobile width.
 - `ContentsEditorSelectionController.qml` now also owns common markdown list shortcuts (`Cmd+Shift+7/8` on macOS,
@@ -72,6 +74,8 @@
   rewrite.
 - `ContentsEditorSession.qml` now defers note swaps behind pending-body flushes, so a failed immediate save cannot
   silently discard the old note buffer when the user changes selection.
+- `ContentsEditorSession.qml` now also keeps local editor authority across same-note model echoes, so one successful
+  echo cannot immediately reopen the door for the next stale polling snapshot to replace the current note body.
 - Editor body persistence is now split into async idle staging vs background completion:
   - `ContentsEditorSession.qml` owns pending/in-flight state only
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter

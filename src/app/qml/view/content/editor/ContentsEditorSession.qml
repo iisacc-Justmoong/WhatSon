@@ -157,7 +157,7 @@ Item {
         const textChanged = editorSession.editorText !== nextText;
         editorSession.pendingBodySave = false;
         editorSession.editorBoundNoteId = nextNoteId;
-        if (noteChanged || !textChanged)
+        if (noteChanged)
             editorSession.localEditorAuthority = false;
         editorSession.syncingEditorTextFromModel = true;
         if (textChanged)

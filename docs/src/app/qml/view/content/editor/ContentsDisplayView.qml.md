@@ -78,6 +78,9 @@ that sit directly inside the editor viewport.
   so a failed pending-body flush no longer lets a note switch silently overwrite the still-unsaved editor buffer.
 - Desktop editor body writes are now staged into the async idle-sync boundary immediately on mutation, while actual
   `.wsnote` synchronization waits for the worker-thread `1000ms` idle gate or an explicit note-exit flush.
+- Desktop note snapshot polling now also pauses while the editor owns input focus.
+  This prevents the periodic `currentBodyText` refresh from re-binding a stale same-note body snapshot into the live
+  editor while the user is still typing.
 
 ## Tests
 
@@ -100,6 +103,8 @@ that sit directly inside the editor viewport.
     live `TextEdit`; the whole-document commit should wait for blur or another explicit immediate refresh path.
   - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
     async idle gate or explicit note-exit flush.
+  - While the desktop editor is focused, periodic note snapshot polling must not reapply an older same-note
+    `currentBodyText` payload into the live editor buffer.
   - Desktop Hangul typing must not lose committed syllables or delete partial jamo because of a deferred presentation
     refresh firing mid-edit.
   - Desktop cursor restoration after note focus or inline resource insertion must go through one logical cursor path;
