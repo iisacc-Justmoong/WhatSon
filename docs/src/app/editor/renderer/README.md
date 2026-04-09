@@ -18,6 +18,12 @@
 - `ContentsTextFormatRenderer.cpp`
 - `ContentsTextFormatRenderer.hpp`
 
+## Current Notes
+- `ContentsTextFormatRenderer.cpp` now treats proprietary inline source tags as the authoritative formatting basis for
+  logical-selection formatting.
+- Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
+  RAW source style starts or ends.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

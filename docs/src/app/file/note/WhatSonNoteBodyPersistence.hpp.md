@@ -11,6 +11,9 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   (plain text, inline `.wsnbody` tags, or Qt Rich HTML) and emits normalized `<paragraph>` XML with
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `tag`) plus normalized
   self-closed `<resource ... />` tags.
+- When a proprietary inline style stays open across a source newline, the serializer now reopens that style at the
+  beginning of the next `<paragraph>` and closes it again at the end of that paragraph, so multi-paragraph formatting
+  survives a full save round-trip instead of stopping at the first paragraph boundary.
 - Editor-visible inline hashtags such as `#label` are promoted into canonical body storage as
   `<tag>label</tag>` during serialization.
 - `extractedInlineTagValues(...)` collects deduplicated inline-tag values from editor source, whether the caller
@@ -40,3 +43,5 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   - editor/source text: `#label`
   - `.wsnbody` canonical storage: `<tag>label</tag>`
   - plain-text/rich-text read projection: visible `#label`
+- Proprietary inline formatting that spans multiple editor paragraphs must still round-trip as visible formatting on
+  every touched paragraph even though `.wsnbody` remains paragraph-based XML.

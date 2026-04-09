@@ -725,9 +725,17 @@ namespace
         return output;
     }
 
-    QString serializeInlineTaggedLine(const QString& lineText)
+    QString serializeInlineTaggedLine(
+        const QString& lineText,
+        const QStringList& carriedOpenStyleTags,
+        QStringList* nextCarriedOpenStyleTags)
     {
-        if (lineText.isEmpty())
+        if (nextCarriedOpenStyleTags != nullptr)
+        {
+            nextCarriedOpenStyleTags->clear();
+        }
+
+        if (lineText.isEmpty() && carriedOpenStyleTags.isEmpty())
         {
             return {};
         }
@@ -736,7 +744,11 @@ namespace
             QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
 
         QString output;
-        QStringList openStyleTags;
+        QStringList openStyleTags = carriedOpenStyleTags;
+        for (const QString& openStyleTag : carriedOpenStyleTags)
+        {
+            output += QStringLiteral("<%1>").arg(openStyleTag);
+        }
         qsizetype cursor = 0;
 
         QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(lineText);
@@ -815,6 +827,11 @@ namespace
         if (cursor < lineText.size())
         {
             output += escapeXmlAttributeValue(lineText.mid(cursor));
+        }
+
+        if (nextCarriedOpenStyleTags != nullptr)
+        {
+            *nextCarriedOpenStyleTags = openStyleTags;
         }
 
         for (int index = openStyleTags.size() - 1; index >= 0; --index)
@@ -1050,10 +1067,13 @@ namespace WhatSon::NoteBodyPersistence
         }
 
         const QStringList lines = inlineTaggedText.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+        QStringList carriedOpenStyleTags;
         for (const QString& line : lines)
         {
             text += QStringLiteral("    <paragraph>");
-            text += serializeInlineTaggedLine(line);
+            QStringList nextCarriedOpenStyleTags;
+            text += serializeInlineTaggedLine(line, carriedOpenStyleTags, &nextCarriedOpenStyleTags);
+            carriedOpenStyleTags = nextCarriedOpenStyleTags;
             text += QStringLiteral("</paragraph>\n");
         }
         text += QStringLiteral("  </body>\n");

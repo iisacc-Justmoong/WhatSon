@@ -3,6 +3,7 @@
 #include "file/note/WhatSonNoteBodyPersistence.hpp"
 #include "file/note/WhatSonNoteMarkdownStyleObject.hpp"
 
+#include <array>
 #include <algorithm>
 #include <limits>
 #include <QColor>
@@ -18,6 +19,16 @@
 
 namespace
 {
+    constexpr int kSupportedInlineStyleCount = 5;
+
+    using InlineStyleCoverageMap = std::array<QVector<bool>, kSupportedInlineStyleCount>;
+
+    struct SourceInlineStyleState final
+    {
+        int logicalLength = 0;
+        InlineStyleCoverageMap coverage;
+    };
+
     enum class LiteralRenderMode
     {
         MarkdownAware,
@@ -60,6 +71,42 @@ namespace
         text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
         text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
         return text;
+    }
+
+    int htmlEntityLengthAt(const QString& text, const int sourceOffset)
+    {
+        if (sourceOffset < 0
+            || sourceOffset >= text.size()
+            || text.at(sourceOffset) != QLatin1Char('&'))
+        {
+            return 0;
+        }
+
+        const int semicolonOffset = text.indexOf(QLatin1Char(';'), sourceOffset + 1);
+        if (semicolonOffset <= sourceOffset)
+        {
+            return 0;
+        }
+
+        const QString entityToken = text.mid(sourceOffset, semicolonOffset - sourceOffset + 1).toCaseFolded();
+        if (entityToken == QStringLiteral("&amp;")
+            || entityToken == QStringLiteral("&lt;")
+            || entityToken == QStringLiteral("&gt;")
+            || entityToken == QStringLiteral("&quot;")
+            || entityToken == QStringLiteral("&apos;")
+            || entityToken == QStringLiteral("&#39;")
+            || entityToken == QStringLiteral("&nbsp;"))
+        {
+            return entityToken.size();
+        }
+
+        if (entityToken.startsWith(QStringLiteral("&#x"))
+            || entityToken.startsWith(QStringLiteral("&#")))
+        {
+            return entityToken.size();
+        }
+
+        return 0;
     }
 
     QString whitespaceToHtml(const QString& value)
@@ -262,6 +309,50 @@ namespace
         return {};
     }
 
+    QString normalizedTagElementName(const QString& tagToken)
+    {
+        if (tagToken.size() < 3 || !tagToken.startsWith(QLatin1Char('<')))
+        {
+            return {};
+        }
+
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+        {
+            ++cursor;
+        }
+        if (cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/'))
+        {
+            ++cursor;
+        }
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+        {
+            ++cursor;
+        }
+
+        const int nameStart = cursor;
+        while (cursor < tagToken.size())
+        {
+            const QChar ch = tagToken.at(cursor);
+            if (!(ch.isLetterOrNumber()
+                  || ch == QLatin1Char('_')
+                  || ch == QLatin1Char('.')
+                  || ch == QLatin1Char(':')
+                  || ch == QLatin1Char('-')))
+            {
+                break;
+            }
+            ++cursor;
+        }
+
+        if (cursor <= nameStart)
+        {
+            return {};
+        }
+
+        return tagToken.mid(nameStart, cursor - nameStart).trimmed().toCaseFolded();
+    }
+
     QStringList spanInlineStyleTagsFromCssDeclaration(const QString& cssDeclaration)
     {
         const QString normalizedCss = cssDeclaration.toCaseFolded();
@@ -418,6 +509,299 @@ namespace
             normalizedStyleTag = QStringLiteral("highlight");
         }
         return normalizedStyleTag;
+    }
+
+    int supportedInlineStyleIndexForTag(const QString& rawStyleTag)
+    {
+        const QString normalizedStyleTag = normalizeSupportedInlineStyleTag(rawStyleTag);
+        if (normalizedStyleTag == QStringLiteral("bold"))
+        {
+            return 0;
+        }
+        if (normalizedStyleTag == QStringLiteral("italic"))
+        {
+            return 1;
+        }
+        if (normalizedStyleTag == QStringLiteral("underline"))
+        {
+            return 2;
+        }
+        if (normalizedStyleTag == QStringLiteral("strikethrough"))
+        {
+            return 3;
+        }
+        if (normalizedStyleTag == QStringLiteral("highlight"))
+        {
+            return 4;
+        }
+        return -1;
+    }
+
+    QString sourceInlineStyleOpenTagForIndex(const int index)
+    {
+        switch (index)
+        {
+        case 0:
+            return QStringLiteral("<bold>");
+        case 1:
+            return QStringLiteral("<italic>");
+        case 2:
+            return QStringLiteral("<underline>");
+        case 3:
+            return QStringLiteral("<strikethrough>");
+        case 4:
+            return QStringLiteral("<highlight>");
+        default:
+            return {};
+        }
+    }
+
+    QString sourceInlineStyleCloseTagForIndex(const int index)
+    {
+        switch (index)
+        {
+        case 0:
+            return QStringLiteral("</bold>");
+        case 1:
+            return QStringLiteral("</italic>");
+        case 2:
+            return QStringLiteral("</underline>");
+        case 3:
+            return QStringLiteral("</strikethrough>");
+        case 4:
+            return QStringLiteral("</highlight>");
+        default:
+            return {};
+        }
+    }
+
+    SourceInlineStyleState buildSourceInlineStyleState(const QString& sourceText)
+    {
+        SourceInlineStyleState state;
+        const QString normalizedSourceText = normalizeLineEndings(sourceText);
+        std::array<int, kSupportedInlineStyleCount> styleDepths{};
+
+        auto appendCoverageEntry = [&state, &styleDepths]() {
+            for (int index = 0; index < kSupportedInlineStyleCount; ++index)
+            {
+                state.coverage[static_cast<std::size_t>(index)].push_back(styleDepths[static_cast<std::size_t>(index)] > 0);
+            }
+            state.logicalLength += 1;
+        };
+
+        int sourceOffset = 0;
+        while (sourceOffset < normalizedSourceText.size())
+        {
+            if (normalizedSourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = normalizedSourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset)
+                {
+                    const QString fullTagToken =
+                        normalizedSourceText.mid(sourceOffset, tagEnd - sourceOffset + 1);
+                    const QString normalizedTagName = normalizedTagElementName(fullTagToken);
+                    const bool closingTag = isClosingTagToken(fullTagToken);
+                    const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+                    const int styleIndex = supportedInlineStyleIndexForTag(normalizedTagName);
+                    if (styleIndex >= 0 && !selfClosingTag)
+                    {
+                        int& styleDepth = styleDepths[static_cast<std::size_t>(styleIndex)];
+                        if (closingTag)
+                        {
+                            styleDepth = std::max(0, styleDepth - 1);
+                        }
+                        else
+                        {
+                            styleDepth += 1;
+                        }
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+                    if (normalizedTagName == QStringLiteral("br"))
+                    {
+                        appendCoverageEntry();
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+            }
+
+            const int entityLength = htmlEntityLengthAt(normalizedSourceText, sourceOffset);
+            if (entityLength > 0)
+            {
+                appendCoverageEntry();
+                sourceOffset += entityLength;
+                continue;
+            }
+
+            appendCoverageEntry();
+            sourceOffset += 1;
+        }
+
+        return state;
+    }
+
+    bool selectionFullyHasSourceInlineStyle(
+        const QVector<bool>& styleCoverage,
+        const int selectionStart,
+        const int selectionEnd)
+    {
+        if (selectionEnd <= selectionStart)
+        {
+            return false;
+        }
+        for (int logicalOffset = selectionStart; logicalOffset < selectionEnd; ++logicalOffset)
+        {
+            if (logicalOffset < 0
+                || logicalOffset >= styleCoverage.size()
+                || !styleCoverage.at(logicalOffset))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void applySourceInlineStyleCoverageRange(
+        QVector<bool>* styleCoverage,
+        const int selectionStart,
+        const int selectionEnd,
+        const bool nextActive)
+    {
+        if (styleCoverage == nullptr || selectionEnd <= selectionStart)
+        {
+            return;
+        }
+        const int boundedStart = std::max(0, selectionStart);
+        const int boundedEnd = std::min(selectionEnd, styleCoverage->size());
+        for (int logicalOffset = boundedStart; logicalOffset < boundedEnd; ++logicalOffset)
+        {
+            (*styleCoverage)[logicalOffset] = nextActive;
+        }
+    }
+
+    void synchronizeOutputInlineStyleState(
+        QString* output,
+        QVector<int>* emittedStyleOrder,
+        const InlineStyleCoverageMap& desiredCoverage,
+        const int logicalOffset)
+    {
+        if (output == nullptr || emittedStyleOrder == nullptr)
+        {
+            return;
+        }
+
+        QVector<int> targetStyleOrder;
+        targetStyleOrder.reserve(kSupportedInlineStyleCount);
+        for (int index = 0; index < kSupportedInlineStyleCount; ++index)
+        {
+            const QVector<bool>& coverage = desiredCoverage[static_cast<std::size_t>(index)];
+            const bool shouldBeActive = logicalOffset >= 0
+                && logicalOffset < coverage.size()
+                && coverage.at(logicalOffset);
+            if (shouldBeActive)
+            {
+                targetStyleOrder.push_back(index);
+            }
+        }
+
+        int commonPrefixLength = 0;
+        while (commonPrefixLength < emittedStyleOrder->size()
+               && commonPrefixLength < targetStyleOrder.size()
+               && emittedStyleOrder->at(commonPrefixLength) == targetStyleOrder.at(commonPrefixLength))
+        {
+            ++commonPrefixLength;
+        }
+
+        for (int index = emittedStyleOrder->size() - 1; index >= commonPrefixLength; --index)
+        {
+            *output += sourceInlineStyleCloseTagForIndex(emittedStyleOrder->at(index));
+            emittedStyleOrder->removeAt(index);
+        }
+
+        for (int index = commonPrefixLength; index < targetStyleOrder.size(); ++index)
+        {
+            const int styleIndex = targetStyleOrder.at(index);
+            *output += sourceInlineStyleOpenTagForIndex(styleIndex);
+            emittedStyleOrder->push_back(styleIndex);
+        }
+    }
+
+    QString rebuildSourceTextWithInlineStyleCoverage(
+        const QString& sourceText,
+        const InlineStyleCoverageMap& desiredCoverage,
+        const int logicalLength)
+    {
+        const QString normalizedSourceText = normalizeLineEndings(sourceText);
+        QString output;
+        output.reserve(normalizedSourceText.size() + 32);
+
+        QVector<int> emittedStyleOrder;
+        emittedStyleOrder.reserve(kSupportedInlineStyleCount);
+
+        int logicalOffset = 0;
+        int sourceOffset = 0;
+        while (sourceOffset < normalizedSourceText.size())
+        {
+            if (normalizedSourceText.at(sourceOffset) == QLatin1Char('<'))
+            {
+                const int tagEnd = normalizedSourceText.indexOf(QLatin1Char('>'), sourceOffset + 1);
+                if (tagEnd > sourceOffset)
+                {
+                    const QString fullTagToken =
+                        normalizedSourceText.mid(sourceOffset, tagEnd - sourceOffset + 1);
+                    const QString normalizedTagName = normalizedTagElementName(fullTagToken);
+                    const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+                    const int styleIndex = supportedInlineStyleIndexForTag(normalizedTagName);
+                    if (styleIndex >= 0 && !selfClosingTag)
+                    {
+                        sourceOffset = tagEnd + 1;
+                        continue;
+                    }
+
+                    synchronizeOutputInlineStyleState(
+                        &output,
+                        &emittedStyleOrder,
+                        desiredCoverage,
+                        logicalOffset);
+                    output += fullTagToken;
+                    sourceOffset = tagEnd + 1;
+                    if (normalizedTagName == QStringLiteral("br"))
+                    {
+                        logicalOffset += 1;
+                    }
+                    continue;
+                }
+            }
+
+            synchronizeOutputInlineStyleState(
+                &output,
+                &emittedStyleOrder,
+                desiredCoverage,
+                logicalOffset);
+
+            const int entityLength = htmlEntityLengthAt(normalizedSourceText, sourceOffset);
+            if (entityLength > 0)
+            {
+                output += normalizedSourceText.mid(sourceOffset, entityLength);
+                sourceOffset += entityLength;
+                logicalOffset += 1;
+                continue;
+            }
+
+            output += normalizedSourceText.at(sourceOffset);
+            sourceOffset += 1;
+            logicalOffset += 1;
+        }
+
+        synchronizeOutputInlineStyleState(
+            &output,
+            &emittedStyleOrder,
+            desiredCoverage,
+            logicalLength);
+        return output;
     }
 
     QTextCharFormat textCharFormatForInlineStyle(const QString& normalizedStyleTag)
@@ -1024,44 +1408,54 @@ QString ContentsTextFormatRenderer::applyInlineStyleToLogicalSelectionSource(
         return normalizedSourceText;
     }
 
-    QTextDocument document;
-    document.setHtml(renderInlineStyleEditingSurfaceHtml(normalizedSourceText));
-
-    const int boundedStart = boundedDocumentSelectionPosition(document, std::min(selectionStart, selectionEnd));
-    const int boundedEnd = boundedDocumentSelectionPosition(document, std::max(selectionStart, selectionEnd));
+    const SourceInlineStyleState styleState = buildSourceInlineStyleState(normalizedSourceText);
+    const int boundedStart = std::clamp(
+        std::min(selectionStart, selectionEnd),
+        0,
+        styleState.logicalLength);
+    const int boundedEnd = std::clamp(
+        std::max(selectionStart, selectionEnd),
+        0,
+        styleState.logicalLength);
     if (boundedEnd <= boundedStart)
     {
         return normalizedSourceText;
     }
 
-    QTextCursor cursor(&document);
-    cursor.setPosition(boundedStart);
-    cursor.setPosition(boundedEnd, QTextCursor::KeepAnchor);
-    if (!cursor.hasSelection())
-    {
-        return normalizedSourceText;
-    }
-
-    cursor.beginEditBlock();
+    InlineStyleCoverageMap desiredCoverage = styleState.coverage;
     if (normalizedStyleTag == QStringLiteral("plain"))
     {
-        const QString replacementText = plainSelectedText(cursor);
-        cursor.removeSelectedText();
-        cursor.insertText(replacementText, plainTextCharFormat());
-    }
-    else if (selectionFullyHasInlineStyle(cursor, normalizedStyleTag))
-    {
-        const QString replacementText = plainSelectedText(cursor);
-        cursor.removeSelectedText();
-        cursor.insertText(replacementText, plainTextCharFormat());
+        for (int index = 0; index < kSupportedInlineStyleCount; ++index)
+        {
+            applySourceInlineStyleCoverageRange(
+                &desiredCoverage[static_cast<std::size_t>(index)],
+                boundedStart,
+                boundedEnd,
+                false);
+        }
     }
     else
     {
-        cursor.mergeCharFormat(textCharFormatForInlineStyle(normalizedStyleTag));
+        const int targetStyleIndex = supportedInlineStyleIndexForTag(normalizedStyleTag);
+        if (targetStyleIndex < 0)
+        {
+            return normalizedSourceText;
+        }
+        const bool fullyStyled = selectionFullyHasSourceInlineStyle(
+            styleState.coverage[static_cast<std::size_t>(targetStyleIndex)],
+            boundedStart,
+            boundedEnd);
+        applySourceInlineStyleCoverageRange(
+            &desiredCoverage[static_cast<std::size_t>(targetStyleIndex)],
+            boundedStart,
+            boundedEnd,
+            !fullyStyled);
     }
-    cursor.endEditBlock();
 
-    return normalizeEditorSurfaceTextToSource(document.toHtml());
+    return rebuildSourceTextWithInlineStyleCoverage(
+        normalizedSourceText,
+        desiredCoverage,
+        styleState.logicalLength);
 }
 
 void ContentsTextFormatRenderer::requestRenderRefresh()

@@ -71,6 +71,8 @@
   - editor-visible `#label` source persists into `.wsnbody` as `<tag>label</tag>`
   - the same save transaction unions that tag into `.wsnhead`
   - new tags are inserted into `Tags.wstags` so the tags hierarchy can reload them as first-class entries
+- Body-save normalization now also preserves proprietary inline formatting across paragraph boundaries by reopening any
+  still-active style tags at the next serialized `<paragraph>`.
 
 
 ## Intended Detailed Sections

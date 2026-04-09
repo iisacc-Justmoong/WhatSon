@@ -47,8 +47,10 @@ embedded in the generic inline-tag parser.
   The same entrypoint also accepts `plain` / `clear` / `none` to strip all supported inline styling from the selected
   range explicitly.
 - `applyInlineStyleToLogicalSelectionSource(sourceText, selectionStart, selectionEnd, styleTag)`
-  Applies inline formatting from canonical source text plus logical editor offsets, using a markdown-neutral editing
-  surface so shortcut/context-menu toggles only react to proprietary `.wsnbody` inline styles.
+  Applies inline formatting from canonical source text plus logical editor offsets by rebuilding proprietary inline
+  source tags directly from RAW-source style coverage.
+  Logical selection offsets are now resolved against the stored source text itself, and the opening/closing proprietary
+  tags become the authoritative formatting boundaries instead of any transient `QTextDocument` fragment split.
 - `requestRenderRefresh()`
   Slot entrypoint for explicit refresh requests from QML when immediate recompute is needed.
 

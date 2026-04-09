@@ -12,6 +12,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - plain text with newlines
   - inline `.wsnbody` style/resource tags
   - Qt Rich HTML fragments/documents
+- When inline proprietary styles remain open across a source newline, the serializer now carries those open style tags
+  forward and reopens them at the start of the next `<paragraph>`. This keeps multi-paragraph formatting alive in a
+  paragraph-based XML document instead of silently truncating it at the first line boundary.
 - During that write-side normalization, visible inline hashtags such as `#label` are promoted into canonical body tags
   as `<tag>label</tag>`.
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
@@ -65,3 +68,5 @@ text projections still show `#label`.
 - Editor autosave must not inflate `fileStat.modifiedCount` while the user types.
 - Body hashtags must survive a full save/load round-trip as visible `#label` text while still persisting as canonical
   `<tag>` nodes inside `.wsnbody`.
+- A style applied across multiple logical paragraphs must still render on every touched paragraph after save/load, even
+  though the serializer has to split that logical span into paragraph-local reopened canonical tags.

@@ -75,8 +75,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   than on the live logical editor surface.
 - The controller no longer mutates the live markdown-rendered RichText surface directly for shortcut formatting.
 - It delegates to `ContentsTextFormatRenderer.applyInlineStyleToLogicalSelectionSource(...)`, which builds a
-  markdown-neutral source-editing surface from the canonical `.wsnbody` text and applies `QTextDocument/QTextCursor`
-  formatting against logical editor offsets.
+  markdown-neutral source-editing contract from the canonical `.wsnbody` text and now rebuilds proprietary RAW source
+  tags directly from logical selection coverage instead of trusting `QTextDocument` fragment formatting as the
+  authoritative boundary.
 - Because ordinary typing now keeps `ContentsLogicalTextBridge` current through incremental adoption, explicit
   formatting/list actions no longer need a pre-mutation whole-document bridge commit.
 - After a programmatic source rewrite finishes, the controller does trigger one immediate

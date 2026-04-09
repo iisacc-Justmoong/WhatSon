@@ -75,10 +75,16 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   - serializes the updated document back into canonical `.wsnbody`
 - Exposes `applyInlineStyleToLogicalSelectionSource(...)` for shortcut/context-menu formatting that must ignore markdown
   presentation roles:
-    - builds a markdown-neutral inline-style editing surface from canonical source text
-    - resolves the selected range by logical editor offsets
-    - toggles only when the proprietary `.wsnbody` inline style is already present
-    - serializes the edited document back into canonical `.wsnbody`
+    - no longer routes the selection through `QTextDocument` fragment formatting as the source of truth
+    - instead scans the RAW editor source, computes logical character coverage for each proprietary inline style, and
+      rebuilds canonical `<bold>` / `<italic>` / `<underline>` / `<strikethrough>` / `<highlight>` tags directly from
+      that coverage
+    - the selected range is therefore compared against the actual stored source tags, not against a temporary RichText
+      fragment split that may collapse multi-tag or multi-paragraph selections
+    - `plain` clears every supported proprietary inline style across the selected logical range
+    - reapplying the same style toggles that style off by zeroing its RAW-source coverage inside the range
+    - applying a style across text that is split by other proprietary tags now expands one continuous source-tag span
+      over the whole logical selection
 - Preview HTML generation and editable-surface normalization now reuse the same strong/span-style openings, so
   read-side rendering and editor rendering no longer diverge on weight/decoration styling.
 
@@ -100,6 +106,9 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Applying proprietary inline formatting to text inside a markdown bullet line must keep the stored source line prefix
   as
   `- ` instead of persisting the rendered `• ` glyph.
+- Applying proprietary inline formatting to a selection that spans multiple existing proprietary tags or multiple
+  logical paragraphs must rebuild the target RAW source tags over the whole selected range, not only the first RichText
+  fragment that happened to survive the context-menu click.
 - Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
   must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
   already-applied shortcut format.

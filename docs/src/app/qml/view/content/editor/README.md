@@ -111,6 +111,9 @@
 - The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or
   mixed-inline dragged selections survive the menu-opening click instead of collapsing to one fragment before
   formatting.
+- Shared inline-format actions now also rebuild proprietary source tags from RAW logical coverage, so formatting ranges
+  that cross multiple paragraphs or existing inline tags stay governed by canonical `<bold>` / `<italic>` / ...
+  boundaries instead of temporary RichText fragment splits.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
