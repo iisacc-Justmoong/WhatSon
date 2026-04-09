@@ -72,19 +72,20 @@
 - Markdown list toggles now restore selection/cursor using logical-text lengths from `ContentsLogicalTextBridge`, so
   lines that contain inline tags, escaped entities, or `<resource ...>` tokens no longer jump selection after a list
   rewrite.
-- `ContentsEditorSession.qml` now defers note swaps behind pending-body flushes, so a failed immediate save cannot
-  silently discard the old note buffer when the user changes selection.
+- `ContentsEditorSession.qml` no longer serializes note swaps behind pending-body save barriers. It keeps the live editor buffer
+  authoritative, re-stages the old note into the buffered fetch-sync controller, and allows the next selected note to
+  bind immediately.
 - `ContentsEditorSession.qml` now also keeps local editor authority across same-note model echoes, so one successful
   echo cannot immediately reopen the door for the next stale polling snapshot to replace the current note body.
-- Editor body persistence is now split into async idle staging vs background completion:
+- Editor body persistence is now split into buffered fetch staging vs background completion:
   - `ContentsEditorSession.qml` owns pending/in-flight state only
   - `ContentsEditorSelectionBridge` stays as the QML-facing adapter
-  - `file/sync/ContentsEditorIdleSyncController` owns the worker-thread `1000ms` idle gate and explicit note-exit
-    flush promotion
+  - `file/sync/ContentsEditorIdleSyncController` owns the note-scoped buffered snapshot cache and recurring `1000ms`
+    fetch clock
   - `ContentsNoteManagementCoordinator` serializes direct `.wsnote` writes plus open-count/stat follow-up work on the
     downstream management side
-  - selection/typing controllers now treat persistence success as "snapshot accepted into the async idle-sync lane",
-    not "disk write already finished"
+  - selection/typing controllers now treat persistence as eventual filesystem sync of the latest buffered note body,
+    not as an "all changes must land on this exact idle turn" guarantee
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`

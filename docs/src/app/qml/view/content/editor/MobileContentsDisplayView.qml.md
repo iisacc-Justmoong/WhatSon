@@ -67,9 +67,9 @@ suppression local to this file.
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
-  so a failed pending-body flush cannot silently replace the current unsaved editor buffer with the newly selected note.
-- Mobile editor body writes now also stage immediately into the shared async idle-sync boundary, while actual `.wsnote`
-  synchronization waits for the worker-thread `1000ms` idle gate or an explicit note-exit flush.
+  so the old note buffer stays staged in the fetch-sync controller while the newly selected note binds immediately.
+- Mobile editor body writes now also stage immediately into the shared buffered fetch-sync boundary, while actual
+  `.wsnote` synchronization waits for a later recurring fetch turn instead of an exact idle/flush moment.
 
 ## Tests
 
@@ -87,8 +87,8 @@ suppression local to this file.
     goes idle, loses focus, or switches notes.
   - While the mobile editor is focused, the presentation timer must not reapply the whole-document editing surface back
     into the live `TextEdit`; the commit must wait for blur or another explicit immediate refresh path.
-  - Mobile typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
-    async idle gate or explicit note-exit flush.
+  - Mobile typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must flow through
+    the buffered fetch boundary instead.
   - Mobile hidden-minimap states must still keep line geometry current through the incremental line-group cache rather
     than re-running whole-note text-geometry sampling for gutter helpers.
   - Mobile body edits must not force full-document minimap text-geometry sampling; only the changed logical-line
@@ -115,5 +115,5 @@ suppression local to this file.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
-  - Switching mobile note selection while the current note still has a pending unsaved body must either flush that body
-    first or defer the editor swap; it must not drop the unsaved text.
+  - Switching mobile note selection while the current note still has a pending staged body must not drop the old note
+    text or block the new selection on an immediate-save success path.

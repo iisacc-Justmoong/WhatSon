@@ -10,15 +10,16 @@
 - File name: `ContentsEditorSession.qml`
 - Approximate line count: 95
 
-## Idle Sync Contract
+## Fetch Sync Contract
 
 - The session no longer owns a debounce timer.
-- `pendingBodySave` now means "the current editor buffer is newer than the last finished filesystem sync", not
-  "waiting for a local 120ms timer".
-- `scheduleEditorPersistence()` now stages the latest editor snapshot immediately into the bridge's async idle-sync
+- `pendingBodySave` now only tracks whether the currently bound editor buffer still has a staged-but-not-yet-confirmed
+  filesystem persistence result for that same note/text pair.
+- `scheduleEditorPersistence()` stages the latest editor snapshot immediately into the bridge's buffered fetch-sync
   boundary.
-- Idle detection itself lives in `file/sync/ContentsEditorIdleSyncController` on a worker thread.
-- `flushPendingEditorText()` is now a note-exit flush request into that same async boundary, not a direct save call.
+- The session no longer blocks note swaps on an immediate save acceptance path.
+- `flushPendingEditorText()` is now only a best-effort final fetch request; it is no longer part of ordinary note-switch
+  control flow.
 
 ## QML Surface Snapshot
 - Root type: `Item`
@@ -33,15 +34,11 @@
 - `editorTextSynchronized`
 
 ## Persistence Guard Notes
-- The session now distinguishes:
-  - `pendingBodySave`: local edits waiting for idle or explicit note-exit flush
-  - `bodySaveInFlight`: a staged snapshot already accepted into the downstream async persistence queue
-- `acknowledgeQueuedEditorPersistence(noteId, text)` now records which staged snapshot actually crossed the async
-  idle/flush gate.
-- `acknowledgeSuccessfulEditorPersistence(noteId, text)` now clears `pendingBodySave` only when the finished payload
-  still matches the currently bound editor buffer.
+- The session no longer owns deferred note-switch state or queued-payload tracking.
 - The session still only talks to `ContentsEditorSelectionBridge`, but that bridge now forwards completion from
-  `ContentsEditorIdleSyncController`; the session does not own idle detection, save, stat, or open-count behavior.
+  `ContentsEditorIdleSyncController`; the session does not own fetch timing, save, stat, or open-count behavior.
+- Successful completion only clears `pendingBodySave` when the finished payload still matches the currently bound
+  editor buffer.
 - Async completion for an older payload must not clear a newer `pendingBodySave`.
 - Successful writes still do not revoke `localEditorAuthority` immediately. The session keeps that authority until the
   bound note itself changes.
@@ -51,22 +48,19 @@
 - `shouldAcceptModelBodyText(...)` therefore continues rejecting mismatched same-note model text while the editor still
   owns the current local buffer.
 - Note-selection changes now enter through `requestSyncEditorTextFromSelection(...)`. When the user leaves a note with a
-  pending unsaved body and the async flush request fails, the session keeps the old note bound, preserves the pending body,
-  and records the newly selected note as a deferred sync target instead of silently dropping the edit.
-- Once the async flush request is accepted, the session no longer blocks the note switch on the actual disk write. The
-  previous note body continues saving asynchronously while the editor may already bind to the next note.
-- If the async completion later reports a failure for the still-bound note and unchanged editor text, the session
-  re-stages that body through the idle-sync path.
+  pending staged body, the session simply re-stages the latest current-note text and then binds the next note
+  immediately. The previous note stays buffered in the fetch-sync controller instead of blocking the UI.
+- Same-note model echoes that exactly match the current editor buffer now leave `pendingBodySave` untouched; only an
+  actual success completion for that same note/text pair clears it.
 
 ## Regression Checks
-- Switching to another note while the current note still has a pending unsaved body must not overwrite `editorText`
-  with the new note body unless the previous note body was at least accepted into the async save queue.
-- Once the async enqueue succeeds, the editor must be able to bind to the latest requested note body without waiting
-  for the physical file write to finish.
+- Switching to another note while the current note still has a pending staged body must not require an immediate save
+  success path before the new note body binds.
+- The previous note body must still remain recoverable through the buffered fetch-sync controller after that note switch.
 - If the user edits again while an older async save is still running, that older completion must not clear the newer
-  pending idle-stage save.
-- If the currently bound note's async save completion reports failure and the editor buffer still matches that queued
-  payload, `pendingBodySave` must remain armed so the idle-sync retry path remains alive.
+  pending staged save.
+- Same-note model echoes that only mirror the current text must not clear `pendingBodySave` ahead of the real
+  persistence completion.
 - A same-note model echo that exactly matches the current editor buffer must not revoke local authority and thereby make
   the next stale snapshot eligible to overwrite the live note body.
 

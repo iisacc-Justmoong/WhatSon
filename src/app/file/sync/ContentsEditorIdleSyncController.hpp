@@ -1,12 +1,13 @@
 #pragma once
 
+#include <QHash>
 #include <QObject>
 #include <QPointer>
-#include <QThread>
 #include <QString>
+#include <QStringList>
+#include <QTimer>
 #include <QtTypes>
 
-class ContentsEditorIdleSyncWorker;
 class ContentsNoteManagementCoordinator;
 
 class ContentsEditorIdleSyncController final : public QObject
@@ -48,11 +49,9 @@ signals:
         bool success,
         const QString& errorMessage);
 
-    void idleMonitorStageRequested(quint64 revision);
-    void idleMonitorClearRequested();
-
 private slots:
-    void handleIdleRevisionReached(quint64 revision);
+    void handleFetchTimerTimeout();
+    void handleContentPersistenceContractAvailabilityChanged();
     void handlePersistenceFinished(
         const QString& noteId,
         const QString& text,
@@ -60,18 +59,18 @@ private slots:
         const QString& errorMessage);
 
 private:
-    bool stageEditorSnapshot(const QString& noteId, const QString& text, bool flushImmediately);
-    bool enqueueStagedPersistenceIfNeeded();
+    bool stageEditorSnapshot(const QString& noteId, const QString& text, bool requestImmediateFetch);
+    bool enqueueNextBufferedPersistenceIfNeeded();
+    void ensureFetchTimerRunning();
+    void markNoteDirty(const QString& noteId);
+    void removeNoteFromDirtyOrder(const QString& noteId);
 
     QPointer<ContentsNoteManagementCoordinator> m_noteManagementCoordinator;
-    QThread m_idleMonitorThread;
-    ContentsEditorIdleSyncWorker* m_idleMonitorWorker = nullptr;
-    QString m_stagedNoteId;
-    QString m_stagedText;
-    quint64 m_latestStagedRevision = 0;
-    quint64 m_latestIdleRevision = 0;
-    quint64 m_forceFlushRevision = 0;
-    quint64 m_lastQueuedRevision = 0;
-    quint64 m_lastCompletedRevision = 0;
+    QTimer m_fetchTimer;
+    QHash<QString, QString> m_bufferedTextByNote;
+    QHash<QString, QString> m_lastPersistedTextByNote;
+    QStringList m_dirtyNoteOrder;
+    QString m_inFlightNoteId;
+    QString m_inFlightText;
     bool m_persistenceInFlight = false;
 };

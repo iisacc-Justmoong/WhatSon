@@ -290,6 +290,8 @@ FocusScope {
             control._compositionEditPending = true;
             return;
         }
+        if (control._compositionEditPending)
+            return;
         control._compositionEditPending = false;
         control.textEdited(textInput.text);
     }
@@ -452,15 +454,19 @@ FocusScope {
 
     Connections {
         function onInputMethodComposingChanged() {
-            if (!textInput.inputMethodComposing && control._compositionEditPending)
+            if (!textInput.inputMethodComposing && control._compositionEditPending) {
+                control._compositionEditPending = false;
                 control.scheduleCommittedTextEditedDispatch();
+            }
             if (!textInput.inputMethodComposing)
                 control.flushDeferredProgrammaticText(false);
         }
 
         function onPreeditTextChanged() {
-            if (!textInput.inputMethodComposing && control._compositionEditPending && control.preeditText.length === 0)
+            if (!textInput.inputMethodComposing && control._compositionEditPending && control.preeditText.length === 0) {
+                control._compositionEditPending = false;
                 control.scheduleCommittedTextEditedDispatch();
+            }
             if (!textInput.inputMethodComposing && control.preeditText.length === 0)
                 control.flushDeferredProgrammaticText(false);
         }

@@ -25,6 +25,8 @@
   `bindSelectedNote(...)` / `clearSelectedNote()`, so open-count maintenance also left the bridge.
 - `setContentViewModel(...)` now rebinds the same content view-model into the sync controller and re-seeds the
   currently selected note session there.
+- Persistence requests forwarded through the bridge now follow buffered fetch semantics rather than worker-thread idle
+  semantics, so the bridge remains a pure adapter while the controller owns eventual filesystem sync.
 
 ### Classes and Structs
 - None detected during scaffold generation.
@@ -54,3 +56,4 @@
   open-count/stat maintenance directly inside the bridge implementation.
 - The bridge must continue forwarding sync-boundary queued/completion signals so `ContentsEditorSession.qml` behavior
   does not regress.
+- The bridge must not reintroduce note-switch blocking logic on top of the controller's buffered fetch model.

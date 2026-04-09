@@ -75,9 +75,10 @@ that sit directly inside the editor viewport.
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
-  so a failed pending-body flush no longer lets a note switch silently overwrite the still-unsaved editor buffer.
-- Desktop editor body writes are now staged into the async idle-sync boundary immediately on mutation, while actual
-  `.wsnote` synchronization waits for the worker-thread `1000ms` idle gate or an explicit note-exit flush.
+  so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
+  immediate-save acceptance path.
+- Desktop editor body writes are now staged into the shared buffered fetch-sync boundary immediately on mutation, while
+  actual `.wsnote` synchronization happens later on the controller's recurring `1000ms` fetch turn.
 - Desktop note snapshot polling now also pauses while the editor owns input focus.
   This prevents the periodic `currentBodyText` refresh from re-binding a stale same-note body snapshot into the live
   editor while the user is still typing.
@@ -101,8 +102,8 @@ that sit directly inside the editor viewport.
     key; whole-document logical/source offset regeneration should wait for editor idle, blur, or note switch.
   - While the desktop editor is focused, the presentation timer must not reapply a fresh RichText surface into the
     live `TextEdit`; the whole-document commit should wait for blur or another explicit immediate refresh path.
-  - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must wait for the
-    async idle gate or explicit note-exit flush.
+  - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must flow through
+    the buffered fetch boundary instead.
   - While the desktop editor is focused, periodic note snapshot polling must not reapply an older same-note
     `currentBodyText` payload into the live editor buffer.
   - Desktop Hangul typing must not lose committed syllables or delete partial jamo because of a deferred presentation
@@ -117,5 +118,5 @@ that sit directly inside the editor viewport.
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the
     selection controller while the rich-text editor owns focus.
-  - Switching desktop note selection while the current note still has a pending unsaved body must either flush that body
-    first or defer the editor swap; it must not drop the unsaved text.
+  - Switching desktop note selection while the current note still has a pending staged body must not drop the old note
+    text or block the new selection on an immediate-save success path.

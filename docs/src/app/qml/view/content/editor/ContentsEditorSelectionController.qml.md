@@ -87,18 +87,14 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 ## Persistence Rules
 
 - Mutations call `editorSession.markLocalEditorAuthority()` before persistence.
-- Immediate editor mutations no longer bypass the idle-sync boundary.
+- Immediate editor mutations no longer bypass the fetch-sync boundary.
 - `persistEditorTextImmediately(...)` now only stages the current editor buffer through `ContentsEditorSession`, which
-  forwards it into the async idle-sync controller under `file/sync`.
+  forwards it into the buffered fetch-sync controller under `file/sync`.
 - The typing controller still uses that boolean to decide whether one staging request already succeeded for the current
   turn.
 - The save pipeline canonicalizes the edited RichText surface back into `.wsnbody` source tags, so shortcut/context
   formatting persists as semantic tags such as `<bold>...</bold>` and `<italic>...</italic>` instead of raw span CSS.
 - Ordinary typing no longer goes through this controller or its whole-document RichText normalization helper.
-- A successful idle/flush enqueue now routes through `ContentsEditorSession.acknowledgeQueuedEditorPersistence(...)`,
-  while the bridge completion later routes through `acknowledgeSuccessfulEditorPersistence(...)`.
-  The controller must not revoke local authority before the note list model echoes the same body text back, otherwise
-  newly created notes can collapse the first typed text to a stale empty snapshot.
 - If immediate persistence is unavailable or fails, the controller falls back to
   `editorSession.scheduleEditorPersistence()`.
 - The host view still emits `editorTextEdited(...)`; the controller owns the mutation decision but not the broader
@@ -142,7 +138,7 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   duplicate formatting from the same key chord.
 - Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`
   toggles to misfire as if the proprietary `.wsnbody` style was already present.
-- Immediate typing saves must return `true` once the snapshot is accepted into the async idle-sync stage so the typing
-  controller does not schedule a redundant second staging request on the same turn.
+- Immediate typing saves must return `true` once the snapshot is accepted into the buffered fetch-sync stage so the
+  typing controller does not schedule a redundant second staging request on the same turn.
 - A host with `preferNativeInputHandling` enabled must not be re-forced into `TextEdit.RichText` by the selection
   controller after note changes, surface syncs, or shortcut handling.

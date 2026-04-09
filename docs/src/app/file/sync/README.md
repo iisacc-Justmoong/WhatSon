@@ -18,10 +18,12 @@
 
 ## Current Notes
 
-- `ContentsEditorIdleSyncController` now owns the editor idle gate under the `file/sync` domain.
-- QML/editor code stages body snapshots only; it no longer owns the `1000ms` inactivity decision locally.
-- The same controller also handles note-exit flush promotion, but actual `.wsnote` persistence still remains
-  asynchronous because it forwards into `file/note/ContentsNoteManagementCoordinator`.
+- `ContentsEditorIdleSyncController` now owns the editor-side buffered fetch-sync boundary under the `file/sync`
+  domain.
+- QML/editor code stages the latest body snapshot per note only; it no longer owns any "save on this exact idle turn"
+  decision locally.
+- The same controller also handles best-effort immediate fetch requests for lifecycle edges, but actual `.wsnote`
+  persistence still remains asynchronous because it forwards into `file/note/ContentsNoteManagementCoordinator`.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

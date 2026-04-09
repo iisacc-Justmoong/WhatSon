@@ -3,67 +3,10 @@
 #include "file/WhatSonDebugTrace.hpp"
 #include "file/note/ContentsNoteManagementCoordinator.hpp"
 
-#include <QPointer>
-#include <QTimer>
-
-#include <algorithm>
-
 namespace
 {
-    constexpr int kEditorIdleThresholdMs = 1000;
+    constexpr int kEditorPersistenceFetchIntervalMs = 1000;
 }
-
-class ContentsEditorIdleSyncWorker final : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit ContentsEditorIdleSyncWorker(QObject* parent = nullptr)
-        : QObject(parent)
-        , m_idleTimer(this)
-    {
-        m_idleTimer.setSingleShot(true);
-        m_idleTimer.setInterval(kEditorIdleThresholdMs);
-        connect(&m_idleTimer, &QTimer::timeout, this, &ContentsEditorIdleSyncWorker::handleIdleTimeout);
-    }
-
-public slots:
-    void clearPendingRevision()
-    {
-        m_pendingRevision = 0;
-        m_idleTimer.stop();
-    }
-
-    void stagePendingRevision(const quint64 revision)
-    {
-        if (revision == 0)
-        {
-            clearPendingRevision();
-            return;
-        }
-
-        m_pendingRevision = revision;
-        m_idleTimer.start();
-    }
-
-signals:
-    void idleRevisionReached(quint64 revision);
-
-private slots:
-    void handleIdleTimeout()
-    {
-        if (m_pendingRevision == 0)
-        {
-            return;
-        }
-
-        emit idleRevisionReached(m_pendingRevision);
-    }
-
-private:
-    QTimer m_idleTimer;
-    quint64 m_pendingRevision = 0;
-};
 
 ContentsEditorIdleSyncController::ContentsEditorIdleSyncController(QObject* parent)
     : QObject(parent)
@@ -76,45 +19,25 @@ ContentsEditorIdleSyncController::ContentsEditorIdleSyncController(QObject* pare
         &ContentsEditorIdleSyncController::contentPersistenceContractAvailableChanged);
     connect(
         m_noteManagementCoordinator,
+        &ContentsNoteManagementCoordinator::contentPersistenceContractAvailableChanged,
+        this,
+        &ContentsEditorIdleSyncController::handleContentPersistenceContractAvailabilityChanged);
+    connect(
+        m_noteManagementCoordinator,
         &ContentsNoteManagementCoordinator::editorTextPersistenceFinished,
         this,
         &ContentsEditorIdleSyncController::handlePersistenceFinished);
 
-    m_idleMonitorWorker = new ContentsEditorIdleSyncWorker();
-    m_idleMonitorWorker->moveToThread(&m_idleMonitorThread);
+    m_fetchTimer.setInterval(kEditorPersistenceFetchIntervalMs);
+    m_fetchTimer.setSingleShot(false);
     connect(
-        &m_idleMonitorThread,
-        &QThread::finished,
-        m_idleMonitorWorker,
-        &QObject::deleteLater);
-    connect(
+        &m_fetchTimer,
+        &QTimer::timeout,
         this,
-        &ContentsEditorIdleSyncController::idleMonitorStageRequested,
-        m_idleMonitorWorker,
-        &ContentsEditorIdleSyncWorker::stagePendingRevision,
-        Qt::QueuedConnection);
-    connect(
-        this,
-        &ContentsEditorIdleSyncController::idleMonitorClearRequested,
-        m_idleMonitorWorker,
-        &ContentsEditorIdleSyncWorker::clearPendingRevision,
-        Qt::QueuedConnection);
-    connect(
-        m_idleMonitorWorker,
-        &ContentsEditorIdleSyncWorker::idleRevisionReached,
-        this,
-        &ContentsEditorIdleSyncController::handleIdleRevisionReached,
-        Qt::QueuedConnection);
-    m_idleMonitorThread.setObjectName(QStringLiteral("ContentsEditorIdleSyncMonitor"));
-    m_idleMonitorThread.start();
+        &ContentsEditorIdleSyncController::handleFetchTimerTimeout);
 }
 
-ContentsEditorIdleSyncController::~ContentsEditorIdleSyncController()
-{
-    emit idleMonitorClearRequested();
-    m_idleMonitorThread.quit();
-    m_idleMonitorThread.wait();
-}
+ContentsEditorIdleSyncController::~ContentsEditorIdleSyncController() = default;
 
 QObject* ContentsEditorIdleSyncController::contentViewModel() const noexcept
 {
@@ -180,10 +103,19 @@ void ContentsEditorIdleSyncController::clearSelectedNote()
     }
 }
 
-void ContentsEditorIdleSyncController::handleIdleRevisionReached(const quint64 revision)
+void ContentsEditorIdleSyncController::handleFetchTimerTimeout()
 {
-    m_latestIdleRevision = std::max(m_latestIdleRevision, revision);
-    enqueueStagedPersistenceIfNeeded();
+    enqueueNextBufferedPersistenceIfNeeded();
+}
+
+void ContentsEditorIdleSyncController::handleContentPersistenceContractAvailabilityChanged()
+{
+    if (!contentPersistenceContractAvailable())
+    {
+        return;
+    }
+
+    enqueueNextBufferedPersistenceIfNeeded();
 }
 
 void ContentsEditorIdleSyncController::handlePersistenceFinished(
@@ -192,104 +124,164 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
     const bool success,
     const QString& errorMessage)
 {
+    const QString normalizedNoteId = noteId.trimmed();
+    const QString completedText = text;
+
     m_persistenceInFlight = false;
+    m_inFlightNoteId.clear();
+    m_inFlightText.clear();
+
     if (success)
     {
-        m_lastCompletedRevision = std::max(m_lastCompletedRevision, m_lastQueuedRevision);
-        if (m_forceFlushRevision <= m_lastCompletedRevision)
+        m_lastPersistedTextByNote.insert(normalizedNoteId, completedText);
+        if (m_bufferedTextByNote.value(normalizedNoteId) == completedText)
         {
-            m_forceFlushRevision = 0;
+            removeNoteFromDirtyOrder(normalizedNoteId);
+        }
+        else
+        {
+            markNoteDirty(normalizedNoteId);
         }
     }
-    else if (m_latestStagedRevision > m_lastCompletedRevision)
+    else
     {
-        emit idleMonitorStageRequested(m_latestStagedRevision);
+        markNoteDirty(normalizedNoteId);
     }
 
     emit editorTextPersistenceFinished(noteId, text, success, errorMessage);
-    enqueueStagedPersistenceIfNeeded();
+
+    if (m_dirtyNoteOrder.isEmpty())
+    {
+        m_fetchTimer.stop();
+        return;
+    }
+
+    ensureFetchTimerRunning();
 }
 
 bool ContentsEditorIdleSyncController::stageEditorSnapshot(
     const QString& noteId,
     const QString& text,
-    const bool flushImmediately)
+    const bool requestImmediateFetch)
 {
     const QString normalizedNoteId = noteId.trimmed();
-    if (normalizedNoteId.isEmpty() || !contentPersistenceContractAvailable())
+    if (normalizedNoteId.isEmpty())
     {
         return false;
     }
 
     const QString normalizedText = text;
-    if (m_stagedNoteId != normalizedNoteId || m_stagedText != normalizedText)
+    m_bufferedTextByNote.insert(normalizedNoteId, normalizedText);
+
+    const bool matchesInFlight =
+        m_persistenceInFlight
+        && m_inFlightNoteId == normalizedNoteId
+        && m_inFlightText == normalizedText;
+    const bool matchesLastPersisted =
+        m_lastPersistedTextByNote.contains(normalizedNoteId)
+        && m_lastPersistedTextByNote.value(normalizedNoteId) == normalizedText;
+
+    if (matchesLastPersisted && !matchesInFlight)
     {
-        m_stagedNoteId = normalizedNoteId;
-        m_stagedText = normalizedText;
-        m_latestStagedRevision += 1;
+        removeNoteFromDirtyOrder(normalizedNoteId);
+        if (m_dirtyNoteOrder.isEmpty() && !m_persistenceInFlight)
+        {
+            m_fetchTimer.stop();
+        }
+    }
+    else
+    {
+        markNoteDirty(normalizedNoteId);
+        ensureFetchTimerRunning();
     }
 
-    if (m_latestStagedRevision == 0)
+    if (requestImmediateFetch)
     {
-        return false;
+        enqueueNextBufferedPersistenceIfNeeded();
     }
 
-    if (flushImmediately)
-    {
-        m_forceFlushRevision = std::max(m_forceFlushRevision, m_latestStagedRevision);
-        emit idleMonitorClearRequested();
-        return enqueueStagedPersistenceIfNeeded();
-    }
-
-    emit idleMonitorStageRequested(m_latestStagedRevision);
     return true;
 }
 
-bool ContentsEditorIdleSyncController::enqueueStagedPersistenceIfNeeded()
+bool ContentsEditorIdleSyncController::enqueueNextBufferedPersistenceIfNeeded()
 {
-    if (m_noteManagementCoordinator == nullptr
-        || m_stagedNoteId.isEmpty()
-        || !contentPersistenceContractAvailable())
-    {
-        return false;
-    }
-
-    const quint64 requestedRevision =
-        std::max(m_latestIdleRevision, m_forceFlushRevision);
-    if (requestedRevision == 0)
+    if (m_noteManagementCoordinator == nullptr || m_persistenceInFlight)
     {
         return true;
     }
 
-    if (requestedRevision <= m_lastCompletedRevision)
+    if (m_dirtyNoteOrder.isEmpty())
     {
+        m_fetchTimer.stop();
         return true;
     }
 
-    if (m_persistenceInFlight)
+    if (!contentPersistenceContractAvailable())
     {
+        ensureFetchTimerRunning();
         return true;
     }
 
-    if (requestedRevision <= m_lastQueuedRevision)
+    QString candidateNoteId;
+    QString candidateText;
+    const int dirtyNoteCount = m_dirtyNoteOrder.size();
+    for (int index = 0; index < dirtyNoteCount; ++index)
     {
+        const QString currentNoteId = m_dirtyNoteOrder.takeFirst();
+        const QString currentText = m_bufferedTextByNote.value(currentNoteId);
+        const bool alreadyPersisted =
+            m_lastPersistedTextByNote.contains(currentNoteId)
+            && m_lastPersistedTextByNote.value(currentNoteId) == currentText;
+        if (alreadyPersisted)
+        {
+            continue;
+        }
+
+        candidateNoteId = currentNoteId;
+        candidateText = currentText;
+        m_dirtyNoteOrder.append(currentNoteId);
+        break;
+    }
+
+    if (candidateNoteId.isEmpty())
+    {
+        m_fetchTimer.stop();
         return true;
     }
 
-    if (!m_noteManagementCoordinator->persistEditorTextForNote(m_stagedNoteId, m_stagedText))
+    if (!m_noteManagementCoordinator->persistEditorTextForNote(candidateNoteId, candidateText))
     {
         WhatSon::Debug::traceSelf(
             this,
             QStringLiteral("content.idleSync"),
             QStringLiteral("enqueuePersist.failed"),
-            QStringLiteral("noteId=%1 revision=%2").arg(m_stagedNoteId).arg(requestedRevision));
+            QStringLiteral("noteId=%1").arg(candidateNoteId));
+        ensureFetchTimerRunning();
         return false;
     }
 
     m_persistenceInFlight = true;
-    m_lastQueuedRevision = requestedRevision;
-    emit editorTextPersistenceQueued(m_stagedNoteId, m_stagedText);
+    m_inFlightNoteId = candidateNoteId;
+    m_inFlightText = candidateText;
+    emit editorTextPersistenceQueued(candidateNoteId, candidateText);
     return true;
 }
 
-#include "ContentsEditorIdleSyncController.moc"
+void ContentsEditorIdleSyncController::ensureFetchTimerRunning()
+{
+    if (!m_dirtyNoteOrder.isEmpty() && !m_fetchTimer.isActive())
+    {
+        m_fetchTimer.start();
+    }
+}
+
+void ContentsEditorIdleSyncController::markNoteDirty(const QString& noteId)
+{
+    removeNoteFromDirtyOrder(noteId);
+    m_dirtyNoteOrder.append(noteId);
+}
+
+void ContentsEditorIdleSyncController::removeNoteFromDirtyOrder(const QString& noteId)
+{
+    m_dirtyNoteOrder.removeAll(noteId);
+}

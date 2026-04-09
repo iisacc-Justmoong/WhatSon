@@ -25,10 +25,13 @@
   - `flushEditorTextForNote(noteId, text)`
   - `refreshSelectedNoteSnapshot()`
   and they now delegate to the sync boundary instead of performing note-management work inside the bridge itself.
+- Those invokables no longer imply an idle-threshold or immediate-save guarantee:
+  - staging means "buffer this latest note snapshot for a later fetch turn"
+  - flush means "buffer it and request one immediate fetch attempt if possible"
 - The bridge still exposes `directPersistenceContractAvailable` and `contentPersistenceContractAvailable`, but those
   values now come from the sync-owned downstream management boundary.
 - The bridge now also forwards `editorTextPersistenceQueued(...)` so QML sessions can distinguish
-  "idle/flush gate accepted the snapshot" from "the write already finished".
+  "the fetch boundary accepted one buffered snapshot into the persistence queue" from "the write already finished".
 - `editorTextPersistenceFinished(noteId, text, success, errorMessage)` is still the completion signal consumed by QML
   editor sessions, but the bridge now only forwards the sync/controller result.
 
@@ -57,8 +60,8 @@
 ## Regression Checks
 
 - Selection refresh must not directly execute note-file persistence, stat refresh, or open-count maintenance logic.
-- `persistEditorTextForNote(...)` must stay as an enqueue-facing contract for QML even after the sync split.
+- `persistEditorTextForNote(...)` must stay as a buffered-stage contract for QML even after the sync split.
 - Binding a new content view-model must also rebind the current selected note into the sync controller so note-path
   resolution remains valid after model replacement.
-- QML must still be able to request an explicit async flush through `flushEditorTextForNote(...)` when the editor leaves
-  the current note.
+- QML must still be able to request a best-effort immediate fetch through `flushEditorTextForNote(...)` when the editor
+  lifecycle is ending, but ordinary note switches must not depend on that path.

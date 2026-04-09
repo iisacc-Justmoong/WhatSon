@@ -1,14 +1,15 @@
 # `src/app/file/sync/ContentsEditorIdleSyncController.hpp`
 
 ## Status
-- Documentation phase: focused pass for editor idle-sync ownership.
+- Documentation phase: focused pass for editor fetch-sync ownership.
 - Detail level: interface contract and regression notes captured.
 
 ## Responsibility
 
 `ContentsEditorIdleSyncController` is the editor-facing sync boundary that lives under `file/sync`.
-It accepts hot-path body snapshots from QML, owns the asynchronous `1000ms` idle gate, and forwards actual persistence
-into the downstream note-management queue only after the editor becomes idle or explicitly flushes on note exit.
+It accepts hot-path body snapshots from QML, keeps the latest body text per note in memory, and uses a recurring
+`1000ms` fetch tick to forward the newest dirty snapshot into the downstream note-management queue.
+The live editor buffer remains authoritative; filesystem persistence is eventually consistent.
 
 ## Public Contract
 
@@ -16,39 +17,36 @@ into the downstream note-management queue only after the editor becomes idle or 
   note-management coordinator.
 - `contentPersistenceContractAvailable()` / `directPersistenceAvailable()`: expose whether the downstream persistence
   lanes are currently available.
-- `stageEditorTextForIdleSync(noteId, text)`: stores the latest editor snapshot and arms the worker-thread idle timer.
-- `flushEditorTextForNote(noteId, text)`: promotes the latest snapshot into an immediate async sync request without
-  waiting for the idle timer.
-- `persistEditorTextForNote(noteId, text)`: compatibility alias for the idle-stage path.
+- `stageEditorTextForIdleSync(noteId, text)`: stores the latest editor snapshot for that note and marks it dirty for
+  the next fetch turn even if the downstream persistence contract is temporarily unavailable.
+- `flushEditorTextForNote(noteId, text)`: compatibility path that still stores the same buffered snapshot, but also
+  asks the controller to attempt one immediate fetch-cycle enqueue when possible.
+- `persistEditorTextForNote(noteId, text)`: compatibility alias for the buffered stage path.
 - `refreshNoteSnapshotForNote(noteId)`, `bindSelectedNote(noteId)`, `clearSelectedNote()`: forward selection/session
   work to the downstream coordinator while keeping the sync boundary in `file/sync`.
-- `editorTextPersistenceQueued(...)`: emitted when the idle/flush gate has actually accepted one staged snapshot into
-  the downstream persistence queue.
+- `editorTextPersistenceQueued(...)`: emitted when one buffered snapshot actually enters the downstream persistence
+  queue.
 - `editorTextPersistenceFinished(...)`: forwarded once that queued persistence request completes.
 
 ## Internal Scheduling Notes
 
-- Idle detection is intentionally asynchronous:
-  - a dedicated worker object lives on its own `QThread`
-  - the worker owns the `1000ms` single-shot timer
-  - QML/editor code only stages snapshots and never decides idle locally
-- The private worker type is forward-declared in the header and defined with the same concrete type name in the
-  implementation file. Do not shadow that name with a second anonymous-namespace class, because Qt moc then sees two
-  incompatible `ContentsEditorIdleSyncWorker` types and the file stops compiling.
-- The controller tracks staged, idle-approved, force-flush, queued, and completed revisions separately so:
-  - repeated typing only keeps the newest staged snapshot
-  - note-exit flushes bypass the idle wait without turning file IO synchronous
-  - a newer idle-approved snapshot can queue immediately after an older write finishes
+- The controller no longer asks QML to prove that "this exact idle turn must persist now".
+- Instead it keeps:
+  - the latest buffered text per dirty note
+  - the last persisted text per note
+  - one round-robin dirty-note order list
+  - one in-flight async persistence payload
+- A fetch tick may miss one intermediate editor state without data loss:
+  - the in-memory editor/session buffer stays untouched
+  - the next fetch tick simply writes the latest buffered snapshot
 - Persistence itself remains asynchronous because actual `.wsnote` IO still runs through
   `ContentsNoteManagementCoordinator`.
 
 ## Regression Checks
 
-- Repeated keystrokes inside one second must not enqueue repeated `.wsnote` writes directly from QML.
-- Once typing stops for at least `1000ms`, the newest staged note body must be accepted into the async persistence
-  queue.
-- Leaving the current note while a body is still staged must request an async flush immediately instead of waiting for
-  another idle turn.
-- A failed persistence completion must re-arm the idle gate for the newest unsynced snapshot instead of dropping it.
-- The private idle worker type must remain a single moc-visible class definition; duplicate names across the header and
-  an anonymous namespace implementation are a compile-time regression.
+- Repeated keystrokes must only replace the buffered snapshot for that note; QML must not depend on direct file writes
+  per edit.
+- The newest dirty note snapshot must still reach the async persistence queue on a later fetch turn even if one earlier
+  fetch cycle missed it.
+- Switching notes must not depend on a synchronous or immediate-save success path before the old note buffer stays safe.
+- Failed persistence completion must keep that note dirty so a later fetch turn can retry the latest buffered text.
