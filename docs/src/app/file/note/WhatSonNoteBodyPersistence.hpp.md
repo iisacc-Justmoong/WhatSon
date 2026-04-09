@@ -9,13 +9,18 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - `normalizeBodyPlainText(...)` only normalizes line endings. It must not trim lines or collapse whitespace.
 - `serializeBodyDocument(...)` is now the canonical `.wsnbody` writer entry. It accepts editor source text
   (plain text, inline `.wsnbody` tags, or Qt Rich HTML) and emits normalized `<paragraph>` XML with
-  canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`) plus normalized
+  canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `tag`) plus normalized
   self-closed `<resource ... />` tags.
+- Editor-visible inline hashtags such as `#label` are promoted into canonical body storage as
+  `<tag>label</tag>` during serialization.
+- `extractedInlineTagValues(...)` collects deduplicated inline-tag values from editor source, whether the caller
+  passes visible `#label` source text or already-canonical `<tag>label</tag>` text.
 - Markdown-presentation RichText spans are first matched through `WhatSonNoteMarkdownStyleObject`, which decides whether
   they intentionally promote into proprietary inline tags or should merely suppress generic CSS promotion.
-- `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created.
+- `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created. Stored `<tag>` nodes are projected back to visible `#label` text in that plain-text projection.
 - `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
-  layer (`<bold>...</bold>`, `<italic>...</italic>`, `<resource ... />`).
+  layer. Style/resource tags stay in proprietary inline-tag form, while stored `<tag>label</tag>` nodes project back
+  to editor-visible `#label`.
 - `richTextFromBodyDocument(...)` extracts a rich-text projection from `.wsnbody` and maps inline style tags
   (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `mark`) to RichText HTML (styled `span` tags).
 - `firstLineFromBodyDocument(...)` derives preview text from the first logical XML line, including leading inline text that appears before the first paragraph block.
@@ -31,3 +36,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - Rich-text scaffolding from Qt (`<!DOCTYPE HTML ...><html>...`) must never leak into logical note content or
   first-line indexing.
 - Unordered-list display glyph recovery is intentionally canonicalized to the single source marker `-`.
+- Inline hashtag storage must round-trip as:
+  - editor/source text: `#label`
+  - `.wsnbody` canonical storage: `<tag>label</tag>`
+  - plain-text/rich-text read projection: visible `#label`

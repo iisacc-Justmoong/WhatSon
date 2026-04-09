@@ -14,6 +14,7 @@ namespace
     constexpr auto kApplyPersistedBodyStateForNoteSignature =
         "applyPersistedBodyStateForNote(QString,QString,QString,QString)";
     constexpr auto kNoteDirectoryPathForNoteIdSignature = "noteDirectoryPathForNoteId(QString)";
+    constexpr auto kRequestViewModelHookSignature = "requestViewModelHook()";
     constexpr auto kReloadNoteMetadataForNoteIdSignature = "reloadNoteMetadataForNoteId(QString)";
     constexpr auto kSaveBodyTextForNoteSignature = "saveBodyTextForNote(QString,QString)";
     constexpr auto kSaveCurrentBodyTextSignature = "saveCurrentBodyText(QString)";
@@ -580,9 +581,20 @@ void ContentsNoteManagementCoordinator::handleRequestFinished(const Result& resu
                 m_boundNoteDirectoryPath = persistedDirectoryPath;
             }
 
-            if (!applyPersistedBodyStateToContentViewModel(result.noteId, result.persistedDocument))
+            const bool appliedToContentViewModel = applyPersistedBodyStateToContentViewModel(
+                result.noteId,
+                result.persistedDocument);
+            if (!appliedToContentViewModel)
             {
                 reloadNoteMetadataForNote(result.noteId);
+                if (m_contentViewModel != nullptr
+                    && hasInvokableMethod(m_contentViewModel, kRequestViewModelHookSignature))
+                {
+                    QMetaObject::invokeMethod(
+                        m_contentViewModel,
+                        "requestViewModelHook",
+                        Qt::QueuedConnection);
+                }
             }
 
             const QString statsDirectoryPath =

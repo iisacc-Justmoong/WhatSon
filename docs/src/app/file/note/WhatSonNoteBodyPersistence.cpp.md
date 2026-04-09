@@ -12,9 +12,15 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - plain text with newlines
   - inline `.wsnbody` style/resource tags
   - Qt Rich HTML fragments/documents
+- During that write-side normalization, visible inline hashtags such as `#label` are promoted into canonical body tags
+  as `<tag>label</tag>`.
 - `plainTextFromBodyDocument(...)` parses the `.wsnbody` XML with `QXmlStreamReader` and treats paragraph-like block elements as explicit text lines.
 - `sourceTextFromBodyDocument(...)` is the canonical read-side source extractor. It converts `.wsnbody` back into
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
+  Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
+  user keeps editing the hashtag they originally typed instead of raw XML.
+- `extractedInlineTagValues(...)` canonicalizes incoming editor text and extracts deduplicated body-tag payloads for
+  `.wsnhead` and `Tags.wstags` synchronization.
 - The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
   (`<body>\n  </body>`) no longer rehydrate as a leading blank line in the editor.
 - `richTextFromBodyDocument(...)` uses the same parser pipeline and emits HTML-ready lines (`<br/>` joins), mapping inline style aliases to explicit span styling:
@@ -33,6 +39,8 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 - `firstLineFromBodyDocument(...)` preserves leading inline title text even when the visible plain-text summary is driven by later paragraph blocks.
 - Empty paragraphs are emitted as empty lines instead of being dropped, including leading/trailing empty paragraphs the user intentionally created.
 - Whitespace-only paragraphs are preserved exactly as stored; the persistence layer no longer trims outer whitespace-only lines during read/normalization.
+- Stored `<tag>` nodes contribute a literal leading `#` in plain-text and rich-text projections, so previews and
+  first-line extraction stay aligned with the editor-visible source.
 - This whitespace filter applies only to top-level formatting whitespace around body markup. It must not strip
   whitespace that belongs to actual paragraph/block content.
 - `persistBodyPlainText(...)` now canonicalizes incoming editor text through `serializeBodyDocument(...)` before no-op comparison, then returns:
@@ -48,8 +56,12 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
 Before this change, RichText scaffolding could leak into the logical note body (`<!DOCTYPE HTML ...>` becoming first-line text). Canonicalizing through the `.wsnbody` serializer keeps parser/index behavior stable and preserves formatted editing semantics.
 The same rule now prevents empty-note body indentation from surfacing as a phantom first blank line during note
 creation.
+The hashtag projection rule also keeps note text human-readable after save: storage uses `<tag>`, but the editor and
+text projections still show `#label`.
 
 ## Regression Notes
 - Empty-note `<body>` whitespace handling is now a documented behavior contract only; this repository no longer
   maintains a dedicated scripted test for it.
 - Editor autosave must not inflate `fileStat.modifiedCount` while the user types.
+- Body hashtags must survive a full save/load round-trip as visible `#label` text while still persisting as canonical
+  `<tag>` nodes inside `.wsnbody`.

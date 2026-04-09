@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QSet>
 #include <QVector>
 #include <QXmlStreamReader>
 
@@ -260,6 +261,121 @@ namespace
         return token.endsWith(QStringLiteral("/>"));
     }
 
+    bool isTagElementName(const QString& elementName)
+    {
+        return elementName.trimmed().compare(QStringLiteral("tag"), Qt::CaseInsensitive) == 0;
+    }
+
+    bool isInlineHashtagBoundary(const QString& text, const qsizetype index)
+    {
+        if (index <= 0 || index > text.size())
+        {
+            return true;
+        }
+
+        const QChar previous = text.at(index - 1);
+        return !previous.isLetterOrNumber()
+            && previous != QLatin1Char('_')
+            && previous != QLatin1Char('/')
+            && previous != QLatin1Char('#')
+            && previous != QLatin1Char('&');
+    }
+
+    bool isInlineHashtagStopCharacter(const QChar ch)
+    {
+        return ch.isSpace()
+            || ch == QLatin1Char('<')
+            || ch == QLatin1Char('>')
+            || ch == QLatin1Char('&')
+            || ch == QLatin1Char('#')
+            || ch == QLatin1Char('"')
+            || ch == QLatin1Char('\'');
+    }
+
+    bool isInlineHashtagTrailingPunctuation(const QChar ch)
+    {
+        switch (ch.unicode())
+        {
+        case '.':
+        case ',':
+        case ':':
+        case ';':
+        case '!':
+        case '?':
+        case ')':
+        case ']':
+        case '}':
+        case '>':
+        case '"':
+        case '\'':
+        case 0x3001:
+        case 0x3002:
+        case 0xFF0C:
+        case 0xFF01:
+        case 0xFF1F:
+        case 0x300D:
+        case 0x300F:
+        case 0x3011:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    void appendInlineHashtagTaggedText(QString* output, const QString& textSegment)
+    {
+        if (output == nullptr || textSegment.isEmpty())
+        {
+            return;
+        }
+
+        qsizetype cursor = 0;
+        while (cursor < textSegment.size())
+        {
+            if (textSegment.at(cursor) != QLatin1Char('#')
+                || !isInlineHashtagBoundary(textSegment, cursor)
+                || cursor + 1 >= textSegment.size()
+                || isInlineHashtagStopCharacter(textSegment.at(cursor + 1)))
+            {
+                *output += textSegment.at(cursor);
+                ++cursor;
+                continue;
+            }
+
+            const qsizetype tokenStart = cursor + 1;
+            qsizetype tokenEnd = tokenStart;
+            while (tokenEnd < textSegment.size()
+                   && !isInlineHashtagStopCharacter(textSegment.at(tokenEnd)))
+            {
+                ++tokenEnd;
+            }
+
+            qsizetype trimmedTokenEnd = tokenEnd;
+            while (trimmedTokenEnd > tokenStart
+                   && isInlineHashtagTrailingPunctuation(textSegment.at(trimmedTokenEnd - 1)))
+            {
+                --trimmedTokenEnd;
+            }
+
+            if (trimmedTokenEnd <= tokenStart)
+            {
+                *output += QLatin1Char('#');
+                ++cursor;
+                continue;
+            }
+
+            *output += QStringLiteral("<tag>");
+            *output += textSegment.mid(tokenStart, trimmedTokenEnd - tokenStart);
+            *output += QStringLiteral("</tag>");
+
+            if (trimmedTokenEnd < tokenEnd)
+            {
+                *output += textSegment.mid(trimmedTokenEnd, tokenEnd - trimmedTokenEnd);
+            }
+            cursor = tokenEnd;
+        }
+    }
+
     void closeMatchingInlineStyleTag(
         QString* output,
         QStringList* openStyleTags,
@@ -365,6 +481,62 @@ namespace
         return tags;
     }
 
+    QString editorSourceTextFromCanonicalInlineTaggedText(const QString& canonicalSourceText)
+    {
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(
+            canonicalSourceText);
+        if (normalizedSourceText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*/?\s*([A-Za-z_][A-Za-z0-9_.:-]*)\b[^>]*>)"));
+
+        QString output;
+        qsizetype cursor = 0;
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(normalizedSourceText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype tagStart = match.capturedStart(0);
+            const qsizetype tagEnd = match.capturedEnd(0);
+            if (tagStart < 0 || tagEnd <= tagStart)
+            {
+                continue;
+            }
+
+            if (tagStart > cursor)
+            {
+                output += decodeXmlEntities(normalizedSourceText.mid(cursor, tagStart - cursor));
+            }
+
+            const QString fullTagToken = match.captured(0);
+            const QString rawTagName = match.captured(1);
+            const bool closingTag = isClosingTagToken(fullTagToken);
+            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
+            if (isTagElementName(rawTagName))
+            {
+                if (!closingTag && !selfClosingTag)
+                {
+                    output += QLatin1Char('#');
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            output += fullTagToken;
+            cursor = tagEnd;
+        }
+
+        if (cursor < normalizedSourceText.size())
+        {
+            output += decodeXmlEntities(normalizedSourceText.mid(cursor));
+        }
+
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
+    }
+
     QString cssStyleAttributeFromTagToken(const QString& tagToken)
     {
         static const QRegularExpression stylePattern(
@@ -428,7 +600,9 @@ namespace
 
             if (insideBody && tagStart > cursor)
             {
-                output += decodeXmlEntities(normalizedSource.mid(cursor, tagStart - cursor));
+                appendInlineHashtagTaggedText(
+                    &output,
+                    decodeXmlEntities(normalizedSource.mid(cursor, tagStart - cursor)));
             }
 
             const QString fullTagToken = match.captured(0);
@@ -535,7 +709,7 @@ namespace
 
         if (insideBody && cursor < normalizedSource.size())
         {
-            output += decodeXmlEntities(normalizedSource.mid(cursor));
+            appendInlineHashtagTaggedText(&output, decodeXmlEntities(normalizedSource.mid(cursor)));
         }
 
         while (!spanStyleStack.isEmpty())
@@ -600,6 +774,20 @@ namespace
             if (normalizedTagName == QStringLiteral("br"))
             {
                 output += QStringLiteral("<br/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isTagElementName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</tag>");
+                }
+                else if (!selfClosingTag)
+                {
+                    output += QStringLiteral("<tag>");
+                }
                 cursor = tagEnd;
                 continue;
             }
@@ -696,6 +884,21 @@ namespace
 
                 if (elementName.compare(QStringLiteral("resource"), Qt::CaseInsensitive) == 0)
                 {
+                    continue;
+                }
+
+                if (isTagElementName(elementName))
+                {
+                    if (blockDepth > 0)
+                    {
+                        currentBlockText += QLatin1Char('#');
+                        currentBlockRichText += QLatin1Char('#');
+                    }
+                    else if (!encounteredBlockElement)
+                    {
+                        fragments.fallbackText += QLatin1Char('#');
+                        fragments.fallbackRichText += QLatin1Char('#');
+                    }
                     continue;
                 }
 
@@ -858,6 +1061,43 @@ namespace WhatSon::NoteBodyPersistence
         return text;
     }
 
+    QStringList extractedInlineTagValues(const QString& bodySourceText)
+    {
+        const QString canonicalInlineTaggedText = normalizeEditorSourceToInlineTaggedText(bodySourceText);
+        if (canonicalInlineTaggedText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression tagPattern(
+            QStringLiteral(R"(<\s*tag\b[^>]*>(.*?)<\s*/\s*tag\s*>)"),
+            QRegularExpression::CaseInsensitiveOption | QRegularExpression::DotMatchesEverythingOption);
+
+        QStringList extractedTags;
+        QSet<QString> seenTags;
+        QRegularExpressionMatchIterator iterator = tagPattern.globalMatch(canonicalInlineTaggedText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const QString tagValue = normalizeBodyPlainText(decodeXmlEntities(match.captured(1))).trimmed();
+            if (tagValue.isEmpty())
+            {
+                continue;
+            }
+
+            const QString normalizedTagKey = tagValue.toCaseFolded();
+            if (seenTags.contains(normalizedTagKey))
+            {
+                continue;
+            }
+
+            seenTags.insert(normalizedTagKey);
+            extractedTags.push_back(tagValue);
+        }
+
+        return extractedTags;
+    }
+
     QString plainTextFromBodyDocument(const QString& bodyDocumentText)
     {
         const BodyDocumentTextFragments fragments = parseBodyDocumentTextFragments(bodyDocumentText);
@@ -870,7 +1110,8 @@ namespace WhatSon::NoteBodyPersistence
 
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
     {
-        return normalizeEditorSourceToInlineTaggedText(bodyDocumentText);
+        return editorSourceTextFromCanonicalInlineTaggedText(
+            normalizeEditorSourceToInlineTaggedText(bodyDocumentText));
     }
 
     QString richTextFromBodyDocument(const QString& bodyDocumentText)

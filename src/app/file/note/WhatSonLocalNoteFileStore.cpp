@@ -5,6 +5,8 @@
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "WhatSonNoteHeaderParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
+#include "file/hierarchy/tags/WhatSonTagsHierarchyParser.hpp"
+#include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -188,6 +190,174 @@ namespace
             return QUrl::fromLocalFile(QDir::cleanPath(resourceUrl.toLocalFile())).toString();
         }
         return {};
+    }
+
+    QString normalizedTagKey(const QString& tag)
+    {
+        return tag.trimmed().toCaseFolded();
+    }
+
+    QStringList mergeTagsPreservingOrder(const QStringList& existingTags, const QStringList& additionalTags)
+    {
+        QStringList mergedTags;
+        mergedTags.reserve(existingTags.size() + additionalTags.size());
+
+        QSet<QString> seenTags;
+        seenTags.reserve(existingTags.size() + additionalTags.size());
+
+        const auto appendTag = [&mergedTags, &seenTags](const QString& rawTag)
+        {
+            const QString trimmedTag = rawTag.trimmed();
+            const QString tagKey = normalizedTagKey(trimmedTag);
+            if (trimmedTag.isEmpty() || seenTags.contains(tagKey))
+            {
+                return;
+            }
+
+            seenTags.insert(tagKey);
+            mergedTags.push_back(trimmedTag);
+        };
+
+        for (const QString& existingTag : existingTags)
+        {
+            appendTag(existingTag);
+        }
+        for (const QString& additionalTag : additionalTags)
+        {
+            appendTag(additionalTag);
+        }
+
+        return mergedTags;
+    }
+
+    QString resolveTagsFilePathForNoteDirectory(const QString& noteDirectoryPath)
+    {
+        const QString contentsDirectoryPath = findAncestorDirectoryWithSuffix(
+            noteDirectoryPath,
+            QStringLiteral(".wscontents"));
+        if (contentsDirectoryPath.isEmpty())
+        {
+            return {};
+        }
+
+        return QDir(contentsDirectoryPath).filePath(QStringLiteral("Tags.wstags"));
+    }
+
+    bool ensureTagsHierarchyContainsTags(
+        const QString& noteDirectoryPath,
+        const QStringList& tags,
+        QString* errorMessage)
+    {
+        QStringList requestedTags;
+        requestedTags.reserve(tags.size());
+
+        QSet<QString> requestedTagKeys;
+        requestedTagKeys.reserve(tags.size());
+        for (const QString& rawTag : tags)
+        {
+            const QString trimmedTag = rawTag.trimmed();
+            const QString tagKey = normalizedTagKey(trimmedTag);
+            if (trimmedTag.isEmpty() || requestedTagKeys.contains(tagKey))
+            {
+                continue;
+            }
+
+            requestedTagKeys.insert(tagKey);
+            requestedTags.push_back(trimmedTag);
+        }
+
+        if (requestedTags.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        }
+
+        const QString tagsFilePath = resolveTagsFilePathForNoteDirectory(noteDirectoryPath);
+        if (tagsFilePath.isEmpty())
+        {
+            if (errorMessage != nullptr)
+            {
+                *errorMessage = QStringLiteral(
+                    "Failed to resolve Tags.wstags path from note directory: %1").arg(noteDirectoryPath);
+            }
+            return false;
+        }
+
+        WhatSonTagsHierarchyStore hierarchyStore;
+        if (QFileInfo(tagsFilePath).isFile())
+        {
+            QString rawTagsText;
+            QString readError;
+            if (!WhatSonSystemIoGateway().readUtf8File(tagsFilePath, &rawTagsText, &readError))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = readError;
+                }
+                return false;
+            }
+
+            WhatSonTagsHierarchyParser parser;
+            QString parseError;
+            if (!parser.parse(rawTagsText, &hierarchyStore, &parseError))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = parseError;
+                }
+                return false;
+            }
+        }
+
+        QVector<WhatSonTagDepthEntry> stagedEntries = hierarchyStore.tagEntries();
+        QSet<QString> existingTagKeys;
+        existingTagKeys.reserve(stagedEntries.size() * 2);
+        for (const WhatSonTagDepthEntry& entry : stagedEntries)
+        {
+            const QString idKey = normalizedTagKey(entry.id);
+            const QString labelKey = normalizedTagKey(entry.label);
+            if (!idKey.isEmpty())
+            {
+                existingTagKeys.insert(idKey);
+            }
+            if (!labelKey.isEmpty())
+            {
+                existingTagKeys.insert(labelKey);
+            }
+        }
+
+        bool changed = false;
+        for (const QString& requestedTag : requestedTags)
+        {
+            const QString requestedTagKey = normalizedTagKey(requestedTag);
+            if (existingTagKeys.contains(requestedTagKey))
+            {
+                continue;
+            }
+
+            WhatSonTagDepthEntry entry;
+            entry.id = requestedTag;
+            entry.label = requestedTag;
+            entry.depth = 0;
+            stagedEntries.push_back(entry);
+            existingTagKeys.insert(requestedTagKey);
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            if (errorMessage != nullptr)
+            {
+                errorMessage->clear();
+            }
+            return true;
+        }
+
+        hierarchyStore.setTagEntries(std::move(stagedEntries));
+        return hierarchyStore.writeToFile(tagsFilePath, errorMessage);
     }
 } // namespace
 
@@ -783,6 +953,27 @@ bool WhatSonLocalNoteFileStore::updateNote(
         request.document.bodySourceText = request.document.bodyPlainText;
     }
     request.document.bodyFirstLine = WhatSon::NoteBodyPersistence::firstLineFromBodyPlainText(request.document.bodyPlainText);
+
+    if (persistBody)
+    {
+        const QStringList inlineTags = WhatSon::NoteBodyPersistence::extractedInlineTagValues(
+            request.document.bodySourceText);
+        if (!inlineTags.isEmpty())
+        {
+            request.document.headerStore.setTags(
+                mergeTagsPreservingOrder(request.document.headerStore.tags(), inlineTags));
+
+            QString tagsMutationError;
+            if (!ensureTagsHierarchyContainsTags(noteDirectoryPath, inlineTags, &tagsMutationError))
+            {
+                if (errorMessage != nullptr)
+                {
+                    *errorMessage = tagsMutationError;
+                }
+                return false;
+            }
+        }
+    }
 
     QString bodySourceTextForStats = request.document.bodySourceText;
     if (bodySourceTextForStats.isEmpty() && !bodyDocumentForStats.isEmpty())

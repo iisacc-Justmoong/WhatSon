@@ -1,11 +1,13 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 namespace WhatSon::NoteBodyPersistence
 {
     QString normalizeBodyPlainText(QString text);
     QString serializeBodyDocument(const QString& noteId, const QString& bodySourceText);
+    QStringList extractedInlineTagValues(const QString& bodySourceText);
     QString plainTextFromBodyDocument(const QString& bodyDocumentText);
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText);
     QString richTextFromBodyDocument(const QString& bodyDocumentText);

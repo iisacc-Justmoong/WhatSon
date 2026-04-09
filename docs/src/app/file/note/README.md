@@ -67,6 +67,10 @@
   scripted test for it.
 - Empty-note body parsing now strips formatting-only `<body>` indentation so a newly created note opens on the first
   editable line instead of showing a phantom leading blank line.
+- Body-save normalization now also owns inline hashtag promotion:
+  - editor-visible `#label` source persists into `.wsnbody` as `<tag>label</tag>`
+  - the same save transaction unions that tag into `.wsnhead`
+  - new tags are inserted into `Tags.wstags` so the tags hierarchy can reload them as first-class entries
 
 
 ## Intended Detailed Sections

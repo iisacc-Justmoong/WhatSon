@@ -33,6 +33,9 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - `updateNote(...)` now canonicalizes body writes through `WhatSon::NoteBodyPersistence::serializeBodyDocument(...)`.
 - This allows RichText editor payloads to be accepted while still writing canonical `.wsnbody` inline tags.
 - During update, the store keeps `bodyPlainText` and `bodySourceText` synchronized from the serialized body so viewmodel/list binding and search/index projections do not drift.
+- Body writes now also extract inline body hashtags from the editor-visible source, merge those values into the note
+  header tag list, and ensure `Tags.wstags` contains matching hierarchy entries for any new tags by parsing and
+  rewriting the tracked tags hierarchy file in the same transaction.
 - Before persisting `.wsnhead`, the store now also recalculates the note-local `fileStat` block from
   the current header/body state.
 - Body writes force a header write as well, because the body-derived counters live in `.wsnhead`.
@@ -59,3 +62,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
   - editor body autosave must not increment `modifiedCount`; only update requests that explicitly opt in may advance that counter.
   - editor hot-path writes that disable backlink refresh must still rewrite the current note's normalized body text,
     header timestamp, and non-hub-derived counters
+  - a saved body hashtag such as `#label` must materialize in three places together:
+    - `.wsnbody` as `<tag>label</tag>`
+    - `.wsnhead` inside the note tag list
+    - `Tags.wstags` as a hierarchy entry when the tag is new to the hub

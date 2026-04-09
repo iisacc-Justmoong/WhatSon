@@ -16,6 +16,10 @@
   - post-persist runtime mirror/update hooks back into the bound content view-model
 - Successful direct persistence first updates the editable runtime note snapshot through
   `applyPersistedBodyStateForNote(...)`, then queues tracked-stat refresh as a separate follow-up request.
+- When the bound hierarchy view-model does not expose `applyPersistedBodyStateForNote(...)` but does expose
+  `requestViewModelHook()`, the coordinator now queues that hook after a successful direct body write. This lets
+  fallback-driven hierarchy screens such as Tags re-read freshly mutated hierarchy files (`Tags.wstags`) after inline
+  hashtag promotion.
 - Successful tracked-stat refresh then asks the content view-model to reload that note's metadata snapshot.
 - The fallback persistence lane, when used, is also deferred behind the coordinator queue so the editor hot path still
   only observes enqueue acceptance rather than immediate management work.
@@ -37,3 +41,5 @@
 - A failed tracked-stat refresh or open-count update must not break the editor save completion signal for the body write
   that already finished.
 - Destroying the bound content view-model during an in-flight request must not crash queued completion handling.
+- Fallback/direct body persistence for a Tags-selected note must still cause the active tags hierarchy view-model to
+  re-read `Tags.wstags`, so newly promoted `#label` tags appear in the hierarchy without a manual app restart.
