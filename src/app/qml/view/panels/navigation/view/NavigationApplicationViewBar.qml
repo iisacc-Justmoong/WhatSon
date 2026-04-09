@@ -49,7 +49,7 @@ Item {
             },
             {
                 "label": "Center View",
-                "iconName": "singleRecordView",
+                "iconName": "recursiveMethod",
                 "onTriggered": function () {
                     applicationViewBar.requestViewHook("view-option-center-view");
                 },
@@ -275,6 +275,8 @@ Item {
                 }
             }
             LV.IconButton {
+                id: detailPanelControlButton
+
                 horizontalPadding: LV.Theme.gap2
                 iconName: "columnIndex"
                 rotation: 180

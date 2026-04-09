@@ -32,6 +32,26 @@ namespace
 
         return -1;
     }
+
+    int indexOfTag(const WhatSonNoteHeaderStore& header, const QString& tag)
+    {
+        const QString targetKey = tag.trimmed().toCaseFolded();
+        if (targetKey.isEmpty())
+        {
+            return -1;
+        }
+
+        const QStringList tags = header.tags();
+        for (int index = 0; index < tags.size(); ++index)
+        {
+            if (tags.at(index).trimmed().toCaseFolded() == targetKey)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
 }
 
 DetailPanelViewModel::DetailPanelViewModel(QObject* parent)
@@ -253,6 +273,11 @@ void DetailPanelViewModel::setProgressSelectionSourceViewModel(QObject* sourceVi
     m_progressSelectionSourceViewModel.setOptionsSourceViewModel(sourceViewModel);
 }
 
+void DetailPanelViewModel::setTagsSourceViewModel(QObject* sourceViewModel)
+{
+    m_tagsSourceViewModel = sourceViewModel;
+}
+
 void DetailPanelViewModel::setCurrentNoteListModel(QObject* noteListModel)
 {
     m_currentNoteContextBridge.setNoteListModel(noteListModel);
@@ -322,6 +347,37 @@ bool DetailPanelViewModel::assignFolderByName(const QString& folderPath)
     if (activeFolderIndex >= 0)
     {
         m_propertiesViewModel.setActiveFolderIndex(activeFolderIndex);
+    }
+    synchronizeCurrentNoteMetadataConsumers(noteId);
+    return true;
+}
+
+bool DetailPanelViewModel::assignTagByName(const QString& tag)
+{
+    QString errorMessage;
+    if (!ensureCurrentHeaderLoaded(&errorMessage))
+    {
+        return false;
+    }
+
+    const QString normalizedTag = tag.trimmed();
+    if (normalizedTag.isEmpty())
+    {
+        return false;
+    }
+
+    const QString noteId = currentNoteId();
+    if (!m_noteHeaderSessionStore.assignTag(noteId, normalizedTag, &errorMessage))
+    {
+        return false;
+    }
+
+    const WhatSonNoteHeaderStore header = m_noteHeaderSessionStore.header(noteId);
+    m_propertiesViewModel.applyHeader(header);
+    const int activeTagIndex = indexOfTag(header, normalizedTag);
+    if (activeTagIndex >= 0)
+    {
+        m_propertiesViewModel.setActiveTagIndex(activeTagIndex);
     }
     synchronizeCurrentNoteMetadataConsumers(noteId);
     return true;
@@ -567,4 +623,5 @@ void DetailPanelViewModel::synchronizeCurrentNoteMetadataConsumers(const QString
     synchronizeConsumer(m_projectSelectionSourceViewModel.optionsSourceViewModel());
     synchronizeConsumer(m_bookmarkSelectionSourceViewModel.optionsSourceViewModel());
     synchronizeConsumer(m_progressSelectionSourceViewModel.optionsSourceViewModel());
+    synchronizeConsumer(m_tagsSourceViewModel);
 }

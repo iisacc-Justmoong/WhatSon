@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QSet>
 
 namespace
 {
@@ -227,6 +228,61 @@ bool WhatSonNoteHeaderSessionStore::assignFolderBinding(
     }
 
     existing->header.setFolderBindings(nextBindings.folders, nextBindings.folderUuids);
+    existing->dirty = true;
+    const bool saved = persistEntry(*existing, errorMessage);
+    if (saved)
+    {
+        emit entryChanged(existing->noteId);
+    }
+    return saved;
+}
+
+bool WhatSonNoteHeaderSessionStore::assignTag(
+    const QString& noteId,
+    const QString& tag,
+    QString* errorMessage)
+{
+    Entry* existing = findEntry(noteId);
+    if (existing == nullptr || !existing->loaded)
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Note header session is not loaded.");
+        }
+        return false;
+    }
+
+    const QString normalizedTag = tag.trimmed();
+    if (normalizedTag.isEmpty())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = QStringLiteral("Tag value is empty.");
+        }
+        return false;
+    }
+
+    QStringList tags = existing->header.tags();
+    QSet<QString> seenTags;
+    seenTags.reserve(tags.size());
+
+    for (const QString& existingTag : tags)
+    {
+        seenTags.insert(existingTag.trimmed().toCaseFolded());
+    }
+
+    const QString normalizedTagKey = normalizedTag.toCaseFolded();
+    if (seenTags.contains(normalizedTagKey))
+    {
+        if (errorMessage != nullptr)
+        {
+            errorMessage->clear();
+        }
+        return true;
+    }
+
+    tags.push_back(normalizedTag);
+    existing->header.setTags(std::move(tags));
     existing->dirty = true;
     const bool saved = persistEntry(*existing, errorMessage);
     if (saved)

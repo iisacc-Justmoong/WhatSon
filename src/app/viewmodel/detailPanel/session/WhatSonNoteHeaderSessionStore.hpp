@@ -35,6 +35,10 @@ public:
         const QString& folderPath,
         const QString& folderUuid,
         QString* errorMessage = nullptr) override;
+    bool assignTag(
+        const QString& noteId,
+        const QString& tag,
+        QString* errorMessage = nullptr) override;
     bool removeFolderAt(const QString& noteId, int index, QString* errorMessage = nullptr) override;
     bool removeTagAt(const QString& noteId, int index, QString* errorMessage = nullptr) override;
 

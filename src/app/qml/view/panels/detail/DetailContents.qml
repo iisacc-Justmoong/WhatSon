@@ -18,6 +18,8 @@ Item {
     property var progressSelectionViewModel: null
     property bool folderCreationEditing: false
     property string folderCreationText: ""
+    property string metadataPickerKind: ""
+    property var metadataPickerAnchorItem: null
     readonly property int activeFolderIndex: detailContents.resolveMetadataActiveIndex(
                                                  detailContents.activeContentViewModel ? detailContents.activeContentViewModel.activeFolderIndex : -1,
                                                  detailContents.folderItems)
@@ -26,6 +28,15 @@ Item {
                                               detailContents.tagItems)
     readonly property var folderItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.folderItems : [])
     readonly property var panelViewModel: panelViewModelRegistry ? panelViewModelRegistry.panelViewModel("detail.DetailContents") : null
+    readonly property var registeredViewModelKeys: LV.ViewModels.keys
+    readonly property var libraryHierarchySourceViewModel: {
+        const _ = detailContents.registeredViewModelKeys;
+        return LV.ViewModels.get("libraryHierarchyViewModel");
+    }
+    readonly property var tagsHierarchySourceViewModel: {
+        const _ = detailContents.registeredViewModelKeys;
+        return LV.ViewModels.get("tagsHierarchyViewModel");
+    }
     readonly property var projectMenuItems: detailContents.resolveHierarchyMenuItems(detailContents.projectSelectionViewModel)
     readonly property int projectMenuSelectedIndex: detailContents.resolveHierarchyMenuSelectedIndex(detailContents.projectSelectionViewModel)
     readonly property string resolvedProjectSelectionText: detailContents.resolveHierarchySelectionText(detailContents.projectSelectionViewModel, "No project")
@@ -52,6 +63,8 @@ Item {
     readonly property int scaledInlineInputLeadingInset: Math.max(0, Math.round(LV.Theme.scaleMetric(25)))
     readonly property int scaledPlaceholderCardHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(72)))
     readonly property var tagItems: detailContents.resolveHeaderStringList(detailContents.activeContentViewModel ? detailContents.activeContentViewModel.tagItems : [])
+    readonly property var metadataPickerItems: detailContents.resolveMetadataPickerItems(detailContents.metadataPickerKind)
+    readonly property bool metadataPickerManualFallbackEnabled: detailContents.metadataPickerKind === "folders"
 
     signal viewHookRequested
 
@@ -162,6 +175,59 @@ Item {
             return Array.prototype.slice.call(values);
         return [];
     }
+    function sourceHierarchyViewModelForListKind(listKind) {
+        if (listKind === "folders")
+            return detailContents.libraryHierarchySourceViewModel;
+        if (listKind === "tags")
+            return detailContents.tagsHierarchySourceViewModel;
+        return null;
+    }
+    function fallbackHierarchyIconNameForListKind(listKind) {
+        return listKind === "tags" ? "vcscurrentBranch" : "nodesfolder";
+    }
+    function resolveMetadataPickerItems(listKind) {
+        const normalizedKind = listKind === undefined || listKind === null ? "" : String(listKind).trim();
+        const sourceViewModel = detailContents.sourceHierarchyViewModelForListKind(normalizedKind);
+        const sourceEntries = detailContents.hierarchyEntries(sourceViewModel);
+        const resolvedItems = [];
+
+        for (let index = 0; index < sourceEntries.length; ++index) {
+            const entry = sourceEntries[index];
+            if (!entry)
+                continue;
+
+            const key = entry.key !== undefined && entry.key !== null ? String(entry.key).trim() : "";
+            if (normalizedKind === "folders" && key.startsWith("bucket:"))
+                continue;
+
+            const label = entry.label !== undefined && entry.label !== null ? String(entry.label).trim() : "";
+            const id = entry.id !== undefined && entry.id !== null ? String(entry.id).trim() : "";
+            if (label.length === 0 || (normalizedKind === "folders" && id.length === 0))
+                continue;
+
+            resolvedItems.push({
+                                   accent: entry.accent === true,
+                                   count: entry.count !== undefined ? Number(entry.count) || 0 : 0,
+                                   depth: entry.depth !== undefined ? Number(entry.depth) || 0 : 0,
+                                   expanded: true,
+                                   iconName: entry.iconName !== undefined && entry.iconName !== null && String(entry.iconName).trim().length > 0
+                                       ? String(entry.iconName).trim()
+                                       : detailContents.fallbackHierarchyIconNameForListKind(normalizedKind),
+                                   iconSource: entry.iconSource !== undefined && entry.iconSource !== null
+                                       ? entry.iconSource
+                                       : "",
+                                   id: id,
+                                   itemId: resolvedItems.length,
+                                   key: key.length > 0 ? key : String(normalizedKind) + ":" + String(index),
+                                   label: label,
+                                   showChevron: false,
+                                   sourceIndex: index,
+                                   value: normalizedKind === "folders" ? id : (id.length > 0 ? id : label)
+                               });
+        }
+
+        return resolvedItems;
+    }
     function resolveMetadataActiveIndex(value, items) {
         const resolvedItems = detailContents.resolveHeaderStringList(items);
         const itemCount = resolvedItems.length;
@@ -173,6 +239,7 @@ Item {
         return normalizedValue;
     }
     function beginFolderCreation() {
+        detailContents.closeMetadataPicker();
         if (detailContents.folderCreationEditing)
             return;
         detailContents.folderCreationText = "";
@@ -204,12 +271,58 @@ Item {
         detailContents.folderCreationText = "";
         detailContents.requestViewHook("folders.add.commit");
     }
-    function requestMetadataAdd(listKind) {
-        if (listKind === "folders") {
-            detailContents.beginFolderCreation();
+    function resetMetadataPickerState() {
+        detailContents.metadataPickerKind = "";
+        detailContents.metadataPickerAnchorItem = null;
+    }
+    function closeMetadataPicker() {
+        if (metadataHierarchyPicker.opened)
+            metadataHierarchyPicker.close();
+        else
+            detailContents.resetMetadataPickerState();
+    }
+    function openMetadataPicker(listKind, anchorItem) {
+        const normalizedKind = listKind === undefined || listKind === null ? "" : String(listKind).trim();
+        if (normalizedKind.length === 0)
             return;
+
+        if (detailContents.folderCreationEditing)
+            detailContents.cancelFolderCreation();
+        detailContents.metadataPickerKind = normalizedKind;
+        detailContents.metadataPickerAnchorItem = anchorItem ? anchorItem : null;
+        metadataHierarchyPicker.openForAnchor(detailContents.metadataPickerAnchorItem, normalizedKind + ".picker.open");
+    }
+    function applyMetadataPickerEntry(entry) {
+        if (!detailPanelViewModel)
+            return;
+
+        const resolvedEntry = entry || {};
+        const resolvedValue = resolvedEntry.value !== undefined && resolvedEntry.value !== null
+            ? String(resolvedEntry.value).trim()
+            : "";
+        if (resolvedValue.length === 0)
+            return;
+
+        if (detailContents.metadataPickerKind === "folders") {
+            if (detailPanelViewModel.assignFolderByName === undefined || !detailPanelViewModel.assignFolderByName(resolvedValue))
+                return;
+            detailContents.requestViewHook("folders.add.commit");
+        } else if (detailContents.metadataPickerKind === "tags") {
+            if (detailPanelViewModel.assignTagByName === undefined || !detailPanelViewModel.assignTagByName(resolvedValue))
+                return;
+            detailContents.requestViewHook("tags.add.commit");
         }
-        detailContents.requestViewHook(String(listKind) + ".add");
+
+        detailContents.closeMetadataPicker();
+    }
+    function requestMetadataManualFallback(listKind) {
+        const normalizedKind = listKind === undefined || listKind === null ? "" : String(listKind).trim();
+        if (normalizedKind !== "folders")
+            return;
+        detailContents.beginFolderCreation();
+    }
+    function requestMetadataAdd(listKind, anchorItem) {
+        detailContents.openMetadataPicker(listKind, anchorItem);
     }
     function setMetadataListActiveIndex(listKind, index) {
         if (!detailContents.activeContentViewModel)
@@ -279,8 +392,10 @@ Item {
     state: detailContents.resolvedActiveStateName
 
     onResolvedActiveStateNameChanged: {
-        if (detailContents.resolvedActiveStateName !== "properties")
+        if (detailContents.resolvedActiveStateName !== "properties") {
+            detailContents.closeMetadataPicker();
             detailContents.cancelFolderCreation();
+        }
     }
 
     component DetailSectionTitle: LV.Label {
@@ -610,7 +725,7 @@ Item {
                             enabled: listSection.addEnabled,
                             horizontalPadding: detailContents.scaledGap2,
                             onClicked: function () {
-                                detailContents.requestMetadataAdd(listSection.footerActionPrefix);
+                                detailContents.requestMetadataAdd(listSection.footerActionPrefix, listFooter);
                             },
                             verticalPadding: detailContents.scaledGap2
                         })
@@ -799,7 +914,7 @@ Item {
                 listItems: detailContents.tagItems
                 listNodeId: "155:4592"
                 listObjectName: "TagsList"
-                rowIconName: "nodesfolder"
+                rowIconName: "vcscurrentBranch"
                 titleNodeId: "155:4591"
                 titleText: "Tags"
                 width: parent.width
@@ -824,6 +939,27 @@ Item {
                     detailContents.applyHierarchySelection(detailContents.progressSelectionViewModel, index, "progress.comboSelect");
                 }
             }
+        }
+    }
+    DetailView.DetailMetadataHierarchyPicker {
+        id: metadataHierarchyPicker
+
+        emptyStateText: detailContents.metadataPickerKind === "folders"
+            ? "No existing folders are available in the library hierarchy."
+            : "No existing tags are available in the tags hierarchy."
+        hierarchyItems: detailContents.metadataPickerItems
+        manualFallbackEnabled: detailContents.metadataPickerManualFallbackEnabled
+        manualFallbackText: "Create custom folder path"
+
+        onClosed: detailContents.resetMetadataPickerState()
+        onEntryChosen: function(entry) {
+            detailContents.applyMetadataPickerEntry(entry);
+        }
+        onManualFallbackRequested: {
+            detailContents.requestMetadataManualFallback(detailContents.metadataPickerKind);
+        }
+        onViewHookRequested: function(reason) {
+            detailContents.requestViewHook(reason);
         }
     }
     DetailFileStatForm {

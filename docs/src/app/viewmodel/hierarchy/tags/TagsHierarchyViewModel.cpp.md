@@ -4,7 +4,8 @@
 
 This file implements the tag hierarchy runtime behavior. It translates parsed
 `WhatSonTagDepthEntry` records into LVRS rows, keeps the writable `WhatSonTagsHierarchyStore`
-aligned with those rows, and preserves user navigation state across runtime refreshes.
+aligned with those rows, projects `.wshub` notes into a tag-filtered `LibraryNoteListModel`, and
+preserves user navigation state across runtime refreshes.
 
 ## Runtime Refresh Contract
 
@@ -15,6 +16,8 @@ aligned with those rows, and preserves user navigation state across runtime refr
    the hierarchy model.
 3. If the hierarchy source changed, rebuild from sanitized entries but restore the previous
    selection key and all expanded row keys before syncing the model.
+4. Regardless of whether the hierarchy rows changed, re-index notes from the owning `.wshub` so the
+   tag note-list projection reflects current `.wsnhead` tags.
 
 This prevents watcher-driven runtime loads from collapsing the entire tag tree when note or header
 files change elsewhere in the hub.
@@ -31,6 +34,18 @@ as a passive notification only.
 - Parse/read failures update load-state error metadata and still emit `viewModelHookRequested()`
   so downstream hook listeners do not lose synchronization events.
 
+## Tag Note Projection
+
+- `loadFromWshub(...)` and `refreshIndexedNotesFromTagsFilePath(...)` index all notes through
+  `LibraryAll`.
+- `refreshNoteListForSelection()` builds the list bar contents from that cache by matching the
+  selected tag subtree against note header tags.
+- Subtree matching is inclusive: selecting a parent tag includes notes assigned to any descendant
+  tag id/label/path that belongs to that subtree.
+- `reloadNoteMetadataForNoteId(...)` re-reads one note document and immediately re-applies the tag
+  projection, which is what lets detail-panel tag writes show up in the Tags domain without a full
+  hub reload.
+
 ## Expansion Ownership
 
 - `setItemExpanded(...)` mutates `m_items[index].expanded` only for valid expandable rows.
@@ -40,7 +55,7 @@ as a passive notification only.
 
 ## Mutation And Store Synchronization
 
-- `setTagDepthEntries(...)` is the imperative path used by tests and non-runtime callers.
+- `setTagDepthEntries(...)` is the imperative path used by non-runtime callers.
 - `renameItem(...)`, `createFolder()`, and `deleteSelectedFolder()` mutate the store-backed entry
   list and then rebuild/sync the row model.
 - `syncStore()` persists the current tag depth entries into `WhatSonTagsHierarchyStore`.
@@ -51,10 +66,11 @@ as a passive notification only.
 
 - Empty or malformed depth values are normalized before row creation.
 - Expansion and selection are keyed by stable tag identity rather than by row index.
-- A successful snapshot reload may refresh load-state metadata without forcing a visual reset.
+- A successful snapshot reload may refresh both note metadata and load-state metadata without
+  forcing a visual reset.
 
 ## Count Role Compatibility
 
-`depthItems()` now includes a numeric `count` role for every tag row. Because this viewmodel does
-not currently index note-to-tag membership, the emitted value is `0` as a schema-stability
-fallback for the shared hierarchy view.
+`depthItems()` still includes a numeric `count` role for every tag row. The role remains `0`
+because note projection is now served through the dedicated `noteListModel`, not through per-row
+sidebar counters.

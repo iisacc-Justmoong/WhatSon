@@ -1,10 +1,12 @@
 #pragma once
 
+#include "file/hierarchy/library/LibraryNoteRecord.hpp"
 #include "TagsHierarchyModel.hpp"
 #include "file/hierarchy/tags/WhatSonTagDepthEntry.hpp"
 #include "file/hierarchy/tags/WhatSonTagsHierarchyStore.hpp"
 #include "viewmodel/hierarchy/IHierarchyCapabilities.hpp"
 #include "viewmodel/hierarchy/IHierarchyViewModel.hpp"
+#include "viewmodel/hierarchy/library/LibraryNoteListModel.hpp"
 
 #include <QVariantList>
 #include <QVector>
@@ -18,6 +20,7 @@ class TagsHierarchyViewModel final : public IHierarchyViewModel,
     Q_INTERFACES(IHierarchyRenameCapability IHierarchyCrudCapability IHierarchyExpansionCapability)
 
     Q_PROPERTY(TagsHierarchyModel* itemModel READ itemModel CONSTANT)
+    Q_PROPERTY(LibraryNoteListModel* noteListModel READ noteListModel CONSTANT)
     Q_PROPERTY(QVariantList hierarchyModel READ hierarchyModel NOTIFY hierarchyModelChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(int itemCount READ itemCount NOTIFY itemCountChanged)
@@ -32,6 +35,7 @@ public:
     ~TagsHierarchyViewModel() override;
 
     TagsHierarchyModel* itemModel() noexcept override;
+    LibraryNoteListModel* noteListModel() noexcept override;
 
     int selectedIndex() const noexcept override;
     Q_INVOKABLE void setSelectedIndex(int index) override;
@@ -48,6 +52,8 @@ public:
     Q_INVOKABLE bool setItemExpanded(int index, bool expanded) override;
     Q_INVOKABLE void createFolder() override;
     Q_INVOKABLE void deleteSelectedFolder() override;
+    Q_INVOKABLE QString noteDirectoryPathForNoteId(const QString& noteId) const;
+    Q_INVOKABLE bool reloadNoteMetadataForNoteId(const QString& noteId);
 
     void setTagDepthEntries(QVector<WhatSonTagDepthEntry> entries);
     QVector<WhatSonTagDepthEntry> tagDepthEntries() const;
@@ -84,6 +90,10 @@ private:
     static QVector<TagsHierarchyItem> buildItems(const QVector<WhatSonTagDepthEntry>& entries);
     static int nextFolderSequence(const QVector<WhatSonTagDepthEntry>& entries);
     bool reloadFromTagsFilePath(QString* errorMessage = nullptr);
+    LibraryNoteListItem buildNoteListItem(const LibraryNoteRecord& note) const;
+    void refreshNoteListForSelection();
+    bool refreshIndexedNotesFromWshub(const QString& wshubPath, QString* errorMessage = nullptr);
+    bool refreshIndexedNotesFromTagsFilePath(QString* errorMessage = nullptr);
     void updateItemCount();
     void updateLoadState(bool succeeded, QString errorMessage = QString());
     void syncStore();
@@ -93,6 +103,8 @@ private:
     QVector<TagsHierarchyItem> m_items;
     WhatSonTagsHierarchyStore m_store;
     TagsHierarchyModel m_itemModel;
+    LibraryNoteListModel m_noteListModel;
+    QVector<LibraryNoteRecord> m_allNotes;
     int m_selectedIndex = -1;
     int m_createdFolderSequence = 1;
     int m_itemCount = 0;

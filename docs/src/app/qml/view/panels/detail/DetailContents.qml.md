@@ -57,6 +57,9 @@ The `properties` state renders the Figma `Form` node (`155:4583`) with the exact
 - Uses `LV.ContextMenu` to present all three selector popups from shared hierarchy view-model data.
 - Uses `LV.HierarchyItem` for the compact `Folders` and `Tags` rows so each metadata entry can hold an explicit active selection state inside the small-list surface.
 - Uses `LV.ListFooter` for the `addFile` / `trash` / `settings` footer controls in the Figma small lists.
+- Uses the shared `DetailMetadataHierarchyPicker.qml` overlay to render existing Library/Tags hierarchy entries for
+  metadata-add actions; the picker is an overridden `LV.ContextMenu`, so the desktop popup and mobile sheet both keep
+  LVRS menu animation/dismissal behavior while rendering a flat `LV.HierarchyItem` list inside the menu body.
 - The `trash` control keeps the Figma logical name but pins its rendered icon source to `generaldelete`, because that is the shipped trash-can asset in LVRS.
 - Uses LVRS typography and panel tokens instead of introducing ad-hoc colors or fonts.
 
@@ -82,9 +85,23 @@ The `Projects`, `Bookmark`, and `Progress` combo labels use the caption text tok
   - `Cmd/Ctrl + Shift + click`: union the range with the existing selection
 - The controller keeps a QML-local visual `selectedIndices` set, but still commits one primary active row back through
   `activeFolderIndex` or `activeTagIndex` so existing delete and active-row behaviors continue to use a single index.
-- `FoldersList` now uses the footer `addFile` control to open an inline `LV.InputField` row inside the list viewport.
-- The inline folder editor is a temporary blank list item overlay, not a detached popup, so the add flow stays inside the Figma small-list surface.
-- The inline folder editor accepts raw folder text and forwards successful confirmation to `detailPanelViewModel.assignFolderByName(...)`.
+- The footer `addFile` control no longer writes metadata inline by default.
+- Pressing `FoldersList` add opens the shared hierarchy picker anchored from the footer on desktop and as a bottom
+  sheet on mobile.
+- `DetailContents.qml` opens that picker through `openForAnchor(...)`, making the caller explicitly hand off footer
+  anchoring to the `LV.ContextMenu`-derived component instead of treating it like a generic popup.
+- `resolveMetadataPickerItems(...)` forces every hierarchy row to `expanded: true` and `showChevron: false`, so the
+  add picker always opens with the full tree already unfolded and without collapse controls.
+- The folder picker filters out Library system buckets such as `All`, `Draft`, and `Today`, leaving only assignable
+  folder hierarchy nodes.
+- Choosing a folder entry forwards the canonical folder path (`entry.id`) into `detailPanelViewModel.assignFolderByName(...)`,
+  so duplicate leaf labels still resolve to the correct full hierarchy path.
+- The folder picker also exposes a single fallback action, `Create custom folder path`, which re-opens the existing
+  inline folder editor for first-folder or ad-hoc folder creation.
+- Pressing `TagsList` add now opens the same picker shell against the canonical Tags hierarchy instead of emitting only
+  a view hook with no usable add surface.
+- Choosing a tag entry forwards the canonical tag id/label into `detailPanelViewModel.assignTagByName(...)`, so the
+  user can add note tags without typing when the tag already exists in the hub hierarchy.
 - While the inline folder editor is open, the folder footer `add`, `trash`, and `settings` actions are disabled to keep the temporary row state single-owner.
 - The footer `trash` action is disabled until a row is active.
 - When the footer `trash` action is triggered, `DetailContents.qml` calls `detailPanelViewModel.removeActiveFolder()` or `detailPanelViewModel.removeActiveTag()` directly so the selected `.wsnhead` metadata entry is removed from the file-backed session store instead of only emitting a view hook.
@@ -112,5 +129,12 @@ This keeps the state switch explicit until each mode receives its final Figma fo
   - `Cmd/Ctrl + click` and `Shift + click` must keep modifier-based multi-selection working in `FoldersList`.
   - The same selection rules must also hold for `TagsList`, because both lists share the same `DetailListSection` and
     selection controller.
+  - Desktop `FoldersList` add must open an anchored hierarchy popup instead of jumping straight into inline text entry.
+  - Mobile `FoldersList` and `TagsList` add must open the bottom-sheet picker through the same overridden `LV.ContextMenu`.
+  - The folder and tag pickers must show every hierarchy row immediately, without chevrons or collapsed descendants.
+  - Choosing an existing Library folder or Tags entry from the picker must persist into the active `.wsnhead` file and
+    then refresh the detail-panel list contents without changing the current note selection.
+  - The folder picker must never offer Library system buckets such as `All`, `Draft`, or `Today` as assignable
+    targets.
   - With LVRS mobile UI scaling enabled, the `Projects`, `Bookmark`, `Folders`, `Tags`, and `Progress` sections must
     keep their vertical order without label/control or footer/next-section overlap.

@@ -29,10 +29,12 @@ statistics object, and the three detail-local hierarchy selector copies used by 
 - `writeBookmarkSelection(int index)`
 - `writeProgressSelection(int index)`
 - `assignFolderByName(const QString& folderPath)`
+- `assignTagByName(const QString& tag)`
 - `removeActiveFolder()`
 - `removeActiveTag()`
 - `setCurrentNoteListModel(QObject*)`
 - `setCurrentNoteDirectorySourceViewModel(QObject*)`
+- `setTagsSourceViewModel(QObject*)`
 
 ## Dependency Direction
 The detail panel no longer binds QML selectors directly to the sidebar hierarchy viewmodels.
@@ -42,6 +44,12 @@ The same loaded header snapshot is also applied to the dedicated `DetailFileStat
 from the same persisted `.wsnhead` cache as the properties tab.
 `setCurrentNoteListModel(QObject*)` also observes an optional `itemsChanged()` signal from the active note-list model so the same selected note can force-refresh its `.wsnhead` metadata snapshot after out-of-band folder or tag edits.
 The private write path now also routes successful metadata edits back into the active hierarchy domain through `reloadNoteMetadataForNoteId(QString)`, keeping the note list and detail panel in lockstep.
+It additionally tracks the canonical Tags hierarchy viewmodel as a secondary refresh target, so
+tag writes performed while another sidebar domain is active still refresh the Tags note-list
+projection.
+Folder and tag add actions now share the same mutation shape from QML's point of view: the popup hands a canonical
+string identifier to `assignFolderByName(...)` or `assignTagByName(...)`, and the viewmodel persists it before
+re-applying the refreshed header snapshot.
 
 ## Selection Semantics
 - The three selector-copy objects expose a synthetic `No ...` item at index `0`.

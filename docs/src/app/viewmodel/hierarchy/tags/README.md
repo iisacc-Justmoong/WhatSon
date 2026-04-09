@@ -19,6 +19,13 @@
 - `TagsHierarchyViewModel.hpp`
 - `TagsHierarchyViewModelSupport.hpp`
 
+## Recent Notes
+- `TagsHierarchyViewModel` now owns both the hierarchy rows and the tag-projected `LibraryNoteListModel`,
+  so the Tags sidebar domain can return notes directly.
+- Detail-panel tag writes now re-synchronize the tags viewmodel cache through
+  `reloadNoteMetadataForNoteId(...)`, avoiding stale tag note lists when the current active domain
+  is not Tags.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

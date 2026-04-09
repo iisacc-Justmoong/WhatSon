@@ -52,8 +52,11 @@ The Figma node mapping is:
 - Compact trigger follows the shared menu-button padding contract used by control mode:
   `left=2`, `right=4`, `top=2`, `bottom=2`, `spacing=0`.
 - Compact menu width/y-offset now route through `LV.Theme.scaleMetric(196)` and `LV.Theme.gap2`.
+- The `Center View` option keeps the Figma `258:8039` target/reticle glyph via LVRS `recursiveMethod`,
+  while `Center View Mode` keeps the separate LVRS `singleRecordView` screen-preview glyph from `258:7852`.
 - The compact editor route now also renders the dedicated right-edge `columnIndex` detail button from
-  Figma node `193:6606`, with the same `toggleDetailPanelRequested` signal path used by the desktop preference bar.
+  the `DetailPanelControlButton` affordance, exposed locally as `detailPanelControlButton`, with the same
+  `toggleDetailPanelRequested` signal path used by the desktop preference bar.
 - That compact detail affordance opens the dedicated mobile detail page directly; it is intentionally not duplicated as
   a context-menu entry.
 - The compact detail button now emits the hook reason `open-detail-page`, matching the routed-page behavior instead of
@@ -64,4 +67,5 @@ The Figma node mapping is:
 ## Regression Checklist
 - Keep the child-frame order `ViewOptionBar -> ModeBar -> CalendarBar -> AddNewBar -> PreferenceBar`.
 - Keep the first calendar compact-menu entry on `validator`, matching Figma `TodoListButton`.
+- Keep the `Center View` option icon on `recursiveMethod`; do not collapse it back onto the mode-level `singleRecordView` glyph.
 - Keep the compact-menu section ordering aligned with the full desktop bar ordering.

@@ -38,10 +38,10 @@ LV.HStack {
         onClicked: viewOptionBar.requestViewHook("view-toggle-wrap-text")
     }
     LV.IconButton {
-        id: centerView
+        id: centerViewOptionButton
 
         horizontalPadding: LV.Theme.gap2
-        iconName: "singleRecordView"
+        iconName: "recursiveMethod"
         tone: LV.AbstractButton.Borderless
         verticalPadding: LV.Theme.gap2
 

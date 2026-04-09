@@ -52,6 +52,10 @@ public:
         const QString& folderPath,
         const QString& folderUuid,
         QString* errorMessage = nullptr) = 0;
+    virtual bool assignTag(
+        const QString& noteId,
+        const QString& tag,
+        QString* errorMessage = nullptr) = 0;
     virtual bool removeFolderAt(const QString& noteId, int index, QString* errorMessage = nullptr) = 0;
     virtual bool removeTagAt(const QString& noteId, int index, QString* errorMessage = nullptr) = 0;
 

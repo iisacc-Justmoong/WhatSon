@@ -23,6 +23,8 @@
   `ViewOptionBar -> ModeBar -> CalendarBar -> AddNewBar -> PreferenceBar`.
 - View-only icon contracts that diverged from the shared navigation bars now live in local files under this
   directory so edit/control mode wrappers stay isolated.
+- The view-option `Center View` action now uses LVRS `recursiveMethod`, while the mode-level `Center View Mode`
+  action keeps LVRS `singleRecordView`; those two Figma glyphs are intentionally different.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

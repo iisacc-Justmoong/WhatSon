@@ -439,6 +439,7 @@ int main(int argc, char* argv[])
     detailPanelViewModel.setProjectSelectionSourceViewModel(&projectsHierarchyViewModel);
     detailPanelViewModel.setBookmarkSelectionSourceViewModel(&bookmarksHierarchyViewModel);
     detailPanelViewModel.setProgressSelectionSourceViewModel(&progressHierarchyViewModel);
+    detailPanelViewModel.setTagsSourceViewModel(&tagsHierarchyViewModel);
     sidebarHierarchyViewModel.setSelectionStore(&sidebarSelectionStore);
     sidebarHierarchyViewModel.setViewModelProvider(&hierarchyViewModelProvider);
     const auto syncDetailPanelCurrentNoteContext = [&detailPanelViewModel, &sidebarHierarchyViewModel]()

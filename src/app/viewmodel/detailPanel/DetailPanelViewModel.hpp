@@ -58,12 +58,14 @@ public:
     void setProjectSelectionSourceViewModel(QObject* sourceViewModel);
     void setBookmarkSelectionSourceViewModel(QObject* sourceViewModel);
     void setProgressSelectionSourceViewModel(QObject* sourceViewModel);
+    void setTagsSourceViewModel(QObject* sourceViewModel);
     void setCurrentNoteListModel(QObject* noteListModel);
     void setCurrentNoteDirectorySourceViewModel(QObject* sourceViewModel);
     Q_INVOKABLE bool writeProjectSelection(int index);
     Q_INVOKABLE bool writeBookmarkSelection(int index);
     Q_INVOKABLE bool writeProgressSelection(int index);
     Q_INVOKABLE bool assignFolderByName(const QString& folderPath);
+    Q_INVOKABLE bool assignTagByName(const QString& tag);
     Q_INVOKABLE bool removeActiveFolder();
     Q_INVOKABLE bool removeActiveTag();
 
@@ -119,6 +121,7 @@ private:
     DetailHierarchySelectionViewModel m_projectSelectionViewModel;
     DetailHierarchySelectionViewModel m_bookmarkSelectionViewModel;
     DetailHierarchySelectionViewModel m_progressSelectionViewModel;
+    QObject* m_tagsSourceViewModel = nullptr;
     QObject* m_activeContentViewModel = nullptr;
     QVariantList m_toolbarItems;
     QMetaObject::Connection m_currentNoteListItemsChangedConnection;

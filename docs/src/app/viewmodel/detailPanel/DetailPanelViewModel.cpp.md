@@ -29,12 +29,15 @@ The exported `activeStateName()` now follows the corrected page ids:
   `DetailFileStatViewModel`, and clears both surfaces together when the note context is invalid.
 - `writeProjectSelection(...)`, `writeBookmarkSelection(...)`, and `writeProgressSelection(...)` persist directly into the active note header file and then re-synchronize the selector copies from the file-backed session store.
 - The shared write path now short-circuits when the incoming selector index already matches the detail-local selector-copy `selectedIndex`, so repeated `No ...` or same-option clicks do not re-persist identical `.wsnhead` state.
-- After any detail-panel metadata write succeeds, the viewmodel now asks the active hierarchy domain
-  and any injected project/bookmark/progress option-source domains to
-  `reloadNoteMetadataForNoteId(...)` so every affected note-list projection immediately mirrors the
-  same `.wsnhead` state instead of waiting for a later hub reload.
+- After any detail-panel metadata write succeeds, the viewmodel now asks the active hierarchy domain,
+  the injected project/bookmark/progress option-source domains, and the canonical Tags hierarchy
+  viewmodel to `reloadNoteMetadataForNoteId(...)` so every affected note-list projection
+  immediately mirrors the same `.wsnhead` state instead of waiting for a later hub reload.
 - Each selector model now prepends a synthetic clear entry (`No project`, `No bookmark`, `No progress`), and selecting that entry clears the corresponding field in the current `.wsnhead` file instead of writing the visible label text.
 - `assignFolderByName(...)` first resolves or creates the folder entry in `Folders.wsfolders`, then persists the resulting folder path/uuid binding into the active note header file, and finally re-applies the current header to the properties content view-model.
+- `assignTagByName(...)` persists the chosen tag into the active note header file through the shared session store,
+  re-applies the refreshed header to the properties content view-model, and re-selects the newly assigned tag row when
+  the tag already existed on the note.
 - `removeActiveFolder()` and `removeActiveTag()` delete the active metadata entry from the current note header file through the same file-backed session store and then re-apply the updated header to the properties content view-model.
 - When a Progress hierarchy source is injected, the selector keeps that canonical source hierarchy
   intact instead of replacing the option list with the current note header's
@@ -47,3 +50,5 @@ The exported `activeStateName()` now follows the corrected page ids:
 - Progress persistence resolves the enum integer from hierarchy entry metadata such as `itemId` or a numeric `progress:*` key; it is no longer hard-coded to the default `Ready/Pending/InProgress/Done` labels.
 - Clearing progress writes the `.wsnhead` field as an explicit empty progress value, which round-trips back into the detail selector as `No progress`.
 - The properties form now renders folder rows as leaf names extracted from `header.folders()` (for example `Archive/Knowledge` -> `Knowledge`) while preserving persisted `.wsnhead` full paths for write operations.
+- Folder/tag add popups do not mutate the hierarchy source viewmodels directly; they only read those hierarchy nodes as
+  option sources and keep the actual note-header write ownership inside `DetailPanelViewModel`.
