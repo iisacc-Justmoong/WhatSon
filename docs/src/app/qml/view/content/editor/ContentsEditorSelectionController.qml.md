@@ -23,10 +23,13 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 
 ## Public Contract
 
-- `contextMenuSelectionStart` / `contextMenuSelectionEnd`: selection snapshot captured when the context menu opens.
+- `contextMenuSelectionStart` / `contextMenuSelectionEnd`: selection snapshot captured when the host primes the context
+  menu selection on right-button press.
 - `contextMenuItems`: menu model for inline formatting actions. The top item is `Plain`, which clears inline
   formatting from the current selection.
 - `selectedEditorRange()`: resolves the current editor-surface selection span.
+- `primeContextMenuSelectionSnapshot()`: captures the raw live `TextEdit` selection offsets and their plain-text slice
+  before a right-click can collapse or shrink the editor selection.
 - `openEditorSelectionContextMenu(localX, localY)`: opens the LVRS context menu when a non-empty selection exists.
 - `wrapSelectedEditorTextWithTag(tagName, explicitSelectionRange)`: applies the requested inline style to canonical
   `.wsnbody` source using the resolved logical editor selection range and persists the canonicalized result.
@@ -38,6 +41,11 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 ## Range Mapping Rules
 
 - The controller first prefers the live `TextEdit` selection snapshot exposed by `contentEditor.selectionSnapshot()`.
+- Right-click context-menu flows now prime their selection snapshot on mouse press and reuse that cached range when the
+  menu opens one event-loop turn later.
+- The primed context-menu snapshot now prefers raw `selectionStart` / `selectionEnd` offsets and reconstructs the full
+  selected plain text from `contentEditor.getText(...)`, so one stale/truncated `selectedText` fragment does not shrink
+  a multi-block selection down to a single inline tag.
 - Explicit numeric offsets are only accepted when `contentEditor.getText(start, end)` matches the currently highlighted
   `selectedText`.
 - When numeric offsets disagree with the actual highlighted substring, the controller falls back to selected-text
@@ -134,6 +142,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   contains inline tags around nearby text.
 - Applying the same shortcut twice to an already formatted selection should restore that selection to plain text.
 - Choosing `Plain` from the context menu should remove all inline formatting tags from the selected source range.
+- Drag-selecting text across multiple rendered paragraphs or mixed inline tags, then right-clicking to format it, must
+  keep the original whole selection instead of reformatting only the fragment nearest the click.
 - Shortcut and window-level accelerator paths should coalesce into one queued wrap request per note/tag pair, avoiding
   duplicate formatting from the same key chord.
 - Heading/blockquotes/link/code markdown presentation must not cause `Bold` / `Italic` / `Underline` / `Highlight`

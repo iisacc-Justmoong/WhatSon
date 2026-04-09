@@ -39,6 +39,7 @@ QtObject {
         }
     ]
     property int contextMenuSelectionEnd: -1
+    property real contextMenuSelectionCursorPosition: NaN
     property int contextMenuSelectionStart: -1
     property string contextMenuSelectionText: ""
     property var editorSession: null
@@ -98,7 +99,9 @@ QtObject {
             "start": selectionRange.start,
             "end": selectionRange.end,
             "selectedText": controller.contextMenuSelectionText,
-            "cursorPosition": controller.currentEditorCursorPosition()
+            "cursorPosition": isFinite(controller.contextMenuSelectionCursorPosition)
+                              ? Number(controller.contextMenuSelectionCursorPosition)
+                              : controller.currentEditorCursorPosition()
         };
     }
     function currentEditorCursorPosition() {
@@ -168,6 +171,43 @@ QtObject {
             "selectionEnd": controller.contentEditor.selectionEnd,
             "selectionStart": controller.contentEditor.selectionStart
         };
+    }
+    function currentRawEditorSelectionRange() {
+        if (!controller.contentEditor)
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        const selectionSnapshot = controller.currentEditorSelectionSnapshot();
+        let start = selectionSnapshot.selectionStart !== undefined ? Number(selectionSnapshot.selectionStart) : NaN;
+        let end = selectionSnapshot.selectionEnd !== undefined ? Number(selectionSnapshot.selectionEnd) : NaN;
+        if (!isFinite(start) || !isFinite(end)) {
+            if (controller.contentEditor.editorItem) {
+                if (!isFinite(start) && controller.contentEditor.editorItem.selectionStart !== undefined)
+                    start = Number(controller.contentEditor.editorItem.selectionStart);
+                if (!isFinite(end) && controller.contentEditor.editorItem.selectionEnd !== undefined)
+                    end = Number(controller.contentEditor.editorItem.selectionEnd);
+                if (controller.contentEditor.editorItem.inputItem) {
+                    if (!isFinite(start) && controller.contentEditor.editorItem.inputItem.selectionStart !== undefined)
+                        start = Number(controller.contentEditor.editorItem.inputItem.selectionStart);
+                    if (!isFinite(end) && controller.contentEditor.editorItem.inputItem.selectionEnd !== undefined)
+                        end = Number(controller.contentEditor.editorItem.inputItem.selectionEnd);
+                }
+            }
+        }
+        const surfaceLength = controller.currentEditorSurfaceLength();
+        const boundedStart = isFinite(start) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.min(start, end)))) : NaN;
+        const boundedEnd = isFinite(end) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.max(start, end)))) : NaN;
+        if (!isFinite(boundedStart) || !isFinite(boundedEnd) || boundedEnd <= boundedStart) {
+            return ({
+                    "start": -1,
+                    "end": -1
+                });
+        }
+        return ({
+                "start": boundedStart,
+                "end": boundedEnd
+            });
     }
     function currentEditorSurfaceLength() {
         if (controller.contentEditor && controller.contentEditor.length !== undefined) {
@@ -693,7 +733,10 @@ QtObject {
     function openEditorSelectionContextMenu(localX, localY) {
         if (!controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
             return false;
-        let selectionRange = controller.selectedEditorRange();
+        let selectionRange = controller.resolveSelectionSnapshot(controller.contextMenuEditorSelectionSnapshot());
+        if (selectionRange.end <= selectionRange.start) {
+            selectionRange = controller.selectedEditorRange();
+        }
         if (selectionRange.end <= selectionRange.start) {
             const inferredRange = controller.inferSelectionRangeFromSelectedText(controller.currentSelectedEditorText(), controller.currentEditorCursorPosition());
             if (inferredRange.end > inferredRange.start)
@@ -705,8 +748,24 @@ QtObject {
             controller.selectionContextMenu.close();
         controller.contextMenuSelectionStart = selectionRange.start;
         controller.contextMenuSelectionEnd = selectionRange.end;
-        controller.contextMenuSelectionText = controller.normalizeSelectionTextValue(controller.currentSelectedEditorText());
+        controller.contextMenuSelectionCursorPosition = controller.currentEditorCursorPosition();
+        controller.contextMenuSelectionText = controller.editorPlainTextSlice(selectionRange.start, selectionRange.end);
         controller.selectionContextMenu.openFor(controller.editorViewport, Number(localX) || 0, Number(localY) || 0);
+        return true;
+    }
+    function primeContextMenuSelectionSnapshot() {
+        const rawSelectionRange = controller.currentRawEditorSelectionRange();
+        let selectionRange = rawSelectionRange;
+        if (selectionRange.end <= selectionRange.start)
+            selectionRange = controller.selectedEditorRange();
+        if (selectionRange.end <= selectionRange.start) {
+            controller.resetEditorSelectionCache();
+            return false;
+        }
+        controller.contextMenuSelectionStart = selectionRange.start;
+        controller.contextMenuSelectionEnd = selectionRange.end;
+        controller.contextMenuSelectionCursorPosition = controller.currentEditorCursorPosition();
+        controller.contextMenuSelectionText = controller.editorPlainTextSlice(selectionRange.start, selectionRange.end);
         return true;
     }
     function persistEditorTextImmediately(nextText) {
@@ -842,15 +901,14 @@ QtObject {
         } else {
             controller.scheduleEditorSelection(NaN, NaN, nextCursorPosition);
         }
-        controller.contextMenuSelectionStart = -1;
-        controller.contextMenuSelectionEnd = -1;
-        controller.contextMenuSelectionText = "";
+        controller.resetEditorSelectionCache();
         controller.view.editorTextEdited(nextText);
         return true;
     }
     function resetEditorSelectionCache() {
         controller.contextMenuSelectionStart = -1;
         controller.contextMenuSelectionEnd = -1;
+        controller.contextMenuSelectionCursorPosition = NaN;
         controller.contextMenuSelectionText = "";
     }
     function resolveSelectionSnapshot(selectionSnapshot) {
@@ -931,26 +989,10 @@ QtObject {
                 });
         const selectionSnapshot = controller.currentEditorSelectionSnapshot();
         const selectedText = selectionSnapshot.selectedText !== undefined ? selectionSnapshot.selectedText : controller.currentSelectedEditorText();
-        let start = selectionSnapshot.selectionStart !== undefined ? Number(selectionSnapshot.selectionStart) : NaN;
-        let end = selectionSnapshot.selectionEnd !== undefined ? Number(selectionSnapshot.selectionEnd) : NaN;
-        if (!isFinite(start) || !isFinite(end)) {
-            if (controller.contentEditor.editorItem) {
-                if (!isFinite(start) && controller.contentEditor.editorItem.selectionStart !== undefined)
-                    start = Number(controller.contentEditor.editorItem.selectionStart);
-                if (!isFinite(end) && controller.contentEditor.editorItem.selectionEnd !== undefined)
-                    end = Number(controller.contentEditor.editorItem.selectionEnd);
-                if (controller.contentEditor.editorItem.inputItem) {
-                    if (!isFinite(start) && controller.contentEditor.editorItem.inputItem.selectionStart !== undefined)
-                        start = Number(controller.contentEditor.editorItem.inputItem.selectionStart);
-                    if (!isFinite(end) && controller.contentEditor.editorItem.inputItem.selectionEnd !== undefined)
-                        end = Number(controller.contentEditor.editorItem.inputItem.selectionEnd);
-                }
-            }
-        }
-        const surfaceLength = controller.currentEditorSurfaceLength();
+        const numericSelectionRange = controller.currentRawEditorSelectionRange();
         const numericRange = {
-            "start": isFinite(start) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.min(start, end)))) : NaN,
-            "end": isFinite(end) ? Math.max(0, Math.min(surfaceLength, Math.floor(Math.max(start, end)))) : NaN,
+            "start": numericSelectionRange.start,
+            "end": numericSelectionRange.end,
             "selectedText": selectedText,
             "cursorPosition": selectionSnapshot.cursorPosition !== undefined ? Number(selectionSnapshot.cursorPosition) : controller.currentEditorCursorPosition()
         };
@@ -1006,9 +1048,7 @@ QtObject {
         const saved = controller.persistEditorTextImmediately(nextText);
         if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
             controller.editorSession.scheduleEditorPersistence();
-        controller.contextMenuSelectionStart = -1;
-        controller.contextMenuSelectionEnd = -1;
-        controller.contextMenuSelectionText = "";
+        controller.resetEditorSelectionCache();
         controller.view.editorTextEdited(nextText);
         return true;
     }

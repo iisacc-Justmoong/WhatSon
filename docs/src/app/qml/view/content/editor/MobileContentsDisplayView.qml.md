@@ -62,6 +62,8 @@ suppression local to this file.
 - While the mobile editor is focused, app-side note snapshot refresh does not preempt the live native input session.
 - Inline styling on mobile remains source-driven, but the live typing surface is now plain logical text rather than the
   RichText projection.
+- The mobile surface mirrors the desktop right-click path by priming the shared selection-controller context-menu
+  snapshot on mouse press before the menu opens.
 - That logical text now preserves raw markdown markers instead of replacing unordered-list markers with `•`.
 - Mobile keeps the same window-level markdown list shortcuts as desktop when a hardware keyboard is present:
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
@@ -115,5 +117,7 @@ suppression local to this file.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
+  - Any pointer-driven right-click formatting flow must preserve a multi-paragraph or mixed-inline dragged selection
+    until the shared context menu action runs.
   - Switching mobile note selection while the current note still has a pending staged body must not drop the old note
     text or block the new selection on an immediate-save success path.

@@ -44,6 +44,8 @@ that sit directly inside the editor viewport.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
+- The desktop right-click formatting menu now primes the shared selection-controller snapshot on mouse press, before the
+  follow-up click/open cycle can let the RichText editor collapse the dragged selection to one fragment.
 - Whole-document RichText/plain-text projection now runs through a dedicated `documentPresentationSourceText` snapshot
   instead of a direct `editorText` binding:
   - live typing mutates `editorText` immediately, but `ContentsLogicalTextBridge` and `ContentsTextFormatRenderer`
@@ -118,5 +120,8 @@ that sit directly inside the editor viewport.
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the
     selection controller while the rich-text editor owns focus.
+  - Drag-selecting text across multiple paragraphs or mixed inline-style regions, then right-clicking for `Bold` /
+    `Italic` / `Underline` / `Highlight`, must still format the entire dragged range instead of only the fragment that
+    survives after the context-menu click.
   - Switching desktop note selection while the current note still has a pending staged body must not drop the old note
     text or block the new selection on an immediate-save success path.

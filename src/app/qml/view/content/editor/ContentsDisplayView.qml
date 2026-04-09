@@ -879,6 +879,9 @@ Item {
     function openEditorSelectionContextMenu(localX, localY) {
         return editorSelectionController.openEditorSelectionContextMenu(localX, localY);
     }
+    function primeEditorSelectionContextMenuSnapshot() {
+        return editorSelectionController.primeContextMenuSelectionSnapshot();
+    }
     function persistEditorTextImmediately(nextText) {
         return editorSelectionController.persistEditorTextImmediately(nextText);
     }
@@ -1625,6 +1628,7 @@ Item {
                                 return;
                             lastPressX = mouse.x;
                             lastPressY = mouse.y;
+                            contentsView.primeEditorSelectionContextMenuSnapshot();
                         }
                     }
                     Shortcut {

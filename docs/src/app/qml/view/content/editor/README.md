@@ -108,6 +108,9 @@
 - The shared editor wrapper now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
   instead of maintaining its own synthetic IME commit flag, aligning Hangul composition behavior with standard text
   editors and word processors more closely.
+- The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or
+  mixed-inline dragged selections survive the menu-opening click instead of collapsing to one fragment before
+  formatting.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
