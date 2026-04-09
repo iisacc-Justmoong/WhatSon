@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
@@ -48,12 +49,16 @@ Rectangle {
     property var noteDropTarget: null
     readonly property bool noteFolderClearContractAvailable: listBarLayout.noteDeletionViewModel !== null && listBarLayout.noteDeletionViewModel !== undefined && (listBarLayout.noteDeletionViewModel.clearNoteFoldersByIds !== undefined || listBarLayout.noteDeletionViewModel.clearNoteFoldersById !== undefined)
     readonly property bool noteListCurrentIndexContractAvailable: listBarLayout.hasNoteListModel && (listBarLayout.noteListModel.currentIndex !== undefined || listBarLayout.noteListModel.setCurrentIndex !== undefined)
-    readonly property int noteListBoundsBehavior: LV.Theme.mobileTarget ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
-    readonly property int noteListBoundsMovement: LV.Theme.mobileTarget ? Flickable.FollowBoundsBehavior : Flickable.StopAtBounds
+    readonly property bool noteListKineticViewportEnabled: LV.Theme.mobileTarget
+                                                        || (Window.window && Window.window.isMobilePlatform !== undefined
+                                                            ? Boolean(Window.window.isMobilePlatform)
+                                                            : false)
+    readonly property int noteListBoundsBehavior: listBarLayout.noteListKineticViewportEnabled ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
+    readonly property int noteListBoundsMovement: listBarLayout.noteListKineticViewportEnabled ? Flickable.FollowBoundsBehavior : Flickable.StopAtBounds
     readonly property int noteListDesktopFlickDeceleration: 1000000
-    readonly property int noteListFlickDeceleration: LV.Theme.mobileTarget ? Math.max(0, Math.round(LV.Theme.scaleMetric(2800))) : listBarLayout.noteListDesktopFlickDeceleration
+    readonly property int noteListFlickDeceleration: listBarLayout.noteListKineticViewportEnabled ? Math.max(0, Math.round(LV.Theme.scaleMetric(2800))) : listBarLayout.noteListDesktopFlickDeceleration
     readonly property bool noteListMode: listBarLayout.hasNoteListModel
-    readonly property int noteListMaximumFlickVelocity: LV.Theme.mobileTarget ? Math.max(0, Math.round(LV.Theme.scaleMetric(12000))) : listBarLayout.noteListScrollTick
+    readonly property int noteListMaximumFlickVelocity: listBarLayout.noteListKineticViewportEnabled ? Math.max(0, Math.round(LV.Theme.scaleMetric(12000))) : listBarLayout.noteListScrollTick
     property var noteListModel: null
     readonly property int noteListViewportInset: LV.Theme.gap2
     property var displayedNoteListEntries: []
@@ -113,7 +118,7 @@ Rectangle {
         });
     }
     function applyNoteListViewportStep(contentY) {
-        const targetY = listBarLayout.quantizedNoteListContentY(contentY);
+        const targetY = listBarLayout.noteListViewportTargetY(contentY);
         const previousY = Number(noteListView.contentY) || 0;
         if (Math.abs(targetY - previousY) <= 0.001)
             return;
@@ -146,7 +151,7 @@ Rectangle {
     function captureNoteListViewport() {
         if (!listBarLayout.noteListMode)
             return;
-        listBarLayout.preservedNoteListContentY = listBarLayout.quantizedNoteListContentY(noteListView.contentY);
+        listBarLayout.preservedNoteListContentY = listBarLayout.noteListViewportTargetY(noteListView.contentY);
         listBarLayout.noteListViewportRestorePending = true;
     }
     function clampNoteListContentY(value) {
@@ -361,6 +366,11 @@ Rectangle {
     function noteListMaxContentY() {
         return Math.max(0, (Number(noteListView.contentHeight) || 0) - (Number(noteListView.height) || 0));
     }
+    function noteListViewportTargetY(value) {
+        if (listBarLayout.noteListKineticViewportEnabled)
+            return listBarLayout.clampNoteListContentY(value);
+        return listBarLayout.quantizedNoteListContentY(value);
+    }
     function readDisplayedNoteListEntriesFromModel() {
         if (!noteListContractBridge || noteListContractBridge.readAllRows === undefined)
             return [];
@@ -487,6 +497,12 @@ Rectangle {
     function settleNoteListViewport() {
         if (listBarLayout.noteListViewportRestorePending) {
             listBarLayout.restoreNoteListViewport();
+            return;
+        }
+        if (listBarLayout.noteListKineticViewportEnabled) {
+            const clampedContentY = listBarLayout.clampNoteListContentY(noteListView.contentY);
+            if (Math.abs(clampedContentY - (Number(noteListView.contentY) || 0)) > 0.001)
+                listBarLayout.applyNoteListViewportStep(clampedContentY);
             return;
         }
         listBarLayout.applyNoteListViewportStep(noteListView.contentY);
@@ -773,7 +789,7 @@ Rectangle {
                     pixelAligned: true
                     reuseItems: !listBarLayout.noteDragActive
                     spacing: listBarLayout.noteListViewportInset
-                    synchronousDrag: true
+                    synchronousDrag: !listBarLayout.noteListKineticViewportEnabled
                     visible: listBarLayout.noteListMode
 
                     delegate: Item {
@@ -1028,6 +1044,8 @@ Rectangle {
                     onContentHeightChanged: listBarLayout.settleNoteListViewport()
                     onContentYChanged: {
                         if (listBarLayout.syncingNoteListViewport || listBarLayout.noteListViewportRestorePending)
+                            return;
+                        if (listBarLayout.noteListKineticViewportEnabled)
                             return;
                         listBarLayout.applyNoteListViewportStep(noteListView.contentY);
                     }

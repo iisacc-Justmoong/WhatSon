@@ -21,6 +21,10 @@ The rename path is intentionally split between `SidebarHierarchyView.qml` and
 `displayedHierarchyModel` snapshot so inline rename can hide only the visible label without dropping stable row
 identity.
 
+The sidebar also now owns an explicit mobile kinetic-scroll contract. `SidebarHierarchyView.qml`
+does not just rely on LVRS defaults anymore; it pushes the shared `LV.Hierarchy` surface onto a
+touch-friendly overshoot/flick profile so mobile hierarchy scrolling keeps momentum after release.
+
 ## Relationship To C++
 This directory talks to C++ almost entirely through:
 - `IHierarchyViewModel`-compatible objects

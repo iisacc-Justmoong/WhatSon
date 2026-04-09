@@ -28,7 +28,7 @@ expansion hooks for the tag tree.
 - `m_entries` is the canonical parsed tag tree payload.
 - `m_items` is the rendered LVRS row state, including `expanded`.
 - `m_allNotes` is the indexed `.wshub` note cache used to project the currently selected tag subtree
-  into `m_noteListModel`.
+  into `m_noteListModel` and to derive per-row sidebar counts from the same subtree projection rule.
 - `m_tagsFilePath` tracks the writable `Tags.wstags` target for rename/create/delete mutations.
 - `m_createdFolderSequence` is derived from the current data so generated labels do not collide with
   existing tag folders after reload.

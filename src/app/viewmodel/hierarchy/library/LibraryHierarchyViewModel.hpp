@@ -197,6 +197,7 @@ private:
     int firstEditableInsertIndex() const noexcept;
     void rebuildBucketRanges();
     void refreshNoteListForSelection();
+    void refreshNoteListForSelectionAndNotifyHierarchyModel();
     void applyIndexedBuckets();
     void updateItemCount();
     void updateNoteItemCount();

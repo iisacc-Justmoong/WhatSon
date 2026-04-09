@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as Controls
+import QtQuick.Window
 import LVRS 1.0 as LV
 import ".." as PanelView
 
@@ -85,6 +86,17 @@ Rectangle {
         }
         return false;
     }
+    readonly property bool hierarchyKineticViewportEnabled: LV.Theme.mobileTarget
+                                                         || (Window.window && Window.window.isMobilePlatform !== undefined
+                                                             ? Boolean(Window.window.isMobilePlatform)
+                                                             : false)
+    readonly property int hierarchyListFlickDeceleration: hierarchyKineticViewportEnabled
+                                                       ? Math.max(1, Math.round(LV.Theme.scaleMetric(1800)))
+                                                       : Math.max(1, Math.round(LV.Theme.scaleMetric(3200)))
+    readonly property int hierarchyListMaximumFlickVelocity: hierarchyKineticViewportEnabled
+                                                          ? Math.max(1, Math.round(LV.Theme.scaleMetric(12000)))
+                                                          : Math.max(1, Math.round(LV.Theme.scaleMetric(8000)))
+    readonly property int hierarchyListReboundDuration: hierarchyKineticViewportEnabled ? 220 : 160
     property string hierarchyContextMenuKind: "options"
     readonly property var hierarchyContextMenuItems: sidebarHierarchyView.hierarchyContextMenuKind === "folder"
                                                      ? sidebarHierarchyView.hierarchyFolderContextMenuItems
@@ -834,6 +846,10 @@ Rectangle {
         anchors.topMargin: sidebarHierarchyView.verticalInset + (sidebarHierarchyView.searchFieldVisible ? sidebarHierarchyView.searchHeaderTopGap + hierarchySearchHeader.implicitHeight + sidebarHierarchyView.searchListGap : 0)
         editable: sidebarHierarchyView.hierarchyEditable
         keyboardListNavigationEnabled: false
+        listFlickDeceleration: sidebarHierarchyView.hierarchyListFlickDeceleration
+        listMaximumFlickVelocity: sidebarHierarchyView.hierarchyListMaximumFlickVelocity
+        listOvershootEnabled: sidebarHierarchyView.hierarchyKineticViewportEnabled
+        listReboundDuration: sidebarHierarchyView.hierarchyListReboundDuration
         model: sidebarHierarchyView.standardHierarchyModel
         panelColor: sidebarHierarchyView.panelColor
         toolbarItems: []

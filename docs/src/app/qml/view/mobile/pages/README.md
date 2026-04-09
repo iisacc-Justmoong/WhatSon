@@ -15,6 +15,9 @@
 ## Child Files
 - `MobileHierarchyPage.qml`
 
+## Recent Notes
+- `MobileHierarchyPage.qml` now treats `/mobile/detail -> /mobile/editor` as a first-class pop-repair path, so a committed mobile detail back-swipe cannot strand the user on the hierarchy route.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

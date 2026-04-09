@@ -40,6 +40,8 @@ as a passive notification only.
   `LibraryAll`.
 - `refreshNoteListForSelection()` builds the list bar contents from that cache by matching the
   selected tag subtree against note header tags.
+- `depthItems()` now computes each row's `count` from that same subtree projection, so the sidebar
+  badge and the note list are backed by one matching rule instead of diverging contracts.
 - Subtree matching is inclusive: selecting a parent tag includes notes assigned to any descendant
   tag id/label/path that belongs to that subtree.
 - `reloadNoteMetadataForNoteId(...)` re-reads one note document and immediately re-applies the tag
@@ -71,6 +73,6 @@ as a passive notification only.
 
 ## Count Role Compatibility
 
-`depthItems()` still includes a numeric `count` role for every tag row. The role remains `0`
-because note projection is now served through the dedicated `noteListModel`, not through per-row
-sidebar counters.
+`depthItems()` still includes a numeric `count` role for every tag row. The role is now populated
+from the same tag-subtree projection used by `refreshNoteListForSelection()`, so tag badge counts
+update immediately when note metadata reloads or runtime re-indexing changes the matched note set.

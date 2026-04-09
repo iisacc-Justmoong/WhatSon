@@ -25,6 +25,8 @@
 - Detail-panel tag writes now re-synchronize the tags viewmodel cache through
   `reloadNoteMetadataForNoteId(...)`, avoiding stale tag note lists when the current active domain
   is not Tags.
+- Tag hierarchy rows now also expose live subtree note counts derived from the indexed note cache,
+  so sidebar badges change in lockstep with tag projection refreshes instead of staying pinned to `0`.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

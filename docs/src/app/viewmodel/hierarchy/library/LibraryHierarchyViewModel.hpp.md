@@ -20,3 +20,6 @@
 - Exposes `applyPersistedBodyStateForNote(...)` and `requestTrackedStatisticsRefreshForNote(...)` so editor autosave
   can keep the note list hot with a cheap body-state update first and defer `.wsnbody` backlink scans to a later
   viewmodel-owned pass.
+- Note-distribution mutations such as folder assignment, note create/delete, folder clear, and one-note metadata
+  reload now also re-emit the hierarchy-node surface so sidebar count labels stay synchronized even when the folder
+  tree structure itself does not change.

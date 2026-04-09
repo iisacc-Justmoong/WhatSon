@@ -71,12 +71,17 @@ selection state machine lives in a sibling controller file.
     stays quantized to the existing narrow-step panel contract.
   - mobile switches to `Flickable.DragAndOvershootBounds` plus `Flickable.FollowBoundsBehavior`, so note rows and
     resource rows inherit kinetic overscroll instead of dead-stop dragging.
+- `noteListKineticViewportEnabled` now gates the viewport contract from real mobile runtime detection
+  (`LV.Theme.mobileTarget` or `Window.window.isMobilePlatform`), so adaptive/mobile routes keep kinetic scrolling even
+  when the visual route and the raw theme profile would otherwise drift.
 - `flickDeceleration` and `maximumFlickVelocity` are now mobile-aware tokens. Mobile uses scaled kinetic values
   (`LV.Theme.scaleMetric(2800/12000)`), while desktop keeps the previous low-velocity non-kinetic behavior through
   `noteListScrollTick`.
-- `noteListScrollTick` is fixed to `LV.Theme.gap2`, and all viewport motion is quantized through
-  `noteListMaxContentY()`, `quantizedNoteListContentY(value)`, `applyNoteListViewportStep(contentY)`, and
-  `settleNoteListViewport()`.
+- `noteListScrollTick` is fixed to `LV.Theme.gap2`, but quantized viewport snapping is now desktop-only.
+  Mobile still uses `clampNoteListContentY(value)` for restore/bounds repair, while live touch motion is left to the
+  native `ListView` kinetic engine.
+- `synchronousDrag` is also now desktop-only. Mobile stops forcing synchronous viewport drag so Qt's built-in touch
+  flick pipeline can keep velocity after release.
 - The list caches `contentY` before note-model reset cycles and restores it after the reset settles, so periodic
   note-list refreshes do not yank the viewport back to the first row.
 - `LV.WheelScrollGuard` is mounted over the list viewport so wheel input follows the same small-step contract as drag
@@ -173,5 +178,7 @@ selection state machine lives in a sibling controller file.
     source delegate is not recycled out from under `noteDragHandler`.
   - On mobile, the shared note/resource list must keep inertial scrolling after touch release instead of stopping on
     the release frame.
+  - On mobile, `onContentYChanged` and `onMovementEnded` must not re-quantize live touch motion back onto
+    `noteListScrollTick` steps.
   - On mobile, dragging a row must still require a long press; ordinary vertical swipes must be stealable by the list
     viewport and continue scrolling with kinetic carry.

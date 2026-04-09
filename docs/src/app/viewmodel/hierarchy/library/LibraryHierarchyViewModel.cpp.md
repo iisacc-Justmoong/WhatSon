@@ -14,6 +14,9 @@
   - note-save / metadata-reload / folder-assign / note-create / note-delete / folder-clear paths now prefer one-note
     `upsertIndexedNote(...)` / `removeIndexedNoteById(...)` updates and only fall back to full snapshot replacement
     when the mutation service does not return a resolvable target note
+- Those note-distribution mutation paths now also route through
+  `refreshNoteListForSelectionAndNotifyHierarchyModel()`, which is the guard against stale sidebar `count` labels
+  when only the note-to-folder distribution changed and the hierarchy row vector stayed byte-for-byte identical.
 - `setIndexedStateNotes(...)`, `applyIndexedStateSnapshot(...)`, and successful direct index loads now emit
   `indexedNotesSnapshotChanged()`, so calendar/runtime collaborators observe note-snapshot changes directly from the
   viewmodel instead of relying on a later page-open hook.
@@ -48,6 +51,8 @@
     forcing the same save path to rescan every `.wsnbody` in the hub
   - create/delete/folder-clear mutation flows must prefer single-note upsert/remove and only fall back to full
     snapshot replacement when the service result cannot resolve the target note
+  - library folder/system-bucket sidebar counters must refresh immediately after folder assignment, note create,
+    note delete, folder clear, or one-note metadata reload even when the hierarchy rows themselves did not rebuild
   - `activateNoteById(...)` must select the requested note when it is already visible in the current library list.
   - An active library search filter must be cleared automatically when it hides the requested note.
   - A folder-scoped library selection must fall back to `All Library` before the activation path reports failure.

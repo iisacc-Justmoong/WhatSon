@@ -2028,7 +2028,7 @@ void LibraryHierarchyViewModel::applyRuntimeSnapshot(
 
     if (!hierarchySourceChanged)
     {
-        refreshNoteListForSelection();
+        refreshNoteListForSelectionAndNotifyHierarchyModel();
         updateLoadState(true);
         return;
     }
@@ -2783,7 +2783,7 @@ bool LibraryHierarchyViewModel::assignNoteToFolder(int index, const QString& not
     syncNoteRecordFromDocument(&note, noteDocument);
 
     upsertIndexedNote(note);
-    refreshNoteListForSelection();
+    refreshNoteListForSelectionAndNotifyHierarchyModel();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
@@ -2995,7 +2995,7 @@ bool LibraryHierarchyViewModel::createEmptyNote()
     }
     m_hubStore.setStat(result.hubStat);
 
-    refreshNoteListForSelection();
+    refreshNoteListForSelectionAndNotifyHierarchyModel();
 
     const QString createdNoteId = result.noteId.trimmed();
     auto createdNoteIndexForCurrentItems = [this, &createdNoteId]() -> int
@@ -3088,7 +3088,7 @@ bool LibraryHierarchyViewModel::deleteNoteById(const QString& noteId)
     }
     m_hubStore.setStat(result.hubStat);
 
-    refreshNoteListForSelection();
+    refreshNoteListForSelectionAndNotifyHierarchyModel();
     if (removedCurrentVisibleNote)
     {
         const int nextIndex = m_noteListModel.items().isEmpty()
@@ -3146,7 +3146,7 @@ bool LibraryHierarchyViewModel::clearNoteFoldersById(const QString& noteId)
     {
         setIndexedStateNotes(m_indexedState.sourceWshubPath(), std::move(result.notes));
     }
-    refreshNoteListForSelection();
+    refreshNoteListForSelectionAndNotifyHierarchyModel();
 
     WhatSon::Debug::traceSelf(this,
                               QStringLiteral("library.viewmodel"),
@@ -3322,7 +3322,7 @@ bool LibraryHierarchyViewModel::reloadNoteMetadataForNoteId(const QString& noteI
 
     syncNoteRecordFromDocument(&note, noteDocument);
     upsertIndexedNote(note);
-    refreshNoteListForSelection();
+    refreshNoteListForSelectionAndNotifyHierarchyModel();
     return true;
 }
 
@@ -3875,6 +3875,12 @@ void LibraryHierarchyViewModel::refreshNoteListForSelection()
     const QVector<LibraryNoteListItem> listItems = buildNoteListItems(notesForBucket(bucket));
     m_noteListModel.setItems(listItems);
     updateNoteItemCount();
+}
+
+void LibraryHierarchyViewModel::refreshNoteListForSelectionAndNotifyHierarchyModel()
+{
+    refreshNoteListForSelection();
+    emit hierarchyModelChanged();
 }
 
 void LibraryHierarchyViewModel::applyIndexedBuckets()

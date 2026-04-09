@@ -17,5 +17,7 @@ The current direction is to stop exposing the full library hierarchy surface to 
 - Write flows should depend on explicit capabilities or `LibraryNoteMutationViewModel`.
 - Local note mutation flows now also prefer incremental indexed-state updates over full snapshot replacement, so this
   directory is part of the runtime performance boundary for both the note list and the calendar projections.
+- The same mutation boundary is now also responsible for re-emitting hierarchy nodes after note-distribution changes,
+  so library sidebar `count` badges do not lag behind folder assignment or note lifecycle operations.
 
 This directory is therefore one of the main places where the repository's MVVM decomposition is being pushed forward.

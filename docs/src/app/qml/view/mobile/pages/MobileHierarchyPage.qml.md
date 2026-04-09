@@ -107,6 +107,15 @@ Interactive back navigation from the editor can temporarily leave `currentPath` 
 
 `handleCommittedRouteTransition(...)` and `verifyCommittedEditorPopState(...)` therefore use `displayedBodyRoutePath()` before forcing a canonical note-list rebuild. If the rendered body is already the note-list page, the repair path is skipped. This keeps the previous folder-scoped note list on screen instead of rebuilding the stack back through the generic root state.
 
+## Detail Pop Repair
+Interactive back navigation from `/mobile/detail` is now repaired with the same explicit post-commit verification used by the editor route.
+
+- `handleCommittedRouteTransition(...)` now distinguishes `fromPath === /mobile/detail` from `fromPath === /mobile/editor`.
+- `verifyCommittedDetailPopState(...)` waits for the routed body to settle and accepts only `/mobile/editor` as the valid restore target.
+- If the router or rendered body drifts to hierarchy or another non-editor state after a committed detail-page pop, the page rebuilds the canonical `hierarchy -> note-list -> editor` stack instead of leaving the user on the wrong destination.
+
+This preserves the user expectation that dismissing the mobile detail page returns to the current note editor, not to the hierarchy root.
+
 The page re-runs `syncRouteSelectionState()` from both router-path changes and
 `resolvedBodyRoutePath` changes. That dual trigger is intentional because the router can update
 before the rendered body catches up, and the hierarchy-selection clear must wait until both layers
@@ -145,6 +154,7 @@ This keeps mobile back navigation local to the page and avoids stealing editor t
 ## Known Invariants
 - A note-list/editor canonical rebuild must preserve the hierarchy selection before changing the route stack.
 - Returning from `/mobile/editor` must prefer the actually displayed note-list body over a stale `currentPath` snapshot.
+- Returning from `/mobile/detail` must prefer the actual editor body and must never settle on the hierarchy page as the restored destination.
 - Mobile hierarchy routing is selection-driven; the routes do not own separate domain state copies.
 - The mobile editor page must not reintroduce gutter width/line-number overrides now that mobile gutter policy lives in
   `MobileContentsDisplayView.qml`.

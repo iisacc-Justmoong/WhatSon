@@ -296,6 +296,24 @@ namespace
         return false;
     }
 
+    int noteCountForTagProjection(const QVector<LibraryNoteRecord>& notes, const QSet<QString>& projectionKeys)
+    {
+        if (projectionKeys.isEmpty())
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (const LibraryNoteRecord& note : notes)
+        {
+            if (noteMatchesTagProjection(note, projectionKeys))
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     QSet<QString> expandedTagItemKeys(
         const QVector<WhatSonTagDepthEntry>& entries,
         const QVector<TagsHierarchyItem>& items)
@@ -571,6 +589,9 @@ QVariantList TagsHierarchyViewModel::depthItems() const
     {
         const WhatSonTagDepthEntry& entry = m_entries.at(index);
         const TagsHierarchyItem& item = m_items.at(index);
+        const int noteCount = std::max(
+            0,
+            noteCountForTagProjection(m_allNotes, tagProjectionKeysForSelection(m_entries, index)));
         QString itemKey = entry.id.trimmed();
         if (itemKey.isEmpty())
         {
@@ -585,7 +606,7 @@ QVariantList TagsHierarchyViewModel::depthItems() const
             {QStringLiteral("accent"), item.accent},
             {QStringLiteral("expanded"), item.expanded},
             {QStringLiteral("showChevron"), item.showChevron},
-            {QStringLiteral("count"), 0}
+            {QStringLiteral("count"), noteCount}
         });
     }
 

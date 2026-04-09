@@ -15,6 +15,9 @@
 ## Child Files
 - `MobilePageScaffold.qml`
 
+## Recent Notes
+- The mobile routed workspace now explicitly repairs committed detail-page back navigation so the restore target remains the note editor instead of falling through to the hierarchy page.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

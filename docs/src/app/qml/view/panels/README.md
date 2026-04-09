@@ -28,6 +28,11 @@
 - `ResourceListItem.qml`
 - `StatusBarLayout.qml`
 
+## Recent Notes
+- Mobile scroll momentum is now treated as a panel-level interaction contract: `ListBarLayout.qml` preserves native
+  kinetic carry for touch scrolling, and `SidebarHierarchyView.qml` explicitly pushes LVRS hierarchy scroll surfaces
+  onto the mobile flick profile.
+
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer
 - Internal submodule boundaries

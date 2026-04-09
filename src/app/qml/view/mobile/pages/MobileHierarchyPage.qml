@@ -25,6 +25,7 @@ Item {
     property int backSwipeConsumedSessionId: -1
     property bool backSwipeDragCanceled: false
     property int backSwipeGeneratedSessionId: 0
+    property int detailPopRepairRequestId: 0
     property int editorPopRepairRequestId: 0
     property int backSwipeSessionId: -1
     property color canvasColor: LV.Theme.panelBackground01
@@ -151,6 +152,7 @@ Item {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
@@ -213,6 +215,9 @@ Item {
     function cancelPendingEditorPopRepair() {
         mobileHierarchyPage.editorPopRepairRequestId += 1;
     }
+    function cancelPendingDetailPopRepair() {
+        mobileHierarchyPage.detailPopRepairRequestId += 1;
+    }
     function rememberNoteListSelection(selectionIndex) {
         let nextSelectionIndex = -1;
         if (selectionIndex !== undefined && selectionIndex !== null) {
@@ -249,6 +254,7 @@ Item {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -267,6 +273,7 @@ Item {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -286,6 +293,7 @@ Item {
         if (!mobileScaffold.activePageRouter || !mobileHierarchyPage.activeNoteListModel)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -323,14 +331,48 @@ Item {
         mobileHierarchyPage.routeToCanonicalNoteList();
         return false;
     }
+    function verifyCommittedDetailPopState(requestId, attemptsRemaining) {
+        if (requestId !== mobileHierarchyPage.detailPopRepairRequestId
+                || !mobileScaffold.activePageRouter
+                || !mobileHierarchyPage.activeNoteListModel)
+            return false;
+        const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
+        const currentPath = String(mobileScaffold.activePageRouter.currentPath);
+        const depth = mobileHierarchyPage.routeStackDepth();
+        if (displayedPath === mobileHierarchyPage.editorRoutePath)
+            return true;
+        if (currentPath === mobileHierarchyPage.editorRoutePath && depth >= 3)
+            return true;
+        if (attemptsRemaining > 0) {
+            Qt.callLater(function () {
+                mobileHierarchyPage.verifyCommittedDetailPopState(requestId, attemptsRemaining - 1);
+            });
+            return false;
+        }
+        mobileHierarchyPage.routeToCanonicalEditor();
+        return false;
+    }
     function handleCommittedRouteTransition(state) {
         mobileHierarchyPage.requestViewHook();
         const transitionState = state || ({});
         const operation = transitionState.operation !== undefined ? String(transitionState.operation) : "";
         const fromPath = transitionState.fromPath !== undefined ? String(transitionState.fromPath) : "";
-        if (operation !== "pop" || fromPath !== mobileHierarchyPage.editorRoutePath || !mobileHierarchyPage.activeNoteListModel)
+        if (operation !== "pop" || !mobileHierarchyPage.activeNoteListModel)
             return;
         mobileHierarchyPage.rememberNoteListSelection();
+        if (fromPath === mobileHierarchyPage.detailRoutePath) {
+            mobileHierarchyPage.cancelPendingDetailPopRepair();
+            const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
+            if (displayedPath === mobileHierarchyPage.editorRoutePath)
+                return;
+            const repairRequestId = mobileHierarchyPage.detailPopRepairRequestId;
+            Qt.callLater(function () {
+                mobileHierarchyPage.verifyCommittedDetailPopState(repairRequestId, 2);
+            });
+            return;
+        }
+        if (fromPath !== mobileHierarchyPage.editorRoutePath)
+            return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
         if (displayedPath === mobileHierarchyPage.noteListRoutePath)
@@ -344,6 +386,7 @@ Item {
         if (!mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();
@@ -362,6 +405,7 @@ Item {
         if (!mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection(itemId);
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
         const displayedPath = mobileHierarchyPage.displayedBodyRoutePath();
@@ -398,6 +442,7 @@ Item {
         if (normalizedNoteId.length === 0 || !mobileHierarchyPage.activeContentViewModel || !mobileHierarchyPage.activeNoteListModel || !mobileScaffold.activePageRouter)
             return;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         mobileHierarchyPage.dismissCalendarOverlaysForEditorActivation();
         const preservedSelectionIndex = mobileHierarchyPage.rememberNoteListSelection();
         const currentPath = String(mobileScaffold.activePageRouter.currentPath);
@@ -468,6 +513,7 @@ Item {
         if (!mobileScaffold.activePageRouter)
             return false;
         mobileHierarchyPage.cancelPendingEditorPopRepair();
+        mobileHierarchyPage.cancelPendingDetailPopRepair();
         if (pageTransitionController.active)
             pageTransitionController.cancel();
         mobileHierarchyPage.resetBackSwipeState();

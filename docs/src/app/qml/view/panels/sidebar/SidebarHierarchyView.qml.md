@@ -39,6 +39,9 @@ without changing delegate call sites.
   content changed.
 - The embedded `LV.Hierarchy` now lets the shared `TapHandler` explicitly approve flick takeover, so vertical swipes on
   mobile routes are not trapped by row taps and the underlying LVRS hierarchy scroller can keep its inertial carry.
+- The host now also drives `LV.Hierarchy.listOvershootEnabled`, `listFlickDeceleration`,
+  `listMaximumFlickVelocity`, and `listReboundDuration` from an explicit mobile kinetic profile, so hierarchy scrolling
+  keeps touch momentum even when the active mobile route needs a stronger guarantee than the default theme profile.
 
 ## Important Outputs
 - `searchSubmitted(...)`
@@ -191,6 +194,8 @@ This file should be read as a composed view, not as the place where hierarchy bu
   accepts the sidebar animation object again.
 - Added mobile flick-takeover approval to the shared `LV.Hierarchy` host so the hierarchy list keeps inertial carry on
   touch routes without changing the existing desktop routing hooks.
+- Added an explicit mobile kinetic-scroll configuration layer on top of `LV.Hierarchy`, so the sidebar does not rely on
+  LVRS defaults alone to preserve post-release touch momentum.
 
 ## Tests
 
@@ -222,3 +227,5 @@ This file should be read as a composed view, not as the place where hierarchy bu
   `itemKey`, `uuid`, or other internal identifiers.
 - On mobile, hierarchy rows must allow the list viewport to take over a vertical swipe and continue scrolling after
   release with kinetic carry.
+- On mobile, the host must keep `LV.Hierarchy` overshoot/flick parameters aligned with the touch runtime profile instead
+  of leaving the sidebar on the desktop fallback scroll contract.
