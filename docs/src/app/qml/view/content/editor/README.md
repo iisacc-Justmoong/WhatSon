@@ -89,6 +89,10 @@
 - Desktop/mobile editor views now also gate timer-driven snapshot polling and deferred presentation commits on
   `typingSessionSyncProtected` plus `pendingBodySave`, not only focus state, so stale async snapshots cannot overwrite
   active typing when focus reporting briefly flaps.
+- Desktop/mobile snapshot polling now also prefers a filesystem reconcile fetch path
+  (`reconcileViewSessionAndRefreshSnapshotForNote(noteId, editorSession.editorText)`) instead of only running
+  model-side snapshot reload ticks.
+  This shifts sync balance toward RAW fetch verification while still keeping write staging eventual.
 - `ContentsEditorTypingController.qml` now rebuilds post-edit logical line-start offsets from the resulting logical
   text each mutation, fixing stale line-count growth where gutter/minimap lines could increase but not decrease after
   newline removal or line-wrap collapse.
@@ -101,6 +105,8 @@
     downstream management side
   - selection/typing controllers now treat persistence as eventual filesystem sync of the latest buffered note body,
     not as an "all changes must land on this exact idle turn" guarantee
+  - each successful queued write now also triggers one reconcile verify(fetch) against filesystem RAW, so the visible
+    note snapshot converges even when downstream body serialization canonicalizes markup/escaping.
 - The RichText editor surface now decodes one safe-entity layer for display, so RAW-preserving source escapes like
   `&lt;` / `&gt;` / `&amp;` render as visible glyphs without changing the canonical note-body source contract.
 - Gutter/minimap/editor default geometry now routes through LVRS `gap`, `stroke`, theme-color, and `scaleMetric(...)`
@@ -125,6 +131,8 @@
   editors and word processors more closely.
 - The shared editor wrapper now also normalizes tab indentation width through `TextEdit.tabStopDistance` using runtime
   font metrics for four spaces, so Tab indent depth no longer jumps to an oversized default column.
+- The shared editor wrapper now also intercepts direct `Tab` key insertion to emit four literal spaces by default,
+  preventing mode-dependent `\t` expansion from producing oversized indentation width.
 - `ContentsEditorTypingController.qml` no longer drops a committed `textEdited` mutation only because a transient
   model-sync guard bit is still set; committed user typing now always refreshes local authority and persistence staging.
 - The shared selection controller now also primes right-click context-menu selections on mouse press, so multi-block or

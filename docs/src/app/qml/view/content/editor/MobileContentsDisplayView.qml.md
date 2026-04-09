@@ -90,6 +90,12 @@ suppression local to this file.
   - only when they differ does it trigger a RAW snapshot refresh into the bound note-list model
   - the one-shot marker (`editorEntrySnapshotComparedNoteId`) prevents duplicate fetches for the same entry cycle
   - reconciliation is deferred while `pendingBodySave`, active typing session, or focused editor input is true.
+  - once deferred conditions clear, the entry marker is reset and the one-shot reconcile retry runs immediately.
+- Mobile periodic snapshot polling now also prefers that same reconcile path on every timer tick:
+  - first compares session text vs filesystem RAW through the bridge reconcile call
+  - only when that reconcile contract is unavailable does it fall back to `refreshSelectedNoteSnapshot()`
+  - when reconcile changes the selected body snapshot, minimap/document/gutter refresh scheduling is triggered
+    immediately.
 
 ## Tests
 
@@ -128,6 +134,8 @@ suppression local to this file.
   input surface.
 - While the mobile typing session remains active or `pendingBodySave` is true, timer-driven snapshot polling must stay
   paused even when focus reporting momentarily flaps.
+- Mobile periodic snapshot polling must compare view-session text against filesystem RAW first, and only refresh the
+  live snapshot when reconcile detects mismatch.
 - Mobile Hangul typing must not split jamo or jump the cursor because of app-driven surface reinjection during the
   active input session.
 - Mobile gutter/minimap line count must shrink immediately after newline removal or line-wrap collapse; deleting a

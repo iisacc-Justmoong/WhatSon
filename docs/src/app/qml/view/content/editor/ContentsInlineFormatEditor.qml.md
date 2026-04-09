@@ -97,6 +97,8 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   override typography still remain inside LVRS density scaling.
 - The wrapper now normalizes `TextEdit.tabStopDistance` to `tabIndentSpaceCount` spaces (default: 4), measured with
   the same runtime font metrics used by the editor surface.
+- The wrapper now also overrides direct `Tab` key insertion to write spaces (`tabIndentSpaceCount`, default 4) instead
+  of a literal `\t`, so indent width stays consistent in both plain/rich editor modes.
 
 ## Regression Notes
 
@@ -139,3 +141,5 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
     nested internal flicking
 - pressing `Tab` in the note editor must render one indent step as approximately four spaces, not an oversized default
   tab column
+- pressing `Tab` must insert four literal spaces by default (not `\t`) so RAW/renderer mode switches do not inflate
+  indentation width

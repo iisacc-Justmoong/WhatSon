@@ -152,6 +152,19 @@ void ContentsEditorIdleSyncController::handlePersistenceFinished(
         {
             markNoteDirty(normalizedNoteId);
         }
+        if (!normalizedNoteId.isEmpty() && m_noteManagementCoordinator != nullptr)
+        {
+            const bool reconciled = m_noteManagementCoordinator
+                ->reconcileViewSessionAndRefreshSnapshotForNote(normalizedNoteId, completedText);
+            if (!reconciled)
+            {
+                WhatSon::Debug::traceSelf(
+                    this,
+                    QStringLiteral("content.idleSync"),
+                    QStringLiteral("postPersist.reconcile.failed"),
+                    QStringLiteral("noteId=%1").arg(normalizedNoteId));
+            }
+        }
     }
     else
     {

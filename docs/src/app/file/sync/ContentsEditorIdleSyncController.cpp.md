@@ -18,6 +18,10 @@
   enqueue attempt on top of the same buffered state.
 - Entry-time session/filesystem reconcile requests are forwarded as a dedicated pass-through operation to
   `ContentsNoteManagementCoordinator`; this controller does not reimplement RAW comparison logic locally.
+- Successful async persistence completion now also runs one post-write filesystem reconcile step:
+  - compares the persisted editor snapshot against note RAW through
+    `ContentsNoteManagementCoordinator::reconcileViewSessionAndRefreshSnapshotForNote(...)`
+  - refreshes the bound note snapshot only if filesystem RAW differs from the just-persisted payload.
 - Failed writes keep the note dirty and wait for the next fetch turn instead of trying to force recovery inline on the
   editor path.
 
@@ -38,3 +42,5 @@
   buffer.
 - Reconcile operations must remain side-effect free for the buffered persistence queue state (no forced dirty-order
   mutation).
+- A successful persistence completion must still verify note RAW/session alignment once, so editor-visible snapshots
+  can self-heal if downstream body serialization canonicalizes the source text.

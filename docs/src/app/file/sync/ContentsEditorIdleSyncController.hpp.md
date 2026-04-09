@@ -43,6 +43,8 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
   - the next fetch tick simply writes the latest buffered snapshot
 - Persistence itself remains asynchronous because actual `.wsnote` IO still runs through
   `ContentsNoteManagementCoordinator`.
+- After each successful queued persistence completion, the controller also performs one reconcile fetch verify against
+  filesystem RAW to keep editor-visible note snapshots aligned without forcing unconditional reloads.
 
 ## Regression Checks
 
@@ -54,3 +56,5 @@ The live editor buffer remains authoritative; filesystem persistence is eventual
 - Failed persistence completion must keep that note dirty so a later fetch turn can retry the latest buffered text.
 - Session/filesystem reconciliation must not trigger unconditional reloads; filesystem refresh should happen only on
   mismatch.
+- Successful persistence completion must include one reconcile verify pass so the latest visible snapshot can converge
+  with canonicalized filesystem RAW.

@@ -326,6 +326,37 @@ FocusScope {
         });
     }
 
+    function tabIndentText() {
+        return Array(control.effectiveTabIndentSpaceCount + 1).join(" ");
+    }
+
+    function insertTabIndentAsSpaces() {
+        const indentText = control.tabIndentText();
+        if (indentText.length === 0)
+            return false;
+
+        const cursorPosition = Math.max(0, Math.floor(Number(textInput.cursorPosition) || 0));
+        const selectionStart = Math.max(0, Math.floor(Number(textInput.selectionStart) || 0));
+        const selectionEnd = Math.max(selectionStart, Math.floor(Number(textInput.selectionEnd) || 0));
+        const hasSelection = selectionEnd > selectionStart;
+        const insertionPosition = hasSelection ? selectionStart : cursorPosition;
+
+        if (hasSelection && textInput.remove !== undefined)
+            textInput.remove(selectionStart, selectionEnd);
+
+        if (textInput.insert !== undefined) {
+            textInput.insert(insertionPosition, indentText);
+        } else {
+            const previousText = textInput.text === undefined || textInput.text === null ? "" : String(textInput.text);
+            textInput.text = previousText.slice(0, insertionPosition) + indentText + previousText.slice(insertionPosition);
+        }
+
+        if (textInput.deselect !== undefined)
+            textInput.deselect();
+        control.setCursorPositionPreservingInputMethod(insertionPosition + indentText.length);
+        return true;
+    }
+
     onFocusedChanged: {
         control.notifyInputMethod(Qt.ImQueryAll);
         if (!focused)
@@ -450,6 +481,17 @@ FocusScope {
                 onTextChanged: {
                     control.scheduleCommittedTextEditedDispatch();
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
+                }
+                Keys.onPressed: function (event) {
+                    const modifierMask = Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier;
+                    if (event.key === Qt.Key_Tab
+                            && (event.modifiers & modifierMask) === 0
+                            && (event.modifiers & Qt.ShiftModifier) === 0) {
+                        if (control.insertTabIndentAsSpaces()) {
+                            event.accepted = true;
+                            return;
+                        }
+                    }
                 }
 
                 TapHandler {

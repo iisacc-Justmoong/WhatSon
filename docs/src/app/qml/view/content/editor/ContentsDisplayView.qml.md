@@ -93,6 +93,16 @@ that sit directly inside the editor viewport.
 - Desktop note snapshot polling now also pauses while the editor owns input focus.
   This prevents the periodic `currentBodyText` refresh from re-binding a stale same-note body snapshot into the live
   editor while the user is still typing.
+- Desktop snapshot polling now also prefers a filesystem-backed reconcile fetch path:
+  - each timer tick compares `editorSession.editorText` against note RAW through
+    `ContentsEditorSelectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(...)`
+  - only if the bridge does not expose that reconcile contract does the view fall back to
+    `refreshSelectedNoteSnapshot()`
+- Desktop editor entry now also performs one-shot session/filesystem reconciliation per selected note.
+  The view tracks `editorEntrySnapshotComparedNoteId` to avoid duplicate entry fetches, and defers that entry
+  reconciliation while focused typing or `pendingBodySave` is active.
+  When deferred conditions clear (`pendingBodySave=false` / typing-session guard released), the entry marker is reset
+  and one-shot reconcile is retried immediately.
 
 ## Tests
 
@@ -119,6 +129,10 @@ that sit directly inside the editor viewport.
   `currentBodyText` payload into the live editor buffer.
 - While the desktop typing session remains active or `pendingBodySave` is true, timer-driven snapshot polling must stay
   paused even if focus flags momentarily flap.
+- Desktop periodic snapshot polling must compare view-session text against filesystem RAW first, and only refresh the
+  live snapshot when reconcile detects mismatch.
+- Desktop editor entry/visibility/note-switch must run one-shot session/filesystem reconcile exactly once per selected
+  note (unless deferred by typing/pending-save guard).
 - Desktop Hangul typing must not lose committed syllables or delete partial jamo because of a deferred presentation
   refresh firing mid-edit.
 - Desktop gutter/minimap line count must decrease immediately after newline deletion or line-wrap collapse; it must not

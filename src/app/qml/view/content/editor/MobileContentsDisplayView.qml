@@ -889,9 +889,36 @@ Item {
         return editorSelectionController.persistEditorTextImmediately(nextText);
     }
     function pollSelectedNoteSnapshot() {
-        if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
-            return;
         if (contentsView.typingSessionSyncProtected || contentsView.pendingBodySave)
+            return;
+        const normalizedNoteId = contentsView.selectedNoteId === undefined || contentsView.selectedNoteId === null
+                ? ""
+                : String(contentsView.selectedNoteId).trim();
+        if (selectionBridge
+                && selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote !== undefined
+                && normalizedNoteId.length > 0) {
+            const previousBodyText = contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
+                    ? ""
+                    : String(contentsView.selectedNoteBodyText);
+            const sessionText = editorSession.editorText === undefined || editorSession.editorText === null
+                    ? ""
+                    : String(editorSession.editorText);
+            const reconciled = !!selectionBridge.reconcileViewSessionAndRefreshSnapshotForNote(
+                                   normalizedNoteId,
+                                   sessionText);
+            if (!reconciled)
+                return;
+            const refreshedBodyText = contentsView.selectedNoteBodyText === undefined || contentsView.selectedNoteBodyText === null
+                    ? ""
+                    : String(contentsView.selectedNoteBodyText);
+            if (refreshedBodyText !== previousBodyText) {
+                contentsView.scheduleMinimapSnapshotRefresh(true);
+                contentsView.scheduleDocumentPresentationRefresh(true);
+                contentsView.scheduleGutterRefresh(4);
+            }
+            return;
+        }
+        if (!selectionBridge || selectionBridge.refreshSelectedNoteSnapshot === undefined)
             return;
         selectionBridge.refreshSelectedNoteSnapshot();
         contentsView.scheduleGutterRefresh(2);
@@ -1162,12 +1189,16 @@ Item {
         contentsView.scheduleGutterRefresh(4);
     }
     onPendingBodySaveChanged: {
-        if (!contentsView.pendingBodySave)
+        if (!contentsView.pendingBodySave) {
+            contentsView.editorEntrySnapshotComparedNoteId = "";
             contentsView.reconcileEditorEntrySnapshotOnce();
+        }
     }
     onTypingSessionSyncProtectedChanged: {
-        if (!contentsView.typingSessionSyncProtected)
+        if (!contentsView.typingSessionSyncProtected) {
+            contentsView.editorEntrySnapshotComparedNoteId = "";
             contentsView.reconcileEditorEntrySnapshotOnce();
+        }
     }
     onVisibleChanged: {
         if (visible) {
