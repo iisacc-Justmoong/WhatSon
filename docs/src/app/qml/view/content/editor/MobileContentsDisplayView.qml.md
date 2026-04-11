@@ -83,9 +83,16 @@ suppression local to this file.
 - Mobile hardware-keyboard path now also supports `Cmd+Opt+T` (`Meta+Alt+T`) for agenda insertion, sharing the same
   typing-controller source mutation path as desktop, with insertion payloads supplied by
   `ContentsAgendaBackend.buildAgendaInsertionPayload(...)`.
+  - compatibility fallback `Ctrl+Alt+T` is also registered for environments where Command is surfaced as
+    `ControlModifier`.
 - Mobile hardware-keyboard path now also supports `Cmd+Opt+C` (`Meta+Alt+C`) for callout insertion, sharing the same
   typing-controller source mutation path as desktop, with insertion payloads supplied by
   `ContentsCalloutBackend.buildCalloutInsertionPayload(...)`.
+  - compatibility fallback `Ctrl+Alt+C` is also registered for environments where Command is surfaced as
+    `ControlModifier`.
+- Mobile now forwards shortcut key events directly from the inner `TextEdit` through
+  `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so hardware-keyboard shortcuts stay active while the nested
+  input item owns focus.
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so the old note buffer stays staged in the fetch-sync controller while the newly selected note binds immediately.
 - The mobile host now also wires `ContentsEditorSession.typingIdleThresholdMs` from
@@ -168,6 +175,8 @@ suppression local to this file.
     checkbox toggles must persist canonical `done=true|false`.
   - In non-Plain modes, callout source blocks must render through `ContentsCalloutLayer` as Figma-aligned callout rows, and `Cmd+Opt+C` must insert
     canonical `<callout>...</callout>` wrappers.
+  - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
+    `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
   - Any pointer-driven right-click formatting flow must preserve a multi-paragraph or mixed-inline dragged selection

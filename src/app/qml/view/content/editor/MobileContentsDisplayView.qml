@@ -1665,6 +1665,9 @@ Item {
                         selectedTextColor: LV.Theme.textPrimary
                         selectionColor: LV.Theme.accent
                         shapeStyle: shapeRoundRect
+                        shortcutKeyPressHandler: function (event) {
+                            return contentsView.handleInlineFormatShortcutKeyPress(event);
+                        }
                         showRenderedOutput: !contentsView.preferNativeInputHandling
                         showScrollBar: false
                         text: contentsView.preferNativeInputHandling ? contentsView.mobileEditorDisplayText : contentsView.renderedEditorText
@@ -1679,9 +1682,6 @@ Item {
                         z: contentsView.showPrintEditorLayout ? 1 : 0
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : editorViewport
 
-                        Keys.onPressed: function (event) {
-                            contentsView.handleInlineFormatShortcutKeyPress(event);
-                        }
                         onFocusedChanged: {
                             if (focused) {
                                 if (documentPresentationRefreshTimer.running)
@@ -1979,7 +1979,21 @@ Item {
                     Shortcut {
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Ctrl+Alt+T"
+
+                        onActivated: contentsView.queueAgendaShortcutInsertion()
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Alt+C"
+
+                        onActivated: contentsView.queueCalloutShortcutInsertion()
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Ctrl+Alt+C"
 
                         onActivated: contentsView.queueCalloutShortcutInsertion()
                     }

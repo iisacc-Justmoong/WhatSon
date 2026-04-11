@@ -122,13 +122,16 @@
   divider source token `</break>` before persistence.
 - `ContentsEditorTypingController.qml` now also owns agenda authoring shortcuts:
   - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"></task></agenda>`
+  - `Ctrl+Alt+T` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - markdown-like `[] item` / `[x] item` lines are rewritten into agenda/task source blocks
   - pressing `Enter` inside `<task>` either creates the next `<task>` or exits agenda editing when the current task is
     empty
   - if agenda exit occurs on an empty task and all sibling tasks are empty, the entire agenda block is removed
 - `ContentsEditorTypingController.qml` now also owns callout authoring shortcuts:
   - `Cmd+Opt+C` inserts canonical `<callout></callout>` at the current selection/cursor
+  - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - if selection text exists, it is wrapped into `<callout>...</callout>`
+  - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
   `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
 - Callout parsing and insertion payload backend logic now lives in

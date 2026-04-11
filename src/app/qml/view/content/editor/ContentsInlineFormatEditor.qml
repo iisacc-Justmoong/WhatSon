@@ -31,6 +31,7 @@ FocusScope {
     property color selectedTextColor: LV.Theme.textPrimary
     property color selectionColor: LV.Theme.accent
     property int shapeStyle: 0
+    property var shortcutKeyPressHandler: null
     property bool showRenderedOutput: true
     property bool showScrollBar: false
     property int tabIndentSpaceCount: 4
@@ -483,6 +484,12 @@ FocusScope {
                     control.notifyInputMethod(control.inputMethodSelectionQueryMask());
                 }
                 Keys.onPressed: function (event) {
+                    if (control.shortcutKeyPressHandler
+                            && typeof control.shortcutKeyPressHandler === "function") {
+                        const shortcutHandled = !!control.shortcutKeyPressHandler(event);
+                        if (shortcutHandled || event.accepted)
+                            return;
+                    }
                     const modifierMask = Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier;
                     if (event.key === Qt.Key_Tab
                             && (event.modifiers & modifierMask) === 0

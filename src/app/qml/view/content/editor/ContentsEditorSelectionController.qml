@@ -527,17 +527,24 @@ QtObject {
             return false;
 
         const modifiers = event.modifiers;
+        const eventText = event.text === undefined || event.text === null ? "" : String(event.text);
+        const normalizedShortcutText = eventText.length === 1 ? eventText.toUpperCase() : "";
+        const metaPressed = !!(modifiers & Qt.MetaModifier);
+        const controlPressed = !!(modifiers & Qt.ControlModifier);
+        const altPressed = !!(modifiers & Qt.AltModifier);
+        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
         const commandPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.ControlModifier));
         const listShortcutPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.AltModifier)) && !(modifiers & Qt.ControlModifier);
-        const agendaShortcutPressed = !!(modifiers & Qt.MetaModifier)
-                && !!(modifiers & Qt.AltModifier)
-                && !(modifiers & Qt.ControlModifier)
-                && !(modifiers & Qt.ShiftModifier);
-        const calloutShortcutPressed = !!(modifiers & Qt.MetaModifier)
-                && !!(modifiers & Qt.AltModifier)
-                && !(modifiers & Qt.ControlModifier)
-                && !(modifiers & Qt.ShiftModifier);
-        const shiftPressed = !!(modifiers & Qt.ShiftModifier);
+        const metaAltChord = metaPressed && altPressed && !shiftPressed;
+        const controlAltFallbackChord = !metaPressed && controlPressed && altPressed && !shiftPressed;
+        const agendaShortcutPressed = metaAltChord || controlAltFallbackChord;
+        const calloutShortcutPressed = metaAltChord || controlAltFallbackChord;
+        const agendaShortcutKeyMatched = metaAltChord
+                ? (event.key === Qt.Key_T || normalizedShortcutText === "T")
+                : normalizedShortcutText === "T";
+        const calloutShortcutKeyMatched = metaAltChord
+                ? (event.key === Qt.Key_C || normalizedShortcutText === "C")
+                : normalizedShortcutText === "C";
         let handled = false;
         switch (event.key) {
         case Qt.Key_B:
@@ -586,6 +593,20 @@ QtObject {
             break;
         default:
             break;
+        }
+        if (!handled
+                && agendaShortcutPressed
+                && agendaShortcutKeyMatched
+                && controller.view
+                && controller.view.queueAgendaShortcutInsertion !== undefined) {
+            handled = !!controller.view.queueAgendaShortcutInsertion();
+        }
+        if (!handled
+                && calloutShortcutPressed
+                && calloutShortcutKeyMatched
+                && controller.view
+                && controller.view.queueCalloutShortcutInsertion !== undefined) {
+            handled = !!controller.view.queueCalloutShortcutInsertion();
         }
 
         if (handled)

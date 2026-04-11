@@ -16,4 +16,9 @@ public:
     Q_INVOKABLE QVariantList parseCallouts(const QString& sourceText) const;
     Q_INVOKABLE QVariantMap buildCalloutInsertionPayload(
         const QString& bodyText = QString()) const;
+    Q_INVOKABLE QVariantMap detectCalloutEnterReplacement(
+        const QString& sourceText,
+        int sourceStart,
+        int sourceEnd,
+        const QString& insertedText) const;
 };

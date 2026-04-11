@@ -1,9 +1,37 @@
 #include "ContentsCalloutBackend.hpp"
 
 #include <QRegularExpression>
+#include <algorithm>
+#include <limits>
+#include <optional>
 
 namespace
 {
+    struct CalloutContext final
+    {
+        int calloutCloseEnd = 0;
+        int calloutCloseStart = 0;
+        int calloutContentStart = 0;
+    };
+
+    QVariantMap notAppliedResult()
+    {
+        return {
+            {QStringLiteral("applied"), false}
+        };
+    }
+
+    int boundedQStringSize(const QString& text)
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
+    }
+
+    int boundedTextIndex(const QString& text, const int index)
+    {
+        return std::clamp(index, 0, boundedQStringSize(text));
+    }
+
     QString normalizePlainText(QString text)
     {
         text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
@@ -48,6 +76,41 @@ namespace
         rawCalloutInnerText.remove(QRegularExpression(QStringLiteral(R"(<[^>]*>)")));
         rawCalloutInnerText = decodeSourceEntities(rawCalloutInnerText);
         return normalizePlainText(rawCalloutInnerText).trimmed();
+    }
+
+    std::optional<CalloutContext> calloutContextAtSourceOffset(
+        const QString& sourceText,
+        const int sourceOffset)
+    {
+        const QString normalizedSourceText = sourceText;
+        const int boundedOffset = boundedTextIndex(normalizedSourceText, sourceOffset);
+        const QString beforeOffsetText = normalizedSourceText.left(boundedOffset);
+
+        const int calloutOpenStart = beforeOffsetText.lastIndexOf(QStringLiteral("<callout"));
+        if (calloutOpenStart < 0)
+        {
+            return std::nullopt;
+        }
+        const int calloutOpenEnd = normalizedSourceText.indexOf(QLatin1Char('>'), calloutOpenStart);
+        if (calloutOpenEnd < 0)
+        {
+            return std::nullopt;
+        }
+        const int calloutContentStart = calloutOpenEnd + 1;
+        const int calloutCloseStart =
+            normalizedSourceText.indexOf(QStringLiteral("</callout>"), calloutContentStart);
+        if (calloutCloseStart < 0
+            || boundedOffset < calloutContentStart
+            || boundedOffset > calloutCloseStart)
+        {
+            return std::nullopt;
+        }
+
+        CalloutContext context;
+        context.calloutCloseEnd = calloutCloseStart + QStringLiteral("</callout>").size();
+        context.calloutCloseStart = calloutCloseStart;
+        context.calloutContentStart = calloutContentStart;
+        return context;
     }
 } // namespace
 
@@ -106,4 +169,77 @@ QVariantMap ContentsCalloutBackend::buildCalloutInsertionPayload(const QString& 
         QStringLiteral("insertionSourceText"),
         calloutOpenTag + escapedBodyText + calloutCloseTag);
     return insertionPayload;
+}
+
+QVariantMap ContentsCalloutBackend::detectCalloutEnterReplacement(
+    const QString& sourceText,
+    const int sourceStart,
+    const int sourceEnd,
+    const QString& insertedText) const
+{
+    const QString normalizedInsertedText = normalizePlainText(insertedText);
+    if (!normalizedInsertedText.endsWith(QLatin1Char('\n')))
+    {
+        return notAppliedResult();
+    }
+    if (normalizedInsertedText.count(QLatin1Char('\n')) != 1)
+    {
+        return notAppliedResult();
+    }
+
+    const std::optional<CalloutContext> calloutContext = calloutContextAtSourceOffset(sourceText, sourceStart);
+    if (!calloutContext.has_value())
+    {
+        return notAppliedResult();
+    }
+
+    const QString normalizedSourceText = sourceText;
+    const int safeStart = boundedTextIndex(normalizedSourceText, sourceStart);
+    const int safeEnd = boundedTextIndex(normalizedSourceText, std::max(safeStart, sourceEnd));
+    if (safeStart != safeEnd)
+    {
+        return notAppliedResult();
+    }
+
+    const int lineStartCandidate =
+        safeStart > calloutContext->calloutContentStart
+        ? normalizedSourceText.lastIndexOf(QLatin1Char('\n'), safeStart - 1) + 1
+        : calloutContext->calloutContentStart;
+    const int lineStart = std::max(calloutContext->calloutContentStart, lineStartCandidate);
+    if (lineStart <= calloutContext->calloutContentStart)
+    {
+        return notAppliedResult();
+    }
+    if (normalizedSourceText.at(lineStart - 1) != QLatin1Char('\n'))
+    {
+        return notAppliedResult();
+    }
+
+    const int lineEndIndex = normalizedSourceText.indexOf(QLatin1Char('\n'), safeEnd);
+    const int lineEnd =
+        lineEndIndex >= 0 && lineEndIndex < calloutContext->calloutCloseStart
+        ? lineEndIndex
+        : calloutContext->calloutCloseStart;
+    const QString linePrefix = normalizedSourceText.mid(lineStart, safeStart - lineStart);
+    const QString lineSuffix = normalizedSourceText.mid(safeEnd, lineEnd - safeEnd);
+    if (!linePrefix.trimmed().isEmpty() || !lineSuffix.trimmed().isEmpty())
+    {
+        return notAppliedResult();
+    }
+
+    const QString trailingSourceText =
+        normalizedSourceText.mid(safeEnd, calloutContext->calloutCloseStart - safeEnd);
+    if (!trailingSourceText.trimmed().isEmpty())
+    {
+        return notAppliedResult();
+    }
+
+    const QString exitCalloutSourceText = QStringLiteral("</callout>\n");
+    return {
+        {QStringLiteral("applied"), true},
+        {QStringLiteral("cursorSourceOffsetFromReplacementStart"), exitCalloutSourceText.size()},
+        {QStringLiteral("replacementSourceStart"), lineStart - 1},
+        {QStringLiteral("replacementSourceEnd"), calloutContext->calloutCloseEnd},
+        {QStringLiteral("replacementSourceText"), exitCalloutSourceText}
+    };
 }

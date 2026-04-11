@@ -634,6 +634,18 @@ QtObject {
                     insertedText);
     }
 
+    function calloutEnterInsertion(currentSourceText, sourceStart, sourceEnd, insertedText) {
+        if (!controller.calloutBackend
+                || controller.calloutBackend.detectCalloutEnterReplacement === undefined) {
+            return ({ "applied": false });
+        }
+        return controller.calloutBackend.detectCalloutEnterReplacement(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    insertedText);
+    }
+
     function sourceOffsetForLogicalOffset(logicalOffset) {
         controller.ensureLiveEditingStateReady();
         const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
@@ -795,6 +807,21 @@ QtObject {
             rawSourceReplacementText = String(agendaTaskEnter.replacementSourceText || "");
             rawReplacementEnabled = true;
             cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(agendaTaskEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+        const calloutEnter = agendaTaskEnter.applied
+                ? ({ "applied": false })
+                : controller.calloutEnterInsertion(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    normalizedInsertedText);
+        if (calloutEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(calloutEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(replacementSourceStart, Math.floor(Number(calloutEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(calloutEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(calloutEnter.cursorSourceOffsetFromReplacementStart) || 0));
             cursorLogicalOverride = NaN;
         }
 

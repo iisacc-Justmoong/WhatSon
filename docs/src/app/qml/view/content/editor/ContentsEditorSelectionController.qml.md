@@ -63,8 +63,12 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - `Cmd+Shift+7` on macOS and `Alt+Shift+7` on Windows/Linux toggle an ordered markdown list and write canonical `1. `
   / `2. ` source prefixes.
 - `Cmd+Opt+T` (`Meta+Alt+T`) now routes to `view.queueAgendaShortcutInsertion()` when editor mutation guards allow it.
+  - environments that surface Command as `ControlModifier` are also accepted through `Ctrl+Alt+T`.
 - `Cmd+Opt+C` (`Meta+Alt+C`) now routes to `view.queueCalloutShortcutInsertion()` when editor mutation guards allow
   it.
+  - environments that surface Command as `ControlModifier` are also accepted through `Ctrl+Alt+C`.
+- Agenda/callout shortcut key detection now accepts both `event.key` and single-character `event.text` fallback (`T` /
+  `C`) so keyboard-layout-dependent keycode variance does not drop the shortcut.
 - Reapplying the same list shortcut to lines that are already uniformly in that list form removes the corresponding
   list markers instead of stacking duplicates.
 - Mixed-line conversions are canonicalized:
@@ -131,6 +135,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   double-insert when both key-event and window-shortcut paths are present.
 - Pressing `Cmd+Opt+C` while the editor is active should trigger exactly one callout insertion request and must not
   double-insert when both key-event and window-shortcut paths are present.
+- In environments where Command is exposed as `ControlModifier`, `Ctrl+Alt+T` / `Ctrl+Alt+C` must trigger the same
+  agenda/callout insertion behavior as `Cmd+Opt+T` / `Cmd+Opt+C`.
 - Applying either list shortcut to a multi-line selection should transform every touched non-empty line as one block,
   not only the first line.
 - Reapplying the same list shortcut to a uniformly listed block should remove those markers instead of duplicating them.

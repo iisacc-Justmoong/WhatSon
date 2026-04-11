@@ -13,6 +13,9 @@ Implements callout source parsing and insertion helpers shared by desktop/mobile
 - Builds canonical callout insertion payloads:
   - `<callout>...</callout>`
   - cursor placement offset inside callout body text.
+- Detects callout-exit `Enter` behavior:
+  - when the user presses `Enter` on a trailing empty line inside `<callout>...</callout>`
+  - rewrites that span so editing exits the callout block (`</callout>\n`) instead of stacking extra empty lines.
 
 ## Architectural Notes
 - Callout parsing/mutation regex and entity handling are intentionally localized here so QML controllers only manage
@@ -25,3 +28,4 @@ Implements callout source parsing and insertion helpers shared by desktop/mobile
   the callout body.
 - `buildCalloutInsertionPayload(...)` must escape raw `<`, `>`, `&`, and quotes in inserted body text.
 - `<callout>Line 1<br/>Line 2</callout>` must parse into display text with preserved line breaks.
+- Pressing `Enter` twice at the end of a callout must exit the callout block on the second `Enter`.

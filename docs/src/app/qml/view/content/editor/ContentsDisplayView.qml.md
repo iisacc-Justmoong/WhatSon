@@ -94,9 +94,15 @@ that sit directly inside the editor viewport.
 - Desktop now also exposes `Cmd+Opt+T` (`Meta+Alt+T`) as an agenda insertion shortcut, routed through
   `ContentsEditorTypingController.queueAgendaShortcutInsertion()`, and the source insertion payload itself is now
   provided by `ContentsAgendaBackend`.
+  - compatibility fallback `Ctrl+Alt+T` is also registered for environments where Command is surfaced as
+    `ControlModifier`.
 - Desktop now also exposes `Cmd+Opt+C` (`Meta+Alt+C`) as a callout insertion shortcut, routed through
   `ContentsEditorTypingController.queueCalloutShortcutInsertion()`, with insertion payloads supplied by
   `ContentsCalloutBackend`.
+  - compatibility fallback `Ctrl+Alt+C` is also registered for environments where Command is surfaced as
+    `ControlModifier`.
+- Desktop now forwards shortcut key events directly from the inner `TextEdit` through
+  `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so shortcuts still fire while the nested input item owns focus.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
   immediate-save acceptance path.
@@ -172,6 +178,8 @@ that sit directly inside the editor viewport.
     must persist canonical `done=true|false` in source.
   - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
     canonical callout wrapper at the current cursor/selection.
+  - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
+    `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the

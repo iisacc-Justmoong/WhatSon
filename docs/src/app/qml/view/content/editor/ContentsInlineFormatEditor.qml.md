@@ -99,6 +99,10 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   the same runtime font metrics used by the editor surface.
 - The wrapper now also overrides direct `Tab` key insertion to write spaces (`tabIndentSpaceCount`, default 4) instead
   of a literal `\t`, so indent width stays consistent in both plain/rich editor modes.
+- The wrapper now exposes `shortcutKeyPressHandler(event)`:
+  - hosts can inject a key-routing callback that runs from the inner `TextEdit.Keys.onPressed`
+  - when that callback accepts the event, the wrapper stops local key fallback processing
+  - this keeps host shortcuts active even while the nested `TextEdit` owns direct focus.
 
 ## Regression Notes
 
@@ -143,3 +147,5 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   tab column
 - pressing `Tab` must insert four literal spaces by default (not `\t`) so RAW/renderer mode switches do not inflate
   indentation width
+- injected host shortcut handlers must still fire when the nested `TextEdit` has focus, and accepted shortcut events
+  must not fall through into literal character insertion.

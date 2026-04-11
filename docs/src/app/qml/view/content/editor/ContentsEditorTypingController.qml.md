@@ -34,11 +34,14 @@ This controller exists to keep plain typing separate from inline-format applicat
 - The controller now also owns callout source shortcuts:
   - `queueCalloutShortcutInsertion()` wraps the current selection (or empty cursor point) with canonical
     `<callout>...</callout>` source.
+  - pressing `Enter` on a trailing empty callout line exits callout editing instead of adding another empty inner line.
 - Agenda-specific source mutation logic above is delegated to `ContentsAgendaBackend`:
   - `buildAgendaInsertionPayload(...)`
   - `detectTodoShortcutReplacement(...)`
   - `detectAgendaTaskEnterReplacement(...)`
 - Callout insertion payload generation is delegated to `ContentsCalloutBackend.buildCalloutInsertionPayload(...)`.
+- Callout enter-exit detection is delegated to
+  `ContentsCalloutBackend.detectCalloutEnterReplacement(...)`.
 - The divider shortcut rewrite is line-scoped:
   - it replaces the whole current line range, not only the last typed `-`
   - it does not trigger when `---` appears as part of a longer token (`abc---`, `----`, `---text`)
@@ -122,7 +125,9 @@ longer part of the normal typing path.
   - canonicalization rules are centralized in `src/app/agenda/ContentsAgendaBackend.cpp`
 - Callout insertion is another source-side shortcut exception:
   - `Cmd+Opt+C` inserts/wraps canonical `<callout>...</callout>` source tags
-  - canonical insertion payload generation is centralized in `src/app/callout/ContentsCalloutBackend.cpp`
+  - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
+  - pressing `Enter` twice at the end of a callout exits the wrapper on the second `Enter`
+  - canonical insertion/exit payload generation is centralized in `src/app/callout/ContentsCalloutBackend.cpp`
 
 ## Regression Checks
 
@@ -169,8 +174,14 @@ longer part of the normal typing path.
 - Typing a standalone `---` line must immediately persist canonical source `</break>` (not literal `---`).
 - Typing `---` inside longer text (`abc---`, `---todo`, `----`) must not trigger divider canonicalization.
 - `Cmd+Opt+T` must insert one canonical agenda block at the current selection without leaving escaped raw entities.
+- `Ctrl+Alt+T` fallback must trigger the same agenda insertion behavior when runtime Command mapping resolves as
+  `ControlModifier`.
 - `Cmd+Opt+C` must insert one canonical `<callout>...</callout>` wrapper at the current selection without leaving
   escaped raw wrapper tags.
+- `Ctrl+Alt+C` fallback must trigger the same callout insertion behavior when runtime Command mapping resolves as
+  `ControlModifier`.
+- Pressing `Enter` twice at the end of `<callout>...</callout>` must move the cursor out of the callout on the second
+  `Enter` and must not duplicate closing `</callout>` tags.
 - Typing `[] task` must persist canonical `<agenda date="..."><task done="false">task</task></agenda>`.
 - Typing `[x] task` must persist canonical `<agenda date="..."><task done="true">task</task></agenda>`.
 - Pressing `Enter` in a non-empty `<task>` must create the next `<task done="false">` sibling block.
