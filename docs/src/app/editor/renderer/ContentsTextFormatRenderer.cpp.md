@@ -36,6 +36,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Proprietary formatting remains authoritative for bold/italic/underline/strikethrough/highlight; markdown emphasis
   tokens are intentionally not promoted into those styles.
 - Converts `<br>` style tags and newline characters to `<br/>`.
+- Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
+  (`<hr/>`) on both the live editor surface and preview HTML.
 - Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
 - Recognizes supported `<span style=...>` runs and folds them back into the same canonical style stack, so stored
@@ -123,4 +125,6 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Applying `Bold`/`Italic`/`Underline`/`Highlight` shortcuts to heading, blockquote, link-literal, or code-literal text
   must still add/remove proprietary `.wsnbody` tags instead of misreading markdown presentation styling as an
   already-applied shortcut format.
+- A stored `</break>` token must render as a visible divider line (not literal text) and still consume one logical
+  break slot in inline-style selection coverage rebuild.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

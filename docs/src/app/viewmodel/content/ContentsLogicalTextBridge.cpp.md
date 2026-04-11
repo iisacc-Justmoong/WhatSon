@@ -27,7 +27,7 @@
   the exact plain-text string that the offset table was built from.
 - The implementation now also builds a logical-text-to-source offset table:
   - inline tags are treated as zero-width source tokens
-  - `<br>` counts as one logical line-break character
+  - `<br>`, canonical `</break>`, and legacy `<hr>` each count as one logical line-break character
   - common HTML entities (`&lt;`, `&amp;`, `&#39;`, etc.) collapse to one logical character
 - That entity-collapse rule now intentionally matches the editor RichText surface, which renders RAW-safe entity tokens
   as their real glyphs instead of exposing the literal escape strings.
@@ -66,6 +66,8 @@
   identical live-typing snapshot.
 - `logicalToSourceOffsets()` and `buildIntVector(...)` must keep compiling when Qt container `size()` returns
   `qsizetype` on Apple toolchains.
+- When source contains canonical `</break>` divider tags, `logicalToSourceOffsets()` must still expose one logical
+  character step per divider so selection-to-source splices stay aligned.
 
 ## Extracted Symbols
 - Declared namespaces present: no

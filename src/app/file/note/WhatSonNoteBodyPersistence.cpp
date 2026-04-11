@@ -266,6 +266,23 @@ namespace
         return elementName.trimmed().compare(QStringLiteral("tag"), Qt::CaseInsensitive) == 0;
     }
 
+    bool isBreakDividerTagName(const QString& elementName)
+    {
+        const QString normalizedName = elementName.trimmed().toCaseFolded();
+        return normalizedName == QStringLiteral("break")
+            || normalizedName == QStringLiteral("hr");
+    }
+
+    QString canonicalBreakDividerSourceTag()
+    {
+        return QStringLiteral("</break>");
+    }
+
+    QString canonicalBreakDividerBodyTag()
+    {
+        return QStringLiteral("<break/>");
+    }
+
     bool isInlineHashtagBoundary(const QString& text, const qsizetype index)
     {
         if (index <= 0 || index > text.size())
@@ -513,6 +530,7 @@ namespace
 
             const QString fullTagToken = match.captured(0);
             const QString rawTagName = match.captured(1);
+            const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
             const bool closingTag = isClosingTagToken(fullTagToken);
             const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
             if (isTagElementName(rawTagName))
@@ -521,6 +539,13 @@ namespace
                 {
                     output += QLatin1Char('#');
                 }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isBreakDividerTagName(normalizedTagName))
+            {
+                output += canonicalBreakDividerSourceTag();
                 cursor = tagEnd;
                 continue;
             }
@@ -659,6 +684,13 @@ namespace
                 continue;
             }
 
+            if (isBreakDividerTagName(normalizedTagName))
+            {
+                output += canonicalBreakDividerSourceTag();
+                cursor = tagEnd;
+                continue;
+            }
+
             if (normalizedTagName == QStringLiteral("resource"))
             {
                 if (!closingTag)
@@ -786,6 +818,13 @@ namespace
             if (normalizedTagName == QStringLiteral("br"))
             {
                 output += QStringLiteral("<br/>");
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isBreakDividerTagName(normalizedTagName))
+            {
+                output += canonicalBreakDividerBodyTag();
                 cursor = tagEnd;
                 continue;
             }
@@ -944,6 +983,22 @@ namespace
                     {
                         fragments.fallbackText += QLatin1Char('\n');
                         fragments.fallbackRichText += QLatin1Char('\n');
+                    }
+                    continue;
+                }
+
+                if (elementName.compare(QStringLiteral("break"), Qt::CaseInsensitive) == 0
+                    || elementName.compare(QStringLiteral("hr"), Qt::CaseInsensitive) == 0)
+                {
+                    if (blockDepth > 0)
+                    {
+                        currentBlockText += QLatin1Char('\n');
+                        currentBlockRichText += QStringLiteral("<hr/>");
+                    }
+                    else if (!encounteredBlockElement)
+                    {
+                        fragments.fallbackText += QLatin1Char('\n');
+                        fragments.fallbackRichText += QStringLiteral("<hr/>");
                     }
                     continue;
                 }

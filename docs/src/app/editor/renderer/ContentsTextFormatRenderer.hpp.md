@@ -62,6 +62,10 @@ embedded in the generic inline-tag parser.
 - Highlight aliases: `highlight`, `mark` -> Apple Notes-inspired styled `<span ...>`
 - Clear aliases: `plain`, `clear`, `none` -> remove inline formatting from the selected range
 
+## Supported Structural Inline Tags
+- Line break aliases: `br` -> `<br/>`
+- Divider aliases: canonical `</break>` plus legacy `<hr ...>` -> rendered `<hr/>` divider
+
 Markdown emphasis markers such as `**bold**`, `*italic*`, `~~strike~~`, or `==highlight==` are intentionally **not**
 the formatting source of truth in this editor. Those styles remain bound to the proprietary `.wsnbody` inline tags and
 the existing shortcut/context-menu pipeline.

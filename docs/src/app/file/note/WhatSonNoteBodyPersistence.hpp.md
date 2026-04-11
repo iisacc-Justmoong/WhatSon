@@ -10,7 +10,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - `serializeBodyDocument(...)` is now the canonical `.wsnbody` writer entry. It accepts editor source text
   (plain text, inline `.wsnbody` tags, or Qt Rich HTML) and emits normalized `<paragraph>` XML with
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `tag`) plus normalized
-  self-closed `<resource ... />` tags.
+  self-closed `<resource ... />` tags. The single divider source tag `</break>` is persisted as canonical XML
+  `<break/>`.
 - When a proprietary inline style stays open across a source newline, the serializer now reopens that style at the
   beginning of the next `<paragraph>` and closes it again at the end of that paragraph, so multi-paragraph formatting
   survives a full save round-trip instead of stopping at the first paragraph boundary.
@@ -23,9 +24,11 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - `plainTextFromBodyDocument(...)` extracts editor text from a `.wsnbody` XML payload while preserving empty paragraphs and whitespace-only paragraphs, including leading/trailing empty paragraphs the user intentionally created. Stored `<tag>` nodes are projected back to visible `#label` text in that plain-text projection.
 - `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
   layer. Style/resource tags stay in proprietary inline-tag form, while stored `<tag>label</tag>` nodes project back
-  to editor-visible `#label`.
+  to editor-visible `#label`. Stored `<break/>` (or legacy `<hr/>`) projects back to canonical editor source
+  `</break>`.
 - `richTextFromBodyDocument(...)` extracts a rich-text projection from `.wsnbody` and maps inline style tags
   (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `mark`) to RichText HTML (styled `span` tags).
+  Divider tags (`<break/>` / `<hr/>`) render as `<hr/>`.
 - `firstLineFromBodyDocument(...)` derives preview text from the first logical XML line, including leading inline text that appears before the first paragraph block.
 - `firstLineFromBodyPlainText(...)` derives preview text from the first non-empty trimmed line, without mutating the stored plain text.
 - `persistBodyPlainText(...)` is the high-level save entry used by hierarchy viewmodels. It now returns both:
@@ -45,3 +48,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   - plain-text/rich-text read projection: visible `#label`
 - Proprietary inline formatting that spans multiple editor paragraphs must still round-trip as visible formatting on
   every touched paragraph even though `.wsnbody` remains paragraph-based XML.
+- Divider round-trip must stay canonical:
+  - editor/source token: `</break>`
+  - `.wsnbody` XML storage: `<break/>`
+  - rich preview projection: `<hr/>`

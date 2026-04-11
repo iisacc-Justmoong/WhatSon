@@ -29,6 +29,9 @@ namespace
         InlineStyleCoverageMap coverage;
     };
 
+    bool isLogicalBreakTagName(const QString& normalizedTagName);
+    QString breakDividerHtml();
+
     enum class LiteralRenderMode
     {
         MarkdownAware,
@@ -620,7 +623,7 @@ namespace
                         sourceOffset = tagEnd + 1;
                         continue;
                     }
-                    if (normalizedTagName == QStringLiteral("br"))
+                    if (isLogicalBreakTagName(normalizedTagName))
                     {
                         appendCoverageEntry();
                         sourceOffset = tagEnd + 1;
@@ -849,7 +852,7 @@ namespace
                     const QString fullTagToken =
                         normalizedSourceText.mid(sourceOffset, tagEnd - sourceOffset + 1);
                     const QString normalizedTagName = normalizedTagElementName(fullTagToken);
-                    if (normalizedTagName == QStringLiteral("br"))
+                    if (isLogicalBreakTagName(normalizedTagName))
                     {
                         logicalText += QLatin1Char('\n');
                     }
@@ -1008,7 +1011,7 @@ namespace
                         logicalOffset);
                     output += fullTagToken;
                     sourceOffset = tagEnd + 1;
-                    if (normalizedTagName == QStringLiteral("br"))
+                    if (isLogicalBreakTagName(normalizedTagName))
                     {
                         logicalOffset += 1;
                     }
@@ -1191,6 +1194,18 @@ namespace
         return token.endsWith(QStringLiteral("/>"));
     }
 
+    bool isLogicalBreakTagName(const QString& normalizedTagName)
+    {
+        return normalizedTagName == QStringLiteral("br")
+            || normalizedTagName == QStringLiteral("break")
+            || normalizedTagName == QStringLiteral("hr");
+    }
+
+    QString breakDividerHtml()
+    {
+        return QStringLiteral("<hr/>");
+    }
+
     void closeMatchingTag(
         QStringList* openStyleTags,
         QString* htmlOutput,
@@ -1257,6 +1272,14 @@ namespace
 
             if (normalizedTagName == QStringLiteral("resource"))
             {
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (normalizedTagName == QStringLiteral("break")
+                || normalizedTagName == QStringLiteral("hr"))
+            {
+                html += breakDividerHtml();
                 cursor = tagEnd;
                 continue;
             }

@@ -37,6 +37,8 @@
   the normalized plain-text projection.
 - The exposed offset contract remains `int`-based for QML callers, so implementation-side source bounds must be
   normalized before clamping against `QString::size()`.
+- Logical break mapping now treats canonical divider tokens (`</break>`) the same as `<br>`/`<hr>` so QML offset
+  conversions keep divider rows addressable in one logical step.
 
 ### Classes and Structs
 - `ContentsLogicalTextBridge`
@@ -71,3 +73,5 @@
   one QML-to-C++ call per character.
 - When QML pushes `adoptIncrementalState(...)`, the bridge must accept line-start offsets and logical/source offset
   tables that already reflect the latest live keystroke, instead of rebuilding those tables from the whole note again.
+- When source text includes `</break>`, the exported logical/source offset table must still include one logical
+  position for that divider token.

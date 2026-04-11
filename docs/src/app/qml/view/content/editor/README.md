@@ -116,6 +116,8 @@
 - Markdown list continuation on `Enter` is also owned by `ContentsEditorTypingController.qml`, so bullet/numbered list
   continuation stays source-driven instead of relying on RichText widget heuristics or the editor's rendered bullet
   glyph representation.
+- `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
+  divider source token `</break>` before persistence.
 - Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
   not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with

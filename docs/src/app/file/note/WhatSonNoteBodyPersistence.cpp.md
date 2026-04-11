@@ -22,6 +22,10 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   editor-facing inline tags such as `<bold>...</bold>` and `<resource ... />`, instead of returning RichText spans.
   Stored `<tag>label</tag>` elements are intentionally projected back to visible editor text as `#label` so the
   user keeps editing the hashtag they originally typed instead of raw XML.
+- The canonical single divider token `</break>` is now preserved end-to-end:
+  - editor/source projection keeps `</break>`
+  - `.wsnbody` body XML stores `<break/>` (valid XML)
+  - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
 - `extractedInlineTagValues(...)` canonicalizes incoming editor text and extracts deduplicated body-tag payloads for
   `.wsnhead` and `Tags.wstags` synchronization.
 - The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
@@ -32,6 +36,7 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `underline` / `u` -> `<span style="text-decoration: underline;">`
   - `strikethrough` / `strike` / `s` / `del` -> `<span style="text-decoration: line-through;">`
   - `highlight` / `mark` -> styled `span` (`background-color:#8A4B00; color:#D6AE58; font-weight:600`)
+  - divider block tags (`<break/>` and legacy `<hr/>`) -> `<hr/>`
 - Before XML parsing, resource tags are normalized into strict empty-element form (`<resource ... />`), so the body parser still works when notes contain shorthand resource tags such as `<resource ...>` or unquoted attribute values.
 - Rich HTML `<span style=...>` runs are reduced into canonical inline tags before writing. This keeps storage format stable while still accepting LV text editor RichText output.
 - Markdown-presentation spans are matched against `WhatSonNoteMarkdownStyleObject` before the generic CSS heuristics
@@ -70,3 +75,5 @@ text projections still show `#label`.
   `<tag>` nodes inside `.wsnbody`.
 - A style applied across multiple logical paragraphs must still render on every touched paragraph after save/load, even
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
+- A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
+  `<break/>`, and rich-text projection must show a divider line instead of literal tag text.

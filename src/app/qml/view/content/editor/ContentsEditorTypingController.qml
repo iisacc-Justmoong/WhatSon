@@ -391,6 +391,43 @@ QtObject {
         };
     }
 
+    function breakShortcutInsertion(previousPlainText, replacementStart, replacementEnd, insertedText) {
+        const previousText = controller.normalizePlainText(previousPlainText);
+        const safeStart = Math.max(0, Math.min(previousText.length, Math.floor(Number(replacementStart) || 0)));
+        const safeEnd = Math.max(safeStart, Math.min(previousText.length, Math.floor(Number(replacementEnd) || 0)));
+        const normalizedInsertedText = controller.normalizePlainText(insertedText);
+        if (normalizedInsertedText.indexOf("\n") >= 0)
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
+
+        const candidateText = previousText.slice(0, safeStart)
+                + normalizedInsertedText
+                + previousText.slice(safeEnd);
+        const candidateCursor = safeStart + normalizedInsertedText.length;
+        const candidateLineAnchor = Math.max(0, candidateCursor - 1);
+        const candidateLineStart = candidateLineAnchor > 0
+                ? candidateText.lastIndexOf("\n", candidateLineAnchor) + 1
+                : 0;
+        const candidateLineEndIndex = candidateText.indexOf("\n", candidateLineStart);
+        const candidateLineEnd = candidateLineEndIndex >= 0 ? candidateLineEndIndex : candidateText.length;
+        const candidateLineText = candidateText.slice(candidateLineStart, candidateLineEnd);
+        if (candidateLineText !== "---")
+            return ({ "applied": false, "cursorPosition": -1, "insertedText": "", "replacementEnd": -1, "replacementStart": -1 });
+
+        const previousLineAnchor = Math.max(0, safeStart - 1);
+        const previousLineStart = previousLineAnchor > 0
+                ? previousText.lastIndexOf("\n", previousLineAnchor) + 1
+                : 0;
+        const previousLineEndIndex = previousText.indexOf("\n", previousLineStart);
+        const previousLineEnd = previousLineEndIndex >= 0 ? previousLineEndIndex : previousText.length;
+        return ({
+                "applied": true,
+                "cursorPosition": previousLineStart + 1,
+                "insertedText": "</break>",
+                "replacementEnd": previousLineEnd,
+                "replacementStart": previousLineStart
+            });
+    }
+
     function sourceOffsetForLogicalOffset(logicalOffset) {
         controller.ensureLiveEditingStateReady();
         const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
@@ -477,17 +514,27 @@ QtObject {
                 ? ""
                 : String(controller.view.editorText);
         const continuedListInsertion = controller.continuedListInsertion(replacementDelta, currentSourceText, nextPlainText);
-        const normalizedInsertedText = continuedListInsertion.applied
+        let normalizedInsertedText = continuedListInsertion.applied
                 ? continuedListInsertion.insertedText
                 : replacementDelta.insertedText;
-        const logicalReplacementStart = continuedListInsertion.applied && continuedListInsertion.replacementStart !== undefined
+        let logicalReplacementStart = continuedListInsertion.applied && continuedListInsertion.replacementStart !== undefined
                 && Number(continuedListInsertion.replacementStart) >= 0
                 ? Math.floor(Number(continuedListInsertion.replacementStart))
                 : replacementDelta.start;
-        const logicalReplacementEnd = continuedListInsertion.applied && continuedListInsertion.replacementEnd !== undefined
+        let logicalReplacementEnd = continuedListInsertion.applied && continuedListInsertion.replacementEnd !== undefined
                 && Number(continuedListInsertion.replacementEnd) >= 0
                 ? Math.floor(Number(continuedListInsertion.replacementEnd))
                 : replacementDelta.previousEnd;
+        const breakShortcut = controller.breakShortcutInsertion(
+                    previousPlainText,
+                    logicalReplacementStart,
+                    logicalReplacementEnd,
+                    normalizedInsertedText);
+        if (breakShortcut.applied) {
+            normalizedInsertedText = breakShortcut.insertedText;
+            logicalReplacementStart = Math.max(0, Math.floor(Number(breakShortcut.replacementStart) || 0));
+            logicalReplacementEnd = Math.max(logicalReplacementStart, Math.floor(Number(breakShortcut.replacementEnd) || 0));
+        }
         const sourceStart = controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
         const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
         const nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
@@ -506,6 +553,8 @@ QtObject {
         controller.adoptLiveStateIntoBridge(nextSourceText);
         if (continuedListInsertion.applied)
             controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
+        else if (breakShortcut.applied)
+            controller.scheduleCursorPosition(breakShortcut.cursorPosition);
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
         if (controller.shouldDeferImmediatePersistence()) {

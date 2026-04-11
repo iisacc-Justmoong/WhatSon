@@ -25,6 +25,11 @@ This controller exists to keep plain typing separate from inline-format applicat
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
   before persistence.
+- After list-continuation preprocessing, if the edited logical line becomes exactly `---`, the controller rewrites that
+  whole line into the canonical divider source token `</break>` before source persistence.
+- The divider shortcut rewrite is line-scoped:
+  - it replaces the whole current line range, not only the last typed `-`
+  - it does not trigger when `---` appears as part of a longer token (`abc---`, `----`, `---text`)
 - The continuation path is tolerant of short source-sync lag: when fast typing causes the committed delta to include the
   last few typed characters plus the trailing newline together, the controller still treats that edit as one list
   continuation candidate instead of requiring `insertedText === "\n"` exactly.
@@ -72,6 +77,8 @@ longer part of the normal typing path.
 - After source replacement, the controller updates `view.editorText`.
 - If list continuation inserted extra markdown marker text, the controller also restores the live cursor to the
   continued item start after programmatic surface sync.
+- If the divider shortcut rewrote `---` to `</break>`, the controller restores the cursor near the rewritten divider
+  line after the programmatic source sync.
 - It marks local editor authority before save, matching the existing editor session contract.
 - A committed `textEdited` turn is now always treated as user-authoritative typing input.
   The controller no longer drops that turn only because `syncingEditorTextFromModel` happened to still be true from a
@@ -94,6 +101,8 @@ longer part of the normal typing path.
   inject raw inline tags accidentally.
 - Markdown-style prefixes such as `1. `, `- `, `# `, `> `, and `` ``` `` still enter the source as literal typed text;
   the renderer layer is responsible for their RichText presentation after the source update lands.
+- The only typing-side markdown shortcut exception is a standalone `---` line, which is canonicalized to `</break>`
+  before it reaches source persistence.
 
 ## Regression Checks
 
@@ -137,3 +146,5 @@ longer part of the normal typing path.
   ordered marker and leave a plain blank line instead of extending the empty list.
 - Pressing `Enter` on a non-empty ordered line such as `1.hello` or `1)항목` should also continue the list even when
   the original source omitted the usual separator space.
+- Typing a standalone `---` line must immediately persist canonical source `</break>` (not literal `---`).
+- Typing `---` inside longer text (`abc---`, `---todo`, `----`) must not trigger divider canonicalization.

@@ -66,7 +66,10 @@ namespace
 
     bool htmlTagProducesLogicalBreak(const QStringView tagToken)
     {
-        return normalizedHtmlTagName(tagToken) == QStringLiteral("br");
+        const QString normalizedTagName = normalizedHtmlTagName(tagToken);
+        return normalizedTagName == QStringLiteral("br")
+            || normalizedTagName == QStringLiteral("break")
+            || normalizedTagName == QStringLiteral("hr");
     }
 
     int htmlEntityLengthAt(const QString& text, const int sourceOffset)
