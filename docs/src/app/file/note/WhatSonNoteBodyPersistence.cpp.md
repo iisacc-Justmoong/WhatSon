@@ -31,6 +31,10 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `<task ...>` start tags are normalized to canonical `done="true|false"`
   - self-closing agenda/task aliases are expanded into explicit open/close pairs
   - read-side source projection keeps canonical `<agenda>` / `<task>` tags
+- Proprietary callout tags are now canonicalized and preserved end-to-end:
+  - `<callout ...>` start aliases are normalized to canonical `<callout>`
+  - self-closing callout aliases are expanded into explicit `<callout></callout>`
+  - read-side source projection keeps canonical `<callout>...</callout>` wrappers
 - `extractedInlineTagValues(...)` canonicalizes incoming editor text and extracts deduplicated body-tag payloads for
   `.wsnhead` and `Tags.wstags` synchronization.
 - The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
@@ -85,3 +89,4 @@ text projections still show `#label`.
 - A typed agenda/task source block must survive save/load without escaping:
   - input: `<agenda date="..."><task done="false">todo</task></agenda>`
   - output source projection: canonical agenda/task tags with normalized attributes
+- A typed `<callout>message</callout>` block must survive save/load without escaping wrapper tags.

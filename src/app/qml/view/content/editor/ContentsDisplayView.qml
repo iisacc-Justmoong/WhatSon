@@ -953,6 +953,9 @@ Item {
     function queueAgendaShortcutInsertion() {
         return editorTypingController.queueAgendaShortcutInsertion();
     }
+    function queueCalloutShortcutInsertion() {
+        return editorTypingController.queueCalloutShortcutInsertion();
+    }
     function setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked) {
         const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
                 ? ""
@@ -1289,6 +1292,7 @@ Item {
         id: editorTypingController
 
         agendaBackend: contentsAgendaBackend
+        calloutBackend: contentsCalloutBackend
         contentEditor: contentEditor
         editorSession: editorSession
         textFormatRenderer: textFormatRenderer
@@ -1304,6 +1308,9 @@ Item {
     }
     ContentsAgendaBackend {
         id: contentsAgendaBackend
+    }
+    ContentsCalloutBackend {
+        id: contentsCalloutBackend
     }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
@@ -1705,9 +1712,10 @@ Item {
                                                       + contentsView.printGuideHorizontalInset
                                                       + contentsView.printPaperTextWidth))
                                              : contentsView.editorHorizontalInset
-                        anchors.topMargin: contentsView.showPrintEditorLayout
+                        anchors.topMargin: (contentsView.showPrintEditorLayout
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
-                                           : contentsView.editorDocumentStartY
+                                           : contentsView.editorDocumentStartY)
+                                          + (calloutRenderLayer.visible ? calloutRenderLayer.implicitHeight + LV.Theme.gap2 : 0)
                         sourceText: contentsView.editorText
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
@@ -1717,6 +1725,36 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                                  && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
                                  && agendaRenderLayer.agendaCount > 0
+                        enabled: visible
+                        z: 2
+                    }
+                    ContentsCalloutLayer {
+                        id: calloutRenderLayer
+
+                        calloutBackend: contentsCalloutBackend
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
+                                            : contentsView.editorHorizontalInset
+                        anchors.rightMargin: contentsView.showPrintEditorLayout
+                                             ? Math.max(
+                                                   0,
+                                                   (parent ? Number(parent.width) || 0 : 0)
+                                                   - ((Number(printPaperColumn.x) || 0)
+                                                      + contentsView.printGuideHorizontalInset
+                                                      + contentsView.printPaperTextWidth))
+                                             : contentsView.editorHorizontalInset
+                        anchors.topMargin: contentsView.showPrintEditorLayout
+                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
+                                           : contentsView.editorDocumentStartY
+                        sourceText: contentsView.editorText
+                        visible: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
+                                 && calloutRenderLayer.calloutCount > 0
                         enabled: visible
                         z: 2
                     }
@@ -1936,6 +1974,13 @@ Item {
                         sequence: "Meta+Alt+T"
 
                         onActivated: contentsView.queueAgendaShortcutInsertion()
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+Alt+C"
+
+                        onActivated: contentsView.queueCalloutShortcutInsertion()
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu

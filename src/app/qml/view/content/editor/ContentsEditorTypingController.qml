@@ -11,6 +11,7 @@ QtObject {
     property var textFormatRenderer: null
     property var textMetricsBridge: null
     property var agendaBackend: null
+    property var calloutBackend: null
     property string liveAuthoritativePlainText: ""
     property var liveLogicalLineStartOffsets: [0]
     property var liveLogicalToSourceOffsets: [0]
@@ -503,6 +504,71 @@ QtObject {
             return false;
         }
         const insertionPayload = controller.agendaBackend.buildAgendaInsertionPayload(false, "");
+        const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
+                ? String(insertionPayload.insertionSourceText)
+                : "";
+        const cursorSourceOffsetFromInsertionStart = insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
+                ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
+                : 0;
+        if (insertionSourceText.length === 0)
+            return false;
+        const nextSourceText = controller.spliceSourceText(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    insertionSourceText);
+        const cursorSourceOffset = sourceStart + cursorSourceOffsetFromInsertionStart;
+
+        if (controller.view.editorText !== nextSourceText)
+            controller.view.editorText = nextSourceText;
+        if (controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+        else
+            controller.synchronizeLiveEditingStateFromPresentation();
+
+        const logicalCursor = controller.logicalOffsetForSourceOffset(cursorSourceOffset);
+        controller.scheduleCursorPosition(logicalCursor);
+
+        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
+            controller.editorSession.markLocalEditorAuthority();
+        if (controller.shouldDeferImmediatePersistence()) {
+            controller.editorSession.scheduleEditorPersistence();
+            controller.view.editorTextEdited(nextSourceText);
+            return true;
+        }
+        const saved = controller.view.persistEditorTextImmediately !== undefined
+                ? !!controller.view.persistEditorTextImmediately(nextSourceText)
+                : false;
+        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
+        controller.view.editorTextEdited(nextSourceText);
+        return true;
+    }
+
+    function queueCalloutShortcutInsertion() {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+
+        controller.ensureLiveEditingStateReady();
+        const selectionRange = controller.currentRawEditorSelectionRange();
+        const logicalStart = Math.max(0, Math.min(selectionRange.start, selectionRange.end));
+        const logicalEnd = Math.max(logicalStart, Math.max(selectionRange.start, selectionRange.end));
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const sourceStart = controller.sourceOffsetForLogicalOffset(logicalStart);
+        const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalEnd);
+        if (!controller.calloutBackend
+                || controller.calloutBackend.buildCalloutInsertionPayload === undefined) {
+            return false;
+        }
+        const currentPlainText = controller.authoritativeSourcePlainText();
+        const selectedPlainText = currentPlainText.slice(logicalStart, logicalEnd);
+        const insertionPayload = controller.calloutBackend.buildCalloutInsertionPayload(selectedPlainText);
         const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
                 ? String(insertionPayload.insertionSourceText)
                 : "";

@@ -15,6 +15,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   Proprietary checklist tags are also canonicalized:
   - `<agenda>` always persists with mandatory `date="YYYY-MM-DD"`
   - `<task>` always persists with canonical `done="true|false"`
+  - `<callout>` persists as canonical wrapper tags (`<callout>...</callout>`) without escaping
 - When a proprietary inline style stays open across a source newline, the serializer now reopens that style at the
   beginning of the next `<paragraph>` and closes it again at the end of that paragraph, so multi-paragraph formatting
   survives a full save round-trip instead of stopping at the first paragraph boundary.
@@ -59,3 +60,6 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   - editor/source tokens remain `<agenda ...>` / `<task ...>`
   - serializer must not escape them into literal text
   - `agenda.date` stays mandatory `YYYY-MM-DD`, `task.done` stays `true|false`
+- Callout round-trip must stay canonical:
+  - editor/source tokens remain `<callout>...</callout>`
+  - serializer must not escape wrapper tags into literal text

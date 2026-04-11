@@ -41,6 +41,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
 - Drops proprietary `<agenda ...>` / `<task ...>` wrapper tags from inline text rendering so agenda/task UI can be
   rendered by dedicated view layers without leaking raw wrapper markup.
+- Drops proprietary `<callout ...>` wrapper tags from inline text rendering so callout UI can be rendered by dedicated
+  view layers without leaking raw wrapper markup.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
 - Recognizes supported `<span style=...>` runs and folds them back into the same canonical style stack, so stored
   `.wsnbody` aliases and editor-generated HTML spans render through one path.
@@ -130,4 +132,5 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - A stored `</break>` token must render as a visible divider line (not literal text) and still consume one logical
   break slot in inline-style selection coverage rebuild.
 - A stored `<agenda>/<task>` block must not render raw wrapper tags as literal text on the live editor surface.
+- A stored `<callout>...</callout>` block must not render raw wrapper tags as literal text on the live editor surface.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

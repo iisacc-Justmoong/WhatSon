@@ -31,10 +31,14 @@ This controller exists to keep plain typing separate from inline-format applicat
   - `queueAgendaShortcutInsertion()` triggers agenda insertion at the current selection/cursor.
   - typing `[] item` or `[x] item` triggers todo shorthand canonicalization.
   - pressing `Enter` inside `<task>` triggers agenda-aware newline handling.
+- The controller now also owns callout source shortcuts:
+  - `queueCalloutShortcutInsertion()` wraps the current selection (or empty cursor point) with canonical
+    `<callout>...</callout>` source.
 - Agenda-specific source mutation logic above is delegated to `ContentsAgendaBackend`:
   - `buildAgendaInsertionPayload(...)`
   - `detectTodoShortcutReplacement(...)`
   - `detectAgendaTaskEnterReplacement(...)`
+- Callout insertion payload generation is delegated to `ContentsCalloutBackend.buildCalloutInsertionPayload(...)`.
 - The divider shortcut rewrite is line-scoped:
   - it replaces the whole current line range, not only the last typed `-`
   - it does not trigger when `---` appears as part of a longer token (`abc---`, `----`, `---text`)
@@ -116,6 +120,9 @@ longer part of the normal typing path.
   - agenda insertion always writes `date` as `YYYY-MM-DD`
   - task insertion always writes canonical `done="true|false"`
   - canonicalization rules are centralized in `src/app/agenda/ContentsAgendaBackend.cpp`
+- Callout insertion is another source-side shortcut exception:
+  - `Cmd+Opt+C` inserts/wraps canonical `<callout>...</callout>` source tags
+  - canonical insertion payload generation is centralized in `src/app/callout/ContentsCalloutBackend.cpp`
 
 ## Regression Checks
 
@@ -162,6 +169,8 @@ longer part of the normal typing path.
 - Typing a standalone `---` line must immediately persist canonical source `</break>` (not literal `---`).
 - Typing `---` inside longer text (`abc---`, `---todo`, `----`) must not trigger divider canonicalization.
 - `Cmd+Opt+T` must insert one canonical agenda block at the current selection without leaving escaped raw entities.
+- `Cmd+Opt+C` must insert one canonical `<callout>...</callout>` wrapper at the current selection without leaving
+  escaped raw wrapper tags.
 - Typing `[] task` must persist canonical `<agenda date="..."><task done="false">task</task></agenda>`.
 - Typing `[x] task` must persist canonical `<agenda date="..."><task done="true">task</task></agenda>`.
 - Pressing `Enter` in a non-empty `<task>` must create the next `<task done="false">` sibling block.

@@ -4,6 +4,7 @@
 #include <QRegularExpression>
 #include <QVariantMap>
 #include <algorithm>
+#include <limits>
 #include <optional>
 
 namespace
@@ -30,9 +31,29 @@ namespace
         };
     }
 
+    int boundedQStringSize(const QString& text)
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
+    }
+
+    int boundedQSizeToInt(const qsizetype value)
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        if (value < 0)
+        {
+            return -1;
+        }
+        if (value > maxIntSize)
+        {
+            return std::numeric_limits<int>::max();
+        }
+        return static_cast<int>(value);
+    }
+
     int boundedTextIndex(const QString& text, const int index)
     {
-        return std::clamp(index, 0, text.size());
+        return std::clamp(index, 0, boundedQStringSize(text));
     }
 
     QString normalizePlainText(QString text)
@@ -47,7 +68,7 @@ namespace
 
     QString escapeSourceLiteral(QString text)
     {
-        text = normalizePlainText(std::move(text));
+        text = normalizePlainText(text);
         text.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
         text.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
         text.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
@@ -111,7 +132,7 @@ namespace
     bool parseTaskDoneValue(const QString& taskOpenToken)
     {
         static const QRegularExpression donePattern(
-            QStringLiteral(R"(\bdone\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))"),
+            QStringLiteral(R"PAT(\bdone\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))PAT"),
             QRegularExpression::CaseInsensitiveOption);
         const QRegularExpressionMatch doneMatch = donePattern.match(taskOpenToken);
         if (!doneMatch.hasMatch())
@@ -275,7 +296,7 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
 
         QVariantList tasks;
         const QString innerSource = agendaMatch.captured(2);
-        const int innerSourceStart = agendaMatch.capturedStart(2);
+        const int innerSourceStart = std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(2)));
         QRegularExpressionMatchIterator taskIterator = taskPattern.globalMatch(innerSource);
         while (taskIterator.hasNext())
         {
@@ -288,7 +309,8 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
             const QString fullTaskToken = taskMatch.captured(0);
             const int openTokenEndOffset = fullTaskToken.indexOf(QLatin1Char('>'));
             const int openTokenLength = openTokenEndOffset >= 0 ? openTokenEndOffset + 1 : 0;
-            const int taskOpenTagStart = innerSourceStart + std::max(0, taskMatch.capturedStart(0));
+            const int taskOpenTagStart =
+                innerSourceStart + std::max(0, boundedQSizeToInt(taskMatch.capturedStart(0)));
             const int taskOpenTagEnd = taskOpenTagStart + openTokenLength;
 
             QVariantMap taskEntry;
@@ -320,8 +342,9 @@ QString ContentsAgendaBackend::rewriteTaskDoneAttribute(
     int taskOpenTagEnd,
     const bool checked) const
 {
-    const int safeStart = std::clamp(taskOpenTagStart, 0, sourceText.size());
-    const int safeEnd = std::clamp(taskOpenTagEnd, safeStart, sourceText.size());
+    const int sourceLength = boundedQStringSize(sourceText);
+    const int safeStart = std::clamp(taskOpenTagStart, 0, sourceLength);
+    const int safeEnd = std::clamp(taskOpenTagEnd, safeStart, sourceLength);
     const QString openTaskTag = sourceText.mid(safeStart, safeEnd - safeStart);
     if (!openTaskTag.startsWith(QStringLiteral("<task"), Qt::CaseInsensitive))
     {
@@ -460,7 +483,9 @@ QVariantMap ContentsAgendaBackend::detectAgendaTaskEnterReplacement(
         return notAppliedResult();
     }
 
-    const QString insertedWithoutNewline = normalizedInsertedText.left(std::max(0, normalizedInsertedText.size() - 1));
+    const int normalizedInsertedTextSize = boundedQStringSize(normalizedInsertedText);
+    const QString insertedWithoutNewline =
+        normalizedInsertedText.left(std::max(0, normalizedInsertedTextSize - 1));
     QString normalizedTaskVisibleText = taskContext->taskInnerSourceText;
     normalizedTaskVisibleText.replace(QRegularExpression(QStringLiteral("<[^>]*>")), QString());
     normalizedTaskVisibleText.replace(QRegularExpression(QStringLiteral("&[^;]+;")), QStringLiteral(" "));

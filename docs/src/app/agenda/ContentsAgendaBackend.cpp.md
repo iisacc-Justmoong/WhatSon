@@ -18,6 +18,10 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
     block to keep source body clean
 - Normalizes modification placeholder date tokens (`yyyy-mm-dd`) to current local ISO date.
 - Decodes safe entities (`&lt;`, `&gt;`, `&amp;`, `&quot;`, `&#39;`, `&nbsp;`) for agenda render text projection.
+- Uses explicit `qsizetype` -> `int` bounding helpers before `std::clamp/std::max` calls, preventing libc++
+  template-deduction failures on macOS toolchains where `QString::size()` and regex capture offsets are `qsizetype`.
+- Uses a custom raw-string delimiter for the `done`-attribute regex, preventing accidental raw-literal early
+  termination by `)"` substrings inside the pattern body.
 
 ## Architectural Notes
 - Agenda parsing/mutation regex and attribute handling are intentionally localized here so QML controllers only manage
@@ -31,3 +35,5 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 - Pressing `Enter` in an empty task must exit agenda editing according to source context.
 - Pressing `Enter` in an empty task while all sibling tasks are also empty must remove the entire agenda block.
 - `date="yyyy-mm-dd"` must normalize to `YYYY-MM-DD` during modification staging.
+- macOS libc++ builds must compile this file without `std::clamp/std::max` deduced-type conflicts (`int` vs
+  `qsizetype`).

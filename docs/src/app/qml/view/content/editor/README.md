@@ -7,13 +7,14 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 11
+- Child files: 12
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
 - `ContentsAgendaLayer.qml`
+- `ContentsCalloutLayer.qml`
 - `ContentsDisplayView.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
@@ -125,13 +126,20 @@
   - pressing `Enter` inside `<task>` either creates the next `<task>` or exits agenda editing when the current task is
     empty
   - if agenda exit occurs on an empty task and all sibling tasks are empty, the entire agenda block is removed
+- `ContentsEditorTypingController.qml` now also owns callout authoring shortcuts:
+  - `Cmd+Opt+C` inserts canonical `<callout></callout>` at the current selection/cursor
+  - if selection text exists, it is wrapped into `<callout>...</callout>`
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
   `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
+- Callout parsing and insertion payload backend logic now lives in
+  `src/app/callout/ContentsCalloutBackend.*`, while QML controllers keep event/cursor orchestration only.
 - `ContentsEditorSession.qml` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
   - when local note modification is staged for persistence, placeholder dates are rewritten to current `YYYY-MM-DD`
   - passive same-note model sync does not rewrite agenda dates
 - `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders agenda cards
   with `LV.CheckBox` task rows bound to source `done` attributes via `ContentsAgendaBackend`.
+- `ContentsCalloutLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders Figma-aligned callout rows
+  from canonical `<callout>...</callout>` source wrappers.
 - Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
   not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
@@ -163,6 +171,7 @@
   boundaries instead of temporary RichText fragment splits.
 - Agenda source tags must now round-trip through persistence without escaping (`<agenda>`, `<task>`) and keep canonical
   attribute forms (`date=YYYY-MM-DD`, `done=true|false`).
+- Callout source tags must now round-trip through persistence without escaping (`<callout>...</callout>`).
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

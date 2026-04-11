@@ -533,6 +533,10 @@ QtObject {
                 && !!(modifiers & Qt.AltModifier)
                 && !(modifiers & Qt.ControlModifier)
                 && !(modifiers & Qt.ShiftModifier);
+        const calloutShortcutPressed = !!(modifiers & Qt.MetaModifier)
+                && !!(modifiers & Qt.AltModifier)
+                && !(modifiers & Qt.ControlModifier)
+                && !(modifiers & Qt.ShiftModifier);
         const shiftPressed = !!(modifiers & Qt.ShiftModifier);
         let handled = false;
         switch (event.key) {
@@ -571,6 +575,13 @@ QtObject {
                     && controller.view
                     && controller.view.queueAgendaShortcutInsertion !== undefined) {
                 handled = !!controller.view.queueAgendaShortcutInsertion();
+            }
+            break;
+        case Qt.Key_C:
+            if (calloutShortcutPressed
+                    && controller.view
+                    && controller.view.queueCalloutShortcutInsertion !== undefined) {
+                handled = !!controller.view.queueCalloutShortcutInsertion();
             }
             break;
         default:

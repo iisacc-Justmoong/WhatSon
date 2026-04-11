@@ -19,6 +19,7 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - unordered list
 - ordered list
 - and routes the agenda insertion shortcut (`Cmd+Opt+T`) into the typing controller
+- and routes the callout insertion shortcut (`Cmd+Opt+C`) into the typing controller
 
 ## Public Contract
 
@@ -62,6 +63,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - `Cmd+Shift+7` on macOS and `Alt+Shift+7` on Windows/Linux toggle an ordered markdown list and write canonical `1. `
   / `2. ` source prefixes.
 - `Cmd+Opt+T` (`Meta+Alt+T`) now routes to `view.queueAgendaShortcutInsertion()` when editor mutation guards allow it.
+- `Cmd+Opt+C` (`Meta+Alt+C`) now routes to `view.queueCalloutShortcutInsertion()` when editor mutation guards allow
+  it.
 - Reapplying the same list shortcut to lines that are already uniformly in that list form removes the corresponding
   list markers instead of stacking duplicates.
 - Mixed-line conversions are canonicalized:
@@ -125,6 +128,8 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - Pressing `Cmd+Shift+7` on macOS or `Alt+Shift+7` on Windows/Linux with a collapsed cursor on a plain line should
   insert/remove a canonical ordered list prefix for that line without needing a mouse selection first.
 - Pressing `Cmd+Opt+T` while the editor is active should trigger exactly one agenda insertion request and must not
+  double-insert when both key-event and window-shortcut paths are present.
+- Pressing `Cmd+Opt+C` while the editor is active should trigger exactly one callout insertion request and must not
   double-insert when both key-event and window-shortcut paths are present.
 - Applying either list shortcut to a multi-line selection should transform every touched non-empty line as one block,
   not only the first line.

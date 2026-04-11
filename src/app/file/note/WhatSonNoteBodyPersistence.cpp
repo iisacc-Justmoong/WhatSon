@@ -294,6 +294,11 @@ namespace
         return elementName.trimmed().compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0;
     }
 
+    bool isCalloutTagName(const QString& elementName)
+    {
+        return elementName.trimmed().compare(QStringLiteral("callout"), Qt::CaseInsensitive) == 0;
+    }
+
     QString tagAttributeValue(const QString& rawTagText, const QString& attributeName)
     {
         const QString normalizedAttributeName = attributeName.trimmed();
@@ -361,6 +366,11 @@ namespace
         const bool done = normalizedTaskDoneValue(tagAttributeValue(rawTagText, QStringLiteral("done")));
         return QStringLiteral("<task done=\"%1\">")
             .arg(done ? QStringLiteral("true") : QStringLiteral("false"));
+    }
+
+    QString normalizeCalloutStartTag(const QString&)
+    {
+        return QStringLiteral("<callout>");
     }
 
     bool isInlineHashtagBoundary(const QString& text, const qsizetype index)
@@ -666,6 +676,24 @@ namespace
                 continue;
             }
 
+            if (isCalloutTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</callout>");
+                }
+                else
+                {
+                    output += normalizeCalloutStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</callout>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             output += fullTagToken;
             cursor = tagEnd;
         }
@@ -844,6 +872,24 @@ namespace
                 continue;
             }
 
+            if (isCalloutTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</callout>");
+                }
+                else
+                {
+                    output += normalizeCalloutStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</callout>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             if (normalizedTagName == QStringLiteral("resource"))
             {
                 if (!closingTag)
@@ -1012,6 +1058,24 @@ namespace
                     if (selfClosingTag)
                     {
                         output += QStringLiteral("</task>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isCalloutTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</callout>");
+                }
+                else
+                {
+                    output += normalizeCalloutStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</callout>");
                     }
                 }
                 cursor = tagEnd;

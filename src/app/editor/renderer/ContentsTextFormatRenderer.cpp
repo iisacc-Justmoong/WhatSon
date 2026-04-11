@@ -1277,7 +1277,8 @@ namespace
             }
 
             if (normalizedTagName == QStringLiteral("agenda")
-                || normalizedTagName == QStringLiteral("task"))
+                || normalizedTagName == QStringLiteral("task")
+                || normalizedTagName == QStringLiteral("callout"))
             {
                 cursor = tagEnd;
                 continue;

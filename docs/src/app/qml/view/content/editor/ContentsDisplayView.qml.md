@@ -32,12 +32,14 @@ that sit directly inside the editor viewport.
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorTypingController.qml`
 - `ContentsEditorSession.qml`
+- `ContentsCalloutLayer.qml`
 - `ContentsGutterLayer.qml`
 - `ContentsAgendaLayer.qml`
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
 - `ContentsResourceViewer.qml`
 - `ContentsAgendaBackend` (C++ backend)
+- `ContentsCalloutBackend` (C++ backend)
 - `ContentsPagePrintLayoutRenderer` (C++ backend)
 - `ContentViewLayout.qml`
 
@@ -52,6 +54,8 @@ that sit directly inside the editor viewport.
   view modes (Page/Print/Web/Presentation).
   Each task row is rendered as `LV.CheckBox`, and toggle mutations rewrite the corresponding `<task done="...">`
   attribute in source through `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
+- Callout cards rendered from `<callout>...</callout>` source blocks now also overlay the editor viewport in
+  non-Plain view modes (Page/Print/Web/Presentation) through `ContentsCalloutLayer.qml`.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
@@ -90,6 +94,9 @@ that sit directly inside the editor viewport.
 - Desktop now also exposes `Cmd+Opt+T` (`Meta+Alt+T`) as an agenda insertion shortcut, routed through
   `ContentsEditorTypingController.queueAgendaShortcutInsertion()`, and the source insertion payload itself is now
   provided by `ContentsAgendaBackend`.
+- Desktop now also exposes `Cmd+Opt+C` (`Meta+Alt+C`) as a callout insertion shortcut, routed through
+  `ContentsEditorTypingController.queueCalloutShortcutInsertion()`, with insertion payloads supplied by
+  `ContentsCalloutBackend`.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
   immediate-save acceptance path.
@@ -163,6 +170,8 @@ that sit directly inside the editor viewport.
     `ContentsPagePrintLayoutRenderer`; QML must not reintroduce duplicate local page-math state.
   - In non-Plain modes, `<agenda>/<task>` blocks must render as agenda cards with checkbox rows, and toggling a task
     must persist canonical `done=true|false` in source.
+  - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
+    canonical callout wrapper at the current cursor/selection.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the

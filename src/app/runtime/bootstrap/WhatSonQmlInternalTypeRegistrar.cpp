@@ -1,6 +1,7 @@
 #include "WhatSonQmlInternalTypeRegistrar.hpp"
 
 #include "agenda/ContentsAgendaBackend.hpp"
+#include "callout/ContentsCalloutBackend.hpp"
 #include "editor/renderer/ContentsPagePrintLayoutRenderer.hpp"
 #include "editor/renderer/ContentsTextFormatRenderer.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
@@ -29,6 +30,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
         qmlRegisterType<ContentsAgendaBackend>(
             "WhatSon.App.Internal", 1, 0, "ContentsAgendaBackend");
+        qmlRegisterType<ContentsCalloutBackend>(
+            "WhatSon.App.Internal", 1, 0, "ContentsCalloutBackend");
         qmlRegisterType<ContentsPagePrintLayoutRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsPagePrintLayoutRenderer");
         qmlRegisterType<ContentsBodyResourceRenderer>(

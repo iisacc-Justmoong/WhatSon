@@ -13,7 +13,7 @@ This directory is the architectural center of the repository. Most other modules
 - `store`: lightweight shared state containers such as selected hub and sidebar selection.
 - `file/sync`: runtime and editor synchronization controllers consolidated under the file domain.
 - `policy`: layer rules and lock semantics for startup wiring.
-- `calendar`, `permissions`, `platform`: platform-specific integration points.
+- `agenda`, `callout`, `calendar`, `permissions`, `platform`: domain/platform integration points.
 
 ## Startup Shape
 The app startup sequence lives in `main.cpp` and performs five broad phases.
