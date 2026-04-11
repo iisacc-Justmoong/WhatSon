@@ -38,6 +38,18 @@ FocusScope {
         return true
     }
 
+    function shortcutInsertionSourceOffset() {
+        const localCursorPosition = Math.max(0, Math.min(Number(blockEditor.length) || 0, Number(blockEditor.cursorPosition) || 0))
+        if (blockEditor.getFormattedText !== undefined
+                && blockRenderer
+                && blockRenderer.normalizeEditorSurfaceTextToSource !== undefined) {
+            const formattedPrefix = String(blockEditor.getFormattedText(0, localCursorPosition) || "")
+            const prefixSourceText = String(blockRenderer.normalizeEditorSurfaceTextToSource(formattedPrefix) || "")
+            return textBlock.sourceStart + prefixSourceText.length
+        }
+        return textBlock.sourceStart + localCursorPosition
+    }
+
     ContentsTextFormatRenderer {
         id: blockRenderer
 

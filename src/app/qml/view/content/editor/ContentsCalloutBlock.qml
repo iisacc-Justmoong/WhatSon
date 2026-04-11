@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: calloutBlock
@@ -12,9 +13,11 @@ FocusScope {
 
     signal activated()
     signal enterExitRequested(var blockData)
-    signal textChanged(string text)
+    signal textChanged(string text, int cursorPosition)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
+    readonly property int contentStart: Math.max(0, Number(normalizedBlock.contentStart) || 0)
+    readonly property int contentEnd: Math.max(contentStart, Number(normalizedBlock.contentEnd) || contentStart)
     readonly property int sourceStart: Math.max(0, Number(normalizedBlock.sourceStart) || 0)
     readonly property int sourceEnd: Math.max(sourceStart, Number(normalizedBlock.sourceEnd) || 0)
     readonly property string calloutText: normalizedBlock.text !== undefined ? String(normalizedBlock.text) : ""
@@ -22,19 +25,44 @@ FocusScope {
     implicitHeight: calloutFrame.implicitHeight
     width: parent ? parent.width : implicitWidth
 
+    function focusEditor(cursorPosition) {
+        calloutEditor.forceActiveFocus()
+        const numericCursorPosition = Number(cursorPosition)
+        const targetCursorPosition = isFinite(numericCursorPosition)
+                                   ? Math.max(0, Math.min(Math.floor(numericCursorPosition), Math.max(0, calloutEditor.length || 0)))
+                                   : Math.max(0, calloutEditor.length || 0)
+        if (calloutEditor.setCursorPositionPreservingInputMethod !== undefined)
+            calloutEditor.setCursorPositionPreservingInputMethod(targetCursorPosition)
+        else if (calloutEditor.cursorPosition !== undefined)
+            calloutEditor.cursorPosition = targetCursorPosition
+    }
+
     function applyFocusRequest(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
+        const localCursorPosition = Number(safeRequest.localCursorPosition)
         const sourceOffset = Number(safeRequest.sourceOffset)
         if (!isFinite(sourceOffset))
             return false
         if (sourceOffset < calloutBlock.sourceStart || sourceOffset > calloutBlock.sourceEnd)
             return false
-        calloutEditor.forceActiveFocus()
-        if (calloutEditor.setCursorPositionPreservingInputMethod !== undefined)
-            calloutEditor.setCursorPositionPreservingInputMethod(Math.max(0, calloutEditor.length || 0))
-        else if (calloutEditor.cursorPosition !== undefined)
-            calloutEditor.cursorPosition = Math.max(0, calloutEditor.length || 0)
+        if (isFinite(localCursorPosition)) {
+            calloutBlock.focusEditor(localCursorPosition)
+            return true
+        }
+        if (sourceOffset >= calloutBlock.contentStart && sourceOffset <= calloutBlock.contentEnd) {
+            calloutBlock.focusEditor(
+                        StructuredCursorSupport.plainCursorForSourceOffset(
+                            calloutBlock.calloutText,
+                            sourceOffset - calloutBlock.contentStart))
+            return true
+        }
+        calloutBlock.focusEditor()
         return true
+    }
+
+    function shortcutInsertionSourceOffset() {
+        // Agenda/callout shortcuts must stay block-scoped here so new wrappers do not nest inside callout content.
+        return calloutBlock.sourceEnd
     }
 
     Rectangle {
@@ -109,7 +137,9 @@ FocusScope {
                         calloutBlock.activated()
                 }
                 onTextEdited: function (text) {
-                    calloutBlock.textChanged(String(text || ""))
+                    calloutBlock.textChanged(
+                                String(text || ""),
+                                Math.max(0, Number(calloutEditor.cursorPosition) || 0))
                 }
             }
         }

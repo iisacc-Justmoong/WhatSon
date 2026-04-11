@@ -11,4 +11,8 @@ Renders one agenda card as a native document block inside the editor flow.
   - task text rewrite
   - `done` toggle rewrite
   - Enter handling for task continuation / agenda exit
+- Restores task focus by matching either the reparsed task tag or the reparsed RAW content offset, so typing keeps the
+  caret in the edited task instead of snapping back to the first row.
+- Keeps shortcut-created proprietary wrappers block-scoped by reporting the agenda boundary, not an in-task insertion
+  point, for agenda/callout shortcut routing.
 - Keeps empty tasks visible so RAW `<agenda>` tags always materialize into a card.

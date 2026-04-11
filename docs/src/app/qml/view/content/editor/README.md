@@ -7,15 +7,19 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 12
+- Child files: 18
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
 - `ContentsAgendaLayer.qml`
+- `ContentsAgendaBlock.qml`
+- `ContentsBreakBlock.qml`
 - `ContentsCalloutLayer.qml`
+- `ContentsCalloutBlock.qml`
 - `ContentsDisplayView.qml`
+- `ContentsDocumentTextBlock.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
 - `ContentsEditorTypingController.qml`
@@ -25,6 +29,8 @@
 - `ContentsMinimapSnapshotSupport.js`
 - `MobileContentsDisplayView.qml`
 - `ContentsResourceViewer.qml`
+- `ContentsStructuredCursorSupport.js`
+- `ContentsStructuredDocumentFlow.qml`
 
 ## Current Notes
 
@@ -137,6 +143,10 @@
   - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - insertion now aborts unless that payload still validates as one complete `<callout>...</callout>` block
   - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
+- `ContentsStructuredCursorSupport.js` now centralizes plain-text cursor/source-offset mapping for agenda/callout block
+  reparses, so local caret restoration survives entity-escaped RAW rewrites.
+- `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
+  which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
 - Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing wrapper end first
@@ -176,6 +186,8 @@
   `ContentsPagePrintLayoutRenderer` in `src/app/editor/renderer`, so editor QML hosts consume backend layout state.
 - The repository no longer operates scripted editor tests; the per-file regression notes in this directory are
   documentation-only behavior contracts.
+- `docs/STRUCTURED_EDITOR_REGRESSION_CHECKLIST.md` now captures the manual regression cases for structured-flow caret
+  persistence and live-caret shortcut insertion.
 - Cursor restoration for ordinary typing/focus recovery now routes through the wrapper-level cursor setter instead of
   rewriting `cursorPosition` into the wrapper, `editorItem`, and `inputItem` together.
 - The shared editor wrapper no longer depends on its own synthetic IME commit queue for ordinary typing, so a just-typed

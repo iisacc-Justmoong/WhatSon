@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: documentFlow
@@ -36,18 +37,6 @@ FocusScope {
         text = text.replace(/\u2028/g, "\n")
         text = text.replace(/\u2029/g, "\n")
         text = text.replace(/\u00A0/g, " ")
-        return text
-    }
-
-    function escapeSourceLiteral(value) {
-        let text = normalizedSourceText(value)
-        text = text.replace(/&/g, "&amp;")
-        text = text.replace(/</g, "&lt;")
-        text = text.replace(/>/g, "&gt;")
-        text = text.replace(/\"/g, "&quot;")
-        text = text.replace(/'/g, "&#39;")
-        if (text.trim().length === 0)
-            return " "
         return text
     }
 
@@ -93,18 +82,21 @@ FocusScope {
                     focusRequest)
     }
 
-    function updateAgendaTaskText(taskData, text) {
+    function updateAgendaTaskText(taskData, text, cursorPosition) {
         const safeTask = taskData && typeof taskData === "object" ? taskData : ({})
         const contentStart = Number(safeTask.contentStart)
         const contentEnd = Number(safeTask.contentEnd)
         if (!isFinite(contentStart) || !isFinite(contentEnd) || contentEnd < contentStart)
             return false
+        const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
+        const localCursorPosition = StructuredCursorSupport.clampedPlainCursor(normalizedText, cursorPosition)
         documentFlow.replaceSourceRange(
                     contentStart,
                     contentEnd,
-                    documentFlow.escapeSourceLiteral(text),
+                    StructuredCursorSupport.replacementSourceText(normalizedText),
                     {
-                        "sourceOffset": contentStart,
+                        "localCursorPosition": localCursorPosition,
+                        "sourceOffset": StructuredCursorSupport.sourceOffsetForPlainCursor(normalizedText, localCursorPosition, contentStart),
                         "taskOpenTagStart": Math.floor(Number(safeTask.openTagStart) || -1)
                     })
         return true
@@ -147,18 +139,21 @@ FocusScope {
         return true
     }
 
-    function updateCalloutText(blockData, text) {
+    function updateCalloutText(blockData, text, cursorPosition) {
         const safeBlock = blockData && typeof blockData === "object" ? blockData : ({})
         const contentStart = Number(safeBlock.contentStart)
         const contentEnd = Number(safeBlock.contentEnd)
         if (!isFinite(contentStart) || !isFinite(contentEnd) || contentEnd < contentStart)
             return false
+        const normalizedText = StructuredCursorSupport.normalizedPlainText(text)
+        const localCursorPosition = StructuredCursorSupport.clampedPlainCursor(normalizedText, cursorPosition)
         documentFlow.replaceSourceRange(
                     contentStart,
                     contentEnd,
-                    documentFlow.escapeSourceLiteral(text),
+                    StructuredCursorSupport.replacementSourceText(normalizedText),
                     {
-                        "sourceOffset": contentStart
+                        "localCursorPosition": localCursorPosition,
+                        "sourceOffset": StructuredCursorSupport.sourceOffsetForPlainCursor(normalizedText, localCursorPosition, contentStart)
                     })
         return true
     }
@@ -222,6 +217,14 @@ FocusScope {
         if (blocks.length === 0)
             return documentFlow.normalizedSourceText(documentFlow.sourceText).length
         const safeIndex = Math.max(0, Math.min(blocks.length - 1, documentFlow.activeBlockIndex >= 0 ? documentFlow.activeBlockIndex : blocks.length - 1))
+        const blockHost = blockRepeater.itemAt(safeIndex)
+        const delegateLoader = blockHost && blockHost.delegateLoader ? blockHost.delegateLoader : null
+        const delegateItem = delegateLoader ? delegateLoader.item : null
+        if (delegateItem && delegateItem.shortcutInsertionSourceOffset !== undefined) {
+            const delegateOffset = Number(delegateItem.shortcutInsertionSourceOffset())
+            if (isFinite(delegateOffset))
+                return Math.max(0, Math.min(documentFlow.normalizedSourceText(documentFlow.sourceText).length, Math.floor(delegateOffset)))
+        }
         const block = blocks[safeIndex] && typeof blocks[safeIndex] === "object" ? blocks[safeIndex] : ({})
         return Math.max(0, Math.floor(Number(block.sourceEnd) || 0))
     }
@@ -315,8 +318,8 @@ FocusScope {
                         onTaskEnterRequested: function (_blockData, taskData) {
                             documentFlow.agendaTaskReturn(taskData)
                         }
-                        onTaskTextChanged: function (taskData, text) {
-                            documentFlow.updateAgendaTaskText(taskData, text)
+                        onTaskTextChanged: function (taskData, text, cursorPosition) {
+                            documentFlow.updateAgendaTaskText(taskData, text, cursorPosition)
                         }
                     }
                 }
@@ -333,8 +336,8 @@ FocusScope {
                         onEnterExitRequested: function (blockData) {
                             documentFlow.exitCallout(blockData)
                         }
-                        onTextChanged: function (text) {
-                            documentFlow.updateCalloutText(blockHost.blockEntry, text)
+                        onTextChanged: function (text, cursorPosition) {
+                            documentFlow.updateCalloutText(blockHost.blockEntry, text, cursorPosition)
                         }
                     }
                 }

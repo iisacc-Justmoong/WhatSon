@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import LVRS 1.0 as LV
+import "ContentsStructuredCursorSupport.js" as StructuredCursorSupport
 
 FocusScope {
     id: agendaBlock
@@ -13,7 +14,7 @@ FocusScope {
     signal activated()
     signal taskDoneToggled(int openTagStart, int openTagEnd, bool checked)
     signal taskEnterRequested(var blockData, var taskData)
-    signal taskTextChanged(var taskData, string text)
+    signal taskTextChanged(var taskData, string text, int cursorPosition)
 
     readonly property var normalizedBlock: blockData && typeof blockData === "object" ? blockData : ({})
     readonly property var tasks: {
@@ -46,9 +47,28 @@ FocusScope {
         return false
     }
 
+    function focusTaskAtSourceOffset(sourceOffset) {
+        const numericSourceOffset = Number(sourceOffset)
+        if (!isFinite(numericSourceOffset))
+            return false
+        for (let index = 0; index < taskRepeater.count; ++index) {
+            const item = taskRepeater.itemAt(index)
+            if (!item || item.taskContentStart === undefined || item.taskContentEnd === undefined)
+                continue
+            const contentStart = Math.max(0, Math.floor(Number(item.taskContentStart) || 0))
+            const contentEnd = Math.max(contentStart, Math.floor(Number(item.taskContentEnd) || 0))
+            if (numericSourceOffset < contentStart || numericSourceOffset > contentEnd)
+                continue
+            item.focusEditor(StructuredCursorSupport.plainCursorForSourceOffset(item.taskText, numericSourceOffset - contentStart))
+            return true
+        }
+        return false
+    }
+
     function applyFocusRequest(request) {
         const safeRequest = request && typeof request === "object" ? request : ({})
         const taskOpenTagStart = Number(safeRequest.taskOpenTagStart)
+        const localCursorPosition = Number(safeRequest.localCursorPosition)
         if (isFinite(taskOpenTagStart)) {
             for (let index = 0; index < taskRepeater.count; ++index) {
                 const item = taskRepeater.itemAt(index)
@@ -56,7 +76,7 @@ FocusScope {
                     continue
                 if (Number(item.taskOpenTagStart) !== Math.floor(taskOpenTagStart))
                     continue
-                item.focusEditor()
+                item.focusEditor(localCursorPosition)
                 return true
             }
         }
@@ -66,7 +86,14 @@ FocusScope {
             return false
         if (sourceOffset < agendaBlock.sourceStart || sourceOffset > agendaBlock.sourceEnd)
             return false
+        if (agendaBlock.focusTaskAtSourceOffset(sourceOffset))
+            return true
         return agendaBlock.focusFirstTask()
+    }
+
+    function shortcutInsertionSourceOffset() {
+        // Agenda/callout shortcuts must stay block-scoped here so new wrappers do not nest inside task content.
+        return agendaBlock.sourceEnd
     }
 
     Rectangle {
@@ -125,18 +152,24 @@ FocusScope {
                         readonly property var taskData: modelData && typeof modelData === "object" ? modelData : ({})
                         readonly property int taskOpenTagStart: Math.floor(Number(taskData.openTagStart) || -1)
                         readonly property int taskOpenTagEnd: Math.floor(Number(taskData.openTagEnd) || -1)
+                        readonly property int taskContentStart: Math.floor(Number(taskData.contentStart) || 0)
+                        readonly property int taskContentEnd: Math.max(taskContentStart, Math.floor(Number(taskData.contentEnd) || taskContentStart))
                         readonly property string taskText: taskData.text !== undefined ? String(taskData.text) : ""
 
                         Layout.fillWidth: true
                         implicitHeight: taskEditor.implicitHeight
                         width: parent ? parent.width : implicitWidth
 
-                        function focusEditor() {
+                        function focusEditor(cursorPosition) {
                             taskEditor.forceActiveFocus()
+                            const numericCursorPosition = Number(cursorPosition)
+                            const targetCursorPosition = isFinite(numericCursorPosition)
+                                                       ? Math.max(0, Math.min(Math.floor(numericCursorPosition), Math.max(0, taskEditor.length || 0)))
+                                                       : Math.max(0, taskEditor.length || 0)
                             if (taskEditor.setCursorPositionPreservingInputMethod !== undefined)
-                                taskEditor.setCursorPositionPreservingInputMethod(Math.max(0, taskEditor.length || 0))
+                                taskEditor.setCursorPositionPreservingInputMethod(targetCursorPosition)
                             else if (taskEditor.cursorPosition !== undefined)
-                                taskEditor.cursorPosition = Math.max(0, taskEditor.length || 0)
+                                taskEditor.cursorPosition = targetCursorPosition
                             agendaBlock.activated()
                         }
 
@@ -215,7 +248,10 @@ FocusScope {
                                         agendaBlock.activated()
                                 }
                                 onTextEdited: function (text) {
-                                    agendaBlock.taskTextChanged(taskRow.taskData, String(text || ""))
+                                    agendaBlock.taskTextChanged(
+                                                taskRow.taskData,
+                                                String(text || ""),
+                                                Math.max(0, Number(taskEditor.cursorPosition) || 0))
                                 }
                             }
                         }
