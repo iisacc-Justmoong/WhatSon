@@ -1,0 +1,24 @@
+# `src/app/file/validator/WhatSonStructuredTagLinter.hpp`
+
+## Role
+`WhatSonStructuredTagLinter` owns note-body proprietary structured-tag linting and safe canonicalization.
+
+## Public API
+- `normalizeStructuredSourceText(const QString&)`
+  - Applies safe canonical rewrites for the proprietary body tags currently supported by the editor:
+    - `</break>`
+    - `<agenda date="...">...</agenda>`
+    - `<task done="...">...</task>`
+    - `<callout>...</callout>`
+- `buildBreakVerification(const QString&)`
+  - Reports canonical vs legacy divider-tag usage.
+- `buildAgendaVerification(const QString&, int parsedAgendaCount, int parsedTaskCount, int invalidAgendaChildCount)`
+  - Builds agenda/task verification payloads for parser callers using both raw-source lint signals and parser-confirmed counts.
+- `buildCalloutVerification(const QString&, int parsedCalloutCount)`
+  - Builds callout verification payloads for parser callers.
+- `buildStructuredVerification(const QVariantMap&, const QVariantMap&, const QString&)`
+  - Merges agenda/callout verification with break-tag lint into one renderer-friendly structured verification map.
+
+## Layer Placement
+- This type lives in `file/validator` because the rules describe canonical `.wsnbody` source validity, not editor-widget behavior.
+- Parser backends and note persistence may both depend on it without moving body-tag business rules into QML.
