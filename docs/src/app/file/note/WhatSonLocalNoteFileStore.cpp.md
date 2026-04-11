@@ -43,6 +43,7 @@ It creates notes, reads materialized note directories, updates persisted body/he
 - Header / structural mutations still opt in to that counter by default.
 - Each successful `modifiedCount` increment is now treated as a commit boundary:
   - after header/body files persist, the store captures a new `.wsnversion` snapshot
+  - capture/diff persistence is delegated to `file/diff/WhatSonLocalNoteVersionStore`
   - snapshot label format: `commit:<modifiedCount>`
   - snapshot metadata stores `commitModifiedCount` and git-style unified patches for `.wsnhead` / `.wsnbody`
 - Debounced editor body autosaves deliberately opt out: they still write the normalized `.wsnbody`, refresh

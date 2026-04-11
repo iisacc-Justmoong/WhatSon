@@ -7,12 +7,13 @@
 ## Scope
 - Mirrored source directory: `src/app/qml/view/content/editor`
 - Child directories: 0
-- Child files: 10
+- Child files: 11
 
 ## Child Directories
 - No child directories.
 
 ## Child Files
+- `ContentsAgendaLayer.qml`
 - `ContentsDisplayView.qml`
 - `ContentsEditorSelectionController.qml`
 - `ContentsEditorSession.qml`
@@ -118,6 +119,19 @@
   glyph representation.
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
+- `ContentsEditorTypingController.qml` now also owns agenda authoring shortcuts:
+  - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"></task></agenda>`
+  - markdown-like `[] item` / `[x] item` lines are rewritten into agenda/task source blocks
+  - pressing `Enter` inside `<task>` either creates the next `<task>` or exits agenda editing when the current task is
+    empty
+  - if agenda exit occurs on an empty task and all sibling tasks are empty, the entire agenda block is removed
+- Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
+  `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
+- `ContentsEditorSession.qml` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
+  - when local note modification is staged for persistence, placeholder dates are rewritten to current `YYYY-MM-DD`
+  - passive same-note model sync does not rewrite agenda dates
+- `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders agenda cards
+  with `LV.CheckBox` task rows bound to source `done` attributes via `ContentsAgendaBackend`.
 - Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
   not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
@@ -147,6 +161,8 @@
 - Shared inline-format actions now also rebuild proprietary source tags from RAW logical coverage, so formatting ranges
   that cross multiple paragraphs or existing inline tags stay governed by canonical `<bold>` / `<italic>` / ...
   boundaries instead of temporary RichText fragment splits.
+- Agenda source tags must now round-trip through persistence without escaping (`<agenda>`, `<task>`) and keep canonical
+  attribute forms (`date=YYYY-MM-DD`, `done=true|false`).
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

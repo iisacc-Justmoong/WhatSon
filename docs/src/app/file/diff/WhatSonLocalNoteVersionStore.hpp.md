@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonLocalNoteVersionStore.hpp`
+# `src/app/file/diff/WhatSonLocalNoteVersionStore.hpp`
 
 ## Role
 Declares the local note versioning contract that persists snapshot history in `.wsnversion`.

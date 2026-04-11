@@ -6,12 +6,11 @@
 
 ## Scope
 - Mirrored source directory: `src/app/runtime`
-- Child directories: 6
+- Child directories: 5
 - Child files: 0
 
 ## Child Directories
 - `bootstrap`
-- `permissions`
 - `scheduler`
 - `startup`
 - `threading`

@@ -34,7 +34,7 @@
 #include "runtime/bootstrap/WhatSonHubSyncWiring.hpp"
 #include "runtime/bootstrap/WhatSonQmlContextBinder.hpp"
 #include "runtime/bootstrap/WhatSonQmlInternalTypeRegistrar.hpp"
-#include "runtime/permissions/WhatSonPermissionBootstrapper.hpp"
+#include "permissions/WhatSonPermissionBootstrapper.hpp"
 #include "runtime/scheduler/WhatSonAsyncScheduler.hpp"
 #include "file/hub/WhatSonHubCreator.hpp"
 #include "file/hub/WhatSonHubPathUtils.hpp"

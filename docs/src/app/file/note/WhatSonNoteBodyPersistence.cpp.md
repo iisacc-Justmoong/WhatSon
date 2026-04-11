@@ -26,6 +26,11 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - editor/source projection keeps `</break>`
   - `.wsnbody` body XML stores `<break/>` (valid XML)
   - legacy `<hr ...>` input aliases are normalized to `</break>` on read/write canonicalization
+- Proprietary agenda/task tags are now canonicalized and preserved end-to-end instead of being escaped as literal text:
+  - `<agenda ...>` start tags are normalized to mandatory `date="YYYY-MM-DD"`
+  - `<task ...>` start tags are normalized to canonical `done="true|false"`
+  - self-closing agenda/task aliases are expanded into explicit open/close pairs
+  - read-side source projection keeps canonical `<agenda>` / `<task>` tags
 - `extractedInlineTagValues(...)` canonicalizes incoming editor text and extracts deduplicated body-tag payloads for
   `.wsnhead` and `Tags.wstags` synchronization.
 - The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
@@ -77,3 +82,6 @@ text projections still show `#label`.
   though the serializer has to split that logical span into paragraph-local reopened canonical tags.
 - A typed `</break>` token must survive save/load as `</break>` in editor source while `.wsnbody` persists it as
   `<break/>`, and rich-text projection must show a divider line instead of literal tag text.
+- A typed agenda/task source block must survive save/load without escaping:
+  - input: `<agenda date="..."><task done="false">todo</task></agenda>`
+  - output source projection: canonical agenda/task tags with normalized attributes

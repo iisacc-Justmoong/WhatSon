@@ -10,6 +10,7 @@ QtObject {
     property var editorSession: null
     property var textFormatRenderer: null
     property var textMetricsBridge: null
+    property var agendaBackend: null
     property string liveAuthoritativePlainText: ""
     property var liveLogicalLineStartOffsets: [0]
     property var liveLogicalToSourceOffsets: [0]
@@ -127,6 +128,17 @@ QtObject {
         normalizedText = normalizedText.replace(/\u2029/g, "\n");
         normalizedText = normalizedText.replace(/\u00a0/g, " ");
         return normalizedText;
+    }
+
+    function spliceSourceText(sourceText, sourceStart, sourceEnd, replacementSourceText) {
+        const normalizedSourceText = sourceText === undefined || sourceText === null ? "" : String(sourceText);
+        const safeLength = normalizedSourceText.length;
+        const boundedStart = Math.max(0, Math.min(safeLength, Math.floor(Number(sourceStart) || 0)));
+        const boundedEnd = Math.max(boundedStart, Math.min(safeLength, Math.floor(Number(sourceEnd) || 0)));
+        const replacementText = controller.normalizePlainText(replacementSourceText);
+        return normalizedSourceText.slice(0, boundedStart)
+                + replacementText
+                + normalizedSourceText.slice(boundedEnd);
     }
 
     function presentationSourceText() {
@@ -428,6 +440,134 @@ QtObject {
             });
     }
 
+    function currentEditorSelectionSnapshot() {
+        if (!controller.contentEditor) {
+            return ({
+                    "cursorPosition": NaN,
+                    "selectionEnd": NaN,
+                    "selectionStart": NaN
+                });
+        }
+        if (controller.contentEditor.selectionSnapshot !== undefined) {
+            const snapshot = controller.contentEditor.selectionSnapshot();
+            if (snapshot)
+                return snapshot;
+        }
+        return ({
+                "cursorPosition": controller.contentEditor.cursorPosition,
+                "selectionEnd": controller.contentEditor.selectionEnd,
+                "selectionStart": controller.contentEditor.selectionStart
+            });
+    }
+
+    function currentRawEditorSelectionRange() {
+        const snapshot = controller.currentEditorSelectionSnapshot();
+        const cursorPosition = Number(snapshot && snapshot.cursorPosition !== undefined ? snapshot.cursorPosition : NaN);
+        const selectionStart = Number(snapshot && snapshot.selectionStart !== undefined ? snapshot.selectionStart : NaN);
+        const selectionEnd = Number(snapshot && snapshot.selectionEnd !== undefined ? snapshot.selectionEnd : NaN);
+        const logicalLength = controller.authoritativeSourcePlainText().length;
+        if (isFinite(selectionStart) && isFinite(selectionEnd)) {
+            return ({
+                    "start": Math.max(0, Math.min(logicalLength, Math.floor(Math.min(selectionStart, selectionEnd)))),
+                    "end": Math.max(0, Math.min(logicalLength, Math.floor(Math.max(selectionStart, selectionEnd))))
+                });
+        }
+        const boundedCursor = isFinite(cursorPosition)
+                ? Math.max(0, Math.min(logicalLength, Math.floor(cursorPosition)))
+                : logicalLength;
+        return ({
+                "start": boundedCursor,
+                "end": boundedCursor
+            });
+    }
+
+    function queueAgendaShortcutInsertion() {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+
+        controller.ensureLiveEditingStateReady();
+        const selectionRange = controller.currentRawEditorSelectionRange();
+        const logicalStart = Math.max(0, Math.min(selectionRange.start, selectionRange.end));
+        const logicalEnd = Math.max(logicalStart, Math.max(selectionRange.start, selectionRange.end));
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const sourceStart = controller.sourceOffsetForLogicalOffset(logicalStart);
+        const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalEnd);
+        if (!controller.agendaBackend
+                || controller.agendaBackend.buildAgendaInsertionPayload === undefined) {
+            return false;
+        }
+        const insertionPayload = controller.agendaBackend.buildAgendaInsertionPayload(false, "");
+        const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
+                ? String(insertionPayload.insertionSourceText)
+                : "";
+        const cursorSourceOffsetFromInsertionStart = insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
+                ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
+                : 0;
+        if (insertionSourceText.length === 0)
+            return false;
+        const nextSourceText = controller.spliceSourceText(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    insertionSourceText);
+        const cursorSourceOffset = sourceStart + cursorSourceOffsetFromInsertionStart;
+
+        if (controller.view.editorText !== nextSourceText)
+            controller.view.editorText = nextSourceText;
+        if (controller.view.commitDocumentPresentationRefresh !== undefined)
+            controller.view.commitDocumentPresentationRefresh();
+        else
+            controller.synchronizeLiveEditingStateFromPresentation();
+
+        const logicalCursor = controller.logicalOffsetForSourceOffset(cursorSourceOffset);
+        controller.scheduleCursorPosition(logicalCursor);
+
+        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
+            controller.editorSession.markLocalEditorAuthority();
+        if (controller.shouldDeferImmediatePersistence()) {
+            controller.editorSession.scheduleEditorPersistence();
+            controller.view.editorTextEdited(nextSourceText);
+            return true;
+        }
+        const saved = controller.view.persistEditorTextImmediately !== undefined
+                ? !!controller.view.persistEditorTextImmediately(nextSourceText)
+                : false;
+        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
+            controller.editorSession.scheduleEditorPersistence();
+        controller.view.editorTextEdited(nextSourceText);
+        return true;
+    }
+
+    function agendaTodoShortcutInsertion(previousPlainText, replacementStart, replacementEnd, insertedText) {
+        if (!controller.agendaBackend
+                || controller.agendaBackend.detectTodoShortcutReplacement === undefined) {
+            return ({ "applied": false });
+        }
+        return controller.agendaBackend.detectTodoShortcutReplacement(
+                    previousPlainText,
+                    replacementStart,
+                    replacementEnd,
+                    insertedText);
+    }
+
+    function agendaTaskEnterInsertion(currentSourceText, sourceStart, sourceEnd, insertedText) {
+        if (!controller.agendaBackend
+                || controller.agendaBackend.detectAgendaTaskEnterReplacement === undefined) {
+            return ({ "applied": false });
+        }
+        return controller.agendaBackend.detectAgendaTaskEnterReplacement(
+                    currentSourceText,
+                    sourceStart,
+                    sourceEnd,
+                    insertedText);
+    }
+
     function sourceOffsetForLogicalOffset(logicalOffset) {
         controller.ensureLiveEditingStateReady();
         const safeOffset = Math.max(0, Math.floor(Number(logicalOffset) || 0));
@@ -449,6 +589,22 @@ QtObject {
                 ? String(controller.view.editorText)
                 : "";
         return Math.max(0, Math.min(currentSourceText.length, safeOffset));
+    }
+
+    function logicalOffsetForSourceOffset(sourceOffset) {
+        controller.ensureLiveEditingStateReady();
+        const safeSourceOffset = Math.max(0, Math.floor(Number(sourceOffset) || 0));
+        const offsets = Array.isArray(controller.liveLogicalToSourceOffsets)
+                ? controller.liveLogicalToSourceOffsets
+                : [];
+        if (offsets.length === 0)
+            return safeSourceOffset;
+        for (let logicalIndex = 0; logicalIndex < offsets.length; ++logicalIndex) {
+            const mappedSourceOffset = Math.max(0, Math.floor(Number(offsets[logicalIndex]) || 0));
+            if (mappedSourceOffset >= safeSourceOffset)
+                return logicalIndex;
+        }
+        return Math.max(0, offsets.length - 1);
     }
 
     function applyLiveEditingStateReplacement(logicalStart, logicalEnd, replacementText, sourceStart, sourceEnd) {
@@ -525,36 +681,96 @@ QtObject {
                 && Number(continuedListInsertion.replacementEnd) >= 0
                 ? Math.floor(Number(continuedListInsertion.replacementEnd))
                 : replacementDelta.previousEnd;
+
+        let rawSourceReplacementText = "";
+        let rawReplacementEnabled = false;
+        let cursorLogicalOverride = NaN;
+        let cursorSourceOffsetOverride = NaN;
+
+        const agendaTodoShortcut = controller.agendaTodoShortcutInsertion(
+                    previousPlainText,
+                    logicalReplacementStart,
+                    logicalReplacementEnd,
+                    normalizedInsertedText);
+        if (agendaTodoShortcut.applied) {
+            logicalReplacementStart = Math.max(0, Math.floor(Number(agendaTodoShortcut.replacementStart) || 0));
+            logicalReplacementEnd = Math.max(logicalReplacementStart, Math.floor(Number(agendaTodoShortcut.replacementEnd) || 0));
+            rawSourceReplacementText = String(agendaTodoShortcut.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(agendaTodoShortcut.cursorSourceOffsetFromReplacementStart) || 0));
+        }
+
         const breakShortcut = controller.breakShortcutInsertion(
                     previousPlainText,
                     logicalReplacementStart,
                     logicalReplacementEnd,
                     normalizedInsertedText);
-        if (breakShortcut.applied) {
+        if (!rawReplacementEnabled && breakShortcut.applied) {
             normalizedInsertedText = breakShortcut.insertedText;
             logicalReplacementStart = Math.max(0, Math.floor(Number(breakShortcut.replacementStart) || 0));
             logicalReplacementEnd = Math.max(logicalReplacementStart, Math.floor(Number(breakShortcut.replacementEnd) || 0));
+            rawSourceReplacementText = normalizedInsertedText;
+            rawReplacementEnabled = true;
+            cursorLogicalOverride = Math.max(0, Math.floor(Number(breakShortcut.cursorPosition) || 0));
         }
         const sourceStart = controller.sourceOffsetForLogicalOffset(logicalReplacementStart);
         const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalReplacementEnd);
-        const nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
-                                          currentSourceText,
-                                          sourceStart,
-                                          sourceEnd,
-                                          normalizedInsertedText));
-        controller.applyLiveEditingStateReplacement(
-                    logicalReplacementStart,
-                    logicalReplacementEnd,
-                    normalizedInsertedText,
+
+        const agendaTaskEnter = controller.agendaTaskEnterInsertion(
+                    currentSourceText,
                     sourceStart,
-                    sourceEnd);
+                    sourceEnd,
+                    normalizedInsertedText);
+        let replacementSourceStart = sourceStart;
+        let replacementSourceEnd = sourceEnd;
+        if (agendaTaskEnter.applied) {
+            replacementSourceStart = Math.max(0, Math.floor(Number(agendaTaskEnter.replacementSourceStart) || 0));
+            replacementSourceEnd = Math.max(replacementSourceStart, Math.floor(Number(agendaTaskEnter.replacementSourceEnd) || 0));
+            rawSourceReplacementText = String(agendaTaskEnter.replacementSourceText || "");
+            rawReplacementEnabled = true;
+            cursorSourceOffsetOverride = Math.max(0, Math.floor(Number(agendaTaskEnter.cursorSourceOffsetFromReplacementStart) || 0));
+            cursorLogicalOverride = NaN;
+        }
+
+        let nextSourceText = "";
+        if (rawReplacementEnabled) {
+            nextSourceText = controller.spliceSourceText(
+                        currentSourceText,
+                        replacementSourceStart,
+                        replacementSourceEnd,
+                        rawSourceReplacementText);
+        } else {
+            nextSourceText = String(controller.textFormatRenderer.applyPlainTextReplacementToSource(
+                                        currentSourceText,
+                                        sourceStart,
+                                        sourceEnd,
+                                        normalizedInsertedText));
+            controller.applyLiveEditingStateReplacement(
+                        logicalReplacementStart,
+                        logicalReplacementEnd,
+                        normalizedInsertedText,
+                        sourceStart,
+                        sourceEnd);
+        }
+
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;
-        controller.adoptLiveStateIntoBridge(nextSourceText);
-        if (continuedListInsertion.applied)
+        if (rawReplacementEnabled) {
+            if (controller.view.commitDocumentPresentationRefresh !== undefined)
+                controller.view.commitDocumentPresentationRefresh();
+            else
+                controller.synchronizeLiveEditingStateFromPresentation();
+        } else {
+            controller.adoptLiveStateIntoBridge(nextSourceText);
+        }
+
+        if (continuedListInsertion.applied && !rawReplacementEnabled)
             controller.scheduleCursorPosition(continuedListInsertion.cursorPosition);
-        else if (breakShortcut.applied)
-            controller.scheduleCursorPosition(breakShortcut.cursorPosition);
+        else if (rawReplacementEnabled && isFinite(cursorSourceOffsetOverride))
+            controller.scheduleCursorPosition(controller.logicalOffsetForSourceOffset(replacementSourceStart + cursorSourceOffsetOverride));
+        else if (isFinite(cursorLogicalOverride))
+            controller.scheduleCursorPosition(cursorLogicalOverride);
+
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();
         if (controller.shouldDeferImmediatePersistence()) {

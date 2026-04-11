@@ -10,6 +10,7 @@ Item {
     property bool pendingBodySave: false
     property int typingIdleThresholdMs: 1000
     property var selectionBridge: null
+    property var agendaBackend: null
     property bool syncingEditorTextFromModel: false
 
     signal editorTextSynchronized
@@ -34,7 +35,8 @@ Item {
         }
         if (!editorSession.selectionBridge)
             return false;
-        const bodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
         if (editorSession.selectionBridge.flushEditorTextForNote !== undefined)
             return !!editorSession.selectionBridge.flushEditorTextForNote(noteId, bodyText);
         if (editorSession.selectionBridge.stageEditorTextForIdleSync !== undefined)
@@ -43,6 +45,22 @@ Item {
     }
     function currentTimestampMs() {
         return Date.now();
+    }
+    function normalizeAgendaPlaceholderDates(text) {
+        const sourceText = text === undefined || text === null ? "" : String(text);
+        if (sourceText.length === 0)
+            return sourceText;
+        if (!editorSession.agendaBackend
+                || editorSession.agendaBackend.normalizeAgendaModifiedDate === undefined) {
+            return sourceText;
+        }
+        return String(editorSession.agendaBackend.normalizeAgendaModifiedDate(sourceText));
+    }
+    function normalizeModifiedEditorText(text) {
+        const normalizedText = editorSession.normalizeAgendaPlaceholderDates(text);
+        if (editorSession.editorText !== normalizedText)
+            editorSession.editorText = normalizedText;
+        return normalizedText;
     }
     function isTypingSessionActive() {
         if (!editorSession.localEditorAuthority)
@@ -95,7 +113,8 @@ Item {
                 || editorSession.selectionBridge.stageEditorTextForIdleSync === undefined) {
             return;
         }
-        const bodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        const rawBodyText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
+        const bodyText = editorSession.normalizeModifiedEditorText(rawBodyText);
         editorSession.selectionBridge.stageEditorTextForIdleSync(noteId, bodyText);
     }
     function shouldAcceptModelBodyText(noteId, text) {

@@ -43,7 +43,7 @@
   - callers must be able to update `lastModifiedAt` without also incrementing `modifiedCount`
   - existing update callers that do not override `incrementModifiedCount` must keep the legacy increment behavior
   - when `incrementModifiedCount` advances by exactly one, the same transaction must also emit a
-    `.wsnversion` snapshot labeled as `commit:<modifiedCount>`
+    `.wsnversion` snapshot labeled as `commit:<modifiedCount>` via `file/diff/WhatSonLocalNoteVersionStore`
   - callers that disable backlink refresh must still get local body-derived counters (`lineCount`, `backlinkToCount`,
     `includedResourceCount`, etc.) rewritten into `.wsnhead`
 

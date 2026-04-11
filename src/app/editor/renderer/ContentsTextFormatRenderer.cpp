@@ -1276,6 +1276,13 @@ namespace
                 continue;
             }
 
+            if (normalizedTagName == QStringLiteral("agenda")
+                || normalizedTagName == QStringLiteral("task"))
+            {
+                cursor = tagEnd;
+                continue;
+            }
+
             if (normalizedTagName == QStringLiteral("break")
                 || normalizedTagName == QStringLiteral("hr"))
             {

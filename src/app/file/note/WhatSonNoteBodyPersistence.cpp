@@ -4,6 +4,7 @@
 #include "WhatSonLocalNoteFileStore.hpp"
 
 #include <QDir>
+#include <QDate>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSet>
@@ -283,6 +284,85 @@ namespace
         return QStringLiteral("<break/>");
     }
 
+    bool isAgendaTagName(const QString& elementName)
+    {
+        return elementName.trimmed().compare(QStringLiteral("agenda"), Qt::CaseInsensitive) == 0;
+    }
+
+    bool isTaskTagName(const QString& elementName)
+    {
+        return elementName.trimmed().compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0;
+    }
+
+    QString tagAttributeValue(const QString& rawTagText, const QString& attributeName)
+    {
+        const QString normalizedAttributeName = attributeName.trimmed();
+        if (normalizedAttributeName.isEmpty())
+        {
+            return {};
+        }
+
+        const QRegularExpression attributePattern(
+            QStringLiteral(R"ATTR(\b%1\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))ATTR")
+                .arg(QRegularExpression::escape(normalizedAttributeName)),
+            QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch match = attributePattern.match(rawTagText);
+        if (!match.hasMatch())
+        {
+            return {};
+        }
+
+        if (match.capturedStart(1) >= 0)
+        {
+            return match.captured(1);
+        }
+        if (match.capturedStart(2) >= 0)
+        {
+            return match.captured(2);
+        }
+        if (match.capturedStart(3) >= 0)
+        {
+            return match.captured(3);
+        }
+        return {};
+    }
+
+    QString normalizedAgendaDate(const QString& rawDate)
+    {
+        const QString decodedDate = decodeXmlEntities(rawDate).trimmed();
+        static const QRegularExpression datePattern(QStringLiteral(R"(^\d{4}-\d{2}-\d{2}$)"));
+        if (datePattern.match(decodedDate).hasMatch())
+        {
+            return decodedDate;
+        }
+        return QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
+    }
+
+    bool normalizedTaskDoneValue(const QString& rawDone)
+    {
+        const QString lowered = decodeXmlEntities(rawDone).trimmed().toCaseFolded();
+        if (lowered == QStringLiteral("true")
+            || lowered == QStringLiteral("1")
+            || lowered == QStringLiteral("yes"))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    QString normalizeAgendaStartTag(const QString& rawTagText)
+    {
+        const QString dateValue = normalizedAgendaDate(tagAttributeValue(rawTagText, QStringLiteral("date")));
+        return QStringLiteral("<agenda date=\"%1\">").arg(escapeXmlAttributeValue(dateValue));
+    }
+
+    QString normalizeTaskStartTag(const QString& rawTagText)
+    {
+        const bool done = normalizedTaskDoneValue(tagAttributeValue(rawTagText, QStringLiteral("done")));
+        return QStringLiteral("<task done=\"%1\">")
+            .arg(done ? QStringLiteral("true") : QStringLiteral("false"));
+    }
+
     bool isInlineHashtagBoundary(const QString& text, const qsizetype index)
     {
         if (index <= 0 || index > text.size())
@@ -550,6 +630,42 @@ namespace
                 continue;
             }
 
+            if (isAgendaTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</agenda>");
+                }
+                else
+                {
+                    output += normalizeAgendaStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</agenda>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isTaskTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</task>");
+                }
+                else
+                {
+                    output += normalizeTaskStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</task>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
             output += fullTagToken;
             cursor = tagEnd;
         }
@@ -634,6 +750,7 @@ namespace
             const QString rawTagName = match.captured(1);
             const QString normalizedTagName = rawTagName.trimmed().toCaseFolded();
             const bool closingTag = isClosingTagToken(fullTagToken);
+            const bool selfClosingTag = isSelfClosingTagToken(fullTagToken);
 
             if (normalizedTagName == QStringLiteral("body"))
             {
@@ -687,6 +804,42 @@ namespace
             if (isBreakDividerTagName(normalizedTagName))
             {
                 output += canonicalBreakDividerSourceTag();
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isAgendaTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</agenda>");
+                }
+                else
+                {
+                    output += normalizeAgendaStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</agenda>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isTaskTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</task>");
+                }
+                else
+                {
+                    output += normalizeTaskStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</task>");
+                    }
+                }
                 cursor = tagEnd;
                 continue;
             }
@@ -825,6 +978,42 @@ namespace
             if (isBreakDividerTagName(normalizedTagName))
             {
                 output += canonicalBreakDividerBodyTag();
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isAgendaTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</agenda>");
+                }
+                else
+                {
+                    output += normalizeAgendaStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</agenda>");
+                    }
+                }
+                cursor = tagEnd;
+                continue;
+            }
+
+            if (isTaskTagName(rawTagName))
+            {
+                if (closingTag)
+                {
+                    output += QStringLiteral("</task>");
+                }
+                else
+                {
+                    output += normalizeTaskStartTag(fullTagToken);
+                    if (selfClosingTag)
+                    {
+                        output += QStringLiteral("</task>");
+                    }
+                }
                 cursor = tagEnd;
                 continue;
             }

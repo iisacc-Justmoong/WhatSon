@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WhatSonLocalNoteDocument.hpp"
-#include "WhatSonLocalNoteFileStore.hpp"
+#include "file/note/WhatSonLocalNoteDocument.hpp"
+#include "file/note/WhatSonLocalNoteFileStore.hpp"
 #include "file/IO/WhatSonSystemIoGateway.hpp"
 
 #include <QString>

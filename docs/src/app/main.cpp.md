@@ -14,4 +14,6 @@
 - Bookmark/progress-originated note mutations still use the disk reindex fallback path so calendar projection remains
   aligned even when those domains mutate note metadata outside the library viewmodel's in-memory note list.
 - Hub selection wiring now updates sync/import state directly without a background write-lease heartbeat timer.
+- Permission startup wiring now consumes `permissions/WhatSonPermissionBootstrapper.hpp` after consolidating
+  permission bootstrap code under `src/app/permissions`.
 - This keeps the application bootstrap as the composition root for concrete object selection.

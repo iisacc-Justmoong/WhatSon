@@ -62,6 +62,9 @@ suppression local to this file.
 - `MobileHierarchyPage.qml` reaches this file through `ContentViewLayout.qml`.
 - The editor session, typing controller, selection controller, renderer, and resource-viewer collaborators stay aligned
   with the desktop implementation.
+- `ContentsAgendaLayer.qml` is also shared with desktop for non-Plain agenda/task card rendering.
+- `ContentsAgendaBackend` is shared with desktop for agenda parsing, task-toggle rewrite, and agenda shortcut mutation
+  payloads.
 - `ContentsMinimapSnapshotSupport.js` is shared with desktop so the minimap diff/range-splice policy stays identical
   across both editor surfaces.
 - RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
@@ -75,6 +78,9 @@ suppression local to this file.
 - Mobile keeps the same window-level markdown list shortcuts as desktop when a hardware keyboard is present:
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
+- Mobile hardware-keyboard path now also supports `Cmd+Opt+T` (`Meta+Alt+T`) for agenda insertion, sharing the same
+  typing-controller source mutation path as desktop, with insertion payloads supplied by
+  `ContentsAgendaBackend.buildAgendaInsertionPayload(...)`.
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so the old note buffer stays staged in the fetch-sync controller while the newly selected note binds immediately.
 - The mobile host now also wires `ContentsEditorSession.typingIdleThresholdMs` from
@@ -153,6 +159,8 @@ suppression local to this file.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.
   - Mobile Page/Print viewport and page-count calculations must stay bound to backend
     `ContentsPagePrintLayoutRenderer`; local duplicate page-math state must not be reintroduced.
+  - In non-Plain modes, agenda/task source blocks must render through `ContentsAgendaLayer` with checkbox rows, and
+    checkbox toggles must persist canonical `done=true|false`.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
   - Any pointer-driven right-click formatting flow must preserve a multi-paragraph or mixed-inline dragged selection

@@ -950,6 +950,48 @@ Item {
     function queueMarkdownListMutation(listKind) {
         return editorSelectionController.queueMarkdownListMutation(listKind);
     }
+    function queueAgendaShortcutInsertion() {
+        return editorTypingController.queueAgendaShortcutInsertion();
+    }
+    function setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked) {
+        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
+                ? ""
+                : String(contentsView.editorText);
+        if (!contentsAgendaBackend
+                || contentsAgendaBackend.rewriteTaskDoneAttribute === undefined) {
+            return false;
+        }
+        const nextSourceText = String(contentsAgendaBackend.rewriteTaskDoneAttribute(
+                                          currentSourceText,
+                                          Math.floor(Number(taskOpenTagStart) || 0),
+                                          Math.floor(Number(taskOpenTagEnd) || 0),
+                                          !!checked));
+        if (nextSourceText === currentSourceText)
+            return false;
+        if (contentsView.editorText !== nextSourceText)
+            contentsView.editorText = nextSourceText;
+        if (contentsView.commitDocumentPresentationRefresh !== undefined)
+            contentsView.commitDocumentPresentationRefresh();
+        if (editorSession && editorSession.markLocalEditorAuthority !== undefined)
+            editorSession.markLocalEditorAuthority();
+        if (contentsView.deferImmediateEditorPersistence
+                && editorSession
+                && editorSession.scheduleEditorPersistence !== undefined) {
+            editorSession.scheduleEditorPersistence();
+            contentsView.editorTextEdited(nextSourceText);
+            return true;
+        }
+        const saved = contentsView.persistEditorTextImmediately !== undefined
+                ? !!contentsView.persistEditorTextImmediately(nextSourceText)
+                : false;
+        if (!saved
+                && editorSession
+                && editorSession.scheduleEditorPersistence !== undefined) {
+            editorSession.scheduleEditorPersistence();
+        }
+        contentsView.editorTextEdited(nextSourceText);
+        return true;
+    }
     function refreshMinimapSnapshot() {
         if (!contentsView.lineGeometryRefreshEnabled)
             return;
@@ -1246,6 +1288,7 @@ Item {
     ContentsEditorTypingController {
         id: editorTypingController
 
+        agendaBackend: contentsAgendaBackend
         contentEditor: contentEditor
         editorSession: editorSession
         textFormatRenderer: textFormatRenderer
@@ -1258,6 +1301,9 @@ Item {
         contentViewModel: contentsView.contentViewModel
         maxRenderCount: contentsView.resourceRenderDisplayLimit
         noteId: contentsView.selectedNoteId
+    }
+    ContentsAgendaBackend {
+        id: contentsAgendaBackend
     }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
@@ -1275,6 +1321,7 @@ Item {
     ContentsEditorSession {
         id: editorSession
 
+        agendaBackend: contentsAgendaBackend
         selectionBridge: selectionBridge
         typingIdleThresholdMs: contentsView.editorIdleSyncThresholdMs
     }
@@ -1641,6 +1688,39 @@ Item {
                             editorTypingController.handleEditorTextEdited();
                         }
                     }
+                    ContentsAgendaLayer {
+                        id: agendaRenderLayer
+
+                        agendaBackend: contentsAgendaBackend
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
+                                            : contentsView.editorHorizontalInset
+                        anchors.rightMargin: contentsView.showPrintEditorLayout
+                                             ? Math.max(
+                                                   0,
+                                                   (parent ? Number(parent.width) || 0 : 0)
+                                                   - ((Number(printPaperColumn.x) || 0)
+                                                      + contentsView.printGuideHorizontalInset
+                                                      + contentsView.printPaperTextWidth))
+                                             : contentsView.editorHorizontalInset
+                        anchors.topMargin: contentsView.showPrintEditorLayout
+                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
+                                           : contentsView.editorDocumentStartY
+                        sourceText: contentsView.editorText
+                        taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
+                            contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
+                        }
+                        visible: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
+                                 && agendaRenderLayer.agendaCount > 0
+                        enabled: visible
+                        z: 2
+                    }
                     Flickable {
                         id: formattedPreviewViewport
 
@@ -1850,6 +1930,13 @@ Item {
                         sequence: "Alt+Shift+8"
 
                         onActivated: contentsView.queueMarkdownListMutation("unordered")
+                    }
+                    Shortcut {
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+Alt+T"
+
+                        onActivated: contentsView.queueAgendaShortcutInsertion()
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu

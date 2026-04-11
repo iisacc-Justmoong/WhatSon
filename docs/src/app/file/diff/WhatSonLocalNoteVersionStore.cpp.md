@@ -1,4 +1,4 @@
-# `src/app/file/note/WhatSonLocalNoteVersionStore.cpp`
+# `src/app/file/diff/WhatSonLocalNoteVersionStore.cpp`
 
 ## Role
 Implements `.wsnversion` persistence and snapshot lifecycle for one local note package.

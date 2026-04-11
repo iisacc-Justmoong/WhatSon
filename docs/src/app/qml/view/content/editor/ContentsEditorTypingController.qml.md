@@ -27,6 +27,14 @@ This controller exists to keep plain typing separate from inline-format applicat
   before persistence.
 - After list-continuation preprocessing, if the edited logical line becomes exactly `---`, the controller rewrites that
   whole line into the canonical divider source token `</break>` before source persistence.
+- The controller now also owns agenda source shortcuts:
+  - `queueAgendaShortcutInsertion()` triggers agenda insertion at the current selection/cursor.
+  - typing `[] item` or `[x] item` triggers todo shorthand canonicalization.
+  - pressing `Enter` inside `<task>` triggers agenda-aware newline handling.
+- Agenda-specific source mutation logic above is delegated to `ContentsAgendaBackend`:
+  - `buildAgendaInsertionPayload(...)`
+  - `detectTodoShortcutReplacement(...)`
+  - `detectAgendaTaskEnterReplacement(...)`
 - The divider shortcut rewrite is line-scoped:
   - it replaces the whole current line range, not only the last typed `-`
   - it does not trigger when `---` appears as part of a longer token (`abc---`, `----`, `---text`)
@@ -103,6 +111,11 @@ longer part of the normal typing path.
   the renderer layer is responsible for their RichText presentation after the source update lands.
 - The only typing-side markdown shortcut exception is a standalone `---` line, which is canonicalized to `</break>`
   before it reaches source persistence.
+- Agenda shortcuts are the other source-side exception set:
+  - `[]`/`[x]` todo shorthand is canonicalized into proprietary `<agenda>/<task>` source tags
+  - agenda insertion always writes `date` as `YYYY-MM-DD`
+  - task insertion always writes canonical `done="true|false"`
+  - canonicalization rules are centralized in `src/app/agenda/ContentsAgendaBackend.cpp`
 
 ## Regression Checks
 
@@ -148,3 +161,10 @@ longer part of the normal typing path.
   the original source omitted the usual separator space.
 - Typing a standalone `---` line must immediately persist canonical source `</break>` (not literal `---`).
 - Typing `---` inside longer text (`abc---`, `---todo`, `----`) must not trigger divider canonicalization.
+- `Cmd+Opt+T` must insert one canonical agenda block at the current selection without leaving escaped raw entities.
+- Typing `[] task` must persist canonical `<agenda date="..."><task done="false">task</task></agenda>`.
+- Typing `[x] task` must persist canonical `<agenda date="..."><task done="true">task</task></agenda>`.
+- Pressing `Enter` in a non-empty `<task>` must create the next `<task done="false">` sibling block.
+- Pressing `Enter` inside an empty `<task>` must exit agenda editing rather than stacking additional empty task blocks.
+- Pressing `Enter` inside an empty `<task>` and leaving an agenda where all tasks are empty must remove the entire
+  `<agenda>...</agenda>` block from source.

@@ -1,24 +1,22 @@
 # `src/app/file/diff`
 
-## Status
-- Directory mirror generated from the current `src` tree.
-- This file is the entry point for the detailed documentation pass of this directory.
+## Responsibility
+Owns note snapshot diff/version logic centered on `.wsnversion` persistence and snapshot comparison.
 
 ## Scope
-- Mirrored source directory: `src/app/file/diff`
-- Child directories: 0
-- Child files: 0
-
-## Child Directories
-- No child directories.
+- Source directory: `src/app/file/diff`
+- Child directories: none
+- Child files: 2
 
 ## Child Files
-- No direct source files.
+- `WhatSonLocalNoteVersionStore.hpp`
+- `WhatSonLocalNoteVersionStore.cpp`
 
-## Intended Detailed Sections
-- Module responsibilities and architectural layer
-- Internal submodule boundaries
-- Cross-directory dependencies
-- Runtime ownership and lifecycle rules
-- Testing strategy and coverage map
-- Known hotspots and refactor priorities
+## Architectural Notes
+- Diff/version code was consolidated from `src/app/file/note` into this domain.
+- `file/note/WhatSonLocalNoteFileStore` remains the note package orchestrator and delegates version snapshot/diff
+  persistence to this module.
+
+## Dependency Direction
+- Depends on note document/header/body types under `src/app/file/note`.
+- Consumed by note store update flow for capture/diff/checkout/rollback operations.

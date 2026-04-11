@@ -1,24 +1,26 @@
 # `src/app/agenda`
 
-## Status
-- Directory mirror generated from the current `src` tree.
-- This file is the entry point for the detailed documentation pass of this directory.
+## Responsibility
+Owns agenda-specific editor backend logic that QML editor surfaces consume through
+`WhatSon.App.Internal/ContentsAgendaBackend`.
 
 ## Scope
-- Mirrored source directory: `src/app/agenda`
-- Child directories: 0
-- Child files: 0
+- Source directory: `src/app/agenda`
+- Child directories: none
+- Child files:
+  - `ContentsAgendaBackend.hpp`
+  - `ContentsAgendaBackend.cpp`
 
-## Child Directories
-- No child directories.
+## Contracts
+- Provides QML-invokable agenda parser/model projection for `ContentsAgendaLayer.qml`.
+- Provides source rewrite helpers for agenda task toggle (`done=true|false`) updates.
+- Provides agenda shortcut mutation helpers used by `ContentsEditorTypingController.qml`:
+  - direct agenda insertion (`Cmd+Opt+T`)
+  - todo shorthand (`[] item` / `[x] item`) canonicalization into `<agenda>/<task>`
+  - `Enter` handling inside `<task>` for next-task creation or agenda exit
+- Provides modified-date placeholder normalization (`date="yyyy-mm-dd"` -> current `YYYY-MM-DD`) used by
+  `ContentsEditorSession.qml`.
 
-## Child Files
-- No direct source files.
-
-## Intended Detailed Sections
-- Module responsibilities and architectural layer
-- Internal submodule boundaries
-- Cross-directory dependencies
-- Runtime ownership and lifecycle rules
-- Testing strategy and coverage map
-- Known hotspots and refactor priorities
+## Dependency Direction
+- Depends only on Qt core types (`QObject`, `QRegularExpression`, `QVariantMap/List`, `QDate`).
+- Does not depend on QML view types, note stores, or view-model layers.

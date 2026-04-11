@@ -1,26 +1,28 @@
 # `src/app/permissions`
 
-## Status
-- Directory mirror generated from the current `src` tree.
-- This file is the entry point for the detailed documentation pass of this directory.
+## Responsibility
+Hosts application permission integration code:
+- platform permission bridges (`ApplePermissionBridge`)
+- startup-time permission sequencing (`WhatSonPermissionBootstrapper`)
 
 ## Scope
-- Mirrored source directory: `src/app/permissions`
-- Child directories: 0
-- Child files: 3
-
-## Child Directories
-- No child directories.
+- Source directory: `src/app/permissions`
+- Child directories: none
+- Child files: 5
 
 ## Child Files
 - `ApplePermissionBridge.hpp`
 - `ApplePermissionBridge.mm`
 - `ApplePermissionBridge_stub.cpp`
+- `WhatSonPermissionBootstrapper.hpp`
+- `WhatSonPermissionBootstrapper.cpp`
 
-## Intended Detailed Sections
-- Module responsibilities and architectural layer
-- Internal submodule boundaries
-- Cross-directory dependencies
-- Runtime ownership and lifecycle rules
-- Testing strategy and coverage map
-- Known hotspots and refactor priorities
+## Architectural Notes
+- `WhatSonPermissionBootstrapper` was consolidated from `src/app/runtime/permissions` into this domain so permission
+  request policy and platform bridge implementations stay in one module boundary.
+- Runtime startup orchestrators consume this module rather than owning permission policy directly.
+
+## Dependency Direction
+- Consumed by `main.cpp` startup wiring.
+- Depends on Qt permission APIs (`QPermission`, `QMicrophonePermission`, `QCalendarPermission`, `QLocationPermission`)
+  and Apple bridge request functions.

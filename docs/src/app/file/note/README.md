@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/note`
 - Child directories: 0
-- Child files: 33
+- Child files: 31
 
 ## Child Directories
 - No child directories.
@@ -27,8 +27,6 @@
 - `WhatSonLocalNoteDocument.hpp`
 - `WhatSonLocalNoteFileStore.cpp`
 - `WhatSonLocalNoteFileStore.hpp`
-- `WhatSonLocalNoteVersionStore.cpp`
-- `WhatSonLocalNoteVersionStore.hpp`
 - `WhatSonNoteBodyCreator.cpp`
 - `WhatSonNoteBodyCreator.hpp`
 - `WhatSonNoteBodyPersistence.cpp`
@@ -75,7 +73,7 @@
   still-active style tags at the next serialized `<paragraph>`.
 - `fileStat.modifiedCount` is now the local commit counter for note package history.
   - whenever it advances, `.wsnversion` appends a snapshot with the matching `commitModifiedCount`
-  - each snapshot includes git-style unified patch payloads for header/body deltas
+  - snapshot/diff persistence is delegated to `src/app/file/diff/WhatSonLocalNoteVersionStore.*`
 
 
 ## Intended Detailed Sections

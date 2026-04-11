@@ -529,6 +529,10 @@ QtObject {
         const modifiers = event.modifiers;
         const commandPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.ControlModifier));
         const listShortcutPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.AltModifier)) && !(modifiers & Qt.ControlModifier);
+        const agendaShortcutPressed = !!(modifiers & Qt.MetaModifier)
+                && !!(modifiers & Qt.AltModifier)
+                && !(modifiers & Qt.ControlModifier)
+                && !(modifiers & Qt.ShiftModifier);
         const shiftPressed = !!(modifiers & Qt.ShiftModifier);
         let handled = false;
         switch (event.key) {
@@ -561,6 +565,13 @@ QtObject {
         case Qt.Key_Asterisk:
             if (shiftPressed && listShortcutPressed)
                 handled = controller.queueMarkdownListMutation("unordered");
+            break;
+        case Qt.Key_T:
+            if (agendaShortcutPressed
+                    && controller.view
+                    && controller.view.queueAgendaShortcutInsertion !== undefined) {
+                handled = !!controller.view.queueAgendaShortcutInsertion();
+            }
             break;
         default:
             break;

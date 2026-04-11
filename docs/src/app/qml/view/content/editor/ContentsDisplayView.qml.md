@@ -33,9 +33,11 @@ that sit directly inside the editor viewport.
 - `ContentsEditorTypingController.qml`
 - `ContentsEditorSession.qml`
 - `ContentsGutterLayer.qml`
+- `ContentsAgendaLayer.qml`
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
 - `ContentsResourceViewer.qml`
+- `ContentsAgendaBackend` (C++ backend)
 - `ContentsPagePrintLayoutRenderer` (C++ backend)
 - `ContentViewLayout.qml`
 
@@ -46,6 +48,10 @@ that sit directly inside the editor viewport.
   The editor no longer prettifies markdown markers into a second display-only grammar while the user is typing.
 - Resource cards rendered from `<resource ...>` tags still overlay the editor viewport when the selected note body
   references inline assets.
+- Agenda cards rendered from `<agenda>/<task>` source blocks now also overlay the editor viewport in non-Plain
+  view modes (Page/Print/Web/Presentation).
+  Each task row is rendered as `LV.CheckBox`, and toggle mutations rewrite the corresponding `<task done="...">`
+  attribute in source through `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
@@ -81,6 +87,9 @@ that sit directly inside the editor viewport.
 - Desktop window shortcuts mirror the selection controller contract for markdown lists:
   - macOS: `Cmd+Shift+7` / `Cmd+Shift+8`
   - Windows/Linux: `Alt+Shift+7` / `Alt+Shift+8`
+- Desktop now also exposes `Cmd+Opt+T` (`Meta+Alt+T`) as an agenda insertion shortcut, routed through
+  `ContentsEditorTypingController.queueAgendaShortcutInsertion()`, and the source insertion payload itself is now
+  provided by `ContentsAgendaBackend`.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
   immediate-save acceptance path.
@@ -152,6 +161,8 @@ that sit directly inside the editor viewport.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
   - Page/Print viewport and page-count calculations must stay bound to backend
     `ContentsPagePrintLayoutRenderer`; QML must not reintroduce duplicate local page-math state.
+  - In non-Plain modes, `<agenda>/<task>` blocks must render as agenda cards with checkbox rows, and toggling a task
+    must persist canonical `done=true|false` in source.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the

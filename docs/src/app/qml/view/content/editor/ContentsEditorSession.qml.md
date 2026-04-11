@@ -17,6 +17,9 @@
   filesystem persistence result for that same note/text pair.
 - `scheduleEditorPersistence()` stages the latest editor snapshot immediately into the bridge's buffered fetch-sync
   boundary.
+- During that staging turn, session now treats `date="yyyy-mm-dd"` in `<agenda ...>` as a modified-time placeholder
+  and rewrites it to the current local `YYYY-MM-DD` token before enqueueing persistence.
+- That placeholder normalization is delegated to `ContentsAgendaBackend.normalizeAgendaModifiedDate(...)`.
 - The session no longer blocks note swaps on an immediate save acceptance path.
 - `flushPendingEditorText()` is now only a best-effort final fetch request; it is no longer part of ordinary note-switch
   control flow.
@@ -40,6 +43,9 @@
 - Successful completion only clears `pendingBodySave` when the finished payload still matches the currently bound
   editor buffer.
 - Async completion for an older payload must not clear a newer `pendingBodySave`.
+- Agenda placeholder-date normalization is bound to modification staging, not passive model sync:
+  - model echo application must not rewrite existing agenda dates
+  - only local modified/persistence staging paths rewrite `yyyy-mm-dd`
 - Successful writes still do not revoke `localEditorAuthority` immediately. The session keeps that authority until the
   bound note itself changes.
 - `syncEditorTextFromSelection(...)` now drops local authority only when the note changes.
@@ -73,6 +79,8 @@
   `editorText`.
 - Non-changing same-note model snapshots must not arm a temporary model-sync guard that can suppress the next user
   `textEdited` processing turn.
+- If the editor buffer contains `<agenda date="yyyy-mm-dd">`, the first local persistence-staging turn after
+  modification must rewrite that placeholder to current `YYYY-MM-DD`.
 
 ## Intended Detailed Sections
 - Responsibility and business role

@@ -2,7 +2,7 @@
 
 #include "WhatSonNoteBodyPersistence.hpp"
 #include "WhatSonNoteHeaderCreator.hpp"
-#include "WhatSonLocalNoteVersionStore.hpp"
+#include "file/diff/WhatSonLocalNoteVersionStore.hpp"
 #include "file/statistic/WhatSonNoteFileStatSupport.hpp"
 #include "WhatSonNoteHeaderParser.hpp"
 #include "file/hierarchy/resources/WhatSonResourcePackageSupport.hpp"
