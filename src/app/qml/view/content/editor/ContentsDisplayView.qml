@@ -1328,6 +1328,12 @@ Item {
 
         sourceText: contentsView.editorText
     }
+    ContentsStructuredTagValidator {
+        id: structuredTagValidator
+
+        contentViewModel: contentsView.contentViewModel
+        noteId: contentsView.selectedNoteId
+    }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
 
@@ -1396,6 +1402,36 @@ Item {
 
         ignoreUnknownSignals: true
         target: contentsView.libraryHierarchyViewModel
+    }
+    Connections {
+        function onStructuredCorrectionSuggested(sourceText, correctedSourceText, verification) {
+            if (!contentsView.hasSelectedNote)
+                return;
+            structuredTagValidator.requestStructuredCorrectionForNote(
+                        contentsView.selectedNoteId,
+                        sourceText,
+                        correctedSourceText,
+                        verification);
+        }
+
+        ignoreUnknownSignals: true
+        target: structuredBlockRenderer
+    }
+    Connections {
+        function onCorrectionApplied(noteId, correctedSourceText, _verification) {
+            const normalizedNoteId = noteId === undefined || noteId === null ? "" : String(noteId).trim();
+            if (normalizedNoteId.length === 0 || normalizedNoteId !== contentsView.selectedNoteId)
+                return;
+            editorSession.syncEditorTextFromSelection(normalizedNoteId, correctedSourceText);
+            if (selectionBridge && selectionBridge.stageEditorTextForIdleSync !== undefined)
+                selectionBridge.stageEditorTextForIdleSync(normalizedNoteId, correctedSourceText);
+            contentsView.scheduleMinimapSnapshotRefresh(true);
+            contentsView.scheduleDocumentPresentationRefresh(true);
+            contentsView.scheduleGutterRefresh(4);
+        }
+
+        ignoreUnknownSignals: true
+        target: structuredTagValidator
     }
     Connections {
         function onEditorTextSynchronized() {

@@ -11,6 +11,16 @@
 
 namespace
 {
+    const QRegularExpression kAgendaOpenTagPattern(
+        QStringLiteral(R"(<agenda\b([^>]*)>)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpression kTaskOpenTagPattern(
+        QStringLiteral(R"(<task\b([^>]*)>)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpression kCalloutOpenTagPattern(
+        QStringLiteral(R"(<callout\b[^>]*>)"),
+        QRegularExpression::CaseInsensitiveOption);
+
     struct AgendaTaskContext final
     {
         int agendaCloseEnd = 0;
@@ -58,6 +68,20 @@ namespace
         return std::clamp(index, 0, boundedQStringSize(text));
     }
 
+    int firstPatternStartAtOrAfter(
+        const QString& text,
+        const QRegularExpression& pattern,
+        const int from)
+    {
+        const int safeFrom = boundedTextIndex(text, from);
+        const QRegularExpressionMatch match = pattern.match(text, safeFrom);
+        if (!match.hasMatch())
+        {
+            return -1;
+        }
+        return std::max(0, boundedQSizeToInt(match.capturedStart(0)));
+    }
+
     QString normalizePlainText(QString text)
     {
         text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
@@ -89,6 +113,19 @@ namespace
         text.replace(QStringLiteral("&nbsp;"), QStringLiteral(" "));
         text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
         return text;
+    }
+
+    QString visibleAgendaTaskText(QString rawTaskInnerText)
+    {
+        rawTaskInnerText = normalizePlainText(rawTaskInnerText);
+        rawTaskInnerText.replace(
+            QRegularExpression(
+                QStringLiteral(R"(<\s*br\s*/?\s*>)"),
+                QRegularExpression::CaseInsensitiveOption),
+            QStringLiteral("\n"));
+        rawTaskInnerText.remove(QRegularExpression(QStringLiteral(R"(<[^>]*>)")));
+        rawTaskInnerText = decodeSourceEntities(rawTaskInnerText);
+        return normalizePlainText(rawTaskInnerText).trimmed();
     }
 
     QString tagAttributeValue(const QString& rawAttributes, const QString& attributeName)
@@ -287,7 +324,8 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
 {
     const WhatSonStructuredTagLinter tagLinter;
     QVariantList agendas;
-    int parsedTaskCount = 0;
+    int confirmedAgendaCount = 0;
+    int confirmedTaskCount = 0;
     int invalidAgendaChildCount = 0;
     if (sourceText.isEmpty())
     {
@@ -295,14 +333,7 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
         return agendas;
     }
 
-    static const QRegularExpression agendaPattern(
-        QStringLiteral(R"(<agenda\b([^>]*)>([\s\S]*?)</agenda>)"),
-        QRegularExpression::CaseInsensitiveOption);
-    static const QRegularExpression taskPattern(
-        QStringLiteral(R"(<task\b([^>]*)>([\s\S]*?)</task>)"),
-        QRegularExpression::CaseInsensitiveOption);
-
-    QRegularExpressionMatchIterator agendaIterator = agendaPattern.globalMatch(sourceText);
+    QRegularExpressionMatchIterator agendaIterator = kAgendaOpenTagPattern.globalMatch(sourceText);
     while (agendaIterator.hasNext())
     {
         const QRegularExpressionMatch agendaMatch = agendaIterator.next();
@@ -311,24 +342,59 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
             continue;
         }
 
+        const int agendaOpenTagStart = std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(0)));
+        const int agendaOpenTagEnd = std::max(agendaOpenTagStart, boundedQSizeToInt(agendaMatch.capturedEnd(0)));
+        const int nextAgendaOpenStart = firstPatternStartAtOrAfter(
+            sourceText,
+            kAgendaOpenTagPattern,
+            agendaOpenTagEnd);
+        const int nextCalloutOpenStart = firstPatternStartAtOrAfter(
+            sourceText,
+            kCalloutOpenTagPattern,
+            agendaOpenTagEnd);
+        const int agendaCloseStart = sourceText.indexOf(
+            QStringLiteral("</agenda>"),
+            agendaOpenTagEnd,
+            Qt::CaseInsensitive);
+
+        int agendaContentEnd = boundedQStringSize(sourceText);
+        if (agendaCloseStart >= 0)
+        {
+            agendaContentEnd = std::min(agendaContentEnd, agendaCloseStart);
+        }
+        if (nextAgendaOpenStart >= 0)
+        {
+            agendaContentEnd = std::min(agendaContentEnd, nextAgendaOpenStart);
+        }
+        if (nextCalloutOpenStart >= 0)
+        {
+            agendaContentEnd = std::min(agendaContentEnd, nextCalloutOpenStart);
+        }
+
+        const bool agendaHasCloseTag = agendaCloseStart >= 0 && agendaCloseStart == agendaContentEnd;
+        if (agendaHasCloseTag)
+        {
+            ++confirmedAgendaCount;
+        }
+
+        const QString innerSource = sourceText.mid(
+            agendaOpenTagEnd,
+            std::max(0, agendaContentEnd - agendaOpenTagEnd));
+        const bool tagVerified = agendaHasCloseTag && agendaContainsOnlyTaskChildren(innerSource);
+        if (!agendaContainsOnlyTaskChildren(innerSource))
+        {
+            ++invalidAgendaChildCount;
+        }
+
         QVariantMap agendaEntry;
-        agendaEntry.insert(
-            QStringLiteral("sourceStart"),
-            std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(0))));
+        agendaEntry.insert(QStringLiteral("sourceStart"), agendaOpenTagStart);
         agendaEntry.insert(
             QStringLiteral("date"),
             normalizedAgendaDateForDisplay(tagAttributeValue(agendaMatch.captured(1), QStringLiteral("date"))));
 
         QVariantList tasks;
-        int focusSourceOffset = -1;
-        const QString innerSource = agendaMatch.captured(2);
-        const bool tagVerified = agendaContainsOnlyTaskChildren(innerSource);
-        if (!tagVerified)
-        {
-            ++invalidAgendaChildCount;
-        }
-        const int innerSourceStart = std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(2)));
-        QRegularExpressionMatchIterator taskIterator = taskPattern.globalMatch(innerSource);
+        int focusSourceOffset = agendaOpenTagEnd;
+        QRegularExpressionMatchIterator taskIterator = kTaskOpenTagPattern.globalMatch(innerSource);
         while (taskIterator.hasNext())
         {
             const QRegularExpressionMatch taskMatch = taskIterator.next();
@@ -337,50 +403,80 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
                 continue;
             }
 
-            const QString fullTaskToken = taskMatch.captured(0);
-            const int openTokenEndOffset = fullTaskToken.indexOf(QLatin1Char('>'));
-            const int openTokenLength = openTokenEndOffset >= 0 ? openTokenEndOffset + 1 : 0;
             const int taskOpenTagStart =
-                innerSourceStart + std::max(0, boundedQSizeToInt(taskMatch.capturedStart(0)));
-            const int taskOpenTagEnd = taskOpenTagStart + openTokenLength;
+                agendaOpenTagEnd + std::max(0, boundedQSizeToInt(taskMatch.capturedStart(0)));
+            const int taskOpenTagEnd =
+                agendaOpenTagEnd + std::max(taskOpenTagStart - agendaOpenTagEnd, boundedQSizeToInt(taskMatch.capturedEnd(0)));
+            const int taskCloseStart = sourceText.indexOf(
+                QStringLiteral("</task>"),
+                taskOpenTagEnd,
+                Qt::CaseInsensitive);
+            const int nextTaskOpenStart = firstPatternStartAtOrAfter(
+                sourceText,
+                kTaskOpenTagPattern,
+                taskOpenTagEnd);
+
+            int taskContentEnd = agendaContentEnd;
+            if (taskCloseStart >= 0 && taskCloseStart < agendaContentEnd)
+            {
+                taskContentEnd = std::min(taskContentEnd, taskCloseStart);
+            }
+            if (nextTaskOpenStart >= 0 && nextTaskOpenStart < agendaContentEnd)
+            {
+                taskContentEnd = std::min(taskContentEnd, nextTaskOpenStart);
+            }
+
+            const bool taskHasCloseTag = taskCloseStart >= 0 && taskCloseStart == taskContentEnd;
+            if (taskHasCloseTag)
+            {
+                ++confirmedTaskCount;
+            }
+
+            const QString taskInnerSourceText = sourceText.mid(
+                taskOpenTagEnd,
+                std::max(0, taskContentEnd - taskOpenTagEnd));
 
             QVariantMap taskEntry;
             taskEntry.insert(
                 QStringLiteral("done"),
                 parseBooleanAttributeValue(tagAttributeValue(taskMatch.captured(1), QStringLiteral("done"))));
-            taskEntry.insert(
-                QStringLiteral("openTagStart"),
-                taskOpenTagStart);
-            taskEntry.insert(
-                QStringLiteral("openTagEnd"),
-                taskOpenTagEnd);
-            taskEntry.insert(
-                QStringLiteral("tagVerified"),
-                true);
-            taskEntry.insert(
-                QStringLiteral("text"),
-                decodeSourceEntities(taskMatch.captured(2)));
+            taskEntry.insert(QStringLiteral("hasSourceTag"), true);
+            taskEntry.insert(QStringLiteral("openTagStart"), taskOpenTagStart);
+            taskEntry.insert(QStringLiteral("openTagEnd"), taskOpenTagEnd);
+            taskEntry.insert(QStringLiteral("tagVerified"), taskHasCloseTag);
+            taskEntry.insert(QStringLiteral("text"), visibleAgendaTaskText(taskInnerSourceText));
             tasks.push_back(taskEntry);
-            ++parsedTaskCount;
 
-            if (focusSourceOffset < 0)
+            if (focusSourceOffset <= agendaOpenTagEnd)
             {
                 focusSourceOffset = taskOpenTagEnd;
             }
         }
 
-        agendaEntry.insert(
-            QStringLiteral("focusSourceOffset"),
-            std::max(0, focusSourceOffset));
-        agendaEntry.insert(
-            QStringLiteral("tagVerified"),
-            tagVerified);
+        if (tasks.isEmpty())
+        {
+            QVariantMap placeholderTaskEntry;
+            placeholderTaskEntry.insert(QStringLiteral("done"), false);
+            placeholderTaskEntry.insert(QStringLiteral("hasSourceTag"), false);
+            placeholderTaskEntry.insert(QStringLiteral("openTagStart"), -1);
+            placeholderTaskEntry.insert(QStringLiteral("openTagEnd"), -1);
+            placeholderTaskEntry.insert(QStringLiteral("tagVerified"), false);
+            placeholderTaskEntry.insert(QStringLiteral("text"), visibleAgendaTaskText(innerSource));
+            tasks.push_back(placeholderTaskEntry);
+        }
+
+        agendaEntry.insert(QStringLiteral("focusSourceOffset"), std::max(0, focusSourceOffset));
+        agendaEntry.insert(QStringLiteral("tagVerified"), tagVerified);
         agendaEntry.insert(QStringLiteral("tasks"), tasks);
         agendas.push_back(agendaEntry);
     }
 
     updateLastParseVerification(
-        tagLinter.buildAgendaVerification(sourceText, agendas.size(), parsedTaskCount, invalidAgendaChildCount));
+        tagLinter.buildAgendaVerification(
+            sourceText,
+            confirmedAgendaCount,
+            confirmedTaskCount,
+            invalidAgendaChildCount));
     return agendas;
 }
 

@@ -41,6 +41,7 @@ that sit directly inside the editor viewport.
 - `ContentsAgendaBackend` (C++ backend)
 - `ContentsCalloutBackend` (C++ backend)
 - `ContentsStructuredBlockRenderer` (C++ backend)
+- `ContentsStructuredTagValidator` (C++ backend)
 - `ContentsPagePrintLayoutRenderer` (C++ backend)
 - `ContentViewLayout.qml`
 
@@ -60,6 +61,11 @@ that sit directly inside the editor viewport.
 - Structured tag detection for those agenda/callout overlays is now owned by
   `ContentsStructuredBlockRenderer`, matching the renderer-owned formatting pipeline instead of having QML call parse
   backends directly.
+- Desktop now also instantiates `ContentsStructuredTagValidator` and wires it to
+  `ContentsStructuredBlockRenderer.structuredCorrectionSuggested(...)`.
+  When a safe canonical correction is suggested, the validator rewrites the note file directly and QML immediately
+  rebinds the editor session to the corrected RAW source and restages that canonical text into the buffered sync
+  controller, so malformed text cannot be re-saved over the fix by an older idle-sync buffer.
 - Agenda/callout overlay layers are now positioned by tag source offset through
   `sourceOffsetYResolver(sourceStart)`, so cards appear at authored tag locations in editor flow instead of only
   fixed top stacking.
@@ -196,6 +202,8 @@ that sit directly inside the editor viewport.
   - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
     canonical callout wrapper at the current cursor in RAW source.
   - Even an empty `<callout></callout>` block must still render one visible callout row.
+  - When the renderer emits a structured correction suggestion, desktop must rewrite the underlying note file through
+    `ContentsStructuredTagValidator` and replace the live editor RAW buffer with the canonical corrected source.
   - Tapping an agenda/callout card must move editor focus back into the corresponding RAW source body.
   - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
     `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.

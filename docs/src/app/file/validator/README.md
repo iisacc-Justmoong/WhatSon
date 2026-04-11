@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/file/validator`
 - Child directories: 0
-- Child files: 8
+- Child files: 10
 
 ## Child Directories
 - No child directories.
@@ -19,6 +19,8 @@
 - `WhatSonLibraryIndexIntegrityValidator.hpp`
 - `WhatSonNoteStorageValidator.cpp`
 - `WhatSonNoteStorageValidator.hpp`
+- `ContentsStructuredTagValidator.cpp`
+- `ContentsStructuredTagValidator.hpp`
 - `WhatSonStructuredTagLinter.cpp`
 - `WhatSonStructuredTagLinter.hpp`
 
@@ -32,4 +34,6 @@
 
 ## Current Domain Notes
 - `WhatSonStructuredTagLinter` owns proprietary body-tag lint/canonicalization for `break`, `agenda`, `task`, and `callout`.
+- `ContentsStructuredTagValidator` consumes parser/renderer correction signals and rewrites note files directly when a
+  safe canonical fix is available.
 - The validator layer now serves both filesystem package normalization and note-body structured-tag normalization.

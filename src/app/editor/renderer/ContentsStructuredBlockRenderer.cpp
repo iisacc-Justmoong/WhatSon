@@ -49,9 +49,14 @@ void ContentsStructuredBlockRenderer::setSourceText(const QString& sourceText)
         return;
     }
 
+    const bool previousCorrectionSuggested = correctionSuggested();
     m_sourceText = sourceText;
     emit sourceTextChanged();
     refreshRenderedBlocks();
+    if (previousCorrectionSuggested != correctionSuggested())
+    {
+        emit correctionSuggestedChanged();
+    }
 }
 
 QVariantList ContentsStructuredBlockRenderer::renderedAgendas() const
@@ -77,6 +82,16 @@ QVariantMap ContentsStructuredBlockRenderer::calloutParseVerification() const
 QVariantMap ContentsStructuredBlockRenderer::structuredParseVerification() const
 {
     return m_structuredParseVerification;
+}
+
+QString ContentsStructuredBlockRenderer::correctedSourceText() const
+{
+    return m_correctedSourceText;
+}
+
+bool ContentsStructuredBlockRenderer::correctionSuggested() const noexcept
+{
+    return !m_correctedSourceText.isEmpty() && m_correctedSourceText != m_sourceText;
 }
 
 int ContentsStructuredBlockRenderer::agendaCount() const noexcept
@@ -117,18 +132,42 @@ void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
 void ContentsStructuredBlockRenderer::refreshStructuredParseVerification()
 {
     const WhatSonStructuredTagLinter tagLinter;
+    const QString nextCorrectedSourceText = tagLinter.normalizeStructuredSourceText(m_sourceText);
+    if (m_correctedSourceText != nextCorrectedSourceText)
+    {
+        m_correctedSourceText = nextCorrectedSourceText;
+        emit correctedSourceTextChanged();
+    }
+
     const QVariantMap nextStructuredVerification = tagLinter.buildStructuredVerification(
         m_agendaParseVerification,
         m_calloutParseVerification,
         m_sourceText);
-    if (m_structuredParseVerification == nextStructuredVerification)
+    if (m_structuredParseVerification != nextStructuredVerification)
     {
-        return;
+        m_structuredParseVerification = nextStructuredVerification;
+        emit structuredParseVerificationChanged();
+        emit structuredParseVerificationReported(m_structuredParseVerification);
     }
 
-    m_structuredParseVerification = nextStructuredVerification;
-    emit structuredParseVerificationChanged();
-    emit structuredParseVerificationReported(m_structuredParseVerification);
+    if (correctionSuggested())
+    {
+        if (m_lastCorrectionSuggestionSourceText != m_sourceText
+            || m_lastCorrectionSuggestionCorrectedText != m_correctedSourceText)
+        {
+            m_lastCorrectionSuggestionSourceText = m_sourceText;
+            m_lastCorrectionSuggestionCorrectedText = m_correctedSourceText;
+            emit structuredCorrectionSuggested(
+                m_sourceText,
+                m_correctedSourceText,
+                m_structuredParseVerification);
+        }
+    }
+    else
+    {
+        m_lastCorrectionSuggestionSourceText.clear();
+        m_lastCorrectionSuggestionCorrectedText.clear();
+    }
 }
 
 void ContentsStructuredBlockRenderer::handleAgendaParseVerificationReported(const QVariantMap& verification)

@@ -9,6 +9,13 @@
 
 namespace
 {
+    const QRegularExpression kAgendaOpenTagPattern(
+        QStringLiteral(R"(<agenda\b[^>]*>)"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpression kCalloutOpenTagPattern(
+        QStringLiteral(R"(<callout\b[^>]*>)"),
+        QRegularExpression::CaseInsensitiveOption);
+
     struct CalloutContext final
     {
         int calloutCloseEnd = 0;
@@ -46,6 +53,20 @@ namespace
     int boundedTextIndex(const QString& text, const int index)
     {
         return std::clamp(index, 0, boundedQStringSize(text));
+    }
+
+    int firstPatternStartAtOrAfter(
+        const QString& text,
+        const QRegularExpression& pattern,
+        const int from)
+    {
+        const int safeFrom = boundedTextIndex(text, from);
+        const QRegularExpressionMatch match = pattern.match(text, safeFrom);
+        if (!match.hasMatch())
+        {
+            return -1;
+        }
+        return std::max(0, boundedQSizeToInt(match.capturedStart(0)));
     }
 
     QString normalizePlainText(QString text)
@@ -147,17 +168,14 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText)
 {
     const WhatSonStructuredTagLinter tagLinter;
     QVariantList callouts;
+    int confirmedCalloutCount = 0;
     if (sourceText.isEmpty())
     {
         updateLastParseVerification(tagLinter.buildCalloutVerification(sourceText, 0));
         return callouts;
     }
 
-    static const QRegularExpression calloutPattern(
-        QStringLiteral(R"(<callout\b[^>]*>([\s\S]*?)</callout>)"),
-        QRegularExpression::CaseInsensitiveOption);
-
-    QRegularExpressionMatchIterator iterator = calloutPattern.globalMatch(sourceText);
+    QRegularExpressionMatchIterator iterator = kCalloutOpenTagPattern.globalMatch(sourceText);
     while (iterator.hasNext())
     {
         const QRegularExpressionMatch match = iterator.next();
@@ -167,27 +185,54 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText)
         }
 
         const int calloutStart = std::max(0, boundedQSizeToInt(match.capturedStart(0)));
-        const QString calloutToken = match.captured(0);
-        const int openTokenEndOffset = calloutToken.indexOf(QLatin1Char('>'));
-        const int openTokenLength = openTokenEndOffset >= 0 ? openTokenEndOffset + 1 : 0;
+        const int calloutOpenEnd = std::max(calloutStart, boundedQSizeToInt(match.capturedEnd(0)));
+        const int nextCalloutOpenStart = firstPatternStartAtOrAfter(
+            sourceText,
+            kCalloutOpenTagPattern,
+            calloutOpenEnd);
+        const int nextAgendaOpenStart = firstPatternStartAtOrAfter(
+            sourceText,
+            kAgendaOpenTagPattern,
+            calloutOpenEnd);
+        const int calloutCloseStart = sourceText.indexOf(
+            QStringLiteral("</callout>"),
+            calloutOpenEnd,
+            Qt::CaseInsensitive);
+
+        int calloutContentEnd = boundedQStringSize(sourceText);
+        if (calloutCloseStart >= 0)
+        {
+            calloutContentEnd = std::min(calloutContentEnd, calloutCloseStart);
+        }
+        if (nextCalloutOpenStart >= 0)
+        {
+            calloutContentEnd = std::min(calloutContentEnd, nextCalloutOpenStart);
+        }
+        if (nextAgendaOpenStart >= 0)
+        {
+            calloutContentEnd = std::min(calloutContentEnd, nextAgendaOpenStart);
+        }
+
+        const bool calloutHasCloseTag = calloutCloseStart >= 0 && calloutCloseStart == calloutContentEnd;
+        if (calloutHasCloseTag)
+        {
+            ++confirmedCalloutCount;
+        }
 
         QVariantMap entry;
-        entry.insert(
-            QStringLiteral("sourceStart"),
-            calloutStart);
-        entry.insert(
-            QStringLiteral("focusSourceOffset"),
-            calloutStart + openTokenLength);
-        entry.insert(
-            QStringLiteral("tagVerified"),
-            true);
+        entry.insert(QStringLiteral("sourceStart"), calloutStart);
+        entry.insert(QStringLiteral("focusSourceOffset"), calloutOpenEnd);
+        entry.insert(QStringLiteral("tagVerified"), calloutHasCloseTag);
         entry.insert(
             QStringLiteral("text"),
-            visibleCalloutText(match.captured(1)));
+            visibleCalloutText(
+                sourceText.mid(
+                    calloutOpenEnd,
+                    std::max(0, calloutContentEnd - calloutOpenEnd))));
         callouts.push_back(entry);
     }
 
-    updateLastParseVerification(tagLinter.buildCalloutVerification(sourceText, callouts.size()));
+    updateLastParseVerification(tagLinter.buildCalloutVerification(sourceText, confirmedCalloutCount));
     return callouts;
 }
 

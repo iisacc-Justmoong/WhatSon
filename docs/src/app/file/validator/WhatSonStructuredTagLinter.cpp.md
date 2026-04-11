@@ -34,6 +34,8 @@ Implements linting and safe canonicalization for proprietary note-body structure
 - `WhatSonNoteBodyPersistence` uses the linter before `.wsnbody` serialization and when projecting stored body XML back into editor RAW source.
 - `ContentsAgendaBackend` / `ContentsCalloutBackend` use the linter to build parser verification payloads.
 - `ContentsStructuredBlockRenderer` uses the linter to merge renderer-level structured verification, including divider-tag lint.
+- `ContentsStructuredTagValidator` consumes the renderer's corrected-source suggestion and persists the canonical
+  output directly back into the note package.
 
 ## Regression Checklist
 - Legacy divider aliases must round-trip into canonical `</break>` source.

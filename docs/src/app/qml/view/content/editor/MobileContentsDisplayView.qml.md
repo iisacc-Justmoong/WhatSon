@@ -66,6 +66,8 @@ suppression local to this file.
 - `ContentsCalloutLayer.qml` is also shared with desktop for non-Plain callout-row rendering.
 - `ContentsStructuredBlockRenderer` is also shared with desktop and owns agenda/callout render-model generation for
   the mobile overlay layers.
+- `ContentsStructuredTagValidator` is also shared with desktop and owns direct file correction when the renderer emits
+  a canonical structured-tag repair suggestion.
 - Mobile also routes agenda/callout overlay placement through `sourceOffsetYResolver(sourceStart)`, so cards/rows are
   placed at authored source-tag locations in note flow.
 - That resolver now returns editor-content-relative document Y only, so mobile agenda/callout cards no longer
@@ -102,6 +104,9 @@ suppression local to this file.
   newline normalization), then let `ContentsStructuredBlockRenderer` project those blocks into overlay-layer models.
 - Mobile also routes agenda/callout card taps through `focusStructuredBlockSourceOffset(sourceOffset)`, so empty cards
   can immediately return the cursor to their underlying RAW source body.
+- Mobile also rebases the live editor RAW buffer immediately after validator-driven direct file correction, so the
+  corrected canonical source becomes authoritative inside the current session, and the same canonical text is restaged
+  into the buffered sync controller so stale pre-correction RAW cannot overwrite the fix later.
 - Mobile window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
   controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
@@ -188,6 +193,8 @@ suppression local to this file.
   - In non-Plain modes, callout source blocks must render through `ContentsCalloutLayer` as Figma-aligned callout rows, and `Cmd+Opt+C` must insert
     canonical `<callout>...</callout>` wrappers at current cursor in RAW source.
   - Even an empty `<callout></callout>` block must still render one visible callout row.
+  - When the renderer emits a structured correction suggestion, mobile must rewrite the note file through
+    `ContentsStructuredTagValidator` and replace the live editor RAW buffer with the corrected canonical source.
   - Tapping an agenda/callout card must move mobile editor focus back into the corresponding RAW source body.
   - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
     `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.

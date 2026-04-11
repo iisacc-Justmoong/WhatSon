@@ -16,6 +16,9 @@ Builds agenda/callout render models for editor overlay layers from canonical `.w
   whether the current structured RAW source was actually confirmed by the parsers.
 - Uses `WhatSonStructuredTagLinter::buildStructuredVerification(...)` for the merged payload, so renderer-level
   verification also includes divider-tag lint (`break`) and a `canonicalizationSuggested` bit.
+- Also computes `correctedSourceText` through `WhatSonStructuredTagLinter::normalizeStructuredSourceText(...)`.
+- Emits `structuredCorrectionSuggested(...)` once per unique malformed source/canonical target pair, so a file-layer
+  validator can take write authority and repair the note package directly.
 - Seeds empty agenda/callout verification maps as `wellFormed=true` defaults before the first parse result arrives,
   preventing the merged renderer-level status from transiently reporting a false failure while only one backend has
   emitted.
@@ -29,4 +32,6 @@ Builds agenda/callout render models for editor overlay layers from canonical `.w
 - A source string containing `<callout>...</callout>` must produce callout entries through `renderedCallouts`.
 - Malformed agenda/task/callout source must surface through parser-verification signals even when renderable block
   payloads did not otherwise change.
+- Canonically repairable malformed source must emit one `structuredCorrectionSuggested(...)` signal with the corrected
+  RAW source projection.
 - Unchanged source text must not emit redundant render-model updates.

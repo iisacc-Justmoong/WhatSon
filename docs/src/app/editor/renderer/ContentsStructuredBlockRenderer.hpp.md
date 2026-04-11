@@ -12,13 +12,17 @@ Declares the editor-side structured-block renderer that projects proprietary blo
 - `structuredParseVerification`: merged renderer-level verification report that bundles agenda/callout/break
   verification, a top-level `wellFormed` bit, and `canonicalizationSuggested` when the RAW source can be safely
   normalized by the file-layer linter.
+- `correctedSourceText`: canonical RAW source projection suggested by the file-layer structured-tag linter.
+- `correctionSuggested`: convenience bit telling QML whether the current source differs from that canonical projection.
 - `agendaCount` / `calloutCount` / `hasRenderedBlocks`: cheap QML visibility helpers.
 - `requestRenderRefresh()`: explicit recompute hook for hosts that need a forced refresh after external state changes.
 
 ## Signals
 - `agendaParseVerificationChanged()` / `calloutParseVerificationChanged()` / `structuredParseVerificationChanged()`
+- `correctedSourceTextChanged()` / `correctionSuggestedChanged()`
 - `agendaParseVerificationReported(verification)` / `calloutParseVerificationReported(verification)` /
   `structuredParseVerificationReported(verification)`
+- `structuredCorrectionSuggested(sourceText, correctedSourceText, verification)`
 
 ## Architectural Note
 - This renderer lives in `editor/renderer` because tag detection and render-model projection belong to the editor

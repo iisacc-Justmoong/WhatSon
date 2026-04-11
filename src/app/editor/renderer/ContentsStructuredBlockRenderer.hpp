@@ -18,6 +18,8 @@ class ContentsStructuredBlockRenderer : public QObject
     Q_PROPERTY(QVariantMap agendaParseVerification READ agendaParseVerification NOTIFY agendaParseVerificationChanged)
     Q_PROPERTY(QVariantMap calloutParseVerification READ calloutParseVerification NOTIFY calloutParseVerificationChanged)
     Q_PROPERTY(QVariantMap structuredParseVerification READ structuredParseVerification NOTIFY structuredParseVerificationChanged)
+    Q_PROPERTY(QString correctedSourceText READ correctedSourceText NOTIFY correctedSourceTextChanged)
+    Q_PROPERTY(bool correctionSuggested READ correctionSuggested NOTIFY correctionSuggestedChanged)
     Q_PROPERTY(int agendaCount READ agendaCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(int calloutCount READ calloutCount NOTIFY renderedBlocksChanged)
     Q_PROPERTY(bool hasRenderedBlocks READ hasRenderedBlocks NOTIFY renderedBlocksChanged)
@@ -34,6 +36,8 @@ public:
     QVariantMap agendaParseVerification() const;
     QVariantMap calloutParseVerification() const;
     QVariantMap structuredParseVerification() const;
+    QString correctedSourceText() const;
+    bool correctionSuggested() const noexcept;
     int agendaCount() const noexcept;
     int calloutCount() const noexcept;
     bool hasRenderedBlocks() const noexcept;
@@ -47,9 +51,15 @@ signals:
     void agendaParseVerificationChanged();
     void calloutParseVerificationChanged();
     void structuredParseVerificationChanged();
+    void correctedSourceTextChanged();
+    void correctionSuggestedChanged();
     void agendaParseVerificationReported(const QVariantMap& verification);
     void calloutParseVerificationReported(const QVariantMap& verification);
     void structuredParseVerificationReported(const QVariantMap& verification);
+    void structuredCorrectionSuggested(
+        const QString& sourceText,
+        const QString& correctedSourceText,
+        const QVariantMap& verification);
 
 private:
     void refreshRenderedBlocks();
@@ -65,4 +75,7 @@ private:
     QVariantMap m_agendaParseVerification;
     QVariantMap m_calloutParseVerification;
     QVariantMap m_structuredParseVerification;
+    QString m_correctedSourceText;
+    QString m_lastCorrectionSuggestionSourceText;
+    QString m_lastCorrectionSuggestionCorrectedText;
 };

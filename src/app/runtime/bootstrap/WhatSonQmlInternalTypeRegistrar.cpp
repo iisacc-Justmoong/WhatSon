@@ -5,6 +5,7 @@
 #include "editor/renderer/ContentsPagePrintLayoutRenderer.hpp"
 #include "editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "editor/renderer/ContentsTextFormatRenderer.hpp"
+#include "file/validator/ContentsStructuredTagValidator.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
 #include "viewmodel/content/ContentsEditorSelectionBridge.hpp"
@@ -31,6 +32,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
         qmlRegisterType<ContentsStructuredBlockRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsStructuredBlockRenderer");
+        qmlRegisterType<ContentsStructuredTagValidator>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredTagValidator");
         qmlRegisterType<ContentsAgendaBackend>(
             "WhatSon.App.Internal", 1, 0, "ContentsAgendaBackend");
         qmlRegisterType<ContentsCalloutBackend>(
