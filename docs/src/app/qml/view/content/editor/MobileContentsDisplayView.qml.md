@@ -97,11 +97,16 @@ suppression local to this file.
   `ContentsCalloutBackend.buildCalloutInsertionPayload(...)`.
   - compatibility fallback `Ctrl+Alt+C` is also registered for environments where Command is surfaced as
     `ControlModifier`.
+- Mobile hardware-keyboard path now also supports `Cmd+Opt+H` (`Meta+Alt+H`) for divider insertion, sharing the same
+  typing-controller source mutation path as desktop.
+  - compatibility fallback `Ctrl+Alt+H` is also registered for environments where Command is surfaced as
+    `ControlModifier`.
 - Mobile now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so hardware-keyboard shortcuts stay active while the nested
   input item owns focus.
-- Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
-  newline normalization), then let `ContentsStructuredBlockRenderer` project those blocks into overlay-layer models.
+- Agenda/callout/break shortcut insertions now write canonical tags directly into RAW source at cursor (with
+  line-boundary newline normalization), then let `ContentsStructuredBlockRenderer` project supported blocks into
+  overlay-layer models.
 - Mobile also routes agenda/callout card taps through `focusStructuredBlockSourceOffset(sourceOffset)`, so empty cards
   can immediately return the cursor to their underlying RAW source body.
 - Mobile also rebases the live editor RAW buffer immediately after validator-driven direct file correction, so the
@@ -196,8 +201,9 @@ suppression local to this file.
   - When the renderer emits a structured correction suggestion, mobile must rewrite the note file through
     `ContentsStructuredTagValidator` and replace the live editor RAW buffer with the corrected canonical source.
   - Tapping an agenda/callout card must move mobile editor focus back into the corresponding RAW source body.
-  - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
-    `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
+  - `Cmd+Opt+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
+  - `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Alt+H` fallback chords must trigger the same agenda/callout/divider
+    insertions as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Opt+H` when the runtime maps Command to `ControlModifier`.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
   - Any pointer-driven right-click formatting flow must preserve a multi-paragraph or mixed-inline dragged selection

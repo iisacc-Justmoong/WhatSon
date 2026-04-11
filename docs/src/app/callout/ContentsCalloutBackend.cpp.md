@@ -4,14 +4,19 @@
 Implements callout source parsing and insertion helpers shared by desktop/mobile editor surfaces.
 
 ## Key Behaviors
-- Parses `<callout ...>...</callout>` blocks into QML-friendly entries (`text`, `sourceStart`, `focusSourceOffset`,
-  `tagVerified`).
+- Parses `<callout ...>` openings into QML-friendly entries (`text`, `sourceStart`, `focusSourceOffset`,
+  `tagVerified`) even before a matching `</callout>` arrives, so renderer surfaces can show the callout frame as soon
+  as the RAW opening tag is detected.
 - Publishes parser verification reports after every parse pass:
   - `calloutOpenCount`, `calloutCloseCount`, `calloutParsedCount`
   - self-closing callout count
   - non-canonical callout attribute count
   - `wellFormed`
   - `issues`
+- Separates render visibility from structural verification:
+  - open-only callouts still produce a visible render entry
+  - `calloutParsedCount` continues to count only fully closed callout pairs
+  - missing close tags therefore remain visible while validator/runtime still receive `wellFormed=false`
 - Delegates verification-map construction to `file/validator/WhatSonStructuredTagLinter`, keeping callout canonical
   syntax rules in the file/domain validation layer.
 - Canonicalizes callout display text for rendering:
@@ -39,6 +44,8 @@ Implements callout source parsing and insertion helpers shared by desktop/mobile
 - `<callout>Message</callout>` must parse as one callout entry.
 - `<callout></callout>` or `<callout> </callout>` must still parse as one visible callout entry even when body text is
   empty.
+- `<callout>` must still parse as one visible provisional callout entry even before `</callout>` exists.
+- `<callout>Line 1` must keep the callout row visible while parser verification reports the missing close tag.
 - Parser verification must report `wellFormed=false` when callout open-close counts diverge or complete block matches
   cannot confirm every callout tag pair.
 - `buildCalloutInsertionPayload("abc")` must return canonical source `<callout>abc</callout>` with cursor inside

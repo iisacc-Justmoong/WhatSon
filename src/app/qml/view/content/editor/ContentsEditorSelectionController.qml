@@ -533,7 +533,9 @@ QtObject {
         const normalizedKind = shortcutKind === undefined || shortcutKind === null
                 ? ""
                 : String(shortcutKind).toLowerCase();
-        if (normalizedKind !== "agenda" && normalizedKind !== "callout")
+        if (normalizedKind !== "agenda"
+                && normalizedKind !== "callout"
+                && normalizedKind !== "break")
             return false;
         const noteId = controller.currentSelectedNoteId();
         const selectionSnapshot = controller.currentEditorSelectionSnapshot();
@@ -559,6 +561,11 @@ QtObject {
             if (normalizedKind === "callout"
                     && controller.view.queueCalloutShortcutInsertion !== undefined) {
                 controller.view.queueCalloutShortcutInsertion();
+                return;
+            }
+            if (normalizedKind === "break"
+                    && controller.view.queueBreakShortcutInsertion !== undefined) {
+                controller.view.queueBreakShortcutInsertion();
             }
         });
         return true;
@@ -580,16 +587,21 @@ QtObject {
         const controlAltFallbackChord = !metaPressed && controlPressed && altPressed && !shiftPressed;
         const agendaShortcutPressed = metaAltChord || controlAltFallbackChord;
         const calloutShortcutPressed = metaAltChord || controlAltFallbackChord;
+        const breakShortcutPressed = metaAltChord || controlAltFallbackChord;
         const agendaShortcutKeyMatched = metaAltChord
                 ? (event.key === Qt.Key_T || normalizedShortcutText === "T")
                 : normalizedShortcutText === "T";
         const calloutShortcutKeyMatched = metaAltChord
                 ? (event.key === Qt.Key_C || normalizedShortcutText === "C")
                 : normalizedShortcutText === "C";
+        const breakShortcutKeyMatched = metaAltChord
+                ? (event.key === Qt.Key_H || normalizedShortcutText === "H")
+                : normalizedShortcutText === "H";
         const autoRepeat = event.isAutoRepeat !== undefined && !!event.isAutoRepeat;
         if (autoRepeat
                 && ((agendaShortcutPressed && agendaShortcutKeyMatched)
-                    || (calloutShortcutPressed && calloutShortcutKeyMatched))) {
+                    || (calloutShortcutPressed && calloutShortcutKeyMatched)
+                    || (breakShortcutPressed && breakShortcutKeyMatched))) {
             event.accepted = true;
             return true;
         }
@@ -633,6 +645,10 @@ QtObject {
             if (calloutShortcutPressed && calloutShortcutKeyMatched)
                 handled = controller.queueStructuredShortcutMutation("callout");
             break;
+        case Qt.Key_H:
+            if (breakShortcutPressed && breakShortcutKeyMatched)
+                handled = controller.queueStructuredShortcutMutation("break");
+            break;
         default:
             break;
         }
@@ -647,6 +663,12 @@ QtObject {
                 && calloutShortcutKeyMatched
                 ) {
             handled = controller.queueStructuredShortcutMutation("callout");
+        }
+        if (!handled
+                && breakShortcutPressed
+                && breakShortcutKeyMatched
+                ) {
+            handled = controller.queueStructuredShortcutMutation("break");
         }
 
         if (handled)

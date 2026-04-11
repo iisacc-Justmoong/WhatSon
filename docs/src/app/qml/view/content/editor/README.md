@@ -120,6 +120,9 @@
   glyph representation.
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
+- `ContentsEditorTypingController.qml` now also owns divider authoring shortcuts:
+  - `Cmd+Opt+H` inserts canonical `</break>` into RAW at the current cursor
+  - `Ctrl+Alt+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
 - `ContentsEditorTypingController.qml` now also owns agenda authoring shortcuts:
   - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"> </task></agenda>` (empty-body
     cursor anchor included)

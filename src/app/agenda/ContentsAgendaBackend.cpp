@@ -380,8 +380,9 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
         const QString innerSource = sourceText.mid(
             agendaOpenTagEnd,
             std::max(0, agendaContentEnd - agendaOpenTagEnd));
-        const bool tagVerified = agendaHasCloseTag && agendaContainsOnlyTaskChildren(innerSource);
-        if (!agendaContainsOnlyTaskChildren(innerSource))
+        const bool containsOnlyTaskChildren = agendaContainsOnlyTaskChildren(innerSource);
+        const bool tagVerified = agendaHasCloseTag && containsOnlyTaskChildren;
+        if (!containsOnlyTaskChildren)
         {
             ++invalidAgendaChildCount;
         }
@@ -406,7 +407,7 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
             const int taskOpenTagStart =
                 agendaOpenTagEnd + std::max(0, boundedQSizeToInt(taskMatch.capturedStart(0)));
             const int taskOpenTagEnd =
-                agendaOpenTagEnd + std::max(taskOpenTagStart - agendaOpenTagEnd, boundedQSizeToInt(taskMatch.capturedEnd(0)));
+                agendaOpenTagEnd + std::max(0, boundedQSizeToInt(taskMatch.capturedEnd(0)));
             const int taskCloseStart = sourceText.indexOf(
                 QStringLiteral("</task>"),
                 taskOpenTagEnd,

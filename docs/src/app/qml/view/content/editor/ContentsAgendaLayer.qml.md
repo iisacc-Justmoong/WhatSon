@@ -16,13 +16,23 @@ The layer is now a renderer-fed view:
 - Root card style follows the Figma agenda frame direction:
   - card background `#262728`
   - stroke `#343536`
-  - rounded corners (`LV.Theme.radiusMd`)
-  - compact internal spacing/gaps
+  - corner radius `12`
+  - outer padding `8`
+- Internal Figma spacing is preserved:
+  - header -> task list gap `8`
+  - task list horizontal inset `8`
+  - task row gap `2`
+  - checkbox -> text gap `6`
 - Header row exposes:
   - left caption: `Agenda`
   - right date token: `agenda.date`
 - Task rows are rendered as `LV.CheckBox`.
 - `checked` is mapped from canonical `task.done` boolean.
+- Checkbox visuals are pinned to the Figma card:
+  - box size `17`
+  - box radius `3.5`
+  - white body fill / border
+  - dark check mark drawn against the card background
 
 ## Render-Model Rules
 
@@ -30,6 +40,10 @@ The layer is now a renderer-fed view:
 - This QML layer consumes only renderer-provided agenda entries and does not parse RAW source locally.
 - Parse entries include `sourceStart` and `focusSourceOffset`; cards are positioned by source order/location and can
   restore editor focus to the first task body.
+- Render entries may now be provisional:
+  - open-only `<agenda ...>` blocks still arrive here
+  - task rows may have `tagVerified=false`
+  - placeholder rows may have `hasSourceTag=false` when the agenda exists but no `<task>` tag has been authored yet
 - The host-provided `sourceOffsetYResolver(...)` now resolves editor-internal document Y, so card positioning stays in
   the same coordinate space as the live editor content instead of double-counting outer viewport margins.
 - The layer still normalizes `QVariantList`-like values into JS arrays so C++ renderer properties remain QML-safe.
@@ -47,6 +61,9 @@ The layer is now a renderer-fed view:
 ## Regression Checks
 
 - A source `<agenda date="2026-04-11"><task done="false">A</task></agenda>` must render one agenda card with one unchecked checkbox.
+- A source `<agenda date="2026-04-11">` must still render one visible agenda card with one blank task row.
+- A source `<agenda date="2026-04-11"><task done="false">A` must still render one visible agenda card while parser
+  verification remains non-well-formed.
 - Toggling a checkbox must call `taskToggleHandler(...)` with stable open-tag offsets for that task.
 - Multiple task rows in one agenda must preserve source order.
 - Agenda cards must be placed at the resolved source location (`sourceOffsetYResolver`) so cards appear where tags are

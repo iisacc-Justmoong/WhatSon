@@ -16,6 +16,7 @@ The layer is renderer-fed:
   - background `#262728`
   - row padding `4`
   - inner spacing `12`
+  - width hugs content instead of stretching to the full editor column
 - Left divider:
   - width `1`
   - height `max(14, text height)`
@@ -31,6 +32,10 @@ The layer is renderer-fed:
 - This QML layer consumes only renderer-provided callout entries and does not parse RAW source locally.
 - Parse entries include `sourceStart` and `focusSourceOffset`; rows are positioned by source location and can restore
   editor focus to callout-body start.
+- Render entries may now be provisional:
+  - open-only `<callout>` tags still arrive here
+  - `tagVerified=false` means the frame is visible but the source is not yet structurally closed
+  - empty callouts still reserve a minimal frame width so blank callout tags do not disappear visually
 - The host-provided `sourceOffsetYResolver(...)` now resolves editor-internal document Y, so callout rows stay aligned
   with the live editor content coordinate space.
 - The layer normalizes `QVariantList`-like values into JS arrays so C++ renderer properties still produce visible
@@ -43,6 +48,7 @@ The layer is renderer-fed:
   height.
 - An empty source without `<callout>` tags must produce zero callout rows, but an empty `<callout></callout>` tag must
   still produce one visible callout row.
+- A source `<callout>` must still produce one visible provisional callout row.
 - Callout rows must be placed at resolved source locations (`sourceOffsetYResolver`) so authored tag position is
   reflected on editor surface.
 - Tapping a callout row must route focus back to callout-body start in RAW source.

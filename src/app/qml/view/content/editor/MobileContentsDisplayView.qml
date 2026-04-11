@@ -956,6 +956,9 @@ Item {
     function queueCalloutShortcutInsertion() {
         return editorTypingController.queueCalloutShortcutInsertion();
     }
+    function queueBreakShortcutInsertion() {
+        return editorTypingController.queueBreakShortcutInsertion();
+    }
     function focusStructuredBlockSourceOffset(sourceOffset) {
         const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                     Math.max(0, Math.floor(Number(sourceOffset) || 0)));
@@ -2067,6 +2070,22 @@ Item {
                         sequence: "Ctrl+Alt+C"
 
                         onActivated: editorSelectionController.queueStructuredShortcutMutation("callout")
+                    }
+                    Shortcut {
+                        autoRepeat: false
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Meta+Alt+H"
+
+                        onActivated: editorSelectionController.queueStructuredShortcutMutation("break")
+                    }
+                    Shortcut {
+                        autoRepeat: false
+                        context: Qt.WindowShortcut
+                        enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        sequence: "Ctrl+Alt+H"
+
+                        onActivated: editorSelectionController.queueStructuredShortcutMutation("break")
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu

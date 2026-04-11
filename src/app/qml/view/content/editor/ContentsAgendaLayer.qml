@@ -11,13 +11,19 @@ Item {
     property var sourceOffsetYResolver: null
     property var blockFocusHandler: null
     property var taskToggleHandler: null
+    readonly property int cardSpacing: 8
     readonly property color frameBorderColor: "#343536"
     readonly property int frameBorderWidth: 1
     readonly property color frameColor: "#262728"
     readonly property int framePadding: 8
     readonly property int frameRadius: 12
     readonly property color headerTextColor: "#80FFFFFF"
+    readonly property color taskBoxColor: "#CCFFFFFF"
+    readonly property int taskBoxSize: 17
+    readonly property real taskBoxRadius: 3.5
+    readonly property int taskListInset: 8
     readonly property int rowGap: 2
+    readonly property int taskSpacing: 6
     function normalizedList(value) {
         if (value === undefined || value === null)
             return [];
@@ -92,7 +98,7 @@ Item {
 
                 anchors.fill: parent
                 anchors.margins: agendaLayer.framePadding
-                spacing: agendaLayer.rowGap
+                spacing: agendaLayer.cardSpacing
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -100,18 +106,24 @@ Item {
                     LV.Label {
                         Layout.fillWidth: true
                         color: agendaLayer.headerTextColor
+                        font.family: "Pretendard"
+                        font.pixelSize: 11
+                        font.weight: Font.Normal
                         style: caption
                         text: "Agenda"
                     }
                     LV.Label {
                         color: agendaLayer.headerTextColor
+                        font.family: "Pretendard"
+                        font.pixelSize: 11
+                        font.weight: Font.Normal
                         style: caption
                         text: agendaCard.dateText
                     }
                 }
                 LV.VStack {
-                    Layout.leftMargin: agendaLayer.framePadding
-                    Layout.rightMargin: agendaLayer.framePadding
+                    Layout.leftMargin: agendaLayer.taskListInset
+                    Layout.rightMargin: agendaLayer.taskListInset
                     Layout.fillWidth: true
                     spacing: agendaLayer.rowGap
 
@@ -120,10 +132,32 @@ Item {
 
                         delegate: LV.CheckBox {
                             readonly property var taskEntry: modelData && typeof modelData === "object" ? modelData : ({})
+                            readonly property bool hasSourceTag: taskEntry.hasSourceTag === undefined ? true : !!taskEntry.hasSourceTag
+                            boxSize: agendaLayer.taskBoxSize
+                            boxRadius: agendaLayer.taskBoxRadius
+                            boxBorderColorCheckedEnabled: agendaLayer.taskBoxColor
+                            boxBorderColorCheckedDisabled: agendaLayer.taskBoxColor
+                            boxBorderColorUncheckedEnabled: agendaLayer.taskBoxColor
+                            boxBorderColorUncheckedDisabled: agendaLayer.taskBoxColor
+                            boxBorderWidthCheckedEnabled: 0.5
+                            boxBorderWidthCheckedDisabled: 0.5
+                            checkColor: agendaCard.color
+                            checkMarkColorDisabled: agendaCard.color
+                            checkedColor: agendaLayer.taskBoxColor
                             checked: !!taskEntry.done
+                            disabledCheckedColor: agendaLayer.taskBoxColor
+                            disabledUncheckedColor: agendaLayer.taskBoxColor
+                            enabled: hasSourceTag
+                            font.family: "Pretendard"
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            spacing: agendaLayer.taskSpacing
                             text: taskEntry.text !== undefined ? String(taskEntry.text) : ""
+                            uncheckedColor: agendaLayer.taskBoxColor
 
                             onToggled: {
+                                if (!hasSourceTag)
+                                    return;
                                 if (agendaLayer.taskToggleHandler !== undefined
                                         && agendaLayer.taskToggleHandler !== null) {
                                     agendaLayer.taskToggleHandler(

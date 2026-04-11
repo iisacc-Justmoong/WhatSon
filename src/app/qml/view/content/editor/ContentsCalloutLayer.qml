@@ -11,6 +11,7 @@ Item {
     property var blockFocusHandler: null
     readonly property color calloutColor: "#262728"
     readonly property color dividerColor: "#D9D9D9"
+    readonly property int emptyFrameWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(40)))
     readonly property color textColor: "#FFFFFF"
     readonly property int dividerMinimumHeight: 14
     readonly property int dividerWidth: 1
@@ -74,11 +75,33 @@ Item {
             readonly property var calloutEntry: modelData && typeof modelData === "object" ? modelData : ({})
             readonly property string calloutText: calloutEntry.text !== undefined ? String(calloutEntry.text) : ""
             readonly property int focusSourceOffset: Math.max(0, Number(calloutEntry.focusSourceOffset) || 0)
+            readonly property real maxTextWidth: Math.max(
+                                                     0,
+                                                     calloutLayer.width
+                                                     - calloutLayer.framePadding * 2
+                                                     - calloutLayer.dividerWidth
+                                                     - calloutLayer.frameSpacing)
+            readonly property real resolvedTextWidth: {
+                if (calloutText.length === 0)
+                    return 0;
+                const implicitWidth = Math.max(0, Number(calloutTextLabel.implicitWidth) || 0);
+                return Math.min(maxTextWidth, implicitWidth);
+            }
 
             color: calloutLayer.calloutColor
-            implicitHeight: Math.max(calloutLayer.dividerMinimumHeight, calloutTextLabel.implicitHeight)
+            implicitHeight: Math.max(
+                                calloutLayer.dividerMinimumHeight,
+                                Math.max(
+                                    0,
+                                    Number(calloutTextLabel.paintedHeight) || Number(calloutTextLabel.implicitHeight) || 0))
                             + calloutLayer.framePadding * 2
-            width: calloutLayer.width
+            implicitWidth: Math.max(
+                               calloutLayer.emptyFrameWidth,
+                               calloutLayer.framePadding * 2
+                               + calloutLayer.dividerWidth
+                               + calloutLayer.frameSpacing
+                               + resolvedTextWidth)
+            width: Math.min(calloutLayer.width, implicitWidth)
             y: calloutLayer.calloutYForEntry(calloutFrame.calloutEntry, index)
             z: 1
 
@@ -90,7 +113,11 @@ Item {
                 anchors.top: parent.top
                 anchors.topMargin: calloutLayer.framePadding
                 color: calloutLayer.dividerColor
-                height: Math.max(calloutLayer.dividerMinimumHeight, calloutTextLabel.implicitHeight)
+                height: Math.max(
+                            calloutLayer.dividerMinimumHeight,
+                            Math.max(
+                                0,
+                                Number(calloutTextLabel.paintedHeight) || Number(calloutTextLabel.implicitHeight) || 0))
                 radius: 1
                 width: calloutLayer.dividerWidth
             }
@@ -99,8 +126,6 @@ Item {
 
                 anchors.left: calloutDivider.right
                 anchors.leftMargin: calloutLayer.frameSpacing
-                anchors.right: parent.right
-                anchors.rightMargin: calloutLayer.framePadding
                 anchors.top: parent.top
                 anchors.topMargin: calloutLayer.framePadding
                 color: calloutLayer.textColor
@@ -111,6 +136,7 @@ Item {
                 style: body
                 text: calloutFrame.calloutText
                 textFormat: Text.PlainText
+                width: calloutFrame.resolvedTextWidth
                 wrapMode: Text.Wrap
             }
 

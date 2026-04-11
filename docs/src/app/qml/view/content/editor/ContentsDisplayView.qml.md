@@ -119,12 +119,17 @@ that sit directly inside the editor viewport.
   `ContentsCalloutBackend`.
   - compatibility fallback `Ctrl+Alt+C` is also registered for environments where Command is surfaced as
     `ControlModifier`.
+- Desktop now also exposes `Cmd+Opt+H` (`Meta+Alt+H`) as a divider insertion shortcut, routed through
+  `ContentsEditorTypingController.queueBreakShortcutInsertion()`.
+  - compatibility fallback `Ctrl+Alt+H` is also registered for environments where Command is surfaced as
+    `ControlModifier`.
 - Desktop now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so shortcuts still fire while the nested input item owns focus.
-- Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
-  newline normalization), then let `ContentsStructuredBlockRenderer` project those blocks into overlay-layer models.
-- Desktop window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
-  controller shortcut queue to avoid duplicate same-chord insertion bursts.
+- Agenda/callout/break shortcut insertions now write canonical tags directly into RAW source at cursor (with
+  line-boundary newline normalization), then let `ContentsStructuredBlockRenderer` project supported blocks into
+  overlay-layer models.
+- Desktop window-level agenda/callout/break shortcuts now run with `autoRepeat: false` and are routed through the
+  selection controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
   immediate-save acceptance path.
@@ -201,12 +206,13 @@ that sit directly inside the editor viewport.
   - Even an empty `<agenda>` block with one empty `<task>` body anchor must still render one visible agenda card.
   - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
     canonical callout wrapper at the current cursor in RAW source.
+  - `Cmd+Opt+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
   - Even an empty `<callout></callout>` block must still render one visible callout row.
   - When the renderer emits a structured correction suggestion, desktop must rewrite the underlying note file through
     `ContentsStructuredTagValidator` and replace the live editor RAW buffer with the canonical corrected source.
   - Tapping an agenda/callout card must move editor focus back into the corresponding RAW source body.
-  - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
-    `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
+  - `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Alt+H` fallback chords must trigger the same agenda/callout/divider
+    insertions as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Opt+H` when the runtime maps Command to `ControlModifier`.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the

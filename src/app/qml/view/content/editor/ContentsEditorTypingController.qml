@@ -502,6 +502,16 @@ QtObject {
         return controller.insertStructuredShortcutSourceAtCursor("callout");
     }
 
+    function queueBreakShortcutInsertion() {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        return controller.insertStructuredShortcutSourceAtCursor("break");
+    }
+
     function completeStructuredShortcutInsertionSpec(shortcutKind) {
         const normalizedKind = shortcutKind === undefined || shortcutKind === null
                 ? ""
@@ -563,6 +573,14 @@ QtObject {
                                                            ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
                                                            : 0,
                     "insertionSourceText": insertionSourceText
+                });
+        }
+
+        if (normalizedKind === "break") {
+            return ({
+                    "applied": true,
+                    "cursorSourceOffsetFromInsertionStart": "</break>".length,
+                    "insertionSourceText": "</break>"
                 });
         }
 

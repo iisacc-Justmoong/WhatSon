@@ -44,6 +44,9 @@ This controller exists to keep plain typing separate from inline-format applicat
   - before insertion, the controller now also validates that the payload is still a complete
     `<callout>...</callout>` block and aborts instead of writing partial fragments
   - pressing `Enter` on a trailing empty callout line exits callout editing instead of adding another empty inner line.
+- The controller now also owns divider source shortcuts:
+  - `queueBreakShortcutInsertion()` inserts canonical `</break>` source directly into RAW at the current cursor.
+  - insertion is routed through the same line-boundary normalization used by other raw-structure shortcuts.
 - Structured shortcut insertion now resolves the actual RAW insertion point before writing:
   - if the logical cursor is already inside an existing `<agenda>...</agenda>` or `<callout>...</callout>`, the new
     shortcut block is moved to the end of that enclosing block instead of being nested into it
@@ -142,6 +145,9 @@ longer part of the normal typing path.
   - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - pressing `Enter` twice at the end of a callout exits the wrapper on the second `Enter`
   - canonical insertion/exit payload generation is centralized in `src/app/callout/ContentsCalloutBackend.cpp`
+- Divider insertion is another source-side shortcut exception:
+  - `Cmd+Opt+H` inserts canonical `</break>` source tags at the current cursor
+  - `Ctrl+Alt+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
 
 ## Regression Checks
 
@@ -194,6 +200,9 @@ longer part of the normal typing path.
 - `Cmd+Opt+C` must insert one canonical `<callout>...</callout>` wrapper at the current cursor into RAW source, and
   empty callout bodies must still remain cursor-reachable via an internal one-space anchor.
 - `Ctrl+Alt+C` fallback must trigger the same callout insertion behavior when runtime Command mapping resolves as
+  `ControlModifier`.
+- `Cmd+Opt+H` must insert one canonical `</break>` token at the current cursor into RAW source.
+- `Ctrl+Alt+H` fallback must trigger the same divider insertion behavior when runtime Command mapping resolves as
   `ControlModifier`.
 - Triggering a new agenda/callout shortcut while the cursor already sits inside an existing agenda/callout must place
   the new block after the enclosing closing tag, not inside the existing block body.
