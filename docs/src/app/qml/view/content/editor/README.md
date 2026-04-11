@@ -147,6 +147,12 @@
   reparses, so local caret restoration survives entity-escaped RAW rewrites.
 - `ContentsStructuredDocumentFlow.qml` now asks the active block delegate for structured shortcut insertion offsets,
   which restores live-caret insertion for text blocks while still keeping agenda/callout shortcuts block-scoped.
+- `ContentsStructuredBlockRenderer.*` now also short-circuits notes that contain no proprietary structured tags and
+  computes combined structured verification only once per source refresh, shrinking note-open parse overhead.
+- In structured-flow mode, desktop/mobile hosts now stop feeding legacy agenda/callout overlay layers, so the fallback
+  rendering path does not instantiate off-screen delegates alongside the document-native flow.
+- `ContentsStructuredDocumentFlow.qml` now also loads larger block lists asynchronously and replays pending focus once a
+  delegate becomes available, reducing synchronous note-open stalls.
 - Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
   - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
     block to the enclosing wrapper end first

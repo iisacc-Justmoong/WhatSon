@@ -10,6 +10,29 @@
 
 namespace
 {
+    bool containsIgnoreCase(const QString& text, const QString& token)
+    {
+        return text.indexOf(token, 0, Qt::CaseInsensitive) >= 0;
+    }
+
+    bool mayContainAgendaBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("<agenda"));
+    }
+
+    bool mayContainCalloutBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("<callout"));
+    }
+
+    bool mayContainBreakBlock(const QString& sourceText)
+    {
+        return containsIgnoreCase(sourceText, QStringLiteral("</break"))
+            || containsIgnoreCase(sourceText, QStringLiteral("<break"))
+            || containsIgnoreCase(sourceText, QStringLiteral("<hr"))
+            || containsIgnoreCase(sourceText, QStringLiteral("</hr"));
+    }
+
     struct DocumentBlockSpan final
     {
         int end = 0;
@@ -50,7 +73,8 @@ namespace
     QVariantList buildRenderedDocumentBlocks(
         const QString& sourceText,
         const QVariantList& agendas,
-        const QVariantList& callouts)
+        const QVariantList& callouts,
+        const bool includeBreakBlocks)
     {
         static const QRegularExpression breakTagPattern(
             QStringLiteral(R"((?:</break>|<\s*(?:break|hr)\b[^>]*?/?>|</\s*hr\s*>))"),
@@ -85,23 +109,26 @@ namespace
         appendStructuredBlocks(agendas, QStringLiteral("agenda"));
         appendStructuredBlocks(callouts, QStringLiteral("callout"));
 
-        QRegularExpressionMatchIterator breakIterator = breakTagPattern.globalMatch(sourceText);
-        while (breakIterator.hasNext())
+        if (includeBreakBlocks)
         {
-            const QRegularExpressionMatch match = breakIterator.next();
-            if (!match.hasMatch())
+            QRegularExpressionMatchIterator breakIterator = breakTagPattern.globalMatch(sourceText);
+            while (breakIterator.hasNext())
             {
-                continue;
-            }
+                const QRegularExpressionMatch match = breakIterator.next();
+                if (!match.hasMatch())
+                {
+                    continue;
+                }
 
-            const int sourceStart = std::max(0, static_cast<int>(match.capturedStart(0)));
-            const int sourceEnd = std::max(sourceStart, static_cast<int>(match.capturedEnd(0)));
-            QVariantMap payload;
-            payload.insert(QStringLiteral("type"), QStringLiteral("break"));
-            payload.insert(QStringLiteral("sourceStart"), sourceStart);
-            payload.insert(QStringLiteral("sourceEnd"), sourceEnd);
-            payload.insert(QStringLiteral("sourceText"), sourceText.mid(sourceStart, sourceEnd - sourceStart));
-            spans.push_back(DocumentBlockSpan{sourceEnd, payload, sourceStart});
+                const int sourceStart = std::max(0, static_cast<int>(match.capturedStart(0)));
+                const int sourceEnd = std::max(sourceStart, static_cast<int>(match.capturedEnd(0)));
+                QVariantMap payload;
+                payload.insert(QStringLiteral("type"), QStringLiteral("break"));
+                payload.insert(QStringLiteral("sourceStart"), sourceStart);
+                payload.insert(QStringLiteral("sourceEnd"), sourceEnd);
+                payload.insert(QStringLiteral("sourceText"), sourceText.mid(sourceStart, sourceEnd - sourceStart));
+                spans.push_back(DocumentBlockSpan{sourceEnd, payload, sourceStart});
+            }
         }
 
         std::sort(
@@ -154,16 +181,6 @@ ContentsStructuredBlockRenderer::ContentsStructuredBlockRenderer(QObject* parent
     , m_agendaParseVerification(defaultParseVerification(QStringLiteral("agenda")))
     , m_calloutParseVerification(defaultParseVerification(QStringLiteral("callout")))
 {
-    connect(
-        &m_agendaBackend,
-        &ContentsAgendaBackend::parseVerificationReported,
-        this,
-        &ContentsStructuredBlockRenderer::handleAgendaParseVerificationReported);
-    connect(
-        &m_calloutBackend,
-        &ContentsCalloutBackend::parseVerificationReported,
-        this,
-        &ContentsStructuredBlockRenderer::handleCalloutParseVerificationReported);
     refreshStructuredParseVerification();
 }
 
@@ -261,12 +278,50 @@ void ContentsStructuredBlockRenderer::requestRenderRefresh()
 
 void ContentsStructuredBlockRenderer::refreshRenderedBlocks()
 {
-    const QVariantList nextRenderedAgendas = m_agendaBackend.parseAgendas(m_sourceText);
-    const QVariantList nextRenderedCallouts = m_calloutBackend.parseCallouts(m_sourceText);
+    const bool agendaBlocksPossible = mayContainAgendaBlock(m_sourceText);
+    const bool calloutBlocksPossible = mayContainCalloutBlock(m_sourceText);
+    const bool breakBlocksPossible = mayContainBreakBlock(m_sourceText);
+    const bool anyStructuredBlocksPossible = agendaBlocksPossible || calloutBlocksPossible || breakBlocksPossible;
+    const WhatSonStructuredTagLinter tagLinter;
+
+    QVariantList nextRenderedAgendas;
+    QVariantList nextRenderedCallouts;
+
+    if (agendaBlocksPossible)
+    {
+        nextRenderedAgendas = m_agendaBackend.parseAgendas(m_sourceText);
+        updateAgendaParseVerification(m_agendaBackend.lastParseVerification());
+    }
+    else
+    {
+        updateAgendaParseVerification(tagLinter.buildAgendaVerification(m_sourceText, 0, 0, 0));
+    }
+
+    if (calloutBlocksPossible)
+    {
+        nextRenderedCallouts = m_calloutBackend.parseCallouts(m_sourceText);
+        updateCalloutParseVerification(m_calloutBackend.lastParseVerification());
+    }
+    else
+    {
+        updateCalloutParseVerification(tagLinter.buildCalloutVerification(m_sourceText, 0));
+    }
+
+    refreshStructuredParseVerification();
+
     const QVariantList nextRenderedDocumentBlocks = buildRenderedDocumentBlocks(
         m_sourceText,
         nextRenderedAgendas,
-        nextRenderedCallouts);
+        nextRenderedCallouts,
+        breakBlocksPossible);
+    if (!anyStructuredBlocksPossible
+        && nextRenderedDocumentBlocks.size() == 1
+        && m_renderedAgendas == nextRenderedAgendas
+        && m_renderedCallouts == nextRenderedCallouts
+        && m_renderedDocumentBlocks == nextRenderedDocumentBlocks)
+    {
+        return;
+    }
     if (m_renderedAgendas == nextRenderedAgendas
         && m_renderedCallouts == nextRenderedCallouts
         && m_renderedDocumentBlocks == nextRenderedDocumentBlocks)
@@ -321,7 +376,7 @@ void ContentsStructuredBlockRenderer::refreshStructuredParseVerification()
     }
 }
 
-void ContentsStructuredBlockRenderer::handleAgendaParseVerificationReported(const QVariantMap& verification)
+void ContentsStructuredBlockRenderer::updateAgendaParseVerification(const QVariantMap& verification)
 {
     if (m_agendaParseVerification != verification)
     {
@@ -329,10 +384,9 @@ void ContentsStructuredBlockRenderer::handleAgendaParseVerificationReported(cons
         emit agendaParseVerificationChanged();
     }
     emit agendaParseVerificationReported(verification);
-    refreshStructuredParseVerification();
 }
 
-void ContentsStructuredBlockRenderer::handleCalloutParseVerificationReported(const QVariantMap& verification)
+void ContentsStructuredBlockRenderer::updateCalloutParseVerification(const QVariantMap& verification)
 {
     if (m_calloutParseVerification != verification)
     {
@@ -340,5 +394,4 @@ void ContentsStructuredBlockRenderer::handleCalloutParseVerificationReported(con
         emit calloutParseVerificationChanged();
     }
     emit calloutParseVerificationReported(verification);
-    refreshStructuredParseVerification();
 }

@@ -13,6 +13,8 @@ Desktop content editor host.
   target either the legacy single-editor path or the new structured flow path.
 - Source persistence for block edits now runs through `applyDocumentSourceMutation(...)`, which updates the RAW body,
   refreshes the presentation snapshot, marks local authority, and optionally restores focus inside the reparsed block.
+- While structured-flow mode is active, legacy agenda/callout overlay layers now receive empty models so hidden fallback
+  delegates do not instantiate in parallel with the document-native block flow.
 
 ## Legacy Surface
 - The single `ContentsInlineFormatEditor` and overlay layers still exist as the fallback path for notes without any

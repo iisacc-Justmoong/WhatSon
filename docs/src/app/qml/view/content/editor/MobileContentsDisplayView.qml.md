@@ -10,3 +10,5 @@ Mobile content editor host.
   editor remains the fallback for purely plain-text notes.
 - Structured block rewrites route through `applyDocumentSourceMutation(...)` so mobile keeps the same RAW persistence
   contract as desktop.
+- While structured-flow mode is active, mobile also disconnects the hidden legacy agenda/callout overlay models so note
+  open does not pay for both rendering paths at once.

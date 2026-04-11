@@ -279,6 +279,7 @@ FocusScope {
                     id: blockLoader
 
                     anchors.fill: parent
+                    asynchronous: blockRepeater.count > 12
                     sourceComponent: blockHost.blockType === "agenda"
                                      ? agendaBlockDelegate
                                      : blockHost.blockType === "callout"
@@ -286,6 +287,14 @@ FocusScope {
                                        : blockHost.blockType === "break"
                                          ? breakBlockDelegate
                                          : textBlockDelegate
+
+                    onLoaded: {
+                        if (!item || item.applyFocusRequest === undefined)
+                            return
+                        Qt.callLater(function () {
+                            item.applyFocusRequest(documentFlow.pendingFocusRequest)
+                        })
+                    }
                 }
 
                 Component {

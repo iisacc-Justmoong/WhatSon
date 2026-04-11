@@ -1868,7 +1868,7 @@ Item {
                                            : contentsView.editorDocumentStartY)
                         enableCardFocus: false
                         enableTaskToggle: false
-                        renderedAgendas: structuredBlockRenderer.renderedAgendas
+                        renderedAgendas: contentsView.showStructuredDocumentFlow ? [] : structuredBlockRenderer.renderedAgendas
                         showTaskCheckbox: false
                         showTaskText: false
                         blockFocusHandler: function (sourceOffset) {
@@ -1912,7 +1912,7 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY
                         enableCardFocus: false
-                        renderedCallouts: structuredBlockRenderer.renderedCallouts
+                        renderedCallouts: contentsView.showStructuredDocumentFlow ? [] : structuredBlockRenderer.renderedCallouts
                         showText: false
                         blockFocusHandler: function (sourceOffset) {
                             contentsView.focusStructuredBlockSourceOffset(sourceOffset);
@@ -2012,7 +2012,7 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY)
                         enableCardFocus: false
-                        renderedAgendas: structuredBlockRenderer.renderedAgendas
+                        renderedAgendas: contentsView.showStructuredDocumentFlow ? [] : structuredBlockRenderer.renderedAgendas
                         showFrame: false
                         showHeader: false
                         showTaskText: false

@@ -13,6 +13,11 @@ Builds canonical structured render data from `.wsnbody` source text.
   - divider tags: `type=break`
 - Each non-text block carries the backend-owned source geometry so QML can rewrite RAW in place.
 - `hasRenderedBlocks` now reflects any non-text block, including standalone `</break>`.
+- Source refresh no longer runs the full structured verification pass once per backend signal. The renderer now parses the
+  needed backends first, pulls their cached verification snapshots, and computes the combined structured verification
+  once per source refresh.
+- Notes that do not contain any proprietary structured tags now skip agenda/callout backend parsing entirely and fall
+  back to one plain text block plus linter-only verification.
 
 ## Why It Changed
 Agenda/callout cards now render as document-owned flow blocks instead of offset-projected overlay layers. The QML host

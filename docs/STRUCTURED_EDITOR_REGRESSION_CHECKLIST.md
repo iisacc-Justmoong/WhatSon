@@ -18,3 +18,9 @@ structured document-flow editor changes.
   insert at the live caret position, not only after the whole block.
 - The same shortcuts invoked while focus is inside an agenda or callout must keep wrappers standalone instead of nesting
   a new proprietary block inside existing task/callout body content.
+
+## Note Open Cost
+- Opening a note that contains no proprietary structured tags must stay on the fast path: no agenda/callout cards
+  should appear, and the editor must not instantiate legacy structured overlays in parallel with the plain-text path.
+- Opening a long structured note must populate the document-native block flow without one large synchronous stall before
+  the first editor frame becomes interactive.

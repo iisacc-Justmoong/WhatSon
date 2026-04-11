@@ -66,8 +66,8 @@ signals:
 private:
     void refreshRenderedBlocks();
     void refreshStructuredParseVerification();
-    void handleAgendaParseVerificationReported(const QVariantMap& verification);
-    void handleCalloutParseVerificationReported(const QVariantMap& verification);
+    void updateAgendaParseVerification(const QVariantMap& verification);
+    void updateCalloutParseVerification(const QVariantMap& verification);
 
     ContentsAgendaBackend m_agendaBackend;
     ContentsCalloutBackend m_calloutBackend;
