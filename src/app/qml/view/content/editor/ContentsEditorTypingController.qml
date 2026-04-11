@@ -489,16 +489,6 @@ QtObject {
                 || controller.view.showFormattedTextRenderer) {
             return false;
         }
-
-        controller.ensureLiveEditingStateReady();
-        const selectionRange = controller.currentRawEditorSelectionRange();
-        const logicalStart = Math.max(0, Math.min(selectionRange.start, selectionRange.end));
-        const logicalEnd = Math.max(logicalStart, Math.max(selectionRange.start, selectionRange.end));
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
-                ? ""
-                : String(controller.view.editorText);
-        const sourceStart = controller.sourceOffsetForLogicalOffset(logicalStart);
-        const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalEnd);
         if (!controller.agendaBackend
                 || controller.agendaBackend.buildAgendaInsertionPayload === undefined) {
             return false;
@@ -510,39 +500,7 @@ QtObject {
         const cursorSourceOffsetFromInsertionStart = insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
                 ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
                 : 0;
-        if (insertionSourceText.length === 0)
-            return false;
-        const nextSourceText = controller.spliceSourceText(
-                    currentSourceText,
-                    sourceStart,
-                    sourceEnd,
-                    insertionSourceText);
-        const cursorSourceOffset = sourceStart + cursorSourceOffsetFromInsertionStart;
-
-        if (controller.view.editorText !== nextSourceText)
-            controller.view.editorText = nextSourceText;
-        if (controller.view.commitDocumentPresentationRefresh !== undefined)
-            controller.view.commitDocumentPresentationRefresh();
-        else
-            controller.synchronizeLiveEditingStateFromPresentation();
-
-        const logicalCursor = controller.logicalOffsetForSourceOffset(cursorSourceOffset);
-        controller.scheduleCursorPosition(logicalCursor);
-
-        if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
-            controller.editorSession.markLocalEditorAuthority();
-        if (controller.shouldDeferImmediatePersistence()) {
-            controller.editorSession.scheduleEditorPersistence();
-            controller.view.editorTextEdited(nextSourceText);
-            return true;
-        }
-        const saved = controller.view.persistEditorTextImmediately !== undefined
-                ? !!controller.view.persistEditorTextImmediately(nextSourceText)
-                : false;
-        if (!saved && controller.editorSession && controller.editorSession.scheduleEditorPersistence !== undefined)
-            controller.editorSession.scheduleEditorPersistence();
-        controller.view.editorTextEdited(nextSourceText);
-        return true;
+        return controller.insertRawShortcutSourceAtCursor(insertionSourceText, cursorSourceOffsetFromInsertionStart);
     }
 
     function queueCalloutShortcutInsertion() {
@@ -552,37 +510,64 @@ QtObject {
                 || controller.view.showFormattedTextRenderer) {
             return false;
         }
-
-        controller.ensureLiveEditingStateReady();
-        const selectionRange = controller.currentRawEditorSelectionRange();
-        const logicalStart = Math.max(0, Math.min(selectionRange.start, selectionRange.end));
-        const logicalEnd = Math.max(logicalStart, Math.max(selectionRange.start, selectionRange.end));
-        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
-                ? ""
-                : String(controller.view.editorText);
-        const sourceStart = controller.sourceOffsetForLogicalOffset(logicalStart);
-        const sourceEnd = controller.sourceOffsetForLogicalOffset(logicalEnd);
         if (!controller.calloutBackend
                 || controller.calloutBackend.buildCalloutInsertionPayload === undefined) {
             return false;
         }
-        const currentPlainText = controller.authoritativeSourcePlainText();
-        const selectedPlainText = currentPlainText.slice(logicalStart, logicalEnd);
-        const insertionPayload = controller.calloutBackend.buildCalloutInsertionPayload(selectedPlainText);
+        const insertionPayload = controller.calloutBackend.buildCalloutInsertionPayload("");
         const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
                 ? String(insertionPayload.insertionSourceText)
                 : "";
         const cursorSourceOffsetFromInsertionStart = insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
                 ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
                 : 0;
-        if (insertionSourceText.length === 0)
+        return controller.insertRawShortcutSourceAtCursor(insertionSourceText, cursorSourceOffsetFromInsertionStart);
+    }
+
+    function currentLogicalCursorOffsetForShortcutInsertion() {
+        const plainTextLength = controller.authoritativeSourcePlainText().length;
+        if (!controller.contentEditor || controller.contentEditor.cursorPosition === undefined)
+            return plainTextLength;
+        const numericCursor = Number(controller.contentEditor.cursorPosition);
+        if (!isFinite(numericCursor))
+            return plainTextLength;
+        return Math.max(0, Math.min(plainTextLength, Math.floor(numericCursor)));
+    }
+
+    function insertRawShortcutSourceAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
+        if (!controller.view)
             return false;
+        const normalizedRawSourceText = controller.normalizePlainText(rawSourceText);
+        if (normalizedRawSourceText.length === 0)
+            return false;
+        controller.ensureLiveEditingStateReady();
+        const currentSourceText = controller.view.editorText === undefined || controller.view.editorText === null
+                ? ""
+                : String(controller.view.editorText);
+        const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
+        const sourceCursorOffset = Math.max(
+                    0,
+                    Math.min(
+                        currentSourceText.length,
+                        Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalCursor)) || 0)));
+        const prefixNewline = sourceCursorOffset > 0 && currentSourceText.charAt(sourceCursorOffset - 1) !== "\n"
+                ? "\n"
+                : "";
+        const suffixNewline = sourceCursorOffset < currentSourceText.length && currentSourceText.charAt(sourceCursorOffset) !== "\n"
+                ? "\n"
+                : "";
+        const insertionSourceText = prefixNewline + normalizedRawSourceText + suffixNewline;
+        const cursorOffsetInsideRawSource = Math.max(
+                    0,
+                    Math.min(
+                        normalizedRawSourceText.length,
+                        Math.floor(Number(cursorSourceOffsetFromInsertionStart) || 0)));
+        const cursorSourceOffset = sourceCursorOffset + prefixNewline.length + cursorOffsetInsideRawSource;
         const nextSourceText = controller.spliceSourceText(
                     currentSourceText,
-                    sourceStart,
-                    sourceEnd,
+                    sourceCursorOffset,
+                    sourceCursorOffset,
                     insertionSourceText);
-        const cursorSourceOffset = sourceStart + cursorSourceOffsetFromInsertionStart;
 
         if (controller.view.editorText !== nextSourceText)
             controller.view.editorText = nextSourceText;
@@ -591,8 +576,7 @@ QtObject {
         else
             controller.synchronizeLiveEditingStateFromPresentation();
 
-        const logicalCursor = controller.logicalOffsetForSourceOffset(cursorSourceOffset);
-        controller.scheduleCursorPosition(logicalCursor);
+        controller.scheduleCursorPosition(controller.logicalOffsetForSourceOffset(cursorSourceOffset));
 
         if (controller.editorSession && controller.editorSession.markLocalEditorAuthority !== undefined)
             controller.editorSession.markLocalEditorAuthority();

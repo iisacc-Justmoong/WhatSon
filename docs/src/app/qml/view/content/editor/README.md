@@ -128,9 +128,8 @@
     empty
   - if agenda exit occurs on an empty task and all sibling tasks are empty, the entire agenda block is removed
 - `ContentsEditorTypingController.qml` now also owns callout authoring shortcuts:
-  - `Cmd+Opt+C` inserts canonical `<callout></callout>` at the current selection/cursor
+  - `Cmd+Opt+C` inserts canonical `<callout></callout>` into RAW at the current cursor
   - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
-  - if selection text exists, it is wrapped into `<callout>...</callout>`
   - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
   `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.

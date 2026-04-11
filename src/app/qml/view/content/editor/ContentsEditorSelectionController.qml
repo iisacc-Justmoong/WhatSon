@@ -46,6 +46,7 @@ QtObject {
     property var editorViewport: null
     property var queuedInlineFormatWrapKeys: ({})
     property var queuedMarkdownListMutationKeys: ({})
+    property var queuedStructuredShortcutMutationKeys: ({})
     property var selectionBridge: null
     property var selectionContextMenu: null
     property var textFormatRenderer: null
@@ -522,6 +523,46 @@ QtObject {
             return controller.normalizeSelectionTextValue(inputItem.getText(boundedStart, boundedEnd));
         return controller.currentEditorPlainText().slice(boundedStart, boundedEnd);
     }
+    function queueStructuredShortcutMutation(shortcutKind) {
+        if (!controller.view
+                || !controller.view.hasSelectedNote
+                || controller.view.showDedicatedResourceViewer
+                || controller.view.showFormattedTextRenderer) {
+            return false;
+        }
+        const normalizedKind = shortcutKind === undefined || shortcutKind === null
+                ? ""
+                : String(shortcutKind).toLowerCase();
+        if (normalizedKind !== "agenda" && normalizedKind !== "callout")
+            return false;
+        const noteId = controller.currentSelectedNoteId();
+        const selectionSnapshot = controller.currentEditorSelectionSnapshot();
+        const rawCursor = selectionSnapshot && selectionSnapshot.cursorPosition !== undefined
+                ? Number(selectionSnapshot.cursorPosition)
+                : controller.currentEditorCursorPosition();
+        const normalizedCursor = isFinite(rawCursor) ? Math.max(0, Math.floor(rawCursor)) : -1;
+        const queueKey = noteId + "::shortcut::" + normalizedKind + "::" + String(normalizedCursor);
+        if (controller.queuedStructuredShortcutMutationKeys[queueKey])
+            return true;
+        controller.queuedStructuredShortcutMutationKeys[queueKey] = true;
+        Qt.callLater(function () {
+            delete controller.queuedStructuredShortcutMutationKeys[queueKey];
+            if (!controller.view || !controller.view.hasSelectedNote)
+                return;
+            if (controller.currentSelectedNoteId() !== noteId)
+                return;
+            if (normalizedKind === "agenda"
+                    && controller.view.queueAgendaShortcutInsertion !== undefined) {
+                controller.view.queueAgendaShortcutInsertion();
+                return;
+            }
+            if (normalizedKind === "callout"
+                    && controller.view.queueCalloutShortcutInsertion !== undefined) {
+                controller.view.queueCalloutShortcutInsertion();
+            }
+        });
+        return true;
+    }
     function handleInlineFormatShortcutKeyPress(event) {
         if (!event || !controller.view || !controller.view.hasSelectedNote || controller.view.showDedicatedResourceViewer || controller.view.showFormattedTextRenderer)
             return false;
@@ -545,6 +586,13 @@ QtObject {
         const calloutShortcutKeyMatched = metaAltChord
                 ? (event.key === Qt.Key_C || normalizedShortcutText === "C")
                 : normalizedShortcutText === "C";
+        const autoRepeat = event.isAutoRepeat !== undefined && !!event.isAutoRepeat;
+        if (autoRepeat
+                && ((agendaShortcutPressed && agendaShortcutKeyMatched)
+                    || (calloutShortcutPressed && calloutShortcutKeyMatched))) {
+            event.accepted = true;
+            return true;
+        }
         let handled = false;
         switch (event.key) {
         case Qt.Key_B:
@@ -578,18 +626,12 @@ QtObject {
                 handled = controller.queueMarkdownListMutation("unordered");
             break;
         case Qt.Key_T:
-            if (agendaShortcutPressed
-                    && controller.view
-                    && controller.view.queueAgendaShortcutInsertion !== undefined) {
-                handled = !!controller.view.queueAgendaShortcutInsertion();
-            }
+            if (agendaShortcutPressed && agendaShortcutKeyMatched)
+                handled = controller.queueStructuredShortcutMutation("agenda");
             break;
         case Qt.Key_C:
-            if (calloutShortcutPressed
-                    && controller.view
-                    && controller.view.queueCalloutShortcutInsertion !== undefined) {
-                handled = !!controller.view.queueCalloutShortcutInsertion();
-            }
+            if (calloutShortcutPressed && calloutShortcutKeyMatched)
+                handled = controller.queueStructuredShortcutMutation("callout");
             break;
         default:
             break;
@@ -597,16 +639,14 @@ QtObject {
         if (!handled
                 && agendaShortcutPressed
                 && agendaShortcutKeyMatched
-                && controller.view
-                && controller.view.queueAgendaShortcutInsertion !== undefined) {
-            handled = !!controller.view.queueAgendaShortcutInsertion();
+                ) {
+            handled = controller.queueStructuredShortcutMutation("agenda");
         }
         if (!handled
                 && calloutShortcutPressed
                 && calloutShortcutKeyMatched
-                && controller.view
-                && controller.view.queueCalloutShortcutInsertion !== undefined) {
-            handled = !!controller.view.queueCalloutShortcutInsertion();
+                ) {
+            handled = controller.queueStructuredShortcutMutation("callout");
         }
 
         if (handled)

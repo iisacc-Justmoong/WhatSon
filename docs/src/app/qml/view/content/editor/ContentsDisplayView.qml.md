@@ -103,6 +103,10 @@ that sit directly inside the editor viewport.
     `ControlModifier`.
 - Desktop now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so shortcuts still fire while the nested input item owns focus.
+- Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
+  newline normalization), then let renderer layers project those blocks.
+- Desktop window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
+  controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so note switches re-stage the previous note buffer and then bind the next note immediately instead of blocking on an
   immediate-save acceptance path.
@@ -177,7 +181,7 @@ that sit directly inside the editor viewport.
   - In non-Plain modes, `<agenda>/<task>` blocks must render as agenda cards with checkbox rows, and toggling a task
     must persist canonical `done=true|false` in source.
   - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
-    canonical callout wrapper at the current cursor/selection.
+    canonical callout wrapper at the current cursor in RAW source.
   - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
     `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while

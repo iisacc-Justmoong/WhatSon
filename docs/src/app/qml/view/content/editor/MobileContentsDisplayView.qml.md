@@ -93,6 +93,10 @@ suppression local to this file.
 - Mobile now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so hardware-keyboard shortcuts stay active while the nested
   input item owns focus.
+- Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
+  newline normalization), then let renderer layers project those blocks.
+- Mobile window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
+  controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,
   so the old note buffer stays staged in the fetch-sync controller while the newly selected note binds immediately.
 - The mobile host now also wires `ContentsEditorSession.typingIdleThresholdMs` from
@@ -174,7 +178,7 @@ suppression local to this file.
   - In non-Plain modes, agenda/task source blocks must render through `ContentsAgendaLayer` with checkbox rows, and
     checkbox toggles must persist canonical `done=true|false`.
   - In non-Plain modes, callout source blocks must render through `ContentsCalloutLayer` as Figma-aligned callout rows, and `Cmd+Opt+C` must insert
-    canonical `<callout>...</callout>` wrappers.
+    canonical `<callout>...</callout>` wrappers at current cursor in RAW source.
   - `Ctrl+Alt+T` / `Ctrl+Alt+C` fallback chords must trigger the same agenda/callout insertions as
     `Cmd+Opt+T` / `Cmd+Opt+C` when the runtime maps Command to `ControlModifier`.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)

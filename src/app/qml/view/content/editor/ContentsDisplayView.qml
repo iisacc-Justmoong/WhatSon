@@ -1969,32 +1969,36 @@ Item {
                         onActivated: contentsView.queueMarkdownListMutation("unordered")
                     }
                     Shortcut {
+                        autoRepeat: false
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Alt+T"
 
-                        onActivated: contentsView.queueAgendaShortcutInsertion()
+                        onActivated: editorSelectionController.queueStructuredShortcutMutation("agenda")
                     }
                     Shortcut {
+                        autoRepeat: false
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Alt+T"
 
-                        onActivated: contentsView.queueAgendaShortcutInsertion()
+                        onActivated: editorSelectionController.queueStructuredShortcutMutation("agenda")
                     }
                     Shortcut {
+                        autoRepeat: false
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Alt+C"
 
-                        onActivated: contentsView.queueCalloutShortcutInsertion()
+                        onActivated: editorSelectionController.queueStructuredShortcutMutation("callout")
                     }
                     Shortcut {
+                        autoRepeat: false
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Alt+C"
 
-                        onActivated: contentsView.queueCalloutShortcutInsertion()
+                        onActivated: editorSelectionController.queueStructuredShortcutMutation("callout")
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu
