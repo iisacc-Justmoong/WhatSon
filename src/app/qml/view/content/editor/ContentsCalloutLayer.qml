@@ -9,6 +9,9 @@ Item {
     property var renderedCallouts: []
     property var sourceOffsetYResolver: null
     property var blockFocusHandler: null
+    property bool enableCardFocus: true
+    property bool showFrame: true
+    property bool showText: true
     readonly property color calloutColor: "#262728"
     readonly property color dividerColor: "#D9D9D9"
     readonly property int emptyFrameWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(40)))
@@ -89,20 +92,15 @@ Item {
                 return Math.min(maxTextWidth, implicitWidth);
             }
 
-            color: calloutLayer.calloutColor
+            color: calloutLayer.showFrame ? calloutLayer.calloutColor : "transparent"
             implicitHeight: Math.max(
                                 calloutLayer.dividerMinimumHeight,
                                 Math.max(
                                     0,
                                     Number(calloutTextLabel.paintedHeight) || Number(calloutTextLabel.implicitHeight) || 0))
                             + calloutLayer.framePadding * 2
-            implicitWidth: Math.max(
-                               calloutLayer.emptyFrameWidth,
-                               calloutLayer.framePadding * 2
-                               + calloutLayer.dividerWidth
-                               + calloutLayer.frameSpacing
-                               + resolvedTextWidth)
-            width: Math.min(calloutLayer.width, implicitWidth)
+            implicitWidth: Math.max(calloutLayer.emptyFrameWidth, calloutLayer.width)
+            width: calloutLayer.width
             height: implicitHeight
             y: calloutLayer.calloutYForEntry(calloutFrame.calloutEntry, index)
             z: 1
@@ -114,12 +112,9 @@ Item {
                 anchors.leftMargin: calloutLayer.framePadding
                 anchors.top: parent.top
                 anchors.topMargin: calloutLayer.framePadding
-                color: calloutLayer.dividerColor
-                height: Math.max(
-                            calloutLayer.dividerMinimumHeight,
-                            Math.max(
-                                0,
-                                Number(calloutTextLabel.paintedHeight) || Number(calloutTextLabel.implicitHeight) || 0))
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: calloutLayer.framePadding
+                color: calloutLayer.showFrame ? calloutLayer.dividerColor : "transparent"
                 radius: 1
                 width: calloutLayer.dividerWidth
             }
@@ -135,6 +130,7 @@ Item {
                 font.pixelSize: 12
                 font.weight: Font.Medium
                 lineHeight: 1.0
+                opacity: calloutLayer.showText ? 1 : 0
                 style: body
                 text: calloutFrame.calloutText
                 textFormat: Text.PlainText
@@ -146,7 +142,8 @@ Item {
                 acceptedButtons: Qt.LeftButton
 
                 onTapped: {
-                    if (calloutLayer.blockFocusHandler !== undefined
+                    if (calloutLayer.enableCardFocus
+                            && calloutLayer.blockFocusHandler !== undefined
                             && calloutLayer.blockFocusHandler !== null) {
                         calloutLayer.blockFocusHandler(calloutFrame.focusSourceOffset);
                     }

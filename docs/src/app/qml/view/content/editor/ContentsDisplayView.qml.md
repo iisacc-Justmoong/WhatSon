@@ -52,12 +52,13 @@ that sit directly inside the editor viewport.
   The editor no longer prettifies markdown markers into a second display-only grammar while the user is typing.
 - Resource cards rendered from `<resource ...>` tags still overlay the editor viewport when the selected note body
   references inline assets.
-- Agenda cards rendered from `<agenda>/<task>` source blocks now also overlay the editor viewport in every editor view
-  mode, including `Plain`.
-  Each task row is rendered as `LV.CheckBox`, and toggle mutations rewrite the corresponding `<task done="...">`
-  attribute in source through `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
-- Callout cards rendered from `<callout>...</callout>` source blocks now also overlay the editor viewport in every
-  editor view mode, including `Plain`, through `ContentsCalloutLayer.qml`.
+- Agenda and callout structured cards are now split between editor-owned text flow and QML-owned chrome:
+  - the editor RichText surface reserves the task/callout text slot directly inside document flow
+  - background chrome (`agendaBackgroundLayer`, `calloutBackgroundLayer`) is mounted below the live editor text
+  - agenda checkbox interaction chrome (`agendaRenderLayer`) is mounted above the live editor text without repainting
+    the agenda frame/header/text a second time
+- Agenda task toggles still rewrite canonical `<task done="...">` attributes in source through
+  `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
 - Structured tag detection for those agenda/callout overlays is now owned by
   `ContentsStructuredBlockRenderer`, matching the renderer-owned formatting pipeline instead of having QML call parse
   backends directly.
@@ -74,6 +75,9 @@ that sit directly inside the editor viewport.
 - Desktop now also routes card taps back into the live editor through
   `focusStructuredBlockSourceOffset(sourceOffset)`, so empty agenda/callout cards remain immediately editable as long
   as their RAW tags exist.
+- The live desktop editor wrapper now uses a transparent internal background fill, so structured block chrome rendered
+  underneath it reads as part of the document instead of being hidden behind the editor's own surface rectangle.
+- Desktop agenda/callout chrome now fills the resolved editor text width rather than hugging earlier fixed card widths.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.
@@ -207,11 +211,13 @@ that sit directly inside the editor viewport.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
   - Page/Print viewport and page-count calculations must stay bound to backend
     `ContentsPagePrintLayoutRenderer`; QML must not reintroduce duplicate local page-math state.
-  - In every editor view mode, including `Plain`, `<agenda>/<task>` blocks must render as agenda cards with checkbox
-    rows, and toggling a task must persist canonical `done=true|false` in source.
-  - Even an empty `<agenda>` block with one empty `<task>` body anchor must still render one visible agenda card.
-  - In every editor view mode, including `Plain`, `<callout>...</callout>` blocks must render as Figma-aligned
-    callout rows, and `Cmd+Opt+C` must insert one canonical callout wrapper at the current cursor in RAW source.
+- In every editor view mode, including `Plain`, `<agenda>/<task>` blocks must render as agenda cards with checkbox
+  rows, and toggling a task must persist canonical `done=true|false` in source.
+- Typing immediately after inserting an empty agenda/callout must land inside the renderer-reserved task/callout text
+  block instead of leaking into surrounding paragraph flow.
+- Even an empty `<agenda>` block with one empty `<task>` body anchor must still render one visible agenda card.
+- In every editor view mode, including `Plain`, `<callout>...</callout>` blocks must render as Figma-aligned
+  callout rows, and `Cmd+Opt+C` must insert one canonical callout wrapper at the current cursor in RAW source.
   - `Cmd+Shift+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
   - Even an empty `<callout></callout>` block must still render one visible callout row.
   - When the renderer emits a structured correction suggestion, desktop must rewrite the underlying note file through

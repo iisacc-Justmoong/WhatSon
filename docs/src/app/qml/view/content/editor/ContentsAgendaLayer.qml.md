@@ -10,6 +10,10 @@ The layer is now a renderer-fed view:
 - focus hook: `blockFocusHandler(focusSourceOffset)`
 - mutation hook: `taskToggleHandler(taskOpenTagStart, taskOpenTagEnd, checked)`
 - placement hook: `sourceOffsetYResolver(sourceStart)` (host-provided source-offset -> viewport-y resolver)
+- host mode flags:
+  - `showFrame` / `showHeader`
+  - `showTaskCheckbox` / `showTaskText`
+  - `enableTaskToggle` / `enableCardFocus`
 
 ## Rendering Contract
 
@@ -18,7 +22,7 @@ The layer is now a renderer-fed view:
   - stroke `#343536`
   - corner radius `12`
   - outer padding `8`
-  - card width hugs to Figma node `279:7854` width `307` instead of stretching across the whole editor column
+  - card width now stretches across the resolved editor text column so agenda cards fill the document X-axis
 - Internal Figma spacing is preserved:
   - header -> task list gap `8`
   - task list horizontal inset `8`
@@ -27,7 +31,10 @@ The layer is now a renderer-fed view:
 - Header row exposes:
   - left caption: `Agenda`
   - right date token: `agenda.date`
-- Task rows are rendered as `LV.CheckBox`.
+- Task rows now split visual responsibilities:
+  - `LV.CheckBox` still owns the checkbox box/toggle affordance
+  - a sibling `LV.Label` owns the measurable/wrapping task text
+  - this lets the host reuse the same component for a background-only chrome pass and a checkbox-only interaction pass
 - `checked` is mapped from canonical `task.done` boolean.
 - Checkbox visuals are pinned to the Figma card:
   - box size `17`
@@ -48,6 +55,10 @@ The layer is now a renderer-fed view:
 - The host-provided `sourceOffsetYResolver(...)` now resolves editor-internal document Y, so card positioning stays in
   the same coordinate space as the live editor content instead of double-counting outer viewport margins.
 - The layer still normalizes `QVariantList`-like values into JS arrays so C++ renderer properties remain QML-safe.
+- The host can now mount this layer twice:
+  - one frame/header pass below the live editor text
+  - one checkbox-only interaction pass above the live editor text
+  This keeps agenda chrome document-integrated while preserving task toggle affordances.
 
 ## Mutation Hook
 
@@ -60,6 +71,8 @@ The layer is now a renderer-fed view:
 - The host view owns actual source rewrite/persistence; this layer does not mutate source directly.
 - Root layer and each agenda card now bind `height: implicitHeight`, so renderer-fed agenda entries no longer collapse
   into zero-height rectangles when the overlay is mounted in the editor viewport.
+- When task text is visually hidden (`showTaskText=false`), the label still stays in layout so agenda chrome can keep
+  measuring multi-line row height against the same renderer-fed task body text.
 
 ## Regression Checks
 
@@ -74,3 +87,5 @@ The layer is now a renderer-fed view:
 - Tapping an agenda card must route focus back to the first task body source offset.
 - Even when the editor overlay root has no explicit bottom anchor, agenda cards must still reserve real frame height
   and remain visible.
+- A fill-width host mount must stretch agenda cards across the editor text column instead of capping card width to the
+  earlier fixed `307px` frame preference.

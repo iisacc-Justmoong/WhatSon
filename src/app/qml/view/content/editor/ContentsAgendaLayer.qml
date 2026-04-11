@@ -11,12 +11,17 @@ Item {
     property var sourceOffsetYResolver: null
     property var blockFocusHandler: null
     property var taskToggleHandler: null
+    property bool enableCardFocus: true
+    property bool enableTaskToggle: true
+    property bool showFrame: true
+    property bool showHeader: true
+    property bool showTaskCheckbox: true
+    property bool showTaskText: true
     readonly property int cardSpacing: 8
     readonly property color frameBorderColor: "#343536"
     readonly property int frameBorderWidth: 1
     readonly property color frameColor: "#262728"
     readonly property int framePadding: 8
-    readonly property int framePreferredWidth: 307
     readonly property int frameRadius: 12
     readonly property color headerTextColor: "#80FFFFFF"
     readonly property color taskBoxColor: "#CCFFFFFF"
@@ -86,11 +91,11 @@ Item {
             readonly property string dateText: agendaEntry.date !== undefined ? String(agendaEntry.date) : "yyyy-mm-dd"
             readonly property int focusSourceOffset: Math.max(0, Number(agendaEntry.focusSourceOffset) || 0)
 
-            border.color: agendaLayer.frameBorderColor
-            border.width: agendaLayer.frameBorderWidth
-            color: agendaLayer.frameColor
+            border.color: agendaLayer.showFrame ? agendaLayer.frameBorderColor : "transparent"
+            border.width: agendaLayer.showFrame ? agendaLayer.frameBorderWidth : 0
+            color: agendaLayer.showFrame ? agendaLayer.frameColor : "transparent"
             implicitHeight: agendaCardLayout.implicitHeight + agendaLayer.framePadding * 2
-            implicitWidth: Math.min(agendaLayer.width, agendaLayer.framePreferredWidth)
+            implicitWidth: agendaLayer.width
             radius: agendaLayer.frameRadius
             width: implicitWidth
             height: implicitHeight
@@ -113,6 +118,7 @@ Item {
                         font.family: "Pretendard"
                         font.pixelSize: 11
                         font.weight: Font.Normal
+                        opacity: agendaLayer.showHeader ? 1 : 0
                         style: caption
                         text: "Agenda"
                     }
@@ -121,6 +127,7 @@ Item {
                         font.family: "Pretendard"
                         font.pixelSize: 11
                         font.weight: Font.Normal
+                        opacity: agendaLayer.showHeader ? 1 : 0
                         style: caption
                         text: agendaCard.dateText
                     }
@@ -134,41 +141,62 @@ Item {
                     Repeater {
                         model: agendaCard.agendaTasks
 
-                        delegate: LV.CheckBox {
+                        delegate: RowLayout {
                             readonly property var taskEntry: modelData && typeof modelData === "object" ? modelData : ({})
                             readonly property bool hasSourceTag: taskEntry.hasSourceTag === undefined ? true : !!taskEntry.hasSourceTag
-                            boxSize: agendaLayer.taskBoxSize
-                            boxRadius: agendaLayer.taskBoxRadius
-                            boxBorderColorCheckedEnabled: agendaLayer.taskBoxColor
-                            boxBorderColorCheckedDisabled: agendaLayer.taskBoxColor
-                            boxBorderColorUncheckedEnabled: agendaLayer.taskBoxColor
-                            boxBorderColorUncheckedDisabled: agendaLayer.taskBoxColor
-                            boxBorderWidthCheckedEnabled: 0.5
-                            boxBorderWidthCheckedDisabled: 0.5
-                            checkColor: agendaCard.color
-                            checkMarkColorDisabled: agendaCard.color
-                            checkedColor: agendaLayer.taskBoxColor
-                            checked: !!taskEntry.done
-                            disabledCheckedColor: agendaLayer.taskBoxColor
-                            disabledUncheckedColor: agendaLayer.taskBoxColor
-                            enabled: hasSourceTag
-                            font.family: "Pretendard"
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
+                            Layout.fillWidth: true
                             spacing: agendaLayer.taskSpacing
-                            text: taskEntry.text !== undefined ? String(taskEntry.text) : ""
-                            uncheckedColor: agendaLayer.taskBoxColor
 
-                            onToggled: {
-                                if (!hasSourceTag)
-                                    return;
-                                if (agendaLayer.taskToggleHandler !== undefined
-                                        && agendaLayer.taskToggleHandler !== null) {
-                                    agendaLayer.taskToggleHandler(
-                                                Number(taskEntry.openTagStart) || 0,
-                                                Number(taskEntry.openTagEnd) || 0,
-                                                checked);
+                            LV.CheckBox {
+                                id: taskToggle
+
+                                Layout.alignment: Qt.AlignTop
+                                boxSize: agendaLayer.taskBoxSize
+                                boxRadius: agendaLayer.taskBoxRadius
+                                boxBorderColorCheckedEnabled: agendaLayer.taskBoxColor
+                                boxBorderColorCheckedDisabled: agendaLayer.taskBoxColor
+                                boxBorderColorUncheckedEnabled: agendaLayer.taskBoxColor
+                                boxBorderColorUncheckedDisabled: agendaLayer.taskBoxColor
+                                boxBorderWidthCheckedEnabled: 0.5
+                                boxBorderWidthCheckedDisabled: 0.5
+                                checkColor: agendaCard.color
+                                checkMarkColorDisabled: agendaCard.color
+                                checkedColor: agendaLayer.taskBoxColor
+                                checked: !!taskEntry.done
+                                disabledCheckedColor: agendaLayer.taskBoxColor
+                                disabledUncheckedColor: agendaLayer.taskBoxColor
+                                enabled: agendaLayer.enableTaskToggle
+                                         && agendaLayer.showTaskCheckbox
+                                         && hasSourceTag
+                                opacity: agendaLayer.showTaskCheckbox ? 1 : 0
+                                text: ""
+                                uncheckedColor: agendaLayer.taskBoxColor
+
+                                onToggled: {
+                                    if (!hasSourceTag)
+                                        return;
+                                    if (agendaLayer.taskToggleHandler !== undefined
+                                            && agendaLayer.taskToggleHandler !== null) {
+                                        agendaLayer.taskToggleHandler(
+                                                    Number(taskEntry.openTagStart) || 0,
+                                                    Number(taskEntry.openTagEnd) || 0,
+                                                    checked);
+                                    }
                                 }
+                            }
+
+                            LV.Label {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignTop
+                                color: "#FFFFFF"
+                                font.family: "Pretendard"
+                                font.pixelSize: 12
+                                font.weight: Font.Medium
+                                opacity: agendaLayer.showTaskText ? 1 : 0
+                                style: body
+                                text: taskEntry.text !== undefined ? String(taskEntry.text) : ""
+                                textFormat: Text.PlainText
+                                wrapMode: Text.Wrap
                             }
                         }
                     }
@@ -179,7 +207,8 @@ Item {
                 acceptedButtons: Qt.LeftButton
 
                 onTapped: {
-                    if (agendaLayer.blockFocusHandler !== undefined
+                    if (agendaLayer.enableCardFocus
+                            && agendaLayer.blockFocusHandler !== undefined
                             && agendaLayer.blockFocusHandler !== null) {
                         agendaLayer.blockFocusHandler(agendaCard.focusSourceOffset);
                     }

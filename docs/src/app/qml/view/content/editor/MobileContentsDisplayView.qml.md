@@ -66,10 +66,12 @@ suppression local to this file.
 - `MobileHierarchyPage.qml` reaches this file through `ContentViewLayout.qml`.
 - The editor session, typing controller, selection controller, renderer, and resource-viewer collaborators stay aligned
   with the desktop implementation.
-- `ContentsAgendaLayer.qml` is also shared with desktop for agenda/task card rendering in every editor view mode,
-  including `Plain`.
-- `ContentsCalloutLayer.qml` is also shared with desktop for callout-row rendering in every editor view mode,
-  including `Plain`.
+- `ContentsAgendaLayer.qml` is also shared with desktop, and mobile now mirrors the same split structured-block
+  composition:
+  - one agenda background/header frame pass below the live editor text
+  - one checkbox-only interaction pass above the live editor text
+- `ContentsCalloutLayer.qml` is also shared with desktop, and mobile now uses it as full-width background/divider
+  chrome below renderer-owned callout text.
 - `ContentsStructuredBlockRenderer` is also shared with desktop and owns agenda/callout render-model generation for
   the mobile overlay layers.
 - `ContentsStructuredTagValidator` is also shared with desktop and owns direct file correction when the renderer emits
@@ -78,6 +80,8 @@ suppression local to this file.
   placed at authored source-tag locations in note flow.
 - That resolver now returns editor-content-relative document Y only, so mobile agenda/callout cards no longer
   double-count outer top/paper offsets.
+- The live mobile editor wrapper now also uses a transparent internal background fill, so structured block chrome below
+  the editor surface stays visible as part of the document instead of being covered by the editor shell.
 - `ContentsAgendaBackend` is shared with desktop for task-toggle rewrite and agenda shortcut mutation payloads.
 - `ContentsCalloutBackend` is shared with desktop for callout insertion payload generation.
 - `ContentsMinimapSnapshotSupport.js` is shared with desktop so the minimap diff/range-splice policy stays identical
@@ -202,6 +206,8 @@ suppression local to this file.
     `ContentsPagePrintLayoutRenderer`; local duplicate page-math state must not be reintroduced.
   - In every editor view mode, including `Plain`, agenda/task source blocks must render through `ContentsAgendaLayer`
     with checkbox rows, and checkbox toggles must persist canonical `done=true|false`.
+  - Typing immediately after inserting an empty agenda/callout must land inside the renderer-reserved task/callout
+    text slot instead of leaking into surrounding paragraph flow.
   - Even an empty `<agenda>` block with one empty task body anchor must still render one visible agenda card.
   - In every editor view mode, including `Plain`, callout source blocks must render through `ContentsCalloutLayer` as
     Figma-aligned callout rows, and `Cmd+Opt+C` must insert canonical `<callout>...</callout>` wrappers at current

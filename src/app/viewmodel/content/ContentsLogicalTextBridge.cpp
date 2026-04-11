@@ -64,6 +64,22 @@ namespace
         return tagToken.mid(nameStart, cursor - nameStart).toString().trimmed().toCaseFolded();
     }
 
+    bool isClosingHtmlTagToken(const QStringView tagToken)
+    {
+        if (tagToken.size() < 3 || tagToken.front() != QLatin1Char('<'))
+        {
+            return false;
+        }
+
+        int cursor = 1;
+        while (cursor < tagToken.size() && tagToken.at(cursor).isSpace())
+        {
+            ++cursor;
+        }
+
+        return cursor < tagToken.size() && tagToken.at(cursor) == QLatin1Char('/');
+    }
+
     bool htmlTagProducesLogicalBreak(const QStringView tagToken)
     {
         const QString normalizedTagName = normalizedHtmlTagName(tagToken);
@@ -331,6 +347,8 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
     offsets.reserve(safeLogicalTextLength + 1);
     offsets.push_back(0);
 
+    bool insideAgenda = false;
+    int agendaTaskCount = 0;
     int logicalOffset = 0;
     int sourceOffset = 0;
     while (sourceOffset < text.size() && logicalOffset < safeLogicalTextLength)
@@ -342,6 +360,35 @@ QVector<int> ContentsLogicalTextBridge::buildLogicalToSourceOffsets(const QStrin
             if (tagEnd > sourceOffset)
             {
                 const QStringView tagToken(text.constData() + sourceOffset, tagEnd - sourceOffset + 1);
+                const QString normalizedTagName = normalizedHtmlTagName(tagToken);
+                const bool closingTag = isClosingHtmlTagToken(tagToken);
+
+                if (normalizedTagName == QStringLiteral("agenda"))
+                {
+                    insideAgenda = !closingTag;
+                    if (!insideAgenda)
+                    {
+                        agendaTaskCount = 0;
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
+                if (insideAgenda && normalizedTagName == QStringLiteral("task"))
+                {
+                    if (!closingTag)
+                    {
+                        if (agendaTaskCount > 0 && logicalOffset < safeLogicalTextLength)
+                        {
+                            ++logicalOffset;
+                            offsets.push_back(tagEnd + 1);
+                        }
+                        ++agendaTaskCount;
+                    }
+                    sourceOffset = tagEnd + 1;
+                    continue;
+                }
+
                 if (htmlTagProducesLogicalBreak(tagToken))
                 {
                     ++logicalOffset;

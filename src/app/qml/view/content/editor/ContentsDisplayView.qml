@@ -1749,15 +1749,98 @@ Item {
                             }
                         }
                     }
+                    ContentsAgendaLayer {
+                        id: agendaBackgroundLayer
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
+                                            : contentsView.editorHorizontalInset
+                        anchors.rightMargin: contentsView.showPrintEditorLayout
+                                             ? Math.max(
+                                                   0,
+                                                   (parent ? Number(parent.width) || 0 : 0)
+                                                   - ((Number(printPaperColumn.x) || 0)
+                                                      + contentsView.printGuideHorizontalInset
+                                                      + contentsView.printPaperTextWidth))
+                                             : contentsView.editorHorizontalInset
+                        anchors.topMargin: (contentsView.showPrintEditorLayout
+                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
+                                           : contentsView.editorDocumentStartY)
+                        enableCardFocus: false
+                        enableTaskToggle: false
+                        renderedAgendas: structuredBlockRenderer.renderedAgendas
+                        showTaskCheckbox: false
+                        showTaskText: false
+                        blockFocusHandler: function (sourceOffset) {
+                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
+                        }
+                        sourceOffsetYResolver: function (sourceOffset) {
+                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
+                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
+                            return documentY;
+                        }
+                        taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
+                            contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
+                        }
+                        visible: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && agendaBackgroundLayer.agendaCount > 0
+                        enabled: visible
+                        z: 0
+                    }
+                    ContentsCalloutLayer {
+                        id: calloutBackgroundLayer
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.leftMargin: contentsView.showPrintEditorLayout
+                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
+                                            : contentsView.editorHorizontalInset
+                        anchors.rightMargin: contentsView.showPrintEditorLayout
+                                             ? Math.max(
+                                                   0,
+                                                   (parent ? Number(parent.width) || 0 : 0)
+                                                   - ((Number(printPaperColumn.x) || 0)
+                                                      + contentsView.printGuideHorizontalInset
+                                                      + contentsView.printPaperTextWidth))
+                                             : contentsView.editorHorizontalInset
+                        anchors.topMargin: contentsView.showPrintEditorLayout
+                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
+                                           : contentsView.editorDocumentStartY
+                        enableCardFocus: false
+                        renderedCallouts: structuredBlockRenderer.renderedCallouts
+                        showText: false
+                        blockFocusHandler: function (sourceOffset) {
+                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
+                        }
+                        sourceOffsetYResolver: function (sourceOffset) {
+                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
+                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
+                            return documentY;
+                        }
+                        visible: contentsView.hasSelectedNote
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
+                                 && calloutBackgroundLayer.calloutCount > 0
+                        enabled: visible
+                        z: 0
+                    }
                     ContentsInlineFormatEditor {
                         id: contentEditor
 
                         autoFocusOnPress: true
-                        backgroundColor: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
-                        backgroundColorDisabled: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
-                        backgroundColorFocused: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
-                        backgroundColorHover: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
-                        backgroundColorPressed: contentsView.showPrintEditorLayout ? "transparent" : contentsView.displayColor
+                        backgroundColor: "transparent"
+                        backgroundColorDisabled: "transparent"
+                        backgroundColorFocused: "transparent"
+                        backgroundColorHover: "transparent"
+                        backgroundColorPressed: "transparent"
                         centeredTextHeight: contentsView.editorTextLineBoxHeight
                         cornerRadius: 0
                         editorHeight: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : contentsView.editorSurfaceHeight
@@ -1790,7 +1873,7 @@ Item {
                         y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
                         width: contentsView.showPrintEditorLayout ? contentsView.printPaperTextWidth : (parent ? parent.width : 0)
                         height: contentsView.showPrintEditorLayout ? contentsView.printDocumentPageCount * contentsView.printPaperTextHeight : (parent ? Math.max(0, parent.height - contentsView.editorDocumentStartY) : 0)
-                        z: contentsView.showPrintEditorLayout ? 1 : 0
+                        z: contentsView.showPrintEditorLayout ? 2 : 1
                         parent: contentsView.showPrintEditorLayout ? printDocumentSurface : editorViewport
 
                         onFocusedChanged: {
@@ -1826,7 +1909,11 @@ Item {
                         anchors.topMargin: (contentsView.showPrintEditorLayout
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY)
+                        enableCardFocus: false
                         renderedAgendas: structuredBlockRenderer.renderedAgendas
+                        showFrame: false
+                        showHeader: false
+                        showTaskText: false
                         blockFocusHandler: function (sourceOffset) {
                             contentsView.focusStructuredBlockSourceOffset(sourceOffset);
                         }
@@ -1844,44 +1931,7 @@ Item {
                                  && !contentsView.showFormattedTextRenderer
                                  && agendaRenderLayer.agendaCount > 0
                         enabled: visible
-                        z: 2
-                    }
-                    ContentsCalloutLayer {
-                        id: calloutRenderLayer
-
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.leftMargin: contentsView.showPrintEditorLayout
-                                            ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset
-                                            : contentsView.editorHorizontalInset
-                        anchors.rightMargin: contentsView.showPrintEditorLayout
-                                             ? Math.max(
-                                                   0,
-                                                   (parent ? Number(parent.width) || 0 : 0)
-                                                   - ((Number(printPaperColumn.x) || 0)
-                                                      + contentsView.printGuideHorizontalInset
-                                                      + contentsView.printPaperTextWidth))
-                                             : contentsView.editorHorizontalInset
-                        anchors.topMargin: contentsView.showPrintEditorLayout
-                                           ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
-                                           : contentsView.editorDocumentStartY
-                        renderedCallouts: structuredBlockRenderer.renderedCallouts
-                        blockFocusHandler: function (sourceOffset) {
-                            contentsView.focusStructuredBlockSourceOffset(sourceOffset);
-                        }
-                        sourceOffsetYResolver: function (sourceOffset) {
-                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
-                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
-                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
-                            return documentY;
-                        }
-                        visible: contentsView.hasSelectedNote
-                                 && !contentsView.showDedicatedResourceViewer
-                                 && !contentsView.showFormattedTextRenderer
-                                 && calloutRenderLayer.calloutCount > 0
-                        enabled: visible
-                        z: 2
+                        z: 3
                     }
                     Flickable {
                         id: formattedPreviewViewport

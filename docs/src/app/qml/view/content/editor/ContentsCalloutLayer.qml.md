@@ -9,6 +9,10 @@ The layer is renderer-fed:
 - output: LVRS callout rows (`background + 1px divider + text`)
 - focus hook: `blockFocusHandler(focusSourceOffset)`
 - placement hook: `sourceOffsetYResolver(sourceStart)` (host-provided source-offset -> viewport-y resolver)
+- host mode flags:
+  - `showFrame`
+  - `showText`
+  - `enableCardFocus`
 
 ## Rendering Contract
 
@@ -16,12 +20,12 @@ The layer is renderer-fed:
   - background `#262728`
   - row padding `4`
   - inner spacing `12`
-  - width hugs content instead of stretching to the full editor column
+  - width now stretches across the full resolved editor text column
 - Root layer and each callout frame now bind `height: implicitHeight`, so visible callout rows reserve real background
   height instead of collapsing to zero while still carrying child text/divider nodes.
 - Left divider:
   - width `1`
-  - height `max(14, text height)`
+  - height spans from top padding to bottom padding, so multi-line callouts keep one continuous bar
   - color `#D9D9D9`
 - Body text:
   - color `#FFFFFF`
@@ -42,6 +46,8 @@ The layer is renderer-fed:
   with the live editor content coordinate space.
 - The layer normalizes `QVariantList`-like values into JS arrays so C++ renderer properties still produce visible
   callout rows in QML.
+- The host can now reuse this layer as background-only chrome (`showText=false`) underneath renderer-owned live editor
+  text while preserving the same measured multi-line height.
 
 ## Regression Checks
 
@@ -55,3 +61,5 @@ The layer is renderer-fed:
   reflected on editor surface.
 - Tapping a callout row must route focus back to callout-body start in RAW source.
 - Empty or multi-line callouts must still reserve a visible background frame with non-zero height.
+- A fill-width host mount must stretch the background and divider across the editor text column instead of collapsing
+  to content-hug width.

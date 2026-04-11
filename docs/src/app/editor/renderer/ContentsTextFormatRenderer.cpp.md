@@ -39,10 +39,17 @@ Implements inline-format rendering from note-editor text to RichText HTML.
 - Converts the canonical single divider tag `</break>` (and legacy `<hr ...>` aliases) into rendered divider HTML
   (`<hr/>`) on both the live editor surface and preview HTML.
 - Drops `<resource ...>` tags from text rendering so resource metadata is handled by dedicated resource renderers.
-- Drops proprietary `<agenda ...>` / `<task ...>` wrapper tags from inline text rendering so agenda/task UI can be
-  rendered by dedicated view layers without leaking raw wrapper markup.
-- Drops proprietary `<callout ...>` wrapper tags from inline text rendering so callout UI can be rendered by dedicated
-  view layers without leaking raw wrapper markup.
+- The live editor surface now also projects proprietary structured blocks into editor-owned RichText flow instead of
+  treating them as zero-height skipped markup:
+  - `<agenda ...><task ...>...</task>...</agenda>` emits one padded editor block that contains only task body text,
+    joined with synthetic `<br/>` separators between tasks
+  - `<callout>...</callout>` emits one padded editor block that contains the authored callout body text
+  - those blocks intentionally do not emit editable header/date/checkbox glyphs; the host QML card chrome remains
+    responsible for non-source visuals, while the renderer owns the text-flow slot that the cursor and typing system
+    use
+  - empty task/callout anchors are preserved as `&nbsp;`-backed editable placeholders so blank cards stay cursor-
+    reachable immediately after insertion
+- Proprietary `<task ...>` wrapper tags still stay out of the editor text flow as raw literal markup.
 - Escapes unsupported tags as literal text instead of executing arbitrary markup.
 - Recognizes supported `<span style=...>` runs and folds them back into the same canonical style stack, so stored
   `.wsnbody` aliases and editor-generated HTML spans render through one path.
@@ -131,6 +138,8 @@ Implements inline-format rendering from note-editor text to RichText HTML.
   already-applied shortcut format.
 - A stored `</break>` token must render as a visible divider line (not literal text) and still consume one logical
   break slot in inline-style selection coverage rebuild.
-- A stored `<agenda>/<task>` block must not render raw wrapper tags as literal text on the live editor surface.
-- A stored `<callout>...</callout>` block must not render raw wrapper tags as literal text on the live editor surface.
+- A stored `<agenda>/<task>` block must reserve real editor text-flow height at the authored location, and task body
+  text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
+- A stored `<callout>...</callout>` block must reserve real editor text-flow height at the authored location, and the
+  callout body text must render inside that reserved slot instead of continuing in the surrounding paragraph stream.
 - When preview is disabled, mutating `sourceText` must not recompute markdown-aware preview HTML.

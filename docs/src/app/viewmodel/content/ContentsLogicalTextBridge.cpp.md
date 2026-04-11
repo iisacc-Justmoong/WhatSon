@@ -28,6 +28,8 @@
 - The implementation now also builds a logical-text-to-source offset table:
   - inline tags are treated as zero-width source tokens
   - `<br>`, canonical `</break>`, and legacy `<hr>` each count as one logical line-break character
+  - inside `<agenda>`, each later `<task>` start now also emits one synthetic logical line-break step before that
+    task body, matching the plain-text projection produced by `NoteBodyPersistence`
   - common HTML entities (`&lt;`, `&amp;`, `&#39;`, etc.) collapse to one logical character
 - That entity-collapse rule now intentionally matches the editor RichText surface, which renders RAW-safe entity tokens
   as their real glyphs instead of exposing the literal escape strings.
@@ -68,6 +70,9 @@
   `qsizetype` on Apple toolchains.
 - When source contains canonical `</break>` divider tags, `logicalToSourceOffsets()` must still expose one logical
   character step per divider so selection-to-source splices stay aligned.
+- When source contains multiple `<task>` children inside one `<agenda>`, `logicalToSourceOffsets()` must expose one
+  logical line-break step between adjacent task bodies so cursor restoration and source splices can land inside the
+  intended task instead of drifting to surrounding text.
 
 ## Extracted Symbols
 - Declared namespaces present: no
