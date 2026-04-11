@@ -585,16 +585,18 @@ QtObject {
         const listShortcutPressed = !!((modifiers & Qt.MetaModifier) || (modifiers & Qt.AltModifier)) && !(modifiers & Qt.ControlModifier);
         const metaAltChord = metaPressed && altPressed && !shiftPressed;
         const controlAltFallbackChord = !metaPressed && controlPressed && altPressed && !shiftPressed;
+        const metaShiftChord = metaPressed && shiftPressed && !altPressed;
+        const controlShiftFallbackChord = !metaPressed && controlPressed && shiftPressed && !altPressed;
         const agendaShortcutPressed = metaAltChord || controlAltFallbackChord;
         const calloutShortcutPressed = metaAltChord || controlAltFallbackChord;
-        const breakShortcutPressed = metaAltChord || controlAltFallbackChord;
+        const breakShortcutPressed = metaShiftChord || controlShiftFallbackChord;
         const agendaShortcutKeyMatched = metaAltChord
                 ? (event.key === Qt.Key_T || normalizedShortcutText === "T")
                 : normalizedShortcutText === "T";
         const calloutShortcutKeyMatched = metaAltChord
                 ? (event.key === Qt.Key_C || normalizedShortcutText === "C")
                 : normalizedShortcutText === "C";
-        const breakShortcutKeyMatched = metaAltChord
+        const breakShortcutKeyMatched = metaShiftChord
                 ? (event.key === Qt.Key_H || normalizedShortcutText === "H")
                 : normalizedShortcutText === "H";
         const autoRepeat = event.isAutoRepeat !== undefined && !!event.isAutoRepeat;

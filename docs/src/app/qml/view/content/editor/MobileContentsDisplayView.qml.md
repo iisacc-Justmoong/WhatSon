@@ -35,6 +35,10 @@ suppression local to this file.
     line-rectangle caches
   - the geometry refresh path stays active even while the parent route hides the minimap, so hiding the minimap does
     not push line-Y math back onto full-document sampling
+- Each shared gutter-refresh pass now also rebuilds the live logical line-count/start-offset snapshot from the active
+  editor plain text before recomputing geometry helpers.
+  Deferred `ContentsLogicalTextBridge` commits therefore cannot leave mobile line metrics one refresh behind after
+  batched newline mutations.
 - Mobile now also depends on the shared editor wrapper's `Qt.inputMethod.update(...)` path so iOS can re-query current
   selection/cursor geometry while keyboard trackpad gestures are active.
 - Mobile also depends on the shared wrapper/controller preserving the active selection edge with
@@ -62,8 +66,10 @@ suppression local to this file.
 - `MobileHierarchyPage.qml` reaches this file through `ContentViewLayout.qml`.
 - The editor session, typing controller, selection controller, renderer, and resource-viewer collaborators stay aligned
   with the desktop implementation.
-- `ContentsAgendaLayer.qml` is also shared with desktop for non-Plain agenda/task card rendering.
-- `ContentsCalloutLayer.qml` is also shared with desktop for non-Plain callout-row rendering.
+- `ContentsAgendaLayer.qml` is also shared with desktop for agenda/task card rendering in every editor view mode,
+  including `Plain`.
+- `ContentsCalloutLayer.qml` is also shared with desktop for callout-row rendering in every editor view mode,
+  including `Plain`.
 - `ContentsStructuredBlockRenderer` is also shared with desktop and owns agenda/callout render-model generation for
   the mobile overlay layers.
 - `ContentsStructuredTagValidator` is also shared with desktop and owns direct file correction when the renderer emits
@@ -97,9 +103,9 @@ suppression local to this file.
   `ContentsCalloutBackend.buildCalloutInsertionPayload(...)`.
   - compatibility fallback `Ctrl+Alt+C` is also registered for environments where Command is surfaced as
     `ControlModifier`.
-- Mobile hardware-keyboard path now also supports `Cmd+Opt+H` (`Meta+Alt+H`) for divider insertion, sharing the same
+- Mobile hardware-keyboard path now also supports `Cmd+Shift+H` (`Meta+Shift+H`) for divider insertion, sharing the same
   typing-controller source mutation path as desktop.
-  - compatibility fallback `Ctrl+Alt+H` is also registered for environments where Command is surfaced as
+  - compatibility fallback `Ctrl+Shift+H` is also registered for environments where Command is surfaced as
     `ControlModifier`.
 - Mobile now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so hardware-keyboard shortcuts stay active while the nested
@@ -185,6 +191,8 @@ suppression local to this file.
   active input session.
 - Mobile gutter/minimap line count must shrink immediately after newline removal or line-wrap collapse; deleting a
   wrapped line break must not leave stale extra line indices.
+- Shared line-metric refresh must also derive line count from the current editor text after batched multi-newline
+  edits so mobile geometry helpers do not lag one line behind deferred bridge updates.
   - Mobile cursor restoration after note focus or inline resource insertion must use one wrapper-level cursor path
     rather than rewriting the same cursor offset into multiple nested editor objects.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs on mobile while the
@@ -192,18 +200,19 @@ suppression local to this file.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.
   - Mobile Page/Print viewport and page-count calculations must stay bound to backend
     `ContentsPagePrintLayoutRenderer`; local duplicate page-math state must not be reintroduced.
-  - In non-Plain modes, agenda/task source blocks must render through `ContentsAgendaLayer` with checkbox rows, and
-    checkbox toggles must persist canonical `done=true|false`.
+  - In every editor view mode, including `Plain`, agenda/task source blocks must render through `ContentsAgendaLayer`
+    with checkbox rows, and checkbox toggles must persist canonical `done=true|false`.
   - Even an empty `<agenda>` block with one empty task body anchor must still render one visible agenda card.
-  - In non-Plain modes, callout source blocks must render through `ContentsCalloutLayer` as Figma-aligned callout rows, and `Cmd+Opt+C` must insert
-    canonical `<callout>...</callout>` wrappers at current cursor in RAW source.
+  - In every editor view mode, including `Plain`, callout source blocks must render through `ContentsCalloutLayer` as
+    Figma-aligned callout rows, and `Cmd+Opt+C` must insert canonical `<callout>...</callout>` wrappers at current
+    cursor in RAW source.
   - Even an empty `<callout></callout>` block must still render one visible callout row.
   - When the renderer emits a structured correction suggestion, mobile must rewrite the note file through
     `ContentsStructuredTagValidator` and replace the live editor RAW buffer with the corrected canonical source.
   - Tapping an agenda/callout card must move mobile editor focus back into the corresponding RAW source body.
-  - `Cmd+Opt+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
-  - `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Alt+H` fallback chords must trigger the same agenda/callout/divider
-    insertions as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Opt+H` when the runtime maps Command to `ControlModifier`.
+  - `Cmd+Shift+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
+  - `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Shift+H` fallback chords must trigger the same agenda/callout/divider
+    insertions as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Shift+H` when the runtime maps Command to `ControlModifier`.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
   - Any pointer-driven right-click formatting flow must preserve a multi-paragraph or mixed-inline dragged selection

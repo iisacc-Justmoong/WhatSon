@@ -146,8 +146,8 @@ longer part of the normal typing path.
   - pressing `Enter` twice at the end of a callout exits the wrapper on the second `Enter`
   - canonical insertion/exit payload generation is centralized in `src/app/callout/ContentsCalloutBackend.cpp`
 - Divider insertion is another source-side shortcut exception:
-  - `Cmd+Opt+H` inserts canonical `</break>` source tags at the current cursor
-  - `Ctrl+Alt+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
+  - `Cmd+Shift+H` inserts canonical `</break>` source tags at the current cursor
+  - `Ctrl+Shift+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
 
 ## Regression Checks
 
@@ -201,8 +201,8 @@ longer part of the normal typing path.
   empty callout bodies must still remain cursor-reachable via an internal one-space anchor.
 - `Ctrl+Alt+C` fallback must trigger the same callout insertion behavior when runtime Command mapping resolves as
   `ControlModifier`.
-- `Cmd+Opt+H` must insert one canonical `</break>` token at the current cursor into RAW source.
-- `Ctrl+Alt+H` fallback must trigger the same divider insertion behavior when runtime Command mapping resolves as
+- `Cmd+Shift+H` must insert one canonical `</break>` token at the current cursor into RAW source.
+- `Ctrl+Shift+H` fallback must trigger the same divider insertion behavior when runtime Command mapping resolves as
   `ControlModifier`.
 - Triggering a new agenda/callout shortcut while the cursor already sits inside an existing agenda/callout must place
   the new block after the enclosing closing tag, not inside the existing block body.

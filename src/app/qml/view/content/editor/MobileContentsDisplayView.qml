@@ -23,7 +23,7 @@ Item {
     property var contentViewModel: null
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
-    readonly property int currentCursorLineNumber: textMetricsBridge.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
+    readonly property int currentCursorLineNumber: contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: LV.Theme.warning
     readonly property int desktopEditorFontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     property color displayColor: "transparent"
@@ -120,11 +120,18 @@ Item {
     property int lineNumberColumnTextWidthOverride: -1
     readonly property int lineNumberColumnWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(26)))
     readonly property int lineNumberRightInset: contentsView.editorHorizontalInset
-    readonly property int logicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
+    property int liveLogicalLineCount: Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1)
+    readonly property int logicalLineCount: Math.max(1, Number(contentsView.liveLogicalLineCount) || 1)
     property var logicalLineDocumentYCache: []
     property int logicalLineDocumentYCacheLineCount: 0
     property int logicalLineDocumentYCacheRevision: -1
-    readonly property var logicalLineStartOffsets: textMetricsBridge.logicalLineStartOffsets
+    property var liveLogicalLineStartOffsets: Array.isArray(textMetricsBridge.logicalLineStartOffsets) && textMetricsBridge.logicalLineStartOffsets.length > 0
+                                           ? textMetricsBridge.logicalLineStartOffsets
+                                           : [0]
+    readonly property var logicalLineStartOffsets: contentsView.liveLogicalLineStartOffsets
+    property int liveLogicalTextLength: textMetricsBridge.logicalText !== undefined && textMetricsBridge.logicalText !== null
+                                      ? String(textMetricsBridge.logicalText).length
+                                      : 0
     readonly property bool lineGeometryRefreshEnabled: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
@@ -259,6 +266,16 @@ Item {
     function applyEditorRichTextSurface() {
         editorSelectionController.applyEditorRichTextSurface();
     }
+    function activeLogicalTextSnapshot() {
+        if (editorTypingController && editorTypingController.currentEditorPlainText !== undefined) {
+            const livePlainText = editorTypingController.currentEditorPlainText();
+            if (livePlainText !== undefined && livePlainText !== null)
+                return String(livePlainText);
+        }
+        if (textMetricsBridge && textMetricsBridge.logicalText !== undefined && textMetricsBridge.logicalText !== null)
+            return String(textMetricsBridge.logicalText);
+        return "";
+    }
     function buildFallbackMinimapLineGroupsForRange(startLineNumber, endLineNumber) {
         const groups = [];
         const safeStartLine = Math.max(1, Math.min(contentsView.logicalLineCount, Number(startLineNumber) || 1));
@@ -267,7 +284,7 @@ Item {
         for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
             const contentHeight = Math.max(1, contentsView.lineVisualHeight(lineNumber, 1));
             groups.push({
-                "charCount": Math.max(0, Number(textMetricsBridge.logicalLineCharacterCountAt(lineNumber - 1)) || 0),
+                "charCount": contentsView.logicalLineCharacterCountAt(lineNumber - 1),
                 "contentHeight": contentHeight,
                 "contentY": textStartY + contentsView.lineDocumentY(lineNumber),
                 "lineNumber": lineNumber,
@@ -301,13 +318,13 @@ Item {
         const groups = [];
         const textStartY = contentsView.editorDocumentStartY;
         const logicalLength = contentsView.logicalTextLength();
-        let currentStartOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(safeStartLine - 1)) || 0);
+        let currentStartOffset = contentsView.logicalLineStartOffsetAt(safeStartLine - 1);
         let currentRect = editorItem.positionToRectangle(currentStartOffset);
         for (let lineNumber = safeStartLine; lineNumber <= safeEndLine; ++lineNumber) {
             const safeCurrentRectY = Number(currentRect.y);
             const currentRectY = isFinite(safeCurrentRectY) ? safeCurrentRectY : Math.max(0, contentsView.lineDocumentY(lineNumber));
             const nextStartOffset = lineNumber < contentsView.logicalLineCount
-                    ? Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lineNumber)) || 0)
+                    ? contentsView.logicalLineStartOffsetAt(lineNumber)
                     : Math.max(0, logicalLength);
             const nextRect = editorItem.positionToRectangle(nextStartOffset);
             const safeNextRectY = Number(nextRect.y);
@@ -323,7 +340,7 @@ Item {
             }
 
             groups.push({
-                "charCount": Math.max(0, Number(textMetricsBridge.logicalLineCharacterCountAt(lineNumber - 1)) || 0),
+                "charCount": contentsView.logicalLineCharacterCountAt(lineNumber - 1),
                 "contentHeight": contentHeight,
                 "contentY": textStartY + currentRectY,
                 "lineNumber": lineNumber,
@@ -398,6 +415,7 @@ Item {
         return Math.max(0, Math.min(1, Number(value) || 0));
     }
     function commitGutterRefresh() {
+        contentsView.refreshLiveLogicalLineMetrics();
         contentsView.gutterRefreshRevision += 1;
         contentsView.refreshMinimapSnapshot();
         contentsView.visibleGutterLineEntries = contentsView.buildVisibleGutterLineEntries();
@@ -457,7 +475,7 @@ Item {
         const refreshRevision = contentsView.gutterRefreshRevision;
         const safeOffset = Math.max(0, Number(offset) || 0);
         if (!contentEditor.editorItem || contentEditor.editorItem.positionToRectangle === undefined) {
-            const fallbackLineNumber = textMetricsBridge.logicalLineNumberForOffset(safeOffset);
+            const fallbackLineNumber = contentsView.logicalLineNumberForOffset(safeOffset);
             return (fallbackLineNumber - 1) * contentsView.editorLineHeight;
         }
         const rect = contentEditor.editorItem.positionToRectangle(safeOffset);
@@ -490,7 +508,7 @@ Item {
         const cachedYValues = [];
         let previousDocumentY = 0;
         for (let lineIndex = 0; lineIndex < lineCount; ++lineIndex) {
-            const startOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lineIndex)) || 0);
+            const startOffset = contentsView.logicalLineStartOffsetAt(lineIndex);
             const rawDocumentY = Math.max(0, Number(contentsView.documentYForOffset(startOffset)) || 0);
             const minimumDocumentY = lineIndex === 0 ? 0 : previousDocumentY + Math.max(1, contentsView.editorLineHeight);
             const resolvedDocumentY = lineIndex === 0 ? rawDocumentY : Math.max(rawDocumentY, minimumDocumentY);
@@ -728,12 +746,40 @@ Item {
         }
         return best + 1;
     }
+    function logicalLineCharacterCountAt(lineIndex) {
+        const safeIndex = Math.max(0, Math.min(contentsView.logicalLineCount - 1, Number(lineIndex) || 0));
+        const startOffset = contentsView.logicalLineStartOffsetAt(safeIndex);
+        const hasNextLine = safeIndex + 1 < contentsView.logicalLineCount;
+        const nextOffset = hasNextLine ? contentsView.logicalLineStartOffsetAt(safeIndex + 1) : contentsView.logicalTextLength();
+        return Math.max(0, nextOffset - startOffset - (hasNextLine ? 1 : 0));
+    }
+    function logicalLineNumberForOffset(offset) {
+        if (contentsView.logicalLineCount <= 0)
+            return 1;
+        const safeOffset = Math.max(0, Math.min(contentsView.logicalTextLength(), Number(offset) || 0));
+        let low = 0;
+        let high = contentsView.logicalLineCount - 1;
+        let best = 0;
+        while (low <= high) {
+            const middle = Math.floor((low + high) / 2);
+            const middleOffset = contentsView.logicalLineStartOffsetAt(middle);
+            if (middleOffset <= safeOffset) {
+                best = middle;
+                low = middle + 1;
+            } else {
+                high = middle - 1;
+            }
+        }
+        return best + 1;
+    }
+    function logicalLineStartOffsetAt(lineIndex) {
+        const safeIndex = Math.max(0, Math.min(contentsView.logicalLineCount - 1, Number(lineIndex) || 0));
+        if (Array.isArray(contentsView.logicalLineStartOffsets) && safeIndex < contentsView.logicalLineStartOffsets.length)
+            return Math.max(0, Number(contentsView.logicalLineStartOffsets[safeIndex]) || 0);
+        return 0;
+    }
     function logicalTextLength() {
-        const safeLineCount = Math.max(1, Number(textMetricsBridge.logicalLineCount) || 1);
-        const lastLineIndex = safeLineCount - 1;
-        const lastStartOffset = Math.max(0, Number(textMetricsBridge.logicalLineStartOffsetAt(lastLineIndex)) || 0);
-        const lastLineCharacterCount = Math.max(0, Number(textMetricsBridge.logicalLineCharacterCountAt(lastLineIndex)) || 0);
-        return lastStartOffset + lastLineCharacterCount;
+        return Math.max(0, Number(contentsView.liveLogicalTextLength) || 0);
     }
     function markerColorForType(markerType) {
         const normalizedType = markerType === undefined || markerType === null ? "" : String(markerType).toLowerCase();
@@ -1133,6 +1179,17 @@ Item {
         }
         contentsView.documentPresentationRefreshPendingWhileFocused = true;
         contentsView.scheduleDeferredDocumentPresentationRefresh();
+    }
+    function refreshLiveLogicalLineMetrics() {
+        const normalizedLogicalText = contentsView.activeLogicalTextSnapshot().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        const nextLineStartOffsets = [0];
+        for (let characterIndex = 0; characterIndex < normalizedLogicalText.length; ++characterIndex) {
+            if (normalizedLogicalText.charAt(characterIndex) === "\n")
+                nextLineStartOffsets.push(characterIndex + 1);
+        }
+        contentsView.liveLogicalTextLength = normalizedLogicalText.length;
+        contentsView.liveLogicalLineStartOffsets = nextLineStartOffsets;
+        contentsView.liveLogicalLineCount = Math.max(1, nextLineStartOffsets.length);
     }
     function scheduleGutterRefresh(passCount) {
         const requestedPassCount = Math.max(1, Number(passCount) || 1);
@@ -1786,7 +1843,6 @@ Item {
                         visible: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
                                  && agendaRenderLayer.agendaCount > 0
                         enabled: visible
                         z: 2
@@ -1824,7 +1880,6 @@ Item {
                         visible: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
-                                 && contentsView.activeEditorViewModeValue !== contentsView.plainEditorViewModeValue
                                  && calloutRenderLayer.calloutCount > 0
                         enabled: visible
                         z: 2
@@ -2075,7 +2130,7 @@ Item {
                         autoRepeat: false
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
-                        sequence: "Meta+Alt+H"
+                        sequence: "Meta+Shift+H"
 
                         onActivated: editorSelectionController.queueStructuredShortcutMutation("break")
                     }
@@ -2083,7 +2138,7 @@ Item {
                         autoRepeat: false
                         context: Qt.WindowShortcut
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
-                        sequence: "Ctrl+Alt+H"
+                        sequence: "Ctrl+Shift+H"
 
                         onActivated: editorSelectionController.queueStructuredShortcutMutation("break")
                     }

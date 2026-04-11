@@ -17,6 +17,8 @@ The layer is renderer-fed:
   - row padding `4`
   - inner spacing `12`
   - width hugs content instead of stretching to the full editor column
+- Root layer and each callout frame now bind `height: implicitHeight`, so visible callout rows reserve real background
+  height instead of collapsing to zero while still carrying child text/divider nodes.
 - Left divider:
   - width `1`
   - height `max(14, text height)`
@@ -52,3 +54,4 @@ The layer is renderer-fed:
 - Callout rows must be placed at resolved source locations (`sourceOffsetYResolver`) so authored tag position is
   reflected on editor surface.
 - Tapping a callout row must route focus back to callout-body start in RAW source.
+- Empty or multi-line callouts must still reserve a visible background frame with non-zero height.

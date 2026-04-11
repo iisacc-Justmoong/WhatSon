@@ -18,6 +18,7 @@ The layer is now a renderer-fed view:
   - stroke `#343536`
   - corner radius `12`
   - outer padding `8`
+  - card width hugs to Figma node `279:7854` width `307` instead of stretching across the whole editor column
 - Internal Figma spacing is preserved:
   - header -> task list gap `8`
   - task list horizontal inset `8`
@@ -57,6 +58,8 @@ The layer is now a renderer-fed view:
 - On card tap, the layer calls `blockFocusHandler(focusSourceOffset)` so empty agenda cards can immediately route the
   cursor back into RAW task scope.
 - The host view owns actual source rewrite/persistence; this layer does not mutate source directly.
+- Root layer and each agenda card now bind `height: implicitHeight`, so renderer-fed agenda entries no longer collapse
+  into zero-height rectangles when the overlay is mounted in the editor viewport.
 
 ## Regression Checks
 
@@ -69,3 +72,5 @@ The layer is now a renderer-fed view:
 - Agenda cards must be placed at the resolved source location (`sourceOffsetYResolver`) so cards appear where tags are
   authored in note flow.
 - Tapping an agenda card must route focus back to the first task body source offset.
+- Even when the editor overlay root has no explicit bottom anchor, agenda cards must still reserve real frame height
+  and remain visible.

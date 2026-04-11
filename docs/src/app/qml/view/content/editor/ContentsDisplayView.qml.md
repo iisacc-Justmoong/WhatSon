@@ -52,12 +52,12 @@ that sit directly inside the editor viewport.
   The editor no longer prettifies markdown markers into a second display-only grammar while the user is typing.
 - Resource cards rendered from `<resource ...>` tags still overlay the editor viewport when the selected note body
   references inline assets.
-- Agenda cards rendered from `<agenda>/<task>` source blocks now also overlay the editor viewport in non-Plain
-  view modes (Page/Print/Web/Presentation).
+- Agenda cards rendered from `<agenda>/<task>` source blocks now also overlay the editor viewport in every editor view
+  mode, including `Plain`.
   Each task row is rendered as `LV.CheckBox`, and toggle mutations rewrite the corresponding `<task done="...">`
   attribute in source through `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
-- Callout cards rendered from `<callout>...</callout>` source blocks now also overlay the editor viewport in
-  non-Plain view modes (Page/Print/Web/Presentation) through `ContentsCalloutLayer.qml`.
+- Callout cards rendered from `<callout>...</callout>` source blocks now also overlay the editor viewport in every
+  editor view mode, including `Plain`, through `ContentsCalloutLayer.qml`.
 - Structured tag detection for those agenda/callout overlays is now owned by
   `ContentsStructuredBlockRenderer`, matching the renderer-owned formatting pipeline instead of having QML call parse
   backends directly.
@@ -102,6 +102,10 @@ that sit directly inside the editor viewport.
   - `lineDocumentY(...)` and single-line `lineVisualHeight(...)` read from `minimapLineGroups` when that cache is hot
   - the editor keeps the line-geometry refresh path active even when the minimap is visually hidden, so hiding the
     minimap no longer forces gutter math back onto whole-document `positionToRectangle(...)` scans
+- Each gutter refresh pass now also rebuilds the live logical line-count/start-offset snapshot from the active editor
+  plain text before recomputing visible line numbers.
+  Batched newline insertions such as repeated divider creation therefore no longer wait for deferred
+  `ContentsLogicalTextBridge` rebuilds before the gutter catches up.
 - Cursor-only and viewport-only minimap updates now reuse cached row geometry; full minimap resampling is limited to
   text/layout changes or an explicit minimap re-enable.
 - RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
@@ -119,9 +123,9 @@ that sit directly inside the editor viewport.
   `ContentsCalloutBackend`.
   - compatibility fallback `Ctrl+Alt+C` is also registered for environments where Command is surfaced as
     `ControlModifier`.
-- Desktop now also exposes `Cmd+Opt+H` (`Meta+Alt+H`) as a divider insertion shortcut, routed through
+- Desktop now also exposes `Cmd+Shift+H` (`Meta+Shift+H`) as a divider insertion shortcut, routed through
   `ContentsEditorTypingController.queueBreakShortcutInsertion()`.
-  - compatibility fallback `Ctrl+Alt+H` is also registered for environments where Command is surfaced as
+  - compatibility fallback `Ctrl+Shift+H` is also registered for environments where Command is surfaced as
     `ControlModifier`.
 - Desktop now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so shortcuts still fire while the nested input item owns focus.
@@ -193,6 +197,8 @@ that sit directly inside the editor viewport.
   refresh firing mid-edit.
 - Desktop gutter/minimap line count must decrease immediately after newline deletion or line-wrap collapse; it must not
   monotonically grow because of stale incremental line-offset state.
+- Repeated divider insertion or any other batched multi-newline source mutation must refresh desktop gutter numbering
+  from the current editor text on the next gutter pass instead of advancing only one logical line at a time.
   - Desktop cursor restoration after note focus or inline resource insertion must go through one logical cursor path;
     the app must not write conflicting positions into multiple nested editor objects on the same turn.
   - Desktop gutter line-Y queries must prefer cached `minimapLineGroups` geometry instead of falling back to a fresh
@@ -201,18 +207,18 @@ that sit directly inside the editor viewport.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
   - Page/Print viewport and page-count calculations must stay bound to backend
     `ContentsPagePrintLayoutRenderer`; QML must not reintroduce duplicate local page-math state.
-  - In non-Plain modes, `<agenda>/<task>` blocks must render as agenda cards with checkbox rows, and toggling a task
-    must persist canonical `done=true|false` in source.
+  - In every editor view mode, including `Plain`, `<agenda>/<task>` blocks must render as agenda cards with checkbox
+    rows, and toggling a task must persist canonical `done=true|false` in source.
   - Even an empty `<agenda>` block with one empty `<task>` body anchor must still render one visible agenda card.
-  - In non-Plain modes, `<callout>...</callout>` blocks must render as Figma-aligned callout rows, and `Cmd+Opt+C` must insert one
-    canonical callout wrapper at the current cursor in RAW source.
-  - `Cmd+Opt+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
+  - In every editor view mode, including `Plain`, `<callout>...</callout>` blocks must render as Figma-aligned
+    callout rows, and `Cmd+Opt+C` must insert one canonical callout wrapper at the current cursor in RAW source.
+  - `Cmd+Shift+H` must insert one canonical `</break>` divider token at the current cursor in RAW source.
   - Even an empty `<callout></callout>` block must still render one visible callout row.
   - When the renderer emits a structured correction suggestion, desktop must rewrite the underlying note file through
     `ContentsStructuredTagValidator` and replace the live editor RAW buffer with the canonical corrected source.
   - Tapping an agenda/callout card must move editor focus back into the corresponding RAW source body.
-  - `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Alt+H` fallback chords must trigger the same agenda/callout/divider
-    insertions as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Opt+H` when the runtime maps Command to `ControlModifier`.
+  - `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Shift+H` fallback chords must trigger the same agenda/callout/divider
+    insertions as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Shift+H` when the runtime maps Command to `ControlModifier`.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the

@@ -20,7 +20,7 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - ordered list
 - and routes the agenda insertion shortcut (`Cmd+Opt+T`) into the typing controller
 - and routes the callout insertion shortcut (`Cmd+Opt+C`) into the typing controller
-- and routes the divider insertion shortcut (`Cmd+Opt+H`) into the typing controller
+- and routes the divider insertion shortcut (`Cmd+Shift+H`) into the typing controller
 
 ## Public Contract
 
@@ -71,9 +71,9 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
 - `Cmd+Opt+C` (`Meta+Alt+C`) now routes through `queueStructuredShortcutMutation("callout")`, then into
   `view.queueCalloutShortcutInsertion()` when editor mutation guards allow it.
   - environments that surface Command as `ControlModifier` are also accepted through `Ctrl+Alt+C`.
-- `Cmd+Opt+H` (`Meta+Alt+H`) now routes through `queueStructuredShortcutMutation("break")`, then into
+- `Cmd+Shift+H` (`Meta+Shift+H`) now routes through `queueStructuredShortcutMutation("break")`, then into
   `view.queueBreakShortcutInsertion()` when editor mutation guards allow it.
-  - environments that surface Command as `ControlModifier` are also accepted through `Ctrl+Alt+H`.
+  - environments that surface Command as `ControlModifier` are also accepted through `Ctrl+Shift+H`.
 - Agenda/callout shortcut key detection now accepts both `event.key` and single-character `event.text` fallback (`T` /
   `C` / `H`) so keyboard-layout-dependent keycode variance does not drop the shortcut.
 - Agenda/callout/break shortcut key handling now also ignores shortcut auto-repeat events, preventing repeated raw-block
@@ -144,12 +144,12 @@ It also owns keyboard-driven markdown block toggles for the list types the rende
   double-insert when both key-event and window-shortcut paths are present.
 - Pressing `Cmd+Opt+C` while the editor is active should trigger exactly one callout insertion request and must not
   double-insert when both key-event and window-shortcut paths are present.
-- Pressing `Cmd+Opt+H` while the editor is active should trigger exactly one divider insertion request and must not
+- Pressing `Cmd+Shift+H` while the editor is active should trigger exactly one divider insertion request and must not
   double-insert when both key-event and window-shortcut paths are present.
 - Holding the agenda/callout/break shortcut chord must not repeatedly append raw agenda/callout/divider blocks from
   key auto-repeat.
-- In environments where Command is exposed as `ControlModifier`, `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Alt+H` must
-  trigger the same agenda/callout/divider insertion behavior as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Opt+H`.
+- In environments where Command is exposed as `ControlModifier`, `Ctrl+Alt+T` / `Ctrl+Alt+C` / `Ctrl+Shift+H` must
+  trigger the same agenda/callout/divider insertion behavior as `Cmd+Opt+T` / `Cmd+Opt+C` / `Cmd+Shift+H`.
 - Applying either list shortcut to a multi-line selection should transform every touched non-empty line as one block,
   not only the first line.
 - Reapplying the same list shortcut to a uniformly listed block should remove those markers instead of duplicating them.

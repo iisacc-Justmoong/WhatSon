@@ -63,6 +63,7 @@ Item {
     }
 
     implicitHeight: contentBottomY
+    height: implicitHeight
 
     Repeater {
         id: calloutRepeater
@@ -102,6 +103,7 @@ Item {
                                + calloutLayer.frameSpacing
                                + resolvedTextWidth)
             width: Math.min(calloutLayer.width, implicitWidth)
+            height: implicitHeight
             y: calloutLayer.calloutYForEntry(calloutFrame.calloutEntry, index)
             z: 1
 

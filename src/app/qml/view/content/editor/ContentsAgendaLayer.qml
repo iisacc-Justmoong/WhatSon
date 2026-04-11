@@ -16,6 +16,7 @@ Item {
     readonly property int frameBorderWidth: 1
     readonly property color frameColor: "#262728"
     readonly property int framePadding: 8
+    readonly property int framePreferredWidth: 307
     readonly property int frameRadius: 12
     readonly property color headerTextColor: "#80FFFFFF"
     readonly property color taskBoxColor: "#CCFFFFFF"
@@ -70,6 +71,7 @@ Item {
     }
 
     implicitHeight: contentBottomY
+    height: implicitHeight
 
     Repeater {
         id: agendaRepeater
@@ -88,8 +90,10 @@ Item {
             border.width: agendaLayer.frameBorderWidth
             color: agendaLayer.frameColor
             implicitHeight: agendaCardLayout.implicitHeight + agendaLayer.framePadding * 2
+            implicitWidth: Math.min(agendaLayer.width, agendaLayer.framePreferredWidth)
             radius: agendaLayer.frameRadius
-            width: agendaLayer.width
+            width: implicitWidth
+            height: implicitHeight
             y: agendaLayer.agendaYForEntry(agendaCard.agendaEntry, index)
             z: 1
 

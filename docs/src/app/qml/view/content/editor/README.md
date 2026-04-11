@@ -121,8 +121,8 @@
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
 - `ContentsEditorTypingController.qml` now also owns divider authoring shortcuts:
-  - `Cmd+Opt+H` inserts canonical `</break>` into RAW at the current cursor
-  - `Ctrl+Alt+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
+  - `Cmd+Shift+H` inserts canonical `</break>` into RAW at the current cursor
+  - `Ctrl+Shift+H` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
 - `ContentsEditorTypingController.qml` now also owns agenda authoring shortcuts:
   - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"> </task></agenda>` (empty-body
     cursor anchor included)
@@ -155,10 +155,11 @@
 - `ContentsEditorSession.qml` now also normalizes empty structured blocks into one-space anchors on model sync:
   - `<task ...></task>` -> `<task ...> </task>`
   - `<callout></callout>` -> `<callout> </callout>`
-- `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders agenda cards
-  with `LV.CheckBox` task rows bound to source `done` attributes via renderer-provided agenda models.
-- `ContentsCalloutLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders Figma-aligned callout rows
-  from renderer-provided canonical `<callout>...</callout>` models.
+- `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for every editor view mode, including `Plain`, and
+  renders agenda cards with `LV.CheckBox` task rows bound to source `done` attributes via renderer-provided agenda
+  models.
+- `ContentsCalloutLayer.qml` is now mounted by desktop/mobile hosts for every editor view mode, including `Plain`,
+  and renders Figma-aligned callout rows from renderer-provided canonical `<callout>...</callout>` models.
 - Agenda/callout layers now consume parser-returned `sourceStart` offsets and host `sourceOffsetYResolver(...)`
   callbacks, so structured cards are placed at authored source-tag positions in the editor viewport.
 - Those render models now also expose `focusSourceOffset`, and desktop/mobile hosts route card taps back into the
