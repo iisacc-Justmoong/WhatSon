@@ -388,7 +388,19 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
         }
 
         QVariantMap agendaEntry;
+        agendaEntry.insert(QStringLiteral("contentEnd"), agendaContentEnd);
+        agendaEntry.insert(QStringLiteral("contentStart"), agendaOpenTagEnd);
         agendaEntry.insert(QStringLiteral("sourceStart"), agendaOpenTagStart);
+        agendaEntry.insert(QStringLiteral("sourceEnd"), agendaHasCloseTag
+                                                       ? agendaCloseStart + QStringLiteral("</agenda>").size()
+                                                       : agendaContentEnd);
+        agendaEntry.insert(QStringLiteral("openTagEnd"), agendaOpenTagEnd);
+        agendaEntry.insert(QStringLiteral("openTagStart"), agendaOpenTagStart);
+        agendaEntry.insert(QStringLiteral("closeTagStart"), agendaCloseStart);
+        agendaEntry.insert(
+            QStringLiteral("closeTagEnd"),
+            agendaHasCloseTag ? agendaCloseStart + QStringLiteral("</agenda>").size() : -1);
+        agendaEntry.insert(QStringLiteral("hasCloseTag"), agendaHasCloseTag);
         agendaEntry.insert(
             QStringLiteral("date"),
             normalizedAgendaDateForDisplay(tagAttributeValue(agendaMatch.captured(1), QStringLiteral("date"))));
@@ -441,7 +453,14 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
             taskEntry.insert(
                 QStringLiteral("done"),
                 parseBooleanAttributeValue(tagAttributeValue(taskMatch.captured(1), QStringLiteral("done"))));
+            taskEntry.insert(QStringLiteral("contentStart"), taskOpenTagEnd);
+            taskEntry.insert(QStringLiteral("contentEnd"), taskContentEnd);
             taskEntry.insert(QStringLiteral("hasSourceTag"), true);
+            taskEntry.insert(QStringLiteral("hasCloseTag"), taskHasCloseTag);
+            taskEntry.insert(QStringLiteral("closeTagStart"), taskCloseStart);
+            taskEntry.insert(
+                QStringLiteral("closeTagEnd"),
+                taskHasCloseTag ? taskCloseStart + QStringLiteral("</task>").size() : -1);
             taskEntry.insert(QStringLiteral("openTagStart"), taskOpenTagStart);
             taskEntry.insert(QStringLiteral("openTagEnd"), taskOpenTagEnd);
             taskEntry.insert(QStringLiteral("tagVerified"), taskHasCloseTag);
@@ -459,6 +478,11 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
             QVariantMap placeholderTaskEntry;
             placeholderTaskEntry.insert(QStringLiteral("done"), false);
             placeholderTaskEntry.insert(QStringLiteral("hasSourceTag"), false);
+            placeholderTaskEntry.insert(QStringLiteral("hasCloseTag"), false);
+            placeholderTaskEntry.insert(QStringLiteral("contentStart"), agendaOpenTagEnd);
+            placeholderTaskEntry.insert(QStringLiteral("contentEnd"), agendaContentEnd);
+            placeholderTaskEntry.insert(QStringLiteral("closeTagStart"), -1);
+            placeholderTaskEntry.insert(QStringLiteral("closeTagEnd"), -1);
             placeholderTaskEntry.insert(QStringLiteral("openTagStart"), -1);
             placeholderTaskEntry.insert(QStringLiteral("openTagEnd"), -1);
             placeholderTaskEntry.insert(QStringLiteral("tagVerified"), false);

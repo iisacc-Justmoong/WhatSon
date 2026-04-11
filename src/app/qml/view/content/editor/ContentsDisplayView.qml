@@ -23,7 +23,9 @@ Item {
     property var contentViewModel: null
     property alias contextMenuSelectionEnd: editorSelectionController.contextMenuSelectionEnd
     property alias contextMenuSelectionStart: editorSelectionController.contextMenuSelectionStart
-    readonly property int currentCursorLineNumber: contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
+    readonly property int currentCursorLineNumber: contentsView.showStructuredDocumentFlow
+                                                   ? 1
+                                                   : contentsView.logicalLineNumberForOffset(Number(contentEditor.cursorPosition) || 0)
     readonly property color decorativeMarkerYellow: LV.Theme.warning
     readonly property int desktopEditorFontPixelSize: Math.max(0, Math.round(LV.Theme.scaleMetric(12)))
     readonly property int desktopEditorFontWeight: Font.Normal
@@ -46,6 +48,8 @@ Item {
     readonly property var editorFlickable: contentsView.resolveEditorFlickable()
     readonly property int editorHorizontalInset: LV.Theme.gap16
     readonly property bool editorInputFocused: {
+        if (structuredDocumentFlow && structuredDocumentFlow.focused !== undefined && structuredDocumentFlow.focused)
+            return true;
         if (contentEditor && contentEditor.focused !== undefined && contentEditor.focused)
             return true;
         if (contentEditor && contentEditor.activeFocus !== undefined && contentEditor.activeFocus)
@@ -133,7 +137,9 @@ Item {
     property int liveLogicalTextLength: textMetricsBridge.logicalText !== undefined && textMetricsBridge.logicalText !== null
                                       ? String(textMetricsBridge.logicalText).length
                                       : 0
-    readonly property bool lineGeometryRefreshEnabled: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+    readonly property bool lineGeometryRefreshEnabled: !contentsView.showDedicatedResourceViewer
+                                                       && !contentsView.showFormattedTextRenderer
+                                                       && !contentsView.showStructuredDocumentFlow
     readonly property int minEditorHeight: LV.Theme.gap20 * 12
     readonly property real minimapAvailableTrackHeight: Math.max(1, contentsView.editorViewportHeight - contentsView.minimapTrackInset * 2)
     readonly property color minimapCurrentLineColor: contentsView.activeLineNumberColor
@@ -159,7 +165,11 @@ Item {
     readonly property color minimapViewportFillColor: LV.Theme.accentTransparent
     readonly property int minimapViewportMinHeight: Math.max(0, Math.round(LV.Theme.scaleMetric(28)))
     property bool minimapVisible: true
-    readonly property bool minimapRefreshEnabled: contentsView.minimapVisible && !contentsView.showDedicatedResourceViewer && !contentsView.showPrintEditorLayout && !contentsView.showFormattedTextRenderer
+    readonly property bool minimapRefreshEnabled: contentsView.minimapVisible
+                                                  && !contentsView.showDedicatedResourceViewer
+                                                  && !contentsView.showPrintEditorLayout
+                                                  && !contentsView.showFormattedTextRenderer
+                                                  && !contentsView.showStructuredDocumentFlow
     property var minimapVisualRows: []
     readonly property var normalizedExternalGutterMarkers: gutterMarkerBridge.normalizedExternalGutterMarkers
     readonly property bool noteCountContractAvailable: selectionBridge.noteCountContractAvailable
@@ -242,8 +252,13 @@ Item {
     }
     readonly property bool showCurrentLineMarker: contentsView.hasSelectedNote || contentsView.editorText.length > 0 || contentsView.editorInputFocused
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
-    readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+    readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer
+                                             && !contentsView.showFormattedTextRenderer
+                                             && !contentsView.showStructuredDocumentFlow
     readonly property bool showFormattedTextRenderer: false
+    readonly property bool showStructuredDocumentFlow: structuredBlockRenderer.hasRenderedBlocks
+                                                       && !contentsView.showDedicatedResourceViewer
+                                                       && !contentsView.showFormattedTextRenderer
     readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
     readonly property bool showPrintEditorLayout: pagePrintLayoutRenderer.showPrintEditorLayout
     readonly property bool showPrintMarginGuides: pagePrintLayoutRenderer.showPrintMarginGuides
@@ -997,15 +1012,38 @@ Item {
         return editorSelectionController.queueMarkdownListMutation(listKind);
     }
     function queueAgendaShortcutInsertion() {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.insertStructuredShortcutAtActivePosition !== undefined) {
+            return structuredDocumentFlow.insertStructuredShortcutAtActivePosition("agenda");
+        }
         return editorTypingController.queueAgendaShortcutInsertion();
     }
     function queueCalloutShortcutInsertion() {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.insertStructuredShortcutAtActivePosition !== undefined) {
+            return structuredDocumentFlow.insertStructuredShortcutAtActivePosition("callout");
+        }
         return editorTypingController.queueCalloutShortcutInsertion();
     }
     function queueBreakShortcutInsertion() {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.insertStructuredShortcutAtActivePosition !== undefined) {
+            return structuredDocumentFlow.insertStructuredShortcutAtActivePosition("break");
+        }
         return editorTypingController.queueBreakShortcutInsertion();
     }
     function focusStructuredBlockSourceOffset(sourceOffset) {
+        if (contentsView.showStructuredDocumentFlow
+                && structuredDocumentFlow
+                && structuredDocumentFlow.requestFocus !== undefined) {
+            structuredDocumentFlow.requestFocus({
+                                                   "sourceOffset": Math.max(0, Math.floor(Number(sourceOffset) || 0))
+                                               });
+            return;
+        }
         const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                     Math.max(0, Math.floor(Number(sourceOffset) || 0)));
         contentEditor.forceActiveFocus();
@@ -1015,6 +1053,45 @@ Item {
         }
         if (contentEditor.cursorPosition !== undefined)
             contentEditor.cursorPosition = logicalOffset;
+    }
+    function applyDocumentSourceMutation(nextSourceText, focusRequest) {
+        const normalizedNextSourceText = nextSourceText === undefined || nextSourceText === null
+                ? ""
+                : String(nextSourceText);
+        const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
+                ? ""
+                : String(contentsView.editorText);
+        if (normalizedNextSourceText === currentSourceText)
+            return false;
+        if (contentsView.editorText !== normalizedNextSourceText)
+            contentsView.editorText = normalizedNextSourceText;
+        if (contentsView.commitDocumentPresentationRefresh !== undefined)
+            contentsView.commitDocumentPresentationRefresh();
+        if (editorSession && editorSession.markLocalEditorAuthority !== undefined)
+            editorSession.markLocalEditorAuthority();
+        if (focusRequest && structuredDocumentFlow && structuredDocumentFlow.requestFocus !== undefined) {
+            const requestedFocus = focusRequest && typeof focusRequest === "object" ? focusRequest : ({});
+            Qt.callLater(function () {
+                structuredDocumentFlow.requestFocus(requestedFocus);
+            });
+        }
+        if (contentsView.deferImmediateEditorPersistence
+                && editorSession
+                && editorSession.scheduleEditorPersistence !== undefined) {
+            editorSession.scheduleEditorPersistence();
+            contentsView.editorTextEdited(normalizedNextSourceText);
+            return true;
+        }
+        const saved = contentsView.persistEditorTextImmediately !== undefined
+                ? !!contentsView.persistEditorTextImmediately(normalizedNextSourceText)
+                : false;
+        if (!saved
+                && editorSession
+                && editorSession.scheduleEditorPersistence !== undefined) {
+            editorSession.scheduleEditorPersistence();
+        }
+        contentsView.editorTextEdited(normalizedNextSourceText);
+        return true;
     }
     function setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked) {
         const currentSourceText = contentsView.editorText === undefined || contentsView.editorText === null
@@ -1029,31 +1106,11 @@ Item {
                                           Math.floor(Number(taskOpenTagStart) || 0),
                                           Math.floor(Number(taskOpenTagEnd) || 0),
                                           !!checked));
-        if (nextSourceText === currentSourceText)
-            return false;
-        if (contentsView.editorText !== nextSourceText)
-            contentsView.editorText = nextSourceText;
-        if (contentsView.commitDocumentPresentationRefresh !== undefined)
-            contentsView.commitDocumentPresentationRefresh();
-        if (editorSession && editorSession.markLocalEditorAuthority !== undefined)
-            editorSession.markLocalEditorAuthority();
-        if (contentsView.deferImmediateEditorPersistence
-                && editorSession
-                && editorSession.scheduleEditorPersistence !== undefined) {
-            editorSession.scheduleEditorPersistence();
-            contentsView.editorTextEdited(nextSourceText);
-            return true;
-        }
-        const saved = contentsView.persistEditorTextImmediately !== undefined
-                ? !!contentsView.persistEditorTextImmediately(nextSourceText)
-                : false;
-        if (!saved
-                && editorSession
-                && editorSession.scheduleEditorPersistence !== undefined) {
-            editorSession.scheduleEditorPersistence();
-        }
-        contentsView.editorTextEdited(nextSourceText);
-        return true;
+        return contentsView.applyDocumentSourceMutation(
+                    nextSourceText,
+                    {
+                        "taskOpenTagStart": Math.floor(Number(taskOpenTagStart) || -1)
+                    });
     }
     function refreshMinimapSnapshot() {
         if (!contentsView.lineGeometryRefreshEnabled)
@@ -1111,6 +1168,11 @@ Item {
         editorSelectionController.resetEditorSelectionCache();
     }
     function resolveEditorFlickable() {
+        if (contentsView.showStructuredDocumentFlow) {
+            if (contentsView.showPrintEditorLayout)
+                return printDocumentViewport;
+            return structuredDocumentViewport;
+        }
         if (contentEditor && contentEditor.resolvedFlickable !== undefined && contentEditor.resolvedFlickable)
             return contentEditor.resolvedFlickable;
         if (!contentEditor.editorItem || !contentEditor.editorItem.parent)
@@ -1328,7 +1390,9 @@ Item {
 
         activeEditorViewMode: contentsView.activeEditorViewModeValue
         dedicatedResourceViewerVisible: contentsView.showDedicatedResourceViewer
-        editorContentHeight: contentEditor && contentEditor.inputContentHeight !== undefined ? Number(contentEditor.inputContentHeight) || 0 : 0
+        editorContentHeight: contentsView.showStructuredDocumentFlow
+                             ? (structuredDocumentFlow ? Number(structuredDocumentFlow.implicitHeight) || 0 : 0)
+                             : (contentEditor && contentEditor.inputContentHeight !== undefined ? Number(contentEditor.inputContentHeight) || 0 : 0)
         editorViewportHeight: contentsView.editorViewportHeight
         editorViewportWidth: editorViewport ? Number(editorViewport.width) || 0 : 0
         guideHorizontalInset: LV.Theme.gap12 * 2
@@ -1749,6 +1813,41 @@ Item {
                             }
                         }
                     }
+                    Flickable {
+                        id: structuredDocumentViewport
+
+                        anchors.fill: parent
+                        boundsBehavior: Flickable.StopAtBounds
+                        clip: true
+                        contentHeight: Math.max(
+                                           height,
+                                           (Number(structuredDocumentFlow.y) || 0)
+                                           + (Number(structuredDocumentFlow.implicitHeight) || 0)
+                                           + contentsView.editorBottomInset)
+                        contentWidth: width
+                        flickableDirection: Flickable.VerticalFlick
+                        interactive: !contentsView.showPrintEditorLayout && contentHeight > height
+                        visible: contentsView.showStructuredDocumentFlow && !contentsView.showPrintEditorLayout
+                        z: 1
+                    }
+                    ContentsStructuredDocumentFlow {
+                        id: structuredDocumentFlow
+
+                        agendaBackend: contentsAgendaBackend
+                        calloutBackend: contentsCalloutBackend
+                        documentBlocks: structuredBlockRenderer.renderedDocumentBlocks
+                        parent: contentsView.showPrintEditorLayout ? printDocumentSurface : structuredDocumentViewport.contentItem
+                        sourceText: contentsView.editorText
+                        width: contentsView.showPrintEditorLayout ? contentsView.printPaperTextWidth : structuredDocumentViewport.width
+                        x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : contentsView.editorHorizontalInset
+                        y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
+                        visible: contentsView.showStructuredDocumentFlow
+                        z: contentsView.showPrintEditorLayout ? 2 : 1
+
+                        onSourceMutationRequested: function (nextSourceText, focusRequest) {
+                            contentsView.applyDocumentSourceMutation(nextSourceText, focusRequest);
+                        }
+                    }
                     ContentsAgendaLayer {
                         id: agendaBackgroundLayer
 
@@ -1787,6 +1886,7 @@ Item {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
                         visible: contentsView.hasSelectedNote
+                                 && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
                                  && agendaBackgroundLayer.agendaCount > 0
@@ -1826,6 +1926,7 @@ Item {
                             return documentY;
                         }
                         visible: contentsView.hasSelectedNote
+                                 && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
                                  && calloutBackgroundLayer.calloutCount > 0
@@ -1867,7 +1968,9 @@ Item {
                         text: contentsView.preferNativeInputHandling ? String(textMetricsBridge.logicalText) : contentsView.renderedEditorText
                         textColor: contentsView.showPrintEditorLayout ? contentsView.printPaperTextColor : LV.Theme.bodyColor
                         textFormat: contentsView.preferNativeInputHandling ? TextEdit.PlainText : TextEdit.RichText
-                        visible: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
+                        visible: !contentsView.showStructuredDocumentFlow
+                                 && !contentsView.showDedicatedResourceViewer
+                                 && !contentsView.showFormattedTextRenderer
                         wrapMode: TextEdit.Wrap
                         x: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.x) || 0) + contentsView.printGuideHorizontalInset : 0
                         y: contentsView.showPrintEditorLayout ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset : contentsView.editorDocumentStartY
@@ -1927,6 +2030,7 @@ Item {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
                         visible: contentsView.hasSelectedNote
+                                 && !contentsView.showStructuredDocumentFlow
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer
                                  && agendaRenderLayer.agendaCount > 0
@@ -2149,7 +2253,7 @@ Item {
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Alt+T"
 
-                        onActivated: editorSelectionController.queueStructuredShortcutMutation("agenda")
+                        onActivated: contentsView.queueAgendaShortcutInsertion()
                     }
                     Shortcut {
                         autoRepeat: false
@@ -2157,7 +2261,7 @@ Item {
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Alt+T"
 
-                        onActivated: editorSelectionController.queueStructuredShortcutMutation("agenda")
+                        onActivated: contentsView.queueAgendaShortcutInsertion()
                     }
                     Shortcut {
                         autoRepeat: false
@@ -2165,7 +2269,7 @@ Item {
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Alt+C"
 
-                        onActivated: editorSelectionController.queueStructuredShortcutMutation("callout")
+                        onActivated: contentsView.queueCalloutShortcutInsertion()
                     }
                     Shortcut {
                         autoRepeat: false
@@ -2173,7 +2277,7 @@ Item {
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Alt+C"
 
-                        onActivated: editorSelectionController.queueStructuredShortcutMutation("callout")
+                        onActivated: contentsView.queueCalloutShortcutInsertion()
                     }
                     Shortcut {
                         autoRepeat: false
@@ -2181,7 +2285,7 @@ Item {
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Meta+Shift+H"
 
-                        onActivated: editorSelectionController.queueStructuredShortcutMutation("break")
+                        onActivated: contentsView.queueBreakShortcutInsertion()
                     }
                     Shortcut {
                         autoRepeat: false
@@ -2189,7 +2293,7 @@ Item {
                         enabled: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
                         sequence: "Ctrl+Shift+H"
 
-                        onActivated: editorSelectionController.queueStructuredShortcutMutation("break")
+                        onActivated: contentsView.queueBreakShortcutInsertion()
                     }
                     LV.ContextMenu {
                         id: editorSelectionContextMenu

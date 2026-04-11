@@ -1,37 +1,19 @@
 # `src/app/editor/renderer/ContentsStructuredBlockRenderer.cpp`
 
 ## Responsibility
-Builds agenda/callout render models for editor overlay layers from canonical `.wsnbody` source text.
+Builds canonical structured render data from `.wsnbody` source text.
 
-## Key Behavior
-- Reuses `ContentsAgendaBackend::parseAgendas(...)` and `ContentsCalloutBackend::parseCallouts(...)` so render-model
-  parsing stays aligned with domain-owned source rules.
-- Recomputes render data whenever `sourceText` changes.
-- Emits one shared `renderedBlocksChanged()` signal only when agenda/callout render payloads actually change.
-- Listens to backend parser verification signals and forwards them as renderer-owned verification properties/signals:
-  - `agendaParseVerification`
-  - `calloutParseVerification`
-  - `structuredParseVerification`
-- Merges agenda/callout issue lists into one renderer-level verification payload so QML/debug tooling can inspect
-  whether the current structured RAW source was actually confirmed by the parsers.
-- Uses `WhatSonStructuredTagLinter::buildStructuredVerification(...)` for the merged payload, so renderer-level
-  verification also includes divider-tag lint (`break`) and a `canonicalizationSuggested` bit.
-- Also computes `correctedSourceText` through `WhatSonStructuredTagLinter::normalizeStructuredSourceText(...)`.
-- Emits `structuredCorrectionSuggested(...)` once per unique malformed source/canonical target pair, so a file-layer
-  validator can take write authority and repair the note package directly.
-- Seeds empty agenda/callout verification maps as `wellFormed=true` defaults before the first parse result arrives,
-  preventing the merged renderer-level status from transiently reporting a false failure while only one backend has
-  emitted.
-- Keeps the QML host contract renderer-owned:
-  - QML views no longer call agenda/callout parse backends directly
-  - desktop/mobile hosts bind `ContentsAgendaLayer` / `ContentsCalloutLayer` to this renderer's properties
+## Current Contract
+- Still exposes `renderedAgendas` and `renderedCallouts` for legacy/fallback consumers.
+- Now also exposes `renderedDocumentBlocks`, a mixed document-flow model ordered by source position.
+- `renderedDocumentBlocks` interleaves:
+  - plain text segments: `type=text`
+  - agenda blocks: `type=agenda`
+  - callout blocks: `type=callout`
+  - divider tags: `type=break`
+- Each non-text block carries the backend-owned source geometry so QML can rewrite RAW in place.
+- `hasRenderedBlocks` now reflects any non-text block, including standalone `</break>`.
 
-## Regression Checks
-- A source string containing `<agenda ...>` must produce agenda entries with task metadata through
-  `renderedAgendas`.
-- A source string containing `<callout>...</callout>` must produce callout entries through `renderedCallouts`.
-- Malformed agenda/task/callout source must surface through parser-verification signals even when renderable block
-  payloads did not otherwise change.
-- Canonically repairable malformed source must emit one `structuredCorrectionSuggested(...)` signal with the corrected
-  RAW source projection.
-- Unchanged source text must not emit redundant render-model updates.
+## Why It Changed
+Agenda/callout cards now render as document-owned flow blocks instead of offset-projected overlay layers. The QML host
+needs one ordered block stream rather than two independent overlay lists.

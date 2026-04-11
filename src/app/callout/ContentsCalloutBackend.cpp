@@ -220,7 +220,19 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText)
         }
 
         QVariantMap entry;
+        entry.insert(QStringLiteral("contentStart"), calloutOpenEnd);
+        entry.insert(QStringLiteral("contentEnd"), calloutContentEnd);
         entry.insert(QStringLiteral("sourceStart"), calloutStart);
+        entry.insert(QStringLiteral("sourceEnd"), calloutHasCloseTag
+                                                 ? calloutCloseStart + QStringLiteral("</callout>").size()
+                                                 : calloutContentEnd);
+        entry.insert(QStringLiteral("openTagStart"), calloutStart);
+        entry.insert(QStringLiteral("openTagEnd"), calloutOpenEnd);
+        entry.insert(QStringLiteral("closeTagStart"), calloutCloseStart);
+        entry.insert(
+            QStringLiteral("closeTagEnd"),
+            calloutHasCloseTag ? calloutCloseStart + QStringLiteral("</callout>").size() : -1);
+        entry.insert(QStringLiteral("hasCloseTag"), calloutHasCloseTag);
         entry.insert(QStringLiteral("focusSourceOffset"), calloutOpenEnd);
         entry.insert(QStringLiteral("tagVerified"), calloutHasCloseTag);
         entry.insert(

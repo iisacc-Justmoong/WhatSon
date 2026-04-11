@@ -15,6 +15,7 @@ class ContentsStructuredBlockRenderer : public QObject
     Q_PROPERTY(QString sourceText READ sourceText WRITE setSourceText NOTIFY sourceTextChanged)
     Q_PROPERTY(QVariantList renderedAgendas READ renderedAgendas NOTIFY renderedBlocksChanged)
     Q_PROPERTY(QVariantList renderedCallouts READ renderedCallouts NOTIFY renderedBlocksChanged)
+    Q_PROPERTY(QVariantList renderedDocumentBlocks READ renderedDocumentBlocks NOTIFY renderedBlocksChanged)
     Q_PROPERTY(QVariantMap agendaParseVerification READ agendaParseVerification NOTIFY agendaParseVerificationChanged)
     Q_PROPERTY(QVariantMap calloutParseVerification READ calloutParseVerification NOTIFY calloutParseVerificationChanged)
     Q_PROPERTY(QVariantMap structuredParseVerification READ structuredParseVerification NOTIFY structuredParseVerificationChanged)
@@ -33,6 +34,7 @@ public:
 
     QVariantList renderedAgendas() const;
     QVariantList renderedCallouts() const;
+    QVariantList renderedDocumentBlocks() const;
     QVariantMap agendaParseVerification() const;
     QVariantMap calloutParseVerification() const;
     QVariantMap structuredParseVerification() const;
@@ -72,6 +74,7 @@ private:
     QString m_sourceText;
     QVariantList m_renderedAgendas;
     QVariantList m_renderedCallouts;
+    QVariantList m_renderedDocumentBlocks;
     QVariantMap m_agendaParseVerification;
     QVariantMap m_calloutParseVerification;
     QVariantMap m_structuredParseVerification;
