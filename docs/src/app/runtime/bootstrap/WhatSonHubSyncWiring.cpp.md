@@ -8,6 +8,7 @@ Implements hub-sync wiring extracted from `main.cpp`.
 - Builds one local-mutation connection per provided source object using
   `hubFilesystemMutated() -> acknowledgeLocalMutation()`.
 - Reports aggregate validity through `HubSyncWiringResult`.
+- Includes `WhatSonHubSyncController` from `src/app/file/sync` after sync-domain consolidation.
 
 ## Test Coverage
 

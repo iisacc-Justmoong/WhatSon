@@ -552,7 +552,7 @@ activation that needs them.
 Concurrent hub access is now allowed across desktop and mobile sessions. `WhatSonHubWriteLease` remains only as a
 legacy cleanup shim for old `.whatson/write-lease.json` artifacts, so onboarding/runtime loading and filesystem
 mutation paths no longer reject a `.wshub` just because another WhatSon session already touched the same package.
-Runtime hub refresh now flows through `src/app/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
+Runtime hub refresh now flows through `src/app/file/sync/WhatSonHubSyncController.*`. The controller keeps a periodic
 filesystem watcher/timer policy, recursive `QFileSystemWatcher` coverage over the mounted `.wshub`, and a debounced
 reload path that reacts to observed hub-signature changes without UI interaction hints. Signature hashing and watcher
 path collection now come from a single recursive observation pass, so one sync hint no longer scans the hub twice.

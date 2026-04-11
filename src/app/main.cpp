@@ -44,7 +44,7 @@
 #include "permissions/ApplePermissionBridge.hpp"
 #include "store/hub/SelectedHubStore.hpp"
 #include "store/sidebar/SidebarSelectionStore.hpp"
-#include "sync/WhatSonHubSyncController.hpp"
+#include "file/sync/WhatSonHubSyncController.hpp"
 #if defined(WHATSON_IS_TRIAL_BUILD) && !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 #include "WhatSonTrialActivationPolicy.hpp"
 #endif

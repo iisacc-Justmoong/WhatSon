@@ -11,7 +11,7 @@ This directory is the architectural center of the repository. Most other modules
 - `qml`: LVRS-based view composition and interaction surfaces.
 - `runtime`: startup-time scheduling and background domain loading.
 - `store`: lightweight shared state containers such as selected hub and sidebar selection.
-- `sync`: runtime coordination of hub synchronization.
+- `file/sync`: runtime and editor synchronization controllers consolidated under the file domain.
 - `policy`: layer rules and lock semantics for startup wiring.
 - `calendar`, `permissions`, `platform`: platform-specific integration points.
 

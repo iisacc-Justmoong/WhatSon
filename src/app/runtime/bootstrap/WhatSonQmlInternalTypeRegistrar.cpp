@@ -1,5 +1,6 @@
 #include "WhatSonQmlInternalTypeRegistrar.hpp"
 
+#include "editor/renderer/ContentsPagePrintLayoutRenderer.hpp"
 #include "editor/renderer/ContentsTextFormatRenderer.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
@@ -25,6 +26,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
         qmlRegisterType<ContentsTextFormatRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
+        qmlRegisterType<ContentsPagePrintLayoutRenderer>(
+            "WhatSon.App.Internal", 1, 0, "ContentsPagePrintLayoutRenderer");
         qmlRegisterType<ContentsBodyResourceRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsBodyResourceRenderer");
         qmlRegisterType<ResourceBitmapViewer>(

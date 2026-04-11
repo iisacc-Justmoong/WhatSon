@@ -120,6 +120,10 @@
   not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
   the note instead of remaining a fixed-height scaffold.
+- `Page` / `Print` paper visuals now use an A4-style off-white sheet gradient with per-page separators and subtle
+  shadow depth, replacing the prior plain-white flat backdrop.
+- `Page` / `Print` mode gating plus paper geometry/page-count math are now provided by
+  `ContentsPagePrintLayoutRenderer` in `src/app/editor/renderer`, so editor QML hosts consume backend layout state.
 - The repository no longer operates scripted editor tests; the per-file regression notes in this directory are
   documentation-only behavior contracts.
 - Cursor restoration for ordinary typing/focus recovery now routes through the wrapper-level cursor setter instead of

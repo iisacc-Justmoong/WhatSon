@@ -161,43 +161,37 @@ Item {
     readonly property bool typingSessionSyncProtected: editorSession && editorSession.isTypingSessionActive !== undefined && editorSession.isTypingSessionActive()
     readonly property bool noteSnapshotRefreshEnabled: contentsView.visible && contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer && contentsView.noteSelectionContractAvailable && !contentsView.editorInputFocused && !contentsView.typingSessionSyncProtected && !contentsView.pendingBodySave
     readonly property int noteSnapshotRefreshIntervalMs: 1200
-    readonly property int pageEditorViewModeValue: 1
+    readonly property int pageEditorViewModeValue: pagePrintLayoutRenderer.pageViewModeValue
     property var panelViewModel: null
     property alias pendingBodySave: editorSession.pendingBodySave
     property string editorEntrySnapshotComparedNoteId: ""
     property string pendingEditorFocusNoteId: ""
     readonly property int plainEditorViewModeValue: 0
-    readonly property color printCanvasColor: "#F1F3F6"
-    readonly property int printEditorViewModeValue: 2
-    readonly property int printGuideHorizontalInset: LV.Theme.gap12 * 2
-    readonly property int printGuideVerticalInset: LV.Theme.gap12 * 2
-    readonly property real printPaperAspectRatio: 210 / 297
-    readonly property color printPaperBorderColor: "#19000000"
-    readonly property color printPaperColor: "#FFFFFF"
-    readonly property real printPaperDocumentHeight: contentsView.printGuideVerticalInset * 2 + contentsView.printDocumentPageCount * contentsView.printPaperTextHeight
-    readonly property int printPaperHorizontalMargin: LV.Theme.gap12
-    readonly property int printPaperMaxWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(880)))
-    readonly property int printPaperPaddingHorizontal: LV.Theme.gap12
-    readonly property int printPaperPaddingVertical: LV.Theme.gap8
-    readonly property int printPaperSeparatorThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
-    readonly property color printPaperTextColor: "#000000"
-    readonly property real printPaperTextHeight: Math.max(1, contentsView.printPaperResolvedHeight - contentsView.printGuideVerticalInset * 2)
-    readonly property real printPaperTextWidth: Math.max(0, contentsView.printPaperResolvedWidth - contentsView.printGuideHorizontalInset * 2)
-    readonly property int printPaperVerticalMargin: LV.Theme.gap4
-    readonly property int printDocumentPageCount: {
-        if (!contentsView.showPrintEditorLayout)
-            return 1;
-        const pageTextHeight = Math.max(1, contentsView.printPaperTextHeight);
-        const requiredHeight = Math.max(pageTextHeight, Number(contentEditor && contentEditor.inputContentHeight !== undefined ? contentEditor.inputContentHeight : 0) || 0);
-        return Math.max(1, Math.ceil(requiredHeight / pageTextHeight));
-    }
-    readonly property real printDocumentSurfaceHeight: Math.max(contentsView.editorViewportHeight, contentsView.printPaperDocumentHeight + contentsView.printPaperVerticalMargin * 2)
-    readonly property real printPaperResolvedHeight: contentsView.printPaperAspectRatio > 0 ? contentsView.printPaperResolvedWidth / contentsView.printPaperAspectRatio : 0
-    readonly property real printPaperResolvedWidth: {
-        const viewportWidth = Number(editorViewport ? editorViewport.width : 0) || 0;
-        const availableWidth = Math.max(0, viewportWidth - contentsView.printPaperHorizontalMargin * 2);
-        return Math.max(0, Math.min(contentsView.printPaperMaxWidth, availableWidth));
-    }
+    readonly property color printCanvasColor: pagePrintLayoutRenderer.canvasColor
+    readonly property int printEditorViewModeValue: pagePrintLayoutRenderer.printViewModeValue
+    readonly property real printGuideHorizontalInset: pagePrintLayoutRenderer.guideHorizontalInset
+    readonly property real printGuideVerticalInset: pagePrintLayoutRenderer.guideVerticalInset
+    readonly property real printPaperAspectRatio: pagePrintLayoutRenderer.paperAspectRatio
+    readonly property color printPaperBorderColor: pagePrintLayoutRenderer.paperBorderColor
+    readonly property color printPaperColor: pagePrintLayoutRenderer.paperColor
+    readonly property color printPaperHighlightColor: pagePrintLayoutRenderer.paperHighlightColor
+    readonly property color printPaperShadeColor: pagePrintLayoutRenderer.paperShadeColor
+    readonly property color printPaperSeparatorColor: pagePrintLayoutRenderer.paperSeparatorColor
+    readonly property color printPaperShadowColor: pagePrintLayoutRenderer.paperShadowColor
+    readonly property real printPaperShadowOffsetX: pagePrintLayoutRenderer.paperShadowOffsetX
+    readonly property real printPaperShadowOffsetY: pagePrintLayoutRenderer.paperShadowOffsetY
+    readonly property real printPaperDocumentHeight: pagePrintLayoutRenderer.paperDocumentHeight
+    readonly property real printPaperHorizontalMargin: pagePrintLayoutRenderer.paperHorizontalMargin
+    readonly property real printPaperMaxWidth: pagePrintLayoutRenderer.paperMaxWidth
+    readonly property real printPaperSeparatorThickness: pagePrintLayoutRenderer.paperSeparatorThickness
+    readonly property color printPaperTextColor: pagePrintLayoutRenderer.paperTextColor
+    readonly property real printPaperTextHeight: pagePrintLayoutRenderer.paperTextHeight
+    readonly property real printPaperTextWidth: pagePrintLayoutRenderer.paperTextWidth
+    readonly property real printPaperVerticalMargin: pagePrintLayoutRenderer.paperVerticalMargin
+    readonly property int printDocumentPageCount: pagePrintLayoutRenderer.documentPageCount
+    readonly property real printDocumentSurfaceHeight: pagePrintLayoutRenderer.documentSurfaceHeight
+    readonly property real printPaperResolvedHeight: pagePrintLayoutRenderer.paperResolvedHeight
+    readonly property real printPaperResolvedWidth: pagePrintLayoutRenderer.paperResolvedWidth
     readonly property int documentPresentationRefreshIntervalMs: 120
     property string documentPresentationSourceText: ""
     property bool documentPresentationRefreshPendingWhileFocused: false
@@ -242,10 +236,10 @@ Item {
     readonly property bool showDedicatedResourceViewer: contentsView.selectedNoteIsResourcePackage
     readonly property bool showEditorGutter: !contentsView.showDedicatedResourceViewer && !contentsView.showFormattedTextRenderer
     readonly property bool showFormattedTextRenderer: false
-    readonly property bool showPageEditorLayout: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && contentsView.activeEditorViewModeValue === contentsView.pageEditorViewModeValue
-    readonly property bool showPrintEditorLayout: contentsView.showPageEditorLayout || contentsView.showPrintModeActive
-    readonly property bool showPrintMarginGuides: contentsView.showPrintModeActive
-    readonly property bool showPrintModeActive: contentsView.hasSelectedNote && !contentsView.showDedicatedResourceViewer && contentsView.activeEditorViewModeValue === contentsView.printEditorViewModeValue
+    readonly property bool showPageEditorLayout: pagePrintLayoutRenderer.showPageEditorLayout
+    readonly property bool showPrintEditorLayout: pagePrintLayoutRenderer.showPrintEditorLayout
+    readonly property bool showPrintMarginGuides: pagePrintLayoutRenderer.showPrintMarginGuides
+    readonly property bool showPrintModeActive: pagePrintLayoutRenderer.showPrintModeActive
     property alias syncingEditorTextFromModel: editorSession.syncingEditorTextFromModel
     readonly property real textOriginY: {
         return contentsView.editorDocumentStartY + contentsView.editorContentOffsetY;
@@ -1212,6 +1206,24 @@ Item {
         contentsView.scheduleGutterRefresh(2);
     }
 
+    ContentsPagePrintLayoutRenderer {
+        id: pagePrintLayoutRenderer
+
+        activeEditorViewMode: contentsView.activeEditorViewModeValue
+        dedicatedResourceViewerVisible: contentsView.showDedicatedResourceViewer
+        editorContentHeight: contentEditor && contentEditor.inputContentHeight !== undefined ? Number(contentEditor.inputContentHeight) || 0 : 0
+        editorViewportHeight: contentsView.editorViewportHeight
+        editorViewportWidth: editorViewport ? Number(editorViewport.width) || 0 : 0
+        guideHorizontalInset: LV.Theme.gap12 * 2
+        guideVerticalInset: LV.Theme.gap12 * 2
+        hasSelectedNote: contentsView.hasSelectedNote
+        paperHorizontalMargin: LV.Theme.gap12
+        paperMaxWidth: Math.max(0, Math.round(LV.Theme.scaleMetric(880)))
+        paperSeparatorThickness: Math.max(1, Math.round(LV.Theme.strokeThin))
+        paperShadowOffsetX: Math.max(1, Math.round(LV.Theme.scaleMetric(1)))
+        paperShadowOffsetY: Math.max(1, Math.round(LV.Theme.scaleMetric(2)))
+        paperVerticalMargin: LV.Theme.gap4
+    }
     ContentsEditorSelectionController {
         id: editorSelectionController
 
@@ -1461,14 +1473,10 @@ Item {
                                 anchors.fill: parent
                                 color: contentsView.printCanvasColor
                             }
-                            Rectangle {
+                            Item {
                                 id: printPaperColumn
 
-                                border.color: contentsView.printPaperBorderColor
-                                border.width: contentsView.printPaperSeparatorThickness
-                                color: contentsView.printPaperColor
                                 height: contentsView.printPaperDocumentHeight
-                                radius: LV.Theme.radiusSm
                                 width: contentsView.printPaperResolvedWidth
                                 x: Math.max(0, (Number(parent ? parent.width : 0) - width) / 2)
                                 y: contentsView.printPaperVerticalMargin
@@ -1483,10 +1491,42 @@ Item {
                                     height: contentsView.printPaperResolvedHeight
 
                                     Rectangle {
+                                        x: contentsView.printPaperShadowOffsetX
+                                        y: contentsView.printPaperShadowOffsetY
+                                        width: parent.width
+                                        height: parent.height
+                                        color: contentsView.printPaperShadowColor
+                                        radius: LV.Theme.radiusSm
+                                        z: -2
+                                    }
+                                    Rectangle {
+                                        id: printPaperSheet
+
+                                        anchors.fill: parent
+                                        border.color: contentsView.printPaperBorderColor
+                                        border.width: contentsView.printPaperSeparatorThickness
+                                        color: contentsView.printPaperColor
+                                        gradient: Gradient {
+                                            GradientStop {
+                                                position: 0.0
+                                                color: contentsView.printPaperHighlightColor
+                                            }
+                                            GradientStop {
+                                                position: 0.72
+                                                color: contentsView.printPaperColor
+                                            }
+                                            GradientStop {
+                                                position: 1.0
+                                                color: contentsView.printPaperShadeColor
+                                            }
+                                        }
+                                        radius: LV.Theme.radiusSm
+                                    }
+                                    Rectangle {
                                         anchors.left: parent.left
                                         anchors.right: parent.right
                                         anchors.top: parent.top
-                                        color: contentsView.printPaperBorderColor
+                                        color: contentsView.printPaperSeparatorColor
                                         height: contentsView.printPaperSeparatorThickness
                                         visible: index > 0
                                     }

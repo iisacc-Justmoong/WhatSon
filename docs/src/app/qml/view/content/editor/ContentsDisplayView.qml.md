@@ -21,6 +21,10 @@ that sit directly inside the editor viewport.
   - print-paper/resource card border thickness uses `LV.Theme.strokeThin`
 - `Page` / `Print` mode still route the live editor through the outer paper-document viewport so scrolling owns the
   paper surface rather than a fixed-height nested editor.
+- `Page` / `Print` paper background now renders an A4-style sheet tone (off-white highlight/shade gradient), per-page
+  separator, and subtle shadow so preview surfaces no longer collapse into a plain white block.
+- Page/Print mode-state and paper-geometry math are now sourced from backend
+  `ContentsPagePrintLayoutRenderer` (`WhatSon.App.Internal`), not from local QML arithmetic.
 
 ## Key Collaborators
 
@@ -32,6 +36,7 @@ that sit directly inside the editor viewport.
 - `ContentsMinimapLayer.qml`
 - `ContentsMinimapSnapshotSupport.js`
 - `ContentsResourceViewer.qml`
+- `ContentsPagePrintLayoutRenderer` (C++ backend)
 - `ContentViewLayout.qml`
 
 ## Interaction Notes
@@ -125,6 +130,8 @@ that sit directly inside the editor viewport.
     live `TextEdit`; the whole-document commit should wait for blur or another explicit immediate refresh path.
   - Desktop typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must flow through
     the buffered fetch boundary instead.
+  - `Page` / `Print` mode must render the paper background with sheet tone + separator + subtle shadow instead of a
+    plain white flat fill.
 - While the desktop editor is focused, periodic note snapshot polling must not reapply an older same-note
   `currentBodyText` payload into the live editor buffer.
 - While the desktop typing session remains active or `pendingBodySave` is true, timer-driven snapshot polling must stay
@@ -143,6 +150,8 @@ that sit directly inside the editor viewport.
     whole-note `positionToRectangle(...)` sweep when the minimap is merely hidden.
   - Resource overlays and dedicated resource viewing must still occupy the editor viewport correctly.
   - `Page` / `Print` mode must keep the external paper-document scroll contract.
+  - Page/Print viewport and page-count calculations must stay bound to backend
+    `ContentsPagePrintLayoutRenderer`; QML must not reintroduce duplicate local page-math state.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs in the editor while
     persistence continues to use the source-driven note body path.
   - Desktop markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux) must still reach the

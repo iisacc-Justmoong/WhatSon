@@ -51,6 +51,10 @@ suppression local to this file.
 - Mobile shares the same LVRS tokenized editor/gutter/minimap metric defaults and editor typography baseline as desktop.
 - Print-paper/resource card border thickness also follows `LV.Theme.strokeThin`.
 - `Page` / `Print` mode still scroll the outer paper-document viewport instead of a fixed-height nested editor.
+- `Page` / `Print` paper background now renders an A4-style sheet tone (off-white gradient), per-page separator, and
+  subtle shadow so mobile preview mode also reads as paper instead of a flat white fill.
+- Page/Print mode-state and paper-geometry math are now sourced from backend
+  `ContentsPagePrintLayoutRenderer` (`WhatSon.App.Internal`) rather than local QML calculations.
 
 ## Ownership
 
@@ -115,6 +119,8 @@ suppression local to this file.
     into the live `TextEdit`; the commit must wait for blur or another explicit immediate refresh path.
   - Mobile typing must not perform direct `.wsnote` persistence on every mutation; filesystem sync must flow through
     the buffered fetch boundary instead.
+  - Mobile `Page` / `Print` mode must render the paper background with sheet tone + separator + subtle shadow instead
+    of a plain white flat fill.
   - Mobile hidden-minimap states must still keep line geometry current through the incremental line-group cache rather
     than re-running whole-note text-geometry sampling for gutter helpers.
   - Mobile body edits must not force full-document minimap text-geometry sampling; only the changed logical-line
@@ -145,6 +151,8 @@ suppression local to this file.
   - RAW-safe entity text such as `&lt;bold&gt;` or `Tom &amp; Jerry` must display as visible glyphs on mobile while the
     source-driven persistence path remains unchanged.
   - Mobile `Page` / `Print` mode must keep the outer paper-document scroll contract.
+  - Mobile Page/Print viewport and page-count calculations must stay bound to backend
+    `ContentsPagePrintLayoutRenderer`; local duplicate page-math state must not be reintroduced.
   - Mobile hardware-keyboard markdown list shortcuts (`Cmd+Shift+7/8` on macOS, `Alt+Shift+7/8` on Windows/Linux)
     must stay aligned with the desktop markdown list behavior.
   - Any pointer-driven right-click formatting flow must preserve a multi-paragraph or mixed-inline dragged selection
