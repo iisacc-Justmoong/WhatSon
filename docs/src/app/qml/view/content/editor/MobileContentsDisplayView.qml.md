@@ -64,6 +64,8 @@ suppression local to this file.
   with the desktop implementation.
 - `ContentsAgendaLayer.qml` is also shared with desktop for non-Plain agenda/task card rendering.
 - `ContentsCalloutLayer.qml` is also shared with desktop for non-Plain callout-row rendering.
+- Mobile also routes agenda/callout overlay placement through `sourceOffsetYResolver(sourceStart)`, so cards/rows are
+  placed at authored source-tag locations in note flow.
 - `ContentsAgendaBackend` is shared with desktop for agenda parsing, task-toggle rewrite, and agenda shortcut mutation
   payloads.
 - `ContentsCalloutBackend` is shared with desktop for callout parsing and insertion payload generation.

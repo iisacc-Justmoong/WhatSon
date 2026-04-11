@@ -20,6 +20,10 @@
 - During that staging turn, session now treats `date="yyyy-mm-dd"` in `<agenda ...>` as a modified-time placeholder
   and rewrites it to the current local `YYYY-MM-DD` token before enqueueing persistence.
 - That placeholder normalization is delegated to `ContentsAgendaBackend.normalizeAgendaModifiedDate(...)`.
+- Session also normalizes empty structured blocks into cursor-reachable anchors before sync/persistence staging:
+  - `<task ...></task>` -> `<task ...> </task>`
+  - `<callout></callout>` -> `<callout> </callout>`
+  - this keeps existing empty agenda/callout tags editable through logical/source offset mapping.
 - The session no longer blocks note swaps on an immediate save acceptance path.
 - `flushPendingEditorText()` is now only a best-effort final fetch request; it is no longer part of ordinary note-switch
   control flow.
@@ -81,6 +85,8 @@
   `textEdited` processing turn.
 - If the editor buffer contains `<agenda date="yyyy-mm-dd">`, the first local persistence-staging turn after
   modification must rewrite that placeholder to current `YYYY-MM-DD`.
+- If model/body sync includes empty `<task>` or empty `<callout>` blocks, editor session normalization must expose
+  them as single-space anchor bodies so subsequent typing/Enter flow can still target those structures.
 
 ## Intended Detailed Sections
 - Responsibility and business role

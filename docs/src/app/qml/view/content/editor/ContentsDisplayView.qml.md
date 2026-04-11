@@ -56,6 +56,9 @@ that sit directly inside the editor viewport.
   attribute in source through `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
 - Callout cards rendered from `<callout>...</callout>` source blocks now also overlay the editor viewport in
   non-Plain view modes (Page/Print/Web/Presentation) through `ContentsCalloutLayer.qml`.
+- Agenda/callout overlay layers are now positioned by tag source offset through
+  `sourceOffsetYResolver(sourceStart)`, so cards appear at authored tag locations in editor flow instead of only
+  fixed top stacking.
 - Direct `.wsresource` selections still switch the surface to the dedicated in-editor resource viewer.
 - Context-menu formatting, keyboard shortcuts, gutter refresh, and minimap snapshot refresh all remain rooted in this
   file.

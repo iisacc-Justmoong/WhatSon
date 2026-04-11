@@ -56,8 +56,24 @@ Item {
         }
         return String(editorSession.agendaBackend.normalizeAgendaModifiedDate(sourceText));
     }
+    function normalizeStructuredEmptyBlockAnchors(text) {
+        let sourceText = text === undefined || text === null ? "" : String(text);
+        if (sourceText.length === 0)
+            return sourceText;
+        sourceText = sourceText.replace(
+                    /<task\b([^>]*)>\s*<\/task>/gi,
+                    "<task$1> </task>");
+        sourceText = sourceText.replace(
+                    /<callout\b([^>]*)>\s*<\/callout>/gi,
+                    "<callout$1> </callout>");
+        return sourceText;
+    }
+    function normalizedEditorText(text) {
+        return editorSession.normalizeAgendaPlaceholderDates(
+                    editorSession.normalizeStructuredEmptyBlockAnchors(text));
+    }
     function normalizeModifiedEditorText(text) {
-        const normalizedText = editorSession.normalizeAgendaPlaceholderDates(text);
+        const normalizedText = editorSession.normalizedEditorText(text);
         if (editorSession.editorText !== normalizedText)
             editorSession.editorText = normalizedText;
         return normalizedText;
@@ -76,7 +92,7 @@ Item {
     }
     function requestSyncEditorTextFromSelection(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextText = text === undefined || text === null ? "" : String(text);
+        const nextText = editorSession.normalizedEditorText(text);
         const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
         const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
         if (currentNoteId !== nextNoteId && editorSession.pendingBodySave) {
@@ -119,7 +135,7 @@ Item {
     }
     function shouldAcceptModelBodyText(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextText = text === undefined || text === null ? "" : String(text);
+        const nextText = editorSession.normalizedEditorText(text);
         const currentNoteId = editorSession.editorBoundNoteId === undefined || editorSession.editorBoundNoteId === null ? "" : String(editorSession.editorBoundNoteId);
         const currentText = editorSession.editorText === undefined || editorSession.editorText === null ? "" : String(editorSession.editorText);
         if (nextNoteId !== currentNoteId)
@@ -132,7 +148,7 @@ Item {
     }
     function syncEditorTextFromSelection(noteId, text) {
         const nextNoteId = noteId === undefined || noteId === null ? "" : String(noteId);
-        const nextText = text === undefined || text === null ? "" : String(text);
+        const nextText = editorSession.normalizedEditorText(text);
         const noteChanged = editorSession.editorBoundNoteId !== nextNoteId;
         const textChanged = editorSession.editorText !== nextText;
         if (!noteChanged && !textChanged)

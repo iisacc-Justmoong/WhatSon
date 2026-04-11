@@ -8,6 +8,7 @@ The layer is backend-fed:
 - input: canonical source text (`sourceText`)
 - parser backend: `calloutBackend.parseCallouts(sourceText)` (`ContentsCalloutBackend`)
 - output: LVRS callout rows (`background + 1px divider + text`)
+- placement hook: `sourceOffsetYResolver(sourceStart)` (host-provided source-offset -> viewport-y resolver)
 
 ## Rendering Contract
 
@@ -28,6 +29,9 @@ The layer is backend-fed:
 
 - Source parsing rules are implemented in `src/app/callout/ContentsCalloutBackend.cpp`.
 - This QML layer consumes only the backend parse result model and does not perform source-regex parsing locally.
+- Parse entries now include `sourceStart`; rows are positioned by source location instead of only top stacking.
+- The layer now normalizes backend `QVariantList`-like return values into JS arrays instead of depending on
+  `Array.isArray(...)` only, so C++ invokable parse results still produce visible callout rows in QML.
 
 ## Regression Checks
 
@@ -35,3 +39,5 @@ The layer is backend-fed:
 - A multi-line source `<callout>Line 1\nLine 2</callout>` must render as one row with expanded background/divider
   height.
 - Empty or unsupported source must produce zero callout rows.
+- Callout rows must be placed at resolved source locations (`sourceOffsetYResolver`) so authored tag position is
+  reflected on editor surface.

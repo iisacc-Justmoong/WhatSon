@@ -1716,8 +1716,15 @@ Item {
                         anchors.topMargin: (contentsView.showPrintEditorLayout
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY)
-                                          + (calloutRenderLayer.visible ? calloutRenderLayer.implicitHeight + LV.Theme.gap2 : 0)
                         sourceText: contentsView.editorText
+                        sourceOffsetYResolver: function (sourceOffset) {
+                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
+                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
+                            if (contentsView.showPrintEditorLayout)
+                                return (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset + documentY;
+                            return contentsView.editorDocumentStartY + documentY + contentsView.editorContentOffsetY;
+                        }
                         taskToggleHandler: function (taskOpenTagStart, taskOpenTagEnd, checked) {
                             contentsView.setAgendaTaskDone(taskOpenTagStart, taskOpenTagEnd, checked);
                         }
@@ -1751,6 +1758,14 @@ Item {
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY
                         sourceText: contentsView.editorText
+                        sourceOffsetYResolver: function (sourceOffset) {
+                            const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
+                                        Math.max(0, Math.floor(Number(sourceOffset) || 0)));
+                            const documentY = Math.max(0, Number(contentsView.documentYForOffset(logicalOffset)) || 0);
+                            if (contentsView.showPrintEditorLayout)
+                                return (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset + documentY;
+                            return contentsView.editorDocumentStartY + documentY + contentsView.editorContentOffsetY;
+                        }
                         visible: contentsView.hasSelectedNote
                                  && !contentsView.showDedicatedResourceViewer
                                  && !contentsView.showFormattedTextRenderer

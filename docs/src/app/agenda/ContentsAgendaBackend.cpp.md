@@ -5,11 +5,14 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 
 ## Key Behaviors
 - Parses `<agenda ...>...</agenda>` blocks and nested `<task ...>...</task>` rows into QML-friendly `QVariantList`
-  entries (`date`, `tasks`, `done`, `text`, source open-tag offsets).
+  entries (`date`, `sourceStart`, `tasks`, `done`, `text`, source open-tag offsets).
 - Rewrites one task open-tag `done` attribute while preserving the rest of the source.
 - Builds canonical agenda insertion payloads:
   - `<agenda date="YYYY-MM-DD"><task done="true|false">...</task></agenda>`
-  - cursor placement offset inside the task body.
+  - when inserted task body is empty, writes a single-space edit anchor (`<task ...> </task>`) so the editor cursor
+    can enter task scope through logical/source offset mapping.
+  - for that empty-anchor case, cursor placement targets task-body start (before the anchor), keeping first typing
+    input natural and preserving empty-task Enter-exit behavior.
 - Detects todo shorthand edits from plain-text deltas and returns source replacement metadata.
 - Detects `Enter` behavior inside `<task>`:
   - non-empty task -> append `</task><task done="false">`
@@ -32,6 +35,7 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 - `<agenda date="2026-04-11"><task done="false">A</task></agenda>` must parse as one agenda + one unchecked task.
 - Task toggle rewrite must only mutate the targeted open-tag `done` value.
 - Typing `[] task` / `[x] task` must produce canonical agenda/task source replacement payloads.
+- Empty agenda insertion payloads must include a one-space task anchor and place cursor at task-body start.
 - Pressing `Enter` in an empty task must exit agenda editing according to source context.
 - Pressing `Enter` in an empty task while all sibling tasks are also empty must remove the entire agenda block.
 - `date="yyyy-mm-dd"` must normalize to `YYYY-MM-DD` during modification staging.

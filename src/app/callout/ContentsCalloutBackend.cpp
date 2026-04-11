@@ -27,6 +27,20 @@ namespace
         return static_cast<int>(std::min<qsizetype>(text.size(), maxIntSize));
     }
 
+    int boundedQSizeToInt(const qsizetype value)
+    {
+        constexpr qsizetype maxIntSize = static_cast<qsizetype>(std::numeric_limits<int>::max());
+        if (value < 0)
+        {
+            return -1;
+        }
+        if (value > maxIntSize)
+        {
+            return std::numeric_limits<int>::max();
+        }
+        return static_cast<int>(value);
+    }
+
     int boundedTextIndex(const QString& text, const int index)
     {
         return std::clamp(index, 0, boundedQStringSize(text));
@@ -144,6 +158,9 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText) co
 
         QVariantMap entry;
         entry.insert(
+            QStringLiteral("sourceStart"),
+            std::max(0, boundedQSizeToInt(match.capturedStart(0))));
+        entry.insert(
             QStringLiteral("text"),
             visibleCalloutText(match.captured(1)));
         callouts.push_back(entry);
@@ -154,9 +171,18 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText) co
 
 QVariantMap ContentsCalloutBackend::buildCalloutInsertionPayload(const QString& bodyText) const
 {
-    const QString escapedBodyText = escapeSourceLiteral(bodyText);
+    QString escapedBodyText = escapeSourceLiteral(bodyText);
+    const bool insertedEmptyAnchor = escapedBodyText.trimmed().isEmpty();
+    if (insertedEmptyAnchor)
+    {
+        // Keep one editable anchor character so empty shortcut callouts remain cursor-reachable.
+        escapedBodyText = QStringLiteral(" ");
+    }
     const QString calloutOpenTag = QStringLiteral("<callout>");
     const QString calloutCloseTag = QStringLiteral("</callout>");
+    const int cursorSourceOffsetFromInsertionStart = insertedEmptyAnchor
+                                                         ? calloutOpenTag.size()
+                                                         : calloutOpenTag.size() + escapedBodyText.size();
 
     QVariantMap insertionPayload;
     insertionPayload.insert(QStringLiteral("applied"), true);
@@ -164,7 +190,7 @@ QVariantMap ContentsCalloutBackend::buildCalloutInsertionPayload(const QString& 
     insertionPayload.insert(QStringLiteral("calloutCloseTag"), calloutCloseTag);
     insertionPayload.insert(
         QStringLiteral("cursorSourceOffsetFromInsertionStart"),
-        calloutOpenTag.size() + escapedBodyText.size());
+        cursorSourceOffsetFromInsertionStart);
     insertionPayload.insert(
         QStringLiteral("insertionSourceText"),
         calloutOpenTag + escapedBodyText + calloutCloseTag);

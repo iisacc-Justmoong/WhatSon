@@ -29,10 +29,14 @@ This controller exists to keep plain typing separate from inline-format applicat
   whole line into the canonical divider source token `</break>` before source persistence.
 - The controller now also owns agenda source shortcuts:
   - `queueAgendaShortcutInsertion()` inserts canonical agenda source directly into RAW at the current cursor.
+  - empty agenda shortcut payloads include an internal one-space task-body anchor so cursor/Enter flow can still
+    address the inserted task in logical/source mapping.
   - typing `[] item` or `[x] item` triggers todo shorthand canonicalization.
   - pressing `Enter` inside `<task>` triggers agenda-aware newline handling.
 - The controller now also owns callout source shortcuts:
   - `queueCalloutShortcutInsertion()` inserts canonical callout source directly into RAW at the current cursor.
+  - empty callout shortcut payloads include an internal one-space body anchor so cursor/Enter flow can still
+    address the inserted callout in logical/source mapping.
   - pressing `Enter` on a trailing empty callout line exits callout editing instead of adding another empty inner line.
 - Agenda-specific source mutation logic above is delegated to `ContentsAgendaBackend`:
   - `buildAgendaInsertionPayload(...)`
@@ -172,10 +176,12 @@ longer part of the normal typing path.
   the original source omitted the usual separator space.
 - Typing a standalone `---` line must immediately persist canonical source `</break>` (not literal `---`).
 - Typing `---` inside longer text (`abc---`, `---todo`, `----`) must not trigger divider canonicalization.
-- `Cmd+Opt+T` must insert one canonical agenda block at the current cursor into RAW source.
+- `Cmd+Opt+T` must insert one canonical agenda block at the current cursor into RAW source, and empty task bodies must
+  still remain cursor-reachable via an internal one-space anchor.
 - `Ctrl+Alt+T` fallback must trigger the same agenda insertion behavior when runtime Command mapping resolves as
   `ControlModifier`.
-- `Cmd+Opt+C` must insert one canonical `<callout>...</callout>` wrapper at the current cursor into RAW source.
+- `Cmd+Opt+C` must insert one canonical `<callout>...</callout>` wrapper at the current cursor into RAW source, and
+  empty callout bodies must still remain cursor-reachable via an internal one-space anchor.
 - `Ctrl+Alt+C` fallback must trigger the same callout insertion behavior when runtime Command mapping resolves as
   `ControlModifier`.
 - Pressing `Enter` twice at the end of `<callout>...</callout>` must move the cursor out of the callout on the second

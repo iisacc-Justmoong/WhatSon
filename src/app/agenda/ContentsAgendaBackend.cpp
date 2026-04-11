@@ -291,6 +291,9 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
 
         QVariantMap agendaEntry;
         agendaEntry.insert(
+            QStringLiteral("sourceStart"),
+            std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(0))));
+        agendaEntry.insert(
             QStringLiteral("date"),
             normalizedAgendaDateForDisplay(tagAttributeValue(agendaMatch.captured(1), QStringLiteral("date"))));
 
@@ -387,11 +390,20 @@ QVariantMap ContentsAgendaBackend::buildAgendaInsertionPayload(
     const bool done,
     const QString& taskText) const
 {
-    const QString escapedTaskBodyText = escapeSourceLiteral(taskText);
+    QString escapedTaskBodyText = escapeSourceLiteral(taskText);
+    const bool insertedEmptyAnchor = escapedTaskBodyText.trimmed().isEmpty();
+    if (insertedEmptyAnchor)
+    {
+        // Keep one editable anchor character so empty shortcut agendas remain cursor-reachable in editor text metrics.
+        escapedTaskBodyText = QStringLiteral(" ");
+    }
     const QString doneValue = done ? QStringLiteral("true") : QStringLiteral("false");
     const QString agendaOpenTag = QStringLiteral("<agenda date=\"%1\"><task done=\"%2\">")
                                       .arg(todayIsoDate(), doneValue);
     const QString agendaCloseTag = QStringLiteral("</task></agenda>");
+    const int cursorSourceOffsetFromInsertionStart = insertedEmptyAnchor
+                                                         ? agendaOpenTag.size()
+                                                         : agendaOpenTag.size() + escapedTaskBodyText.size();
 
     QVariantMap insertionPayload;
     insertionPayload.insert(QStringLiteral("applied"), true);
@@ -399,7 +411,7 @@ QVariantMap ContentsAgendaBackend::buildAgendaInsertionPayload(
     insertionPayload.insert(QStringLiteral("agendaCloseTag"), agendaCloseTag);
     insertionPayload.insert(
         QStringLiteral("cursorSourceOffsetFromInsertionStart"),
-        agendaOpenTag.size() + escapedTaskBodyText.size());
+        cursorSourceOffsetFromInsertionStart);
     insertionPayload.insert(
         QStringLiteral("insertionSourceText"),
         agendaOpenTag + escapedTaskBodyText + agendaCloseTag);

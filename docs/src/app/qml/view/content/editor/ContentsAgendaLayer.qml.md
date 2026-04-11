@@ -9,6 +9,7 @@ The layer is now a backend-fed view:
 - parser backend: `agendaBackend.parseAgendas(sourceText)` (`ContentsAgendaBackend`)
 - output: LVRS card + `LV.CheckBox` task rows
 - mutation hook: `taskToggleHandler(taskOpenTagStart, taskOpenTagEnd, checked)`
+- placement hook: `sourceOffsetYResolver(sourceStart)` (host-provided source-offset -> viewport-y resolver)
 
 ## Rendering Contract
 
@@ -27,6 +28,10 @@ The layer is now a backend-fed view:
 
 - Source parsing rules are implemented in `src/app/agenda/ContentsAgendaBackend.cpp`.
 - This QML layer consumes only the backend parse result model and does not perform source-regex parsing locally.
+- Parse entries now include `sourceStart`; cards are positioned by source order/location, not by a fixed top-stacked
+  column only.
+- The layer now normalizes backend `QVariantList`-like return values into JS arrays instead of depending on
+  `Array.isArray(...)` only, so C++ invokable parse results still drive card visibility/model counts in QML.
 
 ## Mutation Hook
 
@@ -41,3 +46,5 @@ The layer is now a backend-fed view:
 - A source `<agenda date="2026-04-11"><task done="false">A</task></agenda>` must render one agenda card with one unchecked checkbox.
 - Toggling a checkbox must call `taskToggleHandler(...)` with stable open-tag offsets for that task.
 - Multiple task rows in one agenda must preserve source order.
+- Agenda cards must be placed at the resolved source location (`sourceOffsetYResolver`) so cards appear where tags are
+  authored in note flow.

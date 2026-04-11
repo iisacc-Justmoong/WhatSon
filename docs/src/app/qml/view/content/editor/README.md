@@ -121,14 +121,15 @@
 - `ContentsEditorTypingController.qml` now also canonicalizes a standalone `---` typing line into the proprietary
   divider source token `</break>` before persistence.
 - `ContentsEditorTypingController.qml` now also owns agenda authoring shortcuts:
-  - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"></task></agenda>`
+  - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"> </task></agenda>` (empty-body
+    cursor anchor included)
   - `Ctrl+Alt+T` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - markdown-like `[] item` / `[x] item` lines are rewritten into agenda/task source blocks
   - pressing `Enter` inside `<task>` either creates the next `<task>` or exits agenda editing when the current task is
     empty
   - if agenda exit occurs on an empty task and all sibling tasks are empty, the entire agenda block is removed
 - `ContentsEditorTypingController.qml` now also owns callout authoring shortcuts:
-  - `Cmd+Opt+C` inserts canonical `<callout></callout>` into RAW at the current cursor
+  - `Cmd+Opt+C` inserts canonical `<callout> </callout>` (empty-body cursor anchor included) into RAW at the current cursor
   - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
   - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
@@ -138,10 +139,15 @@
 - `ContentsEditorSession.qml` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
   - when local note modification is staged for persistence, placeholder dates are rewritten to current `YYYY-MM-DD`
   - passive same-note model sync does not rewrite agenda dates
+- `ContentsEditorSession.qml` now also normalizes empty structured blocks into one-space anchors on model sync:
+  - `<task ...></task>` -> `<task ...> </task>`
+  - `<callout></callout>` -> `<callout> </callout>`
 - `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders agenda cards
   with `LV.CheckBox` task rows bound to source `done` attributes via `ContentsAgendaBackend`.
 - `ContentsCalloutLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders Figma-aligned callout rows
   from canonical `<callout>...</callout>` source wrappers.
+- Agenda/callout layers now consume parser-returned `sourceStart` offsets and host `sourceOffsetYResolver(...)`
+  callbacks, so structured cards are placed at authored source-tag positions in the editor viewport.
 - Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do
   not get stuck in an endless empty-list state.
 - `Page` / `Print` now mount the live RichText editor inside an outer paper-document viewport, so the paper grows with
