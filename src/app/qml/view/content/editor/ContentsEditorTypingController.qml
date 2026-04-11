@@ -489,18 +489,7 @@ QtObject {
                 || controller.view.showFormattedTextRenderer) {
             return false;
         }
-        if (!controller.agendaBackend
-                || controller.agendaBackend.buildAgendaInsertionPayload === undefined) {
-            return false;
-        }
-        const insertionPayload = controller.agendaBackend.buildAgendaInsertionPayload(false, "");
-        const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
-                ? String(insertionPayload.insertionSourceText)
-                : "";
-        const cursorSourceOffsetFromInsertionStart = insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
-                ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
-                : 0;
-        return controller.insertRawShortcutSourceAtCursor(insertionSourceText, cursorSourceOffsetFromInsertionStart);
+        return controller.insertStructuredShortcutSourceAtCursor("agenda");
     }
 
     function queueCalloutShortcutInsertion() {
@@ -510,18 +499,87 @@ QtObject {
                 || controller.view.showFormattedTextRenderer) {
             return false;
         }
-        if (!controller.calloutBackend
-                || controller.calloutBackend.buildCalloutInsertionPayload === undefined) {
-            return false;
+        return controller.insertStructuredShortcutSourceAtCursor("callout");
+    }
+
+    function completeStructuredShortcutInsertionSpec(shortcutKind) {
+        const normalizedKind = shortcutKind === undefined || shortcutKind === null
+                ? ""
+                : String(shortcutKind).toLowerCase();
+        if (normalizedKind === "agenda") {
+            if (!controller.agendaBackend
+                    || controller.agendaBackend.buildAgendaInsertionPayload === undefined) {
+                return ({
+                        "applied": false,
+                        "cursorSourceOffsetFromInsertionStart": 0,
+                        "insertionSourceText": ""
+                    });
+            }
+            const insertionPayload = controller.agendaBackend.buildAgendaInsertionPayload(false, "");
+            const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
+                    ? String(insertionPayload.insertionSourceText)
+                    : "";
+            const canonicalAgendaPattern = /^<agenda\b[^>]*>\s*<task\b[^>]*>[\s\S]*<\/task>\s*<\/agenda>$/i;
+            if (!canonicalAgendaPattern.test(insertionSourceText)) {
+                return ({
+                        "applied": false,
+                        "cursorSourceOffsetFromInsertionStart": 0,
+                        "insertionSourceText": ""
+                    });
+            }
+            return ({
+                    "applied": true,
+                    "cursorSourceOffsetFromInsertionStart": insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
+                                                           ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
+                                                           : 0,
+                    "insertionSourceText": insertionSourceText
+                });
         }
-        const insertionPayload = controller.calloutBackend.buildCalloutInsertionPayload("");
-        const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
-                ? String(insertionPayload.insertionSourceText)
-                : "";
-        const cursorSourceOffsetFromInsertionStart = insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
-                ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
-                : 0;
-        return controller.insertRawShortcutSourceAtCursor(insertionSourceText, cursorSourceOffsetFromInsertionStart);
+
+        if (normalizedKind === "callout") {
+            if (!controller.calloutBackend
+                    || controller.calloutBackend.buildCalloutInsertionPayload === undefined) {
+                return ({
+                        "applied": false,
+                        "cursorSourceOffsetFromInsertionStart": 0,
+                        "insertionSourceText": ""
+                    });
+            }
+            const insertionPayload = controller.calloutBackend.buildCalloutInsertionPayload("");
+            const insertionSourceText = insertionPayload && insertionPayload.insertionSourceText !== undefined
+                    ? String(insertionPayload.insertionSourceText)
+                    : "";
+            const canonicalCalloutPattern = /^<callout>[\s\S]*<\/callout>$/i;
+            if (!canonicalCalloutPattern.test(insertionSourceText)) {
+                return ({
+                        "applied": false,
+                        "cursorSourceOffsetFromInsertionStart": 0,
+                        "insertionSourceText": ""
+                    });
+            }
+            return ({
+                    "applied": true,
+                    "cursorSourceOffsetFromInsertionStart": insertionPayload && insertionPayload.cursorSourceOffsetFromInsertionStart !== undefined
+                                                           ? Math.max(0, Math.floor(Number(insertionPayload.cursorSourceOffsetFromInsertionStart) || 0))
+                                                           : 0,
+                    "insertionSourceText": insertionSourceText
+                });
+        }
+
+        return ({
+                "applied": false,
+                "cursorSourceOffsetFromInsertionStart": 0,
+                "insertionSourceText": ""
+            });
+    }
+
+    function insertStructuredShortcutSourceAtCursor(shortcutKind) {
+        const insertionSpec = controller.completeStructuredShortcutInsertionSpec(shortcutKind);
+        if (!insertionSpec.applied)
+            return false;
+        return controller.insertRawShortcutSourceAtCursor(
+                    String(insertionSpec.insertionSourceText || ""),
+                    Math.max(0, Math.floor(Number(insertionSpec.cursorSourceOffsetFromInsertionStart) || 0)));
     }
 
     function currentLogicalCursorOffsetForShortcutInsertion() {
@@ -532,6 +590,72 @@ QtObject {
         if (!isFinite(numericCursor))
             return plainTextLength;
         return Math.max(0, Math.min(plainTextLength, Math.floor(numericCursor)));
+    }
+
+    function findEnclosingStructuredShortcutBlock(sourceText, sourceOffset) {
+        const normalizedSourceText = controller.normalizePlainText(sourceText);
+        const safeSourceOffset = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Math.floor(Number(sourceOffset) || 0)));
+        const blockPatterns = [
+            {
+                "regex": /<agenda\b[^>]*>[\s\S]*?<\/agenda>/gi,
+                "type": "agenda"
+            },
+            {
+                "regex": /<callout\b[^>]*>[\s\S]*?<\/callout>/gi,
+                "type": "callout"
+            }
+        ];
+
+        for (let patternIndex = 0; patternIndex < blockPatterns.length; ++patternIndex) {
+            const patternSpec = blockPatterns[patternIndex];
+            const regex = patternSpec.regex;
+            regex.lastIndex = 0;
+
+            let match = regex.exec(normalizedSourceText);
+            while (match) {
+                const blockToken = String(match[0] || "");
+                const blockStart = Math.max(0, Number(match.index) || 0);
+                const blockEnd = blockStart + blockToken.length;
+                if (safeSourceOffset > blockStart && safeSourceOffset < blockEnd) {
+                    return ({
+                            "end": blockEnd,
+                            "found": true,
+                            "start": blockStart,
+                            "type": patternSpec.type
+                        });
+                }
+
+                if (regex.lastIndex === match.index)
+                    regex.lastIndex = match.index + Math.max(1, blockToken.length);
+                match = regex.exec(normalizedSourceText);
+            }
+        }
+
+        return ({
+                "end": safeSourceOffset,
+                "found": false,
+                "start": safeSourceOffset,
+                "type": ""
+            });
+    }
+
+    function resolveStructuredShortcutInsertionSourceOffset(sourceText, sourceOffset) {
+        const normalizedSourceText = controller.normalizePlainText(sourceText);
+        const safeSourceOffset = Math.max(
+                    0,
+                    Math.min(
+                        normalizedSourceText.length,
+                        Math.floor(Number(sourceOffset) || 0)));
+        const enclosingBlock = controller.findEnclosingStructuredShortcutBlock(
+                    normalizedSourceText,
+                    safeSourceOffset);
+        if (enclosingBlock.found)
+            return Math.max(0, Math.min(normalizedSourceText.length, Number(enclosingBlock.end) || 0));
+        return safeSourceOffset;
     }
 
     function insertRawShortcutSourceAtCursor(rawSourceText, cursorSourceOffsetFromInsertionStart) {
@@ -545,11 +669,14 @@ QtObject {
                 ? ""
                 : String(controller.view.editorText);
         const logicalCursor = controller.currentLogicalCursorOffsetForShortcutInsertion();
-        const sourceCursorOffset = Math.max(
+        const rawSourceCursorOffset = Math.max(
                     0,
                     Math.min(
                         currentSourceText.length,
                         Math.floor(Number(controller.sourceOffsetForLogicalOffset(logicalCursor)) || 0)));
+        const sourceCursorOffset = controller.resolveStructuredShortcutInsertionSourceOffset(
+                    currentSourceText,
+                    rawSourceCursorOffset);
         const prefixNewline = sourceCursorOffset > 0 && currentSourceText.charAt(sourceCursorOffset - 1) !== "\n"
                 ? "\n"
                 : "";

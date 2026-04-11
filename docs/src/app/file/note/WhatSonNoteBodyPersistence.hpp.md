@@ -12,6 +12,7 @@ It is the boundary between the editor-facing text model and the filesystem-facin
   canonical inline tags (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `tag`) plus normalized
   self-closed `<resource ... />` tags. The single divider source tag `</break>` is persisted as canonical XML
   `<break/>`.
+  Before that XML write step, `WhatSonStructuredTagLinter` performs safe structured-tag canonicalization.
   Proprietary checklist tags are also canonicalized:
   - `<agenda>` always persists with mandatory `date="YYYY-MM-DD"`
   - `<task>` always persists with canonical `done="true|false"`
@@ -29,7 +30,8 @@ It is the boundary between the editor-facing text model and the filesystem-facin
 - `sourceTextFromBodyDocument(...)` extracts the canonical inline-tag source projection used by the editor/session
   layer. Style/resource tags stay in proprietary inline-tag form, while stored `<tag>label</tag>` nodes project back
   to editor-visible `#label`. Stored `<break/>` (or legacy `<hr/>`) projects back to canonical editor source
-  `</break>`.
+  `</break>`. Structured tags also pass through `WhatSonStructuredTagLinter`, so persisted non-canonical agenda/task/
+  callout source rehydrates into the canonical editor RAW form whenever safe repair is possible.
 - `richTextFromBodyDocument(...)` extracts a rich-text projection from `.wsnbody` and maps inline style tags
   (`bold`, `italic`, `underline`, `strikethrough`, `highlight`, `mark`) to RichText HTML (styled `span` tags).
   Divider tags (`<break/>` / `<hr/>`) render as `<hr/>`.

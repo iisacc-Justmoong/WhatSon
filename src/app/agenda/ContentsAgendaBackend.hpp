@@ -8,12 +8,15 @@
 class ContentsAgendaBackend : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QVariantMap lastParseVerification READ lastParseVerification NOTIFY lastParseVerificationChanged)
 
 public:
     explicit ContentsAgendaBackend(QObject* parent = nullptr);
     ~ContentsAgendaBackend() override;
 
-    Q_INVOKABLE QVariantList parseAgendas(const QString& sourceText) const;
+    QVariantMap lastParseVerification() const;
+
+    Q_INVOKABLE QVariantList parseAgendas(const QString& sourceText);
     Q_INVOKABLE QString rewriteTaskDoneAttribute(
         const QString& sourceText,
         int taskOpenTagStart,
@@ -34,4 +37,13 @@ public:
         const QString& insertedText) const;
     Q_INVOKABLE QString normalizeAgendaModifiedDate(const QString& sourceText) const;
     Q_INVOKABLE QString todayIsoDate() const;
+
+signals:
+    void lastParseVerificationChanged();
+    void parseVerificationReported(const QVariantMap& verification);
+
+private:
+    void updateLastParseVerification(const QVariantMap& verification);
+
+    QVariantMap m_lastParseVerification;
 };

@@ -5,7 +5,21 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 
 ## Key Behaviors
 - Parses `<agenda ...>...</agenda>` blocks and nested `<task ...>...</task>` rows into QML-friendly `QVariantList`
-  entries (`date`, `sourceStart`, `focusSourceOffset`, `tasks`, `done`, `text`, source open-tag offsets).
+  entries (`date`, `sourceStart`, `focusSourceOffset`, `tasks`, `done`, `text`, source open-tag offsets,
+  `tagVerified`).
+- Publishes parser verification reports after every parse pass:
+  - `agendaOpenCount`, `agendaCloseCount`, `agendaParsedCount`
+  - `taskOpenCount`, `taskCloseCount`, `taskParsedCount`
+  - `invalidAgendaChildCount`
+  - invalid/missing `agenda.date`
+  - self-closing `agenda` / `task`
+  - missing / non-canonical `task.done`
+  - `wellFormed`
+  - `issues`
+- Treats non-task residual content inside a parsed agenda body as an invalid-child verification failure, matching the
+  architecture rule that agenda may contain only `task` children.
+- Delegates verification-map construction to `file/validator/WhatSonStructuredTagLinter`, keeping agenda canonical
+  syntax rules in the file/domain validation layer.
 - Rewrites one task open-tag `done` attribute while preserving the rest of the source.
 - Builds canonical agenda insertion payloads:
   - `<agenda date="YYYY-MM-DD"><task done="true|false">...</task></agenda>`
@@ -36,6 +50,8 @@ Implements agenda source parsing and mutation helpers shared by desktop/mobile e
 ## Regression Checklist
 - `<agenda date="2026-04-11"><task done="false">A</task></agenda>` must parse as one agenda + one unchecked task.
 - Empty agendas that still contain one empty `<task>` body anchor must still parse into one visible agenda card model.
+- Parser verification must report `wellFormed=false` when agenda/task open-close counts diverge or when parsed agenda
+  bodies contain non-task child content.
 - Task toggle rewrite must only mutate the targeted open-tag `done` value.
 - Typing `[] task` / `[x] task` must produce canonical agenda/task source replacement payloads.
 - Empty agenda insertion payloads must include a one-space task anchor and place cursor at task-body start.

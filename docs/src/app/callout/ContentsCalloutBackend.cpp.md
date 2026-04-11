@@ -4,7 +4,16 @@
 Implements callout source parsing and insertion helpers shared by desktop/mobile editor surfaces.
 
 ## Key Behaviors
-- Parses `<callout ...>...</callout>` blocks into QML-friendly entries (`text`, `sourceStart`, `focusSourceOffset`).
+- Parses `<callout ...>...</callout>` blocks into QML-friendly entries (`text`, `sourceStart`, `focusSourceOffset`,
+  `tagVerified`).
+- Publishes parser verification reports after every parse pass:
+  - `calloutOpenCount`, `calloutCloseCount`, `calloutParsedCount`
+  - self-closing callout count
+  - non-canonical callout attribute count
+  - `wellFormed`
+  - `issues`
+- Delegates verification-map construction to `file/validator/WhatSonStructuredTagLinter`, keeping callout canonical
+  syntax rules in the file/domain validation layer.
 - Canonicalizes callout display text for rendering:
   - normalizes line endings
   - preserves source line breaks (`\n`) and maps `<br>` aliases to line breaks
@@ -30,6 +39,8 @@ Implements callout source parsing and insertion helpers shared by desktop/mobile
 - `<callout>Message</callout>` must parse as one callout entry.
 - `<callout></callout>` or `<callout> </callout>` must still parse as one visible callout entry even when body text is
   empty.
+- Parser verification must report `wellFormed=false` when callout open-close counts diverge or complete block matches
+  cannot confirm every callout tag pair.
 - `buildCalloutInsertionPayload("abc")` must return canonical source `<callout>abc</callout>` with cursor inside
   the callout body.
 - `buildCalloutInsertionPayload("")` must include a one-space body anchor and place cursor at callout-body start.

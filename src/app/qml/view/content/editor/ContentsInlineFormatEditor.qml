@@ -78,6 +78,8 @@ FocusScope {
     property string _deferredProgrammaticText: ""
     property bool _fallbackTextEditedDispatchQueued: false
     property int _nativeTextEditedSerial: 0
+    property bool _pendingProgrammaticNativeTextSuppression: false
+    property string _pendingProgrammaticNativeTextValue: ""
 
     signal textEdited(string text)
 
@@ -296,6 +298,8 @@ FocusScope {
         const previousSelectionEnd = Number(textInput.selectionEnd);
         const hadSelection = isFinite(previousSelectionStart) && isFinite(previousSelectionEnd)
                 && previousSelectionEnd > previousSelectionStart;
+        control._pendingProgrammaticNativeTextSuppression = true;
+        control._pendingProgrammaticNativeTextValue = normalizedText;
         control._programmaticTextSyncDepth += 1;
         textInput.text = normalizedText;
         if (hadSelection && previousSelectionEnd > previousSelectionStart) {
@@ -567,6 +571,17 @@ FocusScope {
         }
 
         function onTextEdited() {
+            const currentText = textInput.text === undefined || textInput.text === null
+                    ? ""
+                    : String(textInput.text);
+            if (control._pendingProgrammaticNativeTextSuppression
+                    && currentText === control._pendingProgrammaticNativeTextValue) {
+                control._pendingProgrammaticNativeTextSuppression = false;
+                control._pendingProgrammaticNativeTextValue = "";
+                return;
+            }
+            control._pendingProgrammaticNativeTextSuppression = false;
+            control._pendingProgrammaticNativeTextValue = "";
             control._nativeTextEditedSerial += 1;
             control.dispatchCommittedTextEditedIfReady();
         }

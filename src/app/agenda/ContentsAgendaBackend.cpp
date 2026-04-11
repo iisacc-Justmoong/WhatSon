@@ -1,5 +1,7 @@
 #include "ContentsAgendaBackend.hpp"
 
+#include "file/validator/WhatSonStructuredTagLinter.hpp"
+
 #include <QDate>
 #include <QRegularExpression>
 #include <QVariantMap>
@@ -246,6 +248,16 @@ namespace
         return false;
     }
 
+    bool agendaContainsOnlyTaskChildren(QString agendaInnerSourceText)
+    {
+        agendaInnerSourceText.remove(
+            QRegularExpression(
+                QStringLiteral(R"(<task\b[^>]*>[\s\S]*?</task>)"),
+                QRegularExpression::CaseInsensitiveOption));
+        agendaInnerSourceText.replace(QRegularExpression(QStringLiteral("\\s+")), QString());
+        return agendaInnerSourceText.isEmpty();
+    }
+
     QString normalizedAgendaDateForDisplay(const QString& rawDate)
     {
         const QString decodedDate = decodeSourceEntities(rawDate).trimmed();
@@ -256,6 +268,7 @@ namespace
         }
         return QStringLiteral("yyyy-mm-dd");
     }
+
 } // namespace
 
 ContentsAgendaBackend::ContentsAgendaBackend(QObject* parent)
@@ -265,11 +278,20 @@ ContentsAgendaBackend::ContentsAgendaBackend(QObject* parent)
 
 ContentsAgendaBackend::~ContentsAgendaBackend() = default;
 
-QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) const
+QVariantMap ContentsAgendaBackend::lastParseVerification() const
 {
+    return m_lastParseVerification;
+}
+
+QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText)
+{
+    const WhatSonStructuredTagLinter tagLinter;
     QVariantList agendas;
+    int parsedTaskCount = 0;
+    int invalidAgendaChildCount = 0;
     if (sourceText.isEmpty())
     {
+        updateLastParseVerification(tagLinter.buildAgendaVerification(sourceText, 0, 0, 0));
         return agendas;
     }
 
@@ -300,6 +322,11 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
         QVariantList tasks;
         int focusSourceOffset = -1;
         const QString innerSource = agendaMatch.captured(2);
+        const bool tagVerified = agendaContainsOnlyTaskChildren(innerSource);
+        if (!tagVerified)
+        {
+            ++invalidAgendaChildCount;
+        }
         const int innerSourceStart = std::max(0, boundedQSizeToInt(agendaMatch.capturedStart(2)));
         QRegularExpressionMatchIterator taskIterator = taskPattern.globalMatch(innerSource);
         while (taskIterator.hasNext())
@@ -328,9 +355,13 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
                 QStringLiteral("openTagEnd"),
                 taskOpenTagEnd);
             taskEntry.insert(
+                QStringLiteral("tagVerified"),
+                true);
+            taskEntry.insert(
                 QStringLiteral("text"),
                 decodeSourceEntities(taskMatch.captured(2)));
             tasks.push_back(taskEntry);
+            ++parsedTaskCount;
 
             if (focusSourceOffset < 0)
             {
@@ -341,10 +372,15 @@ QVariantList ContentsAgendaBackend::parseAgendas(const QString& sourceText) cons
         agendaEntry.insert(
             QStringLiteral("focusSourceOffset"),
             std::max(0, focusSourceOffset));
+        agendaEntry.insert(
+            QStringLiteral("tagVerified"),
+            tagVerified);
         agendaEntry.insert(QStringLiteral("tasks"), tasks);
         agendas.push_back(agendaEntry);
     }
 
+    updateLastParseVerification(
+        tagLinter.buildAgendaVerification(sourceText, agendas.size(), parsedTaskCount, invalidAgendaChildCount));
     return agendas;
 }
 
@@ -613,4 +649,14 @@ QString ContentsAgendaBackend::normalizeAgendaModifiedDate(const QString& source
 QString ContentsAgendaBackend::todayIsoDate() const
 {
     return QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
+}
+
+void ContentsAgendaBackend::updateLastParseVerification(const QVariantMap& verification)
+{
+    if (m_lastParseVerification != verification)
+    {
+        m_lastParseVerification = verification;
+        emit lastParseVerificationChanged();
+    }
+    emit parseVerificationReported(verification);
 }

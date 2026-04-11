@@ -7,8 +7,18 @@ Declares the editor-side structured-block renderer that projects proprietary blo
 - `sourceText`: canonical RAW note-body source consumed by the renderer.
 - `renderedAgendas`: `QVariantList` of parsed agenda/task card models.
 - `renderedCallouts`: `QVariantList` of parsed callout row models.
+- `agendaParseVerification`: latest agenda parser verification report forwarded from `ContentsAgendaBackend`.
+- `calloutParseVerification`: latest callout parser verification report forwarded from `ContentsCalloutBackend`.
+- `structuredParseVerification`: merged renderer-level verification report that bundles agenda/callout/break
+  verification, a top-level `wellFormed` bit, and `canonicalizationSuggested` when the RAW source can be safely
+  normalized by the file-layer linter.
 - `agendaCount` / `calloutCount` / `hasRenderedBlocks`: cheap QML visibility helpers.
 - `requestRenderRefresh()`: explicit recompute hook for hosts that need a forced refresh after external state changes.
+
+## Signals
+- `agendaParseVerificationChanged()` / `calloutParseVerificationChanged()` / `structuredParseVerificationChanged()`
+- `agendaParseVerificationReported(verification)` / `calloutParseVerificationReported(verification)` /
+  `structuredParseVerificationReported(verification)`
 
 ## Architectural Note
 - This renderer lives in `editor/renderer` because tag detection and render-model projection belong to the editor

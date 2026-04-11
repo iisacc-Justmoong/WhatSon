@@ -1,5 +1,7 @@
 #include "ContentsCalloutBackend.hpp"
 
+#include "file/validator/WhatSonStructuredTagLinter.hpp"
+
 #include <QRegularExpression>
 #include <algorithm>
 #include <limits>
@@ -126,6 +128,7 @@ namespace
         context.calloutContentStart = calloutContentStart;
         return context;
     }
+
 } // namespace
 
 ContentsCalloutBackend::ContentsCalloutBackend(QObject* parent)
@@ -135,11 +138,18 @@ ContentsCalloutBackend::ContentsCalloutBackend(QObject* parent)
 
 ContentsCalloutBackend::~ContentsCalloutBackend() = default;
 
-QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText) const
+QVariantMap ContentsCalloutBackend::lastParseVerification() const
 {
+    return m_lastParseVerification;
+}
+
+QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText)
+{
+    const WhatSonStructuredTagLinter tagLinter;
     QVariantList callouts;
     if (sourceText.isEmpty())
     {
+        updateLastParseVerification(tagLinter.buildCalloutVerification(sourceText, 0));
         return callouts;
     }
 
@@ -169,11 +179,15 @@ QVariantList ContentsCalloutBackend::parseCallouts(const QString& sourceText) co
             QStringLiteral("focusSourceOffset"),
             calloutStart + openTokenLength);
         entry.insert(
+            QStringLiteral("tagVerified"),
+            true);
+        entry.insert(
             QStringLiteral("text"),
             visibleCalloutText(match.captured(1)));
         callouts.push_back(entry);
     }
 
+    updateLastParseVerification(tagLinter.buildCalloutVerification(sourceText, callouts.size()));
     return callouts;
 }
 
@@ -276,4 +290,14 @@ QVariantMap ContentsCalloutBackend::detectCalloutEnterReplacement(
         {QStringLiteral("replacementSourceEnd"), calloutContext->calloutCloseEnd},
         {QStringLiteral("replacementSourceText"), exitCalloutSourceText}
     };
+}
+
+void ContentsCalloutBackend::updateLastParseVerification(const QVariantMap& verification)
+{
+    if (m_lastParseVerification != verification)
+    {
+        m_lastParseVerification = verification;
+        emit lastParseVerificationChanged();
+    }
+    emit parseVerificationReported(verification);
 }

@@ -54,6 +54,11 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
   Ordinary edits now prefer the native `TextEdit` edited signal when that path exists, and older runtimes only fall
   back to one deferred `textChanged` re-check after the platform input session settles.
   The wrapper no longer keeps its own synthetic `_compositionEditPending` commit state.
+- Native `TextEdit.onTextEdited` is now also guarded against programmatic RichText surface replacement re-entry:
+  - when the host pushes a new rendered surface into `text`
+  - the wrapper marks that exact payload as a pending programmatic native-edit suppression
+  - if Qt echoes one native `textEdited` for that same payload, the wrapper drops it instead of forwarding it to host
+    mutation controllers as if the user had typed it
 - Exposes a `textEdited(string text)` signal as a change event for the host controllers.
 - The host no longer persists that whole-document RichText payload directly for ordinary typing.
 - Instead, the typing controller treats the signal as a notification and derives the actual mutation from
@@ -110,8 +115,9 @@ plain `QtQuick.TextEdit` as the actual rendering and input engine.
 - Regression checklist:
   - RichText spans derived from `.wsnbody` tags render visibly inside the live editor surface
   - cursor/selection updates still drive gutter and minimap geometry
-  - programmatic note switches do not emit duplicate save mutations
-  - the live note editor remains backed by `QtQuick.TextEdit`; no `LV.TextEditor` dependency should be reintroduced
+- programmatic note switches do not emit duplicate save mutations
+- programmatic rendered-surface refresh must not loop back into host typing mutation handling as a fake user edit
+- the live note editor remains backed by `QtQuick.TextEdit`; no `LV.TextEditor` dependency should be reintroduced
 - direct typing must not surface fragment comment markup such as `<!--StartFragment-->`
 - Hangul IME composition must not delete previously committed text when a syllable block is assembled
 - Hangul IME composition must not leave split jamo behind after the committed syllable lands

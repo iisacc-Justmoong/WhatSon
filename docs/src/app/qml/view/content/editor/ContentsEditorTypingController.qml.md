@@ -21,6 +21,8 @@ This controller exists to keep plain typing separate from inline-format applicat
 - Reads the live edited plain text from `contentEditor.getText(0, length)`.
 - Receives committed edit notifications only after the native `TextEdit` input-method session settles, so diffing is
   based on stable plain-text snapshots instead of transient Hangul/Japanese preedit fragments.
+- Programmatic RichText surface replacement from the host wrapper is no longer allowed to re-enter this path as a fake
+  committed edit notification; only real post-sync user edits should reach this controller.
 - Computes a single contiguous replacement delta (`start`, `previousEnd`, `insertedText`) from those two plain-text
   projections.
 - When that delta is a single `Enter` insertion on a markdown list line, the controller now expands the inserted text
@@ -31,13 +33,22 @@ This controller exists to keep plain typing separate from inline-format applicat
   - `queueAgendaShortcutInsertion()` inserts canonical agenda source directly into RAW at the current cursor.
   - empty agenda shortcut payloads include an internal one-space task-body anchor so cursor/Enter flow can still
     address the inserted task in logical/source mapping.
+  - before insertion, the controller now also validates that the payload is still a complete
+    `<agenda ...><task ...>...</task></agenda>` block and aborts instead of writing partial fragments
   - typing `[] item` or `[x] item` triggers todo shorthand canonicalization.
   - pressing `Enter` inside `<task>` triggers agenda-aware newline handling.
 - The controller now also owns callout source shortcuts:
   - `queueCalloutShortcutInsertion()` inserts canonical callout source directly into RAW at the current cursor.
   - empty callout shortcut payloads include an internal one-space body anchor so cursor/Enter flow can still
     address the inserted callout in logical/source mapping.
+  - before insertion, the controller now also validates that the payload is still a complete
+    `<callout>...</callout>` block and aborts instead of writing partial fragments
   - pressing `Enter` on a trailing empty callout line exits callout editing instead of adding another empty inner line.
+- Structured shortcut insertion now resolves the actual RAW insertion point before writing:
+  - if the logical cursor is already inside an existing `<agenda>...</agenda>` or `<callout>...</callout>`, the new
+    shortcut block is moved to the end of that enclosing block instead of being nested into it
+  - newline padding is then applied around that resolved outer insertion point, so the new block becomes a standalone
+    RAW block instead of continuing the surrounding line
 - Agenda-specific source mutation logic above is delegated to `ContentsAgendaBackend`:
   - `buildAgendaInsertionPayload(...)`
   - `detectTodoShortcutReplacement(...)`
@@ -184,6 +195,8 @@ longer part of the normal typing path.
   empty callout bodies must still remain cursor-reachable via an internal one-space anchor.
 - `Ctrl+Alt+C` fallback must trigger the same callout insertion behavior when runtime Command mapping resolves as
   `ControlModifier`.
+- Triggering a new agenda/callout shortcut while the cursor already sits inside an existing agenda/callout must place
+  the new block after the enclosing closing tag, not inside the existing block body.
 - Pressing `Enter` twice at the end of `<callout>...</callout>` must move the cursor out of the callout on the second
   `Enter` and must not duplicate closing `</callout>` tags.
 - Typing `[] task` must persist canonical `<agenda date="..."><task done="false">task</task></agenda>`.

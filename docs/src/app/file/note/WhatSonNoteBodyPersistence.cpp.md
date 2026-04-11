@@ -12,6 +12,9 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - plain text with newlines
   - inline `.wsnbody` style/resource tags
   - Qt Rich HTML fragments/documents
+- Before standalone block splitting and XML emission, the serializer now passes proprietary structured tags through
+  `WhatSonStructuredTagLinter`, so safe canonical repairs happen in the file/domain layer instead of being left to
+  ad-hoc editor code.
 - When inline proprietary styles remain open across a source newline, the serializer now carries those open style tags
   forward and reopens them at the start of the next `<paragraph>`. This keeps multi-paragraph formatting alive in a
   paragraph-based XML document instead of silently truncating it at the first line boundary.
@@ -35,6 +38,14 @@ The file now also contains the shared XML-to-plain-text extraction path used by 
   - `<callout ...>` start aliases are normalized to canonical `<callout>`
   - self-closing callout aliases are expanded into explicit `<callout></callout>`
   - read-side source projection keeps canonical `<callout>...</callout>` wrappers
+- Agenda/callout/divider source blocks are now normalized onto standalone editor lines before save/load projection.
+  Adjacent text is split away from the proprietary block so block cards do not remain embedded in ordinary paragraph
+  text on round-trip.
+- `serializeBodyDocument(...)` now writes standalone agenda/callout/divider lines directly under `<body>` instead of
+  wrapping them back into `<paragraph>...</paragraph>`.
+- `plainTextFromBodyDocument(...)` now treats direct `<agenda>` / `<callout>` body children as block content too, so
+  logical text reconstruction still preserves block line boundaries even after those tags stop being paragraph-wrapped.
+  Agenda task bodies are projected as newline-separated block lines inside that agenda block.
 - `extractedInlineTagValues(...)` canonicalizes incoming editor text and extracts deduplicated body-tag payloads for
   `.wsnhead` and `Tags.wstags` synchronization.
 - The parser now ignores whitespace-only top-level character nodes inside `<body>`, so pretty-printed empty bodies
@@ -90,3 +101,9 @@ text projections still show `#label`.
   - input: `<agenda date="..."><task done="false">todo</task></agenda>`
   - output source projection: canonical agenda/task tags with normalized attributes
 - A typed `<callout>message</callout>` block must survive save/load without escaping wrapper tags.
+- A standalone `<agenda>...</agenda>`, `<callout>...</callout>`, or `</break>` source line must round-trip as a direct
+  `<body>` child instead of being rewrapped into `<paragraph>`.
+- Legacy notes that already embedded agenda/callout blocks inside paragraph content must rehydrate into standalone
+  editor lines on load so renderer-owned cards can be rebuilt immediately from the RAW tags.
+- Legacy/self-closing/non-canonical structured tags must rehydrate into canonical editor RAW source whenever the linter
+  can repair them safely.

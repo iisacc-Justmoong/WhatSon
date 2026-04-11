@@ -124,6 +124,7 @@
   - `Cmd+Opt+T` inserts canonical `<agenda date="YYYY-MM-DD"><task done="false"> </task></agenda>` (empty-body
     cursor anchor included)
   - `Ctrl+Alt+T` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
+  - insertion now aborts unless that payload still validates as one complete `<agenda><task>...</task></agenda>` block
   - markdown-like `[] item` / `[x] item` lines are rewritten into agenda/task source blocks
   - pressing `Enter` inside `<task>` either creates the next `<task>` or exits agenda editing when the current task is
     empty
@@ -131,7 +132,13 @@
 - `ContentsEditorTypingController.qml` now also owns callout authoring shortcuts:
   - `Cmd+Opt+C` inserts canonical `<callout> </callout>` (empty-body cursor anchor included) into RAW at the current cursor
   - `Ctrl+Alt+C` fallback is also accepted when runtime Command mapping resolves as `ControlModifier`
+  - insertion now aborts unless that payload still validates as one complete `<callout>...</callout>` block
   - pressing `Enter` twice on a trailing empty callout line exits the callout block on the second `Enter`
+- Structured shortcut insertion now also resolves out of existing proprietary wrappers before writing:
+  - invoking agenda/callout insertion while the cursor is already inside an existing agenda/callout moves the new RAW
+    block to the enclosing wrapper end first
+  - newline padding is then applied around that resolved point so proprietary blocks remain standalone instead of
+    nesting inside one another
 - Agenda parsing and source-mutation backend logic used by those shortcuts now lives in
   `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
 - Callout parsing and insertion payload backend logic now lives in
@@ -172,6 +179,9 @@
 - The shared editor wrapper now also prefers the native `QtQuick.TextEdit` edited-signal / input-method commit path
   instead of maintaining its own synthetic IME commit flag, aligning Hangul composition behavior with standard text
   editors and word processors more closely.
+- That same wrapper now also suppresses one echoed native `textEdited` turn for host-driven RichText surface
+  replacement, preventing debounced presentation refresh from re-entering the RAW typing-mutation path as a fake user
+  edit.
 - The shared editor wrapper now also normalizes tab indentation width through `TextEdit.tabStopDistance` using runtime
   font metrics for four spaces, so Tab indent depth no longer jumps to an oversized default column.
 - The shared editor wrapper now also intercepts direct `Tab` key insertion to emit four literal spaces by default,
@@ -187,6 +197,8 @@
 - Agenda source tags must now round-trip through persistence without escaping (`<agenda>`, `<task>`) and keep canonical
   attribute forms (`date=YYYY-MM-DD`, `done=true|false`).
 - Callout source tags must now round-trip through persistence without escaping (`<callout>...</callout>`).
+- Agenda/callout/divider RAW blocks must now also round-trip as standalone body children on disk instead of being
+  rewrapped into `<paragraph>`.
 
 ## Intended Detailed Sections
 - Module responsibilities and architectural layer

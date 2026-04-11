@@ -2,6 +2,7 @@
 
 #include "WhatSonNoteMarkdownStyleObject.hpp"
 #include "WhatSonLocalNoteFileStore.hpp"
+#include "file/validator/WhatSonStructuredTagLinter.hpp"
 
 #include <QDir>
 #include <QDate>
@@ -373,6 +374,104 @@ namespace
         return QStringLiteral("<callout>");
     }
 
+    bool isStandaloneStructuredSourceLine(const QString& lineText)
+    {
+        const QString trimmedLine = lineText.trimmed();
+        if (trimmedLine.isEmpty())
+        {
+            return false;
+        }
+
+        static const QRegularExpression standaloneStructuredLinePattern(
+            QStringLiteral(
+                R"(^(?:</break>|<callout\b[^>]*>[\s\S]*</callout>|<agenda\b[^>]*>[\s\S]*</agenda>)$)"),
+            QRegularExpression::CaseInsensitiveOption);
+        return standaloneStructuredLinePattern.match(trimmedLine).hasMatch();
+    }
+
+    void trimTrailingHorizontalWhitespace(QString* text)
+    {
+        if (text == nullptr)
+        {
+            return;
+        }
+
+        while (!text->isEmpty())
+        {
+            const QChar lastCharacter = text->at(text->size() - 1);
+            if (lastCharacter != QLatin1Char(' ') && lastCharacter != QLatin1Char('\t'))
+            {
+                break;
+            }
+            text->chop(1);
+        }
+    }
+
+    QString normalizeStructuredBlocksToStandaloneLines(const QString& sourceText)
+    {
+        const QString normalizedSourceText = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(sourceText);
+        if (normalizedSourceText.isEmpty())
+        {
+            return {};
+        }
+
+        static const QRegularExpression structuredBlockPattern(
+            QStringLiteral(
+                R"((</break>|<callout\b[^>]*>[\s\S]*?</callout>|<agenda\b[^>]*>[\s\S]*?</agenda>))"),
+            QRegularExpression::CaseInsensitiveOption);
+
+        QString output;
+        qsizetype cursor = 0;
+        QRegularExpressionMatchIterator iterator = structuredBlockPattern.globalMatch(normalizedSourceText);
+        while (iterator.hasNext())
+        {
+            const QRegularExpressionMatch match = iterator.next();
+            const qsizetype blockStart = match.capturedStart(0);
+            const qsizetype blockEnd = match.capturedEnd(0);
+            if (blockStart < 0 || blockEnd <= blockStart)
+            {
+                continue;
+            }
+
+            if (blockStart > cursor)
+            {
+                output += normalizedSourceText.mid(cursor, blockStart - cursor);
+            }
+
+            if (!output.isEmpty() && !output.endsWith(QLatin1Char('\n')))
+            {
+                trimTrailingHorizontalWhitespace(&output);
+                if (!output.isEmpty() && !output.endsWith(QLatin1Char('\n')))
+                {
+                    output += QLatin1Char('\n');
+                }
+            }
+
+            output += match.captured(0).trimmed();
+            cursor = blockEnd;
+
+            if (cursor < normalizedSourceText.size()
+                && normalizedSourceText.at(cursor) != QLatin1Char('\n'))
+            {
+                output += QLatin1Char('\n');
+            }
+        }
+
+        if (cursor < normalizedSourceText.size())
+        {
+            output += normalizedSourceText.mid(cursor);
+        }
+
+        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
+    }
+
+    bool isStructuredBodyBlockElement(const QString& elementName)
+    {
+        const QString normalizedName = elementName.trimmed().toCaseFolded();
+        return normalizedName == QStringLiteral("agenda")
+            || normalizedName == QStringLiteral("callout");
+    }
+
     bool isInlineHashtagBoundary(const QString& text, const qsizetype index)
     {
         if (index <= 0 || index > text.size())
@@ -703,7 +802,8 @@ namespace
             output += decodeXmlEntities(normalizedSourceText.mid(cursor));
         }
 
-        return WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
+        return normalizeStructuredBlocksToStandaloneLines(
+            WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output));
     }
 
     QString cssStyleAttributeFromTagToken(const QString& tagToken)
@@ -953,7 +1053,7 @@ namespace
         }
 
         output = WhatSon::NoteBodyPersistence::normalizeBodyPlainText(output);
-        return output;
+        return normalizeStructuredBlocksToStandaloneLines(output);
     }
 
     QString serializeInlineTaggedLine(
@@ -1173,8 +1273,10 @@ namespace
         bool insideBody = false;
         bool encounteredBlockElement = false;
         int blockDepth = 0;
+        int agendaTaskCount = 0;
         QString currentBlockText;
         QString currentBlockRichText;
+        QString activeStructuredBlockName;
 
         while (!reader.atEnd())
         {
@@ -1256,6 +1358,35 @@ namespace
                     continue;
                 }
 
+                if (isStructuredBodyBlockElement(elementName))
+                {
+                    encounteredBlockElement = true;
+                    if (blockDepth == 0)
+                    {
+                        currentBlockText.clear();
+                        currentBlockRichText.clear();
+                    }
+                    ++blockDepth;
+                    activeStructuredBlockName = elementName.trimmed().toCaseFolded();
+                    agendaTaskCount = 0;
+                    continue;
+                }
+
+                if (activeStructuredBlockName == QStringLiteral("agenda")
+                    && elementName.compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0)
+                {
+                    if (blockDepth > 0)
+                    {
+                        if (agendaTaskCount > 0)
+                        {
+                            currentBlockText += QLatin1Char('\n');
+                            currentBlockRichText += QLatin1Char('\n');
+                        }
+                        ++agendaTaskCount;
+                    }
+                    continue;
+                }
+
                 if (isTextBlockElement(elementName))
                 {
                     encounteredBlockElement = true;
@@ -1316,6 +1447,33 @@ namespace
                 break;
             }
 
+            if (activeStructuredBlockName == QStringLiteral("agenda")
+                && elementName.compare(QStringLiteral("task"), Qt::CaseInsensitive) == 0)
+            {
+                continue;
+            }
+
+            if (isStructuredBodyBlockElement(elementName) && blockDepth > 0)
+            {
+                --blockDepth;
+                if (blockDepth == 0)
+                {
+                    fragments.blockLines.append(
+                        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockText).split(
+                            QLatin1Char('\n'),
+                            Qt::KeepEmptyParts));
+                    fragments.blockRichLines.append(
+                        WhatSon::NoteBodyPersistence::normalizeBodyPlainText(currentBlockRichText).split(
+                            QLatin1Char('\n'),
+                            Qt::KeepEmptyParts));
+                    currentBlockText.clear();
+                    currentBlockRichText.clear();
+                    activeStructuredBlockName.clear();
+                    agendaTaskCount = 0;
+                }
+                continue;
+            }
+
             if (!isTextBlockElement(elementName) || blockDepth <= 0)
             {
                 continue;
@@ -1357,10 +1515,14 @@ namespace WhatSon::NoteBodyPersistence
 
     QString serializeBodyDocument(const QString& noteId, const QString& bodySourceText)
     {
+        const WhatSonStructuredTagLinter structuredTagLinter;
         const QString normalizedId = noteId.trimmed().isEmpty()
                                          ? QStringLiteral("note")
                                          : escapeXmlAttributeValue(noteId.trimmed());
-        const QString inlineTaggedText = normalizeEditorSourceToInlineTaggedText(bodySourceText);
+        const QString inlineTaggedText =
+            normalizeStructuredBlocksToStandaloneLines(
+                structuredTagLinter.normalizeStructuredSourceText(
+                    normalizeEditorSourceToInlineTaggedText(bodySourceText)));
 
         QString text;
         text += QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -1378,6 +1540,16 @@ namespace WhatSon::NoteBodyPersistence
         QStringList carriedOpenStyleTags;
         for (const QString& line : lines)
         {
+            const QString trimmedLine = line.trimmed();
+            if (isStandaloneStructuredSourceLine(trimmedLine))
+            {
+                carriedOpenStyleTags.clear();
+                text += QStringLiteral("    ");
+                text += serializeInlineTaggedLine(trimmedLine, {}, nullptr);
+                text += QLatin1Char('\n');
+                continue;
+            }
+
             text += QStringLiteral("    <paragraph>");
             QStringList nextCarriedOpenStyleTags;
             text += serializeInlineTaggedLine(line, carriedOpenStyleTags, &nextCarriedOpenStyleTags);
@@ -1438,8 +1610,10 @@ namespace WhatSon::NoteBodyPersistence
 
     QString sourceTextFromBodyDocument(const QString& bodyDocumentText)
     {
-        return editorSourceTextFromCanonicalInlineTaggedText(
-            normalizeEditorSourceToInlineTaggedText(bodyDocumentText));
+        const WhatSonStructuredTagLinter structuredTagLinter;
+        return structuredTagLinter.normalizeStructuredSourceText(
+            editorSourceTextFromCanonicalInlineTaggedText(
+                normalizeEditorSourceToInlineTaggedText(bodyDocumentText)));
     }
 
     QString richTextFromBodyDocument(const QString& bodyDocumentText)
