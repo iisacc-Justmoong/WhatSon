@@ -8,6 +8,7 @@ Provides the concrete QML bridge registration list used by the workspace shell.
 - `ContentsLogicalTextBridge`
 - `ContentsGutterMarkerBridge`
 - `ContentsTextFormatRenderer`
+- `ContentsStructuredBlockRenderer`
 - `ContentsAgendaBackend`
 - `ContentsCalloutBackend`
 - `ContentsPagePrintLayoutRenderer`

@@ -1312,6 +1312,11 @@ Item {
     ContentsCalloutBackend {
         id: contentsCalloutBackend
     }
+    ContentsStructuredBlockRenderer {
+        id: structuredBlockRenderer
+
+        sourceText: contentsView.editorText
+    }
     ContentsTextFormatRenderer {
         id: textFormatRenderer
 
@@ -1697,7 +1702,6 @@ Item {
                     ContentsAgendaLayer {
                         id: agendaRenderLayer
 
-                        agendaBackend: contentsAgendaBackend
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
@@ -1715,7 +1719,7 @@ Item {
                         anchors.topMargin: (contentsView.showPrintEditorLayout
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY)
-                        sourceText: contentsView.editorText
+                        renderedAgendas: structuredBlockRenderer.renderedAgendas
                         sourceOffsetYResolver: function (sourceOffset) {
                             const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                                         Math.max(0, Math.floor(Number(sourceOffset) || 0)));
@@ -1738,7 +1742,6 @@ Item {
                     ContentsCalloutLayer {
                         id: calloutRenderLayer
 
-                        calloutBackend: contentsCalloutBackend
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
@@ -1756,7 +1759,7 @@ Item {
                         anchors.topMargin: contentsView.showPrintEditorLayout
                                            ? (Number(printPaperColumn.y) || 0) + contentsView.printGuideVerticalInset
                                            : contentsView.editorDocumentStartY
-                        sourceText: contentsView.editorText
+                        renderedCallouts: structuredBlockRenderer.renderedCallouts
                         sourceOffsetYResolver: function (sourceOffset) {
                             const logicalOffset = editorTypingController.logicalOffsetForSourceOffset(
                                         Math.max(0, Math.floor(Number(sourceOffset) || 0)));

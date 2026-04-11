@@ -3,6 +3,7 @@
 #include "agenda/ContentsAgendaBackend.hpp"
 #include "callout/ContentsCalloutBackend.hpp"
 #include "editor/renderer/ContentsPagePrintLayoutRenderer.hpp"
+#include "editor/renderer/ContentsStructuredBlockRenderer.hpp"
 #include "editor/renderer/ContentsTextFormatRenderer.hpp"
 #include "file/viewer/ContentsBodyResourceRenderer.hpp"
 #include "file/viewer/ResourceBitmapViewer.hpp"
@@ -28,6 +29,8 @@ namespace WhatSon::Runtime::Bootstrap
             "WhatSon.App.Internal", 1, 0, "ContentsGutterMarkerBridge");
         qmlRegisterType<ContentsTextFormatRenderer>(
             "WhatSon.App.Internal", 1, 0, "ContentsTextFormatRenderer");
+        qmlRegisterType<ContentsStructuredBlockRenderer>(
+            "WhatSon.App.Internal", 1, 0, "ContentsStructuredBlockRenderer");
         qmlRegisterType<ContentsAgendaBackend>(
             "WhatSon.App.Internal", 1, 0, "ContentsAgendaBackend");
         qmlRegisterType<ContentsCalloutBackend>(

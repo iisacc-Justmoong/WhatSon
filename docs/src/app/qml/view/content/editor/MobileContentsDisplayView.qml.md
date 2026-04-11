@@ -64,11 +64,12 @@ suppression local to this file.
   with the desktop implementation.
 - `ContentsAgendaLayer.qml` is also shared with desktop for non-Plain agenda/task card rendering.
 - `ContentsCalloutLayer.qml` is also shared with desktop for non-Plain callout-row rendering.
+- `ContentsStructuredBlockRenderer` is also shared with desktop and owns agenda/callout render-model generation for
+  the mobile overlay layers.
 - Mobile also routes agenda/callout overlay placement through `sourceOffsetYResolver(sourceStart)`, so cards/rows are
   placed at authored source-tag locations in note flow.
-- `ContentsAgendaBackend` is shared with desktop for agenda parsing, task-toggle rewrite, and agenda shortcut mutation
-  payloads.
-- `ContentsCalloutBackend` is shared with desktop for callout parsing and insertion payload generation.
+- `ContentsAgendaBackend` is shared with desktop for task-toggle rewrite and agenda shortcut mutation payloads.
+- `ContentsCalloutBackend` is shared with desktop for callout insertion payload generation.
 - `ContentsMinimapSnapshotSupport.js` is shared with desktop so the minimap diff/range-splice policy stays identical
   across both editor surfaces.
 - RAW-safe entity strings stored in source text (`&lt;`, `&gt;`, `&amp;`, etc.) now render as their visible symbols on the
@@ -96,7 +97,7 @@ suppression local to this file.
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so hardware-keyboard shortcuts stay active while the nested
   input item owns focus.
 - Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
-  newline normalization), then let renderer layers project those blocks.
+  newline normalization), then let `ContentsStructuredBlockRenderer` project those blocks into overlay-layer models.
 - Mobile window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
   controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Mobile note selection/body echo changes now also route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,

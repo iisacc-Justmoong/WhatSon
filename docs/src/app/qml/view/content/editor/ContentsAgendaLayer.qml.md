@@ -4,9 +4,8 @@
 
 `ContentsAgendaLayer.qml` renders proprietary `<agenda>` / `<task>` source blocks as an agenda card UI.
 
-The layer is now a backend-fed view:
-- input: canonical source text (`sourceText`)
-- parser backend: `agendaBackend.parseAgendas(sourceText)` (`ContentsAgendaBackend`)
+The layer is now a renderer-fed view:
+- input: renderer-owned agenda models (`renderedAgendas`)
 - output: LVRS card + `LV.CheckBox` task rows
 - mutation hook: `taskToggleHandler(taskOpenTagStart, taskOpenTagEnd, checked)`
 - placement hook: `sourceOffsetYResolver(sourceStart)` (host-provided source-offset -> viewport-y resolver)
@@ -24,14 +23,13 @@ The layer is now a backend-fed view:
 - Task rows are rendered as `LV.CheckBox`.
 - `checked` is mapped from canonical `task.done` boolean.
 
-## Parsing Rules
+## Render-Model Rules
 
-- Source parsing rules are implemented in `src/app/agenda/ContentsAgendaBackend.cpp`.
-- This QML layer consumes only the backend parse result model and does not perform source-regex parsing locally.
-- Parse entries now include `sourceStart`; cards are positioned by source order/location, not by a fixed top-stacked
+- Source parsing rules are now owned by `src/app/editor/renderer/ContentsStructuredBlockRenderer.cpp`.
+- This QML layer consumes only renderer-provided agenda entries and does not parse RAW source locally.
+- Parse entries include `sourceStart`; cards are positioned by source order/location, not by a fixed top-stacked
   column only.
-- The layer now normalizes backend `QVariantList`-like return values into JS arrays instead of depending on
-  `Array.isArray(...)` only, so C++ invokable parse results still drive card visibility/model counts in QML.
+- The layer still normalizes `QVariantList`-like values into JS arrays so C++ renderer properties remain QML-safe.
 
 ## Mutation Hook
 

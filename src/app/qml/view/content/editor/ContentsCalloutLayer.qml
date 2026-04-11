@@ -1,14 +1,12 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Item {
     id: calloutLayer
 
-    property string sourceText: ""
-    property var calloutBackend: internalCalloutBackend
+    property var renderedCallouts: []
     property var sourceOffsetYResolver: null
     readonly property color calloutColor: "#262728"
     readonly property color dividerColor: "#D9D9D9"
@@ -31,17 +29,8 @@ Item {
         }
         return [];
     }
-    readonly property var parsedCallouts: {
-        if (!calloutLayer.calloutBackend || calloutLayer.calloutBackend.parseCallouts === undefined)
-            return [];
-        const parsed = calloutLayer.calloutBackend.parseCallouts(sourceText);
-        return calloutLayer.normalizedList(parsed);
-    }
-    readonly property int calloutCount: calloutLayer.parsedCallouts.length
-
-    ContentsCalloutBackend {
-        id: internalCalloutBackend
-    }
+    readonly property var calloutEntries: calloutLayer.normalizedList(renderedCallouts)
+    readonly property int calloutCount: calloutLayer.calloutEntries.length
 
     function fallbackCalloutY(index) {
         return Math.max(0, index) * Math.max(1, LV.Theme.gap20);
@@ -76,7 +65,7 @@ Item {
     Repeater {
         id: calloutRepeater
 
-        model: calloutLayer.parsedCallouts
+        model: calloutLayer.calloutEntries
 
         delegate: Rectangle {
             id: calloutFrame

@@ -7,7 +7,7 @@
 ## Scope
 - Mirrored source directory: `src/app/editor/renderer`
 - Child directories: 0
-- Child files: 6
+- Child files: 8
 
 ## Child Directories
 - No child directories.
@@ -17,12 +17,16 @@
 - `ContentsTextHighlightRenderer.hpp`
 - `ContentsTextFormatRenderer.cpp`
 - `ContentsTextFormatRenderer.hpp`
+- `ContentsStructuredBlockRenderer.cpp`
+- `ContentsStructuredBlockRenderer.hpp`
 - `ContentsPagePrintLayoutRenderer.cpp`
 - `ContentsPagePrintLayoutRenderer.hpp`
 
 ## Current Notes
 - `ContentsTextFormatRenderer.cpp` now treats proprietary inline source tags as the authoritative formatting basis for
   logical-selection formatting.
+- `ContentsStructuredBlockRenderer.cpp` now owns agenda/callout tag detection for editor overlay render models, so QML
+  layers no longer parse RAW source directly.
 - Shortcut/context-menu formatting no longer depends on a transient `QTextDocument` fragment merge to decide where a
   RAW source style starts or ends.
 - Page/Print paper-preview mode gating and A4 paper geometry calculations are now centralized in

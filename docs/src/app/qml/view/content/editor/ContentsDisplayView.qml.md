@@ -40,6 +40,7 @@ that sit directly inside the editor viewport.
 - `ContentsResourceViewer.qml`
 - `ContentsAgendaBackend` (C++ backend)
 - `ContentsCalloutBackend` (C++ backend)
+- `ContentsStructuredBlockRenderer` (C++ backend)
 - `ContentsPagePrintLayoutRenderer` (C++ backend)
 - `ContentViewLayout.qml`
 
@@ -56,6 +57,9 @@ that sit directly inside the editor viewport.
   attribute in source through `ContentsAgendaBackend.rewriteTaskDoneAttribute(...)`.
 - Callout cards rendered from `<callout>...</callout>` source blocks now also overlay the editor viewport in
   non-Plain view modes (Page/Print/Web/Presentation) through `ContentsCalloutLayer.qml`.
+- Structured tag detection for those agenda/callout overlays is now owned by
+  `ContentsStructuredBlockRenderer`, matching the renderer-owned formatting pipeline instead of having QML call parse
+  backends directly.
 - Agenda/callout overlay layers are now positioned by tag source offset through
   `sourceOffsetYResolver(sourceStart)`, so cards appear at authored tag locations in editor flow instead of only
   fixed top stacking.
@@ -107,7 +111,7 @@ that sit directly inside the editor viewport.
 - Desktop now forwards shortcut key events directly from the inner `TextEdit` through
   `ContentsInlineFormatEditor.shortcutKeyPressHandler`, so shortcuts still fire while the nested input item owns focus.
 - Agenda/callout shortcut insertions now write canonical tags directly into RAW source at cursor (with line-boundary
-  newline normalization), then let renderer layers project those blocks.
+  newline normalization), then let `ContentsStructuredBlockRenderer` project those blocks into overlay-layer models.
 - Desktop window-level agenda/callout shortcuts now run with `autoRepeat: false` and are routed through the selection
   controller shortcut queue to avoid duplicate same-chord insertion bursts.
 - Desktop note selection/body echo changes now route through `ContentsEditorSession.requestSyncEditorTextFromSelection(...)`,

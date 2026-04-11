@@ -136,6 +136,9 @@
   `src/app/agenda/ContentsAgendaBackend.*`, while QML controllers keep event/cursor orchestration only.
 - Callout parsing and insertion payload backend logic now lives in
   `src/app/callout/ContentsCalloutBackend.*`, while QML controllers keep event/cursor orchestration only.
+- Agenda/callout render-model projection now lives in
+  `src/app/editor/renderer/ContentsStructuredBlockRenderer.*`, so QML overlay layers consume renderer-owned data
+  instead of calling parse backends directly.
 - `ContentsEditorSession.qml` now treats `date="yyyy-mm-dd"` as a modification-time placeholder:
   - when local note modification is staged for persistence, placeholder dates are rewritten to current `YYYY-MM-DD`
   - passive same-note model sync does not rewrite agenda dates
@@ -143,9 +146,9 @@
   - `<task ...></task>` -> `<task ...> </task>`
   - `<callout></callout>` -> `<callout> </callout>`
 - `ContentsAgendaLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders agenda cards
-  with `LV.CheckBox` task rows bound to source `done` attributes via `ContentsAgendaBackend`.
+  with `LV.CheckBox` task rows bound to source `done` attributes via renderer-provided agenda models.
 - `ContentsCalloutLayer.qml` is now mounted by desktop/mobile hosts for non-Plain view modes and renders Figma-aligned callout rows
-  from canonical `<callout>...</callout>` source wrappers.
+  from renderer-provided canonical `<callout>...</callout>` models.
 - Agenda/callout layers now consume parser-returned `sourceStart` offsets and host `sourceOffsetYResolver(...)`
   callbacks, so structured cards are placed at authored source-tag positions in the editor viewport.
 - Empty continued markdown list items now also break back to a plain blank line on `Enter`, so repeated list newlines do

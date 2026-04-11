@@ -2,14 +2,12 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import WhatSon.App.Internal 1.0
 import LVRS 1.0 as LV
 
 Item {
     id: agendaLayer
 
-    property string sourceText: ""
-    property var agendaBackend: internalAgendaBackend
+    property var renderedAgendas: []
     property var sourceOffsetYResolver: null
     property var taskToggleHandler: null
     readonly property color frameBorderColor: "#343536"
@@ -33,17 +31,8 @@ Item {
         }
         return [];
     }
-    readonly property var parsedAgendas: {
-        if (!agendaLayer.agendaBackend || agendaLayer.agendaBackend.parseAgendas === undefined)
-            return [];
-        const parsed = agendaLayer.agendaBackend.parseAgendas(sourceText);
-        return agendaLayer.normalizedList(parsed);
-    }
-    readonly property int agendaCount: agendaLayer.parsedAgendas.length
-
-    ContentsAgendaBackend {
-        id: internalAgendaBackend
-    }
+    readonly property var agendaEntries: agendaLayer.normalizedList(renderedAgendas)
+    readonly property int agendaCount: agendaLayer.agendaEntries.length
 
     function fallbackAgendaY(index) {
         return Math.max(0, index) * Math.max(1, LV.Theme.gap20);
@@ -78,7 +67,7 @@ Item {
     Repeater {
         id: agendaRepeater
 
-        model: agendaLayer.parsedAgendas
+        model: agendaLayer.agendaEntries
 
         delegate: Rectangle {
             id: agendaCard
